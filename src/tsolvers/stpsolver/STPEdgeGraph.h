@@ -32,8 +32,9 @@ public:
     explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), addedCount(0) {}
     bool isTrue(EdgeRef e) const;
     uint32_t getAddedCount() const { return addedCount; }
-    void setTrue(EdgeRef e, bool consequence);
+    void setTrue(EdgeRef e, PtAsgn asgn);
     void findConsequences(EdgeRef e);
+    void findExplanation(EdgeRef e, vec<PtAsgn> &v);
     void removeAfter(uint32_t point);
 };
 

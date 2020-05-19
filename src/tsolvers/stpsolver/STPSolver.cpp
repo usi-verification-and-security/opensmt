@@ -111,7 +111,7 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
 
     // The assignment isn't decided yet, so we set it as true and find all of its consequences
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;
-    graph.setTrue(set, false);
+    graph.setTrue(set, asgn);
     graph.findConsequences(set);
     return true;
 }
@@ -178,7 +178,7 @@ void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
     if (inv_edge == EdgeRef_Undef) return;  // TODO: how to handle call in consistent state?
-
+    graph.findExplanation(store.getEdge(inv_edge).neg, vec);
 }
 
 PtAsgn_reason STPSolver::getDeduction() {

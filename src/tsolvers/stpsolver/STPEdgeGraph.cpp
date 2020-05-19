@@ -5,13 +5,14 @@ bool STPEdgeGraph::isTrue(EdgeRef e) const {
     return e != EdgeRef_Undef && store.getEdge(e).setTime != 0;
 }
 
-void STPEdgeGraph::setTrue(EdgeRef e, bool consequence) {
+void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     Edge &edge = store.getEdge(e);
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
-    if (!consequence) ++addedCount;             // consequences have the same timestamp as the edge that caused them
+    if (asgn != PtAsgn_Undef) ++addedCount;     // consequences have the same timestamp as the edge that caused them
     addedEdges.push_back(e);
     edge.setTime = addedCount;
+    edge.asgn = asgn;
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
         incoming.resize(max + 1);
@@ -44,7 +45,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
             if (thisSide == i && (*otherRes.visited)[otherSide]
                 && edge.cost >= (*thisRes.distance)[thisSide] + start.cost + (*otherRes.distance)[otherSide])
-                    setTrue(eRef, true);
+                    setTrue(eRef, PtAsgn_Undef);
         }
     }
 }
@@ -94,5 +95,42 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
         edge.setTime = 0;
     }
 }
+
+void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
+    Edge &expl = store.getEdge(e);
+    std::vector<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
+    std::vector<opensmt::Number> length(store.vertexNum());
+    std::stack<VertexRef> open;
+
+    open.push(expl.from);
+    while (!open.empty()) {
+        auto curr = open.top(); open.pop();
+        if (curr == expl.to) break;
+        for (auto eRef : outgoing[curr.x]) {
+            if (eRef == e) continue;
+            Edge &edge = store.getEdge(eRef);
+            if (edge.asgn == PtAsgn_Undef) continue;
+            if (edge.setTime > expl.setTime) continue;
+            if (length[curr.x] + edge.cost > expl.cost) continue;
+
+            auto next = edge.to;
+            if (visited[next.x] == EdgeRef_Undef || length[next.x] > length[curr.x] + edge.cost) {
+                visited[next.x] = eRef;
+                length[next.x] = length[curr.x] + edge.cost;
+                open.push(next);
+            }
+        }
+    }
+
+    auto backtrack = visited[expl.to.x];
+    assert( backtrack != EdgeRef_Undef);
+    while (true) {
+        Edge &edge = store.getEdge(backtrack);
+        v.push(edge.asgn);
+        if (edge.from == expl.from) break;
+        backtrack = visited[edge.from.x];
+    }
+}
+
 
 

@@ -5,6 +5,7 @@
 #include <vector>
 #include <Number.h>
 #include <SolverTypes.h>
+#include <PtStructs.h>
 
 struct VertexRef {
     uint32_t x;
@@ -28,6 +29,7 @@ struct Edge {
     EdgeRef neg;            // the logical negation of this edge
     opensmt::Number cost;   // cost of this edge
     uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
+    PtAsgn asgn;
 };
 
 class STPStore {
