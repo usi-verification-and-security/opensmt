@@ -11,14 +11,12 @@ struct VertexRef {
     uint32_t x;
     inline bool operator==(VertexRef other) const { return x == other.x; }
     inline bool operator!=(VertexRef other) const { return x != other.x; }
-    explicit operator bool() const { return x != INT32_MAX; }
 };
 
 struct EdgeRef {
     uint32_t x;
     inline bool operator==(EdgeRef other) const { return x == other.x; }
     inline bool operator!=(EdgeRef other) const { return x != other.x; }
-    explicit operator bool() const { return x != INT32_MAX; }
 };
 
 static VertexRef VertRef_Undef = VertexRef { INT32_MAX };
@@ -28,14 +26,15 @@ struct Edge {
     VertexRef from, to;     // vertices of this edge
     EdgeRef neg;            // the logical negation of this edge
     opensmt::Number cost;   // cost of this edge
+
     uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
-    PtAsgn asgn;
+    PtAsgn asgn;            // assignment that caused this edge to be set (for actually set edges and not consequences)
 };
 
 class STPStore {
 private:
-    uint32_t vertices;                      // number of created vertices (a vertex doesn't actually carry any information)
-    std::vector<Edge> edges;                // list of all created edges
+    uint32_t vertices;                  // number of created vertices (a vertex doesn't actually carry any information)
+    std::vector<Edge> edges;            // list of all created edges
 public:
     STPStore() : vertices(0) {}
     VertexRef createVertex();
@@ -43,7 +42,6 @@ public:
 
     size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }
-    const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }
     void setNegation(EdgeRef a, EdgeRef b);
 };

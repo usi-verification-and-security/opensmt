@@ -27,7 +27,7 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto start = store.getEdge(e);
-    // find potential starts/ends of an edge
+    // find potential starts/ends of an edge with a path going through 'e'
     auto aRes = dfsSearch(start.from, false);
     auto bRes = dfsSearch(start.to, true);
 
@@ -38,13 +38,13 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
     // for each (WLOG) 'a', go through its edges and find each 'a -> b' edge that has cost higher than length found by DFS
     // such edges are consequences of the current graph
     for (uint32_t i = 0; i < n; ++i) {
-        if (!(*thisRes.visited)[i]) continue;
+        if (!thisRes.visited[i]) continue;
         for (auto eRef : mapper.edgesOf(VertexRef{i})) {
             Edge &edge = store.getEdge(eRef);
             auto thisSide = (aRes.total < bRes.total) ? edge.from.x : edge.to.x;
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
-            if (thisSide == i && (*otherRes.visited)[otherSide]
-                && edge.cost >= (*thisRes.distance)[thisSide] + start.cost + (*otherRes.distance)[otherSide])
+            if (thisSide == i && otherRes.visited[otherSide]
+                && edge.cost >= thisRes.distance[thisSide] + start.cost + otherRes.distance[otherSide])
                     setTrue(eRef, PtAsgn_Undef);
         }
     }
@@ -52,12 +52,12 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
 DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
-    auto visited = std::unique_ptr<std::vector<bool>>(new std::vector<bool>(store.vertexNum()));
-    auto length = std::unique_ptr<std::vector<opensmt::Number>>(new std::vector<opensmt::Number>(store.vertexNum()));
+    std::vector<bool> visited(store.vertexNum());
+    std::vector<opensmt::Number> length(store.vertexNum());
     size_t total = 0;
     std::stack<VertexRef> open;
-    (*visited)[init.x] = true;
-    (*length)[init.x] = 0;
+    visited[init.x] = true;
+    length[init.x] = 0;
     open.push(init);
 
     while (!open.empty()) {
@@ -66,13 +66,13 @@ DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
         for (auto eRef : toScan) {
             Edge &edge = store.getEdge(eRef);
             auto next = forward ? edge.to : edge.from;
-            if (!(*visited)[next.x]) {
-                (*visited)[next.x] = true;
+            if (!visited[next.x]) {
+                visited[next.x] = true;
                 open.push(next);
-                (*length)[next.x] = (*length)[curr.x] + edge.cost;
+                length[next.x] = length[curr.x] + edge.cost;
                 total += static_cast<uint32_t>(mapper.edgesOf(next).size());
-            } else if ((*length)[next.x] > (*length)[curr.x] + edge.cost) {
-                (*length)[next.x] = (*length)[curr.x] + edge.cost;
+            } else if (length[next.x] > length[curr.x] + edge.cost) {
+                length[next.x] = length[curr.x] + edge.cost;
                 open.push(next);
             }
         }

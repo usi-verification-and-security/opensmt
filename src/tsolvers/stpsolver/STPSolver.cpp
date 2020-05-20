@@ -23,21 +23,21 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
-    assert( logic.isNumConst(leq[0]) );
+    assert( logic.isNumConst(leq[0]) );  // TODO: Can the inequality be reversed?
     auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
-    PTRef diff = leq[1];                        // 'x + (-1 * y)'
+    PTRef diff = leq[1];  // 'x + (-1 * y)'
 
     assert( logic.isNumPlus(diff) );
     Pterm &diffPt = logic.getPterm(diff);
-    uint8_t ix = logic.isNumVar(diffPt[0]) ? 0 : 1;     // index of 'x'
-    uint8_t iy = 1 - ix;                                    // index of '-1 * y'
-    PTRef x = diffPt[ix];                       // 'x'
+    uint8_t ix = logic.isNumVar(diffPt[0]) ? 0 : 1;  // index of 'x'
+    uint8_t iy = 1 - ix;  // index of '-1 * y'
+    PTRef x = diffPt[ix];  // 'x'
     assert( logic.isNumTimes(diffPt[iy]) );
 
-    Pterm &mult = logic.getPterm(diffPt[iy]);   // '-1 * y'
+    Pterm &mult = logic.getPterm(diffPt[iy]);  // '-1 * y'
     assert( logic.isNumConst(mult[0]) && logic.getNumConst(mult[0]) == -1 );
     assert( logic.isNumVar(mult[1]) );
-    PTRef y = mult[1];                          // 'y'
+    PTRef y = mult[1];  // 'y'
     auto ret = ParsedPTRef{x, y, con};
     return ret;
 }
@@ -100,8 +100,11 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     assert( e != EdgeRef_Undef );
     EdgeRef neg = store.getEdge(e).neg;
 
-    if (graph.isTrue(e) && asgn.sgn == l_True) return true; // assignment was already found as a consequence
-    if (graph.isTrue(neg) && asgn.sgn == l_False) return true;
+    // if the assignment was already found as a consequence, we just mark it as manually assigned and return it as true
+    if (graph.isTrue(e) && asgn.sgn == l_True || graph.isTrue(neg) && asgn.sgn == l_False) {
+        store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
+        return true;
+    }
 
     if (graph.isTrue(neg) || graph.isTrue(e)) {             // negation of assignment was found as a consequence
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
@@ -138,7 +141,7 @@ void STPSolver::pushBacktrackPoint() {
     // Important for backtracking
     TSolver::pushBacktrackPoint();
     ++curr_bpoint;
-    backtrack_points.push_back(graph.getAddedCount());
+    backtrack_points.push(graph.getAddedCount());
 }
 
 void STPSolver::popBacktrackPoint() {
@@ -159,8 +162,8 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
         inv_edge = EdgeRef_Undef;
     }
 
-    backtrack_points.resize(curr_bpoint + 1); // pop 'i-1' values from the backtrack stack
-    graph.removeAfter(backtrack_points.back());
+    backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
+    graph.removeAfter(backtrack_points.last());
     // no need to modify mapper or store - the values stored there can't change
 }
 
