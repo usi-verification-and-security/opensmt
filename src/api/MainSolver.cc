@@ -121,7 +121,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
-        PTRef root = frame.root;
 
 #ifdef PRODUCE_PROOF
         assert(frame.substs == logic.getTerm_true());
@@ -143,6 +142,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             }
         }
 #else // PRODUCE_PROOF
+        PTRef root = frame.root;
         if (logic.isFalse(root)) {
             giveToSolver(getLogic().getTerm_false(), frame.getId());
             return status = s_False;
