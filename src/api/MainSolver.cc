@@ -123,10 +123,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
         PTRef root = frame.root;
 
-        if (logic.isFalse(root)) {
-            giveToSolver(getLogic().getTerm_false(), frame.getId());
-            return status = s_False;
-        }
 #ifdef PRODUCE_PROOF
         assert(frame.substs == logic.getTerm_true());
         vec<PTRef> const & flas =  frame.formulas;
@@ -147,6 +143,10 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             }
         }
 #else // PRODUCE_PROOF
+        if (logic.isFalse(root)) {
+            giveToSolver(getLogic().getTerm_false(), frame.getId());
+            return status = s_False;
+        }
         FContainer fc(root);
 
         // Optimize the dag for cnfization
