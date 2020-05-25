@@ -1,7 +1,6 @@
 #include "LASolver.h"
 #include "LA.h"
 
-
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
 
@@ -431,6 +430,7 @@ PtAsgn
 LASolver::popDecisions()
 {
     PtAsgn popd = PtAsgn_Undef;
+    assert(decision_trace.size() - dec_limit.last() == 1 || decision_trace.size() - dec_limit.last() == 0);
     if (decision_trace.size() - dec_limit.last() == 1) {
         popd = int_decisions.last().asgn;
         int_decisions.pop();

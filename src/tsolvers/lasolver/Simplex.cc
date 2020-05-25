@@ -242,12 +242,13 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
+    // Here we count the bound as activated
+    boundActivated(it);
+
     // Check if simple SAT can be given
     if (model->boundTriviallySatisfied(it, itBound_ref))
         return {};
 
-    // Here we count the bound as activated
-    boundActivated(it);
     model->pushBound(itBound_ref);
 
     bufferOfActivatedBounds.push_back(std::make_pair(it, itBound_ref));

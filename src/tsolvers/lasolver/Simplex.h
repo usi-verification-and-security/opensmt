@@ -135,6 +135,7 @@ public:
 
     }
     void boundDeactivated(LVRef v) {
+        assert(boundsActivated[getVarId(v)] > 0);
         --boundsActivated[getVarId(v)];
         if (getNumOfBoundsActive(v) == 0 && tableau.isBasic(v)) {
             tableau.basicToQuasi(v);
