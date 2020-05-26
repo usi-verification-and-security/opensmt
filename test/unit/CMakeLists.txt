@@ -61,7 +61,7 @@ gtest_add_tests(TARGET LATest)
 
 add_executable(SimplexTest)
 target_sources(SimplexTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Simplex.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Simplex.cc"
     )
 
 target_link_libraries(SimplexTest api_static gtest gtest_main)

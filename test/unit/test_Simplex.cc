@@ -24,18 +24,20 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
     LABoundStore bs(vs);
 
-    LABoundStore::BoundInfo x_strict_0   = bs.allocBoundPair(x, 0, true); // x < 0 and x >= 0
-    LABoundStore::BoundInfo y_strict_0   = bs.allocBoundPair(y, 0, true); // y < 0 and y >= 0
+    Delta zero = Delta(0);
+    Delta one = Delta(1);
+    LABoundStore::BoundInfo x_strict_0   = bs.allocBoundPair(x, {Delta(0, -1), zero}); // x < 0 and x >= 0
+    LABoundStore::BoundInfo y_strict_0   = bs.allocBoundPair(y, {Delta(0, -1), zero}); // y < 0 and y >= 0
 //    LABoundStore::BoundInfo x_nostrict_0 = bs.allocBoundPair(x, 0, false); // x <= 0 and x > 0
 //    LABoundStore::BoundInfo y_nostrict_0 = bs.allocBoundPair(y, 0, false); // y <= 0 and y > 0
 
-    LABoundStore::BoundInfo x_strict_1   = bs.allocBoundPair(x, 1, true); // x < 1 and x >= 1
-    LABoundStore::BoundInfo x_nostrict_1 = bs.allocBoundPair(x, 1, false); // x <= 1 and x > 1
-    LABoundStore::BoundInfo y_strict_1   = bs.allocBoundPair(y, 1, true); // y < 1 and y >= 1
-    LABoundStore::BoundInfo y_nostrict_1 = bs.allocBoundPair(y, 1, false); // y <= 1 and y > 1
+    LABoundStore::BoundInfo x_strict_1   = bs.allocBoundPair(x, {Delta(1, -1), one}); // x < 1 and x >= 1
+    LABoundStore::BoundInfo x_nostrict_1 = bs.allocBoundPair(x, {one, Delta(1, 1)}); // x <= 1 and x > 1
+    LABoundStore::BoundInfo y_strict_1   = bs.allocBoundPair(y, {Delta(1, -1), one}); // y < 1 and y >= 1
+    LABoundStore::BoundInfo y_nostrict_1 = bs.allocBoundPair(y, {one, Delta(1, 1)}); // y <= 1 and y > 1
 
-    LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, 0, false);   // y - x <= 0 and y - x > 0
-    LABoundStore::BoundInfo y_minus_x_nostrict_1  = bs.allocBoundPair(y_minus_x, 1, false);   // y - x - 1 <= 0
+    LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, {zero, Delta(0, 1)});   // y - x <= 0 and y - x > 0
+    LABoundStore::BoundInfo y_minus_x_nostrict_1  = bs.allocBoundPair(y_minus_x, {one, Delta(1, 1)});   // y - x - 1 <= 0
     //LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, 0, true);    // y - x < 0 and y - x >= 0
     //LABoundStore::BoundInfo y_minus_x_strict_m1   = bs.allocBoundPair(y_minus_x, -1, true);   // y - x + 1 <  0
     //LABoundStore::BoundInfo y_minus_x_nostrict_m1 = bs.allocBoundPair(y_minus_x, -1, false);  // y - x + 1 <= 0
@@ -115,13 +117,13 @@ TEST(Simplex_test, test_Assignment)
 
     LABoundStore bs(vs);
 
-    LABoundStore::BoundInfo x_nostrict_1 = bs.allocBoundPair(x, 1, false); // x <= 1 and x > 0
-    LABoundStore::BoundInfo y_strict_0   = bs.allocBoundPair(y, 0, true); // y < 0 and y >= 0
+    LABoundStore::BoundInfo x_nostrict_1 = bs.allocBoundPair(x, {Delta(1), Delta(1,1) }); // x <= 1 and x > 1
+    LABoundStore::BoundInfo y_strict_0   = bs.allocBoundPair(y, {Delta(0, -1), Delta(0)}); // y < 0 and y >= 0
 
-    LABoundStore::BoundInfo x_strict_m5   = bs.allocBoundPair(x, -5, true); // x < -5 and x >= -5
+    LABoundStore::BoundInfo x_strict_m5   = bs.allocBoundPair(x, { Delta(-5, -1), Delta(-5) }); // x < -5 and x >= -5
 
-    LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, 0, true);    // y - x < 0 and y - x >= 0
-    LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, 0, false);   // y - x <= 0 and y - x > 0
+    LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, { Delta(0, -1), Delta(0) });    // y - x < 0 and y - x >= 0
+    LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, { Delta(0), Delta(0,1) });   // y - x <= 0 and y - x > 0
 
     bs.buildBounds();
 

@@ -13,6 +13,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     const Pterm& leq = logic.getPterm(leq_tr);
     PTRef const_tr = leq[0];
     PTRef sum_tr = leq[1];
+    assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
@@ -20,19 +21,18 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
 
     LABoundStore::BoundInfo bi;
-
     LABoundRef br_pos;
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
         opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr_neg, false);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
         const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr, true);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
     }
@@ -484,7 +484,7 @@ void LASolver::initSolver()
 #endif
         auto known_PTRefs = getInformed();
         for(PTRef leq_tr : known_PTRefs) {
-            Pterm& leq_t = logic.getPterm(leq_tr);
+            Pterm const & leq_t = logic.getPterm(leq_tr);
 
             // Terms are of form c <= t where
             //  - c is a constant and

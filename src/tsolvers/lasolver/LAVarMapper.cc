@@ -44,6 +44,7 @@ void LAVarMapper::addLeqVar(PTRef leq_tr, LVRef v)
     for (int i = leqToLavar.size(); i <= idx; i++) {
         leqToLavar.push(LVRef_Undef);
     }
+    assert(leqToLavar[idx] == LVRef_Undef);
     leqToLavar[idx] = v;
 }
 

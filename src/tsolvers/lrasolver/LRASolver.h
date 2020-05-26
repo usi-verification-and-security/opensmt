@@ -56,8 +56,12 @@ public:
     LRALogic&  getLogic() override;
     lbool getPolaritySuggestion(PTRef) const;
 
+protected:
+    LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) override;
+
 
 #ifdef PRODUCE_PROOF
+public:
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
     PTRef getExperimentalInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels);
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
