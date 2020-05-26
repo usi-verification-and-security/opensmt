@@ -23,6 +23,29 @@ bool LALogic::isNegated(PTRef tr) const {
         return isNegated(getPterm(tr)[0]);
     }
 }
+
+bool LALogic::isLinearFactor(PTRef tr) const {
+    if (isNumConst(tr) || isNumVar(tr)) { return true; }
+    if (isNumTimes(tr)) {
+        Pterm const& term = getPterm(tr);
+        return term.size() == 2 && ((isNumConst(term[0]) && isNumVar(term[1]))
+                                    || (isNumConst(term[1]) && isNumVar(term[0])));
+    }
+    return false;
+}
+
+bool LALogic::isLinearTerm(PTRef tr) const {
+    if (isLinearFactor(tr)) { return true; }
+    if (isNumPlus(tr)) {
+        Pterm const& term = getPterm(tr);
+        for (int i = 0; i < term.size(); ++i) {
+            if (!isLinearFactor(term[i])) { return false; }
+        }
+        return true;
+    }
+    return false;
+}
+
 const opensmt::Number&
 LALogic::getNumConst(PTRef tr) const
 {

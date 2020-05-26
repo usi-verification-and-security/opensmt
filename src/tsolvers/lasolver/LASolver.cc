@@ -216,7 +216,7 @@ bool LASolver::hasVar(PTRef expr) {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-
+    assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
     if (laVarMapper.hasVar(id)) {
@@ -268,8 +268,9 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
-        if (simplex.isProcessedByTableau(x))
-        { return x;}
+        if (simplex.isProcessedByTableau(x)){
+            return x;
+        }
     }
 
     if (logic.isNumVar(expr) || logic.isNumTimes(expr)) {
