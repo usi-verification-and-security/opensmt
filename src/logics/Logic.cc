@@ -68,7 +68,8 @@ const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(SMTConfig& c) :
-      config(c)
+      distinctClassCount(0)
+    , config(c)
     , sort_store(id_store)
     , term_store(sym_store)
     , sym_TRUE(SymRef_Undef)
@@ -946,24 +947,53 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
 
 // Given args = {a_1, ..., a_n}, distinct(args) holds iff
 // for all a_i, a_j \in args s.t. i != j: a_i != a_j
+// General distinctions are represented as separate terms until the distinction classes have been used up.
+// After this, they are written explicitly as the O(n^2) expansion.
 PTRef Logic::mkDistinct(vec<PTRef>& args) {
     if (args.size() == 0) return getTerm_true();
     if (args.size() == 1) return getTerm_true();
-    sort(args);
+    if (args.size() == 2) return mkNot(mkEq(args));
+
+    // The boolean distinctness over > 2 args is false
+    if (hasSortBool(args[0])) {
+        assert(args.size() > 2);
+        return getTerm_false();
+    }
+
+    termSort(args);
 
     for (int i = 1, j = 0; i < args.size(); i++, j++) {
         if (args[j] == args[i]) {
             return getTerm_false();
         }
     }
+
     SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
-    // The boolean distinctness is either xor or false
-    if (hasSortBool(args[0])) {
-        if (args.size() > 2)
-            return getTerm_false();
-        return mkXor(args);
+    assert(!isBooleanOperator(diseq_sym));
+    PTLKey key;
+    key.sym = diseq_sym;
+    args.copyTo(key.args);
+    if (term_store.hasCplxKey(key)) {
+        return term_store.getFromCplxMap(key);
     }
-    return mkFun(diseq_sym, args);
+    else {
+        if (distinctClassCount < maxDistinctClasses) {
+            PTRef res = term_store.newTerm(diseq_sym, args);
+            term_store.addToCplxMap(key, res);
+            distinctClassCount++;
+            return res;
+        }
+        else {
+            vec<PTRef> distinct_terms;
+            for (int i = 0; i < args.size(); i++) {
+                for (int j = i + 1; j < args.size(); j++) {
+                    vec<PTRef> small_distinct{args[i], args[j]};
+                    distinct_terms.push(mkDistinct(small_distinct));
+                }
+            }
+            return mkAnd(distinct_terms);
+        }
+    }
 }
 
 PTRef Logic::mkNot(vec<PTRef>& args) {

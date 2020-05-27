@@ -45,17 +45,66 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
 
+
+
+    args.clear();
+    args.push(x);
+    args.push(y);
+    distinct = logic.mkDistinct(args);
+    // MB: dinstinct(x,y) is equivalent to not equal(x,y) and the second version is preferred
+    ASSERT_TRUE(logic.isNot(distinct) && logic.isEquality(logic.getPterm(distinct)[0]));
+
     PTRef b1 = logic.mkBoolVar("b1");
     PTRef b2 = logic.mkBoolVar("b2");
+    PTRef b3 = logic.mkBoolVar("b3");
 
     args.clear();
     args.push(b1);
     args.push(b2);
-    distinct = logic.mkDistinct(args);
-    ASSERT_TRUE(logic.isXor(distinct));
-
-    PTRef b3 = logic.mkBoolVar("b3");
     args.push(b3);
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
+}
+
+TEST_F(LogicMkTermsTest, test_ManyDistinct) {
+    SMTConfig config;
+    Logic logic{config};
+
+    SRef ufsort = logic.declareSort("U", nullptr);
+    vec<PTRef> names;
+    for (int i = 0; i < 9; i++) {
+        std::string name = "x" + std::to_string(i);
+        names.push(logic.mkVar(ufsort, name.c_str()));
+    }
+    vec<PTRef> distincts1;
+    for (int i = 0; i < 9; i++) {
+        for (int j = i+1; j < 9; j++) {
+            for (int k = j+1; k < 9; k++) {
+                vec<PTRef> triple{names[i], names[j], names[k]};
+                distincts1.push(logic.mkDistinct(triple));
+            }
+        }
+    }
+    vec<PTRef> distincts2;
+    for (int i = 0; i < 9; i++) {
+        for (int j = i+1; j < 9; j++) {
+            for (int k = j+1; k < 9; k++) {
+                vec<PTRef> triple{names[j], names[i], names[k]};
+                distincts2.push(logic.mkDistinct(triple));
+            }
+        }
+    }
+    vec<PTRef> distincts3;
+    for (int i = 0; i < 9; i++) {
+        for (int j = i+1; j < 9; j++) {
+            for (int k = j+1; k < 9; k++) {
+                vec<PTRef> triple{names[k], names[i], names[j]};
+                distincts3.push(logic.mkDistinct(triple));
+            }
+        }
+    }
+    for (int i = 0; i < distincts1.size(); i++) {
+        ASSERT_EQ(distincts1[i].x, distincts2[i].x);
+        ASSERT_EQ(distincts1[i].x, distincts3[i].x);
+    }
 }

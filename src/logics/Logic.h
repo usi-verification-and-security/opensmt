@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "Tterm.h"
 #include "PartitionInfo.h"
+#include "CgTypes.h"
 
 
 
@@ -93,19 +94,12 @@ class Logic {
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
-    // Information related to state serialization
-    const static int buf_sz_idx             = 0;
-    const static int equalities_offs_idx    = 1;
-    const static int disequalities_offs_idx = 2;
-    const static int ites_offs_idx          = 3;
-    const static int ufsorts_offs_idx       = 4;
-    const static int constants_offs_idx     = 5;
-
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
+    int distinctClassCount;
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..

@@ -78,29 +78,39 @@ class UseVector {
      * This data structure is a vector possibly containing a free list inside
      */
     struct Entry {
-        enum class Tag : unsigned char {Valid, Marked, Free};
-        Tag tag;
-        int data;
+    private:
+        uint32_t data;
+    public:
+        static const uint32_t VALID_MASK = 0x00;  // 00
+        static const uint32_t MARKED_MASK = 0x01; // 01
+        static const uint32_t FREE_MASK = 0x03;   // 11
+        static const uint32_t TAG_MASK = 0x03;    // bit mask to get the two least significant bits
+        static const uint32_t FREE_ENTRY_LIST_GUARD = (static_cast<uint32_t>(-1)) >> 2;
 
-        Entry(ERef e): tag{Tag::Valid}, data{static_cast<int>(e.x)} { }
-        Entry(): tag{Tag::Valid}, data{0} { }
-        inline bool isFree()   const    { return tag == Tag::Free; }
-        inline bool isValid()  const    { return tag == Tag::Valid; }
-        inline bool isMarked() const    { return tag == Tag::Marked; }
-        inline void mark()              { assert(isValid()); tag = Tag::Marked; }
-        inline void unmark()            { assert(isMarked()); tag = Tag::Valid; }
+        // MB: This packing tag and data together means that the value of ERef is restricted to 2^30.
+        // This is not an issue for the current benchmarks we are dealing with
+        explicit Entry(ERef e): data{e.x << 2} { }
+        explicit Entry(uint32_t i): data{i << 2} { }
+        Entry(int) = delete;
+        Entry() : data{0} {}
+        inline bool isFree()   const    { return (data & TAG_MASK) == FREE_MASK; }
+        inline bool isValid()  const    { return (data & TAG_MASK) == VALID_MASK; }
+        inline bool isMarked() const    { return (data & TAG_MASK) == MARKED_MASK; }
+        inline void mark()              { assert(isValid()); data &= ~TAG_MASK; data |= MARKED_MASK; assert(isMarked()); }
+        inline void unmark()            { assert(isMarked()); data &= ~TAG_MASK; assert(isValid()); }
+        inline void free()              { data |= FREE_MASK; }
+        inline uint32_t getData()   const    { return data >> 2;}
     };
-    // TODO: make it 4 again
-    static_assert(sizeof(Entry) == 8, "Entry is not of expected size!");
+    static_assert(sizeof(Entry) == 4, "Entry is not of expected size!");
     std::vector<Entry> data;
-    int32_t free; // pointer to head of a free list, -1 means no free list
+    uint32_t free; // pointer to head of a free list, FREE_ENTRY_LIST_GUARD means no free list
     uint32_t nelems; // the real number of elements;
 
     using iterator = decltype(data)::iterator;
     using const_iterator = decltype(data)::const_iterator;
 
 public:
-    UseVector() : data{}, free{-1}, nelems{0}
+    UseVector() : data{}, free{Entry::FREE_ENTRY_LIST_GUARD}, nelems{0}
     {}
 
     uint32_t size() const { return nelems; }
@@ -123,24 +133,21 @@ public:
     }
 
     static ERef entryToERef(Entry e) {
-        // MB: TODO: Test that the conversion is correct
         assert(e.isValid());
-        unsigned int val = e.data;
+        uint32_t val = e.getData();
         return ERef{val};
     }
 
-    static int freeEntryToIndex(Entry e) {
-        // MB: TODO: Test that the conversion is correct
+    static uint32_t freeEntryToIndex(Entry e) {
         assert(e.isFree());
-        int val = e.data;
+        uint32_t val = e.getData();
         return val;
     }
 
-    static Entry indexToFreeEntry(int index) {
-        // MB: TODO: Test that the conversion is correct
-        Entry ret;
-        ret.tag = Entry::Tag::Free;
-        ret.data = index;
+    static Entry indexToFreeEntry(uint32_t index) {
+        assert(index >> 30 == 0);
+        Entry ret(index);
+        ret.free();
         return ret;
     }
 

@@ -88,8 +88,9 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             //constructing new constraint
             //x <= c || x >= c+1;
-            PTRef constr = logic.mkOr(logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c)),
-                       logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1)));
+            PTRef upperBound = logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c));
+            PTRef lowerBound = logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1));
+            PTRef constr = logic.mkOr(upperBound, lowerBound);
             //printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);

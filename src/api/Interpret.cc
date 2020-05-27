@@ -729,6 +729,18 @@ bool Interpret::checkSat() {
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
+
+        const Info& status = config.getInfo(":status");
+        if (!status.isEmpty()) {
+            std::string statusString(std::move(status.toString()));
+            if ((statusString.compare("sat") == 0) && (res == s_False)) {
+                notify_formatted(false, "(error \"check status which says sat\")");
+
+            }
+            else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
+                notify_formatted(false, "(error \"check status which says unsat\")");
+            }
+        }
     }
     else {
         notify_formatted(true, "Illegal command before set-logic: check-sat");

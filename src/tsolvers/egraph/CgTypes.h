@@ -30,5 +30,5 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 typedef uint32_t cgId;
 typedef uint32_t dist_t;
 static cgId const cgId_Nil = 0;
-
+static int const maxDistinctClasses = 8*sizeof(dist_t);
 #endif

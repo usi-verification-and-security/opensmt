@@ -16,8 +16,6 @@ class LIATHandler : public TSolverHandler
   public:
     LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
     virtual ~LIATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
-    virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 
