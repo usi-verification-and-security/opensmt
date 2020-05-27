@@ -119,6 +119,7 @@ CoreSMTSolver::handleSat()
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
+            assert(value(l_f) == l_False);
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
             if (!this->logsProof()) {

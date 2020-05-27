@@ -130,6 +130,9 @@ protected:
 
     opensmt::Number getNum(PTRef);
 
+    // Compute the values for an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
+    virtual LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) = 0;
+
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }

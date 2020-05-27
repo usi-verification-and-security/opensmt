@@ -12,7 +12,7 @@
 
 class Logic;
 
-void computeIncomingEdges(const Logic& logic, PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
+void computeIncomingEdges(const Logic& logic, PTRef tr, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming);
 
 PTRef rewriteMaxArityAggresive(Logic & logic, PTRef root);
 
@@ -37,15 +37,7 @@ PTRef mergeAndOrArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
     for (int i = 0; i < t.size(); i++) {
         PTRef subst = cache[t[i]];
         changed |= (subst != t[i]);
-        if (logic.getSymRef(t[i]) != sr) {
-            new_args.push(subst);
-            continue;
-        }
-        if (doNotMerge(t[i])) {
-            new_args.push(subst);
-            continue;
-        }
-        if (logic.getSymRef(subst) == sr) {
+        if (logic.getSymRef(subst) == sr && !doNotMerge(t[i])) {
             changed = true;
             const Pterm& substs_t = logic.getPterm(subst);
             for (int j = 0; j < substs_t.size(); j++)
@@ -77,12 +69,15 @@ PTRef rewriteMaxArity(Logic & logic, const PTRef root, T doNotRewrite) {
         bool unprocessed_children = false;
         const Pterm& t = logic.getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            if (logic.isBooleanOperator(t[i]) && !cache.has(t[i])) {
+            if (cache.has(t[i])) { continue; }
+            if (logic.isBooleanOperator(t[i])) {
                 unprocessed_ptrefs.push(t[i]);
                 unprocessed_children = true;
             }
-            else if (logic.isAtom(t[i]))
+            else if (logic.isAtom(t[i])) {
+                assert(!cache.has(t[i]));
                 cache.insert(t[i], t[i]);
+            }
         }
         if (unprocessed_children)
             continue;

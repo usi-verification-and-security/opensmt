@@ -67,6 +67,8 @@ protected:
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
 
+    LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) override;
+
 
 
     opensmt::Integer2 getInt(PTRef r) ;

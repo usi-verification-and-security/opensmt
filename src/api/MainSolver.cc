@@ -131,12 +131,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
-        PTRef root = frame.root;
 
-        if (logic.isFalse(root)) {
-            giveToSolver(getLogic().getTerm_false(), frame.getId());
-            return status = s_False;
-        }
         if (keepPartitionsSeparate) {
             assert(frame.substs == logic.getTerm_true());
             vec<PTRef> const & flas = frame.formulas;
@@ -157,6 +152,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
                 }
             }
         } else {
+            PTRef root = frame.root;
+            if (logic.isFalse(root)) {
+                giveToSolver(getLogic().getTerm_false(), frame.getId());
+                return status = s_False;
+            }
             // Optimize the dag for cnfization
             if (logic.isBooleanOperator(root)) {
                 root = rewriteMaxArity(root);
@@ -183,11 +183,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-void MainSolver::computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
-{
-    ::computeIncomingEdges(logic, tr, PTRefToIncoming);
-}
-
 PTRef MainSolver::rewriteMaxArity(PTRef root)
 {
     return ::rewriteMaxArityClassic(logic, root);

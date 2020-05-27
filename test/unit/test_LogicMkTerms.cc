@@ -7,7 +7,9 @@
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
-    LogicMkTermsTest() {}
+    SMTConfig config;
+    Logic logic;
+    LogicMkTermsTest(): logic{config} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
@@ -107,4 +109,16 @@ TEST_F(LogicMkTermsTest, test_ManyDistinct) {
         ASSERT_EQ(distincts1[i].x, distincts2[i].x);
         ASSERT_EQ(distincts1[i].x, distincts3[i].x);
     }
+}
+
+TEST_F(LogicMkTermsTest, testMkOrTautology) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef nota = logic.mkNot(a);
+    ASSERT_EQ(logic.mkOr(a, nota), logic.getTerm_true());
+}
+
+TEST_F(LogicMkTermsTest, testMkAndContradiction) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef nota = logic.mkNot(a);
+    ASSERT_EQ(logic.mkAnd(a, nota), logic.getTerm_false());
 }

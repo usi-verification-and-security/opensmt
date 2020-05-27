@@ -846,11 +846,10 @@ void Interpret::getModel() {
         const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
-            char* s = logic->printSym(symref);
+            const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
             ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
-            free(s);
         }
         else {
             char* s = logic->printSym(symref);

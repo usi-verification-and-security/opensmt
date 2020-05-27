@@ -1,7 +1,6 @@
 #include "LASolver.h"
 #include "LA.h"
 
-
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
 
@@ -14,6 +13,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     const Pterm& leq = logic.getPterm(leq_tr);
     PTRef const_tr = leq[0];
     PTRef sum_tr = leq[1];
+    assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
@@ -21,19 +21,18 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
 
     LABoundStore::BoundInfo bi;
-
     LABoundRef br_pos;
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
         opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr_neg, false);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
         const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr, true);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
     }
@@ -217,7 +216,7 @@ bool LASolver::hasVar(PTRef expr) {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-
+    assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
     if (laVarMapper.hasVar(id)) {
@@ -269,8 +268,9 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
-        if (simplex.isProcessedByTableau(x))
-        { return x;}
+        if (simplex.isProcessedByTableau(x)){
+            return x;
+        }
     }
 
     if (logic.isNumVar(expr) || logic.isNumTimes(expr)) {
@@ -431,6 +431,7 @@ PtAsgn
 LASolver::popDecisions()
 {
     PtAsgn popd = PtAsgn_Undef;
+    assert(decision_trace.size() - dec_limit.last() == 1 || decision_trace.size() - dec_limit.last() == 0);
     if (decision_trace.size() - dec_limit.last() == 1) {
         popd = int_decisions.last().asgn;
         int_decisions.pop();
@@ -483,7 +484,7 @@ void LASolver::initSolver()
 #endif
         auto known_PTRefs = getInformed();
         for(PTRef leq_tr : known_PTRefs) {
-            Pterm& leq_t = logic.getPterm(leq_tr);
+            Pterm const & leq_t = logic.getPterm(leq_tr);
 
             // Terms are of form c <= t where
             //  - c is a constant and

@@ -758,103 +758,93 @@ Logic::mkIte(vec<PTRef>& args)
 // Check if arguments contain trues or a false and return the simplified
 // term
 PTRef Logic::mkAnd(vec<PTRef>& args) {
-    PTRef tr = PTRef_Undef;
-
-    for (int i = 0; i < args.size(); i++)
-        if (!hasSortBool(args[i]))
+    if (args.size() == 0) { return getTerm_true(); }
+    // Remove duplicates
+    vec<PtAsgn> tmp_args;
+    tmp_args.capacity(args.size());
+    for (int i = 0; i < args.size(); i++) {
+        if (!hasSortBool(args[i])) {
             return PTRef_Undef;
-
-    if (args.size() == 0)
-        tr = getTerm_true();
-    else {
-        sort(args, LessThan_PTRef());
-        int i, j;
-        PTRef p = PTRef_Undef;
-        for (i = 0, j = 0; i < args.size(); i++) {
-            if (p == args[i]) {} // skip
-            else
-                args[j++] = p = args[i];
         }
-        args.shrink(i-j);
-        vec<PTRef> newargs;
-        for (int i = 0; i < args.size(); ++i)
-        {
-            if (isFalse(args[i])) {
-                tr = getTerm_false();
-                break;
-            }
-            if (!isTrue(args[i]))
-                newargs.push(args[i]);
-        }
-        if (tr == PTRef_Undef) {
-            if(newargs.size() == 0)
-                tr = getTerm_true();
-            else if(newargs.size() == 1)
-                tr = newargs[0];
-            else
-                tr = mkFun(getSym_and(), newargs);
+        if (isNot(args[i])) {
+            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
+        } else {
+            tmp_args.push(PtAsgn(args[i], l_True));
         }
     }
-
-    if (tr == PTRef_Undef) {
-        printf("Error in mkAnd");
-        assert(false);
+    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    int i, j;
+    PtAsgn p = PtAsgn_Undef;
+    for (i = 0, j = 0; i < tmp_args.size(); i++) {
+        if (isFalse(tmp_args[i].tr)) {
+            assert(tmp_args[i].sgn == l_True);
+            return getTerm_false();
+        } else if (isTrue(tmp_args[i].tr)) { // skip
+            assert(tmp_args[i].sgn == l_True);
+        } else if (p == tmp_args[i]) { // skip
+        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
+            return getTerm_false();
+        } else {
+            tmp_args[j++] = p = tmp_args[i];
+        }
     }
-
-    return tr;
+    tmp_args.shrink(i - j);
+    if (tmp_args.size() == 0) {
+        return getTerm_true();
+    } else if (tmp_args.size() == 1) {
+        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
+    }
+    vec<PTRef> newargs;
+    newargs.capacity(tmp_args.size());
+    for (int k = 0; k < tmp_args.size(); k++) {
+        newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+    }
+    return mkFun(getSym_and(), newargs);
 }
 
 PTRef Logic::mkOr(vec<PTRef>& args) {
-    PTRef tr = PTRef_Undef;
-
-    for (int i = 0; i < args.size(); i++)
-        if (!hasSortBool(args[i]))
+    if (args.size() == 0) { return getTerm_false(); }
+    // Remove duplicates
+    vec<PtAsgn> tmp_args;
+    tmp_args.capacity(args.size());
+    for (int i = 0; i < args.size(); i++) {
+        if (!hasSortBool(args[i])) {
             return PTRef_Undef;
-
-    if(args.size() == 0)
-        tr = getTerm_false();
-    else {
-        // Remove duplicates
-        vec<PtAsgn> tmp_args;
-        for (int i = 0; i < args.size(); i++) {
-            if (isNot(args[i]))
-                tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
-            else
-                tmp_args.push(PtAsgn(args[i], l_True));
         }
-        sort(tmp_args, LessThan_PtAsgn());
-//        sort(args, LessThan_PTRef());
-        int i, j;
-        PtAsgn p = PtAsgn_Undef;
-        for (i = 0, j = 0; i < tmp_args.size(); i++) {
-            if (isTrue(tmp_args[i].tr)) {
-                assert(tmp_args[i].sgn == l_True);
-                return getTerm_true();
-            } else if (isFalse(tmp_args[i].tr)) {
-                assert(tmp_args[i].sgn == l_True);
-            } else if (p == tmp_args[i]) { // skip
-            } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
-                return getTerm_true();
-            } else
-                tmp_args[j++] = p = tmp_args[i];
+        if (isNot(args[i])) {
+            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
+        } else {
+            tmp_args.push(PtAsgn(args[i], l_True));
         }
-        tmp_args.shrink(i-j);
-        if(tmp_args.size() == 0)
-            return getTerm_false();
-        else if(tmp_args.size() == 1)
-            return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
-        vec<PTRef> newargs;
-        for (int i = 0; i < tmp_args.size(); i++)
-            newargs.push(tmp_args[i].sgn == l_True? tmp_args[i].tr : mkNot(tmp_args[i].tr));
-        tr = mkFun(getSym_or(), newargs);
     }
-
-    if(tr == PTRef_Undef) {
-        printf("Error in mkOr");
-        assert(0);
+    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    int i, j;
+    PtAsgn p = PtAsgn_Undef;
+    for (i = 0, j = 0; i < tmp_args.size(); i++) {
+        if (isTrue(tmp_args[i].tr)) {
+            assert(tmp_args[i].sgn == l_True);
+            return getTerm_true();
+        } else if (isFalse(tmp_args[i].tr)) { // skip
+            assert(tmp_args[i].sgn == l_True);
+        } else if (p == tmp_args[i]) { // skip
+        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
+            return getTerm_true();
+        } else {
+            tmp_args[j++] = p = tmp_args[i];
+        }
     }
-
-    return tr;
+    tmp_args.shrink(i - j);
+    if (tmp_args.size() == 0) {
+        return getTerm_false();
+    } else if (tmp_args.size() == 1) {
+        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
+    }
+    vec<PTRef> newargs;
+    newargs.capacity(tmp_args.size());
+    for (int k = 0; k < tmp_args.size(); k++) {
+        newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+    }
+    return mkFun(getSym_or(), newargs);
 }
 
 PTRef Logic::mkXor(vec<PTRef>& args) {
@@ -1408,7 +1398,13 @@ bool Logic::isAtom(PTRef r) const {
 //
 bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new)
 {
+    if (substs.elems() == 0) {
+        tr_new = root;
+        return false;
+    }
     Map<PTRef,PTRef,PTRefHash> gen_sub;
+    std::vector<char> processed;
+    processed.resize(Idx(getPterm(root).getId()) + 1, 0);
     vec<PTRef> queue;
     int n_substs = 0;
 
@@ -1418,15 +1414,17 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #ifdef SIMPLIFY_DEBUG
         cerr << "processing " << printTerm(tr) << endl;
 #endif
-        if (gen_sub.has(tr)) {
+        Pterm const & t = getPterm(tr);
+        auto index = Idx(t.getId());
+        if (processed[index] == 1) {
             // Already processed
             queue.pop();
             continue;
         }
         bool unprocessed_children = false;
-        Pterm& t = getPterm(tr);
         for (int i = 0; i < t.size(); i++) {
-            if (!gen_sub.has(t[i])) {
+            auto childIndex = Idx(getPterm(t[i]).getId());
+            if (processed[childIndex] == 0) {
                 queue.push(t[i]);
                 unprocessed_children = true;
             }
@@ -1458,9 +1456,10 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #endif
                 bool changed = false;
                 for (int i = 0; i < t.size(); i++) {
-                    PTRef sub = gen_sub[t[i]];
-                    changed |= (sub != t[i]);
-                    args_mapped.push(sub);
+                    PTRef sub = PTRef_Undef;
+                    bool hasSub = gen_sub.peek(t[i], sub);
+                    changed |= hasSub;
+                    args_mapped.push(hasSub ? sub : t[i]);
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
@@ -1474,16 +1473,17 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
             assert(result != PTRef_Undef);
         }
         assert(result != PTRef_Undef);
-        gen_sub.insert(tr, result);
+        processed[index] = 1;
 
         if (result != tr) {
+            gen_sub.insert(tr, result);
             n_substs++;
 #ifdef SIMPLIFY_DEBUG
             cerr << "Will substitute " << printTerm(tr) << " with " << printTerm(result) << endl;
 #endif
         }
     }
-    tr_new = gen_sub[root];
+    tr_new = gen_sub.has(root) ? gen_sub[root] : root;
     return n_substs > 0;
 }
 
