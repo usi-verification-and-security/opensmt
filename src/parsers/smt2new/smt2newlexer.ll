@@ -85,6 +85,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 "get-proof"        { yyget_lval(yyscanner)->tok = { t_getproof }; return TK_GETPROOF;      }
 "get-unsat-core"   { yyget_lval(yyscanner)->tok = { t_getunsatcore }; return TK_GETUNSATCORE;  }
 "get-value"        { yyget_lval(yyscanner)->tok = { t_getvalue }; return TK_GETVALUE;      }
+"get-model"        { yyget_lval(yyscanner)->tok = { t_getmodel }; return TK_GETMODEL;      }
 "pop"              { yyget_lval(yyscanner)->tok = { t_pop }; return TK_POP;           }
 "push"             { yyget_lval(yyscanner)->tok = { t_push }; return TK_PUSH;          }
 "set-logic"        { yyget_lval(yyscanner)->tok = { t_setlogic }; return TK_SETLOGIC;      }

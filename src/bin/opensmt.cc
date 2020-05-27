@@ -72,14 +72,13 @@ int main( int argc, char * argv[] )
     cerr << "; this binary is compiled in debug mode (slow)" << endl;
 #endif
 
-    cerr << "; git hash: " << GIT_SHA1 << endl;
-
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
     int opt;
 
     SMTConfig c;
-    while ((opt = getopt(argc, argv, "hdr:i")) != -1) {
+    bool pipe = false;
+    while ((opt = getopt(argc, argv, "hdpir:")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -99,6 +98,9 @@ int main( int argc, char * argv[] )
                 c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
                 c.produce_proofs = 1;
                 break;
+            case 'p':
+                pipe = true;
+                break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
                         argv[0]);
@@ -109,9 +111,14 @@ int main( int argc, char * argv[] )
     Interpret interpreter(c);
 
     if (argc - optind == 0) {
-        fin = stdin;
         c.setInstanceName("stdin");
-        interpreter.interpInteractive(fin);
+        if (pipe) {
+            interpreter.interpPipe();
+        }
+        else {
+            fin = stdin;
+            interpreter.interpInteractive(fin);
+        }
     }
     else {
         for (int i = optind; i < argc; i++) {

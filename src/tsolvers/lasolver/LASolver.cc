@@ -691,12 +691,14 @@ ValPair LASolver::getValue(PTRef tr) {
     opensmt::Real val(0);
     if (!laVarMapper.hasVar(tr)) {
         // This is a linear expression.
-        if (logic.getPterm(tr).size() > 0) {
-            Pterm &t = logic.getPterm(tr);
-            for (int i = 0; i < t.size(); i++)
+        if (logic.isNumPlus(tr)) {
+            const Pterm &t = logic.getPterm(tr);
+            for (int i = 0; i < t.size(); i++) {
                 val += evaluateTerm(t[i]);
+            }
         }
         else {
+            assert(logic.isNumConst(tr) || logic.isNumVar(tr) || (logic.isNumTimes(tr) && logic.getPterm(tr).size() == 2));
             val = evaluateTerm(tr);
         }
     }

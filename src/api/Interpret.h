@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "smt2newcontext.h"
 #include "SStore.h"
 #include "PtStructs.h"
+#include "SymRef.h"
 
 // forward declarations
 class Logic;
@@ -82,6 +83,7 @@ class Interpret {
     vec<PTRef>      vec_ptr_empty;
 
     vec<PTRef>      assertions;
+    vec<SymRef>     user_declarations;
 
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
@@ -98,6 +100,7 @@ class Interpret {
     bool                        defineFun(const ASTNode& n);
     bool                        checkSat();
     void                        getValue(const std::vector<ASTNode*>* term);
+    void                        getModel();
     bool                        push();
     bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);

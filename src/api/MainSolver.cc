@@ -240,11 +240,22 @@ ValPair MainSolver::getValue(PTRef tr) const
 {
     if (logic.hasSortBool(tr)) {
         lbool val = ts.getTermValue(tr);
-        return ValPair(tr, val == l_True ? "true" : (val == l_False ? "false" : "unknown"));
+        if (val != l_Undef) {
+            return ValPair(tr, val == l_True ? Logic::tk_true : Logic::tk_false);
+        }
+        // Try if it was not substituted away
+        PTRef subs = thandler.getSubstitution(tr);
+        if (subs != PTRef_Undef) {
+            return getValue(subs);
+        }
+        // Term not seen in the formula, any value can be returned since it cannot have any effect on satisfiability
+        return ValPair(tr, Logic::tk_true);
+
     } else {
         ValPair vp = thandler.getValue(tr);
-        if (vp.val == NULL)
+        if (vp.val == nullptr) {
             vp.val = strdup(logic.getDefaultValue(tr));
+        }
         return vp;
     }
 }

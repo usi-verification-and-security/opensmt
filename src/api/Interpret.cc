@@ -79,7 +79,9 @@ namespace {
 opensmt::Logic_t getLogicFromString(std::string name) {
     if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
     if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
+    if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;
     if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
+    if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
     if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
     return opensmt::Logic_t::UNDEF;
@@ -199,7 +201,7 @@ void Interpret::interp(ASTNode& n) {
             }
             ASTNode &logic_n = **(n.children->begin());
             const char* logic_name = logic_n.getValue();
-            if (logic != NULL) {
+            if (logic != nullptr) {
                 notify_formatted(true, "logic has already been set to %s", logic->getName());
             } else {
                 auto logic_type = getLogicFromString(logic_name);
@@ -273,6 +275,7 @@ void Interpret::interp(ASTNode& n) {
                         throw std::logic_error{"Unreachable code - error in logic selection"};
 
                 };
+                notify_success();
             }
             break;
         }
@@ -284,6 +287,7 @@ void Interpret::interp(ASTNode& n) {
             }
 
             setInfo(**(n.children->begin()));
+            notify_success();
             break;
         }
         case t_getinfo:
@@ -304,6 +308,7 @@ void Interpret::interp(ASTNode& n) {
             }
 
             setOption(**(n.children->begin()));
+            notify_success();
             break;
         }
         case  t_getoption:
@@ -439,6 +444,21 @@ void Interpret::interp(ASTNode& n) {
                 getValue(n.children);
             break;
         }
+        case t_getmodel:
+        {
+            if(parse_only) { break; }
+            if (logic == nullptr) {
+                notify_formatted(true, "Illegal command before set-logic: get-model");
+            }
+            else if (main_solver->getStatus() != s_True) {
+                notify_formatted(true, "Command get-model called, but solver is not in SAT state");
+            }
+            else {
+                getModel();
+            }
+            break;
+        }
+
         case t_writestate:
         {
             if (parse_only) break;
@@ -464,14 +484,18 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_push:
         {
-            if(!parse_only)
+            if(!parse_only){
                 push();
+                notify_success();
+            }
             break;
         }
         case t_pop:
         {
-            if(!parse_only)
+            if(!parse_only) {
                 pop();
+                notify_success();
+            }
             break;
         }
         case t_exit:
@@ -801,6 +825,31 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
     printf(")\n");
 }
 
+void Interpret::getModel() {
+
+    std::stringstream ss;
+    ss << "(model\n";
+    for (int i = 0; i < user_declarations.size(); ++i) {
+        SymRef symref = user_declarations[i];
+        const Symbol & sym = logic->getSym(symref);
+        if (sym.size() == 1) {
+            // variable, just get its value
+            char* s = logic->printSym(symref);
+            SRef symSort = sym.rsort();
+            PTRef term = logic->mkVar(symSort, s);
+            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
+            free(s);
+        }
+        else {
+            char* s = logic->printSym(symref);
+            notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
+            free(s);
+        };
+    }
+    ss << ')';
+    std::cout << ss.str() << std::endl;
+}
+
 void Interpret::writeState(const char* filename)
 {
     char* msg;
@@ -868,6 +917,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
         free(msg);
         return false;
     }
+    user_declarations.push(rval);
     return true;
 }
 
@@ -1036,8 +1086,9 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
 }
 
 void Interpret::notify_success() {
-    if (config.printSuccess())
-        cout << "success" << endl;
+    if (config.printSuccess()) {
+        std::cout << "success" << std::endl;
+    }
 }
 
 void Interpret::execute(const ASTNode* r) {
@@ -1070,14 +1121,13 @@ int Interpret::interpFile(char *content){
     return rval;
 }
 
-/*
+
 // For reading from pipe
 int Interpret::interpPipe() {
 
     int buf_sz  = 16;
     char* buf   = (char*) malloc(sizeof(char)*buf_sz);
     int rd_head = 0;
-    int rd_idx  = 0;
 
     bool done  = false;
     buf[0] = '\0';
@@ -1143,7 +1193,6 @@ int Interpret::interpPipe() {
     free(buf);
     return 0;
 }
-*/
 
 // For reading with readline.
 int Interpret::interpInteractive(FILE*) {
