@@ -37,7 +37,7 @@ private:
 public:
     LAVarMapper(LALogic &logic) : logic(logic) {}
 
-    void registerNewMapping(LVRef lv, PTRef e_orig);
+    void   registerNewMapping(LVRef lv, PTRef e_orig);
 
     void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
 

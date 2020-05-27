@@ -18,10 +18,10 @@ TEST_F(BoundTest, test_LABounds) {
             vars.push(vs.getNewVar());
             for (int j = 0; j < 10; j++) {
                 if (j % 2 == 0) {
-                    bs.allocBoundPair(vars[i], {Delta(j), Delta(j, 1)});
+                    bs.allocBoundPair(vars[i], { Delta(j), Delta(j, 1) });
                 }
                 else {
-                    bs.allocBoundPair(vars[i], {Delta(j, -1), Delta(j)});
+                    bs.allocBoundPair(vars[i], { Delta(j, -1), Delta(j) });
                 }
             }
         }
