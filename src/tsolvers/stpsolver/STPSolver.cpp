@@ -153,8 +153,6 @@ void STPSolver::popBacktrackPoint() {
 void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
-    //  TSolver::popBacktrackPoints(i); <-- FIXME: causes a stack overflow - calls STPSolver::popBacktrackPoint()
-
     assert( backtrack_points.size() >= i );
     curr_bpoint -= i;
     if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
@@ -165,6 +163,9 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
     graph.removeAfter(backtrack_points.last());
     // no need to modify mapper or store - the values stored there can't change
+
+    for (size_t j = 0; j < i; ++j)
+        TSolver::popBacktrackPoint();
 }
 
 ValPair STPSolver::getValue(PTRef pt) {
@@ -194,5 +195,5 @@ Logic & STPSolver::getLogic() {
 }
 
 bool STPSolver::isValid(PTRef tr) {
-    return false;
+    return logic.isNumLeq(tr);
 }
