@@ -10,16 +10,16 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
     if (asgn != PtAsgn_Undef) ++addedCount;     // consequences have the same timestamp as the edge that caused them
-    addedEdges.push_back(e);
+    addedEdges.push(e);
     edge.setTime = addedCount;
     edge.asgn = asgn;
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
-        incoming.resize(max + 1);
-        outgoing.resize(max + 1);
+        incoming.growTo(max + 1);
+        outgoing.growTo(max + 1);
     }
-    outgoing[edge.from.x].push_back(e);
-    incoming[edge.to.x].push_back(e);
+    outgoing[edge.from.x].push(e);
+    incoming[edge.to.x].push(e);
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
@@ -52,8 +52,8 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
 DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
-    std::vector<bool> visited(store.vertexNum());
-    std::vector<opensmt::Number> length(store.vertexNum());
+    vec<bool> visited(store.vertexNum());
+    vec<opensmt::Number> length(store.vertexNum());
     size_t total = 0;
     std::stack<VertexRef> open;
     visited[init.x] = true;
@@ -83,23 +83,23 @@ DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
 void STPEdgeGraph::removeAfter(uint32_t point) {
-    if (addedEdges.empty()) return;
-    for (ptrdiff_t i = addedEdges.size()-1; i >= 0; --i) {
+    if (!addedEdges.size()) return;
+    for (int i = addedEdges.size()-1; i >= 0; --i) {
         EdgeRef eRef = addedEdges[i];
         auto &edge = store.getEdge(eRef);
         if (edge.setTime <= point) return;  // edges appear in 'addedEdges' in timestamp order
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
-        incoming[edge.to.x].pop_back();
-        outgoing[edge.from.x].pop_back();
-        addedEdges.pop_back();
+        incoming[edge.to.x].pop();
+        outgoing[edge.from.x].pop();
+        addedEdges.pop();
         edge.setTime = 0;
     }
 }
 
 void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     Edge &expl = store.getEdge(e);
-    std::vector<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
-    std::vector<opensmt::Number> length(store.vertexNum());
+    vec<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
+    vec<opensmt::Number> length(store.vertexNum());
     std::stack<VertexRef> open;
 
     open.push(expl.from);

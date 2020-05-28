@@ -9,7 +9,7 @@ STPMapper::STPMapper(LALogic const &l, STPStore &s)
 void STPMapper::setVert(PTRef var, VertexRef vert) {
     uint32_t idx = Idx(logic.getPterm(var).getId());
     if (varToVertRef.size() <= idx)
-        varToVertRef.resize(idx + 1, VertRef_Undef);
+        varToVertRef.growTo(idx + 1, VertRef_Undef);
 
     varToVertRef[idx] = vert;
 }
@@ -18,9 +18,9 @@ void STPMapper::setVert(PTRef var, VertexRef vert) {
 void STPMapper::registerEdge(EdgeRef edge) {
     auto & e = store.getEdge(edge);
     if (edgesContainingVert.size() <= std::max(e.from.x, e.to.x))
-        edgesContainingVert.resize(std::max(e.from.x, e.to.x) + 1);
-    edgesContainingVert[e.from.x].push_back(edge);
-    edgesContainingVert[e.to.x].push_back(edge);
+        edgesContainingVert.growTo(std::max(e.from.x, e.to.x) + 1);
+    edgesContainingVert[e.from.x].push(edge);
+    edgesContainingVert[e.to.x].push(edge);
 }
 
 // assigns an EdgeRef to a PTRef inequality and adds it to the 'edgesOf' lists of its vertices
@@ -29,7 +29,7 @@ void STPMapper::mapEdge(PTRef leq, EdgeRef edge) {
 
     uint32_t idx = Idx(logic.getPterm(leq).getId());
     if (leqToEdgeRef.size() <= idx)
-        leqToEdgeRef.resize(idx + 1, EdgeRef_Undef);
+        leqToEdgeRef.growTo(idx + 1, EdgeRef_Undef);
     leqToEdgeRef[idx] = edge;
 }
 

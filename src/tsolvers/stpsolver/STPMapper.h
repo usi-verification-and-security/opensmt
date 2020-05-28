@@ -12,9 +12,9 @@ class STPMapper {
 
     STPStore &store;
 
-    std::vector<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
-    std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
-    std::vector<std::vector<EdgeRef>> edgesContainingVert;  // list of edges each vertex appears in
+    vec<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
+    vec<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
+    vec<vec<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
 
 public:
     STPMapper(LALogic const &l, STPStore &s);
@@ -24,7 +24,7 @@ public:
     VertexRef getVertRef(PTRef var);
     EdgeRef getEdgeRef(PTRef leq);
     EdgeRef getEdgeRef(VertexRef y, VertexRef x, const opensmt::Number &c) const;
-    const vector<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+    const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
 };
 
 #endif //OPENSMT_STPMAPPER_H
