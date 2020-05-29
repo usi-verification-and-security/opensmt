@@ -412,10 +412,7 @@ void Egraph::declareTerm(PTRef tr) {
         enode_store.addDistClass(tr);
 
     if (logic.hasSortBool(tr)) {
-        Pterm& t = logic.getPterm(tr);
-        while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
-            known_preds.push(false);
-        known_preds[Idx(t.getId())] = true;
+        setKnown(tr);
     }
 }
 

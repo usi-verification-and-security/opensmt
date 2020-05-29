@@ -304,7 +304,6 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     setInformed(leq_tr);
 
-
     if (status != INIT)
     {
         // Treat the PTRef as it is pushed on-the-fly
@@ -314,11 +313,7 @@ void LASolver::declareAtom(PTRef leq_tr)
     // DEBUG check
     isProperLeq(leq_tr);
 
-    const Pterm& t = logic.getPterm(leq_tr);
-
-    while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
-        known_preds.push(false);
-    known_preds[Idx(t.getId())] = true;
+    setKnown(leq_tr);
 }
 
 void LASolver::informNewSplit(PTRef tr)

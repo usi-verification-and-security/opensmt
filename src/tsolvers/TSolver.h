@@ -181,6 +181,7 @@ public:
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
     bool         isKnown(PTRef tr);
+    void         setKnown(PTRef tr);
 
 protected:
     bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }

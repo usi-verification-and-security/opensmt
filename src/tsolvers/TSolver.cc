@@ -48,10 +48,16 @@ void TSolver::pushBacktrackPoint()
 
 bool TSolver::isKnown(PTRef tr)
 {
-    uint32_t id = Idx(getLogic().getPterm(tr).getId());
-    if (static_cast<unsigned int>(known_preds.size()) <= id)
-        return false;
-    return known_preds[id];
+    uint32_t tid = Idx(getLogic().getPterm(tr).getId());
+    return tid < known_preds.size_() && known_preds[tid];
+}
+
+void TSolver::setKnown(PTRef tr) {
+    auto tid = Idx(getLogic().getPterm(tr).getId());
+    while (known_preds.size_() <= tid) {
+        known_preds.push(false);
+    }
+    known_preds[tid] = true;
 }
 
 // MB: setPolarity and clearPolarity moved to .C file to remove the macros from the header
