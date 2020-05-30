@@ -1012,7 +1012,7 @@ inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { retu
 inline lbool    CoreSMTSolver::value         (Var x) const                { return assigns[x]; }
 inline lbool    CoreSMTSolver::value         (Lit p) const                { return assigns[var(p)] ^ sign(p); }
 inline lbool    CoreSMTSolver::safeValue     (Var x) const                { if (x < assigns.size()) return value(x); else return l_Undef; }
-inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { return safeValue(var(p)); }
+inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { auto varValue = safeValue(var(p)); return varValue != l_Undef ? (varValue ^ sign(p)) : l_Undef; }
 inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] != l_Undef ? (model[var(p)] ^ sign(p)) : l_Undef; }
 inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
 inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }

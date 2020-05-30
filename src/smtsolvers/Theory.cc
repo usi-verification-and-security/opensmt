@@ -98,14 +98,13 @@ CoreSMTSolver::handleSat()
 
         Lit l1 = new_splits[0];
         Lit l2 = new_splits[1];
-
-        assert(safeValue(l1) == l_Undef || safeValue(l2) == l_Undef);
-        assert(safeValue(l1) != l_True);
-        assert(safeValue(l2) != l_True);
-        // MB: ensure the solver knows about the variables
+        // MB: ensure the SAT solver knows about the variables and that they are active
         addVar_(var(l1));
         addVar_(var(l2));
-        if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
+        assert(value(l1) == l_Undef || value(l2) == l_Undef);
+        assert(value(l1) != l_True);
+        assert(value(l2) != l_True);
+        if (value(l1) == l_Undef && value(l2) == l_Undef) {
             // MB: allocate, attach and remember the clause - treated as original
             CRef cr = ca.alloc(new_splits, false);
             attachClause(cr);
