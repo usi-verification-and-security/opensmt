@@ -8,7 +8,7 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/TResult.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTHandler.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRATHandler.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/RDLTHandler.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/IDLTHandler.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIATHandler.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/THandler.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolverHandler.cc"
@@ -32,7 +32,7 @@ include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)
 
-install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h RDLTHandler.h TSolver.h THandler.h
+install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h IDLTHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 

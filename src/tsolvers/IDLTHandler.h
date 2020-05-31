@@ -2,22 +2,22 @@
 // Created by Martin Blicha on 10.05.20.
 //
 
-#ifndef OPENSMT_RDLTHANDLER_H
-#define OPENSMT_RDLTHANDLER_H
+#ifndef OPENSMT_IDLTHANDLER_H
+#define OPENSMT_IDLTHANDLER_H
 
 #include "TSolverHandler.h"
 
 class STPSolver;
-class LRALogic;
+class LIALogic;
 
-class RDLTHandler : public TSolverHandler
+class IDLTHandler : public TSolverHandler
 {
 private:
-    LRALogic& logic;
+    LIALogic& logic;
     STPSolver *stpsolver;
 public:
-    RDLTHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~RDLTHandler() = default;
+    IDLTHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    virtual ~IDLTHandler();
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
     virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;
@@ -27,4 +27,4 @@ public:
 };
 
 
-#endif //OPENSMT_RDLTHANDLER_H
+#endif //OPENSMT_IDLTHANDLER_H

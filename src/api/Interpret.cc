@@ -231,6 +231,7 @@ void Interpret::interp(ASTNode& n) {
                         break;
                     }
                     case Logic_t::QF_LRA:
+                    case Logic_t::QF_RDL:
                     {
                         LRATheory *lratheory = new LRATheory(config);
                         theory = lratheory;
@@ -242,20 +243,19 @@ void Interpret::interp(ASTNode& n) {
                         main_solver->initialize();
                         break;
                     }
-                    case Logic_t::QF_RDL:
+                    case Logic_t::QF_IDL:
                     {
-                        RDLTheory *rdltheory = new RDLTheory(config);
-                        theory = rdltheory;
-                        thandler = new THandler(*rdltheory);
+                        IDLTheory *idltheory = new IDLTheory(config);
+                        theory = idltheory;
+                        thandler = new THandler(*idltheory);
                         logic = &(theory->getLogic());
 
                         new_solver();
-                        main_solver = new MainSolver(*thandler, config, solver, "qf_rdl solver");
+                        main_solver = new MainSolver(*thandler, config, solver, "qf_idl solver");
                         main_solver->initialize();
                         break;
                     }
                     case Logic_t::QF_LIA:
-                    case Logic_t::QF_IDL:
                     {
                         LIATheory *liatheory = new LIATheory(config);
                         theory = liatheory;

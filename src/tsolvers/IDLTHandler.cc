@@ -2,12 +2,12 @@
 // Created by Martin Blicha on 10.05.20.
 //
 
-#include "RDLTHandler.h"
-#include "LRALogic.h"
+#include "IDLTHandler.h"
+#include "LIALogic.h"
 #include "stpsolver/STPSolver.h"
 #include "TreeOps.h"
 
-RDLTHandler::RDLTHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
+IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap)
         : TSolverHandler(c, d, tmap)
         , logic(l)
 {
@@ -17,17 +17,21 @@ RDLTHandler::RDLTHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper&
     solverSchedule.push(my_id.id);
 }
 
-Logic &RDLTHandler::getLogic()
+IDLTHandler::~IDLTHandler() {
+    delete stpsolver;
+}
+
+Logic &IDLTHandler::getLogic()
 {
     return logic;
 }
 
-const Logic &RDLTHandler::getLogic() const
+const Logic &IDLTHandler::getLogic() const
 {
     return logic;
 }
 
-void RDLTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
+void IDLTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
 {
     // XXX Reorganize so that the storing of the previous variable would
     // not be so awkward?
@@ -77,7 +81,7 @@ void RDLTHandler::fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs)
     }
 }
 
-bool RDLTHandler::assertLit_special(PtAsgn a)
+bool IDLTHandler::assertLit_special(PtAsgn a)
 {
     assert(a.sgn == l_True);
     if (logic.isNumEq(a.tr)) {

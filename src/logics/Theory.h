@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LIATHandler.h"
 #include "UFTHandler.h"
 #include "CUFTHandler.h"
-#include "RDLTHandler.h"
+#include "IDLTHandler.h"
 #include "Alloc.h"
 
 // Simplification in frames:
@@ -259,25 +259,25 @@ class CUFTheory : public Theory
     virtual bool simplify(const vec<PFRef>&, int);
 };
 
-class RDLTheory : public Theory
+class IDLTheory : public Theory
 {
 protected:
-    LRALogic    lralogic;
+    LIALogic    lialogic;
     TermMapper  tmap;
-    RDLTHandler rdltshandler;
+    IDLTHandler idlthandler;
 public:
-    RDLTheory(SMTConfig& c)
+    IDLTheory(SMTConfig& c)
             : Theory(c)
-            , lralogic(c)
-            , tmap(lralogic)
-            , rdltshandler(c, lralogic, deductions, tmap)
+            , lialogic(c)
+            , tmap(lialogic)
+            , idlthandler(c, lialogic, deductions, tmap)
     { }
-    ~RDLTheory() = default;
-    virtual LRALogic&    getLogic()    { return lralogic; }
+    ~IDLTheory() = default;
+    virtual LIALogic&    getLogic()    { return lialogic; }
     virtual TermMapper&  getTmap() { return tmap; }
-    virtual RDLTHandler& getTSolverHandler() { return rdltshandler; }
-    virtual RDLTHandler *getTSolverHandler_new(vec<DedElem> &d) {
-        return new RDLTHandler(config, lralogic, d, tmap);
+    virtual IDLTHandler& getTSolverHandler() { return idlthandler; }
+    virtual IDLTHandler *getTSolverHandler_new(vec<DedElem> &d) {
+        return new IDLTHandler(config, lialogic, d, tmap);
     }
     virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
 };
