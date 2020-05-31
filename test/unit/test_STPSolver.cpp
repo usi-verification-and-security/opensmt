@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <SMTConfig.h>
-#include <LRALogic.h>
+#include <LIALogic.h>
 #include <STPSolver.h>
 
 class STPSolverTest : public ::testing::Test {
@@ -16,7 +16,7 @@ protected:
         z = logic.mkNumVar("z");
     }
     SMTConfig config;
-    LRALogic logic;
+    LIALogic logic;
     SRef ufsort;
     PTRef x;
     PTRef y;
