@@ -34,7 +34,7 @@ struct Edge {
 class STPStore {
 private:
     uint32_t vertices;                  // number of created vertices (a vertex doesn't actually carry any information)
-    vec<Edge> edges;            // list of all created edges
+    std::vector<Edge> edges;            // list of all created edges
 public:
     STPStore() : vertices(0) {}
     VertexRef createVertex();
