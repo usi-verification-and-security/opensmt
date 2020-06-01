@@ -17,7 +17,7 @@ private:
     STPSolver *stpsolver;
 public:
     IDLTHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
-    virtual ~IDLTHandler();
+    virtual ~IDLTHandler() = default;
     virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
     virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;

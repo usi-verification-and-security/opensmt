@@ -17,10 +17,6 @@ IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper&
     solverSchedule.push(my_id.id);
 }
 
-IDLTHandler::~IDLTHandler() {
-    delete stpsolver;
-}
-
 Logic &IDLTHandler::getLogic()
 {
     return logic;
