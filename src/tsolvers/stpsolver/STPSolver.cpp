@@ -58,6 +58,17 @@ void STPSolver::declareAtom(PTRef tr) {
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
     // to some constant
     // TODO: store information about the term tr if necessary
+
+    if (isKnown(tr)) { return; }
+    {
+        // MB: To be simplified when the change is done in the main branch
+        const Pterm & t = logic.getPterm(tr);
+
+        while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
+            known_preds.push(false);
+        known_preds[Idx(t.getId())] = true;
+    }
+
     auto parsed = parseRef(tr);
 
     // find out if edge already exists (created as part of a negation)
@@ -109,6 +120,7 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
     if (graph.isTrue(neg) || graph.isTrue(e)) {             // negation of assignment was found as a consequence
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
         inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
+        has_explanation = true;
         return false;
     }
 
@@ -158,6 +170,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
         inv_edge = EdgeRef_Undef;
+        has_explanation = false;
     }
 
     backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
