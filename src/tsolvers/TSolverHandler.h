@@ -59,7 +59,7 @@ protected:
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];
             SolverId id = (SolverId)(*sd);
-            while (id.id >= (unsigned)tsolvers.size()) tsolvers.push(NULL);
+            while (id.id >= (unsigned)tsolvers.size()) tsolvers.push(nullptr);
         }
     }
 public:
@@ -81,5 +81,6 @@ public:
 //    virtual SolverId getId() const { return my_id; }
     virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     TRes    check(bool);
+    TSolver* getSolverDeducing(PTRef) const;
 };
 #endif

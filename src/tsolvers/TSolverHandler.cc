@@ -22,7 +22,7 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
     // according to the schedule
     for (int i = 0; i < solverSchedule.size(); i++) {
         int idx = solverSchedule[i];
-        assert(tsolvers[idx] != NULL);
+        assert(tsolvers[idx] != nullptr);
         tsolvers[idx]->pushBacktrackPoint();
         if (!tsolvers[idx]->isKnown(asgn.tr)) {
             continue;
@@ -100,6 +100,18 @@ TRes TSolverHandler::check(bool complete)
     }
 
     return res_final;
+}
+
+// MB: This is currently needed to replace a common array of deduced elements with solver ID
+TSolver* TSolverHandler::getSolverDeducing(PTRef ptref) const {
+    // MB: Can we use solverSchedule? Double check this if theory combination is implemented
+    for (auto* solver : tsolvers) {
+        if (solver != nullptr && solver->isValid(ptref)) {
+            return solver;
+        }
+    }
+    assert(false);
+    return nullptr;
 }
 
 
