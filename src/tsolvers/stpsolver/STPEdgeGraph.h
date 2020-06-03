@@ -35,6 +35,7 @@ public:
     void findConsequences(EdgeRef e);
     void findExplanation(EdgeRef e, vec<PtAsgn> &v);
     void removeAfter(uint32_t point);
+    void clear();
 };
 
 

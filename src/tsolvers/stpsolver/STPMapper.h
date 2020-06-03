@@ -25,6 +25,7 @@ public:
     EdgeRef getEdgeRef(PTRef leq);
     EdgeRef getEdgeRef(VertexRef y, VertexRef x, const opensmt::Number &c) const;
     const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+    void clear();
 };
 
 #endif //OPENSMT_STPMAPPER_H

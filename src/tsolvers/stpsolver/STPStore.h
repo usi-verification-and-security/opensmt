@@ -44,6 +44,7 @@ public:
     size_t edgeNum() const { return edges.size(); }
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }
     void setNegation(EdgeRef a, EdgeRef b);
+    void clear();
 };
 
 #endif //OPENSMT_STPSTORE_H

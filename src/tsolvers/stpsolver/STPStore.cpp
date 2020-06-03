@@ -16,3 +16,8 @@ void STPStore::setNegation(EdgeRef a, EdgeRef b) {
     edges[b.x].neg = a;
 }
 
+void STPStore::clear() {
+    edges.clear();
+    vertices = 0;
+}
+

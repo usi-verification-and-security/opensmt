@@ -59,3 +59,9 @@ EdgeRef STPMapper::getEdgeRef(VertexRef y, VertexRef x, const opensmt::Number &c
     return EdgeRef_Undef;
 }
 
+void STPMapper::clear() {
+    edgesContainingVert.clear();
+    varToVertRef.clear();
+    leqToEdgeRef.clear();
+}
+

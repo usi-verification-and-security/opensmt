@@ -98,6 +98,11 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
 
 void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     Edge &expl = store.getEdge(e);
+    if (expl.asgn != PtAsgn_Undef) {
+        v.push(expl.asgn);
+        return;
+    }
+
     vec<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
     vec<opensmt::Number> length(store.vertexNum());
     std::stack<VertexRef> open;
@@ -130,6 +135,13 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
         if (edge.from == expl.from) break;
         backtrack = visited[edge.from.x];
     }
+}
+
+void STPEdgeGraph::clear() {
+    addedEdges.clear();
+    addedCount = 0;
+    incoming.clear();
+    outgoing.clear();
 }
 
 

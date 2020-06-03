@@ -142,6 +142,9 @@ TRes STPSolver::check(bool b) {
 
 void STPSolver::clearSolver() {
     TSolver::clearSolver();
+    graph.clear();
+    mapper.clear();
+    store.clear();
 }
 
 void STPSolver::print(ostream & out) {
