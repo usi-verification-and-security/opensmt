@@ -110,13 +110,12 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     open.push(expl.from);
     while (!open.empty()) {
         auto curr = open.top(); open.pop();
-        if (curr == expl.to) break;
+        if (curr == expl.to && length[curr.x] <= expl.cost) break;
         for (auto eRef : outgoing[curr.x]) {
             if (eRef == e) continue;
             Edge &edge = store.getEdge(eRef);
             if (edge.asgn == PtAsgn_Undef) continue;
             if (edge.setTime > expl.setTime) continue;
-            if (length[curr.x] + edge.cost > expl.cost) continue;
 
             auto next = edge.to;
             if (visited[next.x] == EdgeRef_Undef || length[next.x] > length[curr.x] + edge.cost) {

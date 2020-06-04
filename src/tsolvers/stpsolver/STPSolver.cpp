@@ -173,7 +173,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
         inv_edge = EdgeRef_Undef;
-        has_explanation = false;
+        has_explanation = true;
     }
 
     backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
