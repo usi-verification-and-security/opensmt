@@ -96,7 +96,6 @@ int main( int argc, char * argv[] )
                 break;
             case 'i':
                 c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-                c.produce_proofs = 1;
                 break;
             case 'p':
                 pipe = true;

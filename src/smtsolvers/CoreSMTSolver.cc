@@ -138,7 +138,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-    , proof                 ( config.produce_proofs > 0 ? new Proof( ca ) : nullptr )
+    , proof                 (config.produceProof() ? new Proof(ca ) : nullptr )
     , proof_graph           ( nullptr )
 #ifdef STATISTICS
     , preproc_time          (0)
@@ -187,7 +187,7 @@ CoreSMTSolver::initialize( )
         break; // Boolean atoms
     }
 
-    if ((config.produce_proofs > 0 || config.produce_inter() > 0) && !proof) {
+    if (config.produceProof() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
     }
 

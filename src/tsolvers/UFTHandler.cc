@@ -7,7 +7,7 @@ UFTHandler::UFTHandler(SMTConfig& c, Logic& l, vec<DedElem>& d, TermMapper& tmap
     : TSolverHandler(c, d, tmap)
     , logic(l)
 {
-    egraph = config.produce_proofs > 0 ? new InterpolatingEgraph(config, logic, deductions)
+    egraph = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic, deductions)
             : new Egraph(config, logic, deductions);
 
     SolverId my_id = egraph->getId();

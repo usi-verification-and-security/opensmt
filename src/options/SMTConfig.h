@@ -247,6 +247,7 @@ public:
   static const char* o_garbage_frac;
   static const char* o_restart_first;
   static const char* o_restart_inc;
+  static const char* o_produce_proofs;
   static const char* o_produce_inter;
   static const char* o_certify_inter;
   static const char* o_interpolant_cnf;
@@ -415,7 +416,10 @@ public:
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
 
-  inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
+  inline void setProduceProofs( ) { insertOption(o_produce_proofs, new SMTOption(1)); }
+  inline bool produceProof( ) {
+      return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
+  }
 
   void setTimeQueries() { insertOption(o_time_queries, new SMTOption(1)); }
   bool timeQueries()    { return optionTable.has(o_time_queries) ? optionTable[o_time_queries]->getValue().numval : false; }
@@ -805,7 +809,6 @@ public:
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
-  int          produce_proofs;               // Should produce proofs ?
   int          print_proofs_smtlib2;         // Should print proofs ?
   int          print_proofs_dotty;           // Should print proofs ?
   bool         rocset;                       // Regular Output Channel set ?

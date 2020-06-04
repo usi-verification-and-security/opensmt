@@ -126,7 +126,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     status = s_Undef;
 
     vec<PTRef> coll_f;
-    bool keepPartitionsSeparate = getConfig().produce_proofs > 0;
+    bool keepPartitionsSeparate = getConfig().produceProof();
     for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size(); i++) {
         getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);

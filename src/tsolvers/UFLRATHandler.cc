@@ -13,7 +13,7 @@ UFLRATHandler::UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMap
     tsolvers[lra_id.id] = lrasolver;
     solverSchedule.push(lra_id.id);
 
-    ufsolver = config.produce_proofs > 0 ? new InterpolatingEgraph(config, logic, deductions)
+    ufsolver = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic, deductions)
                                        : new Egraph(config, logic, deductions);
 
     SolverId uf_id = ufsolver->getId();

@@ -117,7 +117,7 @@ protected:
     inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
     // PROOF version
-    bool keepPartitionInfo() const { return config.produce_proofs > 0; }
+    bool keepPartitionInfo() const { return config.produceProof(); }
 
     int currentPartition = -1;
     // end of PROOF version

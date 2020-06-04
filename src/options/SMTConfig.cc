@@ -479,6 +479,7 @@ const char* SMTConfig::o_sat_dump_rnd_inter = ":sat-num-rnd-itps";
 const char* SMTConfig::o_garbage_frac  = ":garbage-frac";
 const char* SMTConfig::o_restart_first = ":restart-first";
 const char* SMTConfig::o_restart_inc   = ":restart-inc";
+const char* SMTConfig::o_produce_proofs = ":produce-proofs";
 const char* SMTConfig::o_produce_inter = ":produce-interpolants";
 const char* SMTConfig::o_certify_inter = ":certify-interpolants";
 const char* SMTConfig::o_interpolant_cnf = ":cnf-interpolants";
@@ -593,7 +594,6 @@ SMTConfig::initializeConfig( )
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;
   // Proof parameters
-  produce_proofs = 0;
 //  proof_reduce                  = 0;
   proof_ratio_red_solv          = 0;
   proof_red_time                = 0;

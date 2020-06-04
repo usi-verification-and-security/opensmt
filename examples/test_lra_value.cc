@@ -5,7 +5,6 @@ Opensmt*
 pre()
 {
     SMTConfig * config = new SMTConfig();
-    config->produce_proofs = 1;
     const char* msg;
     config->setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
     Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "Test solver");
