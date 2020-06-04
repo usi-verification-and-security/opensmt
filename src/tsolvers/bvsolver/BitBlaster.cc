@@ -58,7 +58,7 @@ const char* BitBlaster::s_bbBvlrsh      = "s_bbBvlrsh";
 const char* BitBlaster::s_bbBvarsh      = "s_bbBvarsh";
 
 BitBlaster::BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic & bvlogic, vec<PtAsgn> & ex,
-                       vec<DedElem> & d, vec<PTRef> & s)
+                       vec<PTRef> & s)
     : last_refined(0)
     , config      (c)
     , mainSolver  (mainSolver)
@@ -66,7 +66,6 @@ BitBlaster::BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic
     , thandler    (mainSolver.getTHandler())
     , solverP     (mainSolver.getSMTSolver())
     , explanation (ex)
-    , deductions  (d)
     , suggestions (s)
     , has_model   (false)
     , bitwidth    (logic.getBitWidth())

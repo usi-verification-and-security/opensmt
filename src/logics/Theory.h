@@ -249,7 +249,6 @@ class CUFTheory : public Theory
     virtual BVLogic&  getLogic()             { return cuflogic; }
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual CUFTHandler *getTSolverHandler_new(vec<DedElem>& d) { return new CUFTHandler(config, cuflogic, tmap); }
     virtual bool simplify(const vec<PFRef>&, int);
 };
 

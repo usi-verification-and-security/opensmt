@@ -33,10 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class BVSolver : public TSolver
 {
 public:
-    BVSolver ( SMTConfig &
-             , MainSolver &
-             , BVLogic&
-             , vec<DedElem> & );
+    BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l);
     ~BVSolver ( );
 
     bool            assertLit          ( PtAsgn, bool = false );
@@ -50,7 +47,7 @@ private:
 
     vec<PtAsgn> stack;
     MainSolver& mainSolver;
-    BVLogic&    logic;
+//    BVLogic&    logic; // MB: apparently not needed
     BitBlaster  B;
 };
 
