@@ -2,11 +2,11 @@
 #include "TreeOps.h"
 #include "lrasolver/LRASolver.h"
 
-LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
-        : TSolverHandler(c, d, tmap)
+LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap)
+        : TSolverHandler(c, tmap)
         , logic(l)
 {
-    lrasolver = new LRASolver(config, logic, deductions);
+    lrasolver = new LRASolver(config, logic);
     SolverId my_id = lrasolver->getId();
     tsolvers[my_id.id] = lrasolver;
     solverSchedule.push(my_id.id);

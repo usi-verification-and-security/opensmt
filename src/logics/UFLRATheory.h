@@ -41,11 +41,11 @@ class UFLRATheory : public Theory
         : Theory(c)
         , lralogic(c)
         , tmap(lralogic)
-        , uflratshandler(c, lralogic, deductions, tmap)
+        , uflratshandler(c, lralogic, tmap)
     { }
     virtual LRALogic& getLogic() { return lralogic; }
     virtual UFLRATHandler& getTSolverHandler() { return uflratshandler; }
-    virtual UFLRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new UFLRATHandler(config, lralogic, d, tmap); }
+    virtual UFLRATHandler *getTSolverHandler_new(vec<DedElem> &d) { return new UFLRATHandler(config, lralogic, tmap); }
     virtual bool simplify(const vec<PFRef>&, int);
 };
 

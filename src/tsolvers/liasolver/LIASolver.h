@@ -49,7 +49,7 @@ private:
 
 public:
 
-    LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d);
+    LIASolver(SMTConfig & c, LIALogic & l);
 
     ~LIASolver( );                                      // Destructor ;-)
 

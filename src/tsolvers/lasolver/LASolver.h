@@ -96,7 +96,7 @@ protected:
 
 public:
 
-    LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d);
+    LASolver(SolverDescr dls, SMTConfig & c, LALogic & l);
 
     virtual ~LASolver( );                                      // Destructor ;-)
 

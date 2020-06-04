@@ -4,17 +4,17 @@
 #include "InterpolatingEgraph.h"
 #include "Egraph.h"
 
-UFLRATHandler::UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap)
-        : LRATHandler(c, l, d, tmap)
+UFLRATHandler::UFLRATHandler(SMTConfig & c, LRALogic & l, TermMapper & tmap)
+        : LRATHandler(c, l, tmap)
         , logic(l)
 {
-    lrasolver = new LRASolver(config, logic, deductions);
+    lrasolver = new LRASolver(config, logic);
     SolverId lra_id = lrasolver->getId();
     tsolvers[lra_id.id] = lrasolver;
     solverSchedule.push(lra_id.id);
 
-    ufsolver = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic, deductions)
-                                       : new Egraph(config, logic, deductions);
+    ufsolver = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic)
+                                       : new Egraph(config, logic);
 
     SolverId uf_id = ufsolver->getId();
     tsolvers[uf_id.id] = ufsolver;

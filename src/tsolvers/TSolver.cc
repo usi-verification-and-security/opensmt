@@ -31,8 +31,7 @@ void TSolver::popBacktrackPoint()
     deductions_lim.pop();
     while (th_deductions.size_() > new_deductions_size) {
         PtAsgn_reason asgn = th_deductions.last();
-        assert(deduced[getLogic().getPterm(asgn.tr).getVar()] != l_Undef);
-        deduced[getLogic().getPterm(asgn.tr).getVar()] = DedElem_Undef;
+        clearPolarity(asgn.tr);
         th_deductions.pop();
     }
     assert( deductions_next <= th_deductions.size_() );
@@ -66,17 +65,6 @@ void  TSolver::setPolarity(PTRef tr, lbool p)
 {
     if (polarityMap.has(tr)) { polarityMap[tr] = p; }
     else { polarityMap.insert(tr, p); }
-#ifdef VERBOSE_EUF
-    cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-}
-
-void  TSolver::clearPolarity(PTRef tr)
-{
-    polarityMap[tr] = l_Undef;
-#ifdef VERBOSE_EUF
-    cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
 }
 
 void TSolver::getNewSplits(vec<PTRef>&)

@@ -37,7 +37,7 @@ class LRATHandler : public TSolverHandler
     LRALogic& logic;
     LRASolver *lrasolver;
   public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap);
     virtual ~LRATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;

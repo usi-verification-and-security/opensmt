@@ -275,15 +275,12 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
 
 //MOVINGFROMHEADER
 void Theory::setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
-vec<DedElem>& Theory::getDeductionVec()   { return deductions; }
 
 TermMapper&  LRATheory::getTmap() { return tmap; }
 LRALogic&    LRATheory::getLogic()    { return lralogic; }
 LRATHandler& LRATheory::getTSolverHandler() { return lratshandler; }
-LRATHandler* LRATheory::getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
 
 TermMapper&  LIATheory::getTmap() { return tmap; }
 LIALogic&    LIATheory::getLogic()    { return lialogic; }
 LIATHandler& LIATheory::getTSolverHandler() { return liatshandler; }
-LIATHandler* LIATheory::getTSolverHandler_new(vec<DedElem> &d) { return new LIATHandler(config, lialogic, d, tmap); }
 

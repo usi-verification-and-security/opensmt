@@ -2,11 +2,11 @@
 #include "TreeOps.h"
 #include <liasolver/LIASolver.h>
 
-LIATHandler::LIATHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap)
-        : TSolverHandler(c, d, tmap)
+LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l, TermMapper & tmap)
+        : TSolverHandler(c, tmap)
         , logic(l)
 {
-    liasolver = new LIASolver(config, logic, deductions);
+    liasolver = new LIASolver(config, logic);
     SolverId my_id = liasolver->getId();
     tsolvers[my_id.id] = liasolver;
     solverSchedule.push(my_id.id);

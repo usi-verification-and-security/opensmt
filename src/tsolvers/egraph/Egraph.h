@@ -210,8 +210,7 @@ private:
   static const char* s_val_false;
 
 public:
-  Egraph(SMTConfig & c , Logic& l
-          , vec<DedElem>& d);
+  Egraph(SMTConfig & c, Logic & l);
 
     virtual ~Egraph( ) {
         backtrackToStackSize( 0 );
@@ -231,9 +230,6 @@ private:
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
     PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
-
-    bool  isDeduced(PTRef tr)    const    { return deduced[logic.getPterm(tr).getVar()] != l_Undef; }
-    lbool getDeduced(PTRef tr)   const    { return deduced[logic.getPterm(tr).getVar()].polarity; }
 
     bool  isConstant(ERef er)    const    {
         return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));

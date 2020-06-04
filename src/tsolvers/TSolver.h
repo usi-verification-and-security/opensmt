@@ -126,6 +126,16 @@ class TSolverStats
 
 class TSolver
 {
+private:
+    /**
+     * Polarity map now merges its original meaning and keeping track of deductions.
+     * It keeps track about polarities of theory atoms the solver already knows about.
+     * This information can come from two sources:
+     * - from SAT solver through assertLit
+     * - from TSolver's own deductions
+     */
+    Map<PTRef,lbool,PTRefHash>  polarityMap;
+
 protected:
     SolverId                    id;              // Solver unique identifier
     vec<PtAsgn>                 explanation;     // Stores the explanation
@@ -134,18 +144,22 @@ protected:
     vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
     vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
-    vec<DedElem>                &deduced;        // Array of deductions indexed by variables
-    Map<PTRef,lbool,PTRefHash>  polarityMap;
+
+    // Methods for querying and modifying infromation about known polarities
+    void  setPolarity(PTRef tr, lbool p);
+    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
+    void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
+    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+
     vec<PTRef>                  splitondemand;
 
 public:
     // The states of the TSolver check query
 
 
-    TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
+    TSolver(SolverId id_, const char * name_, SMTConfig & c)
     : id(id_)
     , deductions_next(0)
-    , deduced (d)
     , has_explanation(false)
     , name(name_)
     , config  (c)
@@ -156,11 +170,7 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    virtual void setPolarity(PTRef tr, lbool p);
     virtual void print(ostream& out) = 0;
-    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
-    void  clearPolarity(PTRef tr);
-    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
     virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point

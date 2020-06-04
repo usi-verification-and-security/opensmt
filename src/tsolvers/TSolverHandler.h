@@ -45,16 +45,14 @@ protected:
 public:
     TermMapper    &tmap;
 protected:
-    vec<DedElem>  &deductions;
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
     Map<PTRef,PtAsgn,PTRefHash> substs;
 
-    TSolverHandler(SMTConfig & c, vec<DedElem> & d, TermMapper & tmap)
+    TSolverHandler(SMTConfig & c, TermMapper & tmap)
         : config(c)
         , tmap(tmap)
-        , deductions(d)
     {
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];

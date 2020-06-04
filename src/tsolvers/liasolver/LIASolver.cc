@@ -117,8 +117,8 @@ LIASolver::getNewSplits(vec<PTRef>& splits)
     setStatus(SAT);
 }
 
-LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
-        : LASolver(descr_lia_solver, c, l, d)
+LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
+        : LASolver(descr_lia_solver, c, l)
         , logic(l)
 
 {

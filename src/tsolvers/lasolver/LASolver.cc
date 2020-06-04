@@ -86,8 +86,8 @@ void LASolver::isProperLeq(PTRef tr)
     (void) cons; (void)sum;
 }
 
-LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
-        : TSolver((SolverId)dls, (const char*)dls, c, d)
+LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
+        : TSolver((SolverId) dls, (const char *) dls, c)
         , logic(l)
         , laVarMapper(l)
         , boundStore(laVarStore)
@@ -330,6 +330,7 @@ void LASolver::informNewSplit(PTRef tr)
 bool LASolver::assertLit( PtAsgn asgn, bool reason )
 {
     ( void )reason;
+    assert(asgn.sgn != l_Undef);
 
 //    printf("Assert %d\n", debug_assert_count++);
 
@@ -354,7 +355,13 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     if( status == INIT  )
         initSolver( );
 
-    assert(asgn.sgn != l_Undef);
+
+    if (hasPolarity(asgn.tr) && getPolarity(asgn.tr) == asgn.sgn) {
+        // already known, no new information
+        assert(getStatus());
+        tsolver_stats.sat_calls ++;
+        return getStatus();
+    }
 
     LABoundRefPair p = getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
@@ -367,18 +374,6 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
-
-    const Pterm& t = logic.getPterm(asgn.tr);
-    // skip if it was deduced by the solver itself with the same polarity
-    assert(deduced.size() > t.getVar());
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
-        assert(getStatus());
-        tsolver_stats.sat_calls ++;
-        return getStatus();
-    }
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
-        // MB: what should happen here?
-    }
 
     if (assertBoundOnVar( it, bound_ref))
     {
@@ -578,11 +573,9 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 void LASolver::deduce(LABoundRef bound_prop) {
     PtAsgn ba = getAsgnByBound(bound_prop);
     if (!hasPolarity(ba.tr)) {
-        if (deduced[logic.getPterm(ba.tr).getVar()] == l_Undef) {
-            lbool pol = ba.sgn;
-            deduced[logic.getPterm(ba.tr).getVar()] = DedElem(id, pol); // id is the solver id
-            th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
-        }
+        lbool pol = ba.sgn;
+        th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
+        setPolarity(ba.tr, pol);
     }
 }
 

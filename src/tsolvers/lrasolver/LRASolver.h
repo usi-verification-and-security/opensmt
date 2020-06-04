@@ -44,7 +44,7 @@ private:
 
 public:
 
-    LRASolver(SMTConfig & c, LRALogic& l, vec<DedElem>& d);
+    LRASolver(SMTConfig & c, LRALogic & l);
 
     ~LRASolver( ) ;                                      // Destructor ;-)
 

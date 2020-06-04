@@ -500,7 +500,6 @@ Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
 void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
-void    THandler::pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
 Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 
 void    THandler::computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary

@@ -267,9 +267,6 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     if ( v != 0 && v != 1 )
         undo_stack.push(undo_stack_el(undo_stack_el::NEWVAR, v));
 
-    // Add the deduction entry for this variable
-    theory_handler.pushDeduction();
-
     return v;
 }
 
