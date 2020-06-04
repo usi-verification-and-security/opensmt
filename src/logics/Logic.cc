@@ -706,7 +706,8 @@ Logic::mkIte(vec<PTRef>& args)
     SRef sr = getSortRef(args[1]);
     if(sr != getSortRef(args[2]))
     {
-        cerr << "ITE with different return sorts" << endl;
+        std::cerr << "ITE with different return sorts" << std::endl;
+        // MB: maybe do something more elegant here?
         assert(0);
     }
 
@@ -2025,7 +2026,9 @@ void Logic::conjoinItes(PTRef root, PTRef& new_root)
 {
     std::vector<bool> seen;
     // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    auto size = Idx(this->getPterm(root).getId()) + 1;
+    // Ite variables are replaced by their definition, and when top level formula is ite, this invariant would be broken
+    PTRef termWithMaxId = isIteVar(root) ? getTopLevelIte(root) : root;
+    auto size = Idx(this->getPterm(termWithMaxId).getId()) + 1;
     seen.resize(size, false);
     std::vector<PTRef> queue {root};
     vec<PTRef> args;

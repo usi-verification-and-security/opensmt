@@ -230,14 +230,15 @@ void CoreSMTSolver::addVar(Var v)
 
 //
 // Add a new var v to the solver if it does not yet exist
+// It also activates the variable - turns it into decision variable - if it was not active before
 //
 void CoreSMTSolver::addVar_(Var v)
 {
     if (v < nVars()) {
         // These are Necessary in incremental mode since previously
         // ignored vars can now reappear
-        insertVarOrder(v);
         decision[v] = true;
+        insertVarOrder(v);
         return;
     }
     while (v >= nVars())
@@ -269,7 +270,10 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
     this->var_seen.push(false);
 
-    insertVarOrder(v);
+    // MB: Unnecessary call to insertVarOrder. This is already achieved by calling setDecisionVar above
+    // insertVarOrder(v);
+    assert(!decision[v] || order_heap.inHeap(v));
+
 
     // Added Lines
     // Skip undo for varTrue and varFalse
@@ -1871,6 +1875,11 @@ void CoreSMTSolver::declareVarsToTheories()
                     theory_handler.declareAtom(term);
                 }
             }
+        }
+    }
+    for (Var v = 0; v < var_seen.size(); v++) {
+        if (!var_seen[v]) {
+            setDecisionVar(v, false);
         }
     }
 }
