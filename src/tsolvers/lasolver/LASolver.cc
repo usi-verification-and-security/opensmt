@@ -573,9 +573,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 void LASolver::deduce(LABoundRef bound_prop) {
     PtAsgn ba = getAsgnByBound(bound_prop);
     if (!hasPolarity(ba.tr)) {
-        lbool pol = ba.sgn;
-        th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
-        setPolarity(ba.tr, pol);
+        storeDeduction(PtAsgn_reason(ba.tr, ba.sgn, PTRef_Undef));
     }
 }
 
@@ -732,8 +730,6 @@ LASolver::~LASolver( )
      tsolver_stats.printStatistics(cerr);
 #endif // STATISTICS
 }
-
-PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= static_cast<unsigned>(th_deductions.size())) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
 LALogic&  LASolver::getLogic()  { return logic; }
 

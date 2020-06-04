@@ -75,3 +75,10 @@ void TSolver::getNewSplits(vec<PTRef>&)
 bool TSolver::hasNewSplits() {
     return splitondemand.size() > 0;
 }
+
+PtAsgn_reason TSolver::getDeduction() {
+    if (deductions_next >= th_deductions.size_()) {
+        return PtAsgn_reason_Undef;
+    }
+    return th_deductions[deductions_next++];
+}

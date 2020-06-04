@@ -272,7 +272,6 @@ public:
   bool                assertLit               (PtAsgn, bool = false);
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
-  PtAsgn_reason       getDeduction            ( );                          // Return an implied node based on the current state
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   lbool               getPolaritySuggestion   (PTRef);                      // Return a suggested polarity for a given literal
   void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation

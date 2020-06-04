@@ -161,30 +161,6 @@ void Egraph::popBacktrackPoint() {
 }
 
 //
-// Returns a deduction
-//
-PtAsgn_reason Egraph::getDeduction( ) {
-    // Communicate UF deductions
-    while ( deductions_next < th_deductions.size_( ) ) {
-        PtAsgn_reason pta = th_deductions[deductions_next++];
-        // For sure this has a deduced polarity
-        // If it has been pushed it is not a good candidate
-        // for deduction
-//        if ( hasPolarity(pta.tr) )
-//            continue;
-
-#ifdef STATISTICS
-        tsolver_stats.deductions_sent ++;
-#endif
-
-        return pta;
-    }
-
-    // We have already returned all the possible deductions
-    return PtAsgn_reason_Undef;
-}
-
-//
 // Returns a suggestion
 //
 PTRef Egraph::getSuggestion( )
@@ -1146,8 +1122,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         assert(logic.getPterm(v_tr).getVar() != -1);
         if (!hasPolarity(v_tr)) {
             assert(v_tr == enode_store.ERefToTerm[v]);
-            th_deductions.push(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
-            setPolarity(v_tr, deduced_polarity);
+            storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
             cerr << "Deducing ";
             cerr << (deduced_polarity == l_False ? "not " : "");

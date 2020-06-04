@@ -151,6 +151,12 @@ protected:
     void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
     bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
 
+    // Method for storing information about deductions (Derived solvers should use this and not manipulate fields themselves)
+    void storeDeduction(PtAsgn_reason ded) {
+        th_deductions.push(ded);
+        setPolarity(ded.tr, ded.sgn);
+    }
+
     vec<PTRef>                  splitondemand;
 
 public:
@@ -182,7 +188,7 @@ public:
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
-    virtual PtAsgn_reason getDeduction() = 0;             // Return an implied node based on the current state
+    virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
