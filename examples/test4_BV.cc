@@ -45,10 +45,9 @@ main(int argc, char** argv)
     PTRef eq = logic.mkAnd(args);*/
 
 	vec<PtAsgn> asgns;
-	vec<DedElem> deds;
 	vec<PTRef> foo;
 
-	BitBlaster bbb({42}, c, *mainSolver, logic, asgns, deds, foo);
+	BitBlaster bbb({42}, c, *mainSolver, logic, asgns, foo);
 
 	BVRef output1;
 	lbool stat;
