@@ -14,6 +14,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
         , inv_bpoint(-1)
         , curr_bpoint(0)
         , inv_edge(EdgeRef_Undef)
+        , inv_asgn(PtAsgn_Undef)
 {}
 
 STPSolver::~STPSolver() = default;
@@ -121,6 +122,7 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
         inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
         has_explanation = true;
+        inv_asgn = asgn;
         return false;
     }
 
@@ -168,18 +170,20 @@ void STPSolver::popBacktrackPoint() {
 void STPSolver::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
+    if (!i) return;
     assert( backtrack_points.size() >= i );
     curr_bpoint -= i;
     if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
         inv_edge = EdgeRef_Undef;
-        has_explanation = true;
+        inv_asgn = PtAsgn_Undef;
+        has_explanation = false;
     }
 
     backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
     graph.removeAfter(backtrack_points.last());
+    backtrack_points.shrink(1);
     // no need to modify mapper or store - the values stored there can't change
-
     for (size_t j = 0; j < i; ++j)
         TSolver::popBacktrackPoint();
 }
@@ -199,6 +203,7 @@ void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // The bool parameter can be ignored, the second parameter is the output parameter
     if (inv_edge == EdgeRef_Undef) return;  // TODO: how to handle call in consistent state?
     graph.findExplanation(store.getEdge(inv_edge).neg, vec);
+    vec.push(inv_asgn);
 }
 
 PtAsgn_reason STPSolver::getDeduction() {

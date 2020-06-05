@@ -87,12 +87,16 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
     for (int i = addedEdges.size()-1; i >= 0; --i) {
         EdgeRef eRef = addedEdges[i];
         auto &edge = store.getEdge(eRef);
-        if (edge.setTime <= point) return;  // edges appear in 'addedEdges' in timestamp order
+        if (edge.setTime <= point) {  // edges appear in 'addedEdges' in timestamp order
+            addedCount = edge.setTime;
+            return;
+        }
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
         incoming[edge.to.x].pop();
         outgoing[edge.from.x].pop();
         addedEdges.pop();
         edge.setTime = 0;
+        edge.asgn = PtAsgn_Undef;
     }
 }
 

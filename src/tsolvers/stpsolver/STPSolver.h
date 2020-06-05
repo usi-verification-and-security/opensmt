@@ -32,6 +32,7 @@ class STPSolver : public TSolver {
     uint32_t curr_bpoint;                     // current backtrack point
     uint32_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     EdgeRef inv_edge;                       // first edge that caused the inconsistent state
+    PtAsgn inv_asgn;
 
     ParsedPTRef parseRef(PTRef ref) const;
 
