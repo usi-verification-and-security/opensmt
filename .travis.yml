@@ -4,7 +4,6 @@ language: cpp
 branches:
     only:
         - master
-        - inc_itp
 
 os:
   - linux
