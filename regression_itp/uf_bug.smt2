@@ -1,6 +1,5 @@
-(set-logic QF_UF)
 (set-option :produce-interpolants 1)
-;(set-option :certify-interpolants 2)
+(set-logic QF_UF)
 (declare-sort U 0)
 (declare-fun e () U)
 (declare-fun f () U)

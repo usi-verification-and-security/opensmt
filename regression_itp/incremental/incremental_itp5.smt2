@@ -1,5 +1,5 @@
-(set-logic QF_UF)
 (set-option :produce-interpolants 1)
+(set-logic QF_UF)
 (declare-fun a () Bool)
 (declare-fun b () Bool)
 (declare-fun c () Bool)
