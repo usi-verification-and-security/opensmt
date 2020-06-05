@@ -27,11 +27,11 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 double ProofGraph::recyclePivotsIter()
 {
-	if ( verbose() > 1 ) { cerr << "# " << "Recycle pivots plus restructuring begin" << endl; }
+	if ( verbose() > 1 ) { std::cerr << "; Recycle pivots plus restructuring begin" << std::endl; }
 	if ( verbose() > 1 )
 	{
 		uint64_t mem_used = memUsed();
-		reportf( "# Memory used before recycling: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+		reportf( "; Memory used before recycling: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 	double initTime=cpuTime();
 	clauseid_t id;
@@ -187,11 +187,11 @@ double ProofGraph::recyclePivotsIter()
 	mpz_clear(incr_safe_lit_set_2);
 	resetVisited1();
 
-	if ( verbose() > 1 ) { cerr << "# " << "Recycling end, restructuring begin" << endl; }
+	if ( verbose() > 1 ) { std::cerr << "; Recycling end, restructuring begin" << std::endl; }
 	if ( verbose() > 1 )
 	{
 		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after recycling, before restructuring: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+		reportf( "; Memory used after recycling, before restructuring: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 
 //	bool warning = false;
@@ -368,7 +368,7 @@ double ProofGraph::recyclePivotsIter()
 	if( proofCheck() )
 	{
 		unsigned rem = cleanProofGraph( );
-		if(rem > 0 ) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+		if(rem > 0 ) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
 		checkProof( true );
 	}
 
@@ -377,7 +377,7 @@ double ProofGraph::recyclePivotsIter()
 	if ( verbose() > 1 )
 	{
 		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after restructuring: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+		reportf( "; Memory used after restructuring: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 
 	////////////////////////////////////////////////////////////////////
@@ -643,12 +643,12 @@ void ProofGraph::recycleUnits()
 
 
 void ProofGraph::proofTransformAndRestructure(const double left_time, const int max_num_loops, bool do_transf,
-        std::function<short(RuleContext&,RuleContext&)> handleRules)
+        std::function<ApplicationResult(RuleContext&,RuleContext&)> handleRules)
 {
-    if (verbose() > 1) { std::cerr << "# " << "Proof transformation traversals begin" << std::endl; }
+    if (verbose() > 1) { std::cerr << "; " << "Proof transformation traversals begin" << std::endl; }
     if (verbose() > 1) {
         uint64_t mem_used = memUsed();
-        reportf("# Memory used before proof transformation traversals: %.3f MB\n",
+        reportf("; Memory used before proof transformation traversals: %.3f MB\n",
                 mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 
@@ -724,14 +724,14 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                             getRuleContext(n->getAnt1()->getId(), n->getId(), ra1);
                             getRuleContext(n->getAnt2()->getId(), n->getId(), ra2);
 
-                            short chosen = handleRules(ra1, ra2);
+                            auto chosen = handleRules(ra1, ra2);
 
                             rul_type app_rule = rNO;
-                            if (chosen != 0) {
+                            if (chosen != ApplicationResult::NO_APPLICATION) {
                                 clauseid_t A1_new_id = 0;
                                 clauseid_t dupl_id = 0;
-                                assert(chosen == 1 || chosen == 2);
-                                RuleContext & chosen_ra = chosen == 1 ? ra1 : ra2;
+                                assert(chosen == ApplicationResult::APPLY_FIRST || chosen == ApplicationResult::APPLY_SECOND);
+                                RuleContext & chosen_ra = chosen == ApplicationResult::APPLY_FIRST ? ra1 : ra2;
                                 app_rule = chosen_ra.getType();
                                 if (getNode(chosen_ra.getW())->getNumResolvents() > 1 && isSwapRule(app_rule)) {
                                     dupl_id = dupliNode(chosen_ra);
@@ -823,9 +823,9 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
         curr_num_loops++;
 
         if (proofCheck() > 1) {
-            cerr << "Checking proof after loop " << curr_num_loops << endl;
+            std::cerr << "; Checking proof after loop " << curr_num_loops << std::endl;
             unsigned rem = cleanProofGraph();
-            if (rem > 0) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+            if (rem > 0) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
             checkProof(true);
         }
     }
@@ -838,7 +838,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
 
     if (proofCheck()) {
         unsigned rem = cleanProofGraph();
-        if (rem > 0) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+        if (rem > 0) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
         //assert( rem == 0 );
         checkProof(true);
     }
@@ -846,7 +846,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
 
     if (verbose() > 1) {
         uint64_t mem_used = memUsed();
-        reportf("# Memory used after proof transformation traversals: %.3f MB\n",
+        reportf("; Memory used after proof transformation traversals: %.3f MB\n",
                 mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 
@@ -862,7 +862,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
             }
         }
 
-        std::cerr << "# RE\t";
+        std::cerr << "; RE\t";
         if (num_nodes >= static_cast<int>(new_n_nodes)) {
             std::cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes)
                       << "%)\t";
@@ -887,11 +887,11 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
 
 void ProofGraph::proofPostStructuralHashing()
 {
-	if ( verbose() > 1 ) cerr << "# " << "Post-processing structural hashing begin" << endl;
+	if ( verbose() > 1 ) std::cerr << "; Post-processing structural hashing begin" << std::endl;
 	if ( verbose() > 1 )
 	{
 		uint64_t mem_used = memUsed();
-		reportf( "# Memory used before structural hashing: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+		reportf( "; Memory used before structural hashing: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 
 	double initTime = cpuTime();
@@ -970,7 +970,7 @@ void ProofGraph::proofPostStructuralHashing()
 	if( proofCheck() )
 	{
 		unsigned rem = cleanProofGraph( );
-		if(rem > 0 ) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+		if(rem > 0 ) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
 		//assert( rem == 0 );
 		checkProof( true );
 	}
@@ -980,7 +980,7 @@ void ProofGraph::proofPostStructuralHashing()
 	if ( verbose() > 1 )
 	{
 		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after structural hashing: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+		reportf( "; Memory used after structural hashing: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -994,10 +994,10 @@ void ProofGraph::proofPostStructuralHashing()
 			if(pn != NULL){ new_n_nodes++; new_n_edges += pn->getNumResolvents(); }
 		}
 
-		cerr << "# SH\t";
-		cerr << "Nodes: " << new_n_nodes << "(-" << 100*((double)(num_nodes - new_n_nodes)/num_nodes) << "%)\t";
-		cerr << "Edges: " << new_n_edges << "(-" << 100*((double)(num_edges - new_n_edges)/num_edges) << "%)\t";
-		cerr << "Time: " << (endTime-initTime) << " s" << endl;
+		std::cerr << "; SH\t";
+        std::cerr << "Nodes: " << new_n_nodes << "(-" << 100*((double)(num_nodes - new_n_nodes)/num_nodes) << "%)\t";
+        std::cerr << "Edges: " << new_n_edges << "(-" << 100*((double)(num_edges - new_n_edges)/num_edges) << "%)\t";
+        std::cerr << "Time: " << (endTime-initTime) << " s" << std::endl;
 	}
 	///////////////////////////////////////////////////////////////////////////////
 }
@@ -1022,16 +1022,17 @@ class LiftingVarsRuleHandler {
 public:
     LiftingVarsRuleHandler(ProofGraph & pg, LightVars const & lv) : proofGraph(pg), lightVars(lv) {}
 
-    short operator()(RuleContext & ra1, RuleContext & ra2);
+    ProofGraph::ApplicationResult operator()(RuleContext & ra1, RuleContext & ra2);
 
 private:
     ProofGraph & proofGraph;
     LightVars const & lightVars;
 };
 
-short LiftingVarsRuleHandler::operator()(RuleContext &ra1, RuleContext &ra2) {
-    // Return 0 for no application, 1 for applying rule 1, 2 for applying rule 2
-//    ProofGraph const & pg = this->proofGraph;
+using ApplicationResult = ProofGraph::ApplicationResult;
+
+
+ApplicationResult LiftingVarsRuleHandler::operator()(RuleContext &ra1, RuleContext &ra2) {
     auto isUnordered = [this] (RuleContext const& ra) {
         Var lowerPivot = this->proofGraph.getNode(ra.getV())->getPivot();
         Var upperPivot = this->proofGraph.getNode(ra.getW())->getPivot();
@@ -1040,24 +1041,22 @@ short LiftingVarsRuleHandler::operator()(RuleContext &ra1, RuleContext &ra2) {
     bool enabled1 = ra1.enabled() && isUnordered(ra1);
     bool enabled2 = ra2.enabled() && isUnordered(ra2);
     if (!enabled1) {
-        return enabled2 ? 2 : 0;
+        return enabled2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
     }
     // ra1 is enabled
-    if (!enabled2) { return 1; }
+    if (!enabled2) { return ApplicationResult::APPLY_FIRST; }
     // BOTH are enabled, pick better
     rul_type t1 = ra1.getType();
     rul_type t2 = ra2.getType();
-    if (isCutRule(t1)) { return 1; }
-    if (isCutRule(t2)) { return 2; }
+    if (isCutRule(t1)) { return ApplicationResult::APPLY_FIRST; }
+    if (isCutRule(t2)) { return ApplicationResult::APPLY_SECOND; }
     assert(isSwapRule(t1) && isSwapRule(t2));
     // Prefer simple swaps
-    if (t1 == rA2) { return 1; }
-    if (t2 == rA2) { return 2; }
+    if (t1 == rA2) { return ApplicationResult::APPLY_FIRST; }
+    if (t2 == rA2) { return ApplicationResult::APPLY_SECOND; }
     // No further rules, just pick first one
-    return 1;
-
+    return ApplicationResult::APPLY_FIRST;
 }
-
 }
 
 

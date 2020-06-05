@@ -467,9 +467,11 @@ public:
     //
     // Trasformation
     //
+    enum class ApplicationResult : char { NO_APPLICATION, APPLY_FIRST, APPLY_SECOND};
     bool            chooseReplacingAntecedent( ProofNode* );
     /** A loop of top down reduction sweeps; embeds the topological sorting */
-    void            proofTransformAndRestructure(const double, const int, bool do_transf, std::function<short(RuleContext&,RuleContext&)> handleRules);
+    void            proofTransformAndRestructure(const double, const int, bool do_transf,
+                                                    std::function<ApplicationResult(RuleContext&,RuleContext&)> handleRules);
     void            proofPostStructuralHashing();
     double          recyclePivotsIter();
     void            recycleUnits();
@@ -489,25 +491,25 @@ public:
     double          doIt                        (double);
     double          doReduction                 (double);
     // Reduce the proof
-    short           handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
+    ApplicationResult handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForReduction(RuleContext& );
     bool            allowCutRuleForReduction( RuleContext& );
     // Push unit clauses down in the proof
-    short           handleRuleApplicationForUnitsPushingDown(RuleContext & ra1, RuleContext & ra2);
+    ApplicationResult handleRuleApplicationForUnitsPushingDown(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForUnitsPushingDown(RuleContext&);
     // Push predicates in the proof
-    short          handleRuleApplicationForPredicatePushing(RuleContext & ra1, RuleContext & ra2);
+    ApplicationResult handleRuleApplicationForPredicatePushing(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForPredicatePushingUp( RuleContext&,Var );
     bool            allowSwapRuleForPredicatePushingDown( RuleContext&,Var );
     bool            allowCutRuleForPredicatePushing( RuleContext&,Var );
     inline void     setPredicateToPush(Var p){ pred_to_push = p; }
 
     // Strengthen/weaken interpolants by applying A2 rule locally
-    short           handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2);
+    ApplicationResult handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra);
     // Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
     // See allowSwapRuleForCNFinterpolant
-    short           handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2);
+    ApplicationResult handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForCNFinterpolant(RuleContext& ra);
 
 private:
