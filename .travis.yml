@@ -18,6 +18,7 @@ compiler:
 env:
   global:
     - PRODUCE_PROOF=OFF
+    - USE_LIBEDIT=ON
   matrix:
     - CMAKE_BUILD_TYPE=Release
     - CMAKE_BUILD_TYPE=Debug
@@ -51,7 +52,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - libgmp-dev
-      - libreadline-dev
+      - libedit-dev
       - bison
       - flex
 
@@ -65,7 +66,7 @@ before_script:
 script:
   - set -e
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} -DUSE_LIBEDIT:BOOL=${USE_LIBEDIT} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
   - make
   - ctest
   - make install
