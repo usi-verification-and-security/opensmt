@@ -20,7 +20,7 @@ To compile the system from the source code repository, you need a c++11
 compliant compiler and the following libraries and headers installed:
 
  - gmp
- - readline or libedit
+ - libedit (or readline)
 
 In addition the compilation system relies on `cmake` and the `smtlib2`
 parser on `flex` and `bison`.  To compile OpenSMT2, use the following
@@ -29,11 +29,10 @@ command
 $ mkdir build; cd build; cmake ..; make
 ```
 
-By default, OpenSMT is linked against the [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To create a MIT licensed build of OpenSMT, you should build OpenSMT such that it links against the [Editline Library](https://thrysoee.dk/editline/):
+By default, OpenSMT is linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/). You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To enable `readline` and create a GPL-licensed build of OpenSMT:
 ```
-$ cmake -DUSE_LIBEDIT:BOOL=ON ..
+$ cmake -DUSE_READLINE:BOOL=ON ..
 ```
-`libedit` can be easily installed on platforms such as Ubuntu (`apt-get install libedit-dev`) or CentOS (`dnf install libedit-devel`).
 
 By default, OpenSMT is compiled without interpolation capabilities.  To enable interpolation, the cmake option `PRODUCE_PROOF` must be enabled. This can be done in the cmake configuration file
 `CMakeCache.txt` produced by `cmake` in your build directory or when configuring cmake from the command line:

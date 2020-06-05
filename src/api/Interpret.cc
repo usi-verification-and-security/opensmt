@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
-#ifdef USE_LIBEDIT
+#if !defined(USE_READLINE)
 #include <editline/readline.h>
 #else
 #include <readline/readline.h>
