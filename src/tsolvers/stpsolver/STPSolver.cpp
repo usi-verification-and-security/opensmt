@@ -114,7 +114,8 @@ bool STPSolver::assertLit(PtAsgn asgn, bool b) {
 
     // if the assignment was already found as a consequence, we just mark it as manually assigned and return it as true
     if (graph.isTrue(e) && asgn.sgn == l_True || graph.isTrue(neg) && asgn.sgn == l_False) {
-        store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
+        // FIXME: if we backtrack before the assignment but after the deduction, now invalid 'asgn' is still stored
+        // store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
         return true;
     }
 
@@ -202,8 +203,9 @@ void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
     if (inv_edge == EdgeRef_Undef) return;  // TODO: how to handle call in consistent state?
-    graph.findExplanation(store.getEdge(inv_edge).neg, vec);
+    assert( inv_asgn != PtAsgn_Undef );
     vec.push(inv_asgn);
+    graph.findExplanation(store.getEdge(inv_edge).neg, vec);
 }
 
 PtAsgn_reason STPSolver::getDeduction() {

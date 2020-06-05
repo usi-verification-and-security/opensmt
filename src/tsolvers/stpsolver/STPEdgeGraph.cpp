@@ -134,6 +134,7 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     assert( backtrack != EdgeRef_Undef);
     while (true) {
         Edge &edge = store.getEdge(backtrack);
+        assert( edge.asgn != PtAsgn_Undef);
         v.push(edge.asgn);
         if (edge.from == expl.from) break;
         backtrack = visited[edge.from.x];
