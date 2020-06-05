@@ -38,7 +38,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 
     if (nparts < 2)
     {
-        opensmt_error ("Interpolation requires at least 2 partitions.");
+        opensmt_error ("; Interpolation requires at least 2 partitions.");
         return false;
     }
 
@@ -48,7 +48,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
         return true;
     }
 
-    if ( verbose() ) cerr << "# Path interpolation " << endl;
+    if ( verbose() ) cerr << "; Path interpolation " << endl;
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -82,7 +82,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 
     if (nparts < 2)
     {
-        opensmt_error ("Interpolation requires at least 2 partitions.");
+        opensmt_error ("; Interpolation requires at least 2 partitions.");
         return false;
     }
 
@@ -92,7 +92,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
         return true;
     }
 
-    if ( verbose() ) cerr << "# Simultaneous abstraction " << endl;
+    if ( verbose() ) cerr << "; Simultaneous abstraction " << endl;
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -125,7 +125,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
 
     if (nparts < 2)
     {
-        opensmt_error ("Interpolation requires at least 2 partitions.");
+        opensmt_error ("; Interpolation requires at least 2 partitions.");
         return false;
     }
 
@@ -135,7 +135,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
         return true;
     }
 
-    if ( verbose() ) cerr << "# Generalized simultaneous abstraction " << endl;
+    if ( verbose() ) cerr << "; Generalized simultaneous abstraction " << endl;
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -170,7 +170,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
 
     if (npart < 2)
     {
-        opensmt_error ("Interpolation requires at least 2 partitions.");
+        opensmt_error ("; Interpolation requires at least 2 partitions.");
         return false;
     }
 
@@ -180,7 +180,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
         return true;
     }
 
-    if ( verbose() ) cerr << "# State-transition interpolation " << endl;
+    if ( verbose() ) cerr << "; State-transition interpolation " << endl;
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -213,7 +213,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
 
 void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs, vec<PTRef> &interpolants)
 {
-    if ( verbose() ) cerr << "# General interpolation via configuration matrix " << endl;
+    if ( verbose() ) cerr << "; General interpolation via configuration matrix " << endl;
 
     // Generate appropriate masks
     std::vector< ipartitions_t > parts;
@@ -241,7 +241,7 @@ void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs
 // Requirement  ( /\_(i,j) I_j /\ phi_i ) -> I_i
 bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PTRef> &interpolants)
 {
-    if ( verbose() ) cerr << "# Tree interpolation " << endl;
+    if ( verbose() ) cerr << "; Tree interpolation " << endl;
 
     // NOTE some configurations might be empty,
     // if the corresponding nodes in the tree are not approximated
@@ -339,7 +339,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<i
             PTRef movedPartitions = logic_.mkAnd(logic_.getPartitions(A_masks[i] ^ A_masks[i-1]));
             propertySatisfied &= logic_.implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
             if (!propertySatisfied){
-                std::cerr << "Path interpolation does not hold for:\n"
+                std::cerr << "; Path interpolation does not hold for:\n"
                              << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
                             << "Moved partitions: " << logic_.printTerm(movedPartitions) << '\n'
                             << "Second interpolant: " << logic_.printTerm(next_itp) << '\n';
@@ -363,7 +363,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
 
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
-    if ( verbose() ) cerr << "# Single interpolant " << endl;
+    if ( verbose() ) cerr << "; Single interpolant " << endl;
 
 #ifdef ITP_DEBUG
     PTRef tr_a = logic_.getPartitionA(A_mask);
@@ -392,7 +392,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if ( usingMcMillanInterpolation() )
         {
-            if ( verbose() > 0 ) cerr << "# Proof transformation for interpolants (partially) in CNF" << endl;
+            if ( verbose() > 0 ) cerr << "; Proof transformation for interpolants (partially) in CNF" << endl;
 
             fillProofGraph();
             proofTransformAndRestructure (-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2 )
@@ -405,7 +405,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
         else
         {
-            opensmt_warning ("Please set McMillan interpolation algorithm to generate interpolants in CNF");
+            opensmt_warning ("; Please set McMillan interpolation algorithm to generate interpolants in CNF");
         }
 
 
@@ -416,9 +416,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     // TODO enable proof reduction
     else if (0)
     {
-        if ( verbose() > 0 && restructuringForStrongerInterpolant() ) cerr << "# Preliminary A2 rules application to strengthen interpolants" << endl;
+        if ( verbose() > 0 && restructuringForStrongerInterpolant() ) cerr << "; Preliminary A2 rules application to strengthen interpolants" << endl;
 
-        if ( verbose() > 0 && restructuringForWeakerInterpolant() ) cerr << "# Preliminary A2 rules application to weaken interpolants" << endl;
+        if ( verbose() > 0 && restructuringForWeakerInterpolant() ) cerr << "; Preliminary A2 rules application to weaken interpolants" << endl;
 
         fillProofGraph();
         // NOTE Only a couple of loops to avoid too much overhead
@@ -450,13 +450,13 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if (n->isLeaf())
         {
-            if (!isLeafClauseType(n->getType())) opensmt_error ( "Leaf node with non-leaf clause type" );
+            if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
 
             vector<Lit> &cl = n->getClause();
             bool fal = false;
 
             if (cl.size() == 0) {
-                opensmt_error("Empty clause found in interpolation\n");
+                opensmt_error("; Empty clause found in interpolation\n");
                 assert(false);
             }
             if (cl.size() == 1 && varToPTRef(var(cl[0])) == theory.getLogic().getTerm_false() && !sign(cl[0])) {
@@ -470,7 +470,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 Logic &logic = theory.getLogic();
                 interpolants.push( cc == I_A ? logic.getTerm_false() : logic.getTerm_true());
 
-                if(verbose()) {
+                if (verbose()) {
                     std::cout << "; Degenerate interpolant" << std::endl;
                 }
                 return;
@@ -478,7 +478,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
     }
 
-    if ( verbose() > 0 ) std::cerr << "# Generating interpolant " << std::endl;
+    if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
 
     std::map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
 
@@ -491,17 +491,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         // Generate partial interpolant for clause i
         if (n->isLeaf())
         {
-            if (!isLeafClauseType(n->getType())) opensmt_error ( "Leaf node with non-leaf clause type" );
+            if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
 
             labelLeaf (n, A_mask, 0, PSFunction);
-
-            /*
-            cout << "; LEAF CLAUSE HAS LITERALS: " << endl;
-            vector<Lit> &lala = n->getClause();
-            for (int i = 0; i < lala.size(); ++i)
-                cout << lala[i].x << ' ';
-            cout << endl;
-            */
 
             if (n->getType() == clause_type::CLA_ORIG)
             {

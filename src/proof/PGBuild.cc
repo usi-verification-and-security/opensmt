@@ -398,7 +398,8 @@ void ProofGraph::buildProofGraph( int nVars )
                             //
                             //////////////////////////////////////////////////////////////////////////////////////////
 
-                            n=new ProofNode(logic_); counters.recordNewClause(clause_type::CLA_LEARNT);
+                            n = new ProofNode(logic_);
+                            counters.recordNewClause(clause_type::CLA_LEARNT);
                             unsigned ssize = ( currClause == CRef_Undef ) ? 0 : proof.getClause(currClause).size();
                             if( ssize >= max_learnt_size ) max_learnt_size = ssize;
                             avg_learnt_size += ssize;
@@ -421,7 +422,8 @@ void ProofGraph::buildProofGraph( int nVars )
                     // Edges creation
                     // First internal node deduced from first clauses 0 and 1
                     // Other internal nodes deduced from last internal node and clause i
-                    n->setPivot(chainvar[i-1]); proof_variables.insert(chainvar[i-1]);
+                    n->setPivot(chainvar[i-1]);
+                    proof_variables.insert(chainvar[i-1]);
                     if (static_cast<unsigned>(chainvar[i-1]) > max_id_variable) {
                         max_id_variable = static_cast<unsigned>(chainvar[i-1]);
                     }
@@ -441,7 +443,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             break;
                         }
                     }
-                    assert( found_piv );(void)found_piv;
+                    assert(found_piv); (void)found_piv;
                     int id_i=clauseToIDMap[clause_i];
                     if(pos_piv)
                     {
@@ -490,23 +492,23 @@ void ProofGraph::buildProofGraph( int nVars )
         if(graph.size() > 1)
             assert( num_non_null == (counters.num_leaf + counters.num_learnt + counters.num_derived + counters.num_theory + counters.num_assump) );
 
-        reportf( "# Number of nodes: %d (leaves: %d - learnt: %d - derived: %d - theory: %d - assumptions: %d)\n",
+        reportf( "; Number of nodes: %d (leaves: %d - learnt: %d - derived: %d - theory: %d - assumptions: %d)\n",
                 num_non_null, counters.num_leaf, counters.num_learnt, counters.num_derived, counters.num_theory, counters.num_assump );
-        reportf( "# Maximum, average size of leaves: %d  %.2f\n", max_leaf_size, avg_leaf_size/(double)counters.num_leaf );
-        reportf( "# Maximum, average size of learnt: %d  %.2f\n", max_learnt_size, avg_learnt_size/(double)counters.num_learnt );
+        reportf( "; Maximum, average size of leaves: %d  %.2f\n", max_leaf_size, avg_leaf_size/(double)counters.num_leaf );
+        reportf( "; Maximum, average size of learnt: %d  %.2f\n", max_learnt_size, avg_learnt_size/(double)counters.num_learnt );
         num_edges = (counters.num_learnt + counters.num_derived)*2;
-        reportf( "# Number of edges: %d\n",  num_edges);
+        reportf( "; Number of edges: %d\n",  num_edges);
         num_nodes = num_non_null;
 
         //reportf( "# Number of variables - nominal: %d - actual: %d\n",  num_vars_limit, proof_variables.size() );
-        reportf( "# Number of distinct variables in the proof: %d\n", (int)proof_variables.size() );
+        reportf( "; Number of distinct variables in the proof: %d\n", (int)proof_variables.size() );
     }
     if ( verbose() > 0 )
     {
         uint64_t mem_used = memUsed();
-        reportf( "# Memory used after building the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf( "; Memory used after building the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
-    if ( verbose() ) { cerr << "# " << "Proof graph building end" << endl; }
+    if ( verbose() ) { std::cerr << "; Proof graph building end" << std::endl; }
     building_time=cpuTime()-initTime;
 
     // Postprocessing of the proof
@@ -525,7 +527,7 @@ void ProofGraph::fillProofGraph()
     if ( verbose() > 1 )
     {
         uint64_t mem_used = memUsed();
-        reportf( "# Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf( "; Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
 
     vector<clauseid_t>q;
@@ -568,7 +570,7 @@ void ProofGraph::fillProofGraph()
     if ( verbose() > 0 )
     {
         uint64_t mem_used = memUsed();
-        reportf( "# Memory used after filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf( "; Memory used after filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
 }
 
@@ -577,7 +579,7 @@ void ProofGraph::emptyProofGraph()
     if ( verbose() > 1 )
     {
         uint64_t mem_used = memUsed();
-        reportf( "# Memory used before emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf( "; Memory used before emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
     ProofNode* n = NULL;
     for(size_t i=0;i< getGraphSize() ;i++)
@@ -588,7 +590,7 @@ void ProofGraph::emptyProofGraph()
     if ( verbose() > 0 )
     {
         uint64_t mem_used = memUsed();
-        reportf( "# Memory used after emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf( "; Memory used after emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
 }
 

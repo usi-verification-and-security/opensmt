@@ -32,6 +32,6 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
         lralogic.simplifyAndSplitEq(substs_formula, pfstore[formulas[curr]].substs);
     }
     return true;
-    }
+}
 
 

@@ -99,7 +99,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
-        int partition_index = inserted_formulas_count++;
+        unsigned int partition_index = inserted_formulas_count++;
         logic.assignTopLevelPartitionIndex(partition_index, root);
         assert(logic.getPartitionIndex(root) != -1);
     }
