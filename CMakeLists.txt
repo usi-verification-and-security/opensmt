@@ -22,7 +22,6 @@ endif()
 
 set(INSTALL_HEADERS_DIR include/opensmt)
 
-#option(PRODUCE_PROOF "Produce proof" OFF)
 option(PARTITION_PRETTYPRINT "Term pretty printing shows partitions" OFF)
 option(ITP_DEBUG "Debug interpolation" OFF)
 option(PEDANTIC_DEBUG "Pedantic debug" OFF)
@@ -37,7 +36,6 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
-#option(ENABLE_PROFILING "Enable profiling" OFF)
 
 find_package(Readline REQUIRED)
 find_package(GMP REQUIRED)

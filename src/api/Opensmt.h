@@ -35,7 +35,7 @@ public:
      *
      * @param _logic SMT-LIB logic that OpenSMT instance will operate in
      * @param name Name fot the solver instance
-     * @param config Configguration for the OpenSMT instance
+     * @param config Configuration for the OpenSMT instance
      */
     Opensmt(opensmt_logic _logic, const char* name, SMTConfig* config);
     ~Opensmt();

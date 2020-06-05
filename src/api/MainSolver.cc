@@ -50,7 +50,7 @@ bool
 MainSolver::pop()
 {
     if (frames.size() > 1) {
-        if(config.produce_inter() > 0) {
+        if (config.produce_inter() > 0) {
             auto toPop = frames.last();
             auto& partitionsToInvalidate = pfstore[toPop].formulas;
             ipartitions_t mask = 0;

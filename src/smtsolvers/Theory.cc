@@ -189,7 +189,7 @@ CoreSMTSolver::handleUnsat()
 
     if ( decisionLevel( ) == 0 )
     {
-        if(logsProof()) {
+        if (logsProof()) {
             // All conflicting atoms are dec-level 0
             CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
             proof->newTheoryClause(confl);
