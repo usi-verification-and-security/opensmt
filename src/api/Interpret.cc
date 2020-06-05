@@ -31,8 +31,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
+#ifdef USE_LIBEDIT
+#include <editline/readline.h>
+#else
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 #include "Interpret.h"
 #include "Theory.h"
 #include "UFLRATheory.h"

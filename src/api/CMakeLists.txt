@@ -44,10 +44,21 @@ add_library(api_shared SHARED ${OBJECTS_TO_ADD})
 add_library(api_static STATIC ${OBJECTS_TO_ADD})
 
 
+if (USE_LIBEDIT)
+  set(line_library ${LibEdit_LIBRARIES})
+  target_include_directories(api_shared
+                             PRIVATE
+                             ${LibEdit_INCLUDE_DIRS})
+  target_include_directories(api_static
+                             PRIVATE
+                             ${LibEdit_INCLUDE_DIRS})
+else()
+  set(line_library ${Readline_LIBRARY})
+endif()
 
-target_link_libraries(api_shared ${Readline_LIBRARY} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
+target_link_libraries(api_shared ${line_library} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
 
-target_link_libraries(api_static ${Readline_LIBRARY} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
+target_link_libraries(api_static ${line_library} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
 
 set_target_properties(api_shared PROPERTIES OUTPUT_NAME opensmt2)
 
