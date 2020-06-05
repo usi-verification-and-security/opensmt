@@ -37,9 +37,14 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
+option(USE_LIBEDIT "Use libedit over readline" OFF)
 #option(ENABLE_PROFILING "Enable profiling" OFF)
 
-find_package(Readline REQUIRED)
+if (USE_LIBEDIT)
+  find_package(LibEdit REQUIRED)
+else()
+  find_package(Readline REQUIRED)
+endif()
 find_package(GMP REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -107,6 +112,10 @@ endif ()
 if(STATISTICS)
     add_definitions(-DSTATISTICS)
 endif(STATISTICS)
+
+if (USE_LIBEDIT)
+  add_definitions(-DUSE_LIBEDIT)
+endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
