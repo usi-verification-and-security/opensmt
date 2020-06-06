@@ -44,7 +44,7 @@ add_library(api_shared SHARED ${OBJECTS_TO_ADD})
 add_library(api_static STATIC ${OBJECTS_TO_ADD})
 
 
-if (USE_LIBEDIT)
+if (NOT USE_READLINE)
   set(line_library ${LibEdit_LIBRARIES})
   target_include_directories(api_shared
                              PRIVATE
