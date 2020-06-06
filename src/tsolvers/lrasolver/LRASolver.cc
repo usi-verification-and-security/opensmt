@@ -76,6 +76,12 @@ TRes LRASolver::check(bool complete) {
 //
 LRASolver::~LRASolver( )
 {
+#ifdef PRINT_DECOMPOSED_STATS
+    if (LRA_Interpolator::stats.anyOpportunity()) {
+        LRA_Interpolator::stats.printStatistics(std::cout);
+        LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
+    }
+#endif // PRINT_DECOMPOSED_STATS
 }
 
 LRALogic&  LRASolver::getLogic() { return logic; }
@@ -119,34 +125,19 @@ enum class ItpAlg {
 PTRef
 LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
 {
-    // Old implementation:
-    //l = config.logic == QF_LRA || config.logic == QF_UFLRA
-    //? QF_LRA
-    //: QF_LIA;
-
     assert(status == UNSAT);
-    assert (explanation.size()>1);
+    assert(explanation.size() > 1);
 
-    if(usingExperimental()){
-        if (verbose() > 1){
-            std::cerr << "; Using experimental LRA interpolation\n";
-        }
-        auto itp = getExperimentalInterpolant(mask, labels);
+    if (usingDecomposing()){
+        auto itp = getDecomposedInterpolant(mask, labels);
         assert(itp != PTRef_Undef);
-        if(logic.isBooleanOperator(itp) || (logic.isNot(itp) && logic.isBooleanOperator(logic.getPterm(itp)[0]))){
-            ++interpolStats.interestingInterpolants;
-//            std::cerr << "; Interesting interpolant computed: " << logic.printTerm(itp) << '\n';
-        }
-        else{
-            ++interpolStats.defaultInterpolants;
-        }
         return itp;
     }
 
     const ItpAlg itpAlg = [this](){
-        if(usingStrong()) {return ItpAlg::STRONG;}
-        if(usingWeak()) {return ItpAlg::WEAK;}
-        if(usingFactor()) {return ItpAlg::FACTOR;}
+        if (usingStrong()) { return ItpAlg::STRONG; }
+        if (usingWeak()) { return ItpAlg::WEAK; }
+        if (usingFactor()) { return ItpAlg::FACTOR; }
         return ItpAlg::UNDEF;
     }(); // note the parenthesis => immediate call of the lambda
 
@@ -341,12 +332,9 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
 
 
-PTRef LRASolver::getExperimentalInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels) {
+PTRef LRASolver::getDecomposedInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels) {
     LRA_Interpolator interpolator{logic, explanation, explanationCoefficients, mask, labels};
-    icolor_t color = config.getLRAInterpolationAlgorithm() == itp_lra_alg_experimental_strong ? icolor_t::I_A : icolor_t::I_B;
+    icolor_t color = config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_strong ? icolor_t::I_A : icolor_t::I_B;
     auto res = interpolator.getInterpolant(color);
-    if(verbose() > 1){
-        std::cerr << "; Experimental interpolation returned interpolant: " << logic.printTerm(res) << '\n';
-    }
     return res;
 }

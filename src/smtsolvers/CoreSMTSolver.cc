@@ -52,10 +52,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Proof.h"
 
-#ifdef PRINT_DECOMPOSED_STATS
-#include <lrasolver/LRA_Interpolator.h>
-#endif // PRINT_DECOMPOSED_STATS
-
 
 namespace opensmt
 {
@@ -201,15 +197,6 @@ CoreSMTSolver::~CoreSMTSolver()
     // TODO added for convenience
     if ( config.print_stats != 0 ) printStatistics ( cerr );
 
-#endif
-
-#ifdef PRINT_DECOMPOSED_STATS
-    if (LRA_Interpolator::stats.anyOpportunity()) {
-        LRA_Interpolator::stats.printStatistics(std::cout);
-        LRA_Interpolator::stats.reset(); // Reset after print so they are not cumulated across instances
-    }
-#endif // PRINT_DECOMPOSED_STATS
-#ifdef STATISTICS
     cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
     cerr << "; avg dec time " << branchTimer.getTime()/decisions << endl;
 #endif

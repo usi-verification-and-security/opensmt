@@ -25,10 +25,6 @@ if(PRINT_UNITS)
 	target_compile_definitions(smtsolvers PRIVATE -DREPORT_DL1_THLITS)
 endif()
 
-if(PRINT_DECOMPOSED_STATS)
-    target_compile_definitions(smtsolvers PRIVATE -DPRINT_DECOMPOSED_STATS)
-endif()
-
 target_sources(proof
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc"
