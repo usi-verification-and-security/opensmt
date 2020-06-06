@@ -107,7 +107,7 @@ CoreSMTSolver::handleSat()
             CRef cr = ca.alloc(new_splits, false);
             attachClause(cr);
             clauses.push(cr);
-            if (this->logsProof()) {
+            if (this->logsProofForInterpolation()) {
                 // MB: the proof needs to know about the new class; TODO: what type it should be?
                 proof->newOriginalClause(cr);
             }
@@ -121,7 +121,7 @@ CoreSMTSolver::handleSat()
             assert(value(l_f) == l_False);
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
-            if (!this->logsProof()) {
+            if (!this->logsProofForInterpolation()) {
                 if (decisionLevel() == 0) {
                     // MB: do not allocate, we can directly enqueue the implied literal
                     uncheckedEnqueue(l_i);
@@ -136,7 +136,7 @@ CoreSMTSolver::handleSat()
             CRef cr = ca.alloc(new_splits, false);
             attachClause(cr);
             clauses.push(cr);
-            if (logsProof()) {
+            if (logsProofForInterpolation()) {
                 // MB: the proof needs to know about the new class; TODO: what type it should be?
                 proof->newOriginalClause(cr);
             }
@@ -171,7 +171,7 @@ CoreSMTSolver::handleUnsat()
     // Reset skip step for uns calls
     skip_step = config.sat_initial_skip_step;
 
-    if (!logsProof()) {
+    if (!logsProofForInterpolation()) {
         // Top-level conflict, problem is T-Unsatisfiable
         if (decisionLevel() == 0) {
             return TPropRes::Unsat;
@@ -189,7 +189,7 @@ CoreSMTSolver::handleUnsat()
 
     if ( decisionLevel( ) == 0 )
     {
-        if (logsProof()) {
+        if (logsProofForInterpolation()) {
             // All conflicting atoms are dec-level 0
             CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
             proof->newTheoryClause(confl);
@@ -221,12 +221,12 @@ CoreSMTSolver::handleUnsat()
     assert( confl != CRef_Undef );
 
     learnt_clause.clear();
-    if (logsProof()) {
+    if (logsProofForInterpolation()) {
         proof->newTheoryClause(confl);
     }
     analyze( confl, learnt_clause, backtrack_level );
 
-    if (!logsProof()) {
+    if (!logsProofForInterpolation()) {
         // Get rid of the temporary lemma
         if (learnOnlyTemporary)
         {
@@ -239,7 +239,7 @@ CoreSMTSolver::handleUnsat()
 
     if (learnt_clause.size() == 1) {
         CRef reason = CRef_Undef;
-        if (logsProof())
+        if (logsProofForInterpolation())
         {
             CRef cr = ca.alloc(learnt_clause, false);
             proof->endChain(cr);
@@ -253,7 +253,7 @@ CoreSMTSolver::handleUnsat()
 
         CRef cr = ca.alloc(learnt_clause, true);
 
-        if (logsProof()) {
+        if (logsProofForInterpolation()) {
             proof->endChain(cr);
         }
         learnts.push(cr);

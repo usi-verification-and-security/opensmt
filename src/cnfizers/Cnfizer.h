@@ -116,7 +116,7 @@ protected:
     inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
     inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
-    bool keepPartitionInfo() const { return config.produceProof(); }
+    bool keepPartitionInfo() const { return config.produce_inter(); }
 
     int currentPartition = -1;
 

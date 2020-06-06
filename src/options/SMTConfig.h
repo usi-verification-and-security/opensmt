@@ -416,7 +416,6 @@ public:
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
 
-  inline void setProduceProofs( ) { insertOption(o_produce_proofs, new SMTOption(1)); }
   inline bool produceProof( ) {
       return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
   }
@@ -568,9 +567,9 @@ public:
   int certify_inter() const
     { return optionTable.has(o_certify_inter) ?
         optionTable[o_certify_inter]->getValue().numval : 0; }
-  int produce_inter() const
+  bool produce_inter() const
     { return optionTable.has(o_produce_inter) ?
-        optionTable[o_produce_inter]->getValue().numval : 0; }
+        optionTable[o_produce_inter]->getValue().numval > 0 : false; }
   int proof_struct_hash() const
     { return optionTable.has(o_proof_struct_hash) ?
         optionTable[o_proof_struct_hash]->getValue().numval : 1; }

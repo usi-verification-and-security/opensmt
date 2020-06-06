@@ -134,7 +134,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-    , proof                 (config.produceProof() ? new Proof(ca ) : nullptr )
+    , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
     , proof_graph           ( nullptr )
 #ifdef STATISTICS
     , preproc_time          (0)
@@ -183,7 +183,7 @@ CoreSMTSolver::initialize( )
         break; // Boolean atoms
     }
 
-    if (config.produceProof() && !proof) {
+    if (config.produce_inter() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
     }
 
@@ -285,7 +285,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     assert(decisionLevel() == 0);
     inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
     if (!isOK()) { return false; }
-    bool logProof = this->logsProof();
+    bool logsProofForInterpolation = this->logsProofForInterpolation();
     vec<Lit> ps;
     _ps.copyTo(ps);
     // Check if clause is satisfied and remove false/duplicate literals:
@@ -305,13 +305,13 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
 
             ps[j++] = p = ps[i];
         }
-        else if ( logProof && value(ps[i]) == l_False )
+        else if (logsProofForInterpolation && value(ps[i]) == l_False)
         {
             resolvedUnits.push_back(ps[i]);
         }
     }
     ps.shrink(i - j);
-    if (logProof) {
+    if (logsProofForInterpolation) {
         vec<Lit> original;
         ps.copyTo(original);
         for(Lit l : resolvedUnits) {
@@ -339,7 +339,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     {
         assert(value(ps[0]) == l_Undef);
         CRef reasonForAssignment = inOutCRefs.second;
-        assert((logProof && reasonForAssignment != CRef_Undef) || (!logProof && reasonForAssignment == CRef_Undef));
+        assert((logsProofForInterpolation && reasonForAssignment != CRef_Undef) || (!logsProofForInterpolation && reasonForAssignment == CRef_Undef));
         uncheckedEnqueue(ps[0], reasonForAssignment);
         CRef confl = propagate();
         ok = (confl == CRef_Undef);
@@ -347,7 +347,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
     }
     else
     {
-        CRef clauseToAttach = logProof ? inOutCRefs.second : ca.alloc(ps, false);
+        CRef clauseToAttach = logsProofForInterpolation ? inOutCRefs.second : ca.alloc(ps, false);
         inOutCRefs.second = clauseToAttach;
         clauses.push(clauseToAttach);
         attachClause(clauseToAttach);
@@ -395,7 +395,7 @@ void CoreSMTSolver::removeClause(CRef cr)
     // Don't leave pointers to free'd memory!
     if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
     c.mark(1);
-    if (logsProof()) { // MB: quick solution to remove the macro; TODO: re-investigate separate storages
+    if (logsProofForInterpolation()) {
         // Remove clause and derivations if ref becomes 0
         // If ref is not 0, we keep it and remove later
         if (!proof->deleted(cr)) pleaves.push(cr);
@@ -689,8 +689,8 @@ Lit CoreSMTSolver::pickBranchLit()
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-    bool logProof = this->logsProof();
-    assert(!logProof || !proof->hasOpenChain());
+    bool logsProofForInterpolation = this->logsProofForInterpolation();
+    assert(!logsProofForInterpolation || !proof->hasOpenChain());
     assert(confl != CRef_Undef);
     assert(cleanup.size() == 0);       // Cleanup stack must be empty
     assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; })); // seen must be cleared
@@ -704,7 +704,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     int index   = trail.size() - 1;
     out_btlevel = 0;
 
-    if (logProof) {
+    if (logsProofForInterpolation) {
         proof->beginChain(confl);
     }
 
@@ -735,7 +735,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                         out_learnt.push(q);
                     }
                 }
-                else if (logProof) {
+                else if (logsProofForInterpolation) {
                     assert(level(var(q)) == 0);
                     assert(reason(var(q)) != CRef_Undef);
                     proof->addResolutionStep(reason(var(q)), var(q));
@@ -750,7 +750,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (reason(var(p)) == CRef_Fake)
         {
-            assert(!logProof); // MB: TODO Can we combine theory propagation and proof?
+            assert(!logsProofForInterpolation); // MB: TODO Can we combine theory propagation and proof?
             // Before retrieving the reason it is necessary to backtrack
             // a little bit in order to remove every atom pushed after
             // p has been deduced
@@ -830,7 +830,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         pathC--;
         // Add resolution step only if this is not the last literal from current level
         // The last literal is not resolved! It is a part of the learnt clause
-        if ( logProof && pathC > 0 )
+        if (logsProofForInterpolation && pathC > 0)
         {
             proof->addResolutionStep(confl, var(p));
         }
@@ -916,7 +916,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     // Cleanup generated lemmata
     for ( int i = 0 ; i < cleanup.size() ; i ++ )
     {
-        assert(!logProof);
+        assert(!logsProofForInterpolation);
         ca.free(cleanup[i]);
     }
     cleanup.clear();
@@ -931,7 +931,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 {
     // MB: TODO: figure out if this is compatible with proof tracking
-    if ( logsProof() || config.sat_minimize_conflicts <= 0 )
+    if (logsProofForInterpolation() || config.sat_minimize_conflicts <= 0 )
         return false;
 
     analyze_stack.clear();
@@ -1031,7 +1031,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 }
 
 void CoreSMTSolver::finalizeProof(CRef finalConflict) {
-    assert(this->logsProof());
+    assert(this->logsProofForInterpolation());
     assert(decisionLevel() == 0);
     assert(finalConflict != CRef_Undef);
     proof->beginChain(finalConflict);
@@ -1063,7 +1063,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     out_conflict.push(p);
 
     seen[var(p)] = 1;
-    if (logsProof()) {
+    if (logsProofForInterpolation()) {
         CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(~p);
         proof->beginChain(assumptionUnitClause);
     }
@@ -1076,7 +1076,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             if (reason(x) == CRef_Undef)
             {
                 out_conflict.push(~trail[i]);
-                if (logsProof()) {
+                if (logsProofForInterpolation()) {
                     assert(level(x) > 0);
                     assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
                            != &assumptions[0] + assumptions.size());
@@ -1089,7 +1089,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             {
                 if (reason(x) == CRef_Fake)
                 {
-                    assert(!logsProof()); // MB: If we make theory progpagation work with proof logging, fix this.
+                    assert(!logsProofForInterpolation()); // MB: If we make theory propagation work with proof logging, fix this.
                     cancelUntilVarTempInit(x);
                     vec<Lit> r;
                     theory_handler.getReason(trail[i], r);
@@ -1107,7 +1107,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                     for (unsigned j = 1; j < c.size(); j++) {
                         seen[var(c[j])] = 1;
                     }
-                    if (logsProof()) {
+                    if (logsProofForInterpolation()) {
                         proof->addResolutionStep(reason(x), x);
                     }
                 }
@@ -1117,7 +1117,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     }
     assert(seen[var(p)] == 0);
     seen[var(p)] = 0;
-     if (logsProof()) {
+     if (logsProofForInterpolation()) {
         // MB: Hopefully we have resolved away all literals including assumptions
         proof->endChain(CRef_Undef);
     }
@@ -1216,12 +1216,12 @@ CRef CoreSMTSolver::propagate()
                 while (i < end) {
                     *j++ = *i++;
                 }
-                if (decisionLevel() == 0 && this->logsProof()) {
+                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
                     this->finalizeProof(confl);
                 }
             }
             else {  // clause is unit under assignment:
-                if (decisionLevel() == 0 && this->logsProof()) {
+                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
                     // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
                     //     is not constructed correctly
                     proof->beginChain(cr);
@@ -1287,7 +1287,7 @@ void CoreSMTSolver::reduceDB()
     }
     learnts.shrink(i - j);
     checkGarbage();
-    if (logsProof()) {
+    if (logsProofForInterpolation()) {
         // Remove unused leaves
         // FIXME deal with theory lemmata when proofs will be extended to theories
         for (i = j = 0; i < pleaves.size(); i++) {
@@ -1592,7 +1592,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             if (learnt_clause.size() == 1)
             {
                 CRef reason = CRef_Undef;
-                if (logsProof())
+                if (logsProofForInterpolation())
                 {
                     CRef cr = ca.alloc(learnt_clause, false);
                     proof->endChain(cr);
@@ -1608,7 +1608,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
                 CRef cr = ca.alloc(learnt_clause, true);
 
-                if (logsProof()) {
+                if (logsProofForInterpolation()) {
                     proof->endChain(cr);
                 }
                 learnts.push(cr);
