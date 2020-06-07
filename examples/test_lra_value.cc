@@ -4,10 +4,10 @@
 Opensmt*
 pre()
 {
-    SMTConfig * config = new SMTConfig();
+    auto config = std::unique_ptr<SMTConfig>(new SMTConfig());
     const char* msg;
     config->setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "Test solver");
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "test solver", std::move(config));
     return osmt;
 }
 void
