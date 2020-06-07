@@ -830,8 +830,9 @@ public:
         optionTable[":print-success"]->getValue().numval == 1: false; }
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
+
+  bool         theory_propagation;           // Enables theory propagation
   // SAT-Solver related parameters
-  int          sat_theory_propagation;       // Enables theory propagation from the sat-solver
   int          sat_polarity_mode;            // Polarity mode
   int          sat_theory_polarity_suggestion;  // Should the SAT solver ask the theory solver for var polarity when making a decision
   double       sat_initial_skip_step;        // Initial skip step for tsolver calls
@@ -879,18 +880,14 @@ public:
   int          proof_trans_strength;             // Light proof restructuring for stronger/weaker interpolants, for Pudlak/McMillan/McMillan' algorithms
   // UF-Solver related parameters
   int          uf_disable;                   // Disable the solver
-  int          uf_theory_propagation;        // Enable theory propagation
   // CUF-Solver related parameter
   int          cuf_bitwidth;                  // Bit-width to use by the CUF solver
   // BV-Solver related parameters
   int          bv_disable;                   // Disable the solver
-  int          bv_theory_propagation;        // Enable theory propagation
   // DL-Solver related parameters
   int          dl_disable;                   // Disable the solver
-  int          dl_theory_propagation;        // Enable theory propagation
   // LRA-Solver related parameters
   int          lra_disable;                  // Disable the solver
-  int          lra_theory_propagation;       // Enable theory propagation
   int          lra_poly_deduct_size;         // Used to define the size of polynomial to be used for deduction; 0 - no deduction for polynomials
   int          lra_trade_off;                // Trade-off value for DL preprocessing
   int          lra_integer_solver;           // Flag to require integer solution for LA problem

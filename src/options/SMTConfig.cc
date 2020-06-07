@@ -562,7 +562,7 @@ SMTConfig::initializeConfig( )
   certification_level           = 0;
   strcpy( certifying_solver, "tool_wrapper.sh" );
   // Set SAT-Solver Default configuration
-  sat_theory_propagation        = 1;
+  theory_propagation            = true;
   sat_polarity_mode             = 0;
   sat_initial_skip_step         = 1;
   sat_skip_step_factor          = 1;
@@ -580,16 +580,12 @@ SMTConfig::initializeConfig( )
   sat_lazy_dtc_burst            = 1;
   // UF-Solver Default configuration
   uf_disable                    = 0;
-  uf_theory_propagation         = 1;
   // BV-Solver Default configuration
   bv_disable                    = 0;
-  bv_theory_propagation         = 1;
   // DL-Solver Default configuration
   dl_disable                    = 0;
-  dl_theory_propagation         = 1;
   // LRA-Solver Default configuration
   lra_disable                   = 0;
-  lra_theory_propagation        = 1;
   lra_poly_deduct_size          = 0;
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;

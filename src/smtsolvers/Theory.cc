@@ -144,7 +144,7 @@ CoreSMTSolver::handleSat()
             return TPropRes::Propagate;
         }
     }
-    if (config.sat_theory_propagation > 0) {
+    if (config.theory_propagation) {
         vec<LitLev> deds;
         deduceTheory(deds); // deds will be ordered by decision levels
         for (int i = 0; i < deds.size(); i++) {

@@ -1051,7 +1051,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
-    if ( config.uf_theory_propagation > 0 ) {
+    if (config.theory_propagation) {
         deduce( x, y, reason );
     }
 
