@@ -21,13 +21,18 @@ To build the system from the source code repository, you need a C++11
 compliant compiler and the following libraries and headers installed:
 
  - gmp
- - readline
+ - libedit (or readline)
 
 In addition the `smtlib2` parser uses `flex` and `bison`.
 OpenSMT2 uses `cmake` as a build system generator. To compile OpenSMT2 (using `make` build system), use the following
 command
 ```
 $ mkdir build; cd build; cmake ..; make
+```
+
+By default, OpenSMT is linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/). You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To enable `readline` and create a GPL-licensed build of OpenSMT:
+```
+$ cmake -DUSE_READLINE:BOOL=ON ..
 ```
 
 ### Changing build type
