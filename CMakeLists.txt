@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(opensmt)
+project(opensmt VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
