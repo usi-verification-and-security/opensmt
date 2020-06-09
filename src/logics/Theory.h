@@ -157,6 +157,7 @@ class Theory
     Theory(SMTConfig &c) : config(c) { }
     void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
     inline bool keepPartitions() const { return config.produce_inter(); }
+    PTRef getSubstitutionsFormulaFromUnits(Map<PTRef,lbool,PTRefHash> & units);
   public:
     PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;

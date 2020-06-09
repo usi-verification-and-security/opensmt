@@ -273,6 +273,22 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
     getLogic().dumpChecksatToFile(s);
 }
 
+PTRef Theory::getSubstitutionsFormulaFromUnits(Map<PTRef, lbool, PTRefHash> & unitsMap) {
+    vec<Map<PTRef, lbool, PTRefHash>::Pair> units;
+    unitsMap.getKeysAndVals(units);
+    vec<PTRef> substs_vec;
+    for (int i = 0; i < units.size(); i++) {
+        if (units[i].data == l_True) {
+            substs_vec.push(units[i].key);
+        }
+        else if (getLogic().isBoolAtom(units[i].key) && units[i].data == l_False) {
+            substs_vec.push(getLogic().mkNot(units[i].key));
+        }
+    }
+    PTRef substs_formula = getLogic().mkAnd(substs_vec);
+    return substs_formula;
+}
+
 //MOVINGFROMHEADER
 void Theory::setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
 
