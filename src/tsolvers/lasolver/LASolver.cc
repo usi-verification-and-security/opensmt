@@ -357,6 +357,9 @@ bool LASolver::assertLit(PtAsgn asgn)
 
     if (hasPolarity(asgn.tr) && getPolarity(asgn.tr) == asgn.sgn) {
         // already known, no new information
+        // MB: The deductions done by this TSolver are also marked using polarity.
+        //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
+        //     once it is marked for deduction, so the implementation must count with that.
         assert(getStatus());
         tsolver_stats.sat_calls ++;
         return getStatus();

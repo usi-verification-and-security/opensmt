@@ -1374,6 +1374,9 @@ bool Egraph::assertLit(PtAsgn pta)
 
     if (hasPolarity(pt_r) && getPolarity(pt_r) == sgn) {
         // Already known, no new information;
+        // MB: The deductions done by this TSolver are also marked using polarity.
+        //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
+        //     once it is marked for deduction, so the implementation must count with that.
         tsolver_stats.sat_calls ++;
         return true;
     }
