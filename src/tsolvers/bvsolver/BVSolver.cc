@@ -54,9 +54,8 @@ lbool BVSolver::declareTerm(PTRef tr)
 // return false. The real consistency state will
 // be checked with "check"
 //
-bool BVSolver::assertLit ( PtAsgn pta, bool reason )
+bool BVSolver::assertLit ( PtAsgn pta )
 {
-    (void)reason;
     assert( pta.tr != PTRef_Undef );
     assert( pta.sgn != l_Undef );
 

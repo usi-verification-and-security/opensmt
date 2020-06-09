@@ -36,13 +36,13 @@ public:
     BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l);
     ~BVSolver ( );
 
-    bool            assertLit          ( PtAsgn, bool = false );
-    void            pushBacktrackPoint ( );
-    void            popBacktrackPoint  ( );
-    TRes            check              ( bool );
-    void            computeModel       ( );
+    bool            assertLit          ( PtAsgn ) override;
+    void            pushBacktrackPoint ( )        override;
+    void            popBacktrackPoint  ( )        override;
+    TRes            check              ( bool )   override;
+    void            computeModel       ( )        override;
     virtual lbool   declareTerm        ( PTRef );
-    virtual ValPair getValue           ( PTRef );
+    virtual ValPair getValue           ( PTRef )  override;
 private:
 
     vec<PtAsgn> stack;
