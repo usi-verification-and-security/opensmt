@@ -269,7 +269,7 @@ public:
   //===========================================================================
   // Public APIs for Egraph Core Solver
 
-  bool                assertLit               (PtAsgn, bool = false);
+  bool                assertLit               (PtAsgn);
   void                pushBacktrackPoint      ( );                          // Push a backtrack point
   void                popBacktrackPoint       ( );                          // Backtrack to last saved point
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state

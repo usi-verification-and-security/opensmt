@@ -105,7 +105,7 @@ public:
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     bool  check_simplex      (bool);
-    bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
+    bool  assertLit          ( PtAsgn ) override;                // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points

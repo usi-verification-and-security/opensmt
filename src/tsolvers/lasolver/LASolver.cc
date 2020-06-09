@@ -327,9 +327,8 @@ void LASolver::informNewSplit(PTRef tr)
 //
 // Push the constraint into the solver and increase the level
 //
-bool LASolver::assertLit( PtAsgn asgn, bool reason )
+bool LASolver::assertLit(PtAsgn asgn)
 {
-    ( void )reason;
     assert(asgn.sgn != l_Undef);
 
 //    printf("Assert %d\n", debug_assert_count++);

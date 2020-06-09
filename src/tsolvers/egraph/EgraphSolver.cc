@@ -1365,7 +1365,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     return false;
 }
 
-bool Egraph::assertLit(PtAsgn pta, bool)
+bool Egraph::assertLit(PtAsgn pta)
 {
     // invalidate values
     lbool sgn = pta.sgn;

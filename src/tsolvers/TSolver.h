@@ -177,7 +177,7 @@ public:
     virtual void clearSolver();
 
     virtual void print(ostream& out) = 0;
-    virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
+    virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
@@ -202,8 +202,7 @@ public:
 protected:
     bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
-    std::vector<PTRef>          getInformed() {std::vector<PTRef> res; vec<PTRef> tmp; informed_PTRefs.getKeys(tmp);
-                                                for(int i = 0; i < tmp.size(); ++i) {res.push_back(tmp[i]);} return res; }
+    vec<PTRef>                  getInformed() { vec<PTRef> res; informed_PTRefs.getKeys(res); return res; }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
     string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
