@@ -16,7 +16,7 @@ struct ParsedPTRef {
     // this corresponds to edges 'y --c--> x'
     PTRef x;            // destination of the edge
     PTRef y;            // source of the edge
-    opensmt::Number c;  // cost of the edge
+    ptrdiff_t c;  // cost of the edge
 };
 
 class STPSolver : public TSolver {

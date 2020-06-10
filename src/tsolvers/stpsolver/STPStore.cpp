@@ -4,10 +4,10 @@ VertexRef STPStore::createVertex() {
     return VertexRef{vertices++};
 }
 
-EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, opensmt::Number cost) {
+EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, ptrdiff_t cost) {
     uint32_t i = edges.size();
     EdgeRef r{i};
-    edges.push_back(Edge{.from = from, .to = to, .neg = EdgeRef_Undef, .cost = std::move(cost), .setTime = 0, .asgn = PtAsgn_Undef});
+    edges.push_back(Edge{.from = from, .to = to, .neg = EdgeRef_Undef, .cost = cost, .setTime = 0, .asgn = PtAsgn_Undef});
     return r;
 }
 

@@ -23,7 +23,7 @@ public:
     void mapEdge(PTRef leq, EdgeRef edge);
     VertexRef getVertRef(PTRef var);
     EdgeRef getEdgeRef(PTRef leq);
-    EdgeRef getEdgeRef(VertexRef y, VertexRef x, const opensmt::Number &c) const;
+    EdgeRef getEdgeRef(VertexRef y, VertexRef x, ptrdiff_t c) const;
     const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
     void clear();
 };

@@ -26,6 +26,8 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     Pterm &leq = logic.getPterm(ref);
     assert( logic.isNumConst(leq[0]) );  // TODO: Can the inequality be reversed?
     auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
+    assert( con.isInteger() );
+    auto c = static_cast<ptrdiff_t>(con.get_d());
     PTRef diff = leq[1];  // 'x + (-1 * y)'
 
     assert( logic.isNumPlus(diff) );
@@ -39,7 +41,7 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     assert( logic.isNumConst(mult[0]) && logic.getNumConst(mult[0]) == -1 );
     assert( logic.isNumVar(mult[1]) );
     PTRef y = mult[1];  // 'y'
-    auto ret = ParsedPTRef{x, y, con};
+    auto ret = ParsedPTRef{x, y, c};
     return ret;
 }
 
