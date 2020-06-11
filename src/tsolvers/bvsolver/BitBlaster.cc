@@ -2116,7 +2116,7 @@ PTRef BitBlaster::simplify( PTRef formula )
 void BitBlaster::computeModel( )
 {
     model.clear();
-    for (unsigned i = 0; i < static_cast<unsigned>(variables.size()); i++)
+    for (unsigned i = 0; i < variables.size_(); i++)
     {
         PTRef e = variables[ i ];
         Real value = 0;
@@ -2126,8 +2126,10 @@ void BitBlaster::computeModel( )
         for (int j = 0; j < bs[blast].size(); j++)
         {
             PTRef b = bs[blast][j];
-            Var var = logic.getPterm(b).getVar();
-            Real bit = solverP.modelValue(mkLit(var)) == l_False ? 0 : 1;
+            auto valPair = mainSolver.getValue(b);
+            char* val = valPair.val;
+            assert(strcmp(val,Logic::tk_true) == 0 || strcmp(val, Logic::tk_false) == 0);
+            Real bit = strcmp(val,Logic::tk_true) == 0 ? 1 : 0;
             if (bs[blast].is_signed() && (j = bs[blast].size()-1))
                 value = value - coeff * bit; // The last one is negative
             else
