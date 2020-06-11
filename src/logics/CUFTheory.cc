@@ -23,8 +23,6 @@ bool CUFTheory::simplify(const vec<PFRef>& formulas, int curr)
         pfstore[formulas[curr]].push(trans);
 
         bool res = computeSubstitutions(coll_f, formulas, curr);
-        PTRef substs_formula = getSubstitutionsFormulaFromUnits(pfstore[formulas[curr]].units);
-        pfstore[formulas[curr]].substs = substs_formula;
         return res;
     }
 }
