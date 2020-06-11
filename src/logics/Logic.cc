@@ -1609,14 +1609,14 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
         if (isdup.has(pta)) continue;
         isdup.insert(pta, true);
 
-        Pterm& t = getPterm(pta.tr);
+        Pterm const & t = getPterm(pta.tr);
 
         if (isAnd(pta.tr) and pta.sgn == l_True)
             for (int i = 0; i < t.size(); i++) {
                 PTRef c;
                 lbool c_sign;
                 purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c, pta.sgn == l_True ? c_sign : c_sign^true));
+                queue.push(PtAsgn(c,  c_sign));
             }
         else if (isOr(pta.tr) and (pta.sgn == l_False))
             for (int i = 0; i < t.size(); i++) {
@@ -1625,20 +1625,6 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
                 purify(t[i], c, c_sign);
                 queue.push(PtAsgn(c, c_sign^true));
             }
-        // unary and negated
-        else if (isAnd(pta.tr) and (pta.sgn == l_False) and (t.size() == 1)) {
-            PTRef c;
-            lbool c_sign;
-            purify(t[0], c, c_sign);
-            queue.push(PtAsgn(c, c_sign^true));
-        }
-        // unary or
-        else if (isOr(pta.tr) and (pta.sgn == l_True) and (t.size() == 1)) {
-            PTRef c;
-            lbool c_sign;
-            purify(t[0], c, c_sign);
-            queue.push(PtAsgn(c, c_sign));
-        }
         // Found a fact.  It is important for soundness that we have also the original facts
         // asserted to the euf solver in the future even though no search will be performed there.
         else {
@@ -1656,8 +1642,8 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
                 facts.insert(pta.tr, pta.sgn);
             }
             else if (isXor(pta.tr) and pta.sgn == l_True) {
-                Pterm& t = getPterm(pta.tr);
-                facts.insert(mkEq(t[0], mkNot(t[1])), l_True);
+                Pterm const & xorTerm = getPterm(pta.tr);
+                facts.insert(mkEq(xorTerm[0], mkNot(xorTerm[1])), l_True);
             }
             else {
                 PTRef c;
