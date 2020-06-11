@@ -22,7 +22,7 @@ PTRef Theory::getCollateFunction(const vec<PFRef> & formulas, int curr)
 //    getLogic().dumpFormulaToFile(std::cout, pfstore[formulas[1]].formulas[0]);
     vec<PTRef> coll_f_args;
     // compute coll_f as (a_1^0 /\ ... /\ a_{n_1}^0) /\ ... /\ (a_1^{curr} /\ ... /\ a_{n_k}^{curr})
-    for (int i = 0; i < curr+1; i++)
+    for (int i = 0; i <= curr; i++)
     {
         for (int j = 0; j < pfstore[formulas[i]].size(); j++)
             coll_f_args.push(pfstore[formulas[i]][j]);
@@ -68,36 +68,24 @@ namespace{
 bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, const int curr)
 {
     if (!config.do_substitutions() || config.produce_inter()) {
-        vec<PTRef> curr_args;
-        for (int i = 0; i < pfstore[frames[curr]].size(); i++)
-            curr_args.push(pfstore[frames[curr]][i]);
-        pfstore[frames[curr]].root = getLogic().mkAnd(curr_args);
+        pfstore[frames[curr]].root = getLogic().mkAnd(pfstore[frames[curr]].formulas);
         return true;
     }
     assert(config.do_substitutions() && !config.produce_inter());
-//    const PushFrame& curr_frame = pfstore[frames[curr]];
-
     assert(pfstore[frames[curr]].units.elems() == 0);
-
-    // root for the first iteration is P_{curr}
-//    vec<PTRef> curr_args;
-//    for (int i = 0; i < curr_frame.size(); i++)
-//        curr_args.push(curr_frame[i]);
-//    PTRef root = getLogic().mkAnd(curr_args);
     // MB: We are going to simplify coll_f and it already contains the current frame
     PTRef root = coll_f;
-
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
-
     vec<Map<PTRef,lbool,PTRefHash>*> prev_units;
     vec<PtAsgn> prev_units_vec;
     for (int i = 0; i < curr; i++) {
         prev_units.push(&(pfstore[frames[i]].units));
         vec<Map<PTRef,lbool,PTRefHash>::Pair> tmp;
         pfstore[frames[i]].units.getKeysAndVals(tmp);
-        for (int i = 0; i < tmp.size(); i++)
-            prev_units_vec.push(PtAsgn(tmp[i].key, tmp[i].data));
+        for (auto const & entry : tmp) {
+            prev_units_vec.push(PtAsgn(entry.key, entry.data));
+        }
     }
 
     Map<PTRef,PtAsgn,PTRefHash> allsubsts;
@@ -108,7 +96,6 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
     // This computes the new unit clauses to curr_frame.units until closure
     while (true) {
         // update the current simplification formula
-//        PTRef simp_formula = getLogic().mkAnd(coll_f, root);
         PTRef simp_formula = root;
         Map<PTRef,lbool,PTRefHash> new_units;
         vec<Map<PTRef,lbool,PTRefHash>::Pair> new_units_vec;
@@ -158,12 +145,8 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         printf("  %s -> %s (%s)\n", getLogic().printTerm(source), getLogic().printTerm(target), sgn == l_True ? "enabled" : "disabled");
     }
 #endif
-    vec<PTRef> args;
-    for (int i = 0; i < all_units_vec.size(); i++) {
-        assert(all_units_vec[i].sgn == l_True || getLogic().isBoolAtom(all_units_vec[i].tr));
-        if (getLogic().isTheoryEquality(all_units_vec[i].tr))
-            args.push(all_units_vec[i].tr);
-    }
+    assert(std::all_of(all_units_vec.begin(), all_units_vec.end(),
+            [this](PtAsgn ptasgn) { return ptasgn.sgn == l_True || getLogic().isBoolAtom(ptasgn.tr); }));
 
     pfstore[frames[curr]].root = root;
 

@@ -17,8 +17,6 @@ bool UFTheory::simplify(const vec<PFRef>& formulas, int curr)
         coll_f = getLogic().isTrue(trans) ? coll_f : getLogic().mkAnd(coll_f, trans);
 
         bool res = computeSubstitutions(coll_f, formulas, curr);
-        PTRef substs_formula = getSubstitutionsFormulaFromUnits(pfstore[formulas[curr]].units);
-        pfstore[formulas[curr]].substs = substs_formula;
         return res;
     }
 }

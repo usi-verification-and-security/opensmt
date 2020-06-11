@@ -20,8 +20,6 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, int curr)
         PTRef coll_f = getCollateFunction(formulas, curr);
         computeSubstitutions(coll_f, formulas, curr);
         lialogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
-        PTRef substs_formula = getSubstitutionsFormulaFromUnits(pfstore[formulas[curr]].units);
-        lialogic.simplifyAndSplitEq(substs_formula, pfstore[formulas[curr]].substs);
     }
     return true;
 }
