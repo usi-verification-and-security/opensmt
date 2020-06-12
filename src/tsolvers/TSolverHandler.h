@@ -79,6 +79,8 @@ public:
 //    virtual SolverId getId() const { return my_id; }
     virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     TRes    check(bool);
-    TSolver* getSolverDeducing(PTRef) const;
+private:
+    // Helper method for computing reasons
+    TSolver* getReasoningSolverFor(PTRef ptref) const;
 };
 #endif

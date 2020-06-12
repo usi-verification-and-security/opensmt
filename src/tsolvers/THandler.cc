@@ -256,8 +256,8 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
     PTRef e = tmap.varToPTRef(v);
 
     // It must be a TAtom and already deduced
-    assert( getLogic().isTheoryTerm(e) );
-    TSolver* solver = getSolverHandler().getSolverDeducing(e);
+    assert(getLogic().isTheoryTerm(e));
+    TSolver* solver = getSolverHandler().getReasoningSolverFor(e);
     assert(solver);
     solver->pushBacktrackPoint();
     // Assign temporarily opposite polarity

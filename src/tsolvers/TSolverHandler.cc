@@ -103,7 +103,8 @@ TRes TSolverHandler::check(bool complete)
 }
 
 // MB: This is currently needed to replace a common array of deduced elements with solver ID
-TSolver* TSolverHandler::getSolverDeducing(PTRef ptref) const {
+TSolver* TSolverHandler::getReasoningSolverFor(PTRef ptref) const {
+    assert(getLogic().isTheoryTerm(ptref));
     // MB: Can we use solverSchedule? Double check this if theory combination is implemented
     for (auto* solver : tsolvers) {
         if (solver != nullptr && solver->isValid(ptref)) {
