@@ -72,7 +72,6 @@ int main(int argc, char** argv)
 
     SolverId id = { 5 };
 	vec<PtAsgn> asgns;
-	vec<DedElem> deds;
 	vec<PTRef> foo;
 
 	char* msg;

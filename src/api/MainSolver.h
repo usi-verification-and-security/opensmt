@@ -96,7 +96,6 @@ class MainSolver
     THandler&           thandler;
     PushFrameAllocator& pfstore;
     TermMapper&         tmap;
-    vec<DedElem>        deductions;
     SimpSMTSolver*      smt_solver;
     Tseitin             ts;
     PushFramesWrapper   frames;
