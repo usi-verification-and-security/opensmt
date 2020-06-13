@@ -101,6 +101,8 @@ class PtStore {
     PTRef getFromCplxMap(PTLKey& k);// { return cplx_map[k]; }
 
     PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
+
+    std::size_t getNumberOfTerms() const { return pta.getNumTerms(); }
 };
 
 #endif

@@ -153,6 +153,8 @@ class Logic {
 
     void conjoinItes(PTRef root, PTRef& new_root);
 
+    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
+
   private:
     vec<bool> appears_in_uf;
   public:

@@ -590,9 +590,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 }
 
 
-//
-// XXX Comments? This method is currently under development
-//
+
 void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 {
     vec<pi> queue;
@@ -2025,10 +2023,9 @@ Logic::implies(PTRef implicant, PTRef implicated)
 void Logic::conjoinItes(PTRef root, PTRef& new_root)
 {
     std::vector<bool> seen;
-    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    // Ite variables are replaced by their definition, and when top level formula is ite, this invariant would be broken
-    PTRef termWithMaxId = isIteVar(root) ? getTopLevelIte(root) : root;
-    auto size = Idx(this->getPterm(termWithMaxId).getId()) + 1;
+    //MB: ITE var and its definition do not satisfy the id invariant of parent-child terms
+    //    We need to make sure we cover all possible ID in the bitmap.
+    auto size = getNumberOfTerms();
     seen.resize(size, false);
     std::vector<PTRef> queue {root};
     vec<PTRef> args;

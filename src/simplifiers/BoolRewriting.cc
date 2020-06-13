@@ -19,6 +19,7 @@
 void computeIncomingEdges(const Logic& logic, PTRef root, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
     assert(root != PTRef_Undef);
+    // MB: Relies on an invariant that id of a child is lower than id of a parent.
     auto size = Idx(logic.getPterm(root).getId()) + 1;
     std::vector<char> done;
     done.resize(size, 0);
