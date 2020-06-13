@@ -1370,7 +1370,7 @@ bool Egraph::assertLit(PtAsgn pta)
     // invalidate values
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
-    const Pterm& pt = logic.term_store[pt_r];
+    const Pterm& pt = logic.getPterm(pt_r);
 
     if (hasPolarity(pt_r) && getPolarity(pt_r) == sgn) {
         // Already known, no new information;

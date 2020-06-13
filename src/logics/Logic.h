@@ -119,9 +119,7 @@ class Logic {
     IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
-  public:
     PtStore             term_store;
-  protected:
     opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
