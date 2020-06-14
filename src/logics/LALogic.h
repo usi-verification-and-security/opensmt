@@ -71,6 +71,8 @@ public:
     virtual bool        isUF(PTRef tr) const override;
     virtual bool        isUF(SymRef sr) const override;
     virtual const char* getDefaultValue(const PTRef tr) const override;
+    virtual PTRef getDefaultValuePTRef(const SRef sref) const override;
+
 
     virtual const SymRef get_sym_Num_TIMES () const =0;
     virtual const SymRef get_sym_Num_DIV () const =0;

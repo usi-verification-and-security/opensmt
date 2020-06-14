@@ -674,6 +674,12 @@ Logic::getDefaultValue(const PTRef tr) const
 }
 
 PTRef
+Logic::getDefaultValuePTRef(const SRef sref) const {
+    if (sref == sort_BOOL) { return term_TRUE; }
+    throw "default values not implemented yet for uninterpreted sorts\n";
+}
+
+PTRef
 Logic::mkIte(vec<PTRef>& args)
 {
     if (!hasSortBool(args[0])) return PTRef_Undef;

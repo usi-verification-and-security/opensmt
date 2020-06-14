@@ -251,6 +251,9 @@ class Logic {
 
     // Default values for the logic
     virtual const char* getDefaultValue(const PTRef tr) const;
+    PTRef getDefaultValuePTRef(const PTRef tr) const { return getDefaultValuePTRef(getSortRef(tr)); }
+    virtual PTRef getDefaultValuePTRef(const SRef sref) const;
+
     PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&);
