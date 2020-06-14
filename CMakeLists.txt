@@ -73,6 +73,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
     ${CMAKE_SOURCE_DIR}/proof
+    ${CMAKE_SOURCE_DIR}/models
     ${GMP_INCLUDE_DIR}
 )
 

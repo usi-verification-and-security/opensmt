@@ -108,6 +108,14 @@ target_sources(BoundTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Bounds.cc"
     )
 
-
 target_link_libraries(BoundTest api_static gtest gtest_main)
 gtest_add_tests(TARGET BoundTest)
+
+add_executable(ModelTest)
+target_sources(ModelTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Model.cc"
+    )
+
+target_link_libraries(ModelTest api_static gtest gtest_main)
+gtest_add_tests(TARGET ModelTest)
+

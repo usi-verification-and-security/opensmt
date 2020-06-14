@@ -880,6 +880,17 @@ LALogic::getDefaultValue(const PTRef tr) const
     else
         return Logic::getDefaultValue(tr);
 }
+
+PTRef
+LALogic::getDefaultValuePTRef(const SRef sref) const
+{
+    if (sref == getSort_num())
+        return getTerm_NumZero();
+    else
+        return Logic::getDefaultValuePTRef(sref);
+}
+
+
 // Handle the printing of real constants that are negative and the
 // rational constants
 char*

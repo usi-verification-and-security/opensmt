@@ -10,6 +10,7 @@ $<TARGET_OBJECTS:tsolvers>
 $<TARGET_OBJECTS:cnfizers>
 $<TARGET_OBJECTS:common>
 $<TARGET_OBJECTS:simplifiers>
+$<TARGET_OBJECTS:models>
 )
 
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:proof> ${OBJECTS_TO_ADD})

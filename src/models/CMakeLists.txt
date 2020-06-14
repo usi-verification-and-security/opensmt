@@ -1,0 +1,1 @@
+add_library(models OBJECT Model.cc)
