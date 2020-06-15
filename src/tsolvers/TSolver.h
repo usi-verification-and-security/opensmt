@@ -33,10 +33,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "TResult.h"
 
-class TheoryInterpolator; // forward declaration
-
-
-class Logic; // forward declaration
+// forward declaration
+class TheoryInterpolator;
+class ModelBuilder;
+class Logic;
+///////////////////////
 
 class TSolverStats
 {
@@ -183,7 +184,9 @@ public:
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
     virtual TRes                check               ( bool ) = 0              ;  // Check satisfiability
     inline string               getName             ( ) { return name; }         // The name of the solver
+    // DEPRECATED
     virtual ValPair             getValue            (PTRef) = 0;
+    virtual void fillTheoryVars(ModelBuilder & modelBuilder) const { throw std::logic_error{ "Model computation not supported for the used theory yet!"}; }
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
     virtual bool hasNewSplits();                          // Are there new splits?

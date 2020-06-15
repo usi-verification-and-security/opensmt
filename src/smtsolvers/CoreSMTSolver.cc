@@ -2238,3 +2238,14 @@ std::ostream& operator <<(std::ostream& out, Lit l) {
     out << (sign(l) ? "-" : "") << var(l);
     return out;
 }
+
+void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
+    Logic& logic = theory_handler.getLogic();
+    for (Var v = 0; v < model.size(); ++v) {
+        PTRef atom = theory_handler.varToTerm(v);
+        if (logic.isBoolAtom(atom) && model[v] != l_Undef) {
+            PTRef val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+            modelBuilder.addVarValue(atom, val);
+        }
+    }
+}

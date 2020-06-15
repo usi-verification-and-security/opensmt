@@ -27,9 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MAINSOLVER_H
 
 
-#include <mutex>
 #include "Tseitin.h"
 #include "SimpSMTSolver.h"
+#include "Model.h"
+
+#include <memory>
 
 class Logic;
 
@@ -106,8 +108,6 @@ class MainSolver
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
     int            check_called;     // A counter on how many times check was called.
-    PTRef          prev_query;       // The previously executed query
-    PTRef          curr_query;       // The current query
     sstat          status;           // The status of the last solver call (initially s_Undef)
     unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
 
@@ -162,8 +162,6 @@ class MainSolver
         ts( config, logic, term_mapper, *smt_solver ),
         solver_name {std::move(name)},
         check_called(0),
-        prev_query(PTRef_Undef),
-        curr_query(PTRef_Undef),
         status(s_Undef),
         binary_init(false),
         root_instance(logic.getTerm_true())
@@ -208,14 +206,17 @@ class MainSolver
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
+
+    // DEPRECATED. use the new Model structure
     ValPair getValue       (PTRef tr) const;
     void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
-    bool    getAssignment  (const char*);
 
+    // Returns model of the last formula (must be in satisiable state)
+    std::unique_ptr<Model> getModel();
 
     void stop() { ts.solver.stop = true; }
 
-    PTRef getPrevQuery() const { return prev_query; }
+    bool readFormulaFromFile(const char *file);
 };
 
 #endif //

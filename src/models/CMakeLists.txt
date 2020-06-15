@@ -1,1 +1,1 @@
-add_library(models OBJECT Model.cc)
+add_library(models OBJECT Model.cc ModelBuilder.cc ModelBuilder.h)

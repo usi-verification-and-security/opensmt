@@ -1,5 +1,6 @@
 #include "LASolver.h"
 #include "LA.h"
+#include "ModelBuilder.h"
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
@@ -707,6 +708,16 @@ ValPair LASolver::getValue(PTRef tr) {
     }
 
     return ValPair(tr, val.get_str().c_str());
+}
+
+void LASolver::fillTheoryVars(ModelBuilder & modelBuilder) const {
+    for (LVRef lvar : laVarStore) {
+        PTRef term = laVarMapper.getVarPTRef(lvar);
+        if (logic.isNumVar(term)) {
+            PTRef val = logic.mkConst(concrete_model[getVarId(lvar)]);
+            modelBuilder.addVarValue(term, val);
+        }
+    }
 }
 
 

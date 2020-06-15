@@ -50,6 +50,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SMTSolver.h"
 #include "THandler.h"
+#include "ModelBuilder.h"
 
 #include <cstdio>
 #include <iosfwd>
@@ -327,6 +328,8 @@ public:
     int     nLearnts   ()      const;       // The current number of learnt clauses.
     int     nVars      ()      const;       // The current number of variables.
     int     nFreeVars  ()      const;
+
+    void fillBooleanVars(ModelBuilder & modelBuilder);
 
     // Resource contraints:
     //
