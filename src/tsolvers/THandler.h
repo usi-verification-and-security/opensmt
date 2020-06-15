@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolverHandler.h"
 #include "Theory.h"
 #include "TSolver.h"
+#include "ModelBuilder.h"
 
 class THandler
 {
@@ -65,7 +66,11 @@ public:
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
     PTRef   getSubstitution     (PTRef tr);               // Returns the substituted term, or PTRef_Undef if this term was not substituted
 
+    // DEPRECATED
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
+
+    void fillTheoryVars       (ModelBuilder & modelBuilder) const;
+    void addSubstitutions     (ModelBuilder & modelBuilder) const;
 
     bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable

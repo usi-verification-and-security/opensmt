@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DimacsParser.h"
 #include "Interpret.h"
 #include "BoolRewriting.h"
+#include "ModelBuilder.h"
+
 #include <thread>
 #include <random>
 #include <sys/types.h>
@@ -263,6 +265,16 @@ void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
         PTRef tr = trs[i];
         vals.push(getValue(tr));
     }
+}
+
+std::unique_ptr<Model> MainSolver::getModel() {
+
+    ModelBuilder modelBuilder {logic};
+    ts.solver.fillBooleanVars(modelBuilder);
+    thandler.fillTheoryVars(modelBuilder);
+    thandler.addSubstitutions(modelBuilder);
+
+    return modelBuilder.build();
 }
 
 void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)

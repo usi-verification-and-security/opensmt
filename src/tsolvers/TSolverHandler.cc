@@ -4,15 +4,24 @@
 
 TSolverHandler::~TSolverHandler()
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL) delete tsolvers[i];
+    for (int i = 0; i < tsolvers.size(); i++) {
+        delete tsolvers[i];
+    }
 }
 
 void TSolverHandler::computeModel()
 {
     for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
+        if (tsolvers[i] != nullptr)
             tsolvers[i]->computeModel();
+}
+
+void TSolverHandler::fillTheoryVars(ModelBuilder & modelBuilder) const {
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != nullptr) {
+            tsolvers[i]->fillTheoryVars(modelBuilder);
+        }
+    }
 }
 
 bool TSolverHandler::assertLit(PtAsgn asgn)
@@ -85,6 +94,8 @@ ValPair TSolverHandler::getValue(PTRef tr) const
     }
     return { tr, nullptr }; // Value is unspecified in the model
 }
+
+
 
 TRes TSolverHandler::check(bool complete)
 {

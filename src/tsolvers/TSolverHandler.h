@@ -36,6 +36,7 @@ class TheoryInterpolator;
 
 class THandler;
 class TSolver;
+class ModelBuilder;
 
 class TSolverHandler
 {
@@ -72,7 +73,11 @@ public:
     void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
     Map<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }
 
+
+    // DEPRECATED
     ValPair getValue          (PTRef tr) const;
+
+    void    fillTheoryVars    (ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
     void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers

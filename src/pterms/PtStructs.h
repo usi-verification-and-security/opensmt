@@ -75,6 +75,7 @@ struct LessThan_PtAsgn {
     }
 };
 
+// DEPRECATED in favour of new Model structure, should not be used anymore!
 class ValPair
 {
 public:

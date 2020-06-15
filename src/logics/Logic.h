@@ -232,8 +232,14 @@ class Logic {
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
     // Default values for the logic
+
+    // Deprecated! Use getDefaultValuePTRef instead
     virtual const char* getDefaultValue(const PTRef tr) const;
+
+    // Returns the default value of the sort of the argument term
     PTRef getDefaultValuePTRef(const PTRef tr) const { return getDefaultValuePTRef(getSortRef(tr)); }
+
+    // Returns the default value of the given sort
     virtual PTRef getDefaultValuePTRef(const SRef sref) const;
 
     PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);

@@ -6,6 +6,7 @@
 #include <LRALogic.h>
 #include <SMTConfig.h>
 #include <Model.h>
+#include <Opensmt.h>
 
 #include <memory>
 
@@ -113,6 +114,53 @@ TEST_F(LAModelTest, test_derivedArithmeticAtoms) {
 
 }
 
+
+class ModelIntegrationTest : public ::testing::Test {
+protected:
+    ModelIntegrationTest() {}
+    std::unique_ptr<Opensmt> getLRAOsmt() {
+        return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_lra, "test"));
+    }
+
+    std::unique_ptr<Opensmt> getUFOsmt() {
+        return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_uf, "test"));
+    }
+
+};
+
+TEST_F(ModelIntegrationTest, testSingleAssert) {
+    auto osmt = getLRAOsmt();
+    LRALogic& logic = osmt->getLRALogic();
+    PTRef x = logic.mkNumVar("x");
+    PTRef y = logic.mkNumVar("y");
+    PTRef fla = logic.mkNumLt(x, y);
+    MainSolver& mainSolver = osmt->getMainSolver();
+    char* msg;
+    mainSolver.insertFormula(fla, &msg);
+    sstat res = mainSolver.check();
+    ASSERT_EQ(res, s_True);
+    auto model = mainSolver.getModel();
+    EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+}
+
+TEST_F(ModelIntegrationTest, testSubstitutions) {
+    auto osmt = getLRAOsmt();
+    Logic& logic = osmt->getLogic();
+    PTRef x = logic.mkBoolVar("x");
+    PTRef y = logic.mkBoolVar("y");
+    PTRef fla = logic.mkEq(x, logic.mkNot(y));
+    MainSolver& mainSolver = osmt->getMainSolver();
+    char* msg;
+    mainSolver.insertFormula(fla, &msg);
+    sstat res = mainSolver.check();
+    ASSERT_EQ(res, s_True);
+//    auto xval = mainSolver.getValue(x);
+//    auto yval = mainSolver.getValue(y);
+//    std::cout << logic.printTerm(xval.tr) << " : " << xval.val << '\n';
+//    std::cout << logic.printTerm(yval.tr) << " : " << yval.val << std::endl;
+    auto model = mainSolver.getModel();
+    EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+}
 
 
 
