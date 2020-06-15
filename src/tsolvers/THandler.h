@@ -30,7 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TermMapper.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
-#include "ModelBuilder.h"
+
+class ModelBuilder;
 
 class THandler
 {

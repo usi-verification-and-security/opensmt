@@ -17,7 +17,7 @@ public:
     using Evaluation = std::unordered_map<PTRef, PTRef, PTRefHash>;
 
 
-    Model(Logic& logic, Evaluation basicEval) : varEval{std::move(basicEval)}, logic{logic} {}
+    Model(Logic& logic, Evaluation basicEval) : varEval(std::move(basicEval)), logic(logic) {}
 
     PTRef evaluate(PTRef term);
 

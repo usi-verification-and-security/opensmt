@@ -46,6 +46,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "CoreSMTSolver.h"
 #include "Sort.h"
+#include "ModelBuilder.h"
+
 #include <cmath>
 #include <iostream>
 #include <algorithm>
