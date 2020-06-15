@@ -39,8 +39,7 @@ public:
 
     /*
      * Incorporates the given substitution map into the model.
-     * PRECONDITIONS: all keys are variables and no key variable appears in the value of another key variable
-     * MB: TODO check that precondition holds
+     * PRECONDITIONS: all keys are variables
      */
     void processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subst);
 };

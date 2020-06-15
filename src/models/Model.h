@@ -6,6 +6,7 @@
 #include "Logic.h"
 
 #include <unordered_map>
+#include <algorithm>
 
 #ifndef OPENSMT_MODEL_H
 #define OPENSMT_MODEL_H
@@ -17,7 +18,11 @@ public:
     using Evaluation = std::unordered_map<PTRef, PTRef, PTRefHash>;
 
 
-    Model(Logic& logic, Evaluation basicEval) : varEval(std::move(basicEval)), logic(logic) {}
+    Model(Logic& logic, Evaluation basicEval) : varEval(std::move(basicEval)), logic(logic) {
+        assert(std::all_of(varEval.begin(), varEval.end(),
+                [&logic](Evaluation::value_type entry) { return logic.isVar(entry.first) && logic.isConstant(entry.second); }
+                ));
+    }
 
     PTRef evaluate(PTRef term);
 
