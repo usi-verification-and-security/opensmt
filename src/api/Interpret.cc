@@ -697,21 +697,22 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
 
 void Interpret::getModel() {
 
-    Logic& logic = main_solver->getLogic();
+    auto model = main_solver->getModel();
     std::stringstream ss;
     ss << "(model\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
         SymRef symref = user_declarations[i];
-        const Symbol & sym = logic.getSym(symref);
+        const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
-            const char* s = logic.getSymName(symref);
+            const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
-            PTRef term = logic.mkVar(symSort, s);
-            ss << "(define-fun " << s  << " () " << logic.getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
+            PTRef term = logic->mkVar(symSort, s);
+            PTRef val = model->evaluate(term);
+            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << logic->printTerm(val) << ')' << '\n';
         }
         else {
-            char* s = logic.printSym(symref);
+            char* s = logic->printSym(symref);
             notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
             free(s);
         };
