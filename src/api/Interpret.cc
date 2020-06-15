@@ -838,6 +838,7 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
 
 void Interpret::getModel() {
 
+    auto model = main_solver->getModel();
     std::stringstream ss;
     ss << "(model\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
@@ -848,7 +849,8 @@ void Interpret::getModel() {
             const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
-            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
+            PTRef val = model->evaluate(term);
+            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << logic->printTerm(val) << ')' << '\n';
         }
         else {
             char* s = logic->printSym(symref);
