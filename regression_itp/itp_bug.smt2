@@ -1,6 +1,5 @@
-(set-logic QF_LRA)
 (set-option :produce-interpolants 1)
-;(set-option :certify-interpolants 2)
+(set-logic QF_LRA)
 (declare-fun |state_type::state.delta| () Real)
 (declare-fun |state_type::state.v!0| () Real)
 (declare-fun |state_type::state.v!1| () Real)

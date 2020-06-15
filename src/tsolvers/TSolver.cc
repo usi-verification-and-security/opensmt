@@ -31,8 +31,7 @@ void TSolver::popBacktrackPoint()
     deductions_lim.pop();
     while (th_deductions.size_() > new_deductions_size) {
         PtAsgn_reason asgn = th_deductions.last();
-        assert(deduced[getLogic().getPterm(asgn.tr).getVar()] != l_Undef);
-        deduced[getLogic().getPterm(asgn.tr).getVar()] = DedElem_Undef;
+        clearPolarity(asgn.tr);
         th_deductions.pop();
     }
     assert( deductions_next <= th_deductions.size_() );
@@ -48,10 +47,16 @@ void TSolver::pushBacktrackPoint()
 
 bool TSolver::isKnown(PTRef tr)
 {
-    uint32_t id = Idx(getLogic().getPterm(tr).getId());
-    if (static_cast<unsigned int>(known_preds.size()) <= id)
-        return false;
-    return known_preds[id];
+    uint32_t tid = Idx(getLogic().getPterm(tr).getId());
+    return tid < known_preds.size_() && known_preds[tid];
+}
+
+void TSolver::setKnown(PTRef tr) {
+    auto tid = Idx(getLogic().getPterm(tr).getId());
+    while (known_preds.size_() <= tid) {
+        known_preds.push(false);
+    }
+    known_preds[tid] = true;
 }
 
 // MB: setPolarity and clearPolarity moved to .C file to remove the macros from the header
@@ -60,17 +65,6 @@ void  TSolver::setPolarity(PTRef tr, lbool p)
 {
     if (polarityMap.has(tr)) { polarityMap[tr] = p; }
     else { polarityMap.insert(tr, p); }
-#ifdef VERBOSE_EUF
-    cerr << "Setting polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
-}
-
-void  TSolver::clearPolarity(PTRef tr)
-{
-    polarityMap[tr] = l_Undef;
-#ifdef VERBOSE_EUF
-    cerr << "Clearing polarity " << getLogic().printTerm(tr) << " " << tr.x << endl;
-#endif
 }
 
 void TSolver::getNewSplits(vec<PTRef>&)
@@ -80,4 +74,11 @@ void TSolver::getNewSplits(vec<PTRef>&)
 
 bool TSolver::hasNewSplits() {
     return splitondemand.size() > 0;
+}
+
+PtAsgn_reason TSolver::getDeduction() {
+    if (deductions_next >= th_deductions.size_()) {
+        return PtAsgn_reason_Undef;
+    }
+    return th_deductions[deductions_next++];
 }

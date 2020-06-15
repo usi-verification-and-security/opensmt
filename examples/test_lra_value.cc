@@ -4,7 +4,10 @@
 Opensmt*
 pre()
 {
-    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "Test solver");
+    auto config = std::unique_ptr<SMTConfig>(new SMTConfig());
+    const char* msg;
+    config->setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "test solver", std::move(config));
     return osmt;
 }
 void
@@ -21,10 +24,7 @@ main(int argc, char** argv)
     MainSolver& mainSolver = osmt->getMainSolver();
     SimpSMTSolver& solver = osmt->getSolver();
     LRALogic& logic = osmt->getLRALogic();
-
-    const char* msg;
-    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-
+    
     // Let's build two assertions
 
     // Create vars
@@ -91,8 +91,8 @@ main(int argc, char** argv)
     else if (r == s_False)
     {
         printf("unsat\n");
-#ifdef PRODUCE_PROOF
         // Set labeling function
+        const char* msg;
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
 
         // Create the proof graph
@@ -114,7 +114,6 @@ main(int argc, char** argv)
         vector<PTRef> itps;
         solver.getSingleInterpolant(itps, mask);
         cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
-#endif // PRODUCE_PROOF
     }
     else if (r == s_Undef)
         printf("unknown\n");

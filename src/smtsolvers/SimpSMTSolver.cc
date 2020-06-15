@@ -82,18 +82,17 @@ void SimpSMTSolver::initialize( )
 {
     CoreSMTSolver::initialize( );
 
-#ifdef PRODUCE_PROOF
-    if ( config.sat_preprocess_booleans != 0
-            || config.sat_preprocess_theory != 0 )
-    {
-        if (config.verbosity() > 0 ) {opensmt_warning( "disabling SATElite preprocessing to track proof" )};
-        use_simplification = false;
-        config.sat_preprocess_booleans = 0;
-        config.sat_preprocess_theory = 0;
+    if (config.produce_inter()) {
+        if (config.sat_preprocess_booleans != 0
+            || config.sat_preprocess_theory != 0) {
+            if (config.verbosity() > 0) {opensmt_warning("disabling SATElite preprocessing to track proof")};
+            use_simplification = false;
+            config.sat_preprocess_booleans = 0;
+            config.sat_preprocess_theory = 0;
+        }
+    } else {
+        use_simplification = config.sat_preprocess_booleans != 0;
     }
-#else
-    use_simplification = config.sat_preprocess_booleans != 0;
-#endif
 }
 
 Var SimpSMTSolver::newVar(bool sign, bool dvar)

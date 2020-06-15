@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(opensmt)
+project(opensmt VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -22,7 +22,6 @@ endif()
 
 set(INSTALL_HEADERS_DIR include/opensmt)
 
-option(PRODUCE_PROOF "Produce proof" OFF)
 option(PARTITION_PRETTYPRINT "Term pretty printing shows partitions" OFF)
 option(ITP_DEBUG "Debug interpolation" OFF)
 option(PEDANTIC_DEBUG "Pedantic debug" OFF)
@@ -37,9 +36,14 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
-#option(ENABLE_PROFILING "Enable profiling" OFF)
+option(USE_READLINE "Use readline over libedit" OFF)
 
-find_package(Readline REQUIRED)
+if (NOT USE_READLINE)
+  find_package(LibEdit REQUIRED)
+else()
+  find_package(Readline REQUIRED)
+endif()
+
 find_package(GMP REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -64,6 +68,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/smtsolvers
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
+    ${CMAKE_SOURCE_DIR}/proof
     ${GMP_INCLUDE_DIR}
 )
 
@@ -91,16 +96,6 @@ if(VERBOSE_FOPS)
     add_definitions(-DVERBOSE_FOPS)
 endif(VERBOSE_FOPS)
 
-# there should be a better way of profiling
-#if(ENABLE_PROFILING)
-#    add_compile_options(-pg)
-#endif()
-
-if (PRODUCE_PROOF)
-    add_definitions(-DPRODUCE_PROOF -DFULL_LABELING)
-    include_directories(${CMAKE_SOURCE_DIR}/proof)
-endif ()
-
 if (LADEBUG)
     add_definitions(-DLADEBUG)
 endif ()
@@ -108,6 +103,10 @@ endif ()
 if(STATISTICS)
     add_definitions(-DSTATISTICS)
 endif(STATISTICS)
+
+if (USE_READLINE)
+  add_definitions(-DUSE_READLINE)
+endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
@@ -123,3 +122,10 @@ if(PACKAGE_TESTS)
 endif()
 #########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
+
+if (USE_READLINE)
+  message("You have chosen to build OpenSMT against optional GPL-licensed components (readline)."
+          "\n"
+          "As these libraries are covered under the GPL, so will the resulting binary of OpenSMT.")
+endif()
+

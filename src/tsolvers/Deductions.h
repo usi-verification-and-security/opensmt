@@ -35,7 +35,7 @@ struct SolverId {
     bool operator!= (const SolverId id2) const { return id != id2.id; }
 };
 
-static SolverId SolverId_Undef = {UINT32_MAX};
+static const SolverId SolverId_Undef = {UINT32_MAX};
 
 class SolverDescr
 {
@@ -61,17 +61,17 @@ class SolverDescr
 };
 
 
-struct DedElem {
-    DedElem(SolverId id, lbool p) : deducedBy(id), polarity(p) {}
-    SolverId deducedBy;
-    lbool    polarity;
-    bool operator== (const lbool l) const { return l == polarity; }
-    bool operator!= (const lbool l) const { return l != polarity; }
-    bool operator== (const SolverId id) const { return id == deducedBy; }
-    bool operator!=(const SolverId id) const { return id != deducedBy; }
-};
-
-//static DedElem DedElem_Undef = {SolverId_Undef, l_Undef};
-static DedElem DedElem_Undef(SolverId_Undef, l_Undef);
+//struct DedElem {
+//    DedElem(SolverId id, lbool p) : deducedBy(id), polarity(p) {}
+//    SolverId deducedBy;
+//    lbool    polarity;
+//    bool operator== (const lbool l) const { return l == polarity; }
+//    bool operator!= (const lbool l) const { return l != polarity; }
+//    bool operator== (const SolverId id) const { return id == deducedBy; }
+//    bool operator!=(const SolverId id) const { return id != deducedBy; }
+//};
+//
+////static DedElem DedElem_Undef = {SolverId_Undef, l_Undef};
+//static DedElem DedElem_Undef(SolverId_Undef, l_Undef);
 
 #endif

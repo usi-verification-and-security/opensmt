@@ -16,60 +16,56 @@
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-void computeIncomingEdges(const Logic& logic, PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming)
+void computeIncomingEdges(const Logic& logic, PTRef root, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming)
 {
-    class pi {
-    public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
-
-    assert(tr != PTRef_Undef);
-    vec<pi*> unprocessed_ptrefs;
-    unprocessed_ptrefs.push(new pi(tr));
+    assert(root != PTRef_Undef);
+    // MB: Relies on an invariant that id of a child is lower than id of a parent.
+    auto size = Idx(logic.getPterm(root).getId()) + 1;
+    std::vector<char> done;
+    done.resize(size, 0);
+    vec<PTRef> unprocessed_ptrefs;
+    unprocessed_ptrefs.push(root);
     while (unprocessed_ptrefs.size() > 0) {
-        pi* pi_ptr = unprocessed_ptrefs.last();
-        if (PTRefToIncoming.has(pi_ptr->x)) {
-            PTRefToIncoming[pi_ptr->x]++;
+        PTRef current = unprocessed_ptrefs.last();
+        auto it = PTRefToIncoming.find(current);
+        if (it != PTRefToIncoming.end()) {
+            it->second++;
             unprocessed_ptrefs.pop();
-            delete pi_ptr;
             continue;
         }
         bool unprocessed_children = false;
-        if (logic.isBooleanOperator(pi_ptr->x) && pi_ptr->done == false) {
-            const Pterm& t = logic.getPterm(pi_ptr->x);
+        if (logic.isBooleanOperator(current) && done[Idx(logic.getPterm(current).getId())] == 0) {
+            const Pterm& t = logic.getPterm(current);
             for (int i = 0; i < t.size(); i++) {
                 // push only unprocessed Boolean operators
-                if (!PTRefToIncoming.has(t[i])) {
-                    unprocessed_ptrefs.push(new pi(t[i]));
+                auto itChild = PTRefToIncoming.find(t[i]);
+                if (itChild == PTRefToIncoming.end()) {
+                    unprocessed_ptrefs.push(t[i]);
                     unprocessed_children = true;
                 } else {
-                    PTRefToIncoming[t[i]]++;
+                    itChild->second++;
                 }
             }
-            pi_ptr->done = true;
+            done[Idx(logic.getPterm(current).getId())] = 1;
         }
         if (unprocessed_children)
             continue;
 
         unprocessed_ptrefs.pop();
-        // All descendants of pi_ptr->x are processed
-        assert(logic.isBooleanOperator(pi_ptr->x) || logic.isAtom(pi_ptr->x));
-        assert(!PTRefToIncoming.has(pi_ptr->x));
-        PTRefToIncoming.insert(pi_ptr->x, 1);
-        delete pi_ptr;
+        assert(logic.isBooleanOperator(current) || logic.isAtom(current));
+        PTRefToIncoming.insert(std::make_pair(current, 1));
     }
 }
 
 PTRef rewriteMaxArityClassic(Logic & logic, PTRef root) {
-    Map<PTRef,int,PTRefHash> PTRefToIncoming;
+    std::unordered_map<PTRef,int,PTRefHash> PTRefToIncoming;
     computeIncomingEdges(logic, root, PTRefToIncoming);
     return rewriteMaxArity(logic, root,
             [&PTRefToIncoming](PTRef candidate)
             {
-                assert(PTRefToIncoming.has(candidate) && PTRefToIncoming[candidate] >= 1);
-                return PTRefToIncoming[candidate] > 1;
+                auto it = PTRefToIncoming.find(candidate);
+                assert(it != PTRefToIncoming.end() && it->second >= 1);
+                return it->second > 1;
             });
 }
 
@@ -106,7 +102,7 @@ PtLit decomposeLiteral(const Logic & logic, PTRef lit) {
 }
 
 PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
-                               const Map<PTRef, int, PTRefHash> & PTRefToIncoming,
+                               const std::unordered_map<PTRef, int, PTRefHash> & PTRefToIncoming,
                                std::vector<PtLit> assignment,
                                Map<PTRef, PTRef, PTRefHash> & cache
 ) {
@@ -126,9 +122,10 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
             literals.push_back(term[i]);
             continue;
         }
-        assert(PTRefToIncoming.has(term[i]));
-        assert(PTRefToIncoming[term[i]] >= 1);
-        if (PTRefToIncoming[term[i]] > 1) {
+        auto it = PTRefToIncoming.find(term[i]);
+        assert(it != PTRefToIncoming.end());
+        assert(it->second >= 1);
+        if (it->second > 1) {
             non_owning_children.push_back(term[i]);
         }
         else{
@@ -176,7 +173,7 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
 }
 
 PTRef simplifyUnderAssignment(Logic & logic, PTRef root) {
-    Map<PTRef, int, PTRefHash> incomingEdges;
+    std::unordered_map<PTRef, int, PTRefHash> incomingEdges;
     ::computeIncomingEdges(logic, root, incomingEdges);
     Map<PTRef, PTRef, PTRefHash> cache;
     return _simplifyUnderAssignment(logic, root, incomingEdges, {},  cache);

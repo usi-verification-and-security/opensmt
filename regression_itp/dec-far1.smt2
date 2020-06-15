@@ -1,5 +1,5 @@
-(set-logic QF_LRA)
 (set-option :produce-interpolants true)
+(set-logic QF_LRA)
 (set-option :interpolation-lra-algorithm 4) ; decomposed Farkas
 (declare-fun x1 () Real)
 (declare-fun x2 () Real)

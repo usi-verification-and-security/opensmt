@@ -1,8 +1,8 @@
 #include "CUFTHandler.h"
 #include "CUFLogic.h"
 
-CUFTHandler::CUFTHandler(SMTConfig& c, CUFLogic& l, vec<DedElem>& d, TermMapper& tmap)
-    : UFTHandler(c, l, d, tmap)
+CUFTHandler::CUFTHandler(SMTConfig & c, CUFLogic & l, TermMapper & tmap)
+    : UFTHandler(c, l, tmap)
     , logic(l)
 {}
 

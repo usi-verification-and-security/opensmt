@@ -39,7 +39,7 @@ class BitBlaster
 public:
 
     BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic & bvlogic, vec<PtAsgn> & ex,
-               vec<DedElem> & d, vec<PTRef> & s);
+               vec<PTRef> & s);
     ~BitBlaster ( );
 
     lbool inform             (PTRef); // For the interface for bitvector solver
@@ -166,7 +166,6 @@ private:
 
 
     vec<PtAsgn> &                   explanation;                   // Reference to explanation
-    vec<DedElem> &                  deductions;                    // Reference to deductions
     vec<PTRef> &                    suggestions;                   // Reference to suggestions
 
     vec<PTRef>                      variables;                     // Variables

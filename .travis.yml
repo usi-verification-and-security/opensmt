@@ -3,8 +3,7 @@ language: cpp
 #safelist of branches where travis should run
 branches:
     only:
-        - master    
-sudo: true
+        - master
 
 os:
   - linux
@@ -17,7 +16,7 @@ compiler:
 
 env:
   global:
-    - PRODUCE_PROOF=OFF
+    - USE_READLINE=OFF
   matrix:
     - CMAKE_BUILD_TYPE=Release
     - CMAKE_BUILD_TYPE=Debug
@@ -30,19 +29,12 @@ matrix:
     - os: linux
       dist: trusty
       compiler: clang
-    - env:
-      - CMAKE_BUILD_TYPE=Release
-      - PRODUCE_PROOF=ON
+    - os: linux
+      dist: bionic
+      compiler: gcc
+    - os: linux
+      dist: bionic
       compiler: clang
-    - env:
-      - CMAKE_BUILD_TYPE=Release
-      - PRODUCE_PROOF=ON
-      compiler: gcc
-    - env:
-      - CMAKE_BUILD_TYPE=Debug
-      - PRODUCE_PROOF=ON
-      compiler: gcc
-
 
 addons:
   apt:
@@ -51,7 +43,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - libgmp-dev
-      - libreadline-dev
+      - libedit-dev
       - bison
       - flex
 
@@ -65,15 +57,14 @@ before_script:
 script:
   - set -e
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DPRODUCE_PROOF=${PRODUCE_PROOF} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DUSE_READLINE:BOOL=${USE_READLINE} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
   - make
   - ctest
   - make install
-  - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == OFF ]]; then
+  - if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
         cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
-    fi
-  - if [[ ${CMAKE_BUILD_TYPE} == Debug && ${PRODUCE_PROOF} == ON ]]; then
         cd ../regression_itp && ./run-tests.sh ../build/src/bin/opensmt;
     fi
-  - cd ../examples && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DPRODUCE_PROOF=${PRODUCE_PROOF} -DOPENSMT_DIR=${INSTALL} ..
+
+  - cd ../examples && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DOPENSMT_DIR=${INSTALL} ..
   - make

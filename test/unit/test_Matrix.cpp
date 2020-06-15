@@ -100,7 +100,7 @@ TEST(Matrix_test, vec_creation)
     Real r {"-2147483648"};
     vec<Real> reals;
     for (int i = 0; i < 10; i++) {
-        reals.push(Real(i));
+        reals.push_c(Real(i));
     }
     LAVecRef vr = vecStore.getNewVec(reals);
     for (int i = 1; i <= va[vr].size(); i++) {

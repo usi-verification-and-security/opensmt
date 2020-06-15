@@ -8,6 +8,8 @@
 #include "MainSolver.h"
 #include "Logic.h"
 
+#include <memory>
+
 typedef enum
 {
     qf_uf         // Uninterpreted Functions
@@ -27,6 +29,17 @@ class Opensmt
 {
 public:
     Opensmt(opensmt_logic _logic, const char* name, int bw = 32);
+
+    /**
+     * Constructor for OpenSMT instance where user user can passed its open configuration.
+     * Useful for example when interpolation needs to be enabled
+     * Note that this object takes ownership of the passed pointer
+     *
+     * @param _logic SMT-LIB logic that OpenSMT instance will operate in
+     * @param name Name fot the solver instance
+     * @param config Configuration for the OpenSMT instance
+     */
+    Opensmt(opensmt_logic _logic, const char* name, std::unique_ptr<SMTConfig> config);
     ~Opensmt();
 
     SMTConfig& getConfig() { return *config; }
@@ -48,11 +61,11 @@ public:
     MainSolver& getMainSolver() { return *mainSolver; }
     SimpSMTSolver& getSolver() { return *solver; }
 private:
-    SMTConfig *config;
-    Theory *theory;
-    THandler *thandler;
-    SimpSMTSolver *solver;
-    MainSolver *mainSolver;
+    std::unique_ptr<SMTConfig> config;
+    std::unique_ptr<Theory> theory;
+    std::unique_ptr<THandler> thandler;
+    std::unique_ptr<SimpSMTSolver> solver;
+    std::unique_ptr<MainSolver> mainSolver;
 };
 
 #endif //OPENSMT_H

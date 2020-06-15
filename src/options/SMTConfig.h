@@ -92,7 +92,7 @@ class ASTNode {
         }
         free(val);
     }
-    void                  print(std::ostream& o, int indent);
+    void                   print(std::ostream& o, int indent);
     inline const char      *typeToStr() const { return typestr[type]; }
     inline ASTType         getType()   const { return type; }
     inline const char      *getValue()  const { return val; }
@@ -163,8 +163,8 @@ static const struct ItpAlgorithm itp_euf_alg_random  = { 3 };
 static const struct ItpAlgorithm itp_lra_alg_strong  = { 0 };
 static const struct ItpAlgorithm itp_lra_alg_weak  = { 2 };
 static const struct ItpAlgorithm itp_lra_alg_factor  = { 3 };
-static const struct ItpAlgorithm itp_lra_alg_experimental_strong  = { 4 };
-static const struct ItpAlgorithm itp_lra_alg_experimental_weak  = { 5 };
+static const struct ItpAlgorithm itp_lra_alg_decomposing_strong  = {4 };
+static const struct ItpAlgorithm itp_lra_alg_decomposing_weak  = {5 };
 static const char *itp_lra_factor_0 = "1/2";
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
@@ -247,6 +247,7 @@ public:
   static const char* o_garbage_frac;
   static const char* o_restart_first;
   static const char* o_restart_inc;
+  static const char* o_produce_proofs;
   static const char* o_produce_inter;
   static const char* o_certify_inter;
   static const char* o_interpolant_cnf;
@@ -415,7 +416,9 @@ public:
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
 
-  inline void setProduceProofs( ) { if ( print_proofs_smtlib2 != 0 ) return; print_proofs_smtlib2 = 1; }
+  inline bool produceProof( ) {
+      return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
+  }
 
   void setTimeQueries() { insertOption(o_time_queries, new SMTOption(1)); }
   bool timeQueries()    { return optionTable.has(o_time_queries) ? optionTable[o_time_queries]->getValue().numval : false; }
@@ -564,9 +567,9 @@ public:
   int certify_inter() const
     { return optionTable.has(o_certify_inter) ?
         optionTable[o_certify_inter]->getValue().numval : 0; }
-  int produce_inter() const
+  bool produce_inter() const
     { return optionTable.has(o_produce_inter) ?
-        optionTable[o_produce_inter]->getValue().numval : 0; }
+        optionTable[o_produce_inter]->getValue().numval > 0 : false; }
   int proof_struct_hash() const
     { return optionTable.has(o_proof_struct_hash) ?
         optionTable[o_proof_struct_hash]->getValue().numval : 1; }
@@ -805,7 +808,6 @@ public:
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
-  int          produce_proofs;               // Should produce proofs ?
   int          print_proofs_smtlib2;         // Should print proofs ?
   int          print_proofs_dotty;           // Should print proofs ?
   bool         rocset;                       // Regular Output Channel set ?
@@ -828,8 +830,9 @@ public:
         optionTable[":print-success"]->getValue().numval == 1: false; }
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
+
+  bool         theory_propagation;           // Enables theory propagation
   // SAT-Solver related parameters
-  int          sat_theory_propagation;       // Enables theory propagation from the sat-solver
   int          sat_polarity_mode;            // Polarity mode
   int          sat_theory_polarity_suggestion;  // Should the SAT solver ask the theory solver for var polarity when making a decision
   double       sat_initial_skip_step;        // Initial skip step for tsolver calls
@@ -877,16 +880,14 @@ public:
   int          proof_trans_strength;             // Light proof restructuring for stronger/weaker interpolants, for Pudlak/McMillan/McMillan' algorithms
   // UF-Solver related parameters
   int          uf_disable;                   // Disable the solver
-  int          uf_theory_propagation;        // Enable theory propagation
+  // CUF-Solver related parameter
+  int          cuf_bitwidth;                  // Bit-width to use by the CUF solver
   // BV-Solver related parameters
   int          bv_disable;                   // Disable the solver
-  int          bv_theory_propagation;        // Enable theory propagation
   // DL-Solver related parameters
   int          dl_disable;                   // Disable the solver
-  int          dl_theory_propagation;        // Enable theory propagation
   // LRA-Solver related parameters
   int          lra_disable;                  // Disable the solver
-  int          lra_theory_propagation;       // Enable theory propagation
   int          lra_poly_deduct_size;         // Used to define the size of polynomial to be used for deduction; 0 - no deduction for polynomials
   int          lra_trade_off;                // Trade-off value for DL preprocessing
   int          lra_integer_solver;           // Flag to require integer solution for LA problem

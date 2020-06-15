@@ -123,6 +123,7 @@ class LABoundStore
 {
 public:
     struct BoundInfo { LVRef v; LABoundRef ub; LABoundRef lb; };
+    struct BoundValuePair {Delta upper; Delta lower; };
 private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator ba{1024};
@@ -145,13 +146,15 @@ public:
     LABoundRef getBoundByIdx(LVRef v, int it) const;
     int getBoundListSize(LVRef v) ;
     bool isUnbounded(LVRef v) const;
-    // Construct an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
-    BoundInfo allocBoundPair(LVRef v, const opensmt::Real& c, bool strict) {
-        LABoundRef ub = ba.alloc(bound_u, v, strict ? Delta(c, -1) : Delta(c));
-        LABoundRef lb = ba.alloc(bound_l, v, strict ? Delta(c) : Delta(c, 1));
+
+    // Allocates lower and upper bound for LA var with the given values
+    BoundInfo allocBoundPair(LVRef v, BoundValuePair boundPair) {
+        LABoundRef ub = ba.alloc(bound_u, v, std::move(boundPair.upper));
+        LABoundRef lb = ba.alloc(bound_l, v, std::move(boundPair.lower));
         in_bounds.push(BoundInfo{v, ub, lb});
         return in_bounds.last();
     }
+
     LAVarStore const& getVarStore() const { return lvstore; }
 };
 

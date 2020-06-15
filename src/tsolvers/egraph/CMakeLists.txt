@@ -11,15 +11,15 @@ PRIVATE "${CMAKE_CURRENT_LIST_DIR}/EgraphExplain.cc"
 PRIVATE "${CMAKE_CURRENT_LIST_DIR}/EgraphDebug.cc"
 )
 
-if(PRODUCE_PROOF)
-	target_sources(tsolvers
-		PUBLIC "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h"
-		PRIVATE "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.cc"
-        PUBLIC "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.h"
-        PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cc"
-	)
 
-	install(FILES ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h DESTINATION ${INSTALL_HEADERS_DIR})
-endif()
+target_sources(tsolvers
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.cc"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cc"
+)
 
+install(FILES ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h DESTINATION ${INSTALL_HEADERS_DIR})
+
+install(FILES ${CMAKE_CURRENT_LIST_DIR}/CgTypes.h DESTINATION ${INSTALL_HEADERS_DIR})
 

@@ -60,8 +60,8 @@ Var TermMapper::addBinding(PTRef tr)
 
 void TermMapper::getTerm(PTRef r, PTRef& p, bool& sgn) const {
     sgn = false;
-    while (logic.term_store[r].symb() == logic.getSym_not()) {
-        r = logic.term_store[r][0];
+    while (logic.getPterm(r).symb() == logic.getSym_not()) {
+        r = logic.getPterm(r)[0];
         sgn = !sgn;
     }
     p = r;

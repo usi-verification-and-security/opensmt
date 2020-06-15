@@ -73,8 +73,9 @@ public:
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
     void popBacktrackPoint()  { model->popBacktrackPoint(); }
     inline void finalizeBacktracking() {
-        model->restoreAssignment();
+        assert(model->changed_vars_vec.size() == 0);
         candidates.clear();
+        bufferOfActivatedBounds.clear();
         assert(checkValueConsistency());
         assert(invariantHolds());
     }
@@ -95,7 +96,7 @@ public:
     void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
     void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
     void newRow(LVRef x, std::unique_ptr<Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }
-    Explanation getConflictingBounds(LVRef x);
+    Explanation getConflictingBounds(LVRef x, bool conflictOnLower);
     bool checkValueConsistency() const;
     bool invariantHolds() const;
 
@@ -111,6 +112,7 @@ public:
 
     // Keeping track of activated bounds
 private:
+    std::vector<std::pair<LVRef, LABoundRef>> bufferOfActivatedBounds;
     std::vector<unsigned int> boundsActivated;
     unsigned int getNumOfBoundsActive(LVRef var) const {
         assert(getVarId(var) < boundsActivated.size());
@@ -121,6 +123,8 @@ private:
             boundsActivated.push_back(0);
         }
     }
+
+    void processBufferOfActivatedBounds();
 public:
     void boundActivated(LVRef v) {
         assert(!tableau.isQuasiBasic(v) || boundsActivated[getVarId(v)] == 0);
@@ -131,6 +135,7 @@ public:
 
     }
     void boundDeactivated(LVRef v) {
+        assert(boundsActivated[getVarId(v)] > 0);
         --boundsActivated[getVarId(v)];
         if (getNumOfBoundsActive(v) == 0 && tableau.isBasic(v)) {
             tableau.basicToQuasi(v);

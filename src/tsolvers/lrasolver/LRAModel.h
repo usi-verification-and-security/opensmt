@@ -47,7 +47,10 @@ public:
 private:
     // needed from Simplex to make all work properly with backtracking and quasi-basic variables
     friend class Simplex;
-    void         writeBackupValue(LVRef v, Delta val) { last_consistent_assignment[getVarId(v)] = std::move(val); }
+    void         restoreVarWithValue(LVRef v, Delta val) {
+        current_assignment[getVarId(v)] = val;
+        last_consistent_assignment[getVarId(v)] = std::move(val);
+    }
     inline const Delta& readBackupValue (LVRef v) const { return last_consistent_assignment[getVarId(v)]; }
 public:
 

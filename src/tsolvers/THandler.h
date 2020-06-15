@@ -59,9 +59,7 @@ public:
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
     void    getNewSplits         ( vec<Lit>& ); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 
-#ifdef PRODUCE_PROOF
     PTRef getInterpolant         (const ipartitions_t&, map<PTRef, icolor_t>*);
-#endif
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
@@ -107,13 +105,6 @@ protected:
         return (int)(drand(seed) * size);
     }*/
 
-//  void verifyCallWithExternalTool        ( bool, size_t );
-//  void verifyExplanationWithExternalTool ( vector< Enode * > & );
-//  void verifyDeductionWithExternalTool   ( Enode * = NULL );
-//  bool callCertifyingSolver              ( const char * );
-#ifdef PRODUCE_PROOF
-    void verifyInterpolantWithExternalTool ( PTRef itp, const ipartitions_t & );
-#endif
     void dumpHeaderToFile(ostream&);
     void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
 

@@ -53,9 +53,11 @@ protected:
     bool                s_empty;
 
     class Cache {
+        PTRef zeroLevelTerm;
         using CacheEntry = std::pair<PTRef, PTRef>;
         std::unordered_set<CacheEntry, PTRefPairHash > cache;
     public:
+        Cache(PTRef zeroLevelTerm): zeroLevelTerm(zeroLevelTerm) {}
         bool contains(PTRef term, PTRef frame_term);
         void insert(PTRef term, PTRef frame_term);
     };
@@ -114,9 +116,9 @@ protected:
     inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
     inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
-    // PROOF version
+    bool keepPartitionInfo() const { return config.produce_inter(); }
+
     int currentPartition = -1;
-    // end of PROOF version
 
     PTRef frame_term;
     vec<PTRef> frame_terms;

@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -47,15 +46,13 @@ bool ProofGraph::decideOnAlternativeInterpolation(ProofNode* n)
 	return false;
 }
 
-#ifdef FULL_LABELING
 void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 {
 	// Track AB class variables and associate index to them
 	// NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
 	int AB_bit_index = 0;
-	for( std::set<Var>::iterator nv = proof_variables.begin(); nv != proof_variables.end(); nv++ )
+	for( Var v : proof_variables )
 	{
-		Var v = (*nv);
 		icolor_t v_class = getVarClass( v, A_mask );
 		if( v_class == I_A ){ AB_vars_mapping[v] = -1; }
 		else if( v_class == I_B ){ AB_vars_mapping[v] = -2; }
@@ -147,44 +144,43 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 		updateColoringAfterRes(n);
 	}
 	else opensmt_error( "Pivot " << v << " has no class" );
+	Lit pos = mkLit(v);
+	Lit neg = ~pos;
+	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
+	    return I_S;
+	}
 
 	return var_color;
 }
-#endif
 
 // Input: variable, current interpolant partition masks for A and B
 // e.g. 0---010 first partition in A
 // Output: returns A-local , B-local or AB-common
 icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 {
-	// Get enode corresponding to variable
-	//PTRef enode_var = thandler.varToTerm(v); //varToEnode( v );
+    //Determine mask corresponding to B
+    ipartitions_t B_mask = ~A_mask;
+    const ipartitions_t & var_mask = this->getVarPartition(v);
 
-	// TODO look at isAB methods in egraph
-	//Determine mask corresponding to B
-	ipartitions_t B_mask = ~A_mask;
-	//Reset bit 0 to 0
-//	clrbit( B_mask, 0 );
+    // Check if variable present in A or B
+    bool var_in_A = ((var_mask & A_mask) != 0);
+    bool var_in_B = ((var_mask & B_mask) != 0);
+    // MB: In incremental solving it might be that this is theory literal that has been popped.
+    //      Determine its class based on the classes of variables it contains
+    if (!var_in_A && !var_in_B) {
+        if (this->isAssumedVar(v)) { return I_AB; } // MB: Does not matter for assumed literals
+        // Literals with no partition are handled during proof building, so no other variable except assumed ones should have no partition.
+    }
+    assert(var_in_A || var_in_B);
 
-	//Get partition mask variable
-	//e.g. 0---0110 variable in first and second partition
-	//const ipartitions_t & enode_mask = logic_.getIPartitions(enode_var);
-	const ipartitions_t& enode_mask = logic_.getVarClassMask(v);
-//	const ipartitions_t & enode_mask = enode_var->getIPartitions( );
+    icolor_t var_class;
+    // Determine if variable A-local, B-local or AB-common
+    if (var_in_A && !var_in_B) var_class = I_A;
+    else if (!var_in_A && var_in_B) var_class = I_B;
+    else if (var_in_A && var_in_B) var_class = I_AB;
+    else opensmt_error("Variable has no class");
 
-	// Check if variable present in A or B
-	const bool var_in_A = ( (enode_mask & A_mask) != 0 );
-	const bool var_in_B = ( (enode_mask & B_mask) != 0 );
-	assert( var_in_A || var_in_B );
-
-	icolor_t var_class;
-	// Determine if variable A-local, B-local or AB-common
-	if ( var_in_A && !var_in_B ) var_class = I_A;
-	else if ( !var_in_A && var_in_B ) var_class = I_B;
-	else if (  var_in_A && var_in_B ) var_class = I_AB;
-	else opensmt_error( "Variable has no class" );
-
-	return var_class;
+    return var_class;
 }
 
 // Input: proof node, current interpolant partition masks for A and B
@@ -219,7 +215,6 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
 
     return clause_color;
 }
-
 
 map<Var, icolor_t>*
 ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A_mask)
@@ -328,5 +323,3 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 
 	return labels;
 }
-
-#endif

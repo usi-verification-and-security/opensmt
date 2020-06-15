@@ -1,5 +1,5 @@
-(set-logic QF_LRA)
 (set-option :produce-interpolants 1)
+(set-logic QF_LRA)
 (declare-fun |hifrog::fun_start!0#3| () Bool)
 (declare-fun |hifrog::fun_end!0#3| () Bool)
 (declare-fun |getchar::1::x!0#2| () Real)

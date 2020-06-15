@@ -30,9 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "SStore.h"
 #include "Tterm.h"
-#ifdef PRODUCE_PROOF
-#include "FlaPartitionMap.h"
-#endif
+#include "PartitionInfo.h"
+#include "CgTypes.h"
+
 
 
 class SStore;
@@ -94,28 +94,12 @@ class Logic {
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
-    // Information related to state serialization
-    const static int buf_sz_idx             = 0;
-    const static int equalities_offs_idx    = 1;
-    const static int disequalities_offs_idx = 2;
-    const static int ites_offs_idx          = 3;
-    const static int ufsorts_offs_idx       = 4;
-    const static int constants_offs_idx     = 5;
-
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
-
-#ifdef PRODUCE_PROOF
-    //for partitions:
-    //Map<PTRef,int,PTRefHash> partitions;
-//    std::map<unsigned int, PTRef> partitions; // map of partition indices to PTRefs of partitions
-    FlaPartitionMap flaPartitionMap;
-    map<CRef, ipartitions_t> clause_class;
-    map<Var, ipartitions_t> var_class;
-#endif
+    int distinctClassCount;
 
     Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
     vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
@@ -135,9 +119,7 @@ class Logic {
     IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
-  public:
     PtStore             term_store;
-  protected:
     opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
@@ -170,6 +152,8 @@ class Logic {
     void dumpFunction(ostream &, const TFun&);
 
     void conjoinItes(PTRef root, PTRef& new_root);
+
+    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
 
   private:
     vec<bool> appears_in_uf;
@@ -301,22 +285,48 @@ class Logic {
 
     bool implies(PTRef, PTRef); // Check the result with an external solver
 
-#ifdef PRODUCE_PROOF
+    PartitionInfo partitionInfo;
+
     PTRef getPartitionA(const ipartitions_t&);
     PTRef getPartitionB(const ipartitions_t&);
     bool verifyInterpolantA(PTRef, const ipartitions_t&);
     bool verifyInterpolantB(PTRef, const ipartitions_t&);
     bool verifyInterpolant(PTRef, const ipartitions_t&);
 
-    ipartitions_t& getIPartitions(PTRef _t) { return term_store.getIPartitions(_t); }
-    void setIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.setIPartitions(_t, _p); }
-    void addIPartitions(PTRef _t, const ipartitions_t& _p) { term_store.addIPartitions(_t, _p); }
-    ipartitions_t& getIPartitions(SymRef _s) { return term_store.getIPartitions(_s); }
-    void setIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.setIPartitions(_s, _p); }
-    void addIPartitions(SymRef _s, const ipartitions_t& _p) { term_store.addIPartitions(_s, _p); }
+    //partitions:
+    ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
+    void addIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.addIPartitions(_t, _p); }
+    ipartitions_t& getIPartitions(SymRef _s) { return partitionInfo.getIPartitions(_s); }
+    void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
     void propagatePartitionMask(PTRef tr);
+    void assignTopLevelPartitionIndex(unsigned int n, PTRef tr)
+    {
+        partitionInfo.assignTopLevelPartitionIndex(n, tr);
+    }
 
-#endif
+    ipartitions_t  computeAllowedPartitions(PTRef p);
+    ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
+    void addClauseClassMask(CRef c, const ipartitions_t& toadd);
+    void invalidatePartitions(const ipartitions_t& toinvalidate);
+    inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
+
+
+    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
+        throw std::logic_error{"Not supported at the moment!"};
+    }
+
+    unsigned getNofPartitions() { return partitionInfo.getNoOfPartitions(); }
+
+    void transferPartitionMembership(PTRef old, PTRef new_ptref)
+    {
+        this->addIPartitions(new_ptref, getIPartitions(old));
+        partitionInfo.transferPartitionMembership(old, new_ptref);
+    }
+
+    int getPartitionIndex(PTRef ref) const {
+        return partitionInfo.getPartitionIndex(ref);
+    }
+
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
@@ -465,40 +475,6 @@ class Logic {
     void compareTermStore(PtStore& other) { }// term_store.compare(other); }
 #endif
 
-#ifdef PRODUCE_PROOF
-    //partitions:
-    void assignPartition(unsigned int n, PTRef tr)
-    {
-        flaPartitionMap.store_top_level_fla_index(tr, n);
-        term_store.assignPartition(n, tr);
-    }
-
-    ipartitions_t& getClauseClassMask(CRef l) { return clause_class[l]; }
-    ipartitions_t& getVarClassMask(Var l) { return var_class[l]; }
-    void addClauseClassMask(CRef l, const ipartitions_t& toadd);
-    void addVarClassMask(Var l, const ipartitions_t& toadd);
-    std::vector<PTRef> getPartitions()
-    {
-        return flaPartitionMap.get_top_level_flas();
-    }
-
-    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        throw std::logic_error{"Not supported at the moment!"};
-    }
-
-    unsigned getNofPartitions() { return flaPartitionMap.getNoOfPartitions(); }
-
-    void transferPartitionMembership(PTRef old, PTRef new_ptref)
-    {
-        this->addIPartitions(new_ptref, getIPartitions(old));
-        flaPartitionMap.transferPartitionMembership(old, new_ptref);
-    }
-
-    int getPartitionIndex(PTRef ref) const {
-        return flaPartitionMap.getPartitionIndex(ref);
-    }
-
-#endif // PRODUCE_PROOF
     // Statistics
     int subst_num; // Number of substitutions
 

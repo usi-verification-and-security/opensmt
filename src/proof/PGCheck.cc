@@ -18,7 +18,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 #include <sys/wait.h>
 
@@ -325,4 +324,3 @@ void ProofGraph::checkProof( bool check_clauses )
 	resetVisited2();
 }
 
-#endif

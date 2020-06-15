@@ -31,8 +31,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
+#if !defined(USE_READLINE)
+#include <editline/readline.h>
+#else
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 #include "Interpret.h"
 #include "Theory.h"
 #include "UFLRATheory.h"
@@ -433,12 +437,14 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_getinterpolants:
         {
-            if(!parse_only)
-#ifdef PRODUCE_PROOF
-                getInterpolants(n);
-#else
-                notify_formatted(true, "This binary has no support to interpolation");
-#endif
+            if(!parse_only) {
+                if (config.produce_inter()) {
+                    getInterpolants(n);
+                } else {
+                    notify_formatted(true,
+                                     "Option to produce interpolants has not been set, skipping this command ...");
+                }
+            }
             break;
         }
         case t_getassignment:
@@ -738,6 +744,18 @@ bool Interpret::checkSat() {
             notify_formatted(false, "unsat");
         else
             notify_formatted(false, "unknown");
+
+        const Info& status = config.getInfo(":status");
+        if (!status.isEmpty()) {
+            std::string statusString(std::move(status.toString()));
+            if ((statusString.compare("sat") == 0) && (res == s_False)) {
+                notify_formatted(false, "(error \"check status which says sat\")");
+
+            }
+            else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
+                notify_formatted(false, "(error \"check status which says unsat\")");
+            }
+        }
     }
     else {
         notify_formatted(true, "Illegal command before set-logic: check-sat");
@@ -843,11 +861,10 @@ void Interpret::getModel() {
         const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
-            char* s = logic->printSym(symref);
+            const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
             ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << main_solver->getValue(term).val << ')' << '\n';
-            free(s);
         }
         else {
             char* s = logic->printSym(symref);
@@ -1330,7 +1347,6 @@ SRef Interpret::newSort(ASTNode& sn) {
     return rval;
 }
 
-#ifdef PRODUCE_PROOF
 void Interpret::getInterpolants(const ASTNode& n)
 {
     auto exps = *n.children;
@@ -1393,7 +1409,6 @@ void Interpret::getInterpolants(const ASTNode& n)
             free(itp);
         }
 }
-#endif
 
 bool Interpret::is_top_level_assertion(PTRef ref) {
     return get_assertion_index(ref) >= 0;

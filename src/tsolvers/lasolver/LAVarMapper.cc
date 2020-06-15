@@ -5,13 +5,22 @@
 #include "LAVarMapper.h"
 #include "LALogic.h"
 
-LVRef LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
+/**
+ * Remembers the mapping between a linear term (PTRef) and LA var (LVRef).
+ *
+ * The PTRef is expect to be a positive term, i.e., its leading variable does NOT have a negative coefficient.
+ * LA var is mapped to the positive term, but both positive term and its negation are mapped to the given LVRef.
+ *
+ * This avoids duplicate representations and simplifies the usage of these mappings since PTRefs do not have to be
+ * further normalized. The current implementation (26.5.2020) makes use of negative terms to represent all
+ * possible inequalities using LEQ and negation.
+ */
+void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     assert(!hasVar(e_orig));
     assert(!logic.isNegated(e_orig));
     if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) {
         laVarToPTRef.growTo(lv.x+1, PTRef_Undef);
     }
-
     laVarToPTRef[lv.x] = e_orig;
 
     PTId id_pos = logic.getPterm(e_orig).getId();
@@ -19,33 +28,35 @@ LVRef LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     assert(!hasVar(id_pos));
     int max_id = std::max(Idx(id_pos), Idx(id_neg));
 
-    if (max_id >= ptermToLavar.size())
-        ptermToLavar.growTo(max_id+1, LVRef_Undef);
+    if (max_id >= ptermToLavar.size()) {
+        ptermToLavar.growTo(max_id + 1, LVRef_Undef);
+    }
 
     assert(ptermToLavar[Idx(id_pos)] == ptermToLavar[Idx(id_neg)]);
-
     ptermToLavar[Idx(id_pos)] = lv;
     ptermToLavar[Idx(id_neg)] = lv;
-
-    return lv;
 }
 
 void LAVarMapper::addLeqVar(PTRef leq_tr, LVRef v)
 {
-    Pterm& leq_t = logic.getPterm(leq_tr);
+    Pterm const & leq_t = logic.getPterm(leq_tr);
     int idx = Idx(leq_t.getId());
-    for (int i = leqToLavar.size(); i <= idx; i++)
+    for (int i = leqToLavar.size(); i <= idx; i++) {
         leqToLavar.push(LVRef_Undef);
+    }
+    assert(leqToLavar[idx] == LVRef_Undef);
     leqToLavar[idx] = v;
 }
-
-bool LAVarMapper::hasVar(PTRef tr) { return hasVar(logic.getPterm(tr).getId()); }
 
 LVRef  LAVarMapper::getVarByPTId(PTId i) const { return ptermToLavar[Idx(i)]; }
 
 LVRef  LAVarMapper::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 
-bool   LAVarMapper::hasVar(PTId i) { return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef; }
+bool LAVarMapper::hasVar(PTRef tr) const { return hasVar(logic.getPterm(tr).getId()); }
+
+bool   LAVarMapper::hasVar(PTId i) const {
+    return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef;
+}
 
 void LAVarMapper::clear() {
     this->leqToLavar.clear();
