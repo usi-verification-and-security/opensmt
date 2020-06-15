@@ -16,13 +16,14 @@ private:
     LIALogic& logic;
     STPSolver *stpsolver;
 public:
-    IDLTHandler(SMTConfig& c, LIALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap);
     virtual ~IDLTHandler() = default;
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
-    virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 //    virtual lbool getPolaritySuggestion(PTRef) const override;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) override {
+        throw std::logic_error("Not implemented yet");
+    }
 
 };
 

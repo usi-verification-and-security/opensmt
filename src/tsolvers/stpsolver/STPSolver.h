@@ -40,7 +40,7 @@ class STPSolver : public TSolver {
     EdgeRef createNegation(EdgeRef e);
 
 public:
-    STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d);
+    STPSolver(SMTConfig & c, LALogic & l);
 
     ~STPSolver() override;
 
@@ -48,7 +48,7 @@ public:
 
     void print(ostream & out) override;
 
-    bool assertLit(PtAsgn asgn, bool b = false) override;
+    bool assertLit(PtAsgn asgn) override;
 
     void pushBacktrackPoint() override;
 

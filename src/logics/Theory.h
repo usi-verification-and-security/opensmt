@@ -264,15 +264,12 @@ public:
             : Theory(c)
             , lialogic(c)
             , tmap(lialogic)
-            , idlthandler(c, lialogic, deductions, tmap)
+            , idlthandler(c, lialogic, tmap)
     { }
     ~IDLTheory() = default;
     virtual LIALogic&    getLogic()    { return lialogic; }
     virtual TermMapper&  getTmap() { return tmap; }
     virtual IDLTHandler& getTSolverHandler() { return idlthandler; }
-    virtual IDLTHandler *getTSolverHandler_new(vec<DedElem> &d) {
-        return new IDLTHandler(config, lialogic, d, tmap);
-    }
     virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
 };
 

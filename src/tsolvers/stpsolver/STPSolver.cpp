@@ -6,8 +6,8 @@
 
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
-STPSolver::STPSolver(SMTConfig & c, LALogic & l, vec<DedElem> & d)
-        : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c, d)
+STPSolver::STPSolver(SMTConfig & c, LALogic & l)
+        : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c)
         , logic(l)
         , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
@@ -61,14 +61,7 @@ void STPSolver::declareAtom(PTRef tr) {
     // TODO: store information about the term tr if necessary
 
     if (isKnown(tr)) { return; }
-    {
-        // MB: To be simplified when the change is done in the main branch
-        const Pterm & t = logic.getPterm(tr);
-
-        while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
-            known_preds.push(false);
-        known_preds[Idx(t.getId())] = true;
-    }
+    setKnown(tr);
 
     auto parsed = parseRef(tr);
 
@@ -98,7 +91,7 @@ void STPSolver::declareAtom(PTRef tr) {
     mapper.registerEdge(neg);       // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
 }
 
-bool STPSolver::assertLit(PtAsgn asgn, bool b) {
+bool STPSolver::assertLit(PtAsgn asgn) {
     // Actually asserting an atom to the solver - adding a new constraint to the current set
     // asgn.tr is the atom to add
     // asgn.sgn is the polarity (positive or negative)

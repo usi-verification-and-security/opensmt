@@ -29,8 +29,7 @@ TEST_F(STPSolverTest, test_SimpleTest){
     PTRef ineq2 = logic.mkNumLeq(logic.mkNumMinus(y, z), logic.getTerm_NumZero());
     PTRef ineq3 = logic.mkNumLeq(logic.mkNumMinus(z, x), logic.mkConst(-1));
 
-    vec<DedElem> tmp;
-    STPSolver solver(config, logic, tmp);
+    STPSolver solver(config, logic);
 
     solver.declareAtom(ineq1);
     solver.declareAtom(ineq2);
