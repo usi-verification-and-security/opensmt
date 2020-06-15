@@ -162,5 +162,19 @@ TEST_F(ModelIntegrationTest, testSubstitutions) {
     EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
 }
 
+TEST_F(ModelIntegrationTest, testTrivialBooleanSubstitutionNegation) {
+    auto osmt = getLRAOsmt();
+    Logic& logic = osmt->getLogic();
+    PTRef x = logic.mkBoolVar("x");
+    PTRef fla = logic.mkNot(x);
+    MainSolver& mainSolver = osmt->getMainSolver();
+    char* msg;
+    mainSolver.insertFormula(fla, &msg);
+    sstat res = mainSolver.check();
+    ASSERT_EQ(res, s_True);
+    auto model = mainSolver.getModel();
+    EXPECT_EQ(model->evaluate(x), logic.getTerm_false());
+    EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+}
 
 
