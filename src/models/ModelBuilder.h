@@ -21,7 +21,7 @@ class ModelBuilder {
 
 public:
 
-    ModelBuilder(Logic & logic) : logic{logic} {}
+    ModelBuilder(Logic & logic) : logic(logic) {}
 
     void addVarValue(PTRef var, PTRef value) {
         auto res = assignment.insert(std::make_pair(var, value));

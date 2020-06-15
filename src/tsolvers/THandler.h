@@ -31,7 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolverHandler.h"
 #include "Theory.h"
 #include "TSolver.h"
-#include "ModelBuilder.h"
+
+class ModelBuilder;
 
 class THandler
 {
