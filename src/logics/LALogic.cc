@@ -5,6 +5,9 @@
 #include "LA.h"
 #include "LALogic.h"
 #include "FastRational.h"
+
+#include <memory>
+
 bool LALogic::isNegated(PTRef tr) const {
     //static const opensmt::Integer zero = 0;
     if (isNumConst(tr))
@@ -134,106 +137,30 @@ PTRef LALogic::normalizeMul(PTRef mul)
 }
 lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTRef, PtAsgn, PTRefHash> & substitutions)
 {
-    vec<LAExpression*> equalities;
+    std::vector<std::unique_ptr<LAExpression>> equalities;
     LALogic& logic = *this;
     // I don't know if reversing the order makes any sense but osmt1
     // does that.
     for (int i = top_level_arith.size()-1; i >= 0; i--) {
-        equalities.push(new LAExpression(logic, top_level_arith[i]));
+        equalities.emplace_back(new LAExpression(logic, top_level_arith[i]));
     }
-#ifdef SIMPLIFY_DEBUG
-    for (int i = 0; i < equalities.size(); i++) {
-        cerr << "; ";
-        equalities[i]->print(cerr);
-        cerr << endl;
-    }
-#endif
-    //
-    // If just one equality, produce substitution right away
-    //
-    if ( equalities.size( ) == 0 )
-        ; // Do nothing
-    else if ( equalities.size( ) == 1 ) {
-        LAExpression & lae = *equalities[ 0 ];
-        if (lae.solve() == PTRef_Undef) {
-            // Constant substituted by a constant.  No new info from
-            // here.
-//            printf("there is something wrong here\n");
-            return l_Undef;
+
+    for (auto const& equality : equalities) {
+        PTRef res = equality->solve();
+        if (res == PTRef_Undef) { // TODO: investigate this
+            continue;
         }
-        pair<PTRef, PTRef> sub = lae.getSubst();
-        assert( sub.first != PTRef_Undef );
-        assert( sub.second != PTRef_Undef );
-        if(substitutions.has(sub.first))
-        {
-            //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first].tr) << endl;
-            if(sub.second != substitutions[sub.first].tr)
-                return l_False;
-        } else
-            substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-    } else {
-        // Otherwise obtain substitutions
-        // by means of Gaussian Elimination
-        //
-        // FORWARD substitution
-        // We put the matrix equalities into upper triangular form
-        //
-        for (int i = 0; i < equalities.size()-1; i++) {
-            LAExpression &s = *equalities[i];
-            // Solve w.r.t. first variable
-            if (s.solve( ) == PTRef_Undef) {
-                if (logic.isTrue(s.toPTRef())) continue;
-                assert(logic.isFalse(s.toPTRef()));
-                return l_False;
-            }
-            // Use the first variable x in s to generate a
-            // substitution and replace x in lac
-            for ( int j = i + 1 ; j < equalities.size( ) ; j ++ ) {
-                LAExpression & lac = *equalities[ j ];
-                combine( s, lac );
-            }
-        }
-        //
-        // BACKWARD substitution
-        // From the last equality to the first we put
-        // the matrix equalities into canonical form
-        //
-        for (int i = equalities.size() - 1; i >= 1; i--) {
-            LAExpression & s = *equalities[i];
-            // Solve w.r.t. first variable
-            if (s.solve() == PTRef_Undef) {
-                if (logic.isTrue(s.toPTRef())) continue;
-                assert(logic.isFalse(s.toPTRef()));
-                return l_False;
-            }
-            // Use the first variable x in s as a
-            // substitution and replace x in lac
-            for (int j = i - 1; j >= 0; j--) {
-                LAExpression& lac = *equalities[j];
-                combine(s, lac);
-            }
-        }
-        //
-        // Now, for each row we get a substitution
-        //
-        for (int i = 0 ;i < equalities.size(); i++) {
-            LAExpression& lae = *equalities[i];
-            pair<PTRef, PTRef> sub = lae.getSubst();
-            if (sub.first == PTRef_Undef) continue;
-            assert(sub.second != PTRef_Undef);
-            //cout << printTerm(sub.first) << " <- " << printTerm(sub.second) << endl;
-            if(!substitutions.has(sub.first)) {
-                substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-//                cerr << "; gaussian substitution: " << logic.printTerm(sub.first) << " -> " << logic.printTerm(sub.second) << endl;
-            } else {
-                if (isConstant(sub.second) && isConstant(sub.first) && (sub.second != substitutions[sub.first].tr))
-                    return l_False;
-            }
+        auto sub = equality->getSubst();
+        PTRef var = sub.first;
+        assert(var != PTRef_Undef && isNumVar(var) && sub.second != PTRef_Undef);
+        if (substitutions.has(var)) {
+            // Already has substitution for this var, let the main subbstitution code deal with this situation
+            continue;
+        } else {
+            substitutions.insert(var, PtAsgn(sub.second, l_True));
         }
     }
-    // Clean constraints
-    for (int i = 0; i < equalities.size(); i++)
-        delete equalities[i];
+    // TODO: rethink the return value
     return l_Undef;
 }
 void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
