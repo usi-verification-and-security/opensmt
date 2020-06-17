@@ -19,7 +19,19 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, int curr)
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
         computeSubstitutions(coll_f, formulas, curr);
-        lialogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
+        // MB: In LIA we need to add the substitutions back to the formula, since not all equalities have solution
+        // given integer model of vars on left-hand side.
+        auto const & subst = getTSolverHandler().getSubstitutions();
+        auto const & entries = subst.getKeysAndValsPtrs();
+        vec<PTRef> args;
+        for (auto * entry : entries) {
+            if (lialogic.isNumVar(entry->key) && entry->data.sgn == l_True) {
+                args.push(lialogic.mkEq(entry->key, entry->data.tr));
+            }
+        }
+        args.push(pfstore[formulas[curr]].root);
+        PTRef newRoot = lialogic.mkAnd(args);
+        lialogic.simplifyAndSplitEq(newRoot, pfstore[formulas[curr]].root);
     }
     return true;
 }
