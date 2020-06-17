@@ -5,6 +5,7 @@
 #include "Simplex.h"
 
 #include <limits>
+#include <algorithm>
 
 // MB: helper functions
 namespace{
@@ -28,7 +29,6 @@ Simplex::Explanation Simplex::checkSimplex() {
     while (true) {
         repeats++;
         LVRef x = LVRef_Undef;
-
 
         if (!bland_rule && (repeats > tableau.getNumOfCols()))
             bland_rule = true;
@@ -70,43 +70,33 @@ Simplex::Explanation Simplex::checkSimplex() {
     }
 }
 
-const Delta Simplex::overBound(LVRef v) const
-{
-    assert( isModelOutOfBounds(v) );
-    if (isModelOutOfUpperBound(v))
-    {
-        return ( Delta(model->read(v) - model->Ub(v)) );
-    }
-    else if ( isModelOutOfLowerBound(v) )
-    {
-        return ( Delta(model->Lb(v) - model->read(v)) );
+const Delta Simplex::overBound(LVRef v) const {
+    assert(isModelOutOfBounds(v));
+    if (isModelOutOfUpperBound(v)) {
+        return (Delta(model->read(v) - model->Ub(v)));
+    } else if (isModelOutOfLowerBound(v)) {
+        return (Delta(model->Lb(v) - model->read(v)));
     }
     assert (false);
     printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
     exit(1);
 }
 
-//bool Simplex::isEquality(LVRef v) const
-//{
-//    return model->isEquality(v);
-//}
-
-bool Simplex::isUnbounded(LVRef v) const
-{
-    bool rval = model->isUnbounded(v);
-//    if (rval)
-//        printf("Var %s is unbounded\n", lva.printVar(v));
-    return rval;
+bool Simplex::isUnbounded(LVRef v) const {
+    return model->isUnbounded(v);
 }
 
 LVRef Simplex::getBasicVarToFixByShortestPoly() const {
+    assert(std::all_of(candidates.begin(), candidates.end(),
+                       [&](LVRef var) {
+                           return var != LVRef_Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+                       }));
+    // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getPolySize)
     LVRef current = LVRef_Undef;
-    std::size_t current_poly_size = static_cast<std::size_t>(-1);
-    for (auto it : candidates) {
-        assert(tableau.isBasic(it));
-        assert(it != LVRef_Undef);
-        assert(isModelOutOfBounds(it));
-        if (current == LVRef_Undef || current_poly_size > tableau.getPolySize(it)) {
+    std::size_t current_poly_size = std::numeric_limits<std::size_t>::max();
+    for (auto it : candidates) { // Select the var with smallest row
+        bool const doUpdate = tableau.getPolySize(it) < current_poly_size;
+        if (doUpdate) {
             current = it;
             current_poly_size = tableau.getPolySize(it);
         }
@@ -115,17 +105,20 @@ LVRef Simplex::getBasicVarToFixByShortestPoly() const {
 }
 
 LVRef Simplex::getBasicVarToFixByBland() const {
+    assert(std::all_of(candidates.begin(), candidates.end(),
+                       [&](LVRef var) {
+                           return var != LVRef_Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+                       }));
+    // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getVarId)
     auto curr_var_id_x = std::numeric_limits<unsigned>::max();
     LVRef current = LVRef_Undef;
-    for (auto it : candidates) {
-        assert(it != LVRef_Undef);
-        assert(tableau.isBasic(it));
-        assert(isModelOutOfBounds(it));
-        // Select the var with the smallest id
-        auto id = getVarId(it);
-        assert(it.x == id);
-        current = id < curr_var_id_x ? it : current;
-        curr_var_id_x = id < curr_var_id_x ? id : curr_var_id_x;
+    for (auto it : candidates) { // Select the var with the smallest id
+        auto const id = getVarId(it);
+        bool const doUpdate = id < curr_var_id_x;
+        if (doUpdate) {
+            current = it;
+            curr_var_id_x = id;
+        }
     }
     return current;
 }
@@ -228,15 +221,11 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
 
 Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     assert(!model->isUnbounded(it));
-    const LABound &itBound = boundStore[itBound_ref];
-    assert(itBound.getLVRef() == it);
-
-//  cerr << "; ASSERTING bound on " << *it << endl;
-
+    assert(boundStore[itBound_ref].getLVRef() == it);
 
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
-    if (model->boundTriviallyUnsatisfied(it, itBound_ref))
-    {
+    if (model->boundTriviallyUnsatisfied(it, itBound_ref)) {
+        const LABound & itBound = boundStore[itBound_ref];
         assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
         LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(it) : model->readUBoundRef(it);
         return {{br, 1}, {itBound_ref, 1}};
@@ -246,12 +235,11 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
     boundActivated(it);
 
     // Check if simple SAT can be given
-    if (model->boundTriviallySatisfied(it, itBound_ref))
-        return {};
+    if (model->boundTriviallySatisfied(it, itBound_ref)) { return {}; }
 
     model->pushBound(itBound_ref);
 
-    bufferOfActivatedBounds.push_back(std::make_pair(it, itBound_ref));
+    bufferOfActivatedBounds.emplace_back(it, itBound_ref);
     return {};
 }
 
@@ -321,44 +309,20 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 //
 Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower)
 {
-    Explanation expl;
-    if (conflictOnLower) {
-        // add all bounds for polynomial elements which limit lower bound
-        LABoundRef b_f = model->readLBoundRef(x);
-        expl.push_back({b_f, 1});
-        for (auto const & term : tableau.getRowPoly(x)) {
-            Real const & coeff = term.coeff;
-            assert(! coeff.isZero());
-            auto const var = term.var;
-            assert(var != x);
-            if (coeff < 0) {
-                LABoundRef br = model->readLBoundRef(var);
-                expl.push_back({br, -coeff});
-            }
-            else {
-                LABoundRef br = model->readUBoundRef(var);
-                expl.push_back({br,coeff});
-            }
+    LABoundRef br_f = conflictOnLower ? model->readLBoundRef(x) : model->readUBoundRef(x);
+    Explanation expl = {{br_f,1}};
+    // add all bounds for polynomial elements which limit the given bound
+    for (auto const & term : tableau.getRowPoly(x)) {
+        Real const & coeff = term.coeff;
+        auto const var = term.var;
+        assert(!coeff.isZero() && var != x);
+        if (coeff < 0) {
+            LABoundRef br = conflictOnLower ? model->readLBoundRef(var) : model->readUBoundRef(var);
+            expl.push_back({br, -coeff});
         }
-    }
-    else {
-        // add all bounds for polynomial elements which limit upper bound
-        LABoundRef br_f = model->readUBoundRef(x);
-        expl.push_back({br_f,1});
-
-        for (auto const & term : tableau.getRowPoly(x)) {
-            Real const & coeff = term.coeff;
-            assert( ! coeff.isZero());
-            auto const var = term.var;
-            assert(var != x);
-            if (coeff > 0) {
-                LABoundRef br = model->readLBoundRef(var);
-                expl.push_back({br, coeff});
-            }
-            else {
-                LABoundRef br = model->readUBoundRef(var);
-                expl.push_back({br, -coeff});
-            }
+        else {
+            LABoundRef br = conflictOnLower ? model->readUBoundRef(var) : model->readLBoundRef(var);
+            expl.push_back({br, coeff});
         }
     }
     return expl;
@@ -420,7 +384,7 @@ bool Simplex::checkTableauConsistency() const {
     return res;
 }
 
-bool Simplex::isProcessedByTableau(LVRef var) const {return tableau.isProcessed(var);}
+bool Simplex::isProcessedByTableau(LVRef var) const { return tableau.isProcessed(var); }
 
 const LABoundRef Simplex::getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
 
