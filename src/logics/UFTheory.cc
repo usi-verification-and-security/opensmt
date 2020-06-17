@@ -6,18 +6,18 @@
 //
 bool UFTheory::simplify(const vec<PFRef>& formulas, int curr)
 {
+    auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
-        pfstore[formulas[curr]].root = getLogic().mkAnd(pfstore[formulas[curr]].formulas);
-        return true;
+        currentFrame.root = getLogic().mkAnd(currentFrame.formulas);
     }
     else {
         PTRef coll_f = getCollateFunction(formulas, curr);
-
         PTRef trans = getLogic().learnEqTransitivity(coll_f);
-        coll_f = getLogic().isTrue(trans) ? coll_f : getLogic().mkAnd(coll_f, trans);
-
-        bool res = computeSubstitutions(coll_f, formulas, curr);
-        return res;
+        coll_f = getLogic().mkAnd(coll_f, trans);
+        auto subs_res = computeSubstitutions(coll_f);
+        getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
+        currentFrame.root = subs_res.result;
     }
+    return true;
 }
 

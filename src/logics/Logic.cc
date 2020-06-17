@@ -1564,37 +1564,13 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
     return l_Undef;
 }
 
-lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn pta)
-{
-    PTRef tr = pta.tr;
-    lbool asgn = l_Undef;
-    for (int i = 0; i < hashes.size(); i++) {
-        Map<PTRef,lbool,PTRefHash>& h = *(hashes[i]);
-        if (h.has(tr)) {
-            asgn = h[tr];
-            break;
-        }
-    }
-    if (asgn == l_Undef) {
-        if (curr_hash.has(tr))
-            asgn = curr_hash[tr];
-    }
-    if (asgn == l_Undef)
-        return l_Undef;
-    if (asgn != pta.sgn)
-        return l_False;
-    else if (asgn == pta.sgn)
-        return l_True;
-    assert(false);
-    throw std::logic_error("Unreachable code!");
-}
 
 //
 // TODO: Also this should most likely be dependent on the theory being
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
+void Logic::getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1625,10 +1601,8 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
                 purify(t[i], c, c_sign);
                 queue.push(PtAsgn(c, c_sign^true));
             }
-        // Found a fact.  It is important for soundness that we have also the original facts
-        // asserted to the euf solver in the future even though no search will be performed there.
         else {
-            lbool prev_val = isInHashes(prev_units, facts, pta);
+            lbool prev_val = facts.has(pta.tr) ? facts[pta.tr] : l_Undef;
             if (prev_val != l_Undef && prev_val != pta.sgn)
                 return; // conflict
             else if (prev_val == pta.sgn)

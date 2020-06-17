@@ -25,9 +25,8 @@ protected:
 
 TEST_F(GetFactsTest, test_UnitFact){
     PTRef eq = logic.mkEq(x,y);
-    vec<Map<PTRef,lbool,PTRefHash>*> previous;
     Map<PTRef,lbool,PTRefHash> newFacts;
-    logic.getNewFacts(eq, previous,newFacts);
+    logic.getNewFacts(eq, newFacts);
     ASSERT_TRUE(newFacts.has(eq));
     EXPECT_EQ(newFacts[eq], l_True);
 }
@@ -35,10 +34,9 @@ TEST_F(GetFactsTest, test_UnitFact){
 TEST_F(GetFactsTest, test_NegatedUnitFact){
     PTRef eq = logic.mkEq(x,y);
     PTRef neq = logic.mkNot(eq);
-    vec<Map<PTRef,lbool,PTRefHash>*> previous;
     Map<PTRef,lbool,PTRefHash> newFacts;
     // MB: Currently it does not learn inequalities. Should it?
-    logic.getNewFacts(neq, previous,newFacts);
+    logic.getNewFacts(neq, newFacts);
 //    ASSERT_TRUE(newFacts.has(neq));
 //    EXPECT_EQ(newFacts[eq], l_True);
 }
@@ -46,9 +44,8 @@ TEST_F(GetFactsTest, test_NegatedUnitFact){
 TEST_F(GetFactsTest, test_NegatedBoolLiteral){
     PTRef var = logic.mkBoolVar("a");
     PTRef neq = logic.mkNot(var);
-    vec<Map<PTRef,lbool,PTRefHash>*> previous;
     Map<PTRef,lbool,PTRefHash> newFacts;
-    logic.getNewFacts(neq, previous, newFacts);
+    logic.getNewFacts(neq, newFacts);
     ASSERT_TRUE(newFacts.has(var));
     EXPECT_EQ(newFacts[var], l_False);
 }
@@ -59,9 +56,8 @@ TEST_F(GetFactsTest, test_MultipleFacts){
     PTRef eq = logic.mkEq(x,y);
     PTRef neq = logic.mkNot(eq);
     PTRef conj = logic.mkAnd(a, logic.mkNot(logic.mkOr(b, neq)));
-    vec<Map<PTRef,lbool,PTRefHash>*> previous;
     Map<PTRef,lbool,PTRefHash> newFacts;
-    logic.getNewFacts(conj, previous, newFacts);
+    logic.getNewFacts(conj, newFacts);
     ASSERT_TRUE(newFacts.has(a));
     ASSERT_TRUE(newFacts.has(b));
     ASSERT_TRUE(newFacts.has(eq));
