@@ -7,19 +7,21 @@
 //
 bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
 {
+    auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
-        vec<PTRef> & flas = pfstore[formulas[curr]].formulas;
+        vec<PTRef> & flas = currentFrame.formulas;
         for (int i = 0; i < flas.size(); ++i) {
             PTRef & fla = flas[i];
             PTRef old = flas[i];
             lralogic.simplifyAndSplitEq(old, fla);
             lralogic.transferPartitionMembership(old, fla);
         }
-        pfstore[formulas[curr]].root = getLogic().mkAnd(flas);
+        currentFrame.root = getLogic().mkAnd(flas);
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
-        computeSubstitutions(coll_f, formulas, curr);
-        lralogic.simplifyAndSplitEq(pfstore[formulas[curr]].root, pfstore[formulas[curr]].root);
+        auto subs_res = computeSubstitutions(coll_f);
+        getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
+        lralogic.simplifyAndSplitEq(subs_res.result, currentFrame.root);
     }
     return true;
 }

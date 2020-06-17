@@ -82,19 +82,12 @@ struct PushFrame
     friend PushFrameAllocator;
 private:
     FrameId id;
-    //  If a lower frame F contains a substitution x = f(Y), x = f(Y)
-    //  needs to be inserted into the root of the lower frame
-    Map<PTRef,lbool,PTRefHash> seen; // Contains all the variables x seen in this frame.
 public:
     FrameId getId() const                          { return id; }
     int     size()  const                         { return formulas.size(); }
     void    push(PTRef tr)                        { formulas.push(tr); }
     PTRef operator[] (int i) const                 { return formulas[i]; }
-    Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
-    PTRef substs;                     // Contains the substitutions as a conjunction (equalities possibly split)
-    void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
-    bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;
     bool unsat;                       // If true than the stack of frames with this frame at top is UNSAT
     PushFrame(PushFrame& pf);
@@ -159,13 +152,18 @@ class Theory
     inline bool keepPartitions() const { return config.produce_inter(); }
     PTRef getSubstitutionsFormulaFromUnits(Map<PTRef,lbool,PTRefHash> & units);
   public:
+    struct SubstitutionResult {
+        Map<PTRef,PtAsgn,PTRefHash> usedSubstitution;
+        PTRef result;
+    };
+
+
     PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
-    virtual void            purify(const vec<PFRef>&, int);        // Purify a vector of PushFrames
-    bool                    computeSubstitutions(PTRef coll_f, const vec<PFRef>& frames, int curr);
+    SubstitutionResult      computeSubstitutions(PTRef fla);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s);
     virtual                ~Theory()                           {};
 };

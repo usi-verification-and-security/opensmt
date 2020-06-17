@@ -109,9 +109,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     PushFrame& lastFrame =  pfstore[frames.last()];
     lastFrame.push(root);
-    lastFrame.units.clear();
     lastFrame.root = PTRef_Undef;
-    lastFrame.substs = logic.getTerm_true();
     // New formula has been added to the last frame. If the frame has been simplified before, we need to do it again
     frames.setSimplifiedUntil(std::min(frames.getSimplifiedUntil(), frames.size() - 1));
     return s_Undef;
