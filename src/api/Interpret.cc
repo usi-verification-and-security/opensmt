@@ -1160,14 +1160,22 @@ void Interpret::getInterpolants(const ASTNode& n)
             opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
         }
         else {
-            assert(logic.isAnd(group));
-            Pterm & and_t = logic.getPterm(group);
-            for (int j = 0; j < and_t.size(); j++) {
-                PTRef tr = and_t[j];
-                assert(is_top_level_assertion(tr));
-                int assertion_index = get_assertion_index(tr);
-                assert(assertion_index >= 0);
-                opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
+            bool ok = group != PTRef_Undef && logic.isAnd(group);
+            if (ok) {
+                Pterm const & and_t = logic.getPterm(group);
+                for (int j = 0; j < and_t.size(); j++) {
+                    PTRef tr = and_t[j];
+                    ok = is_top_level_assertion(tr);
+                    if (!ok) { break; }
+                    int assertion_index = get_assertion_index(tr);
+                    assert(assertion_index >= 0);
+                    opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
+                }
+            }
+            if (!ok) {
+                // error in interpolation command
+                notify_formatted(true, "Invalid arguments of get-interpolants command");
+                return;
             }
         }
         partitionings.push_c(p);
