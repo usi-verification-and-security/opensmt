@@ -113,12 +113,12 @@ bool STPSolver::assertLit(PtAsgn asgn) {
         // store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
         return true;
     }
-
-    if (graph.isTrue(neg) || graph.isTrue(e)) {             // negation of assignment was found as a consequence
+    else if (graph.isTrue(neg) || graph.isTrue(e)) {        // negation of assignment was found as a consequence
+        assert( asgn.sgn == lbool(!graph.isTrue(e)) );      // the polarity must be opposite to previous check
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
         inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
-        has_explanation = true;
         inv_asgn = asgn;
+        has_explanation = true;                             // marks this TSolver as the cause of inconsistency
         return false;
     }
 
