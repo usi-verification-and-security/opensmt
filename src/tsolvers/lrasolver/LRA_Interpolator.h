@@ -5,7 +5,6 @@
 #ifndef OPENSMT_LRA_INTERPOLATOR_H
 #define OPENSMT_LRA_INTERPOLATOR_H
 
-#ifdef PRODUCE_PROOF
 
 #include <PtStructs.h>
 #include <Global.h>
@@ -89,5 +88,4 @@ private:
 
 };
 
-#endif // PRODUCE_PROOF
 #endif //OPENSMT_LRA_INTERPOLATOR_H

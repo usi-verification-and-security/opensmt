@@ -41,6 +41,7 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
     , logic    (logic_)
     , tmap     (tmap)
     , s_empty  (true)
+    , alreadyAsserted(logic.getTerm_true())
 {
     frame_terms.push(logic.getTerm_true()); // frame 0 does not have a var
     frame_term = frame_terms[0];
@@ -146,10 +147,10 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
 #endif
 
-#ifdef PRODUCE_PROOF
-    assert(logic.getPartitionIndex(formula) != -1);
-    currentPartition = logic.getPartitionIndex(formula);
-#endif // PRODUCE_PROOF
+    if (keepPartitionInfo()) {
+        assert(logic.getPartitionIndex(formula) != -1);
+        currentPartition = logic.getPartitionIndex(formula);
+    }
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
@@ -437,23 +438,21 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-#ifdef PRODUCE_PROOF
-    std::pair<CRef,CRef> iorefs = std::make_pair(CRef_Undef,CRef_Undef);
-    bool res = solver.addOriginalSMTClause(c, iorefs);
-    CRef ref = iorefs.first;
-    if (ref != CRef_Undef) {
-        ipartitions_t parts = 0;
-        assert(currentPartition != -1);
-        setbit(parts, static_cast<unsigned int>(currentPartition));
-        logic.addClauseClassMask(ref, parts);
-        for (int i = 0; i < c.size(); ++i) {
-            logic.addVarClassMask(var(c[i]), parts);
+    if (keepPartitionInfo()) {
+        std::pair<CRef, CRef> iorefs = std::make_pair(CRef_Undef, CRef_Undef);
+        bool res = solver.addOriginalSMTClause(c, iorefs);
+        CRef ref = iorefs.first;
+        if (ref != CRef_Undef) {
+            ipartitions_t parts = 0;
+            assert(currentPartition != -1);
+            setbit(parts, static_cast<unsigned int>(currentPartition));
+            logic.addClauseClassMask(ref, parts);
         }
+        return res;
     }
-#else
-    bool res = solver.addOriginalSMTClause(c);
-#endif
-    return res;
+    else {
+        return solver.addOriginalSMTClause(c);
+    }
 }
 //
 // Give the formula to the solver
@@ -585,10 +584,11 @@ lbool Cnfizer::getTermValue (PTRef tr) const
 }
 
 bool Cnfizer::Cache::contains(PTRef term, PTRef frame_term) {
-    return this->cache.find(std::make_pair<>(term, frame_term)) != this->cache.end();
+    return cache.find(std::make_pair<>(term, frame_term)) != cache.end()
+        || ( frame_term != zeroLevelTerm && cache.find(std::make_pair<>(term, zeroLevelTerm)) != cache.end());
 }
 
 void Cnfizer::Cache::insert(PTRef term, PTRef frame_term) {
     assert(!contains(term, frame_term));
-    this->cache.insert(std::make_pair<>(term, frame_term));
+    cache.insert(std::make_pair<>(term, frame_term));
 }

@@ -37,17 +37,13 @@ class LRATHandler : public TSolverHandler
     LRALogic& logic;
     LRASolver *lrasolver;
   public:
-    LRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap);
     virtual ~LRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs) override;
-    virtual bool assertLit_special(PtAsgn) override;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
     virtual lbool getPolaritySuggestion(PTRef) const override;
 
-#ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
-#endif
 };
 
 #endif

@@ -479,6 +479,7 @@ const char* SMTConfig::o_sat_dump_rnd_inter = ":sat-num-rnd-itps";
 const char* SMTConfig::o_garbage_frac  = ":garbage-frac";
 const char* SMTConfig::o_restart_first = ":restart-first";
 const char* SMTConfig::o_restart_inc   = ":restart-inc";
+const char* SMTConfig::o_produce_proofs = ":produce-proofs";
 const char* SMTConfig::o_produce_inter = ":produce-interpolants";
 const char* SMTConfig::o_certify_inter = ":certify-interpolants";
 const char* SMTConfig::o_interpolant_cnf = ":cnf-interpolants";
@@ -561,7 +562,7 @@ SMTConfig::initializeConfig( )
   certification_level           = 0;
   strcpy( certifying_solver, "tool_wrapper.sh" );
   // Set SAT-Solver Default configuration
-  sat_theory_propagation        = 1;
+  theory_propagation            = true;
   sat_polarity_mode             = 0;
   sat_initial_skip_step         = 1;
   sat_skip_step_factor          = 1;
@@ -579,16 +580,12 @@ SMTConfig::initializeConfig( )
   sat_lazy_dtc_burst            = 1;
   // UF-Solver Default configuration
   uf_disable                    = 0;
-  uf_theory_propagation         = 1;
   // BV-Solver Default configuration
   bv_disable                    = 0;
-  bv_theory_propagation         = 1;
   // DL-Solver Default configuration
   dl_disable                    = 0;
-  dl_theory_propagation         = 1;
   // LRA-Solver Default configuration
   lra_disable                   = 0;
-  lra_theory_propagation        = 1;
   lra_poly_deduct_size          = 0;
   lra_integer_solver            = 0;
   lra_check_on_assert           = 0;
@@ -607,7 +604,7 @@ SMTConfig::initializeConfig( )
   proof_random_seed	        = 0;
   simplify_interpolant           = 0;
   sat_theory_polarity_suggestion = 1;
-
+  cuf_bitwidth                   = 32;
 }
 
 void

@@ -44,4 +44,16 @@ TEST(UseVector_test, testAddAndRemoveMultiple){
     ASSERT_EQ(uv.size(), 2);
 }
 
+TEST(UseVector_test, testWriteRead){
+    UseVector uv;
+    ERef x{137};
+    auto index = uv.addParent(x);
+    ASSERT_EQ(uv.size(), 1);
+    auto entry = uv[index];
+    ASSERT_EQ(UseVector::entryToERef(entry), x);
+    entry.mark();
+    entry.unmark();
+    ASSERT_EQ(UseVector::entryToERef(entry), x);
+}
+
 

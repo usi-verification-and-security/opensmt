@@ -52,6 +52,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "THandler.h"
 
 #include <cstdio>
+#include <iosfwd>
+#include <memory>
+#include <sstream>
+
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
@@ -60,13 +64,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Timer.h"
 
-#ifdef PRODUCE_PROOF
 class Proof;
 class ProofGraph;
-class Enode;
-#endif
 
-
+// Helper method to print Literal to a stream
+std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
 
 // -----------------------------------------------------------------------------------------
 // The splits
@@ -340,11 +342,6 @@ public:
     void    checkGarbage(double gf);
     void    checkGarbage();
 
-
-#ifdef PRODUCE_PROOF
-    set< int >               axioms_ids;     // Set of ids for lemmas on demand
-#endif
-
     // External support incremental and backtrackable APIs
     // MB: This is used (and needed) by BitBlaster; can be removed if BitBlaster is re-worked
     void        pushBacktrackPoint ( );
@@ -417,6 +414,8 @@ protected:
         VarData d = {cr, l};
         return d;
     }
+
+    void virtual setAssumptions(vec<Lit> const& assumps);
 
     struct Watcher
     {
@@ -506,11 +505,7 @@ protected:
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
 #endif
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
-#ifdef PRODUCE_PROOF
-    vec<int>            trail_pos;        // 'trail_pos[var]' is the variable's position in 'trail[]'. This supersedes 'level[]' in some sense, and 'level[]' will probably be removed in future releases.
-    vec<Lit>            analyze_proof;
-    vec< CRef >         units;
-#endif
+
     vec<VarData>        vardata;          // Stores reason and level for each variable.
     int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
@@ -619,11 +614,7 @@ protected:
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
     CRef     reason           (Var x) const;
-//=================================================================================================
-    // Added Code
-    void     setReason( Var x, CRef c );
-    // Added Code
-    //=================================================================================================
+
     int      level            (Var x) const;
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
     bool     withinBudget     ()      const;
@@ -631,10 +622,6 @@ protected:
 
     void     printSMTLit              ( ostream &, const Lit );
 
-#ifdef PRODUCE_PROOF
-    void     printRestrictedSMTClause ( ostream &, vec< Lit > &, const ipartitions_t & );
-    Enode *  mkRestrictedSMTClause    ( vec< Lit > &, const ipartitions_t & );
-#endif
     virtual void verifyModel      ();
     void         checkLiteralCount();
 
@@ -665,7 +652,7 @@ protected:
 
 public:
 
-    void     printLit         (Lit l);
+    void     printLit         (Lit l) const;
     template<class C>
     void     printClause      (const C& c);
     void     printClause      ( CRef );
@@ -678,11 +665,7 @@ public:
 	char * printCnfLearnts  ();
 
     bool    smtSolve         ( );             // Solve
-    /*
-          lbool  getModel               ( Enode * );
-    */
 
-#ifdef PRODUCE_PROOF
     void   printProofSMT2          ( ostream & ); // Print proof
     void   printProofDotty         ( );           // Print proof
     void   printInter              ( ostream & ); // Generate and print interpolants
@@ -709,28 +692,6 @@ public:
     void   deleteProofGraph          ();
     void   reduceProofGraph          ();
     void   checkPartitions           ();
-    inline ipartitions_t & getIPartitions ( CRef c )
-    {
-        assert( clause_to_partition.find( c ) != clause_to_partition.end( ) );
-        return clause_to_partition[ c ];
-    }
-
-// NOTE old methods, to check
-    void   printProof              ( ostream & );
-    void   GetInterpolants         (const vector<vector<int> >& partitions, vector<PTRef>& interpolants);
-    void   verifyInterpolantWithExternalTool ( vector< PTRef > & );
-    inline TheoryInterpolator*                  getTheoryInterpolator( CRef cr )
-    {
-        assert( clause_to_itpr.find(cr) != clause_to_itpr.end() );
-        return clause_to_itpr[ cr ];
-    }
-    inline void                  setTheoryInterpolator ( CRef cr, TheoryInterpolator* ptr )
-    {
-        clause_to_itpr[ cr ] = ptr;
-    }
-
-
-#endif
 
     void   dumpRndInter           (std::ofstream&); // Dumps a random interpolation problem
 
@@ -746,8 +707,6 @@ protected:
     TPropRes handleUnsat          ();              // Theory check resulted in unsat
 
     void   deduceTheory           (vec<LitLev>&);  // Perform theory-deductions
-
-    int    analyzeUnsatLemma      ( CRef );        // Conflict analysis for an unsat lemma on demand
 
     void   cancelUntilVar         ( Var );         // Backtrack until a certain variable
     void   cancelUntilVarTempInit ( Var );         // Backtrack until a certain variable
@@ -768,21 +727,16 @@ protected:
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
 
-#ifdef PRODUCE_PROOF
     //
     // Proof production
     //
-    Proof *             proof_;                   // (Pointer to) Proof store
-    Proof &             proof;                    // Proof store
+    bool logsProofForInterpolation() const { return static_cast<bool>(proof); }
+    void finalizeProof(CRef finalConflict);
+    std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     ProofGraph *        proof_graph;              // Proof graph
-    vec< CRef >         tleaves;                  // Store theory clauses to be removed
+    // End of proof production
 
-    map< CRef, TheoryInterpolator* >  clause_to_itpr;        // Clause id to interpolant (for theory clauses)
-    // TODO: Maybe change to vectors
-    vector< pair< CRef, ipartitions_t > > units_to_partition;  // Unit clauses and their partitions
-    map< CRef, ipartitions_t >            clause_to_partition; // Clause id to interpolant partition
-#endif
     //
     // Data structures for DTC
     //
@@ -802,10 +756,6 @@ protected:
             , NEWCLAUSE
             , NEWLEARNT
             , NEWAXIOM
-#ifdef PRODUCE_PROOF
-            , NEWPROOF
-            , NEWINTER
-#endif
         };
     private:
         oper_t op;
@@ -872,10 +822,6 @@ protected:
 
 //=================================================================================================
 // Implementation of inline methods:
-//=================================================================================================
-// Added Code
-//FIXME inline void CoreSMTSolver::setReason( Var x, CRef c ) { vardata[x].reason = c; }
-// Added Code
 //=================================================================================================
 inline CRef CoreSMTSolver::reason(Var x) const
 {
@@ -945,11 +891,11 @@ inline void CoreSMTSolver::claBumpActivity (Clause& c)
 inline void CoreSMTSolver::checkGarbage(void) { return checkGarbage(garbage_frac); }
 inline void CoreSMTSolver::checkGarbage(double gf)
 {
-#ifndef PRODUCE_PROOF
     // FIXME Relocation not compatible at the moment with proof tracking
-    if (ca.wasted() > ca.size() * gf)
+    if (this->logsProofForInterpolation()) { return; }
+    if (ca.wasted() > ca.size() * gf) {
         garbageCollect();
-#endif
+    }
 }
 
 inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
@@ -1012,7 +958,7 @@ inline uint32_t CoreSMTSolver::abstractLevel (Var x) const                { retu
 inline lbool    CoreSMTSolver::value         (Var x) const                { return assigns[x]; }
 inline lbool    CoreSMTSolver::value         (Lit p) const                { return assigns[var(p)] ^ sign(p); }
 inline lbool    CoreSMTSolver::safeValue     (Var x) const                { if (x < assigns.size()) return value(x); else return l_Undef; }
-inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { return safeValue(var(p)); }
+inline lbool    CoreSMTSolver::safeValue     (Lit p) const                { auto varValue = safeValue(var(p)); return varValue != l_Undef ? (varValue ^ sign(p)) : l_Undef; }
 inline lbool    CoreSMTSolver::modelValue    (Lit p) const                { return model[var(p)] != l_Undef ? (model[var(p)] ^ sign(p)) : l_Undef; }
 inline int      CoreSMTSolver::nAssigns      ()      const                { return trail.size(); }
 inline int      CoreSMTSolver::nClauses      ()      const                { return clauses.size(); }
@@ -1047,7 +993,7 @@ inline bool     CoreSMTSolver::withinBudget() const
 inline bool     CoreSMTSolver::solve  (const vec<Lit>& assumps)
 {
     budgetOff();
-    assumps.copyTo(assumptions);
+    setAssumptions(assumps);
     return solve_() == l_True;
 }
 
@@ -1108,10 +1054,11 @@ static inline const char* showBool(bool b) { return b ? "true" : "false"; }
 // Just like 'assert()' but expression will be evaluated in the release version as well.
 static inline void check(bool expr) { (void)expr; assert(expr); }
 
-inline void CoreSMTSolver::printLit(Lit l)
+inline void CoreSMTSolver::printLit(Lit l) const
 {
-    reportf("%s%-3d", sign(l) ? "-" : "", var(l)+1 );
-    //reportf("%s%-3d:%c", sign(l) ? "-" : "", var(l)+1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
+    std::flush(std::cout);
+    std::cerr << l;
+    std::flush(std::cerr);
 }
 
 

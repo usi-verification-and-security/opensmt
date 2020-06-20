@@ -96,7 +96,6 @@ class MainSolver
     THandler&           thandler;
     PushFrameAllocator& pfstore;
     TermMapper&         tmap;
-    vec<DedElem>        deductions;
     SimpSMTSolver*      smt_solver;
     Tseitin             ts;
     PushFramesWrapper   frames;
@@ -128,7 +127,6 @@ class MainSolver
 
     FContainer simplifyEqualities(vec<PtChild>& terms);
 
-    void computeIncomingEdges(PTRef tr, Map<PTRef,int,PTRefHash>& PTRefToIncoming);
     PTRef rewriteMaxArity(PTRef);
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done

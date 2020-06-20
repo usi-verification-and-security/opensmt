@@ -84,8 +84,8 @@ const char* Egraph::s_any_prefix = "a";
 const char* Egraph::s_val_true = "true";
 const char* Egraph::s_val_false = "false";
 
-Egraph::Egraph(SMTConfig & c, Logic& l , vec<DedElem>& d)
-      : TSolver            (descr_uf_solver, descr_uf_solver, c, d)
+Egraph::Egraph(SMTConfig & c, Logic& l)
+      : TSolver            (descr_uf_solver, descr_uf_solver, c)
       , logic              (l)
 #if defined(PEDANTIC_DEBUG)
       , enode_store        ( logic, forbid_allocator )
@@ -161,39 +161,6 @@ void Egraph::popBacktrackPoint() {
 }
 
 //
-// Returns a deduction
-//
-PtAsgn_reason Egraph::getDeduction( ) {
-
-#ifdef VERBOSE_EUF
-    cerr << "deductions available: " << th_deductions.size() - deductions_next << endl;
-#endif
-    // Communicate UF deductions
-    while ( deductions_next < th_deductions.size_( ) ) {
-        PtAsgn_reason pta = th_deductions[deductions_next++];
-        // For sure this has a deduced polarity
-        assert( logic.getPterm(pta.tr).getVar() == -1 || deduced[logic.getPterm(pta.tr).getVar()] != l_Undef );
-        // If it has been pushed it is not a good candidate
-        // for deduction
-        if ( hasPolarity(pta.tr) )
-            continue;
-
-#ifdef STATISTICS
-        tsolver_stats.deductions_sent ++;
-#ifdef VERBOSE_EUF
-        cerr << "sent a deduction" << endl;
-#endif
-//    tsolvers_stats[ index ]->deductions_sent ++;
-#endif
-
-        return pta;
-    }
-
-    // We have already returned all the possible deductions
-    return PtAsgn_reason_Undef;
-}
-
-//
 // Returns a suggestion
 //
 PTRef Egraph::getSuggestion( )
@@ -205,9 +172,6 @@ PTRef Egraph::getSuggestion( )
     suggestions.pop();
     if ( hasPolarity(tr) )
       continue;
-    if ( logic.getPterm(tr).getVar() == -1 || deduced[logic.getPterm(tr).getVar()] != l_Undef )
-      continue;
-
     return tr;
   }
 
@@ -412,23 +376,13 @@ void Egraph::declareTerm(PTRef tr) {
         enode_store.addDistClass(tr);
 
     if (logic.hasSortBool(tr)) {
-        Pterm& t = logic.getPterm(tr);
-        while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
-            known_preds.push(false);
-        known_preds[Idx(t.getId())] = true;
+        setKnown(tr);
     }
 }
 
 bool Egraph::addEquality(PtAsgn pa) {
     Pterm& pt = logic.getPterm(pa.tr);
     assert(pt.size() == 2);
-
-    if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
-#ifdef VERBOSE_EUF
-        cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
-#endif
-        return true;
-    }
     bool res = true;
     PTRef e = pt[0];
     for (int i = 1; i < pt.size() && res == true; i++)
@@ -465,13 +419,6 @@ bool Egraph::addDisequality(PtAsgn pa) {
     const Pterm& pt = logic.getPterm(pa.tr);
     bool res = true;
 
-    if (pt.getVar() != -1 && deduced[pt.getVar()] != l_Undef && deduced[pt.getVar()] == pa.sgn) {
-#ifdef VERBOSE_EUF
-        cerr << "Assertion already deduced: " << logic.printTerm(pa.tr) << endl;
-#endif
-        return true;
-    }
-
     if (pt.size() == 2)
         res = assertNEq(pt[0], pt[1], pa);
     else
@@ -505,12 +452,6 @@ bool Egraph::addDisequality(PtAsgn pa) {
 }
 
 bool Egraph::addTrue(PTRef term) {
-    if (logic.getPterm(term).getVar() != -1 && deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_True) {
-#ifdef VERBOSE_EUF
-        cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
-#endif
-        return true;
-    }
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
 #ifdef STATISTICS
     if (res == false)
@@ -526,12 +467,6 @@ bool Egraph::addTrue(PTRef term) {
 }
 
 bool Egraph::addFalse(PTRef term) {
-    if (logic.getPterm(term).getVar() != -1 && deduced[logic.getPterm(term).getVar()] != l_Undef && deduced[logic.getPterm(term).getVar()] == l_False) {
-#ifdef VERBOSE_EUF
-        cerr << "Assertion already deduced: " << logic.printTerm(term) << endl;
-#endif
-        return true;
-    }
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
 
 
@@ -1051,7 +986,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
-    if ( config.uf_theory_propagation > 0 ) {
+    if (config.theory_propagation) {
         deduce( x, y, reason );
     }
 
@@ -1185,12 +1120,9 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             continue;
         }
         assert(logic.getPterm(v_tr).getVar() != -1);
-        if (!hasPolarity(v_tr) && deduced[logic.getPterm(v_tr).getVar()] == l_Undef) {
-            if (logic.getPterm(v_tr).getVar() != -1) {
-                deduced[logic.getPterm(v_tr).getVar()] = {id, deduced_polarity};
-            }
+        if (!hasPolarity(v_tr)) {
             assert(v_tr == enode_store.ERefToTerm[v]);
-            th_deductions.push(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
+            storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
             cerr << "Deducing ";
             cerr << (deduced_polarity == l_False ? "not " : "");
@@ -1433,53 +1365,53 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     return false;
 }
 
-bool Egraph::assertLit(PtAsgn pta, bool)
+bool Egraph::assertLit(PtAsgn pta)
 {
     // invalidate values
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
-    const Pterm& pt = logic.term_store[pt_r];
+    const Pterm& pt = logic.getPterm(pt_r);
 
-    assert(!hasPolarity(pt_r));
+    if (hasPolarity(pt_r) && getPolarity(pt_r) == sgn) {
+        // Already known, no new information;
+        // MB: The deductions done by this TSolver are also marked using polarity.
+        //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
+        //     once it is marked for deduction, so the implementation must count with that.
+        tsolver_stats.sat_calls ++;
+        return true;
+    }
 
     bool res = true; // MB: true means NO conflict, false means conflict
     undo_stack_main.push(Undo(SET_POLARITY, pt_r));
+    setPolarity(pt_r, sgn);
 
     // Watch out here! the second argument of PtAsgn constructor is
     // in fact lbool!
     if (logic.isEquality(pt.symb()) && sgn == l_True) {
-        setPolarity(pt_r, l_True);
         res = addEquality(PtAsgn(pt_r, l_True));
     }
     else if (logic.isEquality(pt.symb()) && sgn == l_False) {
-        setPolarity(pt_r, l_False);
         res = addDisequality(PtAsgn(pt_r, l_False));
     }
     else if (logic.isDisequality(pt.symb()) && sgn == l_True) {
-        setPolarity(pt_r, l_True);
         res = addDisequality(PtAsgn(pt_r, l_True));
     }
     else if (logic.isDisequality(pt.symb()) && sgn == l_False) {
-        setPolarity(pt_r, l_False);
         res = addEquality(PtAsgn(pt_r, l_False));
     }
     else if (logic.isUP(pt_r) && sgn == l_True) {
-        setPolarity(pt_r, l_True);
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
     }
     else if (logic.isUP(pt_r) && sgn == l_False) {
-        setPolarity(pt_r, l_False);
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_True) {
-        setPolarity(pt_r, l_True);
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_False) {
-        setPolarity(pt_r, l_False);
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
     }
@@ -1966,6 +1898,7 @@ uint32_t UseVector::addParent(ERef parent) {
     auto entry = erefToEntry(parent);
     data[index] = entry;
     ++nelems;
+    assert(entryToERef(entry) == parent);
     return index;
 }
 
@@ -1978,11 +1911,11 @@ void UseVector::clearEntryAt(int index) {
 
 uint32_t UseVector::getFreeSlotIndex() {
     auto ret = free;
-    if (ret >= 0) {
+    if (ret != Entry::FREE_ENTRY_LIST_GUARD) {
         Entry e = data[free];
         assert(e.isFree());
         free = freeEntryToIndex(e);
-        assert(free < 0 || static_cast<std::size_t>(free) < data.size());
+        assert(free == Entry::FREE_ENTRY_LIST_GUARD || static_cast<std::size_t>(free) < data.size());
         return ret;
     }
     ret = data.size();

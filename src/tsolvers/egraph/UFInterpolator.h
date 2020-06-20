@@ -36,8 +36,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *  }
  */
 
-#ifdef PRODUCE_PROOF
-
 #ifndef UF_INTERPOLATOR_H
 #define UF_INTERPOLATOR_H
 
@@ -259,7 +257,5 @@ private:
 
   vector< CAdjust * > undo_adjust;
 };
-
-#endif
 
 #endif

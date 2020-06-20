@@ -178,7 +178,7 @@ void THandler::getConflict (
 
     max_decision_level = -1;
     for (int i = 0; i < explanation.size(); ++i) {
-        PtAsgn & ei = explanation[i];
+        PtAsgn const & ei = explanation[i];
         assert(ei.sgn == l_True || ei.sgn == l_False);
         Var v = ptrefToVar(ei.tr);
         bool negate = ei.sgn == l_False;
@@ -191,31 +191,12 @@ void THandler::getConflict (
     }
 }
 
-#ifdef PRODUCE_PROOF
 
 PTRef
 THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
 {
     return getSolverHandler().getInterpolant(mask, labels);
 }
-
-//PTRef THandler::getInterpolants(const ipartitions_t& p)
-//{
-//    return getSolverHandler().getInterpolants(p);
-    /*
-    vec<PTRef> itps;
-    for(int i = 0; i < tsolvers.size(); ++i)
-        if(tsolvers[i] != NULL)
-            itps.push(tsolvers[i]->getInterpolants(p));
-
-  // Check interpolants correctness
-  //if ( config.proof_certify_inter > 1 )
-    //verifyInterpolantWithExternalTool( itps[0], p );
-
-  return itps[0];
-  */
-//}
-#endif
 
 //
 // It is in principle possible that the egraph contains deduceable literals
@@ -271,41 +252,20 @@ Lit THandler::getSuggestion( ) {
 
 void THandler::getReason( Lit l, vec< Lit > & reason)
 {
-#if LAZY_COMMUNICATION
-    assert( checked_trail_size == stack.size( ) );
-    assert( static_cast< int >( checked_trail_size ) == trail.size( ) );
-#else
-#endif
-
     Var   v = var(l);
     PTRef e = tmap.varToPTRef(v);
 
-    // It must be a TAtom and already disabled
-    assert( getLogic().isTheoryTerm(e) );
-    assert(getSolverHandler().deductions[v].polarity != l_Undef);
-    TSolver* solver = getSolverHandler().tsolvers[getSolverHandler().deductions[v].deducedBy.id];
-//  assert( !e->hasPolarity( ) );
-//  assert( e->isDeduced( ) );
-//  assert( e->getDeduced( ) != l_Undef );           // Last assigned deduction
-#if LAZY_COMMUNICATION
-    assert( e->getPolarity( ) != l_Undef );          // Last assigned polarity
-    assert( e->getPolarity( ) == e->getDeduced( ) ); // The two coincide
-#else
-#endif
-
-    solver->pushBacktrackPoint( );
-
-    // Assign reversed polarity temporairly
-//  e->setPolarity( e->getDeduced( ) == l_True ? l_False : l_True );
-    // Compute reason in whatever solver
-//  const bool res = egraph.assertLit( e, true ) &&
-//                   egraph.check( true );
-    lbool res = l_Undef;
+    // It must be a TAtom and already deduced
+    assert(getLogic().isTheoryTerm(e));
+    TSolver* solver = getSolverHandler().getReasoningSolverFor(e);
+    assert(solver);
+    solver->pushBacktrackPoint();
     // Assign temporarily opposite polarity
-    res = solver->assertLit(PtAsgn(e, sign(~l) ? l_False : l_True)) == false ? l_False : l_Undef;
+    PtAsgn conflictingPolarity = PtAsgn(e, sign(~l) ? l_False : l_True);
+    lbool res = solver->assertLit(conflictingPolarity) == false ? l_False : l_Undef;
 
     if ( res != l_False ) {
-        cout << endl << "unknown" << endl;
+        std::cout << std::endl << "unknown" << std::endl;
         assert(false);
     }
 
@@ -313,9 +273,6 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
     vec<PtAsgn> explanation;
     solver->getConflict( true, explanation );
     assert(explanation.size() > 0);
-
-//    if ( config.certification_level > 0 )
-//        verifyExplanationWithExternalTool( explanation );
 
     // Reserve room for implied lit
     reason.push( lit_Undef );
@@ -325,14 +282,9 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
         PtAsgn pa = explanation.last();
         PTRef ei  = pa.tr;
         explanation.pop();
-//        assert( ei->hasPolarity( ) );
-//        assert( ei->getPolarity( ) == l_True
-//                || ei->getPolarity( ) == l_False );
-//        bool negate = ei->getPolarity( ) == l_False;
 
         // Toggle polarity for deduced literal
         if ( e == ei ) {
-//            assert( e->getDeduced( ) != l_Undef );           // But still holds the deduced polarity
             // The deduced literal must have been pushed
             // with the the same polarity that has been deduced
             assert((pa.sgn == l_True && sign(l)) || (pa.sgn == l_False && !sign(l))); // The literal is true (sign false) iff the egraph term polarity is false
@@ -342,39 +294,10 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
             assert(pa.sgn != l_Undef);
             reason.push(pa.sgn == l_True ? ~tmap.getLit(ei) : tmap.getLit(ei)); // Swap the sign for others
         }
-//        else {
-//            assert( ei->hasPolarity( ) );                    // Lit in explanation is active
-//            // This assertion might fail if in your theory solver
-//            // you do not skip deduced literals during assertLit
-//            //
-//            // TODO: check ! It could be deduced: by another solver
-//            // For instance BV found conflict and ei was deduced by EUF solver
-//            //
-//            // assert( !ei->isDeduced( ) );                     // and not deduced
-//            Lit l = Lit( v, !negate );
-//            reason.push( l );
-//        }
     }
+    solver->popBacktrackPoint();
 
-    solver->popBacktrackPoint( );
-
-    // Resetting polarity
-//    egraph.clearPolarity(e);
-//    e->resetPolarity( );
 }
-
-//
-// Inform Theory-Solvers of Theory-Atoms
-//
-//void THandler::inform( ) {
-//  for ( ; tatoms_given < tatoms_list.size_( ) ; tatoms_given ++ ) {
-//    if ( !tatoms_give[ tatoms_given ] ) continue;
-//    Enode * atm = tatoms_list[ tatoms_given ];
-//    assert( atm );
-//    assert( atm->isTAtom( ) );
-//    egraph.inform( atm );
-//  }
-//}
 
 #ifdef PEDANTIC_DEBUG
 
@@ -387,188 +310,6 @@ bool THandler::isOnTrail( Lit l, vec<Lit>& trail ) {
 
 #endif
 
-//void THandler::verifyCallWithExternalTool( bool res, size_t trail_size )
-//{
-//  // First stage: print declarations
-//  const char * name = "/tmp/verifycall.smt2";
-//  std::ofstream dump_out( name );
-//
-//  egraph.dumpHeaderToFile( dump_out );
-//
-//  dump_out << "(assert" << endl;
-//  dump_out << "(and" << endl;
-//  for ( size_t j = 0 ; j <= trail_size ; j ++ )
-//  {
-//    Var v = var( trail[ j ] );
-//
-//    if ( v == var_True || v == var_False )
-//      continue;
-//
-//    // Enode * e = var_to_enode[ v ];
-//    Enode * e = varToEnode( v );
-//    assert( e );
-//
-//    if ( !e->isTAtom( ) )
-//      continue;
-//
-//    bool negated = sign( trail[ j ] );
-//    if ( negated )
-//      dump_out << "(not ";
-//    e->print( dump_out );
-//    if ( negated )
-//      dump_out << ")";
-//
-//    dump_out << endl;
-//  }
-//  dump_out << "))" << endl;
-//  dump_out << "(check-sat)" << endl;
-//  dump_out << "(exit)" << endl;
-//  dump_out.close( );
-//
-//  // Second stage, check the formula
-//  const bool tool_res = callCertifyingSolver( name );
-//
-//  if ( res == false && tool_res == true )
-//    opensmt_error2( config.certifying_solver, " says SAT stack, but we say UNSAT" );
-//
-//  if ( res == true && tool_res == false )
-//    opensmt_error2( config.certifying_solver, " says UNSAT stack, but we say SAT" );
-//}
-
-//void THandler::verifyExplanationWithExternalTool( vector< Enode * > & expl )
-//{
-//#define MULTIPLE_FILES 1
-//#if MULTIPLE_FILES
-//  stringstream s;
-//  static int counter = 0;
-//  s << "/tmp/verifyexp_" << counter ++ << ".smt2";
-//  char name[ 64 ];
-//  strcpy( name, s.str( ).c_str( ) );
-//#else
-//  // First stage: print declarations
-//  const char * name = "/tmp/verifyexp.smt2";
-//#endif
-//  std::ofstream dump_out( name );
-//
-//  egraph.dumpHeaderToFile( dump_out );
-//
-//  dump_out << "(assert " << endl;
-//  dump_out << "(and" << endl;
-//
-//  for ( size_t j = 0 ; j < expl.size( ) ; j ++ )
-//  {
-//    Enode * e = expl[ j ];
-//    assert( e->isTAtom( ) );
-//    assert( e->getPolarity( ) != l_Undef );
-//    bool negated = e->getPolarity( ) == l_False;
-//    if ( negated )
-//      dump_out << "(not ";
-//    e->print( dump_out );
-//    if ( negated )
-//      dump_out << ")";
-//
-//    dump_out << endl;
-//  }
-//
-//  dump_out << "))" << endl;
-//  dump_out << "(check-sat)" << endl;
-//  dump_out << "(exit)" << endl;
-//  dump_out.close( );
-//  // Third stage, check the formula
-//  const bool tool_res = callCertifyingSolver( name );
-//
-//  if ( tool_res == true )
-//  {
-//    stringstream s; 
-//    s << config.certifying_solver << " says " << name << " is not an explanation";
-//    opensmt_error( s.str( ) );
-//  }
-//}
-
-//void THandler::verifyDeductionWithExternalTool( Enode * imp )
-//{
-//  assert( imp->isDeduced( ) );
-//
-//  // First stage: print declarations
-//  const char * name = "/tmp/verifydeduction.smt2";
-//  std::ofstream dump_out( name );
-//
-//  egraph.dumpHeaderToFile( dump_out );
-//
-//  dump_out << "(assert" << endl;
-//  dump_out << "(and" << endl;
-//  for ( int j = 0 ; j < trail.size( ) ; j ++ )
-//  {
-//    Var v = var( trail[ j ] );
-//
-//    if ( v == var_True || v == var_False )
-//      continue;
-//
-//    Enode * e = varToEnode( v );
-//    assert( e );
-//
-//    if ( !e->isTAtom( ) )
-//      continue;
-//
-//    bool negated = sign( trail[ j ] );
-//    if ( negated )
-//      dump_out << "(not ";
-//    e->print( dump_out );
-//    if ( negated )
-//      dump_out << ")";
-//
-//    dump_out << endl;
-//  }
-//
-//  if ( imp->getDeduced( ) == l_True )
-//    dump_out << "(not " << imp << ")" << endl;
-//  else
-//    dump_out << imp << endl;
-//
-//  dump_out << "))" << endl;
-//  dump_out << "(check-sat)" << endl;
-//  dump_out << "(exit)" << endl;
-//  dump_out.close( );
-//
-//  // Second stage, check the formula
-//  const bool tool_res = callCertifyingSolver( name );
-//
-//  if ( tool_res )
-//    opensmt_error2( config.certifying_solver, " says this is not a valid deduction" );
-//}
-
-//bool THandler::callCertifyingSolver( const char * name )
-//{
-//  bool tool_res;
-//  if ( int pid = fork() )
-//  {
-//    int status;
-//    waitpid(pid, &status, 0);
-//    switch ( WEXITSTATUS( status ) )
-//    {
-//      case 0:
-//	tool_res = false;
-//	break;
-//      case 1:
-//	tool_res = true;
-//	break;
-//      default:
-//	perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
-//	exit( EXIT_FAILURE );
-//    }
-//  }
-//  else
-//  {
-//    execlp( config.certifying_solver
-//	  , config.certifying_solver
-//	  , name
-//	  , NULL );
-//    perror( "# Error: Cerifying solver had some problems (check that it is reachable and executable)" );
-//    exit( EXIT_FAILURE );
-//  }
-//  return tool_res;
-//}
-//
 
 void
 THandler::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
@@ -759,7 +500,6 @@ Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
 void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
 
-void    THandler::pushDeduction      () { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
 Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 
 void    THandler::computeModel      () { getSolverHandler().computeModel(); } // Computes a model in the solver if necessary

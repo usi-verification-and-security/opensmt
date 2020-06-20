@@ -2,7 +2,6 @@
 // Created by Martin Blicha on 22.05.18.
 //
 
-#ifdef PRODUCE_PROOF
 
 //#ifndef NDEBUG
 //#define TRACE
@@ -247,6 +246,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         });
     }
 
+#ifdef TRACE
     void print_matrix(std::vector<std::vector<Real>> const & matrix) {
         (void)print_matrix; // MB: to supress compiler warning for this unused helpful debug method
         for (auto const & row : matrix) {
@@ -270,6 +270,8 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         std::cout << '\n';
     }
 
+#endif // TRACE
+
     bool isDecomposition(Basis const & basis, Coordinates const & coordinates, std::vector<Real> const & original) {
         assert(coordinates.size() == basis.size());
         assert(std::all_of(basis.begin(), basis.end(),
@@ -283,6 +285,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         return true;
     }
+
 #endif // NDEBUG // ======== DEBUG METHODS ================
 
     /** Given matrix in RREF computes and returns a basis of its null space
@@ -634,5 +637,3 @@ bool LRA_Interpolator::isALocal(PTRef var) const {
 bool LRA_Interpolator::isBLocal(PTRef var) const {
     return isBstrict(logic.getIPartitions(var), mask);
 }
-
-#endif // PRODUCE_PROOF

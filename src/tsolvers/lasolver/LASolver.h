@@ -96,7 +96,7 @@ protected:
 
 public:
 
-    LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d);
+    LASolver(SolverDescr dls, SMTConfig & c, LALogic & l);
 
     virtual ~LASolver( );                                      // Destructor ;-)
 
@@ -105,7 +105,7 @@ public:
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     bool  check_simplex      (bool);
-    bool  assertLit          ( PtAsgn , bool = false ) override; // Push the constraint into Solver
+    bool  assertLit          ( PtAsgn ) override;                // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
@@ -113,7 +113,6 @@ public:
 
     // Return the conflicting bounds
     void          getConflict(bool, vec<PtAsgn>& e) override;
-    PtAsgn_reason getDeduction() override;
 
     LALogic&   getLogic() override;
     bool       isValid(PTRef tr) override;
@@ -130,14 +129,14 @@ protected:
 
     opensmt::Number getNum(PTRef);
 
+    // Compute the values for an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
+    virtual LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) = 0;
+
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     virtual void notifyVar(LVRef) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
-    void getConflictingBounds( LVRef, vec<PTRef> & );       // Returns the bounds conflicting with the actual model
-    void getDeducedBounds( const Delta& c, BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id ); // find possible deductions by value c
-    void getDeducedBounds( BoundT, vec<PtAsgn_reason>& dst, SolverId solver_id );                 // find possible deductions for actual bounds values
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
     void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef

@@ -105,9 +105,7 @@ class Interpret {
     bool                        pop();
     PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
     void                        exit();
-#ifdef PRODUCE_PROOF
     void                        getInterpolants(const ASTNode& n);
-#endif
     void                        interp (ASTNode& n);
     void                        execute(const ASTNode* n);
 

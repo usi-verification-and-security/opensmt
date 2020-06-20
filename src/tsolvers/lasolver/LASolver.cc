@@ -1,7 +1,6 @@
 #include "LASolver.h"
 #include "LA.h"
 
-
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
 
@@ -14,6 +13,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     const Pterm& leq = logic.getPterm(leq_tr);
     PTRef const_tr = leq[0];
     PTRef sum_tr = leq[1];
+    assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
@@ -21,19 +21,18 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
 
     LABoundStore::BoundInfo bi;
-
     LABoundRef br_pos;
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
         opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr_neg, false);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
         const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, constr, true);
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
     }
@@ -87,8 +86,8 @@ void LASolver::isProperLeq(PTRef tr)
     (void) cons; (void)sum;
 }
 
-LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic& l, vec<DedElem>& d)
-        : TSolver((SolverId)dls, (const char*)dls, c, d)
+LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
+        : TSolver((SolverId) dls, (const char *) dls, c)
         , logic(l)
         , laVarMapper(l)
         , boundStore(laVarStore)
@@ -217,7 +216,7 @@ bool LASolver::hasVar(PTRef expr) {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-
+    assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
     if (laVarMapper.hasVar(id)) {
@@ -269,8 +268,9 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     LVRef x = LVRef_Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
-        if (simplex.isProcessedByTableau(x))
-        { return x;}
+        if (simplex.isProcessedByTableau(x)){
+            return x;
+        }
     }
 
     if (logic.isNumVar(expr) || logic.isNumTimes(expr)) {
@@ -304,7 +304,6 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     setInformed(leq_tr);
 
-
     if (status != INIT)
     {
         // Treat the PTRef as it is pushed on-the-fly
@@ -314,11 +313,7 @@ void LASolver::declareAtom(PTRef leq_tr)
     // DEBUG check
     isProperLeq(leq_tr);
 
-    const Pterm& t = logic.getPterm(leq_tr);
-
-    while (static_cast<unsigned int>(known_preds.size()) <= Idx(t.getId()))
-        known_preds.push(false);
-    known_preds[Idx(t.getId())] = true;
+    setKnown(leq_tr);
 }
 
 void LASolver::informNewSplit(PTRef tr)
@@ -332,9 +327,9 @@ void LASolver::informNewSplit(PTRef tr)
 //
 // Push the constraint into the solver and increase the level
 //
-bool LASolver::assertLit( PtAsgn asgn, bool reason )
+bool LASolver::assertLit(PtAsgn asgn)
 {
-    ( void )reason;
+    assert(asgn.sgn != l_Undef);
 
 //    printf("Assert %d\n", debug_assert_count++);
 
@@ -359,7 +354,16 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     if( status == INIT  )
         initSolver( );
 
-    assert(asgn.sgn != l_Undef);
+
+    if (hasPolarity(asgn.tr) && getPolarity(asgn.tr) == asgn.sgn) {
+        // already known, no new information
+        // MB: The deductions done by this TSolver are also marked using polarity.
+        //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
+        //     once it is marked for deduction, so the implementation must count with that.
+        assert(getStatus());
+        tsolver_stats.sat_calls ++;
+        return getStatus();
+    }
 
     LABoundRefPair p = getBoundRefPair(asgn.tr);
     LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
@@ -373,24 +377,12 @@ bool LASolver::assertLit( PtAsgn asgn, bool reason )
     // Constraint to push was not found in local storage. Most likely it was not read properly before
     assert(it != LVRef_Undef);
 
-    const Pterm& t = logic.getPterm(asgn.tr);
-    // skip if it was deduced by the solver itself with the same polarity
-    assert(deduced.size() > t.getVar());
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == asgn.sgn && deduced[t.getVar()].deducedBy == id) {
-        assert(getStatus());
-        tsolver_stats.sat_calls ++;
-        return getStatus();
-    }
-    if (deduced[t.getVar()] != l_Undef && deduced[t.getVar()].deducedBy == id) {
-        // MB: what should happen here?
-    }
-
     if (assertBoundOnVar( it, bound_ref))
     {
         assert(getStatus());
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
-        getSimpleDeductions(it, bound_ref);
+        if (config.theory_propagation) { getSimpleDeductions(it, bound_ref); }
         tsolver_stats.sat_calls++;
     } else {
         tsolver_stats.unsat_calls++;
@@ -431,6 +423,7 @@ PtAsgn
 LASolver::popDecisions()
 {
     PtAsgn popd = PtAsgn_Undef;
+    assert(decision_trace.size() - dec_limit.last() == 1 || decision_trace.size() - dec_limit.last() == 0);
     if (decision_trace.size() - dec_limit.last() == 1) {
         popd = int_decisions.last().asgn;
         int_decisions.pop();
@@ -483,7 +476,7 @@ void LASolver::initSolver()
 #endif
         auto known_PTRefs = getInformed();
         for(PTRef leq_tr : known_PTRefs) {
-            Pterm& leq_t = logic.getPterm(leq_tr);
+            Pterm const & leq_t = logic.getPterm(leq_tr);
 
             // Terms are of form c <= t where
             //  - c is a constant and
@@ -582,11 +575,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 void LASolver::deduce(LABoundRef bound_prop) {
     PtAsgn ba = getAsgnByBound(bound_prop);
     if (!hasPolarity(ba.tr)) {
-        if (deduced[logic.getPterm(ba.tr).getVar()] == l_Undef) {
-            lbool pol = ba.sgn;
-            deduced[logic.getPterm(ba.tr).getVar()] = DedElem(id, pol); // id is the solver id
-            th_deductions.push(PtAsgn_reason(ba.tr, pol, PTRef_Undef));
-        }
+        storeDeduction(PtAsgn_reason(ba.tr, ba.sgn, PTRef_Undef));
     }
 }
 
@@ -743,8 +732,6 @@ LASolver::~LASolver( )
      tsolver_stats.printStatistics(cerr);
 #endif // STATISTICS
 }
-
-PtAsgn_reason LASolver::getDeduction()  { if (deductions_next >= static_cast<unsigned>(th_deductions.size())) return PtAsgn_reason_Undef; else return th_deductions[deductions_next++]; }
 
 LALogic&  LASolver::getLogic()  { return logic; }
 

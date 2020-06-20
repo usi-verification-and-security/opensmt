@@ -165,31 +165,6 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
             args.push(all_units_vec[i].tr);
     }
 
-
-    // Feed the top-level facts to the theory solver to check for
-    // unsatisfability
-    vec<DedElem> deds;
-    deds.push(DedElem_Undef); // True
-    deds.push(DedElem_Undef); // False
-    Map<PTRef,int,PTRefHash> refs;
-    TSolverHandler * th = getTSolverHandler_new(deds);
-    refs.insert(getLogic().getTerm_true(), 0);
-    refs.insert(getLogic().getTerm_false(), 1);
-    th->fillTmpDeds(root, refs);
-
-    for (int i = 0; i < args.size(); i++)
-        th->fillTmpDeds(args[i], refs);
-
-    bool no_conflict = true;
-    for (int i = 0; i < args.size(); i++) {
-        if (!th->assertLit_special(PtAsgn(args[i], l_True))) {
-            no_conflict = false;
-            break;
-        }
-    }
-
-    bool result = no_conflict && (th->check(true) == TRes::SAT);
-
     pfstore[frames[curr]].root = root;
 
     // Traverse frames[curr].root to see all the variables.
@@ -235,9 +210,9 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
     {
         Map<PTRef,PtAsgn,PTRefHash>::Pair& p = substitutions[i];
         PTRef var = p.key;
-        for (int i = 0; i < curr; i ++)
+        for (int j = 0; j < curr; j ++)
         {
-            if (pfstore[frames[i]].isSeen(var))
+            if (pfstore[frames[j]].isSeen(var))
             {
                 // The substitution needs to be added to the root
                 // formula
@@ -259,8 +234,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         }
     }
     getTSolverHandler().setSubstitutions(allsubsts);
-    delete th;
-    return result;
+    return true;
 }
 
 /**
@@ -301,15 +275,12 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
 
 //MOVINGFROMHEADER
 void Theory::setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
-vec<DedElem>& Theory::getDeductionVec()   { return deductions; }
 
 TermMapper&  LRATheory::getTmap() { return tmap; }
 LRALogic&    LRATheory::getLogic()    { return lralogic; }
 LRATHandler& LRATheory::getTSolverHandler() { return lratshandler; }
-LRATHandler* LRATheory::getTSolverHandler_new(vec<DedElem> &d) { return new LRATHandler(config, lralogic, d, tmap); }
 
 TermMapper&  LIATheory::getTmap() { return tmap; }
 LIALogic&    LIATheory::getLogic()    { return lialogic; }
 LIATHandler& LIATheory::getTSolverHandler() { return liatshandler; }
-LIATHandler* LIATheory::getTSolverHandler_new(vec<DedElem> &d) { return new LIATHandler(config, lialogic, d, tmap); }
 

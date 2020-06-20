@@ -39,15 +39,11 @@ class UFLRATHandler : public LRATHandler
     LRASolver     *lrasolver;
     Egraph        *ufsolver;
   public:
-    UFLRATHandler(SMTConfig& c, LRALogic& l, vec<DedElem>& d, TermMapper& tmap);
+    UFLRATHandler(SMTConfig & c, LRALogic & l, TermMapper & tmap);
     virtual ~UFLRATHandler();
-    virtual void fillTmpDeds(PTRef root, Map<PTRef,int,PTRefHash> &refs);
-//    virtual bool assertLit_special(PtAsgn);
     virtual Logic& getLogic();
 
-#ifdef PRODUCE_PROOF
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
-#endif // PRODUCE_PROOF
 };
 
 #endif

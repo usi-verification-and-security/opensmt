@@ -34,7 +34,7 @@ class CUFTHandler : public UFTHandler
   private:
     CUFLogic&   logic;
   public:
-    CUFTHandler(SMTConfig& c, CUFLogic& l, vec<DedElem>& d, TermMapper& tmap);
+    CUFTHandler(SMTConfig & c, CUFLogic & l, TermMapper & tmap);
     virtual ~CUFTHandler();
     virtual CUFLogic& getLogic();
 };

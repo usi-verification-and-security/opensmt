@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -113,9 +112,9 @@ bool ProofGraph::allowCutRuleForPredicatePushing(RuleContext& ra, Var pred)
 	return false;
 }
 
+using ApplicationResult = ProofGraph::ApplicationResult;
 //Input: a pair of left/right contexts
-//Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+ApplicationResult ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext & ra1, RuleContext & ra2)
 {
 	/*	cerr << "Examining (w=" << ra1.getW() << ",v="
 			<< ra1.getV() << "," << ra1.getType() <<") and (w="
@@ -132,78 +131,83 @@ short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,Rule
 
 	// Check need for duplication
 	bool dupl1, dupl2;
-	bool allowed1, allowed2;
 
-	short chosen=-1;
-	rul_type t1=ra1.getType();
-	rul_type t2=ra2.getType();
-	bool is1cut=isCutRule(t1);
-	bool is2cut=isCutRule(t2);
-	bool is1swap=isSwapRule(t1);
-	bool is2swap=isSwapRule(t2);
+	rul_type t1 = ra1.getType();
+	rul_type t2 = ra2.getType();
+	bool is1cut = isCutRule(t1);
+	bool is2cut = isCutRule(t2);
+	bool is1swap = isSwapRule(t1);
+	bool is2swap = isSwapRule(t2);
 
 	//rA1,rA2,rA2u,rA1B,rA2B,rA1undo,rB2k,rB3,rB1,rB2
 
 	//Neither applicable
-	if(ra1.disabled() && ra2.disabled())
-		chosen=0;
+	if (ra1.disabled() && ra2.disabled()) {
+	    return ApplicationResult::NO_APPLICATION;
+	}
 	//First not applicable
-	else if(ra1.disabled() && ra2.enabled())
+	else if (ra1.disabled() && ra2.enabled())
 	{
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2,pred);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2,pred);
+	    bool allowed2;
+		if (is2cut) allowed2 =  (*this.*allowCut)(ra2,pred);
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2,pred);
 		else opensmt_error_();
-		if(allowed2) chosen=2; else chosen=0;
+        return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
-	else if(ra1.enabled() && ra2.disabled())
+	else if (ra1.enabled() && ra2.disabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1,pred);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1,pred);
+	    bool allowed1;
+		if (is1cut) allowed1 =  (*this.*allowCut)(ra1,pred);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1,pred);
 		else opensmt_error_();
-		if(allowed1) chosen=1; else chosen=0;
+        return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
-	else if(ra1.enabled() && ra2.enabled())
+	else if (ra1.enabled() && ra2.enabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1,pred);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1,pred);
+        bool allowed1, allowed2;
+        if (is1cut) allowed1 =  (*this.*allowCut)(ra1,pred);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1,pred);
 		else opensmt_error_();
 
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2,pred);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2,pred);
+		if (is2cut) allowed2 =  (*this.*allowCut)(ra2,pred);
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2,pred);
 		else opensmt_error_();
 
 		//Neither allowed
-		if(!allowed1 && !allowed2) chosen=0;
+		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
 		//First allowed
-		else if(allowed1 && !allowed2) chosen=1;
+		else if (allowed1 && !allowed2) return ApplicationResult::APPLY_FIRST;
 		//Second allowed
-		else if(!allowed1 && allowed2) chosen=2;
+		else if (!allowed1 && allowed2) return ApplicationResult::APPLY_SECOND;
 		//Both allowed
-		else if(allowed1 && allowed2)
+		else if (allowed1 && allowed2)
 		{
+		    ApplicationResult res = ApplicationResult::NO_APPLICATION;
 			//Case one cuts, the other swaps: privilege cut
-			if(is1cut && is2swap) chosen=1;
-			else if(is2cut && is1swap) chosen=2;
+			if (is1cut && is2swap) res = ApplicationResult::APPLY_FIRST;
+			else if (is2cut && is1swap) res = ApplicationResult::APPLY_SECOND;
 			//Case both cut
 			else if(is1cut && is2cut)
 			{
 				//NOTE Privilege the one with the relevant predicate?
 				//NOTE probably not necessary
 				//Privilege B3 over B1 and B2
-				if(t1==rB3 && t2!=rB3) chosen=1;
-				else if(t1!=rB3 && t2==rB3) chosen=2;
+				if (t1 == rB3 && t2 != rB3) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB3 && t2 == rB3) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else { if(rand()%2==0) chosen=1; else chosen=2; }
+                else {
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
+                }
 			}
 			//Case both swap
-			else if(is2swap && is1swap)
+			else if (is2swap && is1swap)
 			{
 				//NOTE Privilege the one with the relevant predicate!
 				// v pivot is to be pushed up
 				Var	x1, x2;
-				if( push_up )
+				if (push_up)
 				{
 					x1 = getNode(ra1.getV())->getPivot();
 					x2 = getNode(ra2.getV())->getPivot();
@@ -214,33 +218,36 @@ short ProofGraph::handleRuleApplicationForPredicatePushing(RuleContext& ra1,Rule
 					x1 = getNode(ra1.getW())->getPivot();
 					x2 = getNode(ra2.getW())->getPivot();
 				}
-				if( x1 == pred && x2 != pred ) chosen = 1;
-				else if( x1 != pred && x2 == pred ) chosen = 2;
+				if (x1 == pred && x2 != pred) res = ApplicationResult::APPLY_FIRST;
+				else if (x1 != pred && x2 == pred) res = ApplicationResult::APPLY_SECOND;
 				else
 				{
-					dupl1=(getNode(ra1.getW())->getNumResolvents() > 1);
-					dupl2=(getNode(ra2.getW())->getNumResolvents() > 1);
+					dupl1 = (getNode(ra1.getW())->getNumResolvents() > 1);
+					dupl2 = (getNode(ra2.getW())->getNumResolvents() > 1);
 					//Privilege the one not duplicating
-					if(dupl1 && !dupl2) chosen=2;
-					else if(!dupl1 && dupl2) chosen=1;
+					if (dupl1 && !dupl2) res = ApplicationResult::APPLY_SECOND;
+					else if (!dupl1 && dupl2) res = ApplicationResult::APPLY_FIRST;
 					//Privilege A1undo, then B2k, then A2 over A1
-					else if(t1==rA1prime && t2!=rA1prime) chosen=1;
-					else if(t1!=rA1prime && t2==rA1prime) chosen=2;
-					else if(t1==rB2 && t2!=rB2) chosen=1;
-					else if(t1!=rB2 && t2==rB2) chosen=2;
-					else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) chosen=1;
-					else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) chosen=2;
+					else if (t1 == rA1prime && t2 != rA1prime) res = ApplicationResult::APPLY_FIRST;
+					else if (t1 != rA1prime && t2 == rA1prime) res = ApplicationResult::APPLY_SECOND;
+					else if (t1 == rB2 && t2 != rB2) res = ApplicationResult::APPLY_FIRST;
+					else if (t1 != rB2 && t2 == rB2) res = ApplicationResult::APPLY_SECOND;
+					else if ((t1 == rA2 || t1 == rA2u || t1 == rA2B) && (t2 == rA1 || t2 == rA1B)) res = ApplicationResult::APPLY_FIRST;
+					else if ((t2 == rA2 || t2 == rA2u || t2 == rA2B) && (t1 == rA1 || t1 == rA1B)) res = ApplicationResult::APPLY_SECOND;
 					//Privilege A2B over A2 and A1B over A1
-					else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) chosen=1;
-					else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) chosen=2;
+					else if ((t1 == rA2B && (t2 == rA2 || t2 == rA2u)) || (t1 == rA1B && t2 == rA1)) res = ApplicationResult::APPLY_FIRST;
+					else if ((t2 == rA2B && (t1 == rA2 || t1 == rA2u)) || (t2 == rA1B && t1 == rA1)) res = ApplicationResult::APPLY_SECOND;
 					//Break ties randomly
-					else{ if(rand()%2==0) chosen=1; else chosen=2; }
+					else {
+					    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
+					}
 				}
 			}
+			return res;
 		}
 	}
-	assert(chosen!=-1);
-	return chosen;
+	assert(false);
+	return ApplicationResult::NO_APPLICATION;
 }
 
 //Input: a context for a swap rule
@@ -282,75 +289,80 @@ bool ProofGraph::allowSwapRuleForUnitsPushingDown(RuleContext& ra)
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+ApplicationResult ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
 	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForUnitsPushingDown;
 
 	// Check need for duplication
 	bool dupl1, dupl2;
-	bool allowed1, allowed2;
 
-	short chosen=-1;
-	rul_type t1=ra1.getType();
-	rul_type t2=ra2.getType();
-	bool is1cut=isCutRule(t1);
-	bool is2cut=isCutRule(t2);
-	bool is1swap=isSwapRule(t1);
-	bool is2swap=isSwapRule(t2);
+	rul_type t1 = ra1.getType();
+	rul_type t2 = ra2.getType();
+	bool is1cut = isCutRule(t1);
+	bool is2cut = isCutRule(t2);
+	bool is1swap = isSwapRule(t1);
+	bool is2swap = isSwapRule(t2);
 
 	//rA1,rA2,rA2u,rA1B,rA2B,rA1undo,rB2k,rB3,rB1,rB2
 
 	//Neither applicable
-	if(ra1.disabled() && ra2.disabled())
-		chosen=0;
+	if (ra1.disabled() && ra2.disabled()) {
+	    return ApplicationResult::NO_APPLICATION;
+	}
 	//First not applicable
-	else if(ra1.disabled() && ra2.enabled())
+	else if (ra1.disabled() && ra2.enabled())
 	{
-		if( is2cut ) allowed2 = true;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+	    bool allowed2;
+		if (is2cut) allowed2 = true;
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
-		if(allowed2) chosen=2; else chosen=0;
+        return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
-	else if(ra1.enabled() && ra2.disabled())
+	else if (ra1.enabled() && ra2.disabled())
 	{
-		if( is1cut ) allowed1 = true;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+	    bool allowed1;
+		if (is1cut) allowed1 = true;
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
-		if(allowed1) chosen=1; else chosen=0;
+        return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
-	else if(ra1.enabled() && ra2.enabled())
+	else if (ra1.enabled() && ra2.enabled())
 	{
-		if( is1cut ) allowed1 = true;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+        bool allowed1, allowed2;
+        if (is1cut) allowed1 = true;
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 
-		if( is2cut ) allowed2 = true;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+		if (is2cut) allowed2 = true;
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 
 		//Neither allowed
-		if(!allowed1 && !allowed2) chosen=0;
+		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
 		//First allowed
-		else if(allowed1 && !allowed2) chosen=1;
+		else if (allowed1 && !allowed2) return ApplicationResult::APPLY_FIRST;
 		//Second allowed
-		else if(!allowed1 && allowed2) chosen=2;
+		else if (!allowed1 && allowed2) return ApplicationResult::APPLY_SECOND;
 		//Both allowed
-		else if(allowed1 && allowed2)
+		else if (allowed1 && allowed2)
 		{
+		    ApplicationResult res = ApplicationResult::NO_APPLICATION;
 			//Case one cuts, the other swaps: privilege cut
-			if(is1cut && is2swap) chosen=1;
-			else if(is2cut && is1swap) chosen=2;
+			if (is1cut && is2swap) res = ApplicationResult::APPLY_FIRST;
+			else if (is2cut && is1swap) res = ApplicationResult::APPLY_SECOND;
 			//Case both cut
-			else if(is1cut && is2cut)
+			else if (is1cut && is2cut)
 			{
 				//Privilege B3 over B1 and B2
-				if(t1==rB3 && t2!=rB3) chosen=1;
-				else if(t1!=rB3 && t2==rB3) chosen=2;
+				if (t1==rB3 && t2!=rB3) res = ApplicationResult::APPLY_FIRST;
+				else if (t1!=rB3 && t2==rB3) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else { if(rand()%2==0)chosen=1; else chosen=2; }
+                else {
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
+                }
 			}
 			//Case both swap
 			else if(is2swap && is1swap)
@@ -358,25 +370,28 @@ short ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleContext& ra1,Rule
 				dupl1=(getNode(ra1.getW())->getNumResolvents() > 1);
 				dupl2=(getNode(ra2.getW())->getNumResolvents() > 1);
 				//Privilege the one not duplicating
-				if(dupl1 && !dupl2) chosen=2;
-				else if(!dupl1 && dupl2) chosen=1;
+				if(dupl1 && !dupl2) res = ApplicationResult::APPLY_SECOND;
+				else if(!dupl1 && dupl2) res = ApplicationResult::APPLY_FIRST;
 				//Privilege A1undo, then B2k, then A2 over A1
-				else if(t1==rA1prime && t2!=rA1prime) chosen=1;
-				else if(t1!=rA1prime && t2==rA1prime) chosen=2;
-				else if(t1==rB2 && t2!=rB2) chosen=1;
-				else if(t1!=rB2 && t2==rB2) chosen=2;
-				else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) chosen=1;
-				else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) chosen=2;
+				else if(t1==rA1prime && t2!=rA1prime) res = ApplicationResult::APPLY_FIRST;
+				else if(t1!=rA1prime && t2==rA1prime) res = ApplicationResult::APPLY_SECOND;
+				else if(t1==rB2 && t2!=rB2) res = ApplicationResult::APPLY_FIRST;
+				else if(t1!=rB2 && t2==rB2) res = ApplicationResult::APPLY_SECOND;
+				else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) res = ApplicationResult::APPLY_FIRST;
+				else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) res = ApplicationResult::APPLY_SECOND;
 				//Privilege A2B over A2 and A1B over A1
-				else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) chosen=1;
-				else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) chosen=2;
+				else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) res = ApplicationResult::APPLY_FIRST;
+				else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else{ if(rand()%2==0) chosen=1; else chosen=2; }
+                else {
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
+                }
 			}
-		}
+            return res;
+        }
 	}
-	assert(chosen!=-1);
-	return chosen;
+	assert(false);
+	return ApplicationResult::NO_APPLICATION;
 }
 
 //Input: a context for a swap rule
@@ -419,12 +434,12 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
 	else opensmt_error_();
 }
 
+
 //Input: a pair of left/right contexts
-//Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForReduction(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+ ApplicationResult ProofGraph::handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2)
 {
 	// Randomize application of rules
-	if( additionalRandomization() && rand()%2==0 ) return 0;
+	if ( additionalRandomization() && rand()%2==0 ) return ApplicationResult::NO_APPLICATION;
 
 	// Swap application rule
 	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForReduction;
@@ -433,106 +448,108 @@ short ProofGraph::handleRuleApplicationForReduction(RuleContext& ra1,RuleContext
 
 	// Check need for duplication
 	bool dupl1, dupl2;
-	bool allowed1, allowed2;
 
-	short chosen=-1;
-	rul_type t1=ra1.getType();
-	rul_type t2=ra2.getType();
-	bool is1cut=isCutRule(t1);
-	bool is2cut=isCutRule(t2);
-	bool is1swap=isSwapRule(t1);
-	bool is2swap=isSwapRule(t2);
+	rul_type t1 = ra1.getType();
+	rul_type t2 = ra2.getType();
+	bool is1cut = isCutRule(t1);
+	bool is2cut = isCutRule(t2);
+	bool is1swap = isSwapRule(t1);
+	bool is2swap = isSwapRule(t2);
 
 	//rA1,rA2,rA2u,rA1B,rA2B,rA1undo,rB2k,rB3,rB1,rB2
 
 	//Neither applicable
-	if(ra1.disabled() && ra2.disabled())
-		chosen=0;
+	if (ra1.disabled() && ra2.disabled()) {
+        return ApplicationResult::NO_APPLICATION;
+	}
 	//First not applicable
-	else if(ra1.disabled() && ra2.enabled())
+	else if (ra1.disabled() && ra2.enabled())
 	{
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+        bool allowed2;
+        if (is2cut) allowed2 = (*this.*allowCut)(ra2);
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
-		if(allowed2) chosen=2; else chosen=0;
+		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
 	else if(ra1.enabled() && ra2.disabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+	    bool allowed1;
+		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
-		if(allowed1) chosen=1; else chosen=0;
+        return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
-	else if(ra1.enabled() && ra2.enabled())
+	else if (ra1.enabled() && ra2.enabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+        bool allowed1, allowed2;
+		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 
 		//Neither allowed
-		if(!allowed1 && !allowed2) chosen=0;
-		//First allowed
-		else if(allowed1 && !allowed2) chosen=1;
+		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
+        //First allowed
+		if (allowed1 && !allowed2) return ApplicationResult::APPLY_FIRST;
 		//Second allowed
-		else if(!allowed1 && allowed2) chosen=2;
+		else if (!allowed1 && allowed2) return ApplicationResult::APPLY_SECOND;
 		//Both allowed
-		else if(allowed1 && allowed2)
+		else if (allowed1 && allowed2)
 		{
-			//Case one cuts, the other swaps: privilege cut
-			if(is1cut && is2swap) chosen=1;
-			else if(is2cut && is1swap) chosen=2;
+            ApplicationResult res = ApplicationResult::NO_APPLICATION;
+            //Case one cuts, the other swaps: privilege cut
+			if (is1cut && is2swap) res = ApplicationResult::APPLY_FIRST;
+			else if (is2cut && is1swap) res = ApplicationResult::APPLY_SECOND;
 			//Case both cut
 			else if(is1cut && is2cut)
 			{
 				//Privilege B3 over B1 and B2
-				if(t1==rB3 && t2!=rB3) chosen=1;
-				else if(t1!=rB3 && t2==rB3) chosen=2;
+				if (t1 == rB3 && t2 != rB3) res = ApplicationResult::APPLY_FIRST;
+				else if(t1 != rB3 && t2 == rB3) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
-					if(rand()%2==0)chosen=1; else chosen=2;
+				else {
+					res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
 			//Case both swap
-			else if(is2swap && is1swap)
+			else if (is2swap && is1swap)
 			{
-				dupl1=(getNode(ra1.getW())->getNumResolvents() > 1);
-				dupl2=(getNode(ra2.getW())->getNumResolvents() > 1);
+				dupl1 = (getNode(ra1.getW())->getNumResolvents() > 1);
+				dupl2 = (getNode(ra2.getW())->getNumResolvents() > 1);
 				//Privilege the one not duplicating
-				if(dupl1 && !dupl2) chosen=2;
-				else if(!dupl1 && dupl2) chosen=1;
+				if(dupl1 && !dupl2) res = ApplicationResult::APPLY_SECOND;
+				else if (!dupl1 && dupl2) res = ApplicationResult::APPLY_FIRST;
 				//Privilege A1undo, then B2k, then A2 over A1
-				else if(t1==rA1prime && t2!=rA1prime) chosen=1;
-				else if(t1!=rA1prime && t2==rA1prime) chosen=2;
-				else if(t1==rB2 && t2!=rB2) chosen=1;
-				else if(t1!=rB2 && t2==rB2) chosen=2;
-				else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) chosen=1;
-				else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) chosen=2;
+				else if (t1 == rA1prime && t2 != rA1prime) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rA1prime && t2 == rA1prime) res = ApplicationResult::APPLY_SECOND;
+				else if (t1 == rB2 && t2 != rB2) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB2 && t2 == rB2) res = ApplicationResult::APPLY_SECOND;
+				else if ((t1 == rA2 || t1 == rA2u || t1 == rA2B) && (t2 == rA1 || t2 == rA1B)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2 == rA2 || t2 == rA2u || t2 == rA2B) && (t1 == rA1 || t1 == rA1B)) res = ApplicationResult::APPLY_SECOND;
 				//Privilege A2B over A2 and A1B over A1
-				else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) chosen=1;
-				else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) chosen=2;
+				else if ((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
+				else {
 					swap_ties++;
-					if(rand()%2==0) chosen=1; else chosen=2;
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
-		}
+            return res;
+        }
 	}
-	assert(chosen!=-1);
-	return chosen;
+	assert(false);
+	return ApplicationResult::NO_APPLICATION;
 }
 
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
-bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, const ipartitions_t& mask)
+bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra)
 {
 	rul_type t=ra.getType();
 	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
@@ -545,21 +562,14 @@ bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, cons
 	// McMillan/McMillan'/Pudlak should be used
 	assert( usingMcMillanInterpolation() || usingPudlakInterpolation() || usingMcMillanPrimeInterpolation() );
 	// Check colors of the two pivots
-#ifdef FULL_LABELING
 	icolor_t piv_w_color = getVarClass2( getNode(ra.getW())->getPivot() );
-#else
-	icolor_t piv_w_color = getVarClass( getNode(ra.getW())->getPivot(), mask );
-#endif
 	if(  piv_w_color == I_AB )
 	{
 		if( usingMcMillanInterpolation() ) piv_w_color = I_B;
 		if( usingMcMillanPrimeInterpolation() ) piv_w_color = I_A;
 	}
-#ifdef FULL_LABELING
 	icolor_t piv_v_color = getVarClass2( getNode(ra.getV())->getPivot() );
-#else
-	icolor_t piv_v_color = getVarClass( getNode(ra.getV())->getPivot(), mask );
-#endif
+
 	if(  piv_v_color == I_AB )
 	{
 		if( usingMcMillanInterpolation() ) piv_v_color = I_B;
@@ -593,112 +603,110 @@ bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext& ra, cons
 
 
 //Input: a pair of left/right contexts
-//Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
-	bool(ProofGraph::*allowSwap)(RuleContext&, const ipartitions_t&) = &ProofGraph::allowSwapRuleForStrongerWeakerInterpolant;
+	bool(ProofGraph::*allowSwap)(RuleContext&) = &ProofGraph::allowSwapRuleForStrongerWeakerInterpolant;
 
 	// Check need for duplication
 	bool dupl1, dupl2;
-	bool allowed1, allowed2;
 
-	short chosen=-1;
-	rul_type t1=ra1.getType();
-	rul_type t2=ra2.getType();
-	bool is1cut=isCutRule(t1);
-	bool is2cut=isCutRule(t2);
-	bool is1swap=isSwapRule(t1);
-	bool is2swap=isSwapRule(t2);
+	rul_type t1 = ra1.getType();
+	rul_type t2 = ra2.getType();
+	bool is1cut = isCutRule(t1);
+	bool is2cut = isCutRule(t2);
+	bool is1swap = isSwapRule(t1);
+	bool is2swap = isSwapRule(t2);
 
 	//rA1,rA2,rA2u,rA1B,rA2B,rA1undo,rB2k,rB3,rB1,rB2
 
 	//Neither applicable
-	if(ra1.disabled() && ra2.disabled())
-		chosen=0;
+	if (ra1.disabled() && ra2.disabled()) return ApplicationResult::NO_APPLICATION;
 	//First not applicable
-	else if(ra1.disabled() && ra2.enabled())
+	else if (ra1.disabled() && ra2.enabled())
 	{
-		if( is2cut ) allowed2 =  false;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2, mask);
+        bool allowed2;
+		if (is2cut) allowed2 = false;
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
-		if(allowed2) chosen=2; else chosen=0;
+		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
 	else if(ra1.enabled() && ra2.disabled())
 	{
-		if( is1cut ) allowed1 =  false;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1, mask);
+	    bool allowed1;
+		if( is1cut ) allowed1 = false;
+		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
-		if(allowed1) chosen=1; else chosen=0;
+        return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
-	else if(ra1.enabled() && ra2.enabled())
+	else if (ra1.enabled() && ra2.enabled())
 	{
-		if( is1cut ) allowed1 = false;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1, mask);
+        bool allowed1, allowed2;
+        if (is1cut) allowed1 = false;
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 
-		if( is2cut ) allowed2 =  false;
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2, mask);
+		if (is2cut) allowed2 = false;
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 
 		//Neither allowed
-		if(!allowed1 && !allowed2) chosen=0;
+		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
 		//First allowed
-		else if(allowed1 && !allowed2) chosen=1;
+		else if (allowed1 && !allowed2) return ApplicationResult::APPLY_FIRST;
 		//Second allowed
-		else if(!allowed1 && allowed2) chosen=2;
+		else if (!allowed1 && allowed2) return ApplicationResult::APPLY_SECOND;
 		//Both allowed
-		else if(allowed1 && allowed2)
+		else if (allowed1 && allowed2)
 		{
+		    ApplicationResult res = ApplicationResult::NO_APPLICATION;
 			//Case one cuts, the other swaps: privilege cut
-			if(is1cut && is2swap) chosen=1;
-			else if(is2cut && is1swap) chosen=2;
+			if (is1cut && is2swap) res = ApplicationResult::APPLY_FIRST;
+			else if (is2cut && is1swap) res = ApplicationResult::APPLY_SECOND;
 			//Case both cut
-			else if(is1cut && is2cut)
+			else if (is1cut && is2cut)
 			{
 				//Privilege B3 over B1 and B2
-				if(t1==rB3 && t2!=rB3) chosen=1;
-				else if(t1!=rB3 && t2==rB3) chosen=2;
+				if (t1 == rB3 && t2 != rB3) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB3 && t2 == rB3) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
-					if(rand()%2==0)chosen=1; else chosen=2;
+				else {
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
 			//Case both swap
-			else if(is2swap && is1swap)
+			else if (is2swap && is1swap)
 			{
-				dupl1=(getNode(ra1.getW())->getNumResolvents() > 1);
-				dupl2=(getNode(ra2.getW())->getNumResolvents() > 1);
+				dupl1 = (getNode(ra1.getW())->getNumResolvents() > 1);
+				dupl2 = (getNode(ra2.getW())->getNumResolvents() > 1);
 				//Privilege the one not duplicating
-				if(dupl1 && !dupl2) chosen=2;
-				else if(!dupl1 && dupl2) chosen=1;
+				if (dupl1 && !dupl2) res = ApplicationResult::APPLY_SECOND;
+				else if (!dupl1 && dupl2) res = ApplicationResult::APPLY_FIRST;
 				//Privilege A1undo, then B2k, then A2 over A1
-				else if(t1==rA1prime && t2!=rA1prime) chosen=1;
-				else if(t1!=rA1prime && t2==rA1prime) chosen=2;
-				else if(t1==rB2 && t2!=rB2) chosen=1;
-				else if(t1!=rB2 && t2==rB2) chosen=2;
-				else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) chosen=1;
-				else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) chosen=2;
+				else if (t1 == rA1prime && t2 != rA1prime) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rA1prime && t2 == rA1prime) res = ApplicationResult::APPLY_SECOND;
+				else if (t1 == rB2 && t2 != rB2) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB2 && t2 == rB2) res = ApplicationResult::APPLY_SECOND;
+				else if ((t1 == rA2 || t1 == rA2u || t1 == rA2B) && (t2 == rA1 || t2 == rA1B)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2 == rA2 || t2 == rA2u || t2 == rA2B) && (t1 == rA1 || t1 == rA1B)) res = ApplicationResult::APPLY_SECOND;
 				//Privilege A2B over A2 and A1B over A1
-				else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) chosen=1;
-				else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) chosen=2;
+				else if ((t1 == rA2B && (t2 == rA2 || t2 == rA2u)) || (t1 == rA1B && t2 == rA1)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2 == rA2B && (t1 == rA2 || t1 == rA2u)) || (t2 == rA1B && t1 == rA1)) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
+				else {
 					swap_ties++;
-					if(rand()%2==0) chosen=1; else chosen=2;
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
+			return res;
 		}
 	}
-	assert(chosen!=-1);
-	return chosen;
+	assert(false);
+	return ApplicationResult::NO_APPLICATION;
 }
 
-#ifdef FULL_LABELING
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
 bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
@@ -732,9 +740,11 @@ bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
 	else opensmt_error_();
 }
 
+using ApplicationResult = ProofGraph::ApplicationResult;
+
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleContext& ra2, const ipartitions_t& mask)
+ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2)
 {
 	// Swap application rule
 	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForCNFinterpolant;
@@ -745,7 +755,6 @@ short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleCo
 	bool dupl1, dupl2;
 	bool allowed1, allowed2;
 
-	short chosen=-1;
 	rul_type t1=ra1.getType();
 	rul_type t2=ra2.getType();
 	bool is1cut=isCutRule(t1);
@@ -756,91 +765,91 @@ short ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext& ra1,RuleCo
 	//rA1,rA2,rA2u,rA1B,rA2B,rA1undo,rB2k,rB3,rB1,rB2
 
 	//Neither applicable
-	if(ra1.disabled() && ra2.disabled())
-		chosen=0;
+	if (ra1.disabled() && ra2.disabled()) {
+        return ApplicationResult::NO_APPLICATION;
+    }
 	//First not applicable
-	else if(ra1.disabled() && ra2.enabled())
+	else if (ra1.disabled() && ra2.enabled())
 	{
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
+		else if(is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
-		if(allowed2) chosen=2; else chosen=0;
+		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
-	else if(ra1.enabled() && ra2.disabled())
+	else if (ra1.enabled() && ra2.disabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
-		if(allowed1) chosen=1; else chosen=0;
+        return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
-	else if(ra1.enabled() && ra2.enabled())
+	else if (ra1.enabled() && ra2.enabled())
 	{
-		if( is1cut ) allowed1 =  (*this.*allowCut)(ra1);
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
+		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
 		else opensmt_error_();
 
-		if( is2cut ) allowed2 =  (*this.*allowCut)(ra2);
-		else if( is2swap ) allowed2 = (*this.*allowSwap)(ra2);
+		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
+		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
 		else opensmt_error_();
 
 		//Neither allowed
-		if(!allowed1 && !allowed2) chosen=0;
+		if(!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
 		//First allowed
-		else if(allowed1 && !allowed2) chosen=1;
+		else if (allowed1 && !allowed2) return ApplicationResult::APPLY_FIRST;
 		//Second allowed
-		else if(!allowed1 && allowed2) chosen=2;
+		else if (!allowed1 && allowed2) return ApplicationResult::APPLY_SECOND;
 		//Both allowed
-		else if(allowed1 && allowed2)
+		else if (allowed1 && allowed2)
 		{
+		    ApplicationResult res = ApplicationResult::NO_APPLICATION;
 			//Case one cuts, the other swaps: privilege cut
-			if(is1cut && is2swap) chosen=1;
-			else if(is2cut && is1swap) chosen=2;
+			if (is1cut && is2swap) res = ApplicationResult::APPLY_FIRST;
+			else if (is2cut && is1swap) res = ApplicationResult::APPLY_SECOND;
 			//Case both cut
-			else if(is1cut && is2cut)
+			else if (is1cut && is2cut)
 			{
 				//Privilege B3 over B1 and B2
-				if(t1==rB3 && t2!=rB3) chosen=1;
-				else if(t1!=rB3 && t2==rB3) chosen=2;
+				if (t1==rB3 && t2 != rB3) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB3 && t2 == rB3) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
-					if(rand()%2==0)chosen=1; else chosen=2;
+				else {
+				    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
 			//Case both swap
-			else if(is2swap && is1swap)
+			else if (is2swap && is1swap)
 			{
-				dupl1=(getNode(ra1.getW())->getNumResolvents() > 1);
-				dupl2=(getNode(ra2.getW())->getNumResolvents() > 1);
+				dupl1 = (getNode(ra1.getW())->getNumResolvents() > 1);
+				dupl2 = (getNode(ra2.getW())->getNumResolvents() > 1);
 				//Privilege the one not duplicating
-				if(dupl1 && !dupl2) chosen=2;
-				else if(!dupl1 && dupl2) chosen=1;
+				if (dupl1 && !dupl2) res = ApplicationResult::APPLY_SECOND;
+				else if (!dupl1 && dupl2) res = ApplicationResult::APPLY_FIRST;
 				//Privilege A1undo, then B2k, then A2 over A1
-				else if(t1==rA1prime && t2!=rA1prime) chosen=1;
-				else if(t1!=rA1prime && t2==rA1prime) chosen=2;
-				else if(t1==rB2 && t2!=rB2) chosen=1;
-				else if(t1!=rB2 && t2==rB2) chosen=2;
-				else if((t1==rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) chosen=1;
-				else if((t2==rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) chosen=2;
+				else if (t1 == rA1prime && t2 != rA1prime) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rA1prime && t2 == rA1prime) res = ApplicationResult::APPLY_SECOND;
+				else if (t1 == rB2 && t2!=rB2) res = ApplicationResult::APPLY_FIRST;
+				else if (t1 != rB2 && t2==rB2) res = ApplicationResult::APPLY_SECOND;
+				else if ((t1 == rA2 || t1==rA2u || t1==rA2B) && (t2==rA1 || t2==rA1B)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2 == rA2 || t2==rA2u || t2==rA2B) && (t1==rA1 || t1==rA1B)) res = ApplicationResult::APPLY_SECOND;
 				//Privilege A2B over A2 and A1B over A1
-				else if((t1==rA2B && (t2==rA2 || t2==rA2u)) || (t1==rA1B && t2==rA1)) chosen=1;
-				else if((t2==rA2B && (t1==rA2 || t1==rA2u)) || (t2==rA1B && t1==rA1)) chosen=2;
+				else if ((t1 == rA2B && (t2 == rA2 || t2 == rA2u)) || (t1 == rA1B && t2 == rA1)) res = ApplicationResult::APPLY_FIRST;
+				else if ((t2 == rA2B && (t1 == rA2 || t1 == rA2u)) || (t2 == rA1B && t1 == rA1)) res = ApplicationResult::APPLY_SECOND;
 				//Break ties randomly
-				else
-				{
+				else {
 					swap_ties++;
-					if(rand()%2==0) chosen=1; else chosen=2;
+                    res = rand() % 2 == 0 ? ApplicationResult::APPLY_FIRST : ApplicationResult::APPLY_SECOND;
 				}
 			}
-		}
-	}
-	assert(chosen!=-1);
-	return chosen;
+            return res;
+        }
+    }
+	assert(false);
+	return ApplicationResult::NO_APPLICATION;
 }
 
-#endif
 
 //Input: node to be replaced by either antecedent during restructuring
 //Output: true if ant1 is chosen, false if ant2 is chosen
@@ -910,4 +919,3 @@ bool ProofGraph::chooseReplacingAntecedent( ProofNode* n )
 //   AB  A     if I1=true            (~s or I2) or I3 -> (I2 or ~s)
 //   AB  B     ?
 //   AB  AB    ?
-#endif

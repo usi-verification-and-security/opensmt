@@ -23,6 +23,29 @@ bool LALogic::isNegated(PTRef tr) const {
         return isNegated(getPterm(tr)[0]);
     }
 }
+
+bool LALogic::isLinearFactor(PTRef tr) const {
+    if (isNumConst(tr) || isNumVar(tr)) { return true; }
+    if (isNumTimes(tr)) {
+        Pterm const& term = getPterm(tr);
+        return term.size() == 2 && ((isNumConst(term[0]) && isNumVar(term[1]))
+                                    || (isNumConst(term[1]) && isNumVar(term[0])));
+    }
+    return false;
+}
+
+bool LALogic::isLinearTerm(PTRef tr) const {
+    if (isLinearFactor(tr)) { return true; }
+    if (isNumPlus(tr)) {
+        Pterm const& term = getPterm(tr);
+        for (int i = 0; i < term.size(); ++i) {
+            if (!isLinearFactor(term[i])) { return false; }
+        }
+        return true;
+    }
+    return false;
+}
+
 const opensmt::Number&
 LALogic::getNumConst(PTRef tr) const
 {
@@ -254,12 +277,6 @@ void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
         args.clear();
         args.push(i1); args.push(i2);
         PTRef andr = mkAnd(args);
-#ifdef PRODUCE_PROOF
-        const ipartitions_t &part = getIPartitions(tr);
-        transferPartitionMembership(tr, andr);
-        addIPartitions(i1, part);
-        addIPartitions(i2, part);
-#endif
         la_split_inequalities.insert(i1, true);
         la_split_inequalities.insert(i2, true);
         assert(!tr_map.has(tr));

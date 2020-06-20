@@ -37,11 +37,10 @@ int main(int argc, char** argv)
     //PTRef eq4 = logic.mkBVEq(eq3, LOr);
 
 	vec<PtAsgn> asgns;
-	vec<DedElem> deds;
 	vec<PTRef> foo;
 
     SolverId id = {42};
-	BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
+	BitBlaster bbb(id, c, mainSolver, logic, asgns, foo);
 
 	BVRef output1;
 	lbool stat;

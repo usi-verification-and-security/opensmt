@@ -36,8 +36,6 @@ get_filename_component(CMAKE_MODULE_PATH
 
 find_package(GMP REQUIRED)
 
-option(PRODUCE_PROOF "Produce proof" OFF)
-
 file(GLOB_RECURSE my_c_list RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*.cc")
 
 foreach(file_path ${my_c_list})
@@ -46,8 +44,4 @@ foreach(file_path ${my_c_list})
     add_executable( ${filename} ${file_path} )
     target_include_directories(${filename} PUBLIC ${OPENSMT_INCLUDE_DIR} ${GMP_INCLUDE_DIR})
     target_link_libraries(${filename} ${OPENSMT_LIBRARY} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES})
-    if(PRODUCE_PROOF)
-        message("Compiling with PRODUCE_PROOF")
-        target_compile_definitions(${filename} PUBLIC -DPRODUCE_PROOF)
-    endif(PRODUCE_PROOF)
 endforeach()

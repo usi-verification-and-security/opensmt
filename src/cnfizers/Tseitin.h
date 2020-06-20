@@ -44,6 +44,7 @@ public:
                 , logic_
                 , tmap_
                 , solver_ )
+        , alreadyCnfized(logic_.getTerm_true())
       {}
 
     ~Tseitin( ) { }

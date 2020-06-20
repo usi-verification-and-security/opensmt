@@ -27,11 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static SolverDescr descr_bv_solver("UF Solver", "Solver for Quantifier Free Bit Vectors");
 
-BVSolver::BVSolver (SMTConfig & c, MainSolver& s, BVLogic& l, vec<DedElem> & d)
- : TSolver ((SolverId)descr_bv_solver, (const char*)descr_bv_solver, c, d)
+BVSolver::BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l)
+ : TSolver((SolverId) descr_bv_solver, (const char *) descr_bv_solver, c)
  , mainSolver(s)
- , logic(l)
- , B(id, c, mainSolver, l, explanation, d, suggestions)
+ , B(id, c, mainSolver, l, explanation, suggestions)
 { }
 
 BVSolver::~BVSolver () { }
@@ -55,16 +54,16 @@ lbool BVSolver::declareTerm(PTRef tr)
 // return false. The real consistency state will
 // be checked with "check"
 //
-bool BVSolver::assertLit ( PtAsgn pta, bool reason )
+bool BVSolver::assertLit ( PtAsgn pta )
 {
-    (void)reason;
     assert( pta.tr != PTRef_Undef );
     assert( pta.sgn != l_Undef );
 
-    Pterm& t = logic.getPterm(pta.tr);
-    if ( deduced[t.getVar()] != l_Undef && deduced[t.getVar()].polarity == pta.sgn && deduced[t.getVar()].deducedBy == id)
+    if (hasPolarity(pta.tr) && getPolarity(pta.tr) == pta.sgn) {
+        // already known
         return true;
-
+    }
+    setPolarity(pta.tr, pta.sgn);
     stack.push(pta);
     const bool res = B.assertLit(pta);
 
@@ -100,7 +99,9 @@ void BVSolver::popBacktrackPoint ( )
     //
     while (static_cast<unsigned>(stack.size()) > stack_new_size )
     {
+        PtAsgn popped = stack.last();
         stack.pop();
+        clearPolarity(popped.tr);
     }
     //
     // Restore bitblaster state

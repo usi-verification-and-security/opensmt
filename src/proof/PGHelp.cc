@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 #include <math.h>
 
@@ -659,4 +658,3 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 	cerr << "# A B mixed steps  :" << num_AB_mixed << endl;
 	cerr << "# Sym elim steps   :" << num_sym_elim << endl;
 }
-#endif

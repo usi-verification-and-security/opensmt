@@ -78,7 +78,7 @@ int main( int argc, char * argv[] )
 
     SMTConfig c;
     bool pipe = false;
-    while ((opt = getopt(argc, argv, "hdpr:")) != -1) {
+    while ((opt = getopt(argc, argv, "hdpir:")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -93,6 +93,9 @@ int main( int argc, char * argv[] )
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                break;
+            case 'i':
+                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
                 break;
             case 'p':
                 pipe = true;

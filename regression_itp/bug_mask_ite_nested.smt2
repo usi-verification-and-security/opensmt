@@ -1,5 +1,5 @@
-(set-logic QF_LRA)
 (set-option :produce-interpolants 1)
+(set-logic QF_LRA)
 (declare-fun |state::state.pc| () Real)
 (declare-fun |state::state.old| () Real)
 (declare-fun |state::state.new| () Real)

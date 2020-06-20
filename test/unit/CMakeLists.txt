@@ -15,6 +15,7 @@ add_executable(RewritingTest)
 target_sources(RewritingTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_simplifyAssignment.cpp"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Dominators.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rewriting.cpp"
     )
 
 target_link_libraries(RewritingTest api_static gtest gtest_main)
@@ -60,7 +61,7 @@ gtest_add_tests(TARGET LATest)
 
 add_executable(SimplexTest)
 target_sources(SimplexTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Simplex.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Simplex.cc"
     )
 
 target_link_libraries(SimplexTest api_static gtest gtest_main)

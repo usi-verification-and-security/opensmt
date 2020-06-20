@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENODESTORE_H
 
 #include "Enode.h"
+#include "OsmtInternalException.h"
 
 class Logic;
 
@@ -88,7 +89,9 @@ class EnodeStore {
 
     void addDistClass(PTRef tr_d) {
         assert(!dist_classes.has(tr_d));
-        assert(dist_idx < sizeof(dist_t)*8);
+        if (dist_idx >= maxDistinctClasses) {
+            throw OsmtInternalException();
+        }
         dist_classes.insert(tr_d, dist_idx);
         assert(index_to_dist.size_() == dist_idx);
         index_to_dist.push(tr_d);

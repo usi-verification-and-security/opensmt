@@ -1,5 +1,5 @@
-(set-logic QF_LRA)
 (set-option :produce-interpolants 1)
+(set-logic QF_LRA)
 
 (declare-fun x () Real)
 (declare-fun y () Real)

@@ -256,7 +256,7 @@ void Tableau::normalizeRow(LVRef v) {
     assert(isQuasiBasic(v)); // Do not call this for non quasi rows
     Polynomial & row = getRowPoly(v);
     std::vector<Polynomial::Term> toEliminate;
-    for (auto & term : row) {
+    for (auto const & term : row) {
         if (isQuasiBasic(term.var)) {
             normalizeRow(term.var);
             toEliminate.push_back(term);
@@ -279,7 +279,7 @@ void Tableau::normalizeRow(LVRef v) {
 void Tableau::quasiToBasic(LVRef v) {
     assert(isQuasiBasic(v));
     normalizeRow(v);
-    for (auto & term : getRowPoly(v)) {
+    for (auto const & term : getRowPoly(v)) {
         addRowToColumn(v, term.var);
     }
     varTypes[getVarId(v)] = VarType::BASIC;

@@ -113,10 +113,9 @@ int main(int argc, char** argv)
 
 //***** BItBlasting of C1_bv and C2_bv and two******
     vec<PtAsgn> asgns;
-    vec<DedElem> deds;
     vec<PTRef> foo;
     SolverId id = {42};
-    BitBlaster bbb(id, c, mainSolver, logic, asgns, deds, foo);
+    BitBlaster bbb(id, c, mainSolver, logic, asgns, foo);
 
     BVRef output1;
     lbool stat;

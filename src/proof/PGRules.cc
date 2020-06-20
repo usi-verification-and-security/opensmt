@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
-#ifdef PRODUCE_PROOF
 #include "PG.h"
 
 
@@ -529,4 +528,3 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
     B3++;
 }
 
-#endif

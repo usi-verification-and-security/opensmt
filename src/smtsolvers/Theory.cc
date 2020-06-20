@@ -26,10 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <TSolver.h>
 #include "CoreSMTSolver.h"
-
-#ifdef PRODUCE_PROOF
 #include "Proof.h"
-#endif //PRODUCE_PROOF
 
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
@@ -98,22 +95,22 @@ CoreSMTSolver::handleSat()
 
         Lit l1 = new_splits[0];
         Lit l2 = new_splits[1];
-
-        assert(safeValue(l1) == l_Undef || safeValue(l2) == l_Undef);
-        assert(safeValue(l1) != l_True);
-        assert(safeValue(l2) != l_True);
-        // MB: ensure the solver knows about the variables
+        // MB: ensure the SAT solver knows about the variables and that they are active
         addVar_(var(l1));
         addVar_(var(l2));
-        if (safeValue(l1) == l_Undef && safeValue(l2) == l_Undef) {
+        assert(value(l1) == l_Undef || value(l2) == l_Undef);
+        assert(value(l1) != l_True);
+        assert(value(l2) != l_True);
+        if (value(l1) == l_Undef && value(l2) == l_Undef) {
             // MB: allocate, attach and remember the clause - treated as original
+            // MB: TODO: why not theory clause?
             CRef cr = ca.alloc(new_splits, false);
             attachClause(cr);
             clauses.push(cr);
-#ifdef PRODUCE_PROOF
-            // MB: the proof needs to know about the new class; TODO: what type it should be?
-            proof.addRoot( cr, clause_type::CLA_ORIG );
-#endif // PRODUCE_PROOF
+            if (this->logsProofForInterpolation()) {
+                // MB: the proof needs to know about the new class; TODO: what type it should be?
+                proof->newOriginalClause(cr);
+            }
             forced_split = ~l1;
             return TPropRes::Decide;
         }
@@ -121,15 +118,16 @@ CoreSMTSolver::handleSat()
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
+            assert(value(l_f) == l_False);
             int lev = vardata[var(l_f)].level;
             cancelUntil(lev);
-#ifndef PRODUCE_PROOF
-            if (decisionLevel() == 0) {
-                // MB: do not allocate, we can directly enqueue the implied literal
-                uncheckedEnqueue(l_i);
-                return TPropRes::Propagate;
+            if (!this->logsProofForInterpolation()) {
+                if (decisionLevel() == 0) {
+                    // MB: do not allocate, we can directly enqueue the implied literal
+                    uncheckedEnqueue(l_i);
+                    return TPropRes::Propagate;
+                }
             }
-#endif
             // MB: we are going to propagate, make sure the implied literal is the first one
             if (l_i != new_splits[0]) {
                 new_splits[0] = l_i;
@@ -138,18 +136,15 @@ CoreSMTSolver::handleSat()
             CRef cr = ca.alloc(new_splits, false);
             attachClause(cr);
             clauses.push(cr);
-#ifdef PRODUCE_PROOF
-            // MB: the proof needs to know about the new class; TODO: what type it should be?
-            proof.addRoot( cr, clause_type::CLA_ORIG );
-            if (decisionLevel() == 0) {
-                units[ var(l_i) ] = cr;
+            if (logsProofForInterpolation()) {
+                // MB: the proof needs to know about the new class; TODO: what type it should be?
+                proof->newOriginalClause(cr);
             }
-#endif // PRODUCE_PROOF
             uncheckedEnqueue(l_i, cr);
             return TPropRes::Propagate;
         }
     }
-    if (config.sat_theory_propagation > 0) {
+    if (config.theory_propagation) {
         vec<LitLev> deds;
         deduceTheory(deds); // deds will be ordered by decision levels
         for (int i = 0; i < deds.size(); i++) {
@@ -176,79 +171,38 @@ CoreSMTSolver::handleUnsat()
     // Reset skip step for uns calls
     skip_step = config.sat_initial_skip_step;
 
-#ifndef PRODUCE_PROOF
-    // Top-level conflict, problem is T-Unsatisfiable
-    if ( decisionLevel( ) == 0 )
-        return TPropRes::Unsat;
-#endif
+    if (!logsProofForInterpolation()) {
+        // Top-level conflict, problem is T-Unsatisfiable
+        if (decisionLevel() == 0) {
+            return TPropRes::Unsat;
+        }
+    }
     vec< Lit > conflicting;
     vec< Lit > learnt_clause;
     int        max_decision_level;
     int        backtrack_level;
 
-#ifdef PEDANTIC_DEBUG
-    theory_handler.getConflict(conflicting, vardata, max_decision_level, trail);
-#else
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
-#endif
-#ifdef PRODUCE_PROOF
-    /*
-    PTRef interp = PTRef_Undef;
-    if ( config.produce_inter() > 0 )
-        interp = theory_handler.getInterpolants( );
-    */
-#endif
 
     assert( max_decision_level <= decisionLevel( ) );
     cancelUntil( max_decision_level );
 
     if ( decisionLevel( ) == 0 )
     {
-#ifdef PRODUCE_PROOF
-        // This case is equivalent to "Did not find watch" in propagate( )
-        // All conflicting atoms are dec-level 0
-        CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
-
-        Clause & c = ca[confl];
-        proof.addRoot( confl, clause_type::CLA_THEORY );
-        //TODO: is it correct?
-        //proof.setTheoryInterpolator(confl, theory_itpr);
-        //clause_to_itpr[ confl ] = theory_itpr;
-        tleaves.push( confl );
-        if ( config.isIncremental() )
-        {
-            // Not yet integrated
-            //assert(false);
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
+        if (logsProofForInterpolation()) {
+            // All conflicting atoms are dec-level 0
+            CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
+            proof->newTheoryClause(confl);
+            this->finalizeProof(confl);
         }
-        if ( config.produce_inter() > 0 )
-        {
-            //assert(interp != PTRef_Undef);
-            // FIXME why here?
-            //proof.resolve( units[var(c[k])], var(c[k]) );
-        }
-        // Empty clause derived
-        // ADDED CODE BEGIN
-        proof.beginChain( confl );
-        for ( unsigned k = 0; k < c.size() ; k ++ )
-        {
-            //assert( level[ var(c[k]) ] == 0 );
-            //assert( value( c[k] ) == l_False );
-            //assert( units[var(c[k])] != NULL );
-            proof.resolve( units[var(c[k])], var(c[k]) );
-        }
-        // ADDED CODE END
-        proof.endChain( CRef_Undef );
-#endif
         return TPropRes::Unsat;
     }
 
     CRef confl = CRef_Undef;
     assert( conflicting.size( ) > 0 );
 
-#ifdef PRODUCE_PROOF
-    // Do not store theory lemma
-    if ( conflicting.size( ) > config.sat_learn_up_to_size
+    bool learnOnlyTemporary = conflicting.size() > config.sat_learn_up_to_size;
+    if (learnOnlyTemporary
             || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
     {
         confl = ca.alloc(conflicting);
@@ -258,81 +212,40 @@ CoreSMTSolver::handleUnsat()
     {
         confl = ca.alloc(conflicting, config.sat_temporary_learn);
         learnts.push(confl);
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, confl));
-        }
         attachClause(confl);
         claBumpActivity(ca[confl]);
         learnt_t_lemmata ++;
         if ( !config.sat_temporary_learn )
             perm_learnt_t_lemmata ++;
     }
-#else
-    // Do not store theory lemma
-    if ( conflicting.size( ) > config.sat_learn_up_to_size
-            || conflicting.size( ) == 1 ) // That might happen in bit-vector theories
-    {
-        confl = ca.alloc(conflicting);
-    }
-    // Learn theory lemma
-    else
-    {
-        confl = ca.alloc(conflicting, config.sat_temporary_learn);
-        learnts.push(confl);
-//    if ( config.incremental )
-//    {
-//      undo_stack_oper.push_back( NEWLEARNT );
-//      undo_stack_elem.push_back( (void *)confl );
-//    }
-        attachClause(confl);
-        claBumpActivity(ca[confl]);
-        learnt_t_lemmata ++;
-        if ( !config.sat_temporary_learn )
-            perm_learnt_t_lemmata ++;
-    }
-#endif
     assert( confl != CRef_Undef );
 
     learnt_clause.clear();
-#ifdef PRODUCE_PROOF
-    proof.addRoot( confl, clause_type::CLA_THEORY );
-    tleaves.push( confl );
-    if ( config.isIncremental() )
-    {
-        undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, confl));
+    if (logsProofForInterpolation()) {
+        proof->newTheoryClause(confl);
     }
-    if ( config.produce_inter() > 0 )
-    {
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWINTER, CRef_Undef));
-        }
-    }
-#endif
-
     analyze( confl, learnt_clause, backtrack_level );
 
-#ifndef PRODUCE_PROOF
-    // Get rid of the temporary lemma
-    if ( conflicting.size( ) > config.sat_learn_up_to_size )
-    {
-        ca.free(confl);
+    if (!logsProofForInterpolation()) {
+        // Get rid of the temporary lemma
+        if (learnOnlyTemporary)
+        {
+            ca.free(confl);
+        }
     }
-#endif
 
     cancelUntil(backtrack_level);
     assert(value(learnt_clause[0]) == l_Undef);
 
     if (learnt_clause.size() == 1) {
-        uncheckedEnqueue(learnt_clause[0]);
-#ifdef PRODUCE_PROOF
-        // Create a unit for the proof
-        CRef cr = ca.alloc(learnt_clause, false);
-        proof.endChain( cr );
-        //assert( units[ var(learnt_clause[0]) ] == CRef_Undef );
-        units[ var(learnt_clause[0]) ] = proof.last( );
-#endif
+        CRef reason = CRef_Undef;
+        if (logsProofForInterpolation())
+        {
+            CRef cr = ca.alloc(learnt_clause, false);
+            proof->endChain(cr);
+            reason = cr;
+        }
+        uncheckedEnqueue(learnt_clause[0], reason);
     } else {
         // ADDED FOR NEW MINIMIZATION
         learnts_size += learnt_clause.size( );
@@ -340,13 +253,9 @@ CoreSMTSolver::handleUnsat()
 
         CRef cr = ca.alloc(learnt_clause, true);
 
-#ifdef PRODUCE_PROOF
-        proof.endChain( cr );
-        if ( config.isIncremental() )
-        {
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
+        if (logsProofForInterpolation()) {
+            proof->endChain(cr);
         }
-#endif
         learnts.push(cr);
         learnt_theory_conflicts++;
         undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
@@ -357,11 +266,6 @@ CoreSMTSolver::handleUnsat()
 
     varDecayActivity();
     claDecayActivity();
-
-#ifdef PRODUCE_PROOF
-    assert( proof.checkState( ) );
-#endif
-
     return TPropRes::Propagate;
 }
 
@@ -406,85 +310,6 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
     assert(res == TRes::UNKNOWN);
 
     return TPropRes::Decide;
-}
-
-int CoreSMTSolver::analyzeUnsatLemma(CRef confl)
-{
-    assert(confl != CRef_Undef);
-
-#ifndef PRODUCE_PROOF
-  if ( decisionLevel( ) == 0 )
-    return -1;
-#endif
-
-    Clause & c = ca[confl];
-
-    // Get highest decision level
-    int max_decision_level = level(var(c[0]));
-    for ( unsigned i = 1 ; i < c.size( ) ; i++ )
-        if ( level(var(c[i])) > max_decision_level )
-            max_decision_level = level(var(c[i]));
-
-    cancelUntil( max_decision_level );
-
-    if ( decisionLevel( ) == 0 )
-    {
-#ifdef PRODUCE_PROOF
-        proof.beginChain( confl );
-        for ( unsigned k = 0; k < c.size() ; k ++ )
-        {
-            assert(level(var(c[k])) == 0);
-            assert(value( c[k] ) == l_False);
-            assert(units[ var(c[k]) ] != CRef_Undef);
-            proof.resolve(units[var(c[k])], var(c[k]));
-        }
-        // Empty clause reached
-        proof.endChain(CRef_Undef);
-#endif
-        return -1;
-    }
-
-    vec< Lit > learnt_clause;
-    int backtrack_level;
-    analyze( confl, learnt_clause, backtrack_level );
-    cancelUntil(backtrack_level);
-    assert(value(learnt_clause[0]) == l_Undef);
-
-    if (learnt_clause.size() == 1)
-    {
-        uncheckedEnqueue(learnt_clause[0]);
-#ifdef PRODUCE_PROOF
-        // Create a unit for proof
-        CRef cr = ca.alloc(learnt_clause, false);
-        proof.endChain(cr);
-        assert(units[var(learnt_clause[0])] == CRef_Undef);
-        units[ var(learnt_clause[0]) ] = proof.last();
-#endif
-    }
-    else
-    {
-        // ADDED FOR NEW MINIMIZATION
-        learnts_size += learnt_clause.size( );
-        all_learnts ++;
-
-        CRef cr = ca.alloc(learnt_clause, true);
-
-#ifdef PRODUCE_PROOF
-        proof.endChain(cr);
-        if ( config.isIncremental() )
-            undo_stack.push(undo_stack_el(undo_stack_el::NEWPROOF, cr));
-#endif
-        learnts.push(cr);
-        undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, cr));
-        attachClause(cr);
-        claBumpActivity(ca[cr]);
-        uncheckedEnqueue(learnt_clause[0], cr);
-    }
-
-    varDecayActivity();
-    claDecayActivity();
-
-    return 0;
 }
 
 //

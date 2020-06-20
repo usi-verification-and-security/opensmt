@@ -1,5 +1,5 @@
-(set-logic QF_UF)
 (set-option :produce-interpolants 1)
+(set-logic QF_UF)
 (declare-sort Real 0)
 (declare-fun .uf-not () Bool)
 (declare-fun ite (Bool Real Real ) Real)

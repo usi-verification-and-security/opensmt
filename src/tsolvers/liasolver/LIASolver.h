@@ -49,7 +49,7 @@ private:
 
 public:
 
-    LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d);
+    LIASolver(SMTConfig & c, LIALogic & l);
 
     ~LIASolver( );                                      // Destructor ;-)
 
@@ -66,6 +66,8 @@ protected:
 
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
+
+    LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) override;
 
 
 

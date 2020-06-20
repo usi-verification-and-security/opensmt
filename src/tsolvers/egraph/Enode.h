@@ -70,11 +70,6 @@ class Extra {
         ERef        cdr;
         ERef        next;           // Next node in the class
         int         size;           // Size of the eq class
-//        ERef        parent;         // Parent of the node (in congruence)
-//        ERef        same_car;       // Circular list of all the car-parents of the class
-//        ERef        same_cdr;       // Circular list of all the cdr-parents of the class
-//        int         parent_size;    // Size of the parent's congruence class
-//        ERef        cg_ptr;         // Congruence class representative (how is this different from root?)
         int         carParentIndex;
         int         cdrParentIndex;
     } lst;
@@ -157,17 +152,6 @@ public:
     ERef getCdr()                const { assert(type() != et_symb); return ex->lst.cdr; }
     ERef getRoot()               const { if (isSymb()) return er; else return root; }
     void setRoot       (ERef r)        { assert(type() != et_symb); root = r; }
-//    ERef getCgPtr      ()        const { assert(type() != et_symb); return ex->lst.cg_ptr; }
-//    void setCgPtr      (ERef e)        { assert(type() != et_symb); ex->lst.cg_ptr = e; }
-//
-//    ERef getParent     ()        const { assert(type() != et_symb); return ex->lst.parent; }
-//    void setParent     (ERef e)        { assert(type() != et_symb); ex->lst.parent = e; }
-//    int  getParentSize ()        const { assert(type() != et_symb); return ex->lst.parent_size; }
-//    void setParentSize (int i)         { assert(type() != et_symb); ex->lst.parent_size = i; }
-//    ERef getSameCdr    ()        const { assert(type() != et_symb); return ex->lst.same_cdr; }
-//    void setSameCdr    (ERef e)        { assert(type() != et_symb); ex->lst.same_cdr = e; }
-//    ERef getSameCar    ()        const { assert(type() != et_symb); return ex->lst.same_car; }
-//    void setSameCar    (ERef e)        { assert(type() != et_symb); ex->lst.same_car = e; }
 
     void setCarParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.carParentIndex = idx; }
     void setCdrParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.cdrParentIndex = idx; }
@@ -194,17 +178,13 @@ private:
     void  setPterm      (PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
 public:
     PTRef getTerm       ()        const { assert(isTerm()); return ex->trm.pterm; }
-//    ELRef getForbid     ()        const { assert(isTerm()); return ex->trm.forbid; }
     ELRef getForbid     ()        const { assert(!isSymb()); if (isList()) return ELRef_Undef; else return ex->trm.forbid; }
     ELRef& altForbid    ()              { assert(isTerm()); return ex->trm.forbid; }
     void  setForbid     (ELRef r)       { assert(isTerm()); ex->trm.forbid = r; }
-//    int   getDistIndex  ()        const { assert(isTerm()); return ex->trm.dist_index; }
     int   getDistIndex  ()        const { assert(!isSymb()); if (isList()) return 0; else return ex->trm.dist_index; }
     void  setDistIndex  (int i)         { assert(isTerm()); ex->trm.dist_index = i; }
-//    void  setDistClasses( const dist_t& d) { assert(isTerm()); ex->trm.dist_classes = d; }
     void  setDistClasses( const dist_t& d) { assert(!isSymb()); if (isList()) assert(d == 0); else ex->trm.dist_classes = d; }
 
-//    inline dist_t getDistClasses() const { assert(isTerm()); return ex->trm.dist_classes; }
     inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
 };
 
@@ -226,7 +206,6 @@ struct ERef_vecEq {
             if (s1[i] != s2[i]) return false;
         return true; }
 };
-
 
 class EnodeAllocator : public RegionAllocator<uint32_t>
 {
@@ -257,13 +236,16 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     }
 
     // For terms and lists
-    ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr)
-    {
+    ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr) {
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
         assert(t == Enode::et_list || t == Enode::et_term);
         uint32_t v = RegionAllocator<uint32_t>::alloc(t == Enode::et_list ? listEnodeWord32Size() : termEnodeWord32Size());
+        // MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
+        // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
+        // but here is a dynamic check just in case.
+        if (v >= (static_cast<uint32_t>(-1) >> 2)) { throw OutOfMemoryException(); }
         ERef eid;
         eid.x = v;
         assert(t != Enode::et_list || ptr == PTRef_Undef);
@@ -327,7 +309,6 @@ public:
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
         void* mem = malloc(sz);
-//        return new (mem) Elist(e_, r, owner);
         return new (mem) Elist(e_, r);
     }
 };

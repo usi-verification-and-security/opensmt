@@ -32,9 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SolverTypes.h"
 #include "TResult.h"
-#ifdef PRODUCE_PROOF
+
 class TheoryInterpolator; // forward declaration
-#endif
+
 
 class Logic; // forward declaration
 
@@ -126,6 +126,16 @@ class TSolverStats
 
 class TSolver
 {
+private:
+    /**
+     * Polarity map now merges its original meaning and keeping track of deductions.
+     * It keeps track about polarities of theory atoms the solver already knows about.
+     * This information can come from two sources:
+     * - from SAT solver through assertLit
+     * - from TSolver's own deductions
+     */
+    Map<PTRef,lbool,PTRefHash>  polarityMap;
+
 protected:
     SolverId                    id;              // Solver unique identifier
     vec<PtAsgn>                 explanation;     // Stores the explanation
@@ -134,18 +144,28 @@ protected:
     vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
     vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
-    vec<DedElem>                &deduced;        // Array of deductions indexed by variables
-    Map<PTRef,lbool,PTRefHash>  polarityMap;
+
+    // Methods for querying and modifying infromation about known polarities
+    void  setPolarity(PTRef tr, lbool p);
+    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
+    void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
+    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+
+    // Method for storing information about deductions (Derived solvers should use this and not manipulate fields themselves)
+    void storeDeduction(PtAsgn_reason ded) {
+        th_deductions.push(ded);
+        setPolarity(ded.tr, ded.sgn);
+    }
+
     vec<PTRef>                  splitondemand;
 
 public:
     // The states of the TSolver check query
 
 
-    TSolver(SolverId id_, const char* name_, SMTConfig & c, vec<DedElem>& d)
+    TSolver(SolverId id_, const char * name_, SMTConfig & c)
     : id(id_)
     , deductions_next(0)
-    , deduced (d)
     , has_explanation(false)
     , name(name_)
     , config  (c)
@@ -156,12 +176,8 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    virtual void setPolarity(PTRef tr, lbool p);
     virtual void print(ostream& out) = 0;
-    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
-    void  clearPolarity(PTRef tr);
-    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
-    virtual bool                assertLit           ( PtAsgn, bool = false ) = 0 ;  // Assert a theory literal
+    virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
@@ -172,7 +188,7 @@ public:
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
-    virtual PtAsgn_reason getDeduction() = 0;             // Return an implied node based on the current state
+    virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
@@ -181,12 +197,12 @@ public:
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
     bool         isKnown(PTRef tr);
+    void         setKnown(PTRef tr);
 
 protected:
     bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
-    std::vector<PTRef>          getInformed() {std::vector<PTRef> res; vec<PTRef> tmp; informed_PTRefs.getKeys(tmp);
-                                                for(int i = 0; i < tmp.size(); ++i) {res.push_back(tmp[i]);} return res; }
+    vec<PTRef>                  getInformed() { vec<PTRef> res; informed_PTRefs.getKeys(res); return res; }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
     string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration

@@ -88,8 +88,9 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             //constructing new constraint
             //x <= c || x >= c+1;
-            PTRef constr = logic.mkOr(logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c)),
-                       logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1)));
+            PTRef upperBound = logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c));
+            PTRef lowerBound = logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1));
+            PTRef constr = logic.mkOr(upperBound, lowerBound);
             //printf("LIA solver constraint %s\n", logic.pp(constr));
 
             splitondemand.push(constr);
@@ -116,8 +117,8 @@ LIASolver::getNewSplits(vec<PTRef>& splits)
     setStatus(SAT);
 }
 
-LIASolver::LIASolver(SMTConfig & c, LIALogic& l, vec<DedElem>& d)
-        : LASolver(descr_lia_solver, c, l, d)
+LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
+        : LASolver(descr_lia_solver, c, l)
         , logic(l)
 
 {
@@ -130,3 +131,21 @@ LIASolver::~LIASolver( )
 }
 
 LIALogic&  LIASolver::getLogic()  { return logic; }
+
+/**
+ * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the interger bounds on the variable
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The integer values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LIASolver::getBoundsValue(const Real & c, bool strict) {
+    if (strict) {
+        // v < c => UB is ceiling(c-1), LB is ceiling(c)
+        return {Delta((c-1).ceil()), Delta(c.ceil())};
+    }
+    else {
+        // v <= c => UB is floor(c), LB is floor(c+1)
+        return {Delta(c.floor()), Delta((c+1).floor())};
+    }
+}
