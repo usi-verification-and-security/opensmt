@@ -56,9 +56,6 @@ public:
     LRALogic&  getLogic() override;
     lbool getPolaritySuggestion(PTRef) const;
 
-protected:
-    LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) override;
-
 public:
     PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
     PTRef getDecomposedInterpolant(const ipartitions_t & mask , map<PTRef, icolor_t> *labels);

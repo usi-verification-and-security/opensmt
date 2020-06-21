@@ -26,13 +26,13 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     if (sum_term_is_negated) {
         opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr_neg, false));
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
         const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr, true));
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
     }
@@ -734,5 +734,56 @@ LASolver::~LASolver( )
 }
 
 LALogic&  LASolver::getLogic()  { return logic; }
+
+
+/**
+ * Given an inequality v ~ c (with ~ is either < or <=), compute the correct bounds on the variable.
+ * The correct values of the bounds are computed differently, based on whether the value of v must be Int or not.
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValue(LVRef v, const Real & c, bool strict) {
+    return isIntVar(v) ? getBoundsValueForIntVar(c, strict) : getBoundsValueForRealVar(c, strict);
+}
+
+/**
+ * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the interger bounds on the variable
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The integer values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValueForIntVar(const Real & c, bool strict) {
+    if (strict) {
+        // v < c => UB is ceiling(c-1), LB is ceiling(c)
+        return {Delta((c-1).ceil()), Delta(c.ceil())};
+    }
+    else {
+        // v <= c => UB is floor(c), LB is floor(c+1)
+        return {Delta(c.floor()), Delta((c+1).floor())};
+    }
+}
+
+
+/**
+ * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the real bounds on the variable
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The real values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValueForRealVar(const Real & c, bool strict) {
+    if (strict) {
+        // v < c => UB is c-\delta, LB is c
+        return { Delta(c, -1), Delta(c) };
+    }
+    else {
+        // v <= c => UB is c, LB is c+\delta
+        return { Delta(c), Delta(c, 1) };
+    }
+}
+
 
 
