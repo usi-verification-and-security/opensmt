@@ -18,6 +18,6 @@ void STPStore::setNegation(EdgeRef a, EdgeRef b) {
 
 void STPStore::clear() {
     edges.clear();
-    vertices = 0;
+    vertices = 1;   // clear all vertices except zero
 }
 

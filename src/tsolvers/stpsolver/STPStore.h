@@ -36,13 +36,14 @@ private:
     uint32_t vertices;                  // number of created vertices (a vertex doesn't actually carry any information)
     std::vector<Edge> edges;            // list of all created edges
 public:
-    STPStore() : vertices(0) {}
+    STPStore() : vertices(1) {}         // the 'zero' vertex is created implicitly
     VertexRef createVertex();
     EdgeRef createEdge(VertexRef from, VertexRef to, ptrdiff_t cost);
 
     size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }
+    static VertexRef zero() { return VertexRef{0};}
     void setNegation(EdgeRef a, EdgeRef b);
     void clear();
 };

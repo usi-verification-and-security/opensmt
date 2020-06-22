@@ -26,23 +26,36 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     Pterm &leq = logic.getPterm(ref);
     assert( logic.isNumConst(leq[0]) );  // TODO: Can the inequality be reversed?
     auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
-    assert( con.isInteger() );
+    assert( con.isInteger() );  // we're dealing with IDL for now
     auto c = static_cast<ptrdiff_t>(con.get_d());
-    PTRef diff = leq[1];  // 'x + (-1 * y)'
+    PTRef rhs = leq[1];  // 'x + (-1 * y)'
 
-    assert( logic.isNumPlus(diff) );
-    Pterm &diffPt = logic.getPterm(diff);
-    uint8_t ix = logic.isNumVar(diffPt[0]) ? 0 : 1;  // index of 'x'
-    uint8_t iy = 1 - ix;  // index of '-1 * y'
-    PTRef x = diffPt[ix];  // 'x'
-    assert( logic.isNumTimes(diffPt[iy]) );
+    PTRef x, y;  // variables on the right hand side
+    if (logic.isNumVar(rhs)) {  // inequality with a single positive variable
+        x = rhs;
+        y = PTRef_Undef;
+    }
+    else {  // right hand side contains at least a negative variable
+        Pterm &rhsPt = logic.getPterm(rhs);
+        PTRef mul;  // (-1 * y) term
+        if (logic.isNumPlus(rhs)) {  // usual DL inequality with two variables
+            uint8_t ix = logic.isNumVar(rhsPt[0]) ? 0 : 1;
+            uint8_t iy = 1 - ix;
+            x = rhsPt[ix];
+            mul = rhsPt[iy];
+        }
+        else { // RHS contains just a negative variable
+            x = PTRef_Undef;
+            mul = rhs;
+        }
 
-    Pterm &mult = logic.getPterm(diffPt[iy]);  // '-1 * y'
-    assert( logic.isNumConst(mult[0]) && logic.getNumConst(mult[0]) == -1 );
-    assert( logic.isNumVar(mult[1]) );
-    PTRef y = mult[1];  // 'y'
-    auto ret = ParsedPTRef{x, y, c};
-    return ret;
+        assert( logic.isNumTimes(mul) );
+        Pterm &mulPt = logic.getPterm(mul);
+        assert( logic.isNumConst(mulPt[0]) && logic.getNumConst(mulPt[0]) == -1);
+        y = mulPt[1];
+        assert( logic.isNumVar(y) );
+    }
+    return ParsedPTRef{x, y, c};
 }
 
 EdgeRef STPSolver::createNegation(EdgeRef e) {

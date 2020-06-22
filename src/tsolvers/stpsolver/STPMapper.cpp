@@ -7,6 +7,7 @@ STPMapper::STPMapper(LALogic const &l, STPStore &s)
 
 // assigns a VertexRef to a PTRef variable
 void STPMapper::setVert(PTRef var, VertexRef vert) {
+    assert( var != PTRef_Undef );
     uint32_t idx = Idx(logic.getPterm(var).getId());
     if (varToVertRef.size() <= idx)
         varToVertRef.growTo(idx + 1, VertRef_Undef);
@@ -35,6 +36,7 @@ void STPMapper::mapEdge(PTRef leq, EdgeRef edge) {
 
 // returns the VertexRef corresponding to a PTRef, if it exists
 VertexRef STPMapper::getVertRef(PTRef var) {
+    if (var == PTRef_Undef) return STPStore::zero(); // missing variables in inequality are replaced with 'zero' variable
     uint32_t idx = Idx(logic.getPterm(var).getId());
     return varToVertRef.size() <= idx ? VertRef_Undef : varToVertRef[idx];
 }
