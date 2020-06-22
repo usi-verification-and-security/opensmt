@@ -68,6 +68,7 @@ protected:
     bool isModelInteger (LVRef v) const;
 
     virtual bool isIntVar(LVRef v) const override { return int_vars_map.has(v); }
+    virtual void markVarAsInt(LVRef v) override;
 
 
     opensmt::Integer2 getInt(PTRef r) ;

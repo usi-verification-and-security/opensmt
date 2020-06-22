@@ -232,23 +232,18 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 
     auto poly = std::unique_ptr<Polynomial>(new Polynomial());
-
     bool negated = logic.isNegated(term);
-
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;
         PTRef c;
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
         LVRef var = getLAVar_single(v);
-        notifyVar(var);
         Real coeff = getNum(c);
         if (negated) {
             coeff.negate();
         }
-        simplex.nonbasicVar(var);
         poly->addTerm(var, std::move(coeff));
     }
-
     return poly;
 }
 
@@ -287,7 +282,20 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     else {
         // Cases (3), (4a) and (4b)
         x = getLAVar_single(expr);
-        simplex.newRow(x, expressionToLVarPoly(expr));
+        auto poly = expressionToLVarPoly(expr);
+        // ensure the simplex knows about all the variables
+        // and compute if this poly is always integer
+        bool isInt = true;
+        for (auto const & term : *poly) {
+            notifyVar(term.var);
+            simplex.nonbasicVar(term.var);
+            // MB: Notify must be called before the query isIntVar!
+            isInt &= isIntVar(term.var) && term.coeff.isInteger();
+        }
+        simplex.newRow(x, std::move(poly));
+        if (isInt) {
+            markVarAsInt(x);
+        }
     }
     assert(x != LVRef_Undef);
     return x;
