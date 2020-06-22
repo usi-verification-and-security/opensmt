@@ -36,13 +36,7 @@ void LIASolver::clearSolver()
 void LIASolver::notifyVar(LVRef v)
 {
     assert(logic.isNumVar(getVarPTRef(v)));
-    if (!int_vars_map.has(v)) {
-        int_vars_map.insert(v, true);
-        int_vars.push(v);
-    }
-
-    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
-        cuts.push();
+    markVarAsInt(v);
 }
 
 TRes LIASolver::checkIntegersAndSplit() {
@@ -132,3 +126,13 @@ LIASolver::~LIASolver( )
 }
 
 LIALogic&  LIASolver::getLogic()  { return logic; }
+
+void LIASolver::markVarAsInt(LVRef v) {
+    if (!int_vars_map.has(v)) {
+        int_vars_map.insert(v, true);
+        int_vars.push(v);
+    }
+
+    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
+        cuts.push();
+}
