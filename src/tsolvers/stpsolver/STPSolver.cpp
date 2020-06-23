@@ -12,7 +12,6 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l)
         , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
         , inv_bpoint(-1)
-        , curr_bpoint(0)
         , inv_asgn(PtAsgn_Undef)
 {}
 
@@ -129,7 +128,7 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     }
     if (graph.isTrue(nset)) {                               // negation of assignment was found as a consequence
         assert( asgn.sgn == lbool(!graph.isTrue(e)) );      // the polarity must be opposite to previous check
-        inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
+        inv_bpoint = backtrack_points.size();               // remember the first time we reached inconsistent state
         inv_asgn = asgn;
         has_explanation = true;                             // marks this TSolver as the cause of inconsistency
         return false;
@@ -179,7 +178,6 @@ void STPSolver::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking
     TSolver::pushBacktrackPoint();
-    ++curr_bpoint;
     backtrack_points.push(graph.getAddedCount());
 }
 
@@ -194,8 +192,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
     if (!i) return;
     assert( backtrack_points.size() >= i );
-    curr_bpoint -= i;
-    if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
+    if (inv_bpoint > backtrack_points.size() - i) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
         inv_asgn = PtAsgn_Undef;
         has_explanation = false;

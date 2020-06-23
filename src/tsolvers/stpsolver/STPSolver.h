@@ -29,8 +29,7 @@ class STPSolver : public TSolver {
 
     STPEdgeGraph graph;
 
-    uint32_t curr_bpoint;                     // current backtrack point
-    uint32_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
+    ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
 
     ParsedPTRef parseRef(PTRef ref) const;
