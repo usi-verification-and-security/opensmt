@@ -27,11 +27,14 @@ void STPMapper::registerEdge(EdgeRef edge) {
 // assigns an EdgeRef to a PTRef inequality and adds it to the 'edgesOf' lists of its vertices
 void STPMapper::mapEdge(PTRef leq, EdgeRef edge) {
     registerEdge(edge);
-
     uint32_t idx = Idx(logic.getPterm(leq).getId());
     if (leqToEdgeRef.size() <= idx)
         leqToEdgeRef.growTo(idx + 1, EdgeRef_Undef);
+    if (edgeRefToLeq.size() <= edge.x) {
+        edgeRefToLeq.growTo(edge.x + 1, PTRef_Undef);
+    }
     leqToEdgeRef[idx] = edge;
+    edgeRefToLeq[edge.x] = leq;
 }
 
 // returns the VertexRef corresponding to a PTRef, if it exists
@@ -61,9 +64,14 @@ EdgeRef STPMapper::getEdgeRef(VertexRef y, VertexRef x, ptrdiff_t c) const {
     return EdgeRef_Undef;
 }
 
+PTRef STPMapper::getPTRef(EdgeRef edge) const {
+    return edgeRefToLeq.size() > edge.x ? edgeRefToLeq[edge.x] : PTRef_Undef;
+}
+
 void STPMapper::clear() {
     edgesContainingVert.clear();
     varToVertRef.clear();
     leqToEdgeRef.clear();
+    edgeRefToLeq.clear();
 }
 

@@ -115,30 +115,45 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
     if (inv_edge != EdgeRef_Undef) return false;            // no need to check anything if we're inconsistent already
 
-    // If 'e' exists, 'neg' must also exist (see declareAtom)
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
     assert( e != EdgeRef_Undef );
     EdgeRef neg = store.getEdge(e).neg;
+    assert( neg != EdgeRef_Undef );
 
-    // if the assignment was already found as a consequence, we just mark it as manually assigned and return it as true
-    if (graph.isTrue(e) && asgn.sgn == l_True || graph.isTrue(neg) && asgn.sgn == l_False) {
+    EdgeRef set = (asgn.sgn == l_True) ? e : neg;   // edge corresponding to 'true' assignment of 'asgn.tr'
+    EdgeRef nset = (set == e) ? neg : e;            //                       'false'
+
+    if (graph.isTrue(set)) {
         // FIXME: if we backtrack before the assignment but after the deduction, now invalid 'asgn' is still stored
         // store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
         return true;
     }
-    else if (graph.isTrue(neg) || graph.isTrue(e)) {        // negation of assignment was found as a consequence
+    if (graph.isTrue(nset)) {                               // negation of assignment was found as a consequence
         assert( asgn.sgn == lbool(!graph.isTrue(e)) );      // the polarity must be opposite to previous check
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
-        inv_edge = (asgn.sgn == l_True) ? e : neg;          // save the edge which is inconsistent when set true
+        inv_edge = nset;
         inv_asgn = asgn;
         has_explanation = true;                             // marks this TSolver as the cause of inconsistency
         return false;
     }
 
     // The assignment isn't decided yet, so we set it as true and find all of its consequences
-    EdgeRef set = (asgn.sgn == l_True) ? e : neg;
     graph.setTrue(set, asgn);
-    graph.findConsequences(set);
+    vec<EdgeRef> deductions = graph.findConsequences(set);
+
+    // pass all found deductions to TSolver
+    PTRef nleq = mapper.getPTRef(nset);
+    if (nleq != PTRef_Undef)
+        storeDeduction(PtAsgn_reason(nleq, l_False, PTRef_Undef));
+
+    for (auto eRef : deductions) {
+        PTRef leq = mapper.getPTRef(eRef);
+        nleq = mapper.getPTRef(store.getNegation(eRef));
+        if (leq != PTRef_Undef && !hasPolarity(leq))
+            storeDeduction(PtAsgn_reason(leq, l_True, PTRef_Undef));
+        if (nleq != PTRef_Undef && !hasPolarity(nleq))
+            storeDeduction(PtAsgn_reason(nleq, l_False, PTRef_Undef));
+    }
     return true;
 }
 

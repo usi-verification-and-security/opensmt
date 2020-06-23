@@ -14,6 +14,7 @@ class STPMapper {
 
     vec<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
     vec<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
+    vec<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
     vec<vec<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
 
 public:
@@ -24,6 +25,7 @@ public:
     VertexRef getVertRef(PTRef var);
     EdgeRef getEdgeRef(PTRef leq);
     EdgeRef getEdgeRef(VertexRef y, VertexRef x, ptrdiff_t c) const;
+    PTRef getPTRef(EdgeRef edge) const;
     const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
     void clear();
 };

@@ -32,7 +32,7 @@ public:
     bool isTrue(EdgeRef e) const;
     uint32_t getAddedCount() const { return addedCount; }
     void setTrue(EdgeRef e, PtAsgn asgn);
-    void findConsequences(EdgeRef e);
+    vec<EdgeRef> findConsequences(EdgeRef e);
     void findExplanation(EdgeRef e, vec<PtAsgn> &v);
     void removeAfter(uint32_t point);
     void clear();

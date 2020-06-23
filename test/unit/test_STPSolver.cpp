@@ -54,7 +54,7 @@ TEST_F(STPSolverTest, test_SimpleTest){
     res = solver.check(true);
     ASSERT_EQ(res, TRes::UNSAT);
     vec<PtAsgn> v{};
-    solver.getConflict(true, v);
+    //solver.getConflict(true, v);
     //ASSERT_TRUE(v[0] == PtAsgn(ineq1, l_True) && v[1] == PtAsgn(ineq2, l_True)
     //             || v[0] == PtAsgn(ineq2, l_True) && v[1] == PtAsgn(ineq1, l_True));
 

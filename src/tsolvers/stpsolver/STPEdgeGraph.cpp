@@ -23,7 +23,7 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
-void STPEdgeGraph::findConsequences(EdgeRef e) {
+vec<EdgeRef> STPEdgeGraph::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto start = store.getEdge(e);
@@ -35,19 +35,25 @@ void STPEdgeGraph::findConsequences(EdgeRef e) {
     auto &thisRes = aRes.total < bRes.total ? aRes : bRes;
     auto &otherRes = aRes.total < bRes.total ? bRes : aRes;
 
+    vec<EdgeRef> deductions;
     // for each (WLOG) 'a', go through its edges and find each 'a -> b' edge that has cost higher than length found by DFS
     // such edges are consequences of the current graph
     for (uint32_t i = 0; i < n; ++i) {
         if (!thisRes.visited[i]) continue;
         for (auto eRef : mapper.edgesOf(VertexRef{i})) {
+            if (eRef == e) continue;
             Edge &edge = store.getEdge(eRef);
             auto thisSide = (aRes.total < bRes.total) ? edge.from.x : edge.to.x;
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
             if (thisSide == i && otherRes.visited[otherSide]
-                && edge.cost >= thisRes.distance[thisSide] + start.cost + otherRes.distance[otherSide])
-                    setTrue(eRef, PtAsgn_Undef);
+                && edge.cost >= thisRes.distance[thisSide] + start.cost + otherRes.distance[otherSide]) {
+                deductions.push(eRef);
+                setTrue(eRef, PtAsgn_Undef);
+            }
         }
     }
+
+    return deductions;
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
