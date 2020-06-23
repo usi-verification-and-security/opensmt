@@ -13,7 +13,6 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l)
         , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
         , inv_bpoint(-1)
         , curr_bpoint(0)
-        , inv_edge(EdgeRef_Undef)
         , inv_asgn(PtAsgn_Undef)
 {}
 
@@ -113,7 +112,7 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     // TODO: process the addition of the constraint to the current set of constraints
     //      Return false if immediate conflict has been detected, otherwise return true
     //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
-    if (inv_edge != EdgeRef_Undef) return false;            // no need to check anything if we're inconsistent already
+    if (inv_asgn != PtAsgn_Undef) return false;            // no need to check anything if we're inconsistent already
 
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
     assert( e != EdgeRef_Undef );
@@ -131,7 +130,6 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     if (graph.isTrue(nset)) {                               // negation of assignment was found as a consequence
         assert( asgn.sgn == lbool(!graph.isTrue(e)) );      // the polarity must be opposite to previous check
         inv_bpoint = curr_bpoint;                           // remember the first time we reached inconsistent state
-        inv_edge = nset;
         inv_asgn = asgn;
         has_explanation = true;                             // marks this TSolver as the cause of inconsistency
         return false;
@@ -163,7 +161,7 @@ TRes STPSolver::check(bool b) {
     // TODO: implement the main check of consistency
 
     // we check the validity of each assertLit, so this just returns the consistency of current state
-    return inv_edge == EdgeRef_Undef ? TRes::SAT : TRes::UNSAT;
+    return inv_asgn == PtAsgn_Undef ? TRes::SAT : TRes::UNSAT;
 }
 
 void STPSolver::clearSolver() {
@@ -199,7 +197,6 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     curr_bpoint -= i;
     if (inv_bpoint > curr_bpoint) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
-        inv_edge = EdgeRef_Undef;
         inv_asgn = PtAsgn_Undef;
         has_explanation = false;
     }
@@ -225,10 +222,14 @@ void STPSolver::computeModel() {
 void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
-    if (inv_edge == EdgeRef_Undef) return;  // TODO: how to handle call in consistent state?
-    assert( inv_asgn != PtAsgn_Undef );
+    if (inv_asgn == PtAsgn_Undef) return;  // TODO: how to handle call in consistent state?
     vec.push(inv_asgn);
-    graph.findExplanation(store.getEdge(inv_edge).neg, vec);
+    EdgeRef e = mapper.getEdgeRef(inv_asgn.tr);
+    if (inv_asgn.sgn == l_True) {
+        e = store.getNegation(e);
+    }
+    assert( graph.isTrue(e) );
+    graph.findExplanation(e, vec);
 }
 
 PtAsgn_reason STPSolver::getDeduction() {
