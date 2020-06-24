@@ -25,10 +25,9 @@ static EdgeRef EdgeRef_Undef = EdgeRef { INT32_MAX };
 struct Edge {
     VertexRef from, to;     // vertices of this edge
     EdgeRef neg;            // the logical negation of this edge
-    ptrdiff_t cost;   // cost of this edge
+    ptrdiff_t cost;         // cost of this edge
 
     uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
-    PtAsgn asgn;            // assignment that caused this edge to be set (for actually set edges and not consequences)
 };
 
 class STPStore {

@@ -12,7 +12,7 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     ++timestamp;
     addedEdges.push(e);
     edge.setTime = timestamp;
-    edge.asgn = asgn;
+    mapper.setAssignment(e, asgn);
 
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
@@ -111,7 +111,7 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
         outgoing[edge.from.x].pop();
         addedEdges.pop();
         edge.setTime = 0;
-        edge.asgn = PtAsgn_Undef;
+        mapper.removeAssignment(eRef);
     }
 
     if (!deductions.size()) return;
@@ -129,8 +129,8 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
 
 void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     Edge &expl = store.getEdge(e);
-    if (expl.asgn != PtAsgn_Undef) {
-        v.push(expl.asgn);
+    if (mapper.getAssignment(e) != PtAsgn_Undef) {
+        v.push(mapper.getAssignment(e));
         return;
     }
 
@@ -145,8 +145,8 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
         for (auto eRef : outgoing[curr.x]) {
             if (eRef == e) continue;
             Edge &edge = store.getEdge(eRef);
-            if (edge.asgn == PtAsgn_Undef) continue;
             if (edge.setTime > expl.setTime) continue;
+            if (mapper.getAssignment(eRef) == PtAsgn_Undef) continue;
 
             auto next = edge.to;
             if (visited[next.x] == EdgeRef_Undef || length[next.x] > length[curr.x] + edge.cost) {
@@ -161,8 +161,8 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     assert( backtrack != EdgeRef_Undef);
     while (true) {
         Edge &edge = store.getEdge(backtrack);
-        assert( edge.asgn != PtAsgn_Undef);
-        v.push(edge.asgn);
+        assert( mapper.getAssignment(backtrack) != PtAsgn_Undef );
+        v.push(mapper.getAssignment(backtrack));
         if (edge.from == expl.from) break;
         backtrack = visited[edge.from.x];
     }
@@ -173,6 +173,7 @@ void STPEdgeGraph::clear() {
     timestamp = 0;
     incoming.clear();
     outgoing.clear();
+    deductions.clear();
 }
 
 

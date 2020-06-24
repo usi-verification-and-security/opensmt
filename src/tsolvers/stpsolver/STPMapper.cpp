@@ -37,15 +37,31 @@ void STPMapper::mapEdge(PTRef leq, EdgeRef edge) {
     edgeRefToLeq[edge.x] = leq;
 }
 
+void STPMapper::setAssignment(EdgeRef edge, PtAsgn asgn) {
+    if (edgeRefToAsgn.size() <= edge.x)
+        edgeRefToAsgn.growTo(edge.x + 1, PtAsgn_Undef);
+    edgeRefToAsgn[edge.x] = asgn;
+}
+
+void STPMapper::removeAssignment(EdgeRef edge) {
+    assert( edgeRefToAsgn.size() > edge.x );
+    edgeRefToAsgn[edge.x] = PtAsgn_Undef;
+}
+
+PtAsgn STPMapper::getAssignment(EdgeRef edge) const {
+    if (edgeRefToAsgn.size() <= edge.x) return PtAsgn_Undef;
+    return edgeRefToAsgn[edge.x];
+}
+
 // returns the VertexRef corresponding to a PTRef, if it exists
-VertexRef STPMapper::getVertRef(PTRef var) {
+VertexRef STPMapper::getVertRef(PTRef var) const {
     if (var == PTRef_Undef) return STPStore::zero(); // missing variables in inequality are replaced with 'zero' variable
     uint32_t idx = Idx(logic.getPterm(var).getId());
     return varToVertRef.size() <= idx ? VertRef_Undef : varToVertRef[idx];
 }
 
 // returns the EdgeRef corresponding to a PTRef, if it exists
-EdgeRef STPMapper::getEdgeRef(PTRef leq) {
+EdgeRef STPMapper::getEdgeRef(PTRef leq) const {
     uint32_t idx = Idx(logic.getPterm(leq).getId());
     return leqToEdgeRef.size() <= idx ? EdgeRef_Undef : leqToEdgeRef[idx];
 }
@@ -73,5 +89,6 @@ void STPMapper::clear() {
     varToVertRef.clear();
     leqToEdgeRef.clear();
     edgeRefToLeq.clear();
+    edgeRefToAsgn.clear();
 }
 
