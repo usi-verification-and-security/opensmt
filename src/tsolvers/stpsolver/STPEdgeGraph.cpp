@@ -9,10 +9,11 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     Edge &edge = store.getEdge(e);
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
-    if (asgn != PtAsgn_Undef) ++addedCount;     // consequences have the same timestamp as the edge that caused them
+    ++timestamp;
     addedEdges.push(e);
-    edge.setTime = addedCount;
+    edge.setTime = timestamp;
     edge.asgn = asgn;
+
     auto max = std::max(edge.from.x, edge.to.x);
     if (incoming.size() <= max) {
         incoming.growTo(max + 1);
@@ -20,6 +21,11 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     }
     outgoing[edge.from.x].push(e);
     incoming[edge.to.x].push(e);
+}
+
+void STPEdgeGraph::setDeduction(EdgeRef e) {
+    deductions.push(e);
+    store.getEdge(e).setTime = timestamp;
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
@@ -35,7 +41,7 @@ vec<EdgeRef> STPEdgeGraph::findConsequences(EdgeRef e) {
     auto &thisRes = aRes.total < bRes.total ? aRes : bRes;
     auto &otherRes = aRes.total < bRes.total ? bRes : aRes;
 
-    vec<EdgeRef> deductions;
+    vec<EdgeRef> ret;
     // for each (WLOG) 'a', go through its edges and find each 'a -> b' edge that has cost higher than length found by DFS
     // such edges are consequences of the current graph
     for (uint32_t i = 0; i < n; ++i) {
@@ -47,13 +53,15 @@ vec<EdgeRef> STPEdgeGraph::findConsequences(EdgeRef e) {
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
             if (thisSide == i && otherRes.visited[otherSide]
                 && edge.cost >= thisRes.distance[thisSide] + start.cost + otherRes.distance[otherSide]) {
-                deductions.push(eRef);
-                setTrue(eRef, PtAsgn_Undef);
+                if (edge.setTime == 0) {
+                    ret.push(eRef);
+                    setDeduction(eRef);
+                }
             }
         }
     }
 
-    return deductions;
+    return ret;
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
@@ -90,12 +98,13 @@ DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
 // removes all edges that have timestamp strictly later than 'point' from the graph
 void STPEdgeGraph::removeAfter(uint32_t point) {
     if (!addedEdges.size()) return;
+
     for (int i = addedEdges.size()-1; i >= 0; --i) {
         EdgeRef eRef = addedEdges[i];
         auto &edge = store.getEdge(eRef);
         if (edge.setTime <= point) {  // edges appear in 'addedEdges' in timestamp order
-            addedCount = edge.setTime;
-            return;
+            timestamp = edge.setTime;
+            break;
         }
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
         incoming[edge.to.x].pop();
@@ -103,6 +112,18 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
         addedEdges.pop();
         edge.setTime = 0;
         edge.asgn = PtAsgn_Undef;
+    }
+
+    if (!deductions.size()) return;
+    for (int i = deductions.size() - 1; i >= 0; --i) {
+        EdgeRef ded = deductions[i];
+        auto &edge = store.getEdge(ded);
+        if (edge.setTime <= point) {
+            return;
+        }
+
+        edge.setTime = 0;
+        deductions.pop();
     }
 }
 
@@ -149,7 +170,7 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
 
 void STPEdgeGraph::clear() {
     addedEdges.clear();
-    addedCount = 0;
+    timestamp = 0;
     incoming.clear();
     outgoing.clear();
 }

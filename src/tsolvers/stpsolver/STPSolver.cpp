@@ -121,13 +121,12 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;   // edge corresponding to 'true' assignment of 'asgn.tr'
     EdgeRef nset = (set == e) ? neg : e;            //                       'false'
 
+    // literal was already assigned or found as a consequence
     if (graph.isTrue(set)) {
-        // FIXME: if we backtrack before the assignment but after the deduction, now invalid 'asgn' is still stored
-        // store.getEdge(asgn.sgn == l_True ? e : neg).asgn = asgn; // not necessary, but can produce shorter conflicts
-        return true;
+        return true;    // TODO: if a deduction is explicitly set, should we remember that?
     }
-    if (graph.isTrue(nset)) {                               // negation of assignment was found as a consequence
-        assert( asgn.sgn == lbool(!graph.isTrue(e)) );      // the polarity must be opposite to previous check
+    // negation of literal was already assigned or found as a consequence
+    if (graph.isTrue(nset)) {
         inv_bpoint = backtrack_points.size();               // remember the first time we reached inconsistent state
         inv_asgn = asgn;
         has_explanation = true;                             // marks this TSolver as the cause of inconsistency

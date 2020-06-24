@@ -18,19 +18,23 @@ class STPEdgeGraph {
 
     STPMapper & mapper;
 
-    uint32_t addedCount;                // timestamp of the latest 'setTrue' call
+    uint32_t timestamp;        // timestamp of the latest 'setTrue' call
 
     vec<EdgeRef> addedEdges;    // list of all edges set as true and their consequences
+
+    vec<EdgeRef> deductions;
 
     using AdjList = vec<EdgeRef>;
     vec<AdjList> incoming, outgoing; // for each vertex, a list of set edges coming to/from that vertex
 
     DFSResult dfsSearch(VertexRef init, bool forward);
 
+    void setDeduction(EdgeRef e);
+
 public:
-    explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), addedCount(0) {}
+    explicit STPEdgeGraph(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), timestamp(0) {}
     bool isTrue(EdgeRef e) const;
-    uint32_t getAddedCount() const { return addedCount; }
+    uint32_t getAddedCount() const { return timestamp; }
     void setTrue(EdgeRef e, PtAsgn asgn);
     vec<EdgeRef> findConsequences(EdgeRef e);
     void findExplanation(EdgeRef e, vec<PtAsgn> &v);
