@@ -62,8 +62,6 @@ public:
 
     void getConflict(bool b, vec<PtAsgn> & vec) override;
 
-    PtAsgn_reason getDeduction() override;
-
     void declareAtom(PTRef tr) override;
 
     Logic & getLogic() override;

@@ -228,11 +228,6 @@ void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     graph.findExplanation(e, vec);
 }
 
-PtAsgn_reason STPSolver::getDeduction() {
-    return PtAsgn_reason();
-}
-
-
 Logic & STPSolver::getLogic() {
     return logic;
 }
