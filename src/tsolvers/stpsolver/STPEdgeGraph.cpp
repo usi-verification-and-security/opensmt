@@ -1,6 +1,17 @@
 #include <stack>
 #include "STPEdgeGraph.h"
 
+void EdgeGraph::addEdge(EdgeRef e, VertexRef from, VertexRef to) {
+    auto max = std::max(from.x, to.x);
+    if (incoming.size() <= max) {
+        incoming.growTo(max + 1);
+        outgoing.growTo(max + 1);
+    }
+    addedEdges.push(e);
+    incoming[to.x].push(e);
+    outgoing[from.x].push(e);
+}
+
 void EdgeGraph::clear() {
     addedEdges.clear();
     incoming.clear();
@@ -16,17 +27,9 @@ void STPGraphManager::setTrue(EdgeRef e, PtAsgn asgn) {
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
     ++timestamp;
-    addedEdges.push(e);
     edge.setTime = timestamp;
     mapper.setAssignment(e, asgn);
-
-    auto max = std::max(edge.from.x, edge.to.x);
-    if (graph.incoming.size() <= max) {
-        graph.incoming.growTo(max + 1);
-        graph.outgoing.growTo(max + 1);
-    }
-    graph.outgoing[edge.from.x].push(e);
-    graph.incoming[edge.to.x].push(e);
+    graph.addEdge(e, edge.from, edge.to);
 }
 
 void STPGraphManager::setDeduction(EdgeRef e) {
@@ -103,10 +106,10 @@ DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forward) {
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
 void STPGraphManager::removeAfter(uint32_t point) {
-    if (!addedEdges.size()) return;
+    if (!graph.addedEdges.size()) return;
 
-    for (int i = addedEdges.size()-1; i >= 0; --i) {
-        EdgeRef eRef = addedEdges[i];
+    for (int i = graph.addedEdges.size()-1; i >= 0; --i) {
+        EdgeRef eRef = graph.addedEdges[i];
         auto &edge = store.getEdge(eRef);
         if (edge.setTime <= point) {  // edges appear in 'addedEdges' in timestamp order
             timestamp = edge.setTime;
@@ -115,7 +118,7 @@ void STPGraphManager::removeAfter(uint32_t point) {
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
         graph.incoming[edge.to.x].pop();
         graph.outgoing[edge.from.x].pop();
-        addedEdges.pop();
+        graph.addedEdges.pop();
         edge.setTime = 0;
         mapper.removeAssignment(eRef);
     }
@@ -175,7 +178,6 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
 }
 
 void STPGraphManager::clear() {
-    addedEdges.clear();
     timestamp = 0;
     graph.clear();
 }

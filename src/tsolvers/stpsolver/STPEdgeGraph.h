@@ -16,6 +16,7 @@ struct EdgeGraph {
     vec<EdgeRef> deductions;
     vec<vec<EdgeRef>> incoming, outgoing;
 
+    void addEdge(EdgeRef e, VertexRef from, VertexRef to);
     void clear();
 };
 
@@ -29,8 +30,6 @@ class STPGraphManager {
     EdgeGraph graph;
 
     uint32_t timestamp;        // timestamp of the latest 'setTrue' call
-
-    vec<EdgeRef> addedEdges;    // list of all edges set as true and their consequences
 
     DFSResult dfsSearch(VertexRef init, bool forward);
 

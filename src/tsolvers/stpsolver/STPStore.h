@@ -42,6 +42,7 @@ public:
     size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }
     Edge & getEdge(EdgeRef e) { return edges[e.x]; }
+    const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
     EdgeRef getNegation(EdgeRef e) { return edges[e.x].neg; }
     static VertexRef zero() { return VertexRef{0};}
     void setNegation(EdgeRef a, EdgeRef b);
