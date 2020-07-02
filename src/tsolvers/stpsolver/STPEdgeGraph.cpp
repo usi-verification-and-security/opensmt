@@ -1,11 +1,17 @@
 #include <stack>
 #include "STPEdgeGraph.h"
 
-bool STPEdgeGraph::isTrue(EdgeRef e) const {
+void EdgeGraph::clear() {
+    addedEdges.clear();
+    incoming.clear();
+    outgoing.clear();
+}
+
+bool STPGraphManager::isTrue(EdgeRef e) const {
     return e != EdgeRef_Undef && store.getEdge(e).setTime != 0;
 }
 
-void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
+void STPGraphManager::setTrue(EdgeRef e, PtAsgn asgn) {
     Edge &edge = store.getEdge(e);
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
@@ -15,21 +21,21 @@ void STPEdgeGraph::setTrue(EdgeRef e, PtAsgn asgn) {
     mapper.setAssignment(e, asgn);
 
     auto max = std::max(edge.from.x, edge.to.x);
-    if (incoming.size() <= max) {
-        incoming.growTo(max + 1);
-        outgoing.growTo(max + 1);
+    if (graph.incoming.size() <= max) {
+        graph.incoming.growTo(max + 1);
+        graph.outgoing.growTo(max + 1);
     }
-    outgoing[edge.from.x].push(e);
-    incoming[edge.to.x].push(e);
+    graph.outgoing[edge.from.x].push(e);
+    graph.incoming[edge.to.x].push(e);
 }
 
-void STPEdgeGraph::setDeduction(EdgeRef e) {
-    deductions.push(e);
+void STPGraphManager::setDeduction(EdgeRef e) {
+    graph.deductions.push(e);
     store.getEdge(e).setTime = timestamp;
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
-vec<EdgeRef> STPEdgeGraph::findConsequences(EdgeRef e) {
+vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto start = store.getEdge(e);
@@ -65,7 +71,7 @@ vec<EdgeRef> STPEdgeGraph::findConsequences(EdgeRef e) {
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
-DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
+DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forward) {
     vec<bool> visited(store.vertexNum());
     vec<ptrdiff_t> length(store.vertexNum());
     size_t total = 0;
@@ -76,7 +82,7 @@ DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
 
     while (!open.empty()) {
         VertexRef curr = open.top(); open.pop();
-        auto &toScan = forward ? outgoing[curr.x] : incoming[curr.x];
+        auto &toScan = forward ? graph.outgoing[curr.x] : graph.incoming[curr.x];
         for (auto eRef : toScan) {
             Edge &edge = store.getEdge(eRef);
             auto next = forward ? edge.to : edge.from;
@@ -96,7 +102,7 @@ DFSResult STPEdgeGraph::dfsSearch(VertexRef init, bool forward) {
 }
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
-void STPEdgeGraph::removeAfter(uint32_t point) {
+void STPGraphManager::removeAfter(uint32_t point) {
     if (!addedEdges.size()) return;
 
     for (int i = addedEdges.size()-1; i >= 0; --i) {
@@ -107,27 +113,27 @@ void STPEdgeGraph::removeAfter(uint32_t point) {
             break;
         }
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
-        incoming[edge.to.x].pop();
-        outgoing[edge.from.x].pop();
+        graph.incoming[edge.to.x].pop();
+        graph.outgoing[edge.from.x].pop();
         addedEdges.pop();
         edge.setTime = 0;
         mapper.removeAssignment(eRef);
     }
 
-    if (!deductions.size()) return;
-    for (int i = deductions.size() - 1; i >= 0; --i) {
-        EdgeRef ded = deductions[i];
+    if (!graph.deductions.size()) return;
+    for (int i = graph.deductions.size() - 1; i >= 0; --i) {
+        EdgeRef ded = graph.deductions[i];
         auto &edge = store.getEdge(ded);
         if (edge.setTime <= point) {
             return;
         }
 
         edge.setTime = 0;
-        deductions.pop();
+        graph.deductions.pop();
     }
 }
 
-void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
+void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     Edge &expl = store.getEdge(e);
     if (mapper.getAssignment(e) != PtAsgn_Undef) {
         v.push(mapper.getAssignment(e));
@@ -142,7 +148,7 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     while (!open.empty()) {
         auto curr = open.top(); open.pop();
         if (curr == expl.to && length[curr.x] <= expl.cost) break;
-        for (auto eRef : outgoing[curr.x]) {
+        for (auto eRef : graph.outgoing[curr.x]) {
             if (eRef == e) continue;
             Edge &edge = store.getEdge(eRef);
             if (edge.setTime > expl.setTime) continue;
@@ -168,12 +174,10 @@ void STPEdgeGraph::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     }
 }
 
-void STPEdgeGraph::clear() {
+void STPGraphManager::clear() {
     addedEdges.clear();
     timestamp = 0;
-    incoming.clear();
-    outgoing.clear();
-    deductions.clear();
+    graph.clear();
 }
 
 

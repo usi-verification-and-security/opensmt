@@ -27,7 +27,7 @@ class STPSolver : public TSolver {
 
     STPMapper mapper;
 
-    STPEdgeGraph graph;
+    STPGraphManager graph;
 
     ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
