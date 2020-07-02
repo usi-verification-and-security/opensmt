@@ -12,5 +12,6 @@ add_subdirectory(tsolvers)
 add_subdirectory(simplifiers)
 add_subdirectory(smtsolvers)
 add_subdirectory(parsers)
-add_subdirectory(bin)
-
+if (BUILD_EXECUTABLES)
+  add_subdirectory(bin)
+endif()
