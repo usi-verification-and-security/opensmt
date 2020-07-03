@@ -41,6 +41,18 @@ The default build type is RELEASE. Different build type can be configured using 
 $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 ```
 
+### Restricting components to build
+
+By default, when building OpenSMT, an executable, a static library, and a shared library are created. However, in certain circumstances, it is desirable not to build components you do not need. In these instances, you *turn off* building components:
+
+- Passing `-DBUILD_STATIC_LIBS:BOOL=OFF` will *turn off* building the static archive for OpenSMT (`libopensmt2.a`)
+
+- Passing `-DBUILD_SHARED_LIBS:BOOL=OFF` will *turn off* building the shared library for OpenSMT (`libopensmt2.so`)
+
+- Passing `-DBUILD_EXECUTABLES:BOOL=OFF` will *turn off* building the OpenSMT executable (`opensmt`)
+
+Given how the `opensmt` executable is built, you cannot build the executable (i.e., with the default value of `-DBUILD_EXECUTABLES:BOOL=ON`) with the static archive *off* (i.e., with `-DBUILD_STATIC_LIBS:BOOL=OFF`).
+
 
 ## Unit tests
 
@@ -52,8 +64,7 @@ $ ctest
 ```
 
 ## Installing OpenSMT2
-After a successful build, an executable, a static library, and a shared library are created.
-The path to the executable is `<BUILD_DIR>/src/bin/opensmt`, the libraries are located in `<BUILD_DIR>/src/api`.
+As long as you haven't disabled building them, the path to the OpenSMT executable is `<BUILD_DIR>/src/bin/opensmt`, the OpenSMT libraries are located in `<BUILD_DIR>/src/api`.
 To install OpenSMT in your system simply run
 ```
 $ make install
