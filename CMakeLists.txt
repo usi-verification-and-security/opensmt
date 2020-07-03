@@ -75,7 +75,7 @@ include_directories(
 )
 
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
-  message(FATAL_ERROR "Cannot build executables without also building shared libraries")
+  message(FATAL_ERROR "Cannot build executables without also building static libraries")
 endif()
 
 if (ITP_DEBUG)
