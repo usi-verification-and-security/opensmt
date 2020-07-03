@@ -7,8 +7,8 @@
 // helper struct to return results of DFS
 struct DFSResult {
     vec<bool> visited;              // map of which vertices were visited
-    vec<ptrdiff_t> distance;  // map of distances to each visited vertex
-    size_t total;                           // sum of all edges each vertex appears in
+    vec<ptrdiff_t> distance;        // map of distances to each visited vertex
+    size_t total;                   // sum of all edges each vertex appears in
 };
 
 struct EdgeGraph {
@@ -16,6 +16,8 @@ struct EdgeGraph {
     vec<EdgeRef> deductions;
     vec<vec<EdgeRef>> incoming, outgoing;
 
+    EdgeGraph() = default;
+    EdgeGraph(const EdgeGraph &other);
     void addEdge(EdgeRef e, VertexRef from, VertexRef to);
     void clear();
 };
@@ -37,7 +39,7 @@ class STPGraphManager {
 
 public:
     explicit STPGraphManager(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), timestamp(0) {}
-    EdgeGraph && getGraph() { return std::move(graph); }  // transfers ownership of graph, invalidating this manager
+    const EdgeGraph & getGraph() const { return graph; }
     bool isTrue(EdgeRef e) const;
     uint32_t getAddedCount() const { return timestamp; }
     void setTrue(EdgeRef e, PtAsgn asgn);

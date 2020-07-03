@@ -61,6 +61,8 @@ void STPModel::shiftZero() {
         pair.second -= shift;
     }
     assert( valMap[zero.x] == 0 );
+    vec<int> a;
+    a.copyTo(a);
 }
 
 void STPModel::createModel() {

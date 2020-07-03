@@ -1,6 +1,13 @@
 #include <stack>
 #include "STPEdgeGraph.h"
 
+EdgeGraph::EdgeGraph(const EdgeGraph &other) {
+    other.addedEdges.copyTo(addedEdges);
+    other.incoming.copyTo(incoming);
+    other.outgoing.copyTo(outgoing);
+    other.deductions.copyTo(deductions);
+}
+
 void EdgeGraph::addEdge(EdgeRef e, VertexRef from, VertexRef to) {
     auto max = std::max(from.x, to.x);
     if (incoming.size() <= max) {

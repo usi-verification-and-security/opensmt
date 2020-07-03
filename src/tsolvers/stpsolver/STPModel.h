@@ -15,8 +15,7 @@ private:
     void bellmanFord(VertexRef start);
     void shiftZero();
 public:
-    // since createModel is called at the end of solve procedure, the solver won't need to retain the graph
-    STPModel(STPStore &store, EdgeGraph &&graph) : store(store), graph(std::move(graph)) {}
+    STPModel(STPStore &store, const EdgeGraph& graph) : store(store), graph(graph) {}
     void createModel();
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
     ptrdiff_t getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
