@@ -18,7 +18,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l)
 STPSolver::~STPSolver() = default;
 
 // TODO: Ignore terms we don't care about instead of throwing an exception?
-ParsedPTRef STPSolver::parseRef(PTRef ref) const {
+STPSolver::ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
@@ -28,14 +28,14 @@ ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     auto c = static_cast<ptrdiff_t>(con.get_d());
     PTRef rhs = leq[1];  // 'x + (-1 * y)'
 
-    PTRef x, y;  // variables on the right hand side
+    PTRef x{}, y{};  // variables on the right hand side
     if (logic.isNumVar(rhs)) {  // inequality with a single positive variable
         x = rhs;
         y = PTRef_Undef;
     }
     else {  // right hand side contains at least a negative variable
         Pterm &rhsPt = logic.getPterm(rhs);
-        PTRef mul;  // (-1 * y) term
+        PTRef mul{};  // (-1 * y) term
         if (logic.isNumPlus(rhs)) {  // usual DL inequality with two variables
             uint8_t ix = logic.isNumVar(rhsPt[0]) ? 0 : 1;
             uint8_t iy = 1 - ix;

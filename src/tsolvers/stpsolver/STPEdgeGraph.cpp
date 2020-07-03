@@ -81,7 +81,7 @@ vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
-DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forward) {
+STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forward) {
     vec<bool> visited(store.vertexNum());
     vec<ptrdiff_t> length(store.vertexNum());
     size_t total = 0;

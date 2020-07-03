@@ -13,15 +13,15 @@
 #include "STPEdgeGraph.h"
 #include "STPModel.h"
 
-struct ParsedPTRef {
-    // represents inequalities of the form 'y <= x + c'
-    // this corresponds to edges 'y --c--> x'
-    PTRef x;            // destination of the edge
-    PTRef y;            // source of the edge
-    ptrdiff_t c;  // cost of the edge
-};
-
 class STPSolver : public TSolver {
+private:
+    struct ParsedPTRef {
+        // represents inequalities of the form 'y <= x + c'
+        // this corresponds to edges 'y --c--> x'
+        PTRef x;            // destination of the edge
+        PTRef y;            // source of the edge
+        ptrdiff_t c;  // cost of the edge
+    };
 
     LALogic& logic;
 

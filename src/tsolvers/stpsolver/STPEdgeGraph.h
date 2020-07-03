@@ -4,13 +4,6 @@
 #include "STPStore.h"
 #include "STPMapper.h"
 
-// helper struct to return results of DFS
-struct DFSResult {
-    vec<bool> visited;              // map of which vertices were visited
-    vec<ptrdiff_t> distance;        // map of distances to each visited vertex
-    size_t total;                   // sum of all edges each vertex appears in
-};
-
 struct EdgeGraph {
     vec<EdgeRef> addedEdges;
     vec<EdgeRef> deductions;
@@ -24,6 +17,13 @@ struct EdgeGraph {
 
 // stores edges set as true and finds consequences of each added edge
 class STPGraphManager {
+private:
+    // helper struct to return results of DFS
+    struct DFSResult {
+        vec<bool> visited;              // map of which vertices were visited
+        vec<ptrdiff_t> distance;        // map of distances to each visited vertex
+        size_t total;                   // sum of all edges each vertex appears in
+    };
 
     STPStore & store;
 
