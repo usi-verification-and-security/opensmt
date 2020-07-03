@@ -60,6 +60,7 @@ if (BUILD_STATIC_LIBS)
   target_include_directories(api_static
                              PRIVATE
                              ${LibEdit_INCLUDE_DIRS})
+  set_target_properties(api_static PROPERTIES OUTPUT_NAME opensmt2)
 endif()
 
 install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h

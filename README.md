@@ -45,7 +45,7 @@ $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 By default, when building OpenSMT, an executable, a static library, and a shared library are created. However, in certain circumstances, it is desirable not to build components you do not need. In these instances, you *turn off* building components:
 
-- Passing `-DBUILD_STATIC_LIBS:BOOL=OFF` will *turn off* building the static archive for OpenSMT (`libapi_static.a`)
+- Passing `-DBUILD_STATIC_LIBS:BOOL=OFF` will *turn off* building the static archive for OpenSMT (`libopensmt2.a`)
 
 - Passing `-DBUILD_SHARED_LIBS:BOOL=OFF` will *turn off* building the shared library for OpenSMT (`libopensmt2.so`)
 
