@@ -29,12 +29,12 @@ class STPSolver : public TSolver {
 
     STPMapper mapper;
 
-    STPGraphManager graph;
+    STPGraphManager graphMgr;
 
     ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
 
-    std::unique_ptr<STPModel> model;
+    std::unique_ptr<STPModel> model;           // mapping of vertices (vars) to valid assignments, if it was computed
 
     ParsedPTRef parseRef(PTRef ref) const;
 

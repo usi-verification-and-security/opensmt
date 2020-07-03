@@ -1,15 +1,16 @@
 #include <memory>
 #include "STPModel.h"
 
+// returns a list of all vertices present in graph
 vec<VertexRef> STPModel::vertsInGraph() const {
     vec<VertexRef> found;
     uint32_t n = std::min(graph.incoming.size(), graph.outgoing.size());
     uint32_t i = 0;
+    // scans the incoming/outgoing vectors to see if they contain edges
     for (; i < n; ++i) {
         if (graph.incoming[i].size() || graph.outgoing[i].size())
             found.push(VertexRef{.x = i});
     }
-
     const vec<vec<EdgeRef>> &rest = (n == graph.incoming.size()) ? graph.outgoing : graph.incoming;
     for (; i < rest.size(); ++i) {
         if (rest[i].size())
@@ -19,6 +20,7 @@ vec<VertexRef> STPModel::vertsInGraph() const {
     return found;
 }
 
+// creates a common point from which to start the search, and connects it to all vertices in graph
 VertexRef STPModel::addStartingPoint() {
     VertexRef start = store.createVertex();
 
@@ -50,6 +52,7 @@ void STPModel::bellmanFord(VertexRef start) {
     valMap = std::move(dist);
 }
 
+// shifts 'valMap' values so that valMap[zero] == 0
 void STPModel::shiftZero() {
     VertexRef zero = store.zero();
     if (!valMap.count(zero.x)) return; // if 'zero' isn't present, no need to shift anything

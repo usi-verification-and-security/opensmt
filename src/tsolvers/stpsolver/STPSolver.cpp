@@ -10,7 +10,7 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l)
         : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c)
         , logic(l)
         , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
-        , graph(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
+        , graphMgr(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
         , inv_bpoint(-1)
         , inv_asgn(PtAsgn_Undef)
 {}
@@ -122,11 +122,11 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     EdgeRef nset = (set == e) ? neg : e;            //                       'false'
 
     // literal was already assigned or found as a consequence
-    if (graph.isTrue(set)) {
+    if (graphMgr.isTrue(set)) {
         return true;    // TODO: if a deduction is explicitly set, should we remember that?
     }
     // negation of literal was already assigned or found as a consequence
-    if (graph.isTrue(nset)) {
+    if (graphMgr.isTrue(nset)) {
         inv_bpoint = backtrack_points.size();               // remember the first time we reached inconsistent state
         inv_asgn = asgn;
         has_explanation = true;                             // marks this TSolver as the cause of inconsistency
@@ -134,8 +134,8 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     }
 
     // The assignment isn't decided yet, so we set it as true and find all of its consequences
-    graph.setTrue(set, asgn);
-    vec<EdgeRef> deductions = graph.findConsequences(set);
+    graphMgr.setTrue(set, asgn);
+    vec<EdgeRef> deductions = graphMgr.findConsequences(set);
 
     // pass all found deductions to TSolver
     PTRef nleq = mapper.getPTRef(nset);
@@ -164,7 +164,7 @@ TRes STPSolver::check(bool b) {
 
 void STPSolver::clearSolver() {
     TSolver::clearSolver();
-    graph.clear();
+    graphMgr.clear();
     mapper.clear();
     store.clear();
 }
@@ -177,7 +177,7 @@ void STPSolver::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking
     TSolver::pushBacktrackPoint();
-    backtrack_points.push(graph.getAddedCount());
+    backtrack_points.push(graphMgr.getAddedCount());
 }
 
 void STPSolver::popBacktrackPoint() {
@@ -198,7 +198,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     }
 
     backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
-    graph.removeAfter(backtrack_points.last());
+    graphMgr.removeAfter(backtrack_points.last());
     backtrack_points.shrink(1);
     // no need to modify mapper or store - the values stored there can't change
     for (size_t j = 0; j < i; ++j)
@@ -217,7 +217,7 @@ ValPair STPSolver::getValue(PTRef pt) {
 
 void STPSolver::computeModel() {
     // In case of satisfiability prepare a model witnessing the satisfiability of the current set of constraints
-    model = std::unique_ptr<STPModel>(new STPModel(store, graph.getGraph()));
+    model = std::unique_ptr<STPModel>(new STPModel(store, graphMgr.getGraph()));
     model->createModel();
 }
 
@@ -230,8 +230,8 @@ void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     if (inv_asgn.sgn == l_True) {
         e = store.getNegation(e);
     }
-    assert( graph.isTrue(e) );
-    graph.findExplanation(e, vec);
+    assert(graphMgr.isTrue(e) );
+    graphMgr.findExplanation(e, vec);
 }
 
 Logic & STPSolver::getLogic() {
