@@ -207,12 +207,18 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
 
 ValPair STPSolver::getValue(PTRef pt) {
     // In the current model, get the value (represented as string) of the term "pt".
-    return ValPair();
+    VertexRef v = mapper.getVertRef(pt);
+    if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
+        return ValPair_Undef;
+
+    ptrdiff_t value = model->getValue(v);
+    return ValPair(pt, std::to_string(value).c_str());
 }
 
 void STPSolver::computeModel() {
     // In case of satisfiability prepare a model witnessing the satisfiability of the current set of constraints
-
+    model = std::unique_ptr<STPModel>(new STPModel(store, graph.getGraph()));
+    model->createModel();
 }
 
 void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {

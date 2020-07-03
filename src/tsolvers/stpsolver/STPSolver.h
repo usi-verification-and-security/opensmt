@@ -5,11 +5,13 @@
 #ifndef OPENSMT_STPSOLVER_H
 #define OPENSMT_STPSOLVER_H
 
+#include <memory>
 #include "TSolver.h"
 #include "LALogic.h"
 #include "SMTConfig.h"
 #include "STPMapper.h"
 #include "STPEdgeGraph.h"
+#include "STPModel.h"
 
 struct ParsedPTRef {
     // represents inequalities of the form 'y <= x + c'
@@ -31,6 +33,8 @@ class STPSolver : public TSolver {
 
     ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
+
+    std::unique_ptr<STPModel> model;
 
     ParsedPTRef parseRef(PTRef ref) const;
 

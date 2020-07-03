@@ -63,7 +63,7 @@ TEST_F(STPSolverTest, test_SimpleTest){
     solver.assertLit(PtAsgn(ineq3, l_False));
     res = solver.check(true);
     ASSERT_EQ(res, TRes::SAT);
-
+/**/
     solver.pushBacktrackPoint();
     solver.assertLit(PtAsgn(ineq4, l_True));
     res = solver.check(true);
@@ -79,5 +79,27 @@ TEST_F(STPSolverTest, test_SimpleTest){
     solver.assertLit(PtAsgn(ineq5, l_False));
     res = solver.check(true);
     ASSERT_EQ(res, TRes::SAT);
+/**/
+    solver.computeModel();
+    auto valX = solver.getValue(x);
+    auto valY = solver.getValue(y);
+    auto valZ = solver.getValue(z);
+    ASSERT_NE(valX, ValPair_Undef);
+    ASSERT_NE(valY, ValPair_Undef);
+    ASSERT_NE(valZ, ValPair_Undef);
+
+    ptrdiff_t numX, numY, numZ;
+    std::stringstream ss(valX.val);
+    ss >> numX;
+    ss = std::stringstream(valY.val);
+    ss >> numY;
+    ss = std::stringstream(valZ.val);
+    ss >> numZ;
+
+    ASSERT_LE(numX - numY, 0);
+    ASSERT_LE(numY - numZ, 0);
+    ASSERT_GT(numZ - numX, -1);
+    ASSERT_LE(3, numX);
+    ASSERT_GT(numY, -2);
 }
 

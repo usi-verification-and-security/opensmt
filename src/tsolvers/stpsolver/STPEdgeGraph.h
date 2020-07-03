@@ -37,6 +37,7 @@ class STPGraphManager {
 
 public:
     explicit STPGraphManager(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), timestamp(0) {}
+    EdgeGraph && getGraph() { return std::move(graph); }
     bool isTrue(EdgeRef e) const;
     uint32_t getAddedCount() const { return timestamp; }
     void setTrue(EdgeRef e, PtAsgn asgn);
