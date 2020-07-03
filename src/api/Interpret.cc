@@ -57,9 +57,6 @@ bool stop;
 
 uint32_t LetFrame::id_cnt = 0;
 
-// how big of a buffer do we want for obtain error strings?
-const int err_str_buf_size = 256;
-
 
 /***********************************************************
  * Class defining interpreter
@@ -1166,11 +1163,8 @@ int Interpret::interpPipe() {
         if (bts_rd < 0) {
             done = true;
 
-            // buffer to obtaining the error text in a thread-safe way
-            char err_buf[err_str_buf_size];
-
             // obtain the error string
-            char const * err_str = strerror_r(errno, err_buf, err_str_buf_size);
+            char const * err_str = strerror(errno);
 
             // format the error
             notify_formatted(true, err_str);
