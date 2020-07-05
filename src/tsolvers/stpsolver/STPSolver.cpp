@@ -208,6 +208,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
 ValPair STPSolver::getValue(PTRef pt) {
     // In the current model, get the value (represented as string) of the term "pt".
     VertexRef v = mapper.getVertRef(pt);
+    // we can assume no assertions happen between 'computeModel' and 'getValue', so an existing model must be valid
     if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
         return ValPair_Undef;
 
@@ -216,6 +217,11 @@ ValPair STPSolver::getValue(PTRef pt) {
 }
 
 void STPSolver::computeModel() {
+    // a model of an unsatisfiable assignment can't be created
+    if (inv_asgn != PtAsgn_Undef) {
+        model = nullptr;
+        return;
+    }
     // In case of satisfiability prepare a model witnessing the satisfiability of the current set of constraints
     model = std::unique_ptr<STPModel>(new STPModel(store, graphMgr.getGraph()));
     model->createModel();
