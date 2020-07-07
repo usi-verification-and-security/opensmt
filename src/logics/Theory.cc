@@ -138,7 +138,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         newsubsts.getKeysAndVals(newsubsts_vec);
         for (int i = 0; i < newsubsts_vec.size(); ++i) {
             PTRef key = newsubsts_vec[i].key;
-            if (!allsubsts.has(key)) {
+            if (!allsubsts.has(key) && newsubsts_vec[i].data.sgn == l_True) {
                 allsubsts.insert(key, newsubsts_vec[i].data);
             }
         }
@@ -147,7 +147,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         if (!cont) break;
     }
 #ifdef SIMPLIFY_DEBUG
-    cerr << "Number of substitutions: " << all_units_vec.size() << endl;
+    cerr << "Number of substitutions: " << allsubsts.elems() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
     substs.getKeysAndVals(subst_vec);
     printf("Substitutions:\n");
