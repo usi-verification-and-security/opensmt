@@ -6,7 +6,6 @@
 
 struct EdgeGraph {
     vec<EdgeRef> addedEdges;
-    vec<EdgeRef> deductions;
     vec<vec<EdgeRef>> incoming, outgoing;
 
     EdgeGraph() = default;
@@ -32,6 +31,8 @@ private:
     EdgeGraph graph;
 
     uint32_t timestamp;        // timestamp of the latest 'setTrue' call
+
+    vec<EdgeRef> deductions;
 
     DFSResult dfsSearch(VertexRef init, bool forward);
 

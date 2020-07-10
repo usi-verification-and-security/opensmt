@@ -5,7 +5,6 @@ EdgeGraph::EdgeGraph(const EdgeGraph &other) {
     other.addedEdges.copyTo(addedEdges);
     other.incoming.copyTo(incoming);
     other.outgoing.copyTo(outgoing);
-    other.deductions.copyTo(deductions);
 }
 
 void EdgeGraph::addEdge(EdgeRef e, VertexRef from, VertexRef to) {
@@ -40,7 +39,7 @@ void STPGraphManager::setTrue(EdgeRef e, PtAsgn asgn) {
 }
 
 void STPGraphManager::setDeduction(EdgeRef e) {
-    graph.deductions.push(e);
+    deductions.push(e);
     store.getEdge(e).setTime = timestamp;
 }
 
@@ -130,16 +129,16 @@ void STPGraphManager::removeAfter(uint32_t point) {
         mapper.removeAssignment(eRef);
     }
 
-    if (!graph.deductions.size()) return;
-    for (int i = graph.deductions.size() - 1; i >= 0; --i) {
-        EdgeRef ded = graph.deductions[i];
+    if (!deductions.size()) return;
+    for (int i = deductions.size() - 1; i >= 0; --i) {
+        EdgeRef ded = deductions[i];
         auto &edge = store.getEdge(ded);
         if (edge.setTime <= point) {
             return;
         }
 
         edge.setTime = 0;
-        graph.deductions.pop();
+        deductions.pop();
     }
 }
 
