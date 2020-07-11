@@ -63,16 +63,10 @@ class LetFrame {
 
 class Interpret {
   protected:
-    SMTConfig      &config;
-    Logic          *logic;
-    Theory         *theory;
-    THandler       *thandler;
-    SimpSMTSolver  *solver;
-    MainSolver     *main_solver;
+    SMTConfig &     config;
+    MainSolver *    main_solver;
 
     bool            f_exit;
-    int             asrt_lev;
-    int             sat_calls; // number of sat calls
     bool            parse_only;
 
     // Named terms for getting variable values
@@ -85,6 +79,7 @@ class Interpret {
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
 
+    bool                        isInitialized() const { return main_solver != nullptr; }
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
 
@@ -117,24 +112,17 @@ class Interpret {
 
 
 
-    virtual void new_solver();
 
   public:
 
 
-    Interpret(SMTConfig& c, Logic *_l, Theory *_t, THandler *_th, SimpSMTSolver *_s, MainSolver *_m)
+    Interpret(SMTConfig& c, MainSolver *_m)
         : config     (c)
-        , logic      (_l)
-        , theory     (_t)
-        , thandler   (_th)
-        , solver     (_s)
         , main_solver(_m)
         , f_exit     (false)
-        , asrt_lev   (0)
-        , sat_calls  (0)
         , parse_only (false) { }
 
-    Interpret(SMTConfig& c) : Interpret(c, nullptr, nullptr, nullptr, nullptr, nullptr) { }
+    Interpret(SMTConfig& c) : Interpret(c, nullptr) { }
 
     ~Interpret();
 
@@ -145,12 +133,10 @@ class Interpret {
     void    execute(const ASTNode* n);
     bool    gotExit() const { return f_exit; }
 
-
     ValPair getValue       (PTRef tr) const;
     bool    getAssignment  ();
 
     void    reportError(char const * msg) { notify_formatted(true, msg); }
-
 
     PTRef getParsedFormula();
     vec<PTRef>& getAssertions() { return assertions; }

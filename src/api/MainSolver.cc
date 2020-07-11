@@ -29,6 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "DimacsParser.h"
 #include "Interpret.h"
 #include "BoolRewriting.h"
+#include "LookaheadSMTSolver.h"
+#include "LookaheadSplitter.h"
+#include "GhostSMTSolver.h"
+
+
 #include <thread>
 #include <random>
 #include <sys/types.h>
@@ -428,9 +433,23 @@ MainSolver::readFormulaFromFile(const char *file)
         //opensmt_error("can't open file");
         return false;
     }
-    Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
+    Interpret interp(config, this);
     interp.setParseOnly();
     interp.interpFile(f);
     return true;
+}
+
+std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
+    SimpSMTSolver* solver = nullptr;
+    if (config.sat_pure_lookahead())
+        solver = new LookaheadSMTSolver(config, thandler);
+    else if (config.sat_lookahead_split())
+        solver = new LookaheadSplitter(config, thandler);
+    else if (config.use_ghost_vars())
+        solver = new GhostSMTSolver(config, thandler);
+    else
+        solver = new SimpSMTSolver(config, thandler);
+
+    return std::unique_ptr<SimpSMTSolver>(solver);
 }
 

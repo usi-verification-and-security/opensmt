@@ -26,10 +26,8 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
     default:
         opensmt_error("Theory not supported");
     }
-    theory = std::unique_ptr<Theory>(theory_raw_ptr);
-    thandler = std::unique_ptr<THandler>(new THandler(*theory));
-    solver = std::unique_ptr<SimpSMTSolver>(new SimpSMTSolver(*config, *thandler));
-    mainSolver = std::unique_ptr<MainSolver>(new MainSolver(*thandler, *config, solver.get(), name));
+    auto theory = std::unique_ptr<Theory>(theory_raw_ptr);
+    mainSolver = std::unique_ptr<MainSolver>(new MainSolver(std::move(theory), *config, name));
     mainSolver->initialize();
 }
 
@@ -56,10 +54,8 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name, std::unique_ptr<SMTConf
         opensmt_error("Theory not supported");
     }
     this->config = std::move(config);
-    theory = std::unique_ptr<Theory>(theory_raw_ptr);
-    thandler = std::unique_ptr<THandler>(new THandler(*theory));
-    solver = std::unique_ptr<SimpSMTSolver>(new SimpSMTSolver(*this->config, *thandler));
-    mainSolver = std::unique_ptr<MainSolver>(new MainSolver(*thandler, *this->config, solver.get(), name));
+    auto theory = std::unique_ptr<Theory>(theory_raw_ptr);
+    mainSolver = std::unique_ptr<MainSolver>(new MainSolver(std::move(theory), *this->config, name));
     mainSolver->initialize();
 }
 

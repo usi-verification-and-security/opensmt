@@ -91,14 +91,16 @@ class MainSolver
 
     };
 
-    Logic&              logic;
-    SMTConfig&          config;
-    THandler&           thandler;
-    PushFrameAllocator& pfstore;
-    TermMapper&         tmap;
-    SimpSMTSolver*      smt_solver;
-    Tseitin             ts;
-    PushFramesWrapper   frames;
+
+    std::unique_ptr<Theory>         theory;
+    THandler                        thandler;
+    std::unique_ptr<SimpSMTSolver>  smt_solver;
+    Logic&                          logic;
+    SMTConfig&                      config;
+    PushFrameAllocator&             pfstore;
+    TermMapper&                     tmap;
+    Tseitin                         ts;
+    PushFramesWrapper               frames;
 
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
@@ -142,28 +144,27 @@ class MainSolver
         }
     }
 
-
-
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
   public:
-    MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)
-        : logic(thandler.getLogic())
-        , config(c)
-        , thandler(thandler)
-        , pfstore(getTheory().pfstore)
-        , tmap(thandler.getTMap())
-        , smt_solver(s)
-        , ts( config
-            , thandler.getLogic()
-            , tmap
-            , *s )
-        , solver_name {name}
-        , check_called(0)
-        , prev_query(PTRef_Undef)
-        , curr_query(PTRef_Undef)
-        , status(s_Undef)
-        , binary_init(false)
-        , root_instance(logic.getTerm_true())
+
+    MainSolver(std::unique_ptr<Theory> theory, SMTConfig& conf, std::string name)
+        :
+        theory(std::move(theory)),
+        thandler(getTheory()),
+        smt_solver(createInnerSolver(conf, thandler)),
+        logic(thandler.getLogic()),
+        config(conf),
+        pfstore(getTheory().pfstore),
+        tmap(thandler.getTMap()),
+        ts( config, logic, tmap, *smt_solver ),
+        solver_name {std::move(name)},
+        check_called(0),
+        prev_query(PTRef_Undef),
+        curr_query(PTRef_Undef),
+        status(s_Undef),
+        binary_init(false),
+        root_instance(logic.getTerm_true())
     {
         frames.push(pfstore.alloc());
         PushFrame& last = pfstore[frames.last()];
@@ -175,8 +176,8 @@ class MainSolver
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
 
     THandler &getTHandler() { return thandler; }
-    Logic    &getLogic()    { return thandler.getLogic(); }
-    Theory   &getTheory()   { return thandler.getTheory(); }
+    Logic    &getLogic()    { return logic; }
+    Theory   &getTheory()   { return *theory; }
     sstat     push(PTRef root);
     void      push();
     bool      pop();

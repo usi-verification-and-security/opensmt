@@ -508,7 +508,7 @@ void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ } 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
-PTRef THandler::getSubstitution(PTRef tr) {
+PTRef THandler::getSubstitution(PTRef tr) const {
     auto const & subst = getSolverHandler().substs;
     if (subst.has(tr)){
         PtAsgn subs = subst[tr];

@@ -43,28 +43,25 @@ public:
     ~Opensmt();
 
     SMTConfig& getConfig() { return *config; }
-    Logic& getLogic() { return thandler->getLogic(); }
+    Logic& getLogic() { return mainSolver->getLogic(); }
     LRALogic& getLRALogic()
     {
-        LRATheory& t = (LRATheory&)thandler->getTheory();
+        LRATheory& t = (LRATheory&)mainSolver->getTheory();
         return t.getLogic();
     }
     LIALogic& getLIALogic()
     {
-        LIATheory& t = (LIATheory&)thandler->getTheory();
+        LIATheory& t = (LIATheory&)mainSolver->getTheory();
         return t.getLogic();
     }
     CUFLogic& getCUFLogic() {
-        CUFTheory& t = (CUFTheory&)thandler->getTheory();
+        CUFTheory& t = (CUFTheory&)mainSolver->getTheory();
         return t.getLogic();
     }
     MainSolver& getMainSolver() { return *mainSolver; }
-    SimpSMTSolver& getSolver() { return *solver; }
+    SimpSMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
 private:
     std::unique_ptr<SMTConfig> config;
-    std::unique_ptr<Theory> theory;
-    std::unique_ptr<THandler> thandler;
-    std::unique_ptr<SimpSMTSolver> solver;
     std::unique_ptr<MainSolver> mainSolver;
 };
 
