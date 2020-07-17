@@ -8,9 +8,9 @@
 
 
 class STPMapper {
-    LALogic const &logic;
+    const LALogic &logic;
 
-    STPStore &store;
+    const STPStore &store;
 
     vec<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
     vec<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
@@ -19,7 +19,7 @@ class STPMapper {
     vec<vec<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
 
 public:
-    STPMapper(LALogic const &l, STPStore &s);
+    STPMapper(const LALogic &l, const STPStore &s);
     void setVert(PTRef var, VertexRef vert);
     void registerEdge(EdgeRef edge);
     void mapEdge(PTRef leq, EdgeRef edge);

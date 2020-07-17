@@ -84,7 +84,7 @@ void STPSolver::declareAtom(PTRef tr) {
     EdgeRef e = mapper.getEdgeRef(y, x, parsed.c);
 
     if (e != EdgeRef_Undef) {
-        mapper.mapEdge(tr, e);  // edges created as negations of another atom can't yet exist in mapper
+        mapper.mapEdge(tr, e);  // edges created as negations of another atom only need to add PTRef mapping
         return;
     }
 
@@ -100,6 +100,7 @@ void STPSolver::declareAtom(PTRef tr) {
     // e is definitely EdgeRef_Undef
     e = store.createEdge(y, x, parsed.c);
     EdgeRef neg = createNegation(e);
+    mapper.registerEdge(e);
     mapper.mapEdge(tr, e);
     mapper.registerEdge(neg);       // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
 }
@@ -115,7 +116,7 @@ bool STPSolver::assertLit(PtAsgn asgn) {
 
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
     assert( e != EdgeRef_Undef );
-    EdgeRef neg = store.getEdge(e).neg;
+    EdgeRef neg = store.getNegation(e);
     assert( neg != EdgeRef_Undef );
 
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;   // edge corresponding to 'true' assignment of 'asgn.tr'
@@ -202,7 +203,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     backtrack_points.shrink(1);
     // no need to modify mapper or store - the values stored there can't change
     for (size_t j = 0; j < i; ++j)
-        TSolver::popBacktrackPoint();
+        TSolver::popBacktrackPoint(); // calling TSolver::popBacktrackPoints(i) would result in an infinite loop
 }
 
 ValPair STPSolver::getValue(PTRef pt) {

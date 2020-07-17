@@ -28,6 +28,13 @@ struct Edge {
     ptrdiff_t cost;         // cost of this edge
 
     uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
+
+    Edge() = default;
+    Edge(Edge &&other) = default;
+    Edge & operator=(Edge &&other) = default;
+    // copy semantics are disabled (we want edges to only exist in a store)
+    Edge(const Edge &other) = delete;
+    Edge & operator=(const Edge &other) = delete;
 };
 
 class STPStore {

@@ -54,7 +54,7 @@ void STPModel::bellmanFord(VertexRef start) {
 
 // shifts 'valMap' values so that valMap[zero] == 0
 void STPModel::shiftZero() {
-    VertexRef zero = store.zero();
+    VertexRef zero = STPStore::zero();
     if (!valMap.count(zero.x)) return; // if 'zero' isn't present, no need to shift anything
     ptrdiff_t shift = valMap[zero.x];
     for (auto &pair : valMap) {

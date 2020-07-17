@@ -47,7 +47,7 @@ void STPGraphManager::setDeduction(EdgeRef e) {
 vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
-    auto start = store.getEdge(e);
+    auto &start = store.getEdge(e);
     // find potential starts/ends of an edge with a path going through 'e'
     auto aRes = dfsSearch(start.from, false);
     auto bRes = dfsSearch(start.to, true);
@@ -63,7 +63,7 @@ vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
         if (!thisRes.visited[i]) continue;
         for (auto eRef : mapper.edgesOf(VertexRef{i})) {
             if (eRef == e) continue;
-            Edge &edge = store.getEdge(eRef);
+            const Edge &edge = store.getEdge(eRef);
             auto thisSide = (aRes.total < bRes.total) ? edge.from.x : edge.to.x;
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
             if (thisSide == i && otherRes.visited[otherSide]
@@ -93,7 +93,7 @@ STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forwa
         VertexRef curr = open.top(); open.pop();
         auto &toScan = forward ? graph.outgoing[curr.x] : graph.incoming[curr.x];
         for (auto eRef : toScan) {
-            Edge &edge = store.getEdge(eRef);
+            const Edge &edge = store.getEdge(eRef);
             auto next = forward ? edge.to : edge.from;
             if (!visited[next.x]) {
                 visited[next.x] = true;
@@ -143,8 +143,8 @@ void STPGraphManager::removeAfter(uint32_t point) {
 }
 
 void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
-    Edge &expl = store.getEdge(e);
-    if (mapper.getAssignment(e) != PtAsgn_Undef) {
+    const Edge &expl = store.getEdge(e);
+    if (mapper.getAssignment(e) != PtAsgn_Undef) {      // explanation for explicitly assigned edge is trivial
         v.push(mapper.getAssignment(e));
         return;
     }
@@ -159,7 +159,7 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
         if (curr == expl.to && length[curr.x] <= expl.cost) break;
         for (auto eRef : graph.outgoing[curr.x]) {
             if (eRef == e) continue;
-            Edge &edge = store.getEdge(eRef);
+            const Edge &edge = store.getEdge(eRef);
             if (edge.setTime > expl.setTime) continue;
             if (mapper.getAssignment(eRef) == PtAsgn_Undef) continue;
 
@@ -173,9 +173,9 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     }
 
     auto backtrack = visited[expl.to.x];
-    assert( backtrack != EdgeRef_Undef);
     while (true) {
-        Edge &edge = store.getEdge(backtrack);
+        assert( backtrack != EdgeRef_Undef);
+        const Edge &edge = store.getEdge(backtrack);
         assert( mapper.getAssignment(backtrack) != PtAsgn_Undef );
         v.push(mapper.getAssignment(backtrack));
         if (edge.from == expl.from) break;

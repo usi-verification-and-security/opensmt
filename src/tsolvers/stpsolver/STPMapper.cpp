@@ -1,7 +1,7 @@
 #include <Pterm.h>
 #include "STPMapper.h"
 
-STPMapper::STPMapper(LALogic const &l, STPStore &s)
+STPMapper::STPMapper(const LALogic &l, const STPStore &s)
     : logic(l), store(s)
 {}
 
@@ -17,16 +17,15 @@ void STPMapper::setVert(PTRef var, VertexRef vert) {
 
 // adds an EdgeRef to the 'edgesOf' lists of its vertices
 void STPMapper::registerEdge(EdgeRef edge) {
-    auto & e = store.getEdge(edge);
+    auto &e = store.getEdge(edge);
     if (edgesContainingVert.size() <= std::max(e.from.x, e.to.x))
         edgesContainingVert.growTo(std::max(e.from.x, e.to.x) + 1);
     edgesContainingVert[e.from.x].push(edge);
     edgesContainingVert[e.to.x].push(edge);
 }
 
-// assigns an EdgeRef to a PTRef inequality and adds it to the 'edgesOf' lists of its vertices
+// assigns an EdgeRef to a PTRef inequality
 void STPMapper::mapEdge(PTRef leq, EdgeRef edge) {
-    registerEdge(edge);
     uint32_t idx = Idx(logic.getPterm(leq).getId());
     if (leqToEdgeRef.size() <= idx)
         leqToEdgeRef.growTo(idx + 1, EdgeRef_Undef);
