@@ -127,7 +127,8 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
     vec<PTRef> coll_f;
     bool keepPartitionsSeparate = getConfig().produce_inter();
-    for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size(); i++) {
+    // Process (and simplify) not yet processed frames. Stop processing if solver is in UNSAT state already
+    for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size() && status != s_False; i++) {
         getTheory().simplify(frames.getFrameReferences(), i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
@@ -135,7 +136,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
         if (keepPartitionsSeparate) {
             assert(frame.substs == logic.getTerm_true());
             vec<PTRef> const & flas = frame.formulas;
-            for (int j = 0; j < flas.size(); ++j) {
+            for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
                 assert(logic.getPartitionIndex(fla) != -1);
@@ -147,15 +148,14 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
                 }
                 assert(logic.getPartitionIndex(fla) != -1);
                 logic.propagatePartitionMask(fla);
-                if ((status = giveToSolver(fla, frame.getId())) == s_False) {
-                    return s_False;
-                }
+                status = giveToSolver(fla, frame.getId());
             }
         } else {
             PTRef root = frame.root;
             if (logic.isFalse(root)) {
                 giveToSolver(getLogic().getTerm_false(), frame.getId());
-                return status = s_False;
+                status = s_False;
+                break;
             }
             // Optimize the dag for cnfization
             if (logic.isBooleanOperator(root)) {
@@ -164,10 +164,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
             root = logic.mkAnd(root, frame.substs);
             root_instance.setRoot(root);
-            // Stop if problem becomes unsatisfiable
-            if ((status = giveToSolver(root, frame.getId())) == s_False)
-                break;
+            status = giveToSolver(root, frame.getId());
         }
+    }
+    if (status == s_False) {
+        rememberUnsatFrame(frames.getSimplifiedUntil() - 1);
     }
     return status;
 }
@@ -391,10 +392,11 @@ sstat MainSolver::check()
 
     if (rval == s_Undef) {
         rval = solve();
+        if (rval == s_False) {
+            rememberLastFrameUnsat();
+        }
     }
-    if (rval == s_False) {
-        rememberLastFrameUnsat();
-    }
+
     return rval;
 }
 
