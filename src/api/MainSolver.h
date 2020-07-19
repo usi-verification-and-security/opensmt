@@ -135,6 +135,12 @@ class MainSolver
     PushFrame& getLastFrame() const { return pfstore[frames.last()]; }
     bool isLastFrameUnsat() const { return getLastFrame().unsat; }
     void rememberLastFrameUnsat() { getLastFrame().unsat = true; }
+    void rememberUnsatFrame(std::size_t frameIndex) {
+        assert(frameIndex < frames.size());
+        for (; frameIndex < frames.size(); ++frameIndex) {
+            pfstore[frames.getFrameReference(frameIndex)].unsat = true;
+        }
+    }
 
 
 
