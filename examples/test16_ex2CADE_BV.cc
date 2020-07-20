@@ -22,12 +22,9 @@ int main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c, 8);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
     BVLogic& logic = cuftheory->getLogic();
-
    // PTRef k = logic.mkBVNumVar("k"); no need for it; by using mkBVMod it is already in the server.
     PTRef a = logic.mkBVNumVar("a");
     PTRef b = logic.mkBVNumVar("b");

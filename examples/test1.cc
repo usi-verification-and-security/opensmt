@@ -6,11 +6,10 @@ main(int argc, char** argv)
 {
     SMTConfig c;
     UFTheory* uftheory = new UFTheory(c);
-    THandler* thandler = new THandler(*uftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(uftheory), c, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
 
-    Logic& logic = thandler->getLogic();
+    Logic& logic = uftheory->getLogic();
 
     PTRef v = logic.mkBoolVar("a");
     PTRef v_neg = logic.mkNot(v);
@@ -19,9 +18,9 @@ main(int argc, char** argv)
     args.push(v_neg);
     PTRef a = logic.mkAnd(args);
 
-    mainSolver->push(a);
+    mainSolver.push(a);
     printf("Running check!\n");
-    sstat r = mainSolver->check();
+    sstat r = mainSolver.check();
 
     if (r == s_True)
         printf("sat\n");

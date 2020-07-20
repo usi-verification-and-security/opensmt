@@ -14,9 +14,7 @@ int main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
     BVLogic& logic = cuftheory->getLogic();
 

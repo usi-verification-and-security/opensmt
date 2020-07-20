@@ -14,9 +14,8 @@ main(int argc, char** argv)
 {
     SMTConfig c;
     CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
     BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkBVNumVar("a");
@@ -47,7 +46,7 @@ main(int argc, char** argv)
 	vec<PtAsgn> asgns;
 	vec<PTRef> foo;
 
-	BitBlaster bbb({42}, c, *mainSolver, logic, asgns, foo);
+	BitBlaster bbb({42}, c, mainSolver, logic, asgns, foo);
 
 	BVRef output1;
 	lbool stat;
@@ -108,7 +107,7 @@ main(int argc, char** argv)
 	std::cout << logic.printTerm(d2) << "\n";
 	std::cout << logic.printTerm(eq4) << "\n";
 
-    sstat r = mainSolver->check();
+    sstat r = mainSolver.check();
 
     if (r == s_True)
         printf("sat\n");
