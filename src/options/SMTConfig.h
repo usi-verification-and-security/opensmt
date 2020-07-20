@@ -359,27 +359,17 @@ private:
   // For standard executable
   //
 public:
-  SMTConfig ( int    argc
-            , char * argv[ ] )
-    : filename ( argv[ argc - 1 ] )
-    , rocset   ( false )
-    , docset   ( false )
-    , logic    ( opensmt::Logic_t::UNDEF ) {
-    initializeConfig( );
-    // Parse command-line options
-    parseCMDLine( argc, argv );
-  }
-  //
-  // For API
-  //
-  SMTConfig ( )
-    : filename ( NULL )
-    , rocset   ( false )
-    , docset   ( false )
-    , logic    ( opensmt::Logic_t::UNDEF )
-  {
-    initializeConfig( );
-  }
+    SMTConfig(int argc, char* argv[]) : logic(opensmt::Logic_t::UNDEF), rocset(false), docset(false) {
+        initializeConfig( );
+        // Parse command-line options
+        parseCMDLine( argc, argv );
+    }
+    //
+    // For API
+    //
+    SMTConfig () : logic(opensmt::Logic_t::UNDEF), rocset(false), docset(false) {
+        initializeConfig( );
+    }
 
   ~SMTConfig ( )
   {
@@ -490,7 +480,6 @@ public:
     }
   }
 
-  const char * filename;                     // Holds the name of the input filename
   lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
