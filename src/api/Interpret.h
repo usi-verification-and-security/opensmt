@@ -79,7 +79,7 @@ class Interpret {
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
 
-    bool                        isInitialized() const { return main_solver != nullptr; }
+    bool                        isInitialized() const { return config.getLogic() != opensmt::Logic_t::UNDEF; }
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
 

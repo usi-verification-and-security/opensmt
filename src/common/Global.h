@@ -84,42 +84,38 @@ using std::ifstream;
 namespace opensmt {
 
 
-typedef mpz_class Integer; //PS. related to BV logic
+    typedef mpz_class Integer; //PS. related to BV logic
 
-void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int width)
-{
-    bin = (char*) malloc(width+1);
-
-    int p = 0;
-    opensmt::Integer one = 1;
-    for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
-        bin[p++] = ((x&i) == i) ? '1' : '0';
-    bin[p] = '\0';
-}
-
-    void static inline wordToBinary(const unsigned x, char*& bin, const int width)
-    {
-        bin = (char*) malloc(width+1);
+    void static inline wordToBinary(const opensmt::Integer x, char *&bin, const int width) {
+        bin = (char *) malloc(width + 1);
 
         int p = 0;
         opensmt::Integer one = 1;
-        for (opensmt::Integer i = (one << (width-1)); i > 0; i >>= 1)
-            bin[p++] = ((x&i) == i) ? '1' : '0';
+        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
+            bin[p++] = ((x & i) == i) ? '1' : '0';
+        bin[p] = '\0';
+    }
+
+    void static inline wordToBinary(const unsigned x, char *&bin, const int width) {
+        bin = (char *) malloc(width + 1);
+
+        int p = 0;
+        opensmt::Integer one = 1;
+        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
+            bin[p++] = ((x & i) == i) ? '1' : '0';
         bin[p] = '\0';
     }
 
 
-    bool static inline isDigit(char c)
-    {
+    bool static inline isDigit(char c) {
         return (c >= '0' && c <= '9');
     }
-    bool static inline isPosDig(char c)
-    {
+
+    bool static inline isPosDig(char c) {
         return (c > '0' && c <= '9');
     }
 
-    void static inline normalize(char*& rat, const char* flo, bool is_neg)
-    {
+    void static inline normalize(char *&rat, const char *flo, bool is_neg) {
         mpq_t num;
         mpq_init(num);
         int val = mpq_set_str(num, flo, 0);
@@ -132,13 +128,11 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         mpq_clear(num);
     }
 
-    static inline bool isPowOfTwo(int b)
-    {
-        return b && !(b & (b-1));
+    static inline bool isPowOfTwo(int b) {
+        return b && !(b & (b - 1));
     }
 
-    static inline int getLogFromPowOfTwo(int l)
-    {
+    static inline int getLogFromPowOfTwo(int l) {
         assert(isPowOfTwo(l));
         if (l == 1) return 0;
         int n = 0;
@@ -146,26 +140,24 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         return n;
     }
 
-    class strConvException : std::exception
-    {
-        char* reason;
+    class strConvException : std::exception {
+        char *reason;
     public:
-        strConvException(const char* reason_) {
+        strConvException(const char *reason_) {
             int res = asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
-            assert(res >=0);
-            (void)res;
+            assert(res >= 0);
+            (void) res;
         }
-        virtual const char* what() const noexcept
-        {
+
+        virtual const char *what() const noexcept {
             return reason;
         }
+
         ~strConvException() { free(reason); }
     };
 
 
-
-    bool static inline stringToRational(char*& rat, const char* flo)
-    {
+    bool static inline stringToRational(char *&rat, const char *flo) {
         int nom_l = 0;
         int den_l = 1;
         int state = 0;
@@ -173,24 +165,55 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         bool is_frac = false;
         bool is_neg = false;
 
-        if (flo[0] == '-') { flo++; is_neg = true; }
+        if (flo[0] == '-') {
+            flo++;
+            is_neg = true;
+        }
 
         for (int i = 0; flo[i] != '\0'; i++) {
             if (state == 0 && flo[i] == '0') {}
-            else if (state == 0 && isPosDig(flo[i])) { nom_l ++; state = 1; }
-            else if (state == 0 && flo[i] == '.')    { state = 4; }
-            else if (state == 0 && flo[i] == '/')    { state = 5; is_frac = true; }
-            else if (state == 1 && isDigit(flo[i]))  { nom_l ++; state = 1; }
-            else if (state == 1 && flo[i] == '.')    { state = 2; }
-            else if (state == 1 && flo[i] == '/')    { state = 5; is_frac = true; }
-            else if (state == 2 && flo[i] == '0')    { zeroes ++; state = 3; }
-            else if (state == 2 && isPosDig(flo[i])) { nom_l ++; state = 2; }
-            else if (state == 3 && flo[i] == '0')    { zeroes ++; state = 3; }
-            else if (state == 3 && isPosDig(flo[i])) { nom_l += zeroes + 1; zeroes = 0; state = 2; }
-            else if (state == 4 && flo[i] == '0')    { state = 4; }
-            else if (state == 4 && isPosDig(flo[i])) { nom_l ++; state = 2; }
+            else if (state == 0 && isPosDig(flo[i])) {
+                nom_l++;
+                state = 1;
+            }
+            else if (state == 0 && flo[i] == '.') { state = 4; }
+            else if (state == 0 && flo[i] == '/') {
+                state = 5;
+                is_frac = true;
+            }
+            else if (state == 1 && isDigit(flo[i])) {
+                nom_l++;
+                state = 1;
+            }
+            else if (state == 1 && flo[i] == '.') { state = 2; }
+            else if (state == 1 && flo[i] == '/') {
+                state = 5;
+                is_frac = true;
+            }
+            else if (state == 2 && flo[i] == '0') {
+                zeroes++;
+                state = 3;
+            }
+            else if (state == 2 && isPosDig(flo[i])) {
+                nom_l++;
+                state = 2;
+            }
+            else if (state == 3 && flo[i] == '0') {
+                zeroes++;
+                state = 3;
+            }
+            else if (state == 3 && isPosDig(flo[i])) {
+                nom_l += zeroes + 1;
+                zeroes = 0;
+                state = 2;
+            }
+            else if (state == 4 && flo[i] == '0') { state = 4; }
+            else if (state == 4 && isPosDig(flo[i])) {
+                nom_l++;
+                state = 2;
+            }
                 // We come here if it is a fraction already
-            else if (state == 5 && isDigit(flo[i]))  { state = 5; }
+            else if (state == 5 && isDigit(flo[i])) { state = 5; }
             else { throw strConvException(flo); }
         }
 
@@ -208,22 +231,38 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         zeroes = 0;
         for (int i = 0; flo[i] != '\0'; i++) {
             if (state == 0 && isDigit(flo[i])) { state = 0; }
-            else if (state == 0 && flo[i] == '.')   { state = 1; }
-            else if (state == 1 && isPosDig(flo[i])) { state = 1; den_l ++; }
-            else if (state == 1 && flo[i] == '0')    { state = 2; zeroes ++; }
-            else if (state == 2 && flo[i] == '0')    { state = 2; zeroes ++; }
-            else if (state == 2 && isPosDig(flo[i])) { state = 1; den_l += zeroes + 1; zeroes = 0; }
+            else if (state == 0 && flo[i] == '.') { state = 1; }
+            else if (state == 1 && isPosDig(flo[i])) {
+                state = 1;
+                den_l++;
+            }
+            else if (state == 1 && flo[i] == '0') {
+                state = 2;
+                zeroes++;
+            }
+            else if (state == 2 && flo[i] == '0') {
+                state = 2;
+                zeroes++;
+            }
+            else if (state == 2 && isPosDig(flo[i])) {
+                state = 1;
+                den_l += zeroes + 1;
+                zeroes = 0;
+            }
         }
 
 //    printf("The literal %s, once converted, will have denominator of length %d and nominator of length %d characters\n", flo, den_l, nom_l);
-        char* rat_tmp = (char*)malloc(nom_l+den_l+2);
+        char *rat_tmp = (char *) malloc(nom_l + den_l + 2);
         rat_tmp[0] = '\0';
 
         int i, j;
         state = -1;
         for (i = j = 0; j < nom_l; i++) {
             assert(flo[i] != '\0');
-            if (state == -1 && flo[i] != '.' && flo[i] != '0') { rat_tmp[j++] = flo[i]; state = 0; }
+            if (state == -1 && flo[i] != '.' && flo[i] != '0') {
+                rat_tmp[j++] = flo[i];
+                state = 0;
+            }
             else if (state == -1 && flo[i] == '.') {}
             else if (state == -1 && flo[i] == '0') {}
             else if (state == 0 && flo[i] != '.') { rat_tmp[j++] = flo[i]; }
@@ -231,7 +270,7 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
         }
         rat_tmp[j++] = '/';
         rat_tmp[j++] = '1';
-        for (i = 0; i < den_l-1; i++) rat_tmp[j++] = '0';
+        for (i = 0; i < den_l - 1; i++) rat_tmp[j++] = '0';
         rat_tmp[j] = '\0';
         normalize(rat, rat_tmp, is_neg);
         free(rat_tmp);
@@ -239,24 +278,24 @@ void static inline wordToBinary(const opensmt::Integer x, char*& bin, const int 
     }
 
 
+#define Pair(T) pair< T, T >
 
-#define Pair( T ) pair< T, T >
-
-    typedef int       enodeid_t;
+    typedef int enodeid_t;
 
 
     typedef enodeid_t snodeid_t;
     typedef enodeid_t sortid_t;
 #ifdef BUILD_64
     typedef long enodeid_pair_t;
-    inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
-    {
+
+    inline enodeid_pair_t encode(enodeid_t car, enodeid_t cdr) {
         enodeid_pair_t p = car;
-        p = p<<(sizeof(enodeid_t)*8);
+        p = p << (sizeof(enodeid_t) * 8);
         enodeid_pair_t q = cdr;
         p |= q;
         return p;
     }
+
 #else
     typedef Pair( enodeid_t ) enodeid_pair_t;
 inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
@@ -267,14 +306,17 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 //#define STATISTICS
 
 // Set the bit B to 1 and leaves the others to 0
-#define SETBIT( B ) ( 1 << (B) )
+#define SETBIT(B) ( 1 << (B) )
 
 
-    enum class Logic_t{
+    enum class Logic_t : int {
         UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_UFRDL, QF_UFIDL,
         QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_BOOL, QF_AUFBV, QF_CT
     };
 
+    Logic_t getLogicFromString(const std::string& name);
+
+    std::string getStringFromLogic(const Logic_t logic);
 
     static inline double cpuTime(void)
     {

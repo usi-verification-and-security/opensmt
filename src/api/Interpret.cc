@@ -63,19 +63,6 @@ Interpret::~Interpret() {
         free(term_names[i]);
     }
 }
-using opensmt::Logic_t;
-namespace {
-opensmt::Logic_t getLogicFromString(std::string name) {
-    if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
-    if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
-    if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;
-    if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
-    if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
-    if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
-    if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
-    return opensmt::Logic_t::UNDEF;
-}
-}
 
 PTRef
 Interpret::getParsedFormula()
@@ -166,6 +153,9 @@ void Interpret::getOption(ASTNode& n) {
 void Interpret::exit() {
     f_exit = true;
 }
+
+using opensmt::Logic_t;
+using opensmt::getLogicFromString;
 
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);

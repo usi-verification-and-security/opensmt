@@ -186,7 +186,7 @@ class LRATheory : public Theory
         , lralogic(c)
         , tmap(lralogic)
         , lratshandler(c, lralogic, tmap)
-    { }
+    { c.setLogic(opensmt::Logic_t::QF_LRA); }
     ~LRATheory() {};
     virtual LRALogic&    getLogic();//    { return lralogic; }
     virtual LRATHandler& getTSolverHandler();// { return lratshandler; }
@@ -206,7 +206,7 @@ public:
     , lialogic(c)
     , tmap(lialogic)
     , liatshandler(c, lialogic, tmap)
-    { }
+    { c.setLogic(opensmt::Logic_t::QF_LIA); }
     ~LIATheory() {};
     virtual LIALogic&    getLogic();//    { return lialogic; }
     virtual LIATHandler& getTSolverHandler();// { return liatshandler; }
@@ -225,7 +225,7 @@ class UFTheory : public Theory
         , uflogic(c)
         , tmap(uflogic)
         , tshandler(c, uflogic, tmap)
-    {}
+    { c.setLogic(opensmt::Logic_t::QF_UF); }
     ~UFTheory() {}
     virtual TermMapper&  getTmap()              { return tmap; }
     virtual Logic&       getLogic()             { return uflogic; }
@@ -247,7 +247,7 @@ class CUFTheory : public Theory
       , cuflogic(c, width)
       , tmap(cuflogic)
       , tshandler(c, cuflogic, tmap)
-    {}
+    { c.setLogic(opensmt::Logic_t::QF_CUF); }
     ~CUFTheory() {}
     virtual TermMapper& getTmap()            { return tmap; }
     virtual BVLogic&  getLogic()             { return cuflogic; }

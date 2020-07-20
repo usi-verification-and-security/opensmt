@@ -454,6 +454,18 @@ const Info& SMTConfig::getInfo(const char* name) const {
         return info_Empty;
 }
 
+void SMTConfig::setLogic(const opensmt::Logic_t l) {
+    if (logic == opensmt::Logic_t::UNDEF || l == logic) {
+        logic = l;
+    }
+    else {
+        std::stringstream ss;
+        ss << "Cannot set logic to " << opensmt::getStringFromLogic(l) << \
+        " because it is already set to " << opensmt::getStringFromLogic(logic);
+        throw (ss.str());
+    }
+}
+
 const char* SMTConfig::o_produce_models = ":produce-models";
 const char* SMTConfig::o_verbosity      = ":verbosity";
 const char* SMTConfig::o_incremental    = ":incremental";

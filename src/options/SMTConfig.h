@@ -354,6 +354,7 @@ private:
       free(tmp_name);
       return full_str;
   }
+  opensmt::Logic_t logic;                    // SMT-Logic under consideration
   //
   // For standard executable
   //
@@ -363,7 +364,7 @@ public:
     : filename ( argv[ argc - 1 ] )
     , rocset   ( false )
     , docset   ( false )
-  {
+    , logic    ( opensmt::Logic_t::UNDEF ) {
     initializeConfig( );
     // Parse command-line options
     parseCMDLine( argc, argv );
@@ -375,6 +376,7 @@ public:
     : filename ( NULL )
     , rocset   ( false )
     , docset   ( false )
+    , logic    ( opensmt::Logic_t::UNDEF )
   {
     initializeConfig( );
   }
@@ -397,6 +399,8 @@ public:
   bool             setOption(const char* name, const SMTOption& value, const char*& msg);
   const SMTOption& getOption(const char* name) const;
 
+  void          setLogic (const opensmt::Logic_t logic);
+  opensmt::Logic_t getLogic() { return logic; }
   bool          setInfo  (const char* name, const Info& value);
   const Info&   getInfo  (const char* name) const;
 
@@ -487,7 +491,6 @@ public:
   }
 
   const char * filename;                     // Holds the name of the input filename
-  opensmt::Logic_t logic;                    // SMT-Logic under consideration
   lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
