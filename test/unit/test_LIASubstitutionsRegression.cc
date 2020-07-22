@@ -5,14 +5,14 @@
 #include <gtest/gtest.h>
 #include <Opensmt.h>
 
-class LIARegression: public ::testing::Test {
+class LIASubstitutionsRegression: public ::testing::Test {
 public:
     std::unique_ptr<Opensmt> getLIAOsmt() {
         return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_lia, "test"));
     }
 };
 
-TEST_F(LIARegression, test_LIAsubstitution) {
+TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
     auto const osmt = getLIAOsmt();
     auto & mainSolver = osmt->getMainSolver();
     auto & lialogic = osmt->getLIALogic();
@@ -30,10 +30,5 @@ TEST_F(LIARegression, test_LIAsubstitution) {
     char* msg;
     mainSolver.insertFormula(fla, &msg);
     auto res = mainSolver.check();
-//    if (res == s_True) {
-//        auto model = mainSolver.getModel();
-//        std::cout << lialogic.printTerm(model->evaluate(x)) << '\n';
-//        std::cout << lialogic.printTerm(model->evaluate(y)) << std::endl;
-//    }
     ASSERT_EQ(res, s_False);
 }
