@@ -98,7 +98,8 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , forced_split          (lit_Undef)
 
     , ok                    (true)
-    , n_clauses(0)
+    , base_frame_conflict   (true)
+    , n_clauses             (0)
     , cla_inc               (1)
     , var_inc               (1)
     , watches               (WatcherDeleted(ca))
@@ -1688,6 +1689,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
+                    base_frame_conflict = false;
                     return zeroLevelConflictHandler();
                 }
                 else

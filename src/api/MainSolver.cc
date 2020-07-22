@@ -393,7 +393,12 @@ sstat MainSolver::check()
     if (rval == s_Undef) {
         rval = solve();
         if (rval == s_False) {
-            rememberLastFrameUnsat();
+            assert(not smt_solver->isOK());
+            if (smt_solver->isBaseFrameConflict()) {
+                rememberUnsatFrame(0);
+            } else {
+                rememberLastFrameUnsat();
+            }
         }
     }
 
