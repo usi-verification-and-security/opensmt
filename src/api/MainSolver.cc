@@ -237,7 +237,11 @@ ValPair MainSolver::getValue(PTRef tr) const
         // Try if it was not substituted away
         PTRef subs = thandler.getSubstitution(tr);
         if (subs != PTRef_Undef) {
-            return getValue(subs);
+            auto res = getValue(subs);
+            // MB: getValue returns pair where first element is the queried PTRef;
+            //     In case of substitutions, we need to replace it with the original query
+            res.tr = tr;
+            return res;
         }
         // Term not seen in the formula, any value can be returned since it cannot have any effect on satisfiability
         return ValPair(tr, Logic::tk_true);
