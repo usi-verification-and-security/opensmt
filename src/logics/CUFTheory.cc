@@ -20,8 +20,8 @@ bool CUFTheory::simplify(const vec<PFRef>& formulas, int curr)
         PTRef trans = getLogic().learnEqTransitivity(coll_f);
         coll_f = getLogic().mkAnd(coll_f, trans);
         auto subs_res = computeSubstitutions(coll_f);
+        currentFrame.root = flaFromSubstitutionResult(subs_res);
         getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
-        currentFrame.root = subs_res.result;
     }
     return true;
 }

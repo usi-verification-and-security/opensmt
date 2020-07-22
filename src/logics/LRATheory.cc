@@ -20,8 +20,9 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
         auto subs_res = computeSubstitutions(coll_f);
+        PTRef finalFla = flaFromSubstitutionResult(subs_res);
         getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
-        lralogic.simplifyAndSplitEq(subs_res.result, currentFrame.root);
+        lralogic.simplifyAndSplitEq(finalFla, currentFrame.root);
     }
     return true;
 }
