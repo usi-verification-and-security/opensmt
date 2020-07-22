@@ -347,8 +347,9 @@ public:
     void        pushBacktrackPoint ( );
     void        popBacktrackPoint  ( );
     void        reset              ( );
-    inline void restoreOK          ( )       { ok = true; }
+    inline void restoreOK          ( )       { ok = true; base_frame_conflict = true; }
     inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
+    inline bool isBaseFrameConflict( ) const { assert(not isOK()); return base_frame_conflict; }
 
     template<class C>
     void     printSMTClause   ( ostream &, const C& );
@@ -480,7 +481,8 @@ protected:
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-    uint32_t n_clauses;             // number of clauses in the problem
+    bool                base_frame_conflict; // True if conflict occured in the base frame (no assumptions involved)
+    uint32_t            n_clauses;        // number of clauses in the problem
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2

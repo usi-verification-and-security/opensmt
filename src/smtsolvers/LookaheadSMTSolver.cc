@@ -49,7 +49,10 @@ lbool LookaheadSMTSolver::solve_()
         case LALoopRes::sat:
             return l_True;
         case LALoopRes::unsat:
+        {
+            ok = false;
             return l_False;
+        }
         default:
             assert(false);
             return l_Undef;
