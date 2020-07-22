@@ -63,7 +63,6 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
 {
     SubstitutionResult result;
     assert(config.do_substitutions() && !config.produce_inter());
-    // MB: We are going to simplify coll_f and it already contains the current frame
     PTRef root = fla;
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
@@ -134,6 +133,20 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
 
 //MOVINGFROMHEADER
 void Theory::setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs) { getTSolverHandler().setSubstitutions(substs); }
+
+PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
+    Logic & logic = getLogic();
+    vec<PTRef> args;
+    auto entries = sr.usedSubstitution.getKeysAndValsPtrs();
+    for (auto * entry : entries) {
+        assert(entry->data.sgn == l_True);
+        if (entry->data.sgn == l_True) {
+            args.push(logic.mkEq(entry->key, entry->data.tr));
+        }
+    }
+    args.push(sr.result);
+    return logic.mkAnd(args);
+}
 
 TermMapper&  LRATheory::getTmap() { return tmap; }
 LRALogic&    LRATheory::getLogic()    { return lralogic; }

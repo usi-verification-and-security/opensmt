@@ -145,17 +145,23 @@ public:
 class Theory
 {
   protected:
-    SMTConfig &         config;
-    PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
-    Theory(SMTConfig &c) : config(c) { }
-    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
-    inline bool keepPartitions() const { return config.produce_inter(); }
-  public:
     struct SubstitutionResult {
         Map<PTRef,PtAsgn,PTRefHash> usedSubstitution;
         PTRef result;
     };
 
+
+    SMTConfig &         config;
+    PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
+    Theory(SMTConfig &c) : config(c) { }
+    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
+    inline bool keepPartitions() const { return config.produce_inter(); }
+
+    /* Computes the final formula from substitution result.
+     * The formula is the computed formula wiht all subbstitutions conjoined in form of equalities
+     */
+    PTRef flaFromSubstitutionResult(const SubstitutionResult & sr);
+  public:
 
     PushFrameAllocator      pfstore {1024};
     virtual TermMapper     &getTmap() = 0;
