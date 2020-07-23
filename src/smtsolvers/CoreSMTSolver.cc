@@ -1548,7 +1548,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // (Incomplete) Check of Level-0 atoms
 
     TPropRes res = checkTheory(false, conflictC);
-    if ( res == TPropRes::Unsat) return l_False;
+    if ( res == TPropRes::Unsat) {
+        return zeroLevelConflictHandler();
+    }
 
     assert( res == TPropRes::Decide || res == TPropRes::Propagate ); // Either good for decision (from TSolver's perspective) or propagate
 #ifdef STATISTICS
@@ -1650,11 +1652,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
                 TPropRes res = checkTheory(false, conflictC);
                 if (res == TPropRes::Unsat) {
-                    if (splits.size() > 0) {
-                        opensmt::stop = true;
-                        return l_Undef;
-                    }
-                    else return l_False;    // Top-Level conflict: unsat
+                    return zeroLevelConflictHandler();
                 }
                 else if (res == TPropRes::Propagate) {
                     continue; // Theory conflict: time for bcp
