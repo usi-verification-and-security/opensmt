@@ -16,9 +16,7 @@ def getLinesFromOutput(file):
     for line in lines:
         abses = set(map(abs, line))
         if len(abses) != len(line):
-            die("inconsistent path")
-        if len(set(line)) != len(line):
-            die("duplicates in a path")
+            die("inconsistent path or duplicates in a path")
 
     return lines
 
@@ -76,7 +74,6 @@ if __name__ == '__main__':
 
     if len(lines) == 0 and expected == 'unknown':
         die("Expected a split")
-        sys.exit(1)
     if len(lines) != 0 and expected != 'unknown':
         die("Expected %s but got splits" % expected)
 
@@ -87,10 +84,10 @@ if __name__ == '__main__':
             die("Expected %s but found no result" % expected)
         if mo.group(1) != expected:
             die("Expected %s but got %s" % (expected, mo.group(1)))
-        sys.exit(0)
+    else:
+        assert(expected == 'unknown')
+        root, max_depth = getTree(lines)
 
-    root, max_depth = getTree(lines)
-
-    checkTree(root, max_depth)
+        checkTree(root, max_depth)
 
     sys.exit(0)
