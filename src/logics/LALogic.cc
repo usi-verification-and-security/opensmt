@@ -141,26 +141,28 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
     LALogic& logic = *this;
     // I don't know if reversing the order makes any sense but osmt1
     // does that.
-    for (int i = top_level_arith.size()-1; i >= 0; i--) {
+    for (int i = top_level_arith.size() - 1; i >= 0; i--) {
         equalities.emplace_back(new LAExpression(logic, top_level_arith[i]));
     }
 
     for (auto const& equality : equalities) {
         PTRef res = equality->solve();
-        if (res == PTRef_Undef) { // TODO: investigate this
+        if (res == PTRef_Undef) { // MB: special case where the equality simplifies to "c = 0" with c constant
+            // This is a conflicting equality unless the constant "c" is also 0.
+            // We do nothing here and let the main code deal with this
             continue;
         }
         auto sub = equality->getSubst();
         PTRef var = sub.first;
         assert(var != PTRef_Undef && isNumVar(var) && sub.second != PTRef_Undef);
         if (substitutions.has(var)) {
-            // Already has substitution for this var, let the main subbstitution code deal with this situation
+            // Already has substitution for this var, let the main substitution code deal with this situation
             continue;
         } else {
             substitutions.insert(var, PtAsgn(sub.second, l_True));
         }
     }
-    // TODO: rethink the return value
+    // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
 }
 void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
