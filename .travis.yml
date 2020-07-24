@@ -4,7 +4,6 @@ language: cpp
 branches:
     only:
         - master
-
 os:
   - linux
 
@@ -35,6 +34,9 @@ matrix:
     - os: linux
       dist: bionic
       compiler: clang
+    - os: osx
+      compiler: clang
+      env: CMAKE_BUILD_TYPE=Debug
 
 addons:
   apt:
@@ -47,24 +49,18 @@ addons:
       - bison
       - flex
 
-install: true
+before_install:
+    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+        brew install bison;
+        export PATH="/usr/local/opt/bison/bin:$PATH";
+      fi
+
+install: skip
 
 before_script:
-    - FLAGS="-Wall -Werror"
-    - INSTALL=${TRAVIS_BUILD_DIR}/install
+    - export FLAGS="-Wall -Werror"
+    - export INSTALL=${TRAVIS_BUILD_DIR}/install
     - mkdir build && mkdir ${INSTALL}
 
 script:
-  - set -e
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_FLAGS="$FLAGS" -DUSE_READLINE:BOOL=${USE_READLINE} -DCMAKE_INSTALL_PREFIX=${INSTALL} ..
-  - make
-  - ctest
-  - make install
-  - if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
-        cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
-        cd ../regression_itp && ./run-tests.sh ../build/src/bin/opensmt;
-    fi
-
-  - cd ../examples && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DOPENSMT_DIR=${INSTALL} ..
-  - make
+    - ./ci/run_travis_commands.sh

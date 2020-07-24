@@ -26,13 +26,13 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     if (sum_term_is_negated) {
         opensmt::Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr_neg, false));
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
         const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(constr, true));
+        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
     }
@@ -232,23 +232,18 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 
     auto poly = std::unique_ptr<Polynomial>(new Polynomial());
-
     bool negated = logic.isNegated(term);
-
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;
         PTRef c;
         logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
         LVRef var = getLAVar_single(v);
-        notifyVar(var);
         Real coeff = getNum(c);
         if (negated) {
             coeff.negate();
         }
-        simplex.nonbasicVar(var);
         poly->addTerm(var, std::move(coeff));
     }
-
     return poly;
 }
 
@@ -287,7 +282,20 @@ LVRef LASolver::exprToLVar(PTRef expr) {
     else {
         // Cases (3), (4a) and (4b)
         x = getLAVar_single(expr);
-        simplex.newRow(x, expressionToLVarPoly(expr));
+        auto poly = expressionToLVarPoly(expr);
+        // ensure the simplex knows about all the variables
+        // and compute if this poly is always integer
+        bool isInt = true;
+        for (auto const & term : *poly) {
+            notifyVar(term.var);
+            simplex.nonbasicVar(term.var);
+            // MB: Notify must be called before the query isIntVar!
+            isInt &= isIntVar(term.var) && term.coeff.isInteger();
+        }
+        simplex.newRow(x, std::move(poly));
+        if (isInt) {
+            markVarAsInt(x);
+        }
     }
     assert(x != LVRef_Undef);
     return x;
@@ -734,5 +742,56 @@ LASolver::~LASolver( )
 }
 
 LALogic&  LASolver::getLogic()  { return logic; }
+
+
+/**
+ * Given an inequality v ~ c (with ~ is either < or <=), compute the correct bounds on the variable.
+ * The correct values of the bounds are computed differently, based on whether the value of v must be Int or not.
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValue(LVRef v, const Real & c, bool strict) {
+    return isIntVar(v) ? getBoundsValueForIntVar(c, strict) : getBoundsValueForRealVar(c, strict);
+}
+
+/**
+ * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the interger bounds on the variable
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The integer values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValueForIntVar(const Real & c, bool strict) {
+    if (strict) {
+        // v < c => UB is ceiling(c-1), LB is ceiling(c)
+        return {Delta((c-1).ceil()), Delta(c.ceil())};
+    }
+    else {
+        // v <= c => UB is floor(c), LB is floor(c+1)
+        return {Delta(c.floor()), Delta((c+1).floor())};
+    }
+}
+
+
+/**
+ * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the real bounds on the variable
+ *
+ * @param c Real number representing the upper bound
+ * @param strict inequality is LEQ if false, LT if true
+ * @return The real values of upper and lower bound corresponding to the inequality
+ */
+LABoundStore::BoundValuePair LASolver::getBoundsValueForRealVar(const Real & c, bool strict) {
+    if (strict) {
+        // v < c => UB is c-\delta, LB is c
+        return { Delta(c, -1), Delta(c) };
+    }
+    else {
+        // v <= c => UB is c, LB is c+\delta
+        return { Delta(c), Delta(c, 1) };
+    }
+}
+
 
 

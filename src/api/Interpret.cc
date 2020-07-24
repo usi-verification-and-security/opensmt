@@ -1173,7 +1173,12 @@ int Interpret::interpPipe() {
         }
         if (bts_rd < 0) {
             done = true;
-            notify_formatted(true, sys_errlist[errno]);
+
+            // obtain the error string
+            char const * err_str = strerror(errno);
+
+            // format the error
+            notify_formatted(true, err_str);
             continue;
         }
 

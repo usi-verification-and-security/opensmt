@@ -37,6 +37,9 @@ option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
 option(USE_READLINE "Use readline over libedit" OFF)
+option(BUILD_STATIC_LIBS "Build static library" ON)
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+option(BUILD_EXECUTABLES "Build executables" ON)
 
 if (NOT USE_READLINE)
   find_package(LibEdit REQUIRED)
@@ -71,6 +74,10 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/proof
     ${GMP_INCLUDE_DIR}
 )
+
+if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
+  message(FATAL_ERROR "Cannot build executables without also building static libraries")
+endif()
 
 if (ITP_DEBUG)
     add_definitions(-DITP_DEBUG)
@@ -113,6 +120,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR})
 ################# TESTING #############################################
 option(PACKAGE_TESTS "Build the tests" ON)
 if(PACKAGE_TESTS)
+    if (NOT BUILD_STATIC_LIBS)
+      message(FATAL_ERROR "Building tests requires static libraries")
+    endif()
     if(CMAKE_VERSION VERSION_LESS 3.11)
         MESSAGE(WARNING "Minimum CMAKE version for building tests is 3.11")
     else(CMAKE_VERSION VERSION_LESS 3.11)

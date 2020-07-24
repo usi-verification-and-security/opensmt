@@ -35,13 +35,8 @@ void LIASolver::clearSolver()
 
 void LIASolver::notifyVar(LVRef v)
 {
-    if (!int_vars_map.has(v)) {
-        int_vars_map.insert(v, true);
-        int_vars.push(v);
-    }
-
-    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
-        cuts.push();
+    assert(logic.isNumVar(getVarPTRef(v)));
+    markVarAsInt(v);
 }
 
 TRes LIASolver::checkIntegersAndSplit() {
@@ -132,20 +127,12 @@ LIASolver::~LIASolver( )
 
 LIALogic&  LIASolver::getLogic()  { return logic; }
 
-/**
- * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the interger bounds on the variable
- *
- * @param c Real number representing the upper bound
- * @param strict inequality is LEQ if false, LT if true
- * @return The integer values of upper and lower bound corresponding to the inequality
- */
-LABoundStore::BoundValuePair LIASolver::getBoundsValue(const Real & c, bool strict) {
-    if (strict) {
-        // v < c => UB is ceiling(c-1), LB is ceiling(c)
-        return {Delta((c-1).ceil()), Delta(c.ceil())};
+void LIASolver::markVarAsInt(LVRef v) {
+    if (!int_vars_map.has(v)) {
+        int_vars_map.insert(v, true);
+        int_vars.push(v);
     }
-    else {
-        // v <= c => UB is floor(c), LB is floor(c+1)
-        return {Delta(c.floor()), Delta((c+1).floor())};
-    }
+
+    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
+        cuts.push();
 }

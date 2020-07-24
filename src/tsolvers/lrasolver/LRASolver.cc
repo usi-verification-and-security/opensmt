@@ -95,26 +95,6 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     return simplex.getPolaritySuggestion(var, bounds.pos, bounds.neg);
 }
 
-/**
- * Given an imaginary inequality v ~ c (with ~ is either < or <=), compute the real bounds on the variable
- *
- * @param c Real number representing the upper bound
- * @param strict inequality is LEQ if false, LT if true
- * @return The real values of upper and lower bound corresponding to the inequality
- */
-LABoundStore::BoundValuePair LRASolver::getBoundsValue(const Real & c, bool strict) {
-    if (strict) {
-        // v < c => UB is c-\delta, LB is c
-        return { Delta(c, -1), Delta(c) };
-    }
-    else {
-        // v <= c => UB is c, LB is c+\delta
-        return { Delta(c), Delta(c, 1) };
-    }
-}
-
-
-
 
 enum class ItpAlg {
     STRONG, WEAK, FACTOR, EXPERIMENTAL_STRONG, EXPERIMENTAL_WEAK, UNDEF

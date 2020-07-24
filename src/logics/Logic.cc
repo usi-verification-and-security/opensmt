@@ -918,6 +918,18 @@ PTRef Logic::mkImpl(vec<PTRef>& args) {
 }
 
 PTRef Logic::mkEq(vec<PTRef>& args) {
+    if (args.size() < 2) { return PTRef_Undef; }
+    if (args.size() > 2) { // split to chain of equalities with 2 arguments
+        vec<PTRef> binaryEqualities;
+        vec<PTRef> argPair;
+        argPair.growTo(2, PTRef_Undef);
+        for (int i = 0; i < args.size() - 1; ++i) {
+            argPair[0] = args[i];
+            argPair[1] = args[i + 1];
+            binaryEqualities.push(mkEq(argPair));
+        }
+        return mkAnd(binaryEqualities);
+    }
     assert(args.size() == 2);
     if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();

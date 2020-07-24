@@ -138,7 +138,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         newsubsts.getKeysAndVals(newsubsts_vec);
         for (int i = 0; i < newsubsts_vec.size(); ++i) {
             PTRef key = newsubsts_vec[i].key;
-            if (!allsubsts.has(key)) {
+            if (!allsubsts.has(key) && newsubsts_vec[i].data.sgn == l_True) {
                 allsubsts.insert(key, newsubsts_vec[i].data);
             }
         }
@@ -147,7 +147,7 @@ bool Theory::computeSubstitutions(const PTRef coll_f, const vec<PFRef>& frames, 
         if (!cont) break;
     }
 #ifdef SIMPLIFY_DEBUG
-    cerr << "Number of substitutions: " << all_units_vec.size() << endl;
+    cerr << "Number of substitutions: " << allsubsts.elems() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
     substs.getKeysAndVals(subst_vec);
     printf("Substitutions:\n");
@@ -271,6 +271,22 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
         getLogic().dumpFormulaToFile(s, pfstore[frames[i]].root);
     }
     getLogic().dumpChecksatToFile(s);
+}
+
+PTRef Theory::getSubstitutionsFormulaFromUnits(Map<PTRef, lbool, PTRefHash> & unitsMap) {
+    vec<Map<PTRef, lbool, PTRefHash>::Pair> units;
+    unitsMap.getKeysAndVals(units);
+    vec<PTRef> substs_vec;
+    for (int i = 0; i < units.size(); i++) {
+        if (units[i].data == l_True) {
+            substs_vec.push(units[i].key);
+        }
+        else if (getLogic().isBoolAtom(units[i].key) && units[i].data == l_False) {
+            substs_vec.push(getLogic().mkNot(units[i].key));
+        }
+    }
+    PTRef substs_formula = getLogic().mkAnd(substs_vec);
+    return substs_formula;
 }
 
 //MOVINGFROMHEADER

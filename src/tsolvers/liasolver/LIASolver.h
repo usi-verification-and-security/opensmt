@@ -67,8 +67,8 @@ protected:
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
 
-    LABoundStore::BoundValuePair getBoundsValue(const Real & c, bool strict) override;
-
+    virtual bool isIntVar(LVRef v) const override { return int_vars_map.has(v); }
+    virtual void markVarAsInt(LVRef v) override;
 
 
     opensmt::Integer2 getInt(PTRef r) ;
