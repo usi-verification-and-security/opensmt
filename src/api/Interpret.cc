@@ -31,12 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
-#if !defined(USE_READLINE)
-#include <editline/readline.h>
-#else
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
+
 #include "Interpret.h"
 #include "Theory.h"
 #include "UFLRATheory.h"
@@ -1212,76 +1207,6 @@ int Interpret::interpPipe() {
     }
     free(buf);
     return 0;
-}
-
-// For reading with readline.
-int Interpret::interpInteractive(FILE*) {
-    char *line_read = (char *) NULL;
-    bool done = false;
-    int rval = 0;
-    int par = 0;
-    int pb_cap = 1;
-    int pb_sz = 0;
-    char *parse_buf = (char *) malloc(pb_cap);
-
-    while (!done) {
-        if (line_read) {
-            free(line_read);
-            line_read = (char *) NULL;
-        }
-
-        if (par == 0)
-            line_read = readline("> ");
-        else if (par > 0)
-            line_read = readline("... ");
-        else {
-            notify_formatted(true, "interactive reader: unbalanced parentheses");
-            parse_buf[pb_sz-1] = 0; // replace newline with end of string
-            add_history(parse_buf);
-            pb_sz = 0;
-            par = 0;
-        }
-
-        if (line_read && *line_read) {
-            for (int i = 0; line_read[i] != '\0'; i++) {
-                char c = line_read[i];
-                if (c == '(') par ++;
-                if (c == ')') par --;
-                while (pb_cap - 2 < pb_sz) { // the next char and terminating zero
-                    pb_cap *= 2;
-                    parse_buf = (char*) realloc(parse_buf, pb_cap);
-                }
-                parse_buf[pb_sz ++] = c;
-            }
-            if (par == 0) {
-                parse_buf[pb_sz] = '\0';
-                // Parse starting from the command nonterminal
-                // Parsing should be done from a string that I get from the readline
-                // library.
-                Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
-                if (rval != 0)
-                    notify_formatted(true, "scanner");
-                else {
-                    const ASTNode* r = context.getRoot();
-                    execute(r);
-                    done = f_exit;
-                }
-                add_history(parse_buf);
-                pb_sz = 0;
-            }
-            else { // add the line break
-                while (pb_cap - 2 < pb_sz) { // the next char and terminating zero
-                    pb_cap *= 2;
-                    parse_buf = (char*) realloc(parse_buf, pb_cap);
-                }
-                parse_buf[pb_sz ++] = '\n';
-            }
-        }
-    }
-    if (parse_buf) free(parse_buf);
-    if (line_read) free(line_read);
-    return rval;
 }
 
 // The Traversal of the node is unnecessary and a result of a confusion

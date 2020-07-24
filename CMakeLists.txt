@@ -41,11 +41,13 @@ option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
 
-if (NOT USE_READLINE)
-  find_package(LibEdit REQUIRED)
-else()
-  find_package(Readline REQUIRED)
-endif()
+if (BUILD_EXECUTABLES)
+    if (NOT USE_READLINE)
+      find_package(LibEdit REQUIRED)
+    else()
+      find_package(Readline REQUIRED)
+    endif()
+endif(BUILD_EXECUTABLES)
 
 find_package(GMP REQUIRED)
 
