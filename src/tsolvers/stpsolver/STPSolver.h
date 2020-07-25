@@ -16,7 +16,7 @@
 class STPSolver : public TSolver {
 private:
     struct ParsedPTRef {
-        // represents inequalities of the form 'y <= x + c'
+        // represents inequalities of the form 'y - x <= c'
         // this corresponds to edges 'y --c--> x'
         PTRef x;            // destination of the edge
         PTRef y;            // source of the edge
