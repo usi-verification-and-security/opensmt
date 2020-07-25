@@ -17,12 +17,11 @@ STPSolver::STPSolver(SMTConfig & c, LALogic & l)
 
 STPSolver::~STPSolver() = default;
 
-// TODO: Ignore terms we don't care about instead of throwing an exception?
 STPSolver::ParsedPTRef STPSolver::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
-    assert( logic.isNumConst(leq[0]) );  // TODO: Can the inequality be reversed?
+    assert( logic.isNumConst(leq[0]) );
     auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
     assert( con.isInteger() );  // we're dealing with IDL for now
     auto c = static_cast<ptrdiff_t>(con.get_d());
@@ -71,7 +70,6 @@ void STPSolver::declareAtom(PTRef tr) {
     // or negatively
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
     // to some constant
-    // TODO: store information about the term tr if necessary
 
     if (isKnown(tr)) { return; }
     setKnown(tr);
@@ -109,9 +107,7 @@ bool STPSolver::assertLit(PtAsgn asgn) {
     // Actually asserting an atom to the solver - adding a new constraint to the current set
     // asgn.tr is the atom to add
     // asgn.sgn is the polarity (positive or negative)
-    // TODO: process the addition of the constraint to the current set of constraints
-    //      Return false if immediate conflict has been detected, otherwise return true
-    //      Postpone actual checking of consistency of the extended set of constraints until call to the "check" method
+
     if (inv_asgn != PtAsgn_Undef) return false;            // no need to check anything if we're inconsistent already
 
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
@@ -124,7 +120,7 @@ bool STPSolver::assertLit(PtAsgn asgn) {
 
     // literal was already assigned or found as a consequence
     if (graphMgr.isTrue(set)) {
-        return true;    // TODO: if a deduction is explicitly set, should we remember that?
+        return true;
     }
     // negation of literal was already assigned or found as a consequence
     if (graphMgr.isTrue(nset)) {
@@ -157,7 +153,6 @@ bool STPSolver::assertLit(PtAsgn asgn) {
 TRes STPSolver::check(bool b) {
     // The main method checking the consistency of the current set of constraints
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
-    // TODO: implement the main check of consistency
 
     // we check the validity of each assertLit, so this just returns the consistency of current state
     return inv_asgn == PtAsgn_Undef ? TRes::SAT : TRes::UNSAT;
@@ -203,7 +198,7 @@ void STPSolver::popBacktrackPoints(unsigned int i) {
     backtrack_points.shrink(1);
     // no need to modify mapper or store - the values stored there can't change
     for (size_t j = 0; j < i; ++j)
-        TSolver::popBacktrackPoint(); // calling TSolver::popBacktrackPoints(i) would result in an infinite loop
+        TSolver::popBacktrackPoint(); // calling TSolver::popBacktrackPoints(i) would result in a stack overflow
 }
 
 ValPair STPSolver::getValue(PTRef pt) {
@@ -231,7 +226,7 @@ void STPSolver::computeModel() {
 void STPSolver::getConflict(bool b, vec<PtAsgn> & vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
-    if (inv_asgn == PtAsgn_Undef) return;  // TODO: how to handle call in consistent state?
+    if (inv_asgn == PtAsgn_Undef) return;
     vec.push(inv_asgn);
     EdgeRef e = mapper.getEdgeRef(inv_asgn.tr);
     if (inv_asgn.sgn == l_True) {

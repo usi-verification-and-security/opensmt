@@ -99,7 +99,7 @@ STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forwa
                 visited[next.x] = true;
                 open.push(next);
                 length[next.x] = length[curr.x] + edge.cost;
-                total += static_cast<uint32_t>(mapper.edgesOf(next).size());
+                total += mapper.edgesOf(next).size();
             } else if (length[next.x] > length[curr.x] + edge.cost) {
                 length[next.x] = length[curr.x] + edge.cost;
                 open.push(next);
@@ -161,7 +161,7 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
             if (eRef == e) continue;
             const Edge &edge = store.getEdge(eRef);
             if (edge.setTime > expl.setTime) continue;
-            if (mapper.getAssignment(eRef) == PtAsgn_Undef) continue;
+            assert(mapper.getAssignment(eRef) != PtAsgn_Undef); // deductions aren't stored in graph
 
             auto next = edge.to;
             if (visited[next.x] == EdgeRef_Undef || length[next.x] > length[curr.x] + edge.cost) {

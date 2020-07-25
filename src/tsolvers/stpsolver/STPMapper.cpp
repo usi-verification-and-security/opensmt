@@ -54,7 +54,8 @@ PtAsgn STPMapper::getAssignment(EdgeRef edge) const {
 
 // returns the VertexRef corresponding to a PTRef, if it exists
 VertexRef STPMapper::getVertRef(PTRef var) const {
-    if (var == PTRef_Undef) return STPStore::zero(); // missing variables in inequality are replaced with 'zero' variable
+    // missing variables in inequality are replaced with 'zero' variable
+    if (var == PTRef_Undef) return STPStore::zero();
     uint32_t idx = Idx(logic.getPterm(var).getId());
     return varToVertRef.size() <= idx ? VertRef_Undef : varToVertRef[idx];
 }

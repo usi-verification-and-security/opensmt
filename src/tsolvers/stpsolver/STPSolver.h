@@ -20,7 +20,7 @@ private:
         // this corresponds to edges 'y --c--> x'
         PTRef x;            // destination of the edge
         PTRef y;            // source of the edge
-        ptrdiff_t c;  // cost of the edge
+        ptrdiff_t c;        // cost of the edge
     };
 
     LALogic& logic;
