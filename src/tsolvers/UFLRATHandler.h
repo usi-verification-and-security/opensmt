@@ -39,7 +39,7 @@ class UFLRATHandler : public LRATHandler
     LRASolver     *lrasolver;
     Egraph        *ufsolver;
   public:
-    UFLRATHandler(SMTConfig & c, LRALogic & l, TermMapper & tmap);
+    UFLRATHandler(SMTConfig & c, LRALogic & l);
     virtual ~UFLRATHandler();
     virtual Logic& getLogic();
 

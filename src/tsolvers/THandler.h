@@ -34,13 +34,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class THandler
 {
 private:
-    Theory &            theory;
-    TermMapper &        tmap;                     // Mappings between TRefs and Lits
+    Theory &          theory;
+    TermMapper        tmap;                     // Mappings between TRefs and Lits
 public:
 
     THandler(Theory & tsh)
     : theory             (tsh)
-    , tmap               (tsh.getTmap())
+    , tmap               (tsh.getLogic())
     , checked_trail_size (0)
     { }
 

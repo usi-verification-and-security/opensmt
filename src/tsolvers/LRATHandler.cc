@@ -2,8 +2,8 @@
 #include "TreeOps.h"
 #include "lrasolver/LRASolver.h"
 
-LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap)
-        : TSolverHandler(c, tmap)
+LRATHandler::LRATHandler(SMTConfig & c, LRALogic & l)
+        : TSolverHandler(c)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic);

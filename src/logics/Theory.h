@@ -164,7 +164,6 @@ class Theory
   public:
 
     PushFrameAllocator      pfstore {1024};
-    virtual TermMapper     &getTmap() = 0;
     virtual Logic          &getLogic()              = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
@@ -177,15 +176,12 @@ class LRATheory : public Theory
 {
   protected:
     LRALogic    lralogic;
-    TermMapper  tmap;
     LRATHandler lratshandler;
   public:
-    virtual TermMapper& getTmap();// { return tmap; }
     LRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
-        , tmap(lralogic)
-        , lratshandler(c, lralogic, tmap)
+        , lratshandler(c, lralogic)
     { c.setLogic(opensmt::Logic_t::QF_LRA); }
     ~LRATheory() {};
     virtual LRALogic&    getLogic();//    { return lralogic; }
@@ -197,15 +193,12 @@ class LIATheory : public Theory
 {
 protected:
     LIALogic    lialogic;
-    TermMapper  tmap;
     LIATHandler liatshandler;
 public:
-    virtual TermMapper& getTmap();// { return tmap; }
     LIATheory(SMTConfig& c)
     : Theory(c)
     , lialogic(c)
-    , tmap(lialogic)
-    , liatshandler(c, lialogic, tmap)
+    , liatshandler(c, lialogic)
     { c.setLogic(opensmt::Logic_t::QF_LIA); }
     ~LIATheory() {};
     virtual LIALogic&    getLogic();//    { return lialogic; }
@@ -217,17 +210,14 @@ class UFTheory : public Theory
 {
   private:
     Logic      uflogic;
-    TermMapper  tmap;
     UFTHandler tshandler;
   public:
     UFTheory(SMTConfig& c)
         : Theory(c)
         , uflogic(c)
-        , tmap(uflogic)
-        , tshandler(c, uflogic, tmap)
+        , tshandler(c, uflogic)
     { c.setLogic(opensmt::Logic_t::QF_UF); }
     ~UFTheory() {}
-    virtual TermMapper&  getTmap()              { return tmap; }
     virtual Logic&       getLogic()             { return uflogic; }
     virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
@@ -238,18 +228,15 @@ class CUFTheory : public Theory
 {
   private:
     BVLogic     cuflogic;
-    TermMapper  tmap;
     CUFTHandler tshandler;
     static const int i_default_bitwidth;
   public:
     CUFTheory(SMTConfig& c, int width = i_default_bitwidth)
       : Theory(c)
       , cuflogic(c, width)
-      , tmap(cuflogic)
-      , tshandler(c, cuflogic, tmap)
+      , tshandler(c, cuflogic)
     { c.setLogic(opensmt::Logic_t::QF_CUF); }
     ~CUFTheory() {}
-    virtual TermMapper& getTmap()            { return tmap; }
     virtual BVLogic&  getLogic()             { return cuflogic; }
     virtual CUFTHandler& getTSolverHandler() { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }

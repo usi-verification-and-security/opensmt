@@ -42,17 +42,14 @@ class TSolverHandler
     friend THandler;
 protected:
     SMTConfig     &config;
-public:
-    TermMapper    &tmap;
 protected:
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
     Map<PTRef,PtAsgn,PTRefHash> substs;
 
-    TSolverHandler(SMTConfig & c, TermMapper & tmap)
+    TSolverHandler(SMTConfig & c)
         : config(c)
-        , tmap(tmap)
     {
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];

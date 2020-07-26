@@ -3,8 +3,8 @@
 #include "InterpolatingEgraph.h"
 #include "Egraph.h"
 
-UFTHandler::UFTHandler(SMTConfig & c, Logic & l, TermMapper & tmap)
-    : TSolverHandler(c, tmap)
+UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
+    : TSolverHandler(c)
     , logic(l)
 {
     egraph = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic)

@@ -41,7 +41,7 @@ class UFTHandler : public TSolverHandler
   protected:
     Egraph*    egraph;
   public:
-    UFTHandler(SMTConfig & c, Logic & l, TermMapper & tmap);
+    UFTHandler(SMTConfig & c, Logic & l);
     virtual ~UFTHandler();
     // This is for simplification, needed to run the theory solver code
     // as if it were running inside a SAT solver.

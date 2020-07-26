@@ -4,8 +4,8 @@
 #include "InterpolatingEgraph.h"
 #include "Egraph.h"
 
-UFLRATHandler::UFLRATHandler(SMTConfig & c, LRALogic & l, TermMapper & tmap)
-        : LRATHandler(c, l, tmap)
+UFLRATHandler::UFLRATHandler(SMTConfig & c, LRALogic & l)
+        : LRATHandler(c, l)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic);

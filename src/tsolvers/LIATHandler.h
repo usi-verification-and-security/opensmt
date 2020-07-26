@@ -14,7 +14,7 @@ class LIATHandler : public TSolverHandler
     LIALogic& logic;
     LIASolver *liasolver;
   public:
-    LIATHandler(SMTConfig & c, LIALogic & l, TermMapper & tmap);
+    LIATHandler(SMTConfig & c, LIALogic & l);
     virtual ~LIATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;

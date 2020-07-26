@@ -514,9 +514,9 @@ public:
 
 private:
 
-    inline Lit PTRefToLit(PTRef ref) const {return theory.getTmap().getLit(ref);}
-    inline Var PTRefToVar(PTRef ref) const { return theory.getTmap().getVar(ref); }
-    inline PTRef varToPTRef(Var v) const { return theory.getTmap().varToPTRef(v); }
+    inline Lit PTRefToLit(PTRef ref) const {return thandler->getTMap().getLit(ref);}
+    inline Var PTRefToVar(PTRef ref) const { return thandler->getTMap().getVar(ref); }
+    inline PTRef varToPTRef(Var v) const { return thandler->getTMap().varToPTRef(v); }
 
     void initTSolver();
     void clearTSolver();

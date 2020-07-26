@@ -33,15 +33,12 @@ class UFLRATheory : public Theory
 {
   private:
     LRALogic      lralogic;
-    TermMapper    tmap;
     UFLRATHandler uflratshandler;
   public:
-    virtual TermMapper& getTmap() { return tmap; }
     UFLRATheory(SMTConfig& c)
         : Theory(c)
         , lralogic(c)
-        , tmap(lralogic)
-        , uflratshandler(c, lralogic, tmap)
+        , uflratshandler(c, lralogic)
     { }
     virtual LRALogic& getLogic() { return lralogic; }
     virtual UFLRATHandler& getTSolverHandler() { return uflratshandler; }

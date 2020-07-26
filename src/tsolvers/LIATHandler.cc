@@ -2,8 +2,8 @@
 #include "TreeOps.h"
 #include <liasolver/LIASolver.h>
 
-LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l, TermMapper & tmap)
-        : TSolverHandler(c, tmap)
+LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l)
+        : TSolverHandler(c)
         , logic(l)
 {
     liasolver = new LIASolver(config, logic);

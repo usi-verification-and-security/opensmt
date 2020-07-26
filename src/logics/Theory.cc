@@ -148,11 +148,3 @@ PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
     return logic.mkAnd(args);
 }
 
-TermMapper&  LRATheory::getTmap() { return tmap; }
-LRALogic&    LRATheory::getLogic()    { return lralogic; }
-LRATHandler& LRATheory::getTSolverHandler() { return lratshandler; }
-
-TermMapper&  LIATheory::getTmap() { return tmap; }
-LIALogic&    LIATheory::getLogic()    { return lialogic; }
-LIATHandler& LIATheory::getTSolverHandler() { return liatshandler; }
-
