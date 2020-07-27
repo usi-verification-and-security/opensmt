@@ -98,7 +98,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , forced_split          (lit_Undef)
 
     , ok                    (true)
-    , base_frame_conflict   (true)
+    , conflict_frame        (0)
     , n_clauses             (0)
     , cla_inc               (1)
     , var_inc               (1)
@@ -1687,7 +1687,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
-                    base_frame_conflict = false;
+                    conflict_frame = decisionLevel() + 1;
                     return zeroLevelConflictHandler();
                 }
                 else
