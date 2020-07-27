@@ -224,12 +224,6 @@ Logic::~Logic()
 #endif // STATISTICS
 }
 
-const opensmt::Logic_t
-Logic::getLogic() const
-{
-    return config.getLogic();
-}
-
 const char*
 Logic::getName() const
 {

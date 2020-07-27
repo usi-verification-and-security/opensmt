@@ -74,7 +74,6 @@ public:
             cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize()/2 << "\n";
     }
     virtual const char*   getName()              const override { return "QF_LRA"; }
-    virtual const opensmt::Logic_t getLogic()    const override { return opensmt::Logic_t::QF_LRA; }
 
     virtual bool isBuiltinSort  (SRef sr) const override { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }

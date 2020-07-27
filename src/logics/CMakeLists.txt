@@ -1,6 +1,7 @@
 add_library(logics OBJECT "")
 
 target_sources(logics
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LogicFactory.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFLogic.cc"

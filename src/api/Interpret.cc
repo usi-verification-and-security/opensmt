@@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "smt2tokens.h"
 #include "MainSolver.h"
+#include "LogicFactory.h"
 
 #ifdef ITP_DEBUG
 #include "TreeOps.h"
@@ -55,10 +56,6 @@ uint32_t LetFrame::id_cnt = 0;
  ***********************************************************/
 
 Interpret::~Interpret() {
-    if(!parse_only)
-    {
-        delete main_solver;
-    }
     for (int i = 0; i < term_names.size(); ++i) {
         free(term_names[i]);
     }
@@ -172,50 +169,16 @@ void Interpret::interp(ASTNode& n) {
             if (isInitialized()) {
                 notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName());
             } else {
-                Theory* theory = nullptr;
                 auto logic_type = getLogicFromString(logic_name);
-                switch (logic_type) {
-                    case Logic_t::QF_UF:
-                    {
-                        theory = new UFTheory(config);
-                        break;
-                    }
-                    case Logic_t::QF_CUF:
-                    {
-                        theory = new CUFTheory(config);
-                        break;
-                    }
-                    case Logic_t::QF_LRA:
-                    case Logic_t::QF_RDL:
-                    {
-                        theory = new LRATheory(config);
-                        break;
-                    }
-                    case Logic_t::QF_LIA:
-                    case Logic_t::QF_IDL:
-                    {
-                        theory = new LIATheory(config);
-                        break;
-                    }
-                    case Logic_t::QF_UFLRA:
-                    {
-                        theory = new UFLRATheory(config);
-                        break;
-                    }
-                    case Logic_t ::UNDEF:
-                        notify_formatted(true, "unknown logic %s", logic_name);
-                        break;
-                    default:
-                        assert(false);
-                        throw std::logic_error{"Unreachable code - error in logic selection"};
-
-                };
-                if (theory) {
-                    main_solver = new MainSolver(std::unique_ptr<Theory>(theory), config, std::string(logic_name) + " solver");
-                    main_solver->initialize();
-                    notify_success();
+                if (logic_type == Logic_t::UNDEF) {
+                    notify_formatted(true, "unknown logic %s", logic_name);
+                    break;
                 }
-            }
+                initializeLogic(logic_type);
+                main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
+                main_solver->initialize();
+                notify_success();
+                }
             break;
         }
         case t_setinfo:
@@ -1281,6 +1244,11 @@ int Interpret::get_assertion_index(PTRef ref) {
         if (ref == assertions[i]) { return i;}
     }
     return -1;
+}
+
+void Interpret::initializeLogic(opensmt::Logic_t logicType) {
+    config.setLogic(logicType);
+    logic.reset(opensmt::LogicFactory::getInstance(config));
 }
 
 

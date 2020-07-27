@@ -47,8 +47,6 @@ LIALogic::LIALogic(SMTConfig& c) :
     char* m;
     char** msg = &m;
 
-    logic_type = opensmt::Logic_t::QF_LIA;
-
     sort_INTEGER = declareSort(s_sort_integer, msg);
     ufsorts.remove(sort_INTEGER);
 

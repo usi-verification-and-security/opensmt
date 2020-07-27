@@ -114,7 +114,6 @@ class CUFLogic: public Logic
     CUFLogic (SMTConfig& c);
     ~CUFLogic();
     virtual const char*   getName()  const { return "QF_CUF"; }
-    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     using Logic::mkConst;

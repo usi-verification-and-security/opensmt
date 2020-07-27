@@ -175,72 +175,72 @@ class Theory
 class LRATheory : public Theory
 {
   protected:
-    LRALogic    lralogic;
+    LRALogic&    lralogic;
     LRATHandler lratshandler;
   public:
-    LRATheory(SMTConfig& c)
+    LRATheory(SMTConfig & c, LRALogic & logic)
         : Theory(c)
-        , lralogic(c)
+        , lralogic(logic)
         , lratshandler(c, lralogic)
-    { c.setLogic(opensmt::Logic_t::QF_LRA); }
+    { }
     ~LRATheory() {};
-    virtual LRALogic&    getLogic();//    { return lralogic; }
-    virtual LRATHandler& getTSolverHandler();// { return lratshandler; }
-    virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
+    virtual LRALogic&    getLogic() override { return lralogic; }
+    virtual LRATHandler& getTSolverHandler() override { return lratshandler; }
+    virtual bool simplify(const vec<PFRef>&, int) override; // Theory specific simplifications
 };
 
 class LIATheory : public Theory
 {
 protected:
-    LIALogic    lialogic;
+    LIALogic &  lialogic;
     LIATHandler liatshandler;
 public:
-    LIATheory(SMTConfig& c)
+    LIATheory(SMTConfig & c, LIALogic & logic)
     : Theory(c)
-    , lialogic(c)
+    , lialogic(logic)
     , liatshandler(c, lialogic)
-    { c.setLogic(opensmt::Logic_t::QF_LIA); }
+    { }
     ~LIATheory() {};
-    virtual LIALogic&    getLogic();//    { return lialogic; }
-    virtual LIATHandler& getTSolverHandler();// { return liatshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual LIALogic& getLogic() override { return lialogic; }
+    virtual LIATHandler& getTSolverHandler() override { return liatshandler; }
+    virtual bool simplify(const vec<PFRef>&, int) override;
 };
 
 class UFTheory : public Theory
 {
   private:
-    Logic      uflogic;
+    Logic &    uflogic;
     UFTHandler tshandler;
   public:
-    UFTheory(SMTConfig& c)
+    UFTheory(SMTConfig & c, Logic & logic )
         : Theory(c)
-        , uflogic(c)
+        , uflogic(logic)
         , tshandler(c, uflogic)
-    { c.setLogic(opensmt::Logic_t::QF_UF); }
+    { }
     ~UFTheory() {}
-    virtual Logic&       getLogic()             { return uflogic; }
-    virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
+    virtual Logic& getLogic() override { return uflogic; }
+    virtual UFTHandler&  getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, int) override;
 };
 
 class CUFTheory : public Theory
 {
   private:
-    BVLogic     cuflogic;
+    BVLogic &   cuflogic;
     CUFTHandler tshandler;
     static const int i_default_bitwidth;
   public:
-    CUFTheory(SMTConfig& c, int width = i_default_bitwidth)
+    CUFTheory(SMTConfig & c, BVLogic & logic)
       : Theory(c)
-      , cuflogic(c, width)
+      , cuflogic(logic)
       , tshandler(c, cuflogic)
-    { c.setLogic(opensmt::Logic_t::QF_CUF); }
+    { }
     ~CUFTheory() {}
-    virtual BVLogic&  getLogic()             { return cuflogic; }
-    virtual CUFTHandler& getTSolverHandler() { return tshandler; }
+    virtual BVLogic&  getLogic() override { return cuflogic; }
+    virtual CUFTHandler& getTSolverHandler() override { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, int) override;
 };
 
 

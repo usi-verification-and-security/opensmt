@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
 #include "GhostSMTSolver.h"
+#include "UFLRATheory.h"
 
 
 #include <thread>
@@ -451,5 +452,53 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
         solver = new SimpSMTSolver(config, thandler);
 
     return std::unique_ptr<SimpSMTSolver>(solver);
+}
+
+std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
+    using ReasoningEngineType = opensmt::Logic_t;
+    ReasoningEngineType reasoningEngineType = config.getLogic();
+    Theory* theory = nullptr;
+    switch (reasoningEngineType) {
+        case ReasoningEngineType::QF_UF:
+        {
+            theory = new UFTheory(config, logic);
+            break;
+        }
+        case ReasoningEngineType::QF_CUF:
+        {
+            BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
+            theory = new CUFTheory(config, bvLogic);
+            break;
+        }
+        case ReasoningEngineType::QF_LRA:
+        case ReasoningEngineType::QF_RDL:
+        {
+            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            theory = new LRATheory(config, lraLogic);
+            break;
+        }
+        case ReasoningEngineType::QF_LIA:
+        case ReasoningEngineType::QF_IDL:
+        {
+            LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
+            theory = new LIATheory(config, liaLogic);
+            break;
+        }
+        case ReasoningEngineType::QF_UFLRA:
+        {
+            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            theory = new UFLRATheory(config, lraLogic);
+            break;
+        }
+        case ReasoningEngineType::UNDEF:
+            throw std::logic_error{"Error in creating reasoning engine: Engige type not specified"};
+            break;
+        default:
+            assert(false);
+            throw std::logic_error{"Unreachable code - error in logic selection"};
+
+    };
+
+    return std::unique_ptr<Theory>(theory);
 }
 

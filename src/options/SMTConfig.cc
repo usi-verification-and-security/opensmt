@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SMTConfig.h"
 
+#include <array>
+
 void ASTNode::print(std::ostream& o, int indent) {
         for (int i = 0; i < indent; i++)
             printf(" ");
@@ -74,6 +76,25 @@ const char* ASTNode::typestr[] = {
     , "info-flag"       , "info-flag-list"              // INFO
 };
 
+std::array<std::string, 19> logicToName = {"Undef", "Empty", "QF_UF", "QF_CUF", "QF_BV", "QF_RDL", "QF_IDL",
+                               "QF_LRA", "QF_LIA", "QF_UFRDL", "QF_UFIDL", "QF_UFLRA", "QF_UFLIA",
+                               "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_BOOL", "QF_AUFBV", "QF_CT"};
+
+opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
+    if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
+    if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
+    if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;
+    if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
+    if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
+    if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
+    if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
+    return opensmt::Logic_t::UNDEF;
+}
+
+std::string opensmt::getStringFromLogic(const opensmt::Logic_t logic) {
+    return logicToName[static_cast<int>(logic)];
+}
+
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
  *********************************************************************/
@@ -86,7 +107,7 @@ ConfValue::ConfValue(const char* s) {
 ConfValue::ConfValue(const ASTNode& s_expr_n) {
     if (s_expr_n.getType() == SEXPRL_T) {
         type = O_LIST;
-        configs = new list<ConfValue*>;
+        configs = new std::list<ConfValue*>;
         for (auto i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
             configs->push_back(new ConfValue(**i));
     }

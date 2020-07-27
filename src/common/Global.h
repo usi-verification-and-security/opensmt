@@ -308,16 +308,6 @@ inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT(B) ( 1 << (B) )
 
-
-    enum class Logic_t : int {
-        UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_UFRDL, QF_UFIDL,
-        QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_BOOL, QF_AUFBV, QF_CT
-    };
-
-    Logic_t getLogicFromString(const std::string& name);
-
-    std::string getStringFromLogic(const Logic_t logic);
-
     static inline double cpuTime(void)
     {
         struct rusage ru;

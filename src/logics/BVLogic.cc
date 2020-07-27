@@ -85,7 +85,6 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     , term_BV_ONE(PTRef_Undef)
     , bitwidth(width)
 {
-    logic_type = opensmt::Logic_t::QF_BV;
     char* msg;
     sort_BVNUM = declareSort(s_sort_bvnum, &msg);
 

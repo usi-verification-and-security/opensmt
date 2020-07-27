@@ -146,11 +146,13 @@ class MainSolver
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
+    static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
+
   public:
 
-    MainSolver(std::unique_ptr<Theory> theory, SMTConfig& conf, std::string name)
+    MainSolver(Logic& logic, SMTConfig& conf, std::string name)
         :
-        theory(std::move(theory)),
+        theory(createTheory(logic, conf)),
         thandler(getTheory()),
         smt_solver(createInnerSolver(conf, thandler)),
         logic(thandler.getLogic()),

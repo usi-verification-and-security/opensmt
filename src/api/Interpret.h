@@ -30,13 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "PtStructs.h"
 #include "SymRef.h"
-
-// forward declarations
-class Logic;
-class Theory;
-class SimpSMTSolver;
-class MainSolver;
-class THandler;
+#include "Logic.h"
+#include "MainSolver.h"
 
 class LetFrame {
   private:
@@ -64,7 +59,8 @@ class LetFrame {
 class Interpret {
   protected:
     SMTConfig &     config;
-    MainSolver *    main_solver;
+    std::unique_ptr<Logic> logic;
+    std::unique_ptr<MainSolver> main_solver;
 
     bool            f_exit;
     bool            parse_only;
@@ -79,6 +75,7 @@ class Interpret {
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
 
+    void                        initializeLogic(opensmt::Logic_t logicType);
     bool                        isInitialized() const { return config.getLogic() != opensmt::Logic_t::UNDEF; }
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);

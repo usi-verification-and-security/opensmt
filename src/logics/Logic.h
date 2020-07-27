@@ -120,7 +120,6 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
-    opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_ANON;
@@ -192,7 +191,6 @@ class Logic {
 
     virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
 
-    virtual const opensmt::Logic_t getLogic() const;
     virtual const char * getName() const;
 
     // Identifiers

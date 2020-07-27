@@ -27,11 +27,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SMTCONFIG_H
 #define SMTCONFIG_H
 
-#include "Global.h"
 #include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
+#include "Global.h"
+
 #include <libgen.h>
+
+namespace opensmt {
+enum class Logic_t : int {
+    UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_UFRDL, QF_UFIDL,
+    QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_BOOL, QF_AUFBV, QF_CT
+};
+
+Logic_t getLogicFromString(const std::string & name);
+
+std::string getStringFromLogic(const Logic_t logic);
+}
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -105,7 +117,7 @@ enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATT
 class ConfValue {
   public:
     ConfType type;
-    union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
+    union { char* strval; int numval; double decval; uint32_t unumval; std::list<ConfValue*>* configs; };
     ConfValue() : type(O_EMPTY), strval(NULL) {};
     ConfValue(const ASTNode& s_expr_n);
     ConfValue(int i) : type(O_NUM), numval(i) {};
@@ -399,14 +411,14 @@ public:
   void parseConfig      ( char * );
   void parseCMDLine     ( int argc, char * argv[ ] );
   void printHelp        ( );
-  void printConfig      ( ostream & out );
+  void printConfig      ( std::ostream & out );
 
   inline bool      isInit      ( ) { return logic != opensmt::Logic_t::UNDEF; }
 
-  inline ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
-  inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
-  inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
-  inline int       getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
+  inline std::ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
+  inline std::ostream & getRegularOut   ( ) { return rocset ? out : std::cout; }
+  inline std::ostream & getDiagnosticOut( ) { return docset ? err : std::cerr; }
+  inline int  getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
 
@@ -896,8 +908,8 @@ public:
 
 private:
 
-  ofstream     stats_out;                    // File for statistics
-  ofstream     out;                          // Regular output channel
-  ofstream     err;                          // Diagnostic output channel
+  std::ofstream     stats_out;                    // File for statistics
+  std::ofstream     out;                          // Regular output channel
+  std::ofstream     err;                          // Diagnostic output channel
 };
 #endif
