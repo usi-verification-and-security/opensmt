@@ -1687,7 +1687,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
-                    conflict_frame = decisionLevel() + 1;
+                    int max = 0;
+                    for (Lit q : conflict) {
+                        if (!sign(q)) {
+                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                        }
+                    }
+                    conflict_frame = max+1;
                     return zeroLevelConflictHandler();
                 }
                 else
@@ -2088,7 +2094,14 @@ void CoreSMTSolver::garbageCollect()
 
 void CoreSMTSolver::setAssumptions(vec<Lit> const & assumps) {
     assumptions.clear();
+    assumptions_order.clear();
     assumps.copyTo(assumptions);
+    int active_assumptions = 0;
+    for (int i = 0; i < assumptions.size(); i++) {
+        if (sign(assumptions[i])) {
+            assumptions_order.insert(var(assumps[i]), active_assumptions++);
+        }
+    }
     if(proof) {
         proof->setCurrentAssumptionLiterals(&assumps[0], &assumps[0] + assumps.size());
     }
