@@ -1077,8 +1077,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                     out_conflict.push(~trail[i]);
                     if (logsProofForInterpolation()) {
                         assert(level(x) > 0);
-                        assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
-                               != &assumptions[0] + assumptions.size());
+                        assert(std::find(assumptions.begin(), assumptions.end(), trail[i]) != assumptions.end());
                         // Add a resolution step with unit clauses for this assumption
                         CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
                         proof->addResolutionStep(assumptionUnitClause, x);
@@ -1117,7 +1116,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     }
     assert(seen[var(p)] == 0);
     seen[var(p)] = 0;
-     if (logsProofForInterpolation()) {
+    if (logsProofForInterpolation()) {
         // MB: Hopefully we have resolved away all literals including assumptions
         proof->endChain(CRef_Undef);
     }
