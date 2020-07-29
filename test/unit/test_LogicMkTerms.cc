@@ -3,19 +3,14 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
-    SMTConfig config;
     Logic logic;
-    LogicMkTermsTest(): logic{config} {}
+    LogicMkTermsTest(): logic{} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
-    SMTConfig config;
-    Logic logic{config};
-
     SRef ufsort = logic.declareSort("U", nullptr);
     PTRef x = logic.mkVar(ufsort, "x");
     PTRef y = logic.mkVar(ufsort, "y");
@@ -69,9 +64,6 @@ TEST_F(LogicMkTermsTest, test_Distinct){
 }
 
 TEST_F(LogicMkTermsTest, test_ManyDistinct) {
-    SMTConfig config;
-    Logic logic{config};
-
     SRef ufsort = logic.declareSort("U", nullptr);
     vec<PTRef> names;
     for (int i = 0; i < 9; i++) {

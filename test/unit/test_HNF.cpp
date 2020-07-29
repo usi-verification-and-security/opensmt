@@ -5,14 +5,12 @@
 #include <Sort.h>
 #include <liasolver/Matrix.h>
 #include <LIALogic.h>
-#include <SMTConfig.h>
 
 class HNF_test : public ::testing::Test {
 protected:
-    HNF_test() : logic{config}, vecStore(va, logic), ms(vecStore) {}
+    HNF_test() : logic{}, vecStore(va, logic), ms(vecStore) {}
     virtual void SetUp() {
     }
-    SMTConfig config;
     LIALogic logic;
     LAVecAllocator va;
     LAVecStore vecStore;

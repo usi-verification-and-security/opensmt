@@ -41,7 +41,7 @@ protected:
     bool split_eq;
 
 public:
-    LIALogic (SMTConfig& c);
+    LIALogic();
     ~LIALogic () {
         for (int i = 0; i < integers.size(); i++) delete integers[i];
     }

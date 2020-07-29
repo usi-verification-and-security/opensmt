@@ -36,8 +36,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 class SStore;
-struct SMTConfig;
-
 
 class Logic {
     class TFun {
@@ -115,7 +113,6 @@ class Logic {
     } Ite;
     Map<PTRef,Ite,PTRefHash,Equal<PTRef>>    top_level_ites;
 
-    SMTConfig&          config;
     IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
@@ -182,7 +179,7 @@ class Logic {
     static const char*  s_ite_prefix;
     static const char*  s_framev_prefix;
 
-    Logic(SMTConfig& c);
+    Logic();
     virtual ~Logic();
 
     bool isIteVar(PTRef tr) const;// { return top_level_ites.has(tr); }

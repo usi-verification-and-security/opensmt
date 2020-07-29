@@ -5,12 +5,10 @@
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 
 TEST(SimplifyUnderAssignment_test, test_Simple_Conjunction)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a, logic.mkOr(
@@ -23,8 +21,7 @@ TEST(SimplifyUnderAssignment_test, test_Simple_Conjunction)
 
 TEST(SimplifyUnderAssignment_test, test_ConjunctionToConstant)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a, logic.mkAnd(logic.mkNot(a), b));
@@ -34,8 +31,7 @@ TEST(SimplifyUnderAssignment_test, test_ConjunctionToConstant)
 
 TEST(SimplifyUnderAssignment_test, test_DisjunctionToConstant)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef disj = logic.mkOr(a, logic.mkOr(logic.mkNot(a), b));
@@ -45,8 +41,7 @@ TEST(SimplifyUnderAssignment_test, test_DisjunctionToConstant)
 
 TEST(SimplifyUnderAssignment_test, test_Simple_Disjunction)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef disj = logic.mkOr(a, logic.mkAnd(
@@ -59,8 +54,7 @@ TEST(SimplifyUnderAssignment_test, test_Simple_Disjunction)
 
 TEST(SimplifyUnderAssignment_test, test_Do_Not_Simplify_Shared)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -76,8 +70,7 @@ TEST(SimplifyUnderAssignment_test, test_Do_Not_Simplify_Shared)
 
 TEST(SimplifyUnderAssignment_test, test_NestedStructure)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
@@ -92,8 +85,7 @@ TEST(SimplifyUnderAssignment_test, test_NestedStructure)
 
 TEST(SimplifyUnderAssignemnt_test, test_BooleanEquality)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
@@ -110,8 +102,7 @@ TEST(SimplifyUnderAssignemnt_test, test_BooleanEquality)
 // ===================== Tests of agressive simplification based on dominators ========================================
 TEST(SimplifyUnderAssignmentAggressive_test, test_Simple_Conjunction)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a, logic.mkOr(
@@ -124,8 +115,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_Simple_Conjunction)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_ConjunctionToConstant)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a, logic.mkAnd(logic.mkNot(a), b));
@@ -135,8 +125,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_ConjunctionToConstant)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_DisjunctionToConstant)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef disj = logic.mkOr(a, logic.mkOr(logic.mkNot(a), b));
@@ -146,8 +135,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_DisjunctionToConstant)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_Simple_Disjunction)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef disj = logic.mkOr(a, logic.mkAnd(
@@ -160,8 +148,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_Simple_Disjunction)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_Do_Not_Simplify)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -177,8 +164,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_Do_Not_Simplify)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_NestedStructure)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
@@ -193,8 +179,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_NestedStructure)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_BooleanEquality)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");
@@ -210,8 +195,7 @@ TEST(SimplifyUnderAssignmentAggressive_test, test_BooleanEquality)
 
 TEST(SimplifyUnderAssignmentAggressive_test, test_SimplifyByDominator)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     PTRef b = logic.mkBoolVar("b");

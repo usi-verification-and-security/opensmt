@@ -63,8 +63,8 @@ const char* CUFLogic::tk_cuf_cond   = "?";
 const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 const char*  CUFLogic::s_sort_cufstr = "CUFStr";
 
-CUFLogic::CUFLogic(SMTConfig& c) :
-      Logic(c)
+CUFLogic::CUFLogic() :
+    Logic()
     , sym_CUF_ZERO(SymRef_Undef)
     , sym_CUF_ONE(SymRef_Undef)
     , sym_CUF_NEG(SymRef_Undef)

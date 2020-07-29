@@ -4,17 +4,15 @@
 
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 
 class GetFactsTest : public ::testing::Test {
 protected:
-    GetFactsTest(): logic{config} {}
+    GetFactsTest(): logic{} {}
     virtual void SetUp() {
         ufsort = logic.declareSort("U", nullptr);
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
     }
-    SMTConfig config;
     Logic logic;
     SRef ufsort;
     PTRef x;
@@ -71,7 +69,7 @@ TEST_F(GetFactsTest, test_MultipleFacts){
 
 class RetrieveSubstitutionTest : public ::testing::Test {
 protected:
-    RetrieveSubstitutionTest(): logic{config} {}
+    RetrieveSubstitutionTest(): logic{} {}
     virtual void SetUp() {
         ufsort = logic.declareSort("U", nullptr);
         x = logic.mkVar(ufsort, "x");
@@ -83,7 +81,6 @@ protected:
         args.push(ufsort);
         f = logic.newSymb("f", args);
     }
-    SMTConfig config;
     Logic logic;
     SRef ufsort;
     PTRef x;
@@ -148,7 +145,7 @@ TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
 //========================== TEST for applying sustituitions ===========================================================
 class ApplySubstitutionTest : public ::testing::Test {
 protected:
-    ApplySubstitutionTest(): logic{config} {}
+    ApplySubstitutionTest(): logic{} {}
     virtual void SetUp() {
         ufsort = logic.declareSort("U", nullptr);
         x = logic.mkVar(ufsort, "x");
@@ -160,7 +157,6 @@ protected:
         args.push(ufsort);
         f = logic.newSymb("f", args);
     }
-    SMTConfig config;
     Logic logic;
     SRef ufsort;
     PTRef x;

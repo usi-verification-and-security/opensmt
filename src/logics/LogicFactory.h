@@ -17,8 +17,8 @@ namespace opensmt {
 class LogicFactory {
 public:
     static Logic * getInstance(SMTConfig & config);
-    static LRALogic * getLRAInstance(SMTConfig & config);
-    static LIALogic * getLIAInstance(SMTConfig & config);
+    static LRALogic * getLRAInstance();
+    static LIALogic * getLIAInstance();
 };
 }
 #endif //OPENSMT_LOGICFACTORY_H

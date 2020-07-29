@@ -5,13 +5,11 @@
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -24,8 +22,7 @@ TEST(Rewriting_test, test_RewriteClassicConjunction)
 
 TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");

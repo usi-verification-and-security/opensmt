@@ -47,8 +47,8 @@ const char* LRALogic::tk_real_gt    = ">";
 const char* LRALogic::tk_real_geq   = ">=";
 const char* LRALogic::s_sort_real = "Real";
 
-LRALogic::LRALogic(SMTConfig& c) :
-        LALogic(c)
+LRALogic::LRALogic() :
+    LALogic()
         , sym_Real_ZERO(SymRef_Undef)
         , sym_Real_ONE(SymRef_Undef)
         , sym_Real_NEG(SymRef_Undef)

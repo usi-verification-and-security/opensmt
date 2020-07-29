@@ -101,7 +101,7 @@ class BVLogic: public CUFLogic
     int bitwidth;
 
   public:
-    BVLogic (SMTConfig& c, int width = i_default_bitwidth);
+    BVLogic(int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
     virtual const char*   getName()  const { return "QF_BV"; }

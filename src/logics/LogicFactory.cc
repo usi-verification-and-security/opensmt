@@ -18,7 +18,7 @@ Logic * opensmt::LogicFactory::getInstance(SMTConfig & config) {
         case Logic_t::QF_UFLRA:
         case Logic_t::QF_UFRDL:
         {
-            l = new LRALogic(config);
+            l = new LRALogic();
             break;
         }
         case Logic_t::QF_IDL:
@@ -26,17 +26,17 @@ Logic * opensmt::LogicFactory::getInstance(SMTConfig & config) {
         case Logic_t::QF_LIA:
         case Logic_t::QF_UFLIA:
         {
-            l = new LIALogic(config);
+            l = new LIALogic();
             break;
         }
         case Logic_t::QF_UF:
         {
-            l = new Logic(config);
+            l = new Logic();
             break;
         }
         case Logic_t::QF_CUF:
         {
-            l = new BVLogic(config);
+            l = new BVLogic();
             break;
         }
         default:
@@ -46,7 +46,7 @@ Logic * opensmt::LogicFactory::getInstance(SMTConfig & config) {
     return l;
 }
 
-LRALogic * opensmt::LogicFactory::getLRAInstance(SMTConfig &config) { return new LRALogic(config); }
+LRALogic * opensmt::LogicFactory::getLRAInstance() { return new LRALogic(); }
 
-LIALogic * opensmt::LogicFactory::getLIAInstance(SMTConfig &config) { return new LIALogic(config); }
+LIALogic * opensmt::LogicFactory::getLIAInstance() { return new LIALogic(); }
 

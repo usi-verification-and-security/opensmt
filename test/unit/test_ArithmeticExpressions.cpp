@@ -7,13 +7,12 @@
 
 class ArithmeticExpressions_test : public ::testing::Test {
 protected:
-    ArithmeticExpressions_test(): logic{config} {}
+    ArithmeticExpressions_test(): logic{} {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
         z = logic.mkNumVar("z");
     }
-    SMTConfig config;
     LRALogic logic;
     PTRef x;
     PTRef y;

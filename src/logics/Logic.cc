@@ -29,13 +29,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "Global.h"
 #include "Deductions.h"
-#include "SMTConfig.h"
-#include <queue>
-#include <set>
 #include "SubstLoopBreaker.h"
 
-#include <sys/wait.h>
-
+#include <queue>
+#include <set>
 
 using namespace std;
 
@@ -67,9 +64,8 @@ const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic(SMTConfig& c) :
+Logic::Logic() :
       distinctClassCount(0)
-    , config(c)
     , sort_store(id_store)
     , term_store(sym_store)
     , sym_TRUE(SymRef_Undef)

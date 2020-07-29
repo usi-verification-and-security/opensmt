@@ -866,8 +866,8 @@ const char* LALogic::tk_num_gt    = ">";
 const char* LALogic::tk_num_geq   = ">=";
 const char* LALogic::s_sort_num = "Number";
 
-LALogic::LALogic(SMTConfig& c) :
-        Logic(c)
+LALogic::LALogic() :
+    Logic()
         , split_eq(false)
 {}
 

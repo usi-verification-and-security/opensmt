@@ -111,7 +111,7 @@ class CUFLogic: public Logic
     static const char*  s_sort_cufstr;
 
   public:
-    CUFLogic (SMTConfig& c);
+    CUFLogic();
     ~CUFLogic();
     virtual const char*   getName()  const { return "QF_CUF"; }
 
