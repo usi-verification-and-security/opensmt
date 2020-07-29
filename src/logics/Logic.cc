@@ -2224,5 +2224,3 @@ char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTer
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
-
-inline int     Logic::verbose                       ( ) const { return config.verbosity(); }
