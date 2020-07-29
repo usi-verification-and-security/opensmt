@@ -22,6 +22,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "VerificationUtils.h"
 
 #include <fstream>
+#include <sys/wait.h>
 
 bool
 ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)

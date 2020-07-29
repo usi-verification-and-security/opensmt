@@ -28,6 +28,8 @@ opensmt::Logic_t convert(opensmt_logic logic) {
             return opensmt::Logic_t::QF_UFLRA;
         case qf_ct:
             return opensmt::Logic_t::QF_CT;
+        default:
+            return opensmt::Logic_t::UNDEF;
     }
 }
 }

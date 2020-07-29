@@ -4,6 +4,8 @@
 
 #include "VerificationUtils.h"
 
+#include <sys/wait.h>
+
 bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
     const char * implies = "implies.smt2";
     std::ofstream dump_out( implies );

@@ -10,9 +10,9 @@
 
 #include <array>
 
-std::array<std::string, 19> logicToName = {"Undef", "Empty", "QF_UF", "QF_CUF", "QF_BV", "QF_RDL", "QF_IDL",
+std::array<std::string, 19> logicToName = {{"Undef", "Empty", "QF_UF", "QF_CUF", "QF_BV", "QF_RDL", "QF_IDL",
                                            "QF_LRA", "QF_LIA", "QF_UFRDL", "QF_UFIDL", "QF_UFLRA", "QF_UFLIA",
-                                           "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_BOOL", "QF_AUFBV", "QF_CT"};
+                                           "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_BOOL", "QF_AUFBV", "QF_CT"}};
 
 opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
