@@ -425,21 +425,6 @@ sstat MainSolver::solve()
     return status;
 }
 
-bool
-MainSolver::readFormulaFromFile(const char *file)
-{
-    FILE *f;
-    if((f = fopen(file, "rt")) == NULL)
-    {
-        //opensmt_error("can't open file");
-        return false;
-    }
-    Interpret interp(config, this);
-    interp.setParseOnly();
-    interp.interpFile(f);
-    return true;
-}
-
 std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
     SimpSMTSolver* solver = nullptr;
     if (config.sat_pure_lookahead())

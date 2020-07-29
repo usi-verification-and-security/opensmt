@@ -160,10 +160,6 @@ void Interpret::interp(ASTNode& n) {
     switch (cmd.x) {
         case t_setlogic:
         {
-            if(parse_only)
-            {
-                break;
-            }
             ASTNode &logic_n = **(n.children->begin());
             const char* logic_name = logic_n.getValue();
             if (isInitialized()) {
@@ -183,43 +179,23 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_setinfo:
         {
-            if(parse_only)
-            {
-                break;
-            }
-
             setInfo(**(n.children->begin()));
             notify_success();
             break;
         }
         case t_getinfo:
         {
-            if(parse_only)
-            {
-                break;
-            }
-
             getInfo(**(n.children->begin()));
             break;
         }
         case t_setoption:
         {
-            if(parse_only)
-            {
-                break;
-            }
-
             setOption(**(n.children->begin()));
             notify_success();
             break;
         }
         case  t_getoption:
         {
-            if(parse_only)
-            {
-                break;
-            }
-
             getOption(**(n.children->begin()));
             break;
         }
@@ -272,24 +248,21 @@ void Interpret::interp(ASTNode& n) {
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
                     assertions.push(tr);
-                    if (!parse_only)
-                    {
-                        char* err_msg = NULL;
-                        status = main_solver->insertFormula(tr, &err_msg);
+                    char* err_msg = NULL;
+                    status = main_solver->insertFormula(tr, &err_msg);
 
-                        if (status == s_Error)
-                            notify_formatted(true, "Error");
-                        else if (status == s_Undef)
-                            notify_success();
-                        else if (status == s_False)
-                            notify_success();
+                    if (status == s_Error)
+                        notify_formatted(true, "Error");
+                    else if (status == s_Undef)
+                        notify_success();
+                    else if (status == s_False)
+                        notify_success();
 
-                        if (err_msg != NULL && status == s_Error)
-                            notify_formatted(true, err_msg);
-                        if (err_msg != NULL && status != s_Error)
-                            comment_formatted(err_msg);
-                        free(err_msg);
-                    }
+                    if (err_msg != NULL && status == s_Error)
+                        notify_formatted(true, err_msg);
+                    if (err_msg != NULL && status != s_Error)
+                        comment_formatted(err_msg);
+                    free(err_msg);
                 }
             }
             else {
@@ -309,9 +282,6 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_simplify:
         {
-            if(parse_only)
-                break;
-
             sstat status = main_solver->simplifyFormulas();
             if (status == s_Error)
                 notify_formatted(true, "Simplify");
@@ -319,37 +289,31 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_checksat:
         {
-            if(!parse_only)
-                checkSat();
+            checkSat();
             break;
         }
         case t_getinterpolants:
         {
-            if(!parse_only) {
-                if (config.produce_inter()) {
-                    getInterpolants(n);
-                } else {
-                    notify_formatted(true,
-                                     "Option to produce interpolants has not been set, skipping this command ...");
-                }
+            if (config.produce_inter()) {
+                getInterpolants(n);
+            } else {
+                notify_formatted(true,
+                                 "Option to produce interpolants has not been set, skipping this command ...");
             }
             break;
         }
         case t_getassignment:
         {
-            if(!parse_only)
-                getAssignment();
-            break;
+           getAssignment();
+           break;
         }
         case t_getvalue:
         {
-            if(!parse_only)
-                getValue(n.children);
+            getValue(n.children);
             break;
         }
         case t_getmodel:
         {
-            if(parse_only) { break; }
             if (not isInitialized()) {
                 notify_formatted(true, "Illegal command before set-logic: get-model");
             }
@@ -364,7 +328,6 @@ void Interpret::interp(ASTNode& n) {
 
         case t_writestate:
         {
-            if (parse_only) break;
             if (main_solver->solverEmpty()) {
                 sstat status = main_solver->simplifyFormulas();
                 if (status == s_Error)
@@ -387,23 +350,18 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_push:
         {
-            if(!parse_only){
-                push();
-                notify_success();
-            }
+            push();
+            notify_success();
             break;
         }
         case t_pop:
         {
-            if(!parse_only) {
-                pop();
-                notify_success();
-            }
+            pop();
+            notify_success();
             break;
         }
         case t_exit:
         {
-            if (parse_only) break;
             exit();
             notify_success();
             break;

@@ -213,8 +213,6 @@ class MainSolver
 
     void stop() { ts.solver.stop = true; }
 
-    bool readFormulaFromFile(const char *file);
-
     PTRef getPrevQuery() const { return prev_query; }
 };
 

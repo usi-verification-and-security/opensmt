@@ -64,7 +64,6 @@ class Interpret {
     std::unique_ptr<MainSolver> main_solver;
 
     bool            f_exit;
-    bool            parse_only;
 
     // Named terms for getting variable values
     Map<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
@@ -109,18 +108,12 @@ class Interpret {
     PTRef                       insertTerm(const char* s, const vec<PTRef>& args);
 
 
-
-
   public:
 
-
-    Interpret(SMTConfig& c, MainSolver *_m)
+    Interpret(SMTConfig& c)
         : config     (c)
-        , main_solver(_m)
         , f_exit     (false)
-        , parse_only (false) { }
-
-    Interpret(SMTConfig& c) : Interpret(c, nullptr) { }
+        { }
 
     ~Interpret();
 
@@ -140,7 +133,6 @@ class Interpret {
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
-    void setParseOnly() { parse_only = true; }
 };
 
 #endif
