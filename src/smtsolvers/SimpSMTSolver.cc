@@ -184,16 +184,9 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
-{
-    std::pair<CRef, CRef> fake;
-    return addOriginalSMTClause(smt_clause, fake);
-}
-
-
 bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, std::pair<CRef, CRef> & inOutCRefs)
 {
-    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
+    inOutCRefs = {CRef_Undef, CRef_Undef};
     assert( config.sat_preprocess_theory == 0 );
 
     // Check that the variables exist in the solver
@@ -627,10 +620,13 @@ bool SimpSMTSolver::eliminateVar(Var v)
 
     // Produce clauses in cross product:
     vec<Lit>& resolvent = add_tmp;
-    for (int i = 0; i < pos.size(); i++)
-        for (int j = 0; j < neg.size(); j++)
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent))
+    for (int i = 0; i < pos.size(); i++) {
+        for (int j = 0; j < neg.size(); j++) {
+            std::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent, dummy))
                 return false;
+        }
+    }
 
     // Free occurs list for this variable:
     occurs[v].clear(true);
@@ -669,7 +665,8 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        if (!addOriginalSMTClause(subst_clause))
+        std::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
+        if (!addOriginalSMTClause(subst_clause, dummy))
             return ok = false;
     }
 
