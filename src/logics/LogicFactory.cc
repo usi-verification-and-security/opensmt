@@ -46,3 +46,7 @@ Logic * opensmt::LogicFactory::getInstance(SMTConfig & config) {
     return l;
 }
 
+LRALogic * opensmt::LogicFactory::getLRAInstance(SMTConfig &config) { return new LRALogic(config); }
+
+LIALogic * opensmt::LogicFactory::getLIAInstance(SMTConfig &config) { return new LIALogic(config); }
+
