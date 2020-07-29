@@ -1564,6 +1564,30 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
     return l_Undef;
 }
 
+void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs) {
+    bool changed = true;
+    vec<PTRef> keys;
+    substs.getKeys(keys);
+    std::vector<char> notChangedElems(keys.size(), 0); // True if not changed in last iteration, initially False
+    while (changed) {
+        changed = false;
+        for (int i = 0; i < keys.size(); ++i) {
+            auto key = keys[i];
+            auto val = substs[key];
+            if (val.sgn != l_True || notChangedElems[i]) { continue; }
+            PTRef newVal = PTRef_Undef;
+            PTRef oldVal = val.tr;
+            this->varsubstitute(oldVal, substs, newVal);
+            if (oldVal != newVal) {
+                changed = true;
+                substs[key] = PtAsgn(newVal, l_True);
+            }
+            else {
+                notChangedElems[i] = 1;
+            }
+        }
+    }
+}
 
 //
 // TODO: Also this should most likely be dependent on the theory being

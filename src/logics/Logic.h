@@ -446,7 +446,7 @@ class Logic {
     void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);
     bool varsubstitute(PTRef  root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
-
+    void substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs);
 
 
 
