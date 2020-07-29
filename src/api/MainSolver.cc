@@ -450,6 +450,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_CUF:
+        case Logic_t::QF_BV:
         {
             BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
             theory = new CUFTheory(config, bvLogic);

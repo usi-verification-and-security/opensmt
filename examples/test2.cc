@@ -4,12 +4,10 @@
 int
 main(int argc, char** argv)
 {
+    Logic logic; // UF Logic
     SMTConfig c;
-    UFTheory* uftheory = new UFTheory(c);
-    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(uftheory), c, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-
-    Logic& logic = uftheory->getLogic();
 
     PTRef v1 = logic.mkBoolVar("a");
     PTRef v2 = logic.mkBoolVar("b");

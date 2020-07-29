@@ -28,7 +28,7 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SubstLoopBreaker.cc"
 )
 
-install(FILES Theory.h Logic.h LALogic.h Tterm.h LRALogic.h LIALogic.h CUFLogic.h BVLogic.h
+install(FILES LogicFactory.h Theory.h Logic.h LALogic.h Tterm.h LRALogic.h LIALogic.h CUFLogic.h BVLogic.h
  DESTINATION ${INSTALL_HEADERS_DIR})
 
 

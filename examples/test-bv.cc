@@ -20,10 +20,10 @@ main(int argc, char** argv)
     int bw = atoi(argv[1]);
 
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c, bw);
-    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
+    BVLogic* logic_ = new BVLogic(bw);
+    BVLogic& logic = *logic_;
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef b = logic.mkBVNumVar("b");

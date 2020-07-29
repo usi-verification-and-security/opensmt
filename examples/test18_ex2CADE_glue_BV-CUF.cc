@@ -24,11 +24,10 @@ void printValue(ValPair vp, Logic& l)
 
 int main(int argc, char** argv)
 {
+    BVLogic logic;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c, 8);
-    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");

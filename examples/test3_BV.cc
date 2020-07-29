@@ -12,13 +12,10 @@
 int
 main(int argc, char** argv)
 {
+    BVLogic bvlogic;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c);
-    MainSolver* mainSolver_ = new MainSolver(std::unique_ptr<Theory>(cuftheory), c, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(bvlogic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    CUFLogic& logic = cuftheory->getLogic();
-
-    BVLogic bvlogic(c);
 
     PTRef y_bb = bvlogic.mkBVNumVar("y");
     PTRef z_bb = bvlogic.mkBVNumVar("z");
