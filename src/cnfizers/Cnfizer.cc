@@ -438,9 +438,9 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
+    std::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
+    bool res = solver.addOriginalSMTClause(c, iorefs);
     if (keepPartitionInfo()) {
-        std::pair<CRef, CRef> iorefs = std::make_pair(CRef_Undef, CRef_Undef);
-        bool res = solver.addOriginalSMTClause(c, iorefs);
         CRef ref = iorefs.first;
         if (ref != CRef_Undef) {
             ipartitions_t parts = 0;
@@ -448,11 +448,8 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
             setbit(parts, static_cast<unsigned int>(currentPartition));
             logic.addClauseClassMask(ref, parts);
         }
-        return res;
     }
-    else {
-        return solver.addOriginalSMTClause(c);
-    }
+    return res;
 }
 //
 // Give the formula to the solver
