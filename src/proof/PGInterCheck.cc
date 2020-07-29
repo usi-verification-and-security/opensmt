@@ -18,7 +18,9 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include "PG.h"
-#include <sys/wait.h>
+
+#include "VerificationUtils.h"
+
 #include <fstream>
 
 bool
@@ -90,7 +92,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = logic.implies(implicant, n->getPartialInterpolant());
+    bool res = VerificationUtils(config, logic).implies(implicant, n->getPartialInterpolant());
     assert(res);
     return res;
 }
@@ -142,7 +144,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = logic.implies(implicant, logic.mkNot(n->getPartialInterpolant()));
+    bool res = VerificationUtils(config, logic).implies(implicant, logic.mkNot(n->getPartialInterpolant()));
     assert(res);
     return res;
 }

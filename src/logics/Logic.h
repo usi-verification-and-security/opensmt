@@ -281,15 +281,10 @@ class Logic {
 
     PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
-    bool implies(PTRef, PTRef); // Check the result with an external solver
-
     PartitionInfo partitionInfo;
 
     PTRef getPartitionA(const ipartitions_t&);
     PTRef getPartitionB(const ipartitions_t&);
-    bool verifyInterpolantA(PTRef, const ipartitions_t&);
-    bool verifyInterpolantB(PTRef, const ipartitions_t&);
-    bool verifyInterpolant(PTRef, const ipartitions_t&);
 
     //partitions:
     ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }

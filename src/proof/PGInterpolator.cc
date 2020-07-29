@@ -17,13 +17,14 @@ You should have received a copy of the GNU General Public License
 along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
+#include "PG.h"
+
+#include "VerificationUtils.h"
+#include "BoolRewriting.h"
+
 #include <cstdio>
 #include <iostream>
 #include <fstream>
-
-
-#include "PG.h"
-#include "BoolRewriting.h"
 
 
 // Path interpolation
@@ -337,7 +338,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<i
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() -1];
             PTRef movedPartitions = logic_.mkAnd(logic_.getPartitions(A_masks[i] ^ A_masks[i-1]));
-            propertySatisfied &= logic_.implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
+            propertySatisfied &= VerificationUtils(config, logic_).implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
             if (!propertySatisfied){
                 std::cerr << "; Path interpolation does not hold for:\n"
                              << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
@@ -588,7 +589,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
-        bool sound = theory.getLogic().verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
+        bool sound = VerificationUtils(config, logic_).verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
 
         if(verbose())
         {

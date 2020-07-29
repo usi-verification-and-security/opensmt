@@ -1930,59 +1930,6 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
     return tr_subst;
 }
 
-
-bool
-Logic::implies(PTRef implicant, PTRef implicated)
-{
-    Logic& logic = *this;
-    const char * implies = "implies.smt2";
-    std::ofstream dump_out( implies );
-    logic.dumpHeaderToFile(dump_out);
-
-    logic.dumpFormulaToFile(dump_out, implicant);
-    logic.dumpFormulaToFile(dump_out, implicated, true);
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    bool tool_res;
-    int pid = fork();
-    if(pid == -1){
-        std::cerr << "Failed to fork\n";
-        // consider throwing and exception
-        return false;
-    }
-    else if( pid == 0){
-        // child process
-        execlp( config.certifying_solver, config.certifying_solver, implies, NULL );
-        perror( "Child process error: " );
-        exit( 1 );
-    }
-    else{
-        // parent
-        int status;
-        waitpid(pid, &status, 0);
-        switch ( WEXITSTATUS( status ) )
-        {
-            case 0:
-//                std::cerr << "Implication holds!\n";
-                tool_res = false;
-                break;
-            case 1:
-//                std::cerr << "Implication does not hold!\n";
-//                std::cerr << "Antecedent: " << logic.printTerm(implicant) << '\n';
-//                std::cerr << "Consequent: " << logic.printTerm(implicated) << '\n';
-                tool_res = true;
-                break;
-            default:
-                perror( "Parent process error" );
-                exit( EXIT_FAILURE );
-        }
-    }
-
-    return !tool_res;
-}
-
 void Logic::conjoinItes(PTRef root, PTRef& new_root)
 {
     std::vector<bool> seen;
@@ -2057,13 +2004,6 @@ ipartitions_t Logic::computeAllowedPartitions(PTRef p) {
     return allowed;
 }
 
-bool
-Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
-{
-    // Check A -> I, i.e., A & !I
-    return implies(getPartitionA(mask), itp);
-}
-
 PTRef
 Logic::getPartitionA(const ipartitions_t& mask)
 {
@@ -2119,33 +2059,6 @@ Logic::getPartitionB(const ipartitions_t& mask)
     }
     PTRef B = logic.mkAnd(b_args);
     return B;
-}
-
-bool
-Logic::verifyInterpolantB(PTRef itp, const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    PTRef nB = logic.mkNot(getPartitionB(mask));
-    // Check A -> I, i.e., A & !I
-    return implies(itp, nB);
-}
-
-bool
-Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
-{
-    if(verbose())
-        cout << "; Verifying final interpolant" << endl;
-    bool res = verifyInterpolantA(itp, mask);
-    if(!res)
-        opensmt_error("A -> I does not hold");
-    if(verbose())
-        cout << "; A -> I holds" << endl;
-    res = verifyInterpolantB(itp, mask);
-    if(!res)
-        opensmt_error("I -> !B does not hold");
-    if(verbose())
-        cout << "; B -> !I holds" << endl;
-    return res;
 }
 
 void
