@@ -104,14 +104,15 @@ class BVLogic: public CUFLogic
     BVLogic(int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
-    virtual const char*   getName()  const { return "QF_BV"; }
+    virtual const char*   getName() const override { return "QF_BV"; }
+    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
     PTRef         mkBVConst   (const char* c) { char* num; opensmt::wordToBinary(opensmt::Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
-    virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
-    virtual bool          isBuiltinConstant(SymRef sr) const { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
 
@@ -184,9 +185,9 @@ class BVLogic: public CUFLogic
     bool isBVCompl(SymRef sr)  const { return sr == sym_BV_COMPL; }
     bool isBVCompl(PTRef tr)   const { return isBVCompl(getPterm(tr).symb()); }
 
-    bool isUFEquality(PTRef tr) const { return !isBVEq(tr) && Logic::isUFEquality(tr); }
-    bool isTheoryEquality(PTRef tr) const { return isBVEq(tr); }
-    bool isUF(PTRef tr) const { return !hasSortBVNUM(tr) && Logic::isUF(tr); }
+    bool isUFEquality(PTRef tr) const override { return !isBVEq(tr) && Logic::isUFEquality(tr); }
+    bool isTheoryEquality(PTRef tr) const override { return isBVEq(tr); }
+    bool isUF(PTRef tr) const override { return !hasSortBVNUM(tr) && Logic::isUF(tr); }
 
     PTRef getTerm_BVZero() { return term_BV_ZERO; }
     PTRef getTerm_BVOne()  { return term_BV_ONE; }

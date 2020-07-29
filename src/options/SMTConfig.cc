@@ -26,8 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SMTConfig.h"
 
-#include <array>
-
 void ASTNode::print(std::ostream& o, int indent) {
         for (int i = 0; i < indent; i++)
             printf(" ");
@@ -76,24 +74,6 @@ const char* ASTNode::typestr[] = {
     , "info-flag"       , "info-flag-list"              // INFO
 };
 
-std::array<std::string, 19> logicToName = {"Undef", "Empty", "QF_UF", "QF_CUF", "QF_BV", "QF_RDL", "QF_IDL",
-                               "QF_LRA", "QF_LIA", "QF_UFRDL", "QF_UFIDL", "QF_UFLRA", "QF_UFLIA",
-                               "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_BOOL", "QF_AUFBV", "QF_CT"};
-
-opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
-    if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
-    if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
-    if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;
-    if (name == "QF_LIA") return opensmt::Logic_t::QF_LIA;
-    if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
-    if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
-    if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
-    return opensmt::Logic_t::UNDEF;
-}
-
-std::string opensmt::getStringFromLogic(const opensmt::Logic_t logic) {
-    return logicToName[static_cast<int>(logic)];
-}
 
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
@@ -475,18 +455,6 @@ const Info& SMTConfig::getInfo(const char* name) const {
         return info_Empty;
 }
 
-void SMTConfig::setLogic(const opensmt::Logic_t l) {
-    if (logic == opensmt::Logic_t::UNDEF || l == logic) {
-        logic = l;
-    }
-    else {
-        std::stringstream ss;
-        ss << "Cannot set logic to " << opensmt::getStringFromLogic(l) << \
-        " because it is already set to " << opensmt::getStringFromLogic(logic);
-        throw (ss.str());
-    }
-}
-
 const char* SMTConfig::o_produce_models = ":produce-models";
 const char* SMTConfig::o_verbosity      = ":verbosity";
 const char* SMTConfig::o_incremental    = ":incremental";
@@ -580,7 +548,6 @@ void
 SMTConfig::initializeConfig( )
 {
   // Set Global Default configuration
-  logic                         = opensmt::Logic_t::UNDEF;
   status                        = l_Undef;
   insertOption(o_produce_stats, new SMTOption(0));
 //  produce_stats                 = 0;

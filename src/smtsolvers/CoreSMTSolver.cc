@@ -58,7 +58,6 @@ namespace opensmt
     extern bool stop;
 }
 
-using opensmt::Logic_t;
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -146,8 +145,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
 void
 CoreSMTSolver::initialize( )
 {
-    assert( config.isInit( ) );
-//  assert( !init );
     random_seed = config.getRandomSeed();
     restart_first = config.sat_restart_first();
     restart_inc = config.sat_restart_inc();
@@ -1764,16 +1761,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     // Model found:
                     return l_True;
             }
-
-
-            // This case may happen only during DTC
-            if ( value( next ) != l_Undef )
-            {
-                assert( config.getLogic() == opensmt::Logic_t::QF_UFIDL
-                        || config.getLogic() == opensmt::Logic_t::QF_UFLRA );
-                continue;
-            }
-
+            assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
             newDecisionLevel();
@@ -1920,16 +1908,6 @@ lbool CoreSMTSolver::solve_()
     if (config.dump_only()) return l_Undef;
 
     random_seed = config.getRandomSeed();
-//    assert( init );
-    // Check some invariants before we start ...
-    assert( config.getLogic() != Logic_t::UNDEF );
-    // Incrementality should be enabled for arrays
-    // assert( config.logic != QF_AX || config.incremental );
-    // Incrementality should be enabled for lazy dtc
-    assert( config.getLogic() != Logic_t::QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.getLogic() != Logic_t::QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.getLogic() != Logic_t::QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.getLogic() != Logic_t::QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 

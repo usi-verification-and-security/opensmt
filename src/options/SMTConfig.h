@@ -34,17 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <libgen.h>
 
-namespace opensmt {
-enum class Logic_t : int {
-    UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_UFRDL, QF_UFIDL,
-    QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_BOOL, QF_AUFBV, QF_CT
-};
-
-Logic_t getLogicFromString(const std::string & name);
-
-std::string getStringFromLogic(const Logic_t logic);
-}
-
 enum ASTType {
       CMD_T      , CMDL_T
     , SYM_T      , SYML_T
@@ -366,12 +355,11 @@ private:
       free(tmp_name);
       return full_str;
   }
-  opensmt::Logic_t logic;                    // SMT-Logic under consideration
   //
   // For standard executable
   //
 public:
-    SMTConfig(int argc, char* argv[]) : logic(opensmt::Logic_t::UNDEF), rocset(false), docset(false) {
+    SMTConfig(int argc, char* argv[]) : rocset(false), docset(false) {
         initializeConfig( );
         // Parse command-line options
         parseCMDLine( argc, argv );
@@ -379,7 +367,7 @@ public:
     //
     // For API
     //
-    SMTConfig () : logic(opensmt::Logic_t::UNDEF), rocset(false), docset(false) {
+    SMTConfig () : rocset(false), docset(false) {
         initializeConfig( );
     }
 
@@ -401,8 +389,6 @@ public:
   bool             setOption(const char* name, const SMTOption& value, const char*& msg);
   const SMTOption& getOption(const char* name) const;
 
-  void          setLogic (const opensmt::Logic_t logic);
-  opensmt::Logic_t getLogic() { return logic; }
   bool          setInfo  (const char* name, const Info& value);
   const Info&   getInfo  (const char* name) const;
 
@@ -412,8 +398,6 @@ public:
   void parseCMDLine     ( int argc, char * argv[ ] );
   void printHelp        ( );
   void printConfig      ( std::ostream & out );
-
-  inline bool      isInit      ( ) { return logic != opensmt::Logic_t::UNDEF; }
 
   inline std::ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
   inline std::ostream & getRegularOut   ( ) { return rocset ? out : std::cout; }

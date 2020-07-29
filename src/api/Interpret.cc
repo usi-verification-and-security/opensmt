@@ -1247,8 +1247,7 @@ int Interpret::get_assertion_index(PTRef ref) {
 }
 
 void Interpret::initializeLogic(opensmt::Logic_t logicType) {
-    config.setLogic(logicType);
-    logic.reset(opensmt::LogicFactory::getInstance(config));
+    logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
 
 

@@ -248,11 +248,6 @@ public:
 
   void    computePolarities ( ERef );
 
-  void dumpAssertionsToFile ( const char * );
-  void dumpHeaderToFile     ( ostream &, opensmt::Logic_t = opensmt::Logic_t::UNDEF );
-  void dumpFormulaToFile    ( ostream &, ERef, bool = false );
-  void dumpToFile           ( const char *, ERef );
-
   //===========================================================================
   // Public APIs for Theory Combination with DTC
 

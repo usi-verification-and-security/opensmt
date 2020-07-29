@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Tterm.h"
 #include "PartitionInfo.h"
 #include "CgTypes.h"
+#include "LogicFactory.h"
 
 
 
@@ -188,7 +189,8 @@ class Logic {
 
     virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
 
-    virtual const char * getName() const;
+    virtual const char * getName() const { return "QF_UF"; }
+    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
     // Identifiers
     IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }

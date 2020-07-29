@@ -455,42 +455,42 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
-    using ReasoningEngineType = opensmt::Logic_t;
-    ReasoningEngineType reasoningEngineType = config.getLogic();
+    using Logic_t = opensmt::Logic_t;
+    Logic_t logicType = logic.getLogic();
     Theory* theory = nullptr;
-    switch (reasoningEngineType) {
-        case ReasoningEngineType::QF_UF:
+    switch (logicType) {
+        case Logic_t::QF_UF:
         {
             theory = new UFTheory(config, logic);
             break;
         }
-        case ReasoningEngineType::QF_CUF:
+        case Logic_t::QF_CUF:
         {
             BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
             theory = new CUFTheory(config, bvLogic);
             break;
         }
-        case ReasoningEngineType::QF_LRA:
-        case ReasoningEngineType::QF_RDL:
+        case Logic_t::QF_LRA:
+        case Logic_t::QF_RDL:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
             theory = new LRATheory(config, lraLogic);
             break;
         }
-        case ReasoningEngineType::QF_LIA:
-        case ReasoningEngineType::QF_IDL:
+        case Logic_t::QF_LIA:
+        case Logic_t::QF_IDL:
         {
             LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
             theory = new LIATheory(config, liaLogic);
             break;
         }
-        case ReasoningEngineType::QF_UFLRA:
+        case Logic_t::QF_UFLRA:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
             theory = new UFLRATheory(config, lraLogic);
             break;
         }
-        case ReasoningEngineType::UNDEF:
+        case Logic_t::UNDEF:
             throw std::logic_error{"Error in creating reasoning engine: Engige type not specified"};
             break;
         default:

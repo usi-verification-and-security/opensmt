@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "SymRef.h"
 #include "Logic.h"
+#include "LogicFactory.h"
 #include "MainSolver.h"
 
 class LetFrame {
@@ -76,7 +77,7 @@ class Interpret {
     vec<SymRef>     user_declarations;
 
     void                        initializeLogic(opensmt::Logic_t logicType);
-    bool                        isInitialized() const { return config.getLogic() != opensmt::Logic_t::UNDEF; }
+    bool                        isInitialized() const { return logic.get() != nullptr; }
     char*                       buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
 
