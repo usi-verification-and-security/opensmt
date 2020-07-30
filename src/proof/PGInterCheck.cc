@@ -50,7 +50,7 @@ bool
 ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 {
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
-    Logic& logic = theory.getLogic();
+    Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();
@@ -102,7 +102,7 @@ bool
 ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 {
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
-    Logic& logic = theory.getLogic();
+    Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();

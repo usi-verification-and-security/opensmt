@@ -35,12 +35,12 @@ class THandler
 {
 private:
     Theory &          theory;
-    TermMapper        tmap;                     // Mappings between TRefs and Lits
+    TermMapper &      tmap;                     // Mappings between TRefs and Lits
 public:
 
-    THandler(Theory & tsh)
+    THandler(Theory & tsh, TermMapper & termMapper)
     : theory             (tsh)
-    , tmap               (tsh.getLogic())
+    , tmap               (termMapper)
     , checked_trail_size (0)
     { }
 

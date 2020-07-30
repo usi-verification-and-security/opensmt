@@ -363,7 +363,7 @@ void Proof::cleanAssumedLiteral(Lit l) {
 void CoreSMTSolver::createProofGraph ()
 {
     deleteProofGraph();
-    proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(),  *proof, nVars());
+    proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(), theory_handler.getTMap(),  *proof, nVars());
 }
 
 void CoreSMTSolver::deleteProofGraph () { delete proof_graph; proof_graph = nullptr; }

@@ -266,17 +266,17 @@ class ProofGraph
 {
 public:
 
-	ProofGraph ( SMTConfig &     c
+	ProofGraph ( SMTConfig &  c
 			, CoreSMTSolver & s
-			, Theory &      th
+			, Theory &        th
+			, TermMapper &    termMapper
 			, Proof &         t
 			, int             n = -1 )
 : config   ( c )
 , solver   ( s )
-, theory ( th )
 , proof	   ( t )
 , logic_ ( th.getLogic() )
-, thandler {new THandler(th)}
+, thandler {new THandler(th, termMapper)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
 , vars_suggested_color_map ( NULL )
@@ -540,7 +540,6 @@ private:
 
     SMTConfig &           config;
     CoreSMTSolver &       solver;
-    Theory &              theory;
     //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;

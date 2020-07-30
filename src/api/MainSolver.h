@@ -93,12 +93,12 @@ class MainSolver
 
 
     std::unique_ptr<Theory>         theory;
+    TermMapper                      term_mapper;
     THandler                        thandler;
     std::unique_ptr<SimpSMTSolver>  smt_solver;
     Logic&                          logic;
     SMTConfig&                      config;
     PushFrameAllocator&             pfstore;
-    TermMapper&                     tmap;
     Tseitin                         ts;
     PushFramesWrapper               frames;
 
@@ -153,13 +153,13 @@ class MainSolver
     MainSolver(Logic& logic, SMTConfig& conf, std::string name)
         :
         theory(createTheory(logic, conf)),
-        thandler(getTheory()),
+        term_mapper(logic),
+        thandler(getTheory(), term_mapper),
         smt_solver(createInnerSolver(conf, thandler)),
         logic(thandler.getLogic()),
         config(conf),
         pfstore(getTheory().pfstore),
-        tmap(thandler.getTMap()),
-        ts( config, logic, tmap, *smt_solver ),
+        ts( config, logic, term_mapper, *smt_solver ),
         solver_name {std::move(name)},
         check_called(0),
         prev_query(PTRef_Undef),
