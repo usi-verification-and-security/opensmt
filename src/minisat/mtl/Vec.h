@@ -78,7 +78,7 @@ public:
     // Stack interface:
     void     push  (void)              { if (sz == cap) capacity(sz+1); new (&data[sz]) T(); sz++; }
     void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
-    void     push_m(T&& elem)          { int sz_old = sz; if (sz_old == cap) capacity(sz_old+1); growTo(sz_old+1); data[sz_old] = std::move(elem); }
+    void     push_m(T&& elem)          { int sz_old = sz; if (sz_old == cap) capacity(sz_old+1); growTo(sz_old+1); std::swap(data[sz_old], elem); }
     void     push_c(const T& elem)     { if (sz == cap) { cap = imax(2, (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz]) T(elem); sz++; }
     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
