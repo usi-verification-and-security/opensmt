@@ -7,6 +7,7 @@
 #include "LRALogic.h"
 #include "LIALogic.h"
 #include "BVLogic.h"
+#include "OsmtApiException.h"
 
 #include <array>
 
@@ -50,6 +51,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
             break;
         }
         case Logic_t::QF_UF:
+        case Logic_t::QF_BOOL:
         {
             l = new Logic();
             break;
@@ -61,7 +63,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
         }
         default:
             assert(false);
-            throw std::logic_error{"No logic or unsupported logic specified"};
+            throw OsmtApiException{"No logic or unsupported logic specified"};
     }
     return l;
 }

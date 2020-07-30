@@ -457,6 +457,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
     Theory* theory = nullptr;
     switch (logicType) {
         case Logic_t::QF_UF:
+        case Logic_t::QF_BOOL:
         {
             theory = new UFTheory(config, logic);
             break;
@@ -489,7 +490,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::UNDEF:
-            throw std::logic_error{"Error in creating reasoning engine: Engige type not specified"};
+            throw OsmtApiException{"Error in creating reasoning engine: Engige type not specified"};
             break;
         default:
             assert(false);
