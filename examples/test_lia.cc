@@ -33,18 +33,11 @@ void usingWrapper() {
     PTRef x = logic.mkNumVar("x");
     PTRef y = logic.mkNumVar("y");
     // assertion x + y = y + x
-    vec<PTRef> args;
-    args.push(x);
-    args.push(y);
-    PTRef lhs = logic.mkNumPlus(args);
-    args.clear();
-    args.push(y);
-    args.push(x);
-    PTRef rhs = logic.mkNumPlus(args);
+    PTRef lhs = logic.mkNumPlus(x, y);
+    PTRef rhs = logic.mkNumPlus(y, x);
     PTRef eq = logic.mkEq(lhs, rhs);
     // test if the negation is satisfiable
-    char* msg;
-    mainSolver.insertFormula(logic.mkNot(eq), &msg);
+    mainSolver.insertFormula(logic.mkNot(eq));
     sstat r = mainSolver.check();
     assert(r == s_False);
 

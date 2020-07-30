@@ -333,7 +333,12 @@ PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
     tmp.push(a2);
     return mkNumMinus(tmp);
 }
-//PTRef mkNumPlus(const vec<PTRef> &, char **);
+
+PTRef LALogic::mkNumPlus(const PTRef p1, const PTRef p2) {
+    vec<PTRef> tmp {p1, p2};
+    return mkNumPlus(tmp);
+}
+
 PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumPlus(args, &msg);

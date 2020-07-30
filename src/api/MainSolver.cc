@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LookaheadSplitter.h"
 #include "GhostSMTSolver.h"
 #include "UFLRATheory.h"
+#include "OsmtApiException.h"
 
 
 #include <thread>
@@ -88,6 +89,17 @@ MainSolver::push(PTRef root)
     if (res == s_Error)
         printf("%s\n", msg);
     return res;
+}
+
+void
+MainSolver::insertFormula(PTRef fla) {
+    char* msg;
+    auto res = insertFormula(fla, &msg);
+    if (res == s_Error) {
+        OsmtApiException ex(msg);
+        free(msg);
+        throw ex;
+    }
 }
 
 sstat

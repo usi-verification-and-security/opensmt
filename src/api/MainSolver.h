@@ -184,6 +184,7 @@ class MainSolver
     void      push();
     bool      pop();
     sstat     insertFormula(PTRef root, char** msg);
+    void      insertFormula(PTRef fla);
 
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 

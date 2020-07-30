@@ -127,6 +127,7 @@ public:
     virtual PTRef mkNumPlus(const vec<PTRef> &, char **);
     virtual PTRef mkNumPlus(const vec<PTRef> &args);
     virtual PTRef mkNumPlus(const std::vector<PTRef> &args);
+    virtual PTRef mkNumPlus(const PTRef p1, const PTRef p2);
     virtual PTRef mkNumTimes(const vec<PTRef> &, char **);
     virtual PTRef mkNumTimes(const vec<PTRef> &args);
     virtual PTRef mkNumTimes(const PTRef p1, const PTRef p2);
