@@ -200,3 +200,21 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
 }
+
+//========================== TEST for transitive closure of substitutions ===========================================================
+TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
+    Logic logic;
+    Map<PTRef, PtAsgn, PTRefHash> substitutions;
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    substitutions.insert(a, PtAsgn(logic.mkAnd(b,c), l_True));
+    substitutions.insert(b, PtAsgn(c, l_True));
+    substitutions.insert(c, PtAsgn(d, l_True));
+    logic.substitutionsTransitiveClosure(substitutions);
+    ASSERT_EQ(substitutions.getSize(), 3);
+    ASSERT_EQ(substitutions[a].sgn, l_True);
+    ASSERT_EQ(substitutions[a].tr, d);
+}
+

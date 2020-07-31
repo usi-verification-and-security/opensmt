@@ -1540,21 +1540,19 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
 
 void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs) {
     bool changed = true;
-    vec<PTRef> keys;
-    substs.getKeys(keys);
-    std::vector<char> notChangedElems(keys.size(), 0); // True if not changed in last iteration, initially False
+    auto keyValPairs = substs.getKeysAndValsPtrs(); // We can use direct pointers, since no elements are inserted or deleted in the loop
+    std::vector<char> notChangedElems(keyValPairs.size(), 0); // True if not changed in last iteration, initially False
     while (changed) {
         changed = false;
-        for (int i = 0; i < keys.size(); ++i) {
-            auto key = keys[i];
-            auto val = substs[key];
+        for (int i = 0; i < keyValPairs.size(); ++i) {
+            auto & val = keyValPairs[i]->data;
             if (val.sgn != l_True || notChangedElems[i]) { continue; }
             PTRef newVal = PTRef_Undef;
             PTRef oldVal = val.tr;
             this->varsubstitute(oldVal, substs, newVal);
             if (oldVal != newVal) {
                 changed = true;
-                substs[key] = PtAsgn(newVal, l_True);
+                val = PtAsgn(newVal, l_True);
             }
             else {
                 notChangedElems[i] = 1;
