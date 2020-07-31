@@ -1161,23 +1161,10 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     if (defined_functions.has(fname))
         return false; // already there
     TFun tpl_fun(fname, args, rsort, tr);
-    // This part is a bit silly..
-    Tterm tmp;
-    defined_functions_vec.push(tmp);
-    Tterm& t = defined_functions_vec.last();
-    t.setName(tpl_fun.getName());
-    t.setBody(tpl_fun.getBody());
-    for (int i = 0; i < args.size(); i++) {
-        t.addArg(args[i]);
-    }
-    defined_functions.insert(t.getName(), tpl_fun);
+    defined_functions.insert(tpl_fun.getName(), tpl_fun);
     return true;
 }
 
-vec<Tterm>& Logic::getFunctions()
-{
-    return defined_functions_vec;
-}
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
 {
     if(sym == getSym_and())
@@ -2140,8 +2127,6 @@ PTRef       Logic::mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1)
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
-
-void Logic::dumpFunction(ostream& dump_out, const Tterm& t) { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
 
 // The Boolean connectives
 SymRef        Logic::getSym_true      ()              const { return sym_TRUE;     }
