@@ -48,9 +48,6 @@ namespace opensmt {
 bool stop;
 };
 
-uint32_t LetFrame::id_cnt = 0;
-
-
 /***********************************************************
  * Class defining interpreter
  ***********************************************************/
@@ -242,8 +239,8 @@ void Interpret::interp(ASTNode& n) {
             if (isInitialized()) {
                 sstat status;
                 ASTNode& asrt = **(n.children->begin());
-                vec<LetFrame> let_branch;
-                PTRef tr = parseTerm(asrt, let_branch);
+                LetRecords letRecords;
+                PTRef tr = parseTerm(asrt, letRecords);
                 if (tr == PTRef_Undef)
                     notify_formatted(true, "assertion returns an unknown sort");
                 else {
@@ -373,52 +370,37 @@ void Interpret::interp(ASTNode& n) {
     }
 }
 
-// Adds a new term to TermTable and a mapping to the term from this let frame.
-// returns true in success and false if
-//   (i) the frame contains the term or
-//  (ii) if an error occurred in inserting the term to the termtable for some reason, or
-// (iii) if the name is non-redefinable in the logic.
-// Overloading let variables is not supported at the moment
-bool Interpret::addLetName(const char* s, const PTRef tr, LetFrame& frame) {
-    if (frame.contains(s)) {
-        comment_formatted("Overloading let variables makes no sense: %s", s);
-        return false;
-    }
-    Logic& logic = main_solver->getLogic();
-    // If a term is noscoping with one name, all others are also
-    // noscoping.
-    if (logic.hasSym(s) && logic.getSym(logic.symNameToRef(s)[0]).noScoping()) {
-        comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", s);
-        return false;
-    }
 
-    frame.insert(s, tr);
+bool Interpret::addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords) {
+    assert(names.size() == args.size());
+    if (names.size() > 1) {
+        // check that they are pairwise distinct;
+        std::unordered_set<const char*, StringHash, Equal<const char*>> namesAsSet(names.begin(), names.end());
+        if (namesAsSet.size() != names.size()) {
+            comment_formatted("Overloading let variables makes no sense");
+            return false;
+        }
+    }
+    for (std::size_t i = 0; i < names.size(); ++i) {
+        const char* name = names[i];
+        if (logic->hasSym(name) && logic->getSym(logic->symNameToRef(name)[0]).noScoping()) {
+            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name);
+            return false;
+        }
+        letRecords.addBinding(name, args[i]);
+    }
     return true;
 }
 
 //
 // Determine whether the term refers to some let definition
 //
-PTRef Interpret::letNameResolve(const char* s, const vec<LetFrame>& let_branch) const {
-    // We need to try the let branch we're in
-    for (int i = let_branch.size()-1; i >= 0; i--) {
-        if (let_branch[i].contains(s)) {
-            PTRef tref = let_branch[i][s];
-            return tref;
-        }
-    }
-    return PTRef_Undef;
+PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) const {
+    return letRecords.getOrUndef(s);
 }
 
-//
-// Typecheck the term structure.  Construct the terms.
-//
-// TODO: left and right associativity, pairwisety - integrate these to the congruence algorithm,
-//       chainability - not yet implemented
-//       attributed terms - working now on this
 
-PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
-    Logic& logic = main_solver->getLogic();
+PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     ASTType t = term.getType();
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();
@@ -426,7 +408,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         const char* msg;
         vec<SymRef> params;
         //PTRef tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
-        PTRef tr = logic.mkConst(name, &msg);
+        PTRef tr = logic->mkConst(name, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("While processing %s: %s", name, msg);
         return tr;
@@ -435,13 +417,13 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     else if (t == QID_T) {
         const char* name = (**(term.children->begin())).getValue();
 //        comment_formatted("Processing term with symbol %s", name);
-        PTRef tr = letNameResolve(name, let_branch);
+        PTRef tr = letNameResolve(name, letRecords);
         char* msg = NULL;
         if (tr != PTRef_Undef) {
 //            comment_formatted("Found a let reference to term %d", tr);
             return tr;
         }
-        tr = logic.resolveTerm(name, vec_ptr_empty, &msg);
+        tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s: %s", name, msg);
         free(msg);
@@ -455,7 +437,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         const char* name = (**node_iter).getValue(); node_iter++;
         // Parse the arguments
         for (; node_iter != term.children->end(); node_iter++) {
-            PTRef arg_term = parseTerm(**node_iter, let_branch);
+            PTRef arg_term = parseTerm(**node_iter, letRecords);
             if (arg_term == PTRef_Undef)
                 return PTRef_Undef;
             else
@@ -465,7 +447,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         char* msg = NULL;
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic.resolveTerm(name, args, &msg);
+            tr = logic->resolveTerm(name, args, &msg);
         }
         catch (LADivisionByZeroException & ex) {
             notify_formatted(true, ex.what());
@@ -475,16 +457,16 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             notify_formatted(true, "No such symbol %s: %s", name, msg);
             comment_formatted("The symbol %s is not defined for the following sorts:", name);
             for (int j = 0; j < args.size(); j++)
-                comment_formatted("arg %d: %s", j, logic.getSortName(logic.getSortRef(args[j]) )); //store.getName(symstore[ptstore[args[j]].symb()].rsort()));
-            if (logic.hasSym(name)) {
+                comment_formatted("arg %d: %s", j, logic->getSortName(logic->getSortRef(args[j]) )); //store.getName(symstore[ptstore[args[j]].symb()].rsort()));
+            if (logic->hasSym(name)) {
                 comment_formatted("candidates are:");
-                const vec<SymRef>& trefs = logic.symNameToRef(name);
+                const vec<SymRef>& trefs = logic->symNameToRef(name);
                 for (int j = 0; j < trefs.size(); j++) {
                     SymRef ctr = trefs[j];
-                    const Symbol& t = logic.getSym(ctr);
+                    const Symbol& t = logic->getSym(ctr);
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic.getSortName(t[k]));
+                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]));
                     }
                 }
             }
@@ -501,12 +483,19 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
     else if (t == LET_T) {
         auto ch = term.children->begin();
         auto vbl = (**ch).children->begin();
-        let_branch.push(); // The next scope, where my vars will be defined
         vec<PTRef> tmp_args;
         vec<char*> names;
+        // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
+        class Guard {
+            LetRecords& rec;
+            vec<char*>& names;
+        public:
+            Guard(LetRecords& rec, vec<char*>& names): rec{rec}, names{names} { rec.pushFrame(); }
+            ~Guard() { rec.popFrame(); for (int i = 0; i < names.size(); i++) { free(names[i]); }}
+        } scopeGuard(letRecords, names);
         // First read the term declarations in the let statement
         while (vbl != (**ch).children->end()) {
-            PTRef let_tr = parseTerm(**((**vbl).children->begin()), let_branch);
+            PTRef let_tr = parseTerm(**((**vbl).children->begin()), letRecords);
             if (let_tr == PTRef_Undef) return PTRef_Undef;
             tmp_args.push(let_tr);
             char* name = strdup((**vbl).getValue());
@@ -514,27 +503,18 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
             vbl++;
         }
         // Only then insert them to the table
-        for (int i = 0; i < tmp_args.size(); i++) {
-//            vec<TRef> args;
-//            args.push(tmp_args[i]);
-            if (addLetName(names[i], tmp_args[i], let_branch[let_branch.size()-1]) == false) {
-                comment_formatted("Let name addition failed");
-                for (int i = 0; i < names.size(); i++) free(names[i]);
-                return PTRef_Undef;
-            }
-            assert(let_branch[let_branch.size()-1].contains(names[i]));
+        bool success = addLetFrame(names, tmp_args, letRecords);
+        if (not success) {
+            comment_formatted("Let name addition failed");
+            return PTRef_Undef;
         }
         ch++;
         // This is now constructed with the let declarations context in let_branch
-        PTRef tr = parseTerm(**(ch), let_branch);
+        PTRef tr = parseTerm(**(ch), letRecords);
         if (tr == PTRef_Undef) {
             comment_formatted("Failed in parsing the let scoped term");
-            for (int i = 0; i < names.size(); i++) free(names[i]);
             return PTRef_Undef;
         }
-        let_branch.pop(); // Now the scope is unavailable for us
-        for (int i = 0; i < names.size(); i++)
-            free(names[i]);
         return tr;
     }
 
@@ -547,7 +527,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, vec<LetFrame>& let_branch) {
         assert(attr_l.children->size() == 1);
         ASTNode& name_attr = **(attr_l.children->begin());
 
-        PTRef tr = parseTerm(named_term, let_branch);
+        PTRef tr = parseTerm(named_term, letRecords);
         if (tr == PTRef_Undef) return tr;
 
         if (strcmp(name_attr.getValue(), ":named") == 0) {
@@ -676,7 +656,7 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
     vec<ValPair> values;
     for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
-        vec<LetFrame> tmp;
+        LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
             values.push(main_solver->getValue(tr));
@@ -867,8 +847,8 @@ bool Interpret::defineFun(const ASTNode& n)
     }
 
     sstat status;
-    vec<LetFrame> let_branch;
-    PTRef tr = parseTerm(term_node, let_branch);
+    LetRecords letRecords;
+    PTRef tr = parseTerm(term_node, letRecords);
     if (tr == PTRef_Undef) {
         notify_formatted(true, "define-fun returns an unknown sort");
         return false;
@@ -1132,17 +1112,21 @@ SRef Interpret::newSort(ASTNode& sn) {
 
 void Interpret::getInterpolants(const ASTNode& n)
 {
-    Logic& logic = main_solver->getLogic();
     auto exps = *n.children;
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
+    LetRecords letRecords;
+    letRecords.pushFrame();
+    auto namedTermsPtrs = nameToTerm.getKeysAndValsPtrs();
+    for (auto* namedTermPair : namedTermsPtrs) {
+        letRecords.addBinding(namedTermPair->key, namedTermPair->data);
+    }
     for (auto e : exps) {
         ASTNode& c = *e;
-        vec<LetFrame> v;
-        v.push_m(LetFrame(nameToTerm));
-        PTRef tr = parseTerm(c, v);
+        PTRef tr = parseTerm(c, letRecords);
 //        printf("Itp'ing a term %s\n", logic->pp(tr));
         grouping.push(tr);
     }
+    letRecords.popFrame();
 
     if (!(config.produce_inter() > 0))
         opensmt_error("Cannot interpolate");
@@ -1161,9 +1145,9 @@ void Interpret::getInterpolants(const ASTNode& n)
             opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
         }
         else {
-            bool ok = group != PTRef_Undef && logic.isAnd(group);
+            bool ok = group != PTRef_Undef && logic->isAnd(group);
             if (ok) {
-                Pterm const & and_t = logic.getPterm(group);
+                Pterm const & and_t = logic->getPterm(group);
                 for (int j = 0; j < and_t.size(); j++) {
                     PTRef tr = and_t[j];
                     ok = is_top_level_assertion(tr);
@@ -1196,7 +1180,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         smt_solver.deleteProofGraph();
 
         for (int j = 0; j < itps.size(); j++) {
-            char* itp = logic.pp(itps[j]);
+            char* itp = logic->pp(itps[j]);
             notify_formatted(false, "%s", itp);
             free(itp);
         }
