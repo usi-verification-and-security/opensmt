@@ -93,7 +93,36 @@ class Logic {
 
     int distinctClassCount;
 
-    Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+    class DefinedFunctions {
+        Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+        vec<char*> defined_functions_names;
+
+    public:
+        bool has(const char* name) const { return defined_functions.has(name); }
+
+        void insert(const char* name, TFun const & templ) {
+            assert(not has(name));
+            defined_functions_names.push();
+            defined_functions_names.last() = strdup(name);
+            defined_functions.insert(defined_functions_names.last(), templ);
+        }
+
+        TFun & operator[](const char* name) {
+            assert(has(name));
+            return defined_functions[name];
+        }
+
+        void getKeys(vec<const char*> & keys_out) {
+            defined_functions.getKeys(keys_out);
+        }
+
+        ~DefinedFunctions() {
+            for (char* name : defined_functions_names) {
+                free(name);
+            }
+        }
+    };
+    DefinedFunctions defined_functions;
 
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
