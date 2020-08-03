@@ -320,6 +320,12 @@ private:
   vec<char*>    info_names;
   Map<const char*,Info*,StringHash,Equal<const char*> >   infoTable;
   Map<const char*,SMTOption*,StringHash,Equal<const char*> > optionTable;
+
+  bool usedForInitialization = false; // Some options can be changed only before this config is used for initialization of MainSolver
+  bool isPreInitializationOption(const char* o_name) {
+      return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0;
+  }
+
   void          insertOption(const char* o_name, SMTOption* o) {
       options.push(o);
       if (optionTable.has(o_name)) optionTable[o_name] = o;
@@ -405,6 +411,8 @@ public:
   inline int  getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
+
+  void setUsedForInitiliazation() { usedForInitialization = true; }
 
   inline bool produceProof( ) {
       return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;

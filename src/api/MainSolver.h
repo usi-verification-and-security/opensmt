@@ -168,6 +168,7 @@ class MainSolver
         binary_init(false),
         root_instance(logic.getTerm_true())
     {
+        conf.setUsedForInitiliazation();
         frames.push(pfstore.alloc());
         PushFrame& last = pfstore[frames.last()];
         last.push(logic.getTerm_true());

@@ -362,6 +362,10 @@ SMTOption::SMTOption(ASTNode& n) {
 
 bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*& msg) {
     msg = "ok";
+    if (usedForInitialization && isPreInitializationOption(name)) {
+        msg = "Option cannot be changed at this point";
+        return false;
+    }
     // Special options:
     // stats_out
     if (strcmp(name, o_stats_out) == 0) {

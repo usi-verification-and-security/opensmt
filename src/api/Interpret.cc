@@ -126,7 +126,7 @@ void Interpret::setOption(ASTNode& n) {
     const char* msg = "ok";
     bool rval = config.setOption(name, value, msg);
     if (rval == false)
-        notify_formatted(true, "set-option failed: %s", msg);
+        notify_formatted(true, "set-option failed for %s: %s", name, msg);
     free(name);
 }
 
