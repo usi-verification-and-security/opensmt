@@ -41,7 +41,7 @@ class LetBinder {
     PTRef currentValue;
     std::vector<PTRef>* shadowedValues;
 public:
-    LetBinder(PTRef val) : currentValue{val}, shadowedValues{nullptr} {}
+    LetBinder(PTRef val) : currentValue(val), shadowedValues(nullptr) {}
     ~LetBinder() { delete shadowedValues; }
     LetBinder(const LetBinder&) = delete;
     LetBinder& operator=(const LetBinder&) = delete;

@@ -376,12 +376,12 @@ bool Interpret::addLetFrame(const vec<char *> & names, vec<PTRef> const& args, L
     if (names.size() > 1) {
         // check that they are pairwise distinct;
         std::unordered_set<const char*, StringHash, Equal<const char*>> namesAsSet(names.begin(), names.end());
-        if (namesAsSet.size() != names.size()) {
+        if (namesAsSet.size() != names.size_()) {
             comment_formatted("Overloading let variables makes no sense");
             return false;
         }
     }
-    for (std::size_t i = 0; i < names.size(); ++i) {
+    for (int i = 0; i < names.size(); ++i) {
         const char* name = names[i];
         if (logic->hasSym(name) && logic->getSym(logic->symNameToRef(name)[0]).noScoping()) {
             comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name);
@@ -490,7 +490,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
             LetRecords& rec;
             vec<char*>& names;
         public:
-            Guard(LetRecords& rec, vec<char*>& names): rec{rec}, names{names} { rec.pushFrame(); }
+            Guard(LetRecords& rec, vec<char*>& names): rec(rec), names(names) { rec.pushFrame(); }
             ~Guard() { rec.popFrame(); for (int i = 0; i < names.size(); i++) { free(names[i]); }}
         } scopeGuard(letRecords, names);
         // First read the term declarations in the let statement
