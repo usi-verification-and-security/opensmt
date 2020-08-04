@@ -594,5 +594,4 @@ void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
     root_out = mkAnd(root_out, mkAnd(mod_ineqs));
     root_out = mkAnd(root_out, mkAnd(inc_diseqs));
     root_out = mkAnd(root_out, mkAnd(compl_diseqs));
-    Logic::conjoinItes(root_out, root_out);
 }

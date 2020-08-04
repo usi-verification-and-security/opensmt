@@ -21,6 +21,9 @@ bool LALogic::isNegated(PTRef tr) const {
         splitTermToVarAndConst(tr, v, c);
         return isNegated(c);
     }
+    if (isIte(tr)) {
+        return false;
+    }
     else {
         // Cases(3)
         return isNegated(getPterm(tr)[0]);
@@ -28,11 +31,11 @@ bool LALogic::isNegated(PTRef tr) const {
 }
 
 bool LALogic::isLinearFactor(PTRef tr) const {
-    if (isNumConst(tr) || isNumVar(tr)) { return true; }
+    if (isNumConst(tr) || isNumVar(tr) || isIte(tr)) { return true; }
     if (isNumTimes(tr)) {
         Pterm const& term = getPterm(tr);
-        return term.size() == 2 && ((isNumConst(term[0]) && isNumVar(term[1]))
-                                    || (isNumConst(term[1]) && isNumVar(term[0])));
+        return term.size() == 2 && ((isNumConst(term[0]) && (isNumVar(term[1]) || isIte(term[1])))
+                                    || (isNumConst(term[1]) && (isNumVar(term[0]) || isIte(term[0]))));
     }
     return false;
 }
@@ -56,9 +59,10 @@ LALogic::getNumConst(PTRef tr) const
     assert(id < static_cast<unsigned int>(numbers.size()) && numbers[id] != nullptr);
     return *numbers[id];
 }
+
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
-    assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term));
+    assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term) || isIte(term));
     if (isNumTimes(term) || isNumDiv(term)) {
         assert(getPterm(term).size() == 2);
         fac = getPterm(term)[0];
@@ -69,8 +73,8 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
             fac = t;
         }
         assert(isConstant(fac));
-        assert(isNumVar(var) || isUF(var));
-    } else if (isNumVar(term) || isUF(term)) {
+        assert(isNumVar(var) || isUF(var) || isIte(var));
+    } else if (isNumVar(term) || isUF(term) || isIte(term)) {
         var = term;
         fac = getTerm_NumOne();
     } else {
@@ -78,6 +82,7 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
         fac = term;
     }
 }
+
 // Find the lexicographically first factor of a term and divide the other terms with it.
 PTRef LALogic::normalizeSum(PTRef sum) {
     vec<PTRef> args;
@@ -154,7 +159,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
         }
         auto sub = equality->getSubst();
         PTRef var = sub.first;
-        assert(var != PTRef_Undef && isNumVar(var) && sub.second != PTRef_Undef);
+        assert(var != PTRef_Undef && isNumVarOrIte(var) && sub.second != PTRef_Undef);
         if (substitutions.has(var)) {
             // Already has substitution for this var, let the main substitution code deal with this situation
             continue;
@@ -184,6 +189,30 @@ lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,
     }
     return arithmeticElimination(top_level_arith, substs);
 }
+
+uint32_t LessThan_deepPTRef::getMin(PTRef tr) const {
+    PTRef c_t;
+    PTRef v_t;
+    l.splitTermToVarAndConst(tr, v_t, c_t);
+    return v_t.x;
+}
+
+bool LessThan_deepPTRef::operator()(PTRef& x_, PTRef& y_) {
+    uint32_t id_x;
+    uint32_t id_y;
+    if (l.isNumTimes(x_)) {
+        id_x = getMin(x_);
+    } else {
+        id_x = x_.x;
+    }
+    if (l.isNumTimes(y_)) {
+        id_y = getMin(y_);
+    } else {
+        id_y = y_.x;
+    }
+    return id_x < id_y;
+}
+
 void LALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LessThan_deepPTRef(this));
@@ -221,11 +250,12 @@ bool LALogic::isBuiltinFunction(const SymRef sr) const
 }
 bool LALogic::isNumTerm(PTRef tr) const
 {
+    auto isVarOrUFOrIte = [this](PTRef tr) { return isNumVar(tr) || isUF(tr) || isIte(tr); };
     const Pterm& t = getPterm(tr);
     if (t.size() == 2 && isNumTimes(tr))
-        return ((isNumVar(t[0]) || isUF(t[0])) && isConstant(t[1])) || ((isNumVar(t[1]) || isUF(t[1])) && isConstant(t[0]));
+        return (isVarOrUFOrIte(t[0]) && isConstant(t[1])) || (isVarOrUFOrIte(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
-        return isNumVar(tr) || isConstant(tr);
+        return isNumVar(tr) || isConstant(tr) || isIte(tr);
     else
         return false;
 }
@@ -276,7 +306,7 @@ PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num);
 PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
 bool LALogic::isBuiltinSort  (SRef sr) const { return sr == get_sort_NUM() || Logic::isBuiltinSort(sr); }
 bool LALogic::isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
-bool LALogic::isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
+bool LALogic::isNumConst     (SymRef sr)     const { return Logic::isConstant(sr) && hasSortNum(sr); }
 bool LALogic::isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
 bool LALogic::isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
 bool LALogic::hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == get_sort_NUM(); }
@@ -307,7 +337,9 @@ bool LALogic::isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
 bool LALogic::isNumGt(SymRef sr) const { return sr == get_sym_Num_GT(); }
 bool LALogic::isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
 bool LALogic::isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == get_sort_NUM(); }
+bool LALogic::isNumVarOrIte(SymRef sr) const { return isVar(sr) || isIte(sr); }
 bool LALogic::isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
+bool LALogic::isNumVarOrIte(PTRef tr) const { return isNumVar(getPterm(tr).symb()) || isIte(tr); }
 bool LALogic::isNumZero(SymRef sr) const { return sr == get_sym_Num_ZERO(); }
 bool LALogic::isNumZero(PTRef tr) const { return tr == getTerm_NumZero(); }
 bool LALogic::isNumOne(SymRef sr) const { return sr == get_sym_Num_ONE(); }
@@ -455,7 +487,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new, msg);
     if (args_new.size() == 1)
         return args_new[0];
-    if(s_new != get_sym_Num_PLUS()) {
+    if (s_new != get_sym_Num_PLUS()) {
         return mkFun(s_new, args_new);
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
@@ -520,12 +552,13 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     PTRef tr = mkFun(s_new, args_new);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
-    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
+    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr) || isIte(tr))
         return tr;
     else {
         throw LANonLinearException(printTerm(tr));
     }
 }
+
 PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
 {
     SimplifyConstDiv simp(*this);
@@ -537,7 +570,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     }
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     if (isNumDiv(s_new)) {
-        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
+        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0]) || isIte(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
@@ -601,13 +634,15 @@ PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
             args[1] = nonconst_args.size() == 1 ? nonconst_args[0] : mkFun(get_sym_Num_PLUS(), nonconst_args);
             assert(mkNumPlus(nonconst_args) == args[1]);
         }
-    } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
+    } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp) || isIte(sum_tmp)) {
         // The correct arguments are set up already
-    } else assert(false);
+    } else {
+        assert(false);
+    }
     PTRef r = mkFun(get_sym_Num_LEQ(), args);
     return r;
-
 }
+
 PTRef LALogic::mkNumGeq(const vec<PTRef> & args)
 {
     assert(args.size() == 2);
@@ -688,6 +723,21 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         ptr = Logic::mkConst(s, name);
     return ptr;
 }
+
+PTRef LALogic::mkIte(vec<PTRef>& terms) {
+    auto isConstantOrConstantIte = [this](PTRef tr) { return isConstant(tr) || constIteTerms.has(tr); };
+    PTRef tr = Logic::mkIte(terms);
+    if (isIte(tr)) {
+        Pterm &t = getPterm(tr);
+        PTRef true_term = t[1];
+        PTRef false_term = t[2];
+        if (isConstantOrConstantIte(true_term) && isConstantOrConstantIte(false_term)) {
+            constIteTerms.insert(tr, true);
+        }
+    }
+    return tr;
+}
+
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
@@ -702,7 +752,7 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
     vec<int> const_idx;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
-        if (l.isConstant(args[i]))
+        if (l.isConstant(args[i]) && (not l.isIte(args[i])))
             const_idx.push(i);
     }
     if (const_idx.size() == 0) {
@@ -775,18 +825,18 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         }
         if (!l.isNumOne(terms[i]))
         {
-            if(l.isNumPlus(terms[i]))
+            if (l.isNumPlus(terms[i]))
                 plus = terms[i];
-            else if(l.isConstant(terms[i]))
+            else if (l.isConstant(terms[i]) && not l.isIte(terms[i]))
                 con = terms[i];
             else
                 terms_new.push(terms[i]);
         }
     }
-    if(con == PTRef_Undef && plus == PTRef_Undef);
+    if (con == PTRef_Undef && plus == PTRef_Undef);
     else if(con == PTRef_Undef && plus != PTRef_Undef)
         terms_new.push(plus);
-    else if(con != PTRef_Undef && plus == PTRef_Undef)
+    else if (con != PTRef_Undef && plus == PTRef_Undef)
         terms_new.push(con);
     else
     {

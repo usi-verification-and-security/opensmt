@@ -145,6 +145,8 @@ class EnodeStore {
     bool checkInvariants();
 #endif
     friend class Egraph;
+
+    ERef addIteSymb(PTRef tr);
 };
 
 #endif

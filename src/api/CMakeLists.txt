@@ -22,12 +22,14 @@ add_library(api OBJECT "")
 set(PRIVATE_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteManager.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/DimacsParser.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteManager.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
 )
@@ -64,5 +66,5 @@ if (BUILD_STATIC_LIBS)
   set_target_properties(api_static PROPERTIES OUTPUT_NAME opensmt2)
 endif()
 
-install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h
+install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h IteManager.h
 DESTINATION ${INSTALL_HEADERS_DIR})

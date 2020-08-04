@@ -126,6 +126,8 @@ LRALogic::LRALogic() :
     sym_Real_ITE = declareFun(tk_ite, sort_REAL, ite_params, msg, true);
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Real_ITE].setNoScoping();
+    ites.insert(sym_Real_ITE, true);
+    sortToIte.insert(sort_REAL, sym_Real_ITE);
     sym_store.setInterpreted(sym_Real_ITE);
 }
 

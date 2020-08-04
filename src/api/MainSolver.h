@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Tseitin.h"
 #include "SimpSMTSolver.h"
 #include "Model.h"
+#include "IteManager.h"
 
 #include <memory>
 

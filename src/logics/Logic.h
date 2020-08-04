@@ -34,7 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LogicFactory.h"
 
 
-
 class SStore;
 
 class Logic {
@@ -89,6 +88,7 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
     int distinctClassCount;
@@ -127,13 +127,8 @@ class Logic {
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
 
-    typedef struct{
-        PTRef i;
-        PTRef t;
-        PTRef e;
-        PTRef repr;
-    } Ite;
-    Map<PTRef,Ite,PTRefHash,Equal<PTRef>>    top_level_ites;
+
+
 
     IdentifierStore     id_store;
     SStore              sort_store;
@@ -169,14 +164,11 @@ class Logic {
 
     void dumpFunction(ostream &, const TFun&);
 
-    void conjoinItes(PTRef root, PTRef& new_root);
-
-    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
-
   private:
     vec<bool> appears_in_uf;
   public:
     vec<PTRef> propFormulasAppearingInUF;
+    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
 
   public:
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
@@ -203,10 +195,6 @@ class Logic {
 
     Logic();
     virtual ~Logic();
-
-    bool isIteVar(PTRef tr) const;// { return top_level_ites.has(tr); }
-    PTRef getTopLevelIte(PTRef tr);// { return top_level_ites[tr].repr; }
-
 
     virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
 
@@ -274,8 +262,8 @@ class Logic {
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkNot         (vec<PTRef>&);
-    PTRef       mkIte         (vec<PTRef>&);
-    PTRef       mkIte         (PTRef c, PTRef t, PTRef e);// { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
+    virtual PTRef mkIte         (vec<PTRef>&);
+    virtual PTRef mkIte         (PTRef c, PTRef t, PTRef e);// { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
 
 
     // Generic equalities
@@ -374,7 +362,8 @@ class Logic {
     bool          isDisequality    (PTRef tr)      const;// { return disequalities.has(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const;// { return ites.has(tr);          }
     bool          isIte            (PTRef tr)      const;// { return ites.has(term_store[tr].symb()); }
-
+    bool          isNonBoolIte     (SymRef sr)     const { return isIte(sr) and getSortRef(sr) != sort_BOOL; }
+    bool          isNonBoolIte     (PTRef tr)      const { return isNonBoolIte(getPterm(tr).symb()); }
 
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
