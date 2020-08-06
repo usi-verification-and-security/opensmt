@@ -143,8 +143,8 @@ BitBlaster::assertLit (PtAsgn pta)
     // This needs to be re-thought.  I'd like to have this activation
     // logic in MainSolver somehow and use the incremental interface.
     assert( pta.tr != PTRef_Undef );
-    Pterm& p = logic.getPterm(pta.tr);
-    Var act_var = p.getVar();
+    assert(thandler.getTMap().hasLit(pta.tr));
+    Var act_var = thandler.ptrefToVar(pta.tr);
 
     if ( ((pta.sgn == l_False) && (thandler.varToTerm(act_var) == logic.getTerm_true() ))
       || thandler.varToTerm(act_var) == logic.getTerm_false())

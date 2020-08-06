@@ -37,22 +37,27 @@ class TermMapper {
     vec<PTRef>  varToTerm;
     vec<SymRef> varToTheorySymbol;
     vec<bool>   frozen;
+    Map<PTRef, Var, PTRefHash> termToVar;
+
+    void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
+    void getVar(PTRef, PTRef&, Var&) const;     // Return the variable corresponding to the term
+    bool peekVar(PTRef positiveTerm, Var& v) const;
+    Var addBinding(PTRef tr);
+    PTRef toPositive(PTRef term) const;
+
   public:
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
-    Var addBinding(PTRef tr);
     const Lit getOrCreateLit(PTRef ptr);
     void setFrozen(Var v) { frozen[v] = true; }
     bool isFrozen(Var v)  { return frozen[v]; }
     // Return a "purified" term by removing sequence of nots.  sgn is false if
     // sequence length is even, and true if it odd.  Does not change the
     // mapping
-    void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
     Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
-    void getVar(PTRef, PTRef&, Var&) const;     // Return the variable corresponding to the term
     Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
-    bool hasLit(PTRef tr) const { return logic.getPterm(tr).hasVar(); }
-    PTRef varToPTRef(Var v) const { assert(v >= 0); assert(logic.getPterm(varToTerm[v]).getVar() == v); return varToTerm[v]; }
+    bool hasLit(PTRef tr) const { return termToVar.has(toPositive(tr)); }
+    PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
     int  nVars()          const { return varToTerm.size(); }
 #ifdef PEDANTIC_DEBUG
     Var  getVarDbg(uint32_t r) const { PTRef tr; tr = {r}; return getVar(tr); }

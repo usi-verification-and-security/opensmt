@@ -1850,7 +1850,7 @@ void CoreSMTSolver::declareVarsToTheories()
             if (!var_seen[v]) {
                 var_seen[v] = true;
                 const Logic & logic = theory_handler.getLogic();
-                assert(logic.getPterm(theory_handler.varToTerm(v)).getVar() != -1);
+                assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
                 const PTRef term = theory_handler.varToTerm(v);
                 if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
                     theory_handler.declareAtom(term);

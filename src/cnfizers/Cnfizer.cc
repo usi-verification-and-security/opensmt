@@ -565,17 +565,12 @@ void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
 lbool Cnfizer::getTermValue (PTRef tr) const
 {
     assert (solver.isOK());
-    vec<lbool> &model = solver.model;
-    PTRef p;
-    bool sgn;
-    tmap.getTerm (tr, p, sgn);
-
-    if (logic.getPterm (p).getVar() != var_Undef)
+    if (tmap.hasLit(tr))
     {
-        Var v = logic.getPterm (p).getVar();
-        lbool val = model[v];
+        Lit l = tmap.getLit(tr);
+        lbool val = solver.modelValue(l);
         assert (val != l_Undef);
-        return sgn == false ? val : (val == l_True ? l_False : l_True);
+        return val;
     }
     else return l_Undef;
 }

@@ -36,10 +36,9 @@ Var TermMapper::addBinding(PTRef tr)
     PTRef tr_p; // The purified term
     Var v;
     getVar(tr, tr_p, v);
-    if (v == -1) {
-        v = Var(var_cnt++);
-        logic.getPterm(tr_p).setVar(v);
-    }
+    assert(v == var_Undef);
+    v = Var(var_cnt++);
+    termToVar.insert(tr_p, v);
     // It is possible that v was already recorded in the PTRef but
     // varTo* are not updated to contain it for instance when loading
     // state from a file.
@@ -71,41 +70,51 @@ Lit TermMapper::getLit(PTRef r) const {
     bool sgn;
     PTRef p;
     getTerm(r, p, sgn);
-    assert(logic.getPterm(p).hasVar());
-    return mkLit(logic.getPterm(p).getVar(), sgn);
+    Var v = var_Undef;
+    bool found = peekVar(p, v);
+    assert(found); (void)found;
+    return mkLit(v, sgn);
 }
 
 void TermMapper::getVar(PTRef r, PTRef& p, Var& v) const {
     bool sgn;
     getTerm(r, p, sgn);
-    v = logic.getPterm(p).getVar();
+    v = var_Undef;
+    peekVar(p, v);
 }
 
 Var TermMapper::getVar(PTRef r) const {
-    Var v;
+    Var v = var_Undef;
     PTRef p;
     getVar(r, p, v);
-    return logic.getPterm(p).getVar();
+    return v;
 }
 
 const Lit TermMapper::getOrCreateLit(PTRef ptr) {
     PTRef p_tr;
     bool sgn;
-    Var v;
-    this->getTerm(ptr, p_tr, sgn);
-
-    Pterm& p = logic.getPterm(p_tr);
-    if (p.getVar() == -1)
+    Var v = var_Undef;
+    getTerm(ptr, p_tr, sgn);
+    peekVar(p_tr, v);
+    if (v == var_Undef)
     {
-        v = this->addBinding(p_tr);
         assert(logic.hasSortBool(p_tr));
-    }
-    else{
-        v = logic.getPterm(p_tr).getVar();
+        v = this->addBinding(p_tr);
     }
     Lit l = mkLit (v, sgn);
-
     return l;
+}
+
+bool TermMapper::peekVar(PTRef positiveTerm, Var& v) const {
+    assert(not logic.isNot(positiveTerm));
+    return termToVar.peek(positiveTerm, v);
+}
+
+PTRef TermMapper::toPositive(PTRef term) const {
+    bool sign;
+    PTRef pos;
+    getTerm(term, pos, sign);
+    return pos;
 }
 
 
