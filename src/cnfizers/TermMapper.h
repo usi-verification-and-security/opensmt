@@ -34,34 +34,53 @@ class TermMapper {
   private:
     int         var_cnt;
     Logic&      logic;
-    vec<PTRef>  varToTerm;
-    vec<SymRef> varToTheorySymbol;
     vec<bool>   frozen;
-    Map<PTRef, Var, PTRefHash> termToVar;
+    vec<PTRef>  varToTerm; // Mapping Var -> PTRef
+    Map<PTRef, Var, PTRefHash> termToVar; // Mapping PTRef -> Var; NOTE: Only positive terms are stored!
 
-    void getTerm(PTRef tr, PTRef& tr_clean, bool& sgn) const;
-    void getVar(PTRef, PTRef&, Var&) const;     // Return the variable corresponding to the term
-    bool peekVar(PTRef positiveTerm, Var& v) const;
-    Var addBinding(PTRef tr);
+    // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
+    void getTerm(PTRef tr, PTRef& tr_pos, bool& sgn) const;
+
+    // Given a term returns the positive version of the term.
     PTRef toPositive(PTRef term) const;
+
+    // Giver a term computes the positive term and SAT variable correspoding to the positive term.
+    void getVar(PTRef, PTRef&, Var&) const;
+
+    // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and returns true.
+    bool peekVar(PTRef positiveTerm, Var& v) const;
+
+    // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for the same term.
+    Var addBinding(PTRef tr);
+
+
 
   public:
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
-    const Lit getOrCreateLit(PTRef ptr);
     void setFrozen(Var v) { frozen[v] = true; }
     bool isFrozen(Var v)  { return frozen[v]; }
-    // Return a "purified" term by removing sequence of nots.  sgn is false if
-    // sequence length is even, and true if it odd.  Does not change the
-    // mapping
-    Var  getVar(PTRef)    const;                // Return the variable corresponding to the term
-    Lit  getLit(PTRef)    const;                // Return the literal corresponding to the term
+
+
+    /*
+     * Returns a SAT literal corresponding to the giver BOOLEAN term.
+     * If no SAT variable has been assigned to (the positive version of) this term yet, a new one will be created.
+     * Handles the sign of the term correctly, i.e., it returned negative literal for negative term and
+     * positive literal for positive term.
+     */
+    const Lit getOrCreateLit(PTRef ptr);
+
+    // Returns the variable corresponding to the term. The connection must already exist.
+    Var  getVar(PTRef)    const;
+    // Returns the literal corresponding to the term. The connection must already exist.
+    Lit  getLit(PTRef)    const;
+    // Test if the given term already has an assigned SAT variable
     bool hasLit(PTRef tr) const { return termToVar.has(toPositive(tr)); }
+
+    // Returns the term to which the given variable has been assigned. The connection must already exist.
     PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
+
     int  nVars()          const { return varToTerm.size(); }
-#ifdef PEDANTIC_DEBUG
-    Var  getVarDbg(uint32_t r) const { PTRef tr; tr = {r}; return getVar(tr); }
-#endif
 };
 
 #endif

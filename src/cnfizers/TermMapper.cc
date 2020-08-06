@@ -33,26 +33,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Var TermMapper::addBinding(PTRef tr)
 {
     assert(tr != PTRef_Undef);
+    assert(varToTerm.size() == var_cnt);
     PTRef tr_p; // The purified term
     Var v;
     getVar(tr, tr_p, v);
     assert(v == var_Undef);
     v = Var(var_cnt++);
+    assert(not termToVar.has(tr_p));
     termToVar.insert(tr_p, v);
-    // It is possible that v was already recorded in the PTRef but
-    // varTo* are not updated to contain it for instance when loading
-    // state from a file.
-    assert(varToTerm.size() <= v || varToTerm[v] == tr_p || varToTerm[v] == PTRef_Undef);
-    assert(varToTerm.size() == varToTheorySymbol.size());
-    assert(varToTheorySymbol.size() <= v || varToTheorySymbol[v] == logic.getSymRef(tr_p) || varToTheorySymbol[v] == SymRef_Undef);
-
     assert(varToTerm.size() == frozen.size());
     while (varToTerm.size() <= v) {
         varToTerm.push(PTRef_Undef);
-        varToTheorySymbol.push(SymRef_Undef);
         frozen.push(false);
     }
-    varToTheorySymbol[v] = logic.getSymRef(tr_p);
     varToTerm[v] = tr_p;
     return v;
 }
