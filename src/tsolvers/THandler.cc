@@ -117,10 +117,9 @@ TRes THandler::check(bool complete) {
 }
 
 void THandler::getNewSplits(vec<Lit> &splits) {
-    int i;
     vec<PTRef> split_terms;
-    for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasNewSplits()) {
+    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+        if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
             getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
             break;
         }
@@ -133,14 +132,15 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     assert(split_terms.size() == 1);
     PTRef tr = split_terms[0];
     split_terms.pop();
-    assert(getLogic().isOr(tr));
-    Pterm& t = getLogic().getPterm(tr);
-    for (int i = 0; i < t.size(); i++) {
-        tmap.addBinding(t[i]);
-        assert(getLogic().isAtom(t[i])); // MB: Needs to be an atom, otherwise the declaration would not work.
-        declareAtom(t[i]);
-        informNewSplit(t[i]);
-        splits.push(tmap.getLit(t[i]));
+    Logic & logic = getLogic();
+    assert(logic.isOr(tr));
+    for (int i = 0; i < logic.getPterm(tr).size(); i++) {
+        PTRef arg = logic.getPterm(tr)[i];
+        Lit l = tmap.getOrCreateLit(arg);
+        assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
+        declareAtom(arg);
+        informNewSplit(arg);
+        splits.push(l);
     }
 }
 

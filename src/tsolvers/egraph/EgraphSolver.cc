@@ -1119,7 +1119,6 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                 break;
             continue;
         }
-        assert(logic.getPterm(v_tr).getVar() != -1);
         if (!hasPolarity(v_tr)) {
             assert(v_tr == enode_store.ERefToTerm[v]);
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
