@@ -35,14 +35,16 @@ class TermMapper {
     int         var_cnt;
     Logic&      logic;
     vec<bool>   frozen;
-    vec<PTRef>  varToTerm; // Mapping Var -> PTRef
-    Map<PTRef, Var, PTRefHash> termToVar; // Mapping PTRef -> Var; NOTE: Only positive terms are stored!
+    vec<PTRef>  varToTerm; // Mapping Var -> PTRef using var's index
+    vec<Var>    termToVar; // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
 
     // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
     void getTerm(PTRef tr, PTRef& tr_pos, bool& sgn) const;
 
     // Given a term returns the positive version of the term.
     PTRef toPositive(PTRef term) const;
+
+    PTId toId(PTRef term) const { return logic.getPterm(term).getId(); }
 
     // Giver a term computes the positive term and SAT variable correspoding to the positive term.
     void getVar(PTRef, PTRef&, Var&) const;
@@ -75,7 +77,7 @@ class TermMapper {
     // Returns the literal corresponding to the term. The connection must already exist.
     Lit  getLit(PTRef)    const;
     // Test if the given term already has an assigned SAT variable
-    bool hasLit(PTRef tr) const { return termToVar.has(toPositive(tr)); }
+    bool hasLit(PTRef tr) const { Var v = var_Undef; peekVar(toPositive(tr), v); return v != var_Undef; }
 
     // Returns the term to which the given variable has been assigned. The connection must already exist.
     PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }

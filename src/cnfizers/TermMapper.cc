@@ -39,8 +39,10 @@ Var TermMapper::addBinding(PTRef tr)
     getVar(tr, tr_p, v);
     assert(v == var_Undef);
     v = Var(var_cnt++);
-    assert(not termToVar.has(tr_p));
-    termToVar.insert(tr_p, v);
+    assert(not hasLit(tr_p));
+    auto termIndex = Idx(toId(tr_p));
+    termToVar.growTo(termIndex + 1, var_Undef);
+    termToVar[termIndex] = v;
     assert(varToTerm.size() == frozen.size());
     while (varToTerm.size() <= v) {
         varToTerm.push(PTRef_Undef);
@@ -100,7 +102,9 @@ const Lit TermMapper::getOrCreateLit(PTRef ptr) {
 
 bool TermMapper::peekVar(PTRef positiveTerm, Var& v) const {
     assert(not logic.isNot(positiveTerm));
-    return termToVar.peek(positiveTerm, v);
+    auto id = Idx(toId(positiveTerm));
+    v = id < termToVar.size_() ? termToVar[id] : var_Undef;
+    return v != var_Undef;
 }
 
 PTRef TermMapper::toPositive(PTRef term) const {
