@@ -106,7 +106,7 @@ public:
     FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
     FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
     FastRational(uint32_t);
-    FastRational(word num, word den) : state{State::WORD_VALID}, num(num), den(den) { }
+    inline FastRational(word n, uword d);
     explicit FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
     inline FastRational(FastRational&& other) noexcept;
@@ -206,7 +206,6 @@ public:
     inline FastRational operator-() const;
     inline void negate();
 private:
-    inline FastRational(word n, uword d);
     void print_(std::ostream& out) const;
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
