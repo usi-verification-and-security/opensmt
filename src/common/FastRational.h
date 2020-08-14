@@ -63,11 +63,15 @@ inline State& operator |= (State& lhs, State rhs)
 }
 
 inline uword absVal(word x) {
-    return x>=0 ? x : -x;
+    // Taking just (- WORD_MIN) is undefined behaviour, changed according to https://stackoverflow.com/questions/12231560/correct-way-to-take-absolute-value-of-int-min
+    return x < 0 ? -((uword)(x))
+                 : +((uword)(x));
 }
 
 inline ulword absVal(lword x) {
-    return x>=0 ? x : -x;
+    // Taking just (- LWORD_MIN) is undefined behaviour
+    return x < 0 ? -((ulword)(x))
+                 : +((ulword)(x));
 }
 
 class FastRational
