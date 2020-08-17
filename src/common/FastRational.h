@@ -223,16 +223,21 @@ private:
     mpq_t mpq;
 public:
     FastRational get_den() const {
-        if (wordPartValid() && den <= INT32_MAX)
-            return (uword)den;
-        else
+        if (wordPartValid() && den <= INT32_MAX) {
+            return FastRational((uword)den);
+        }
+        else {
+            force_ensure_mpq_valid();
             return FastRational(mpz_class(mpq_denref(mpq)));
+        }
     }
     FastRational get_num() const {
-        if (wordPartValid())
-            return num;
-        else
+        if (wordPartValid()) {
+            return FastRational(num);
+        }
+        else {
             return FastRational(mpz_class(mpq_numref(mpq)));
+        }
     }
 
     inline int compare(const FastRational& b) const;
