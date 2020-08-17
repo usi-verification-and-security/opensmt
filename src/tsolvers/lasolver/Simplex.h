@@ -86,7 +86,7 @@ public:
 
     void quasiToBasic(LVRef it);
 
-    Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
+    Simplex::Explanation assertBound(LABoundRef bound_ref);
     bool isProcessedByTableau  (LVRef var) const;
     inline bool isModelOutOfBounds    (LVRef v) const { return isModelOutOfUpperBound(v) || isModelOutOfLowerBound(v); }
     inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->hasUBound(v) && model->read(v) > model->Ub(v) ); }
@@ -116,7 +116,7 @@ public:
 
     // Keeping track of activated bounds
 private:
-    std::vector<std::pair<LVRef, LABoundRef>> bufferOfActivatedBounds;
+    vec<LABoundRef> bufferOfActivatedBounds;
 
     void newVar(LVRef v) {
         // MB: is this needed for something?
@@ -138,7 +138,9 @@ private:
 
 public:
 
-    lbool getPolaritySuggestion(LVRef var, LABoundRef pos, LABoundRef neg) const {
+    lbool chooseBoundPolarity(LABoundRef pos, LABoundRef neg) const {
+        LVRef var = boundStore[pos].getLVRef();
+        assert(var == boundStore[neg].getLVRef());
         if (tableau.isQuasiBasic(var)) {
             (const_cast<Simplex*>(this))->quasiToBasic(var);
         }

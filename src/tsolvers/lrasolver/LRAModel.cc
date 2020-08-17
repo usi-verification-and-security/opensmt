@@ -86,18 +86,20 @@ bool LRAModel::isEquality(LVRef v) const {
         && Lb(v) == Ub(v);
 }
 bool LRAModel::isUnbounded(LVRef v) const { return bs.isUnbounded(v); }
-bool LRAModel::boundTriviallySatisfied(LVRef v, LABoundRef b) const
+bool LRAModel::boundTriviallySatisfied(LABoundRef b) const
 {
     const LABound& bound = bs[b];
+    LVRef v = bound.getLVRef();
     assert(bound.getType() == bound_l || bound.getType() == bound_u);
     const bool is_lower = bound.getType() == bound_l;
     if ((is_lower && !hasLBound(v)) || (!is_lower && !hasUBound(v))) { return false; }
     const LABound& toCompare = is_lower ? readLBound(v) : readUBound(v);
     return ((!is_lower && bound.getIdx().x >= toCompare.getIdx().x) || (is_lower && bound.getIdx().x <= toCompare.getIdx().x));
 }
-bool LRAModel::boundTriviallyUnsatisfied(LVRef v, LABoundRef b) const
+bool LRAModel::boundTriviallyUnsatisfied(LABoundRef b) const
 {
     const LABound& bound = bs[b];
+    LVRef v = bound.getLVRef();
     assert(bound.getType() == bound_l || bound.getType() == bound_u);
     const bool is_lower = bound.getType() == bound_l;
     if ((is_lower && !hasUBound(v)) || (!is_lower && !hasLBound(v))) { return false; }

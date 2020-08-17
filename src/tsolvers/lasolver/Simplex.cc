@@ -225,26 +225,24 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     return y_found;
 }
 
-Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
-    assert(!model->isUnbounded(it));
-    assert(boundStore[itBound_ref].getLVRef() == it);
-
+Simplex::Explanation Simplex::assertBound(LABoundRef bound_ref) {
+    const LABound & bound = boundStore[bound_ref];
+    assert(bound.getType() == bound_u || bound.getType() == bound_l);
+    LVRef var = bound.getLVRef();
+    assert(var != LVRef_Undef);
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
-    if (model->boundTriviallyUnsatisfied(it, itBound_ref)) {
-        const LABound & itBound = boundStore[itBound_ref];
-        assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
-        LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(it) : model->readUBoundRef(it);
-        return {{br, 1}, {itBound_ref, 1}};
+    if (model->boundTriviallyUnsatisfied(bound_ref)) {
+
+        LABoundRef br = bound.getType() == bound_u ? model->readLBoundRef(var) : model->readUBoundRef(var);
+        return {{br, 1}, {bound_ref, 1}};
     }
 
-
-
     // Check if simple SAT can be given
-    if (model->boundTriviallySatisfied(it, itBound_ref)) { return {}; }
+    if (model->boundTriviallySatisfied(bound_ref)) { return {}; }
 
-    activateBound(itBound_ref);
+    activateBound(bound_ref);
 
-    bufferOfActivatedBounds.emplace_back(it, itBound_ref);
+    bufferOfActivatedBounds.push(bound_ref);
     return {};
 }
 
@@ -484,14 +482,14 @@ Simplex::~Simplex()
 }
 
 void Simplex::processBufferOfActivatedBounds() {
-    while (!bufferOfActivatedBounds.empty()) {
-        LVRef var = bufferOfActivatedBounds.back().first;
-        LABoundRef boundRef = bufferOfActivatedBounds.back().second;
-        bufferOfActivatedBounds.pop_back();
+    while (bufferOfActivatedBounds.size() > 0) {
+        LABoundRef boundRef = bufferOfActivatedBounds.last();
+        auto const & bound = boundStore[boundRef];
+        bufferOfActivatedBounds.pop();
+        LVRef var = bound.getLVRef();
         assert(!tableau.isQuasiBasic(var));
         // Update the Tableau data if a non-basic variable
         if (tableau.isNonBasic(var)) {
-            auto const & bound = boundStore[boundRef];
             if (!isBoundSatisfied(model->read(var), bound)) {
                 changeValueBy(var, bound.getValue() - model->read(var));
             }

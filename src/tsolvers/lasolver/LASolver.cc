@@ -17,8 +17,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
 
-    LVRef v = laVarMapper.getVarByLeqId(logic.getPterm(leq_tr).getId());
-    assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
+    LVRef v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
 
     LABoundStore::BoundInfo bi;
     LABoundRef br_pos;
@@ -326,8 +325,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 void LASolver::informNewSplit(PTRef tr)
 {
     PTRef term = logic.getPterm(tr)[1];
-    LVRef v = exprToLVar(term);
-    laVarMapper.addLeqVar(tr, v);
+    assert(laVarMapper.hasVar(term));
     updateBound(tr);
 }
 
@@ -380,16 +378,12 @@ bool LASolver::assertLit(PtAsgn asgn)
 //    printf("Asserting %s (%d)\n", boundStore.printBound(bound_ref), asgn.tr.x);
 //    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
-    LVRef it = getVarForLeq(asgn.tr);
-    // Constraint to push was not found in local storage. Most likely it was not read properly before
-    assert(it != LVRef_Undef);
-
-    if (assertBoundOnVar( it, bound_ref))
+    if (assertBound(bound_ref))
     {
         assert(getStatus());
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
-        if (config.theory_propagation) { getSimpleDeductions(it, bound_ref); }
+        if (config.theory_propagation) { getSimpleDeductions(bound_ref); }
         tsolver_stats.sat_calls++;
     } else {
         tsolver_stats.unsat_calls++;
@@ -398,12 +392,11 @@ bool LASolver::assertLit(PtAsgn asgn)
     return getStatus();
 }
 
-bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
+bool LASolver::assertBound(LABoundRef bound_ref) {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
 
     assert(status == SAT);
-    assert(it != LVRef_Undef);
-    storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
+    storeExplanation(simplex.assertBound(bound_ref));
 
     if (explanation.size() > 0) {
         return setStatus(UNSAT);
@@ -490,9 +483,7 @@ void LASolver::initSolver()
             PTRef term = leq_t[1];
 
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
-            LVRef v = exprToLVar(term);
-
-            laVarMapper.addLeqVar(leq_tr, v);
+            exprToLVar(term);
 
             // Assumes that the LRA variable has been already declared
             setBound(leq_tr);
@@ -552,12 +543,13 @@ bool LASolver::setStatus( LASolverStatus s )
 }
 
 
-void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
+void LASolver::getSimpleDeductions(LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
     const LABound& bound = boundStore[br];
+    LVRef v = bound.getLVRef();
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);

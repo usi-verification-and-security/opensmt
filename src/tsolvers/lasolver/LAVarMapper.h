@@ -24,9 +24,6 @@ class LALogic;
  */
 class LAVarMapper {
 private:
-    /** Convenience mapping of inequalities to LVRef representing the linear term without constant in the inequality*/
-    vec<LVRef>      leqToLavar;
-
     /** Mapping of linear Pterms to LVRefs */
     vec<LVRef>      ptermToLavar;
 
@@ -39,10 +36,7 @@ public:
 
     void   registerNewMapping(LVRef lv, PTRef e_orig);
 
-    void   addLeqVar(PTRef leq_tr, LVRef v); // Adds a binding from leq_tr to the "slack var" v
-
     LVRef  getVarByPTId(PTId i) const;
-    LVRef  getVarByLeqId(PTId i) const;
 
     bool   hasVar(PTId i) const;
     bool   hasVar(PTRef tr) const;

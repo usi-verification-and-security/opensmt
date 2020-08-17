@@ -89,10 +89,9 @@ LRALogic&  LRASolver::getLogic() { return logic; }
 
 lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
     if (!this->isInformed(ptref)) { return l_Undef; }
-    LVRef var = this->getVarForLeq(ptref);
     LABoundRefPair bounds = getBoundRefPair(ptref);
     assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
-    return simplex.getPolaritySuggestion(var, bounds.pos, bounds.neg);
+    return simplex.chooseBoundPolarity(bounds.pos, bounds.neg);
 }
 
 

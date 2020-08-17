@@ -87,7 +87,7 @@ protected:
     //opensmt::Real delta; // The size of one delta.  Set through computeModel()
     LASolverStats tsolver_stats;
     void setBound(PTRef leq);
-    bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
+    bool assertBound(LABoundRef bound_ref);
 
 protected:
     PTRef getVarPTRef(LVRef v) const {
@@ -138,11 +138,10 @@ protected:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
-    LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     virtual void notifyVar(LVRef) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
-    void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position
+    void getSimpleDeductions(LABoundRef);      // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     inline bool getStatus( );                               // Read the status of the solver in lbool
     bool setStatus( LASolverStatus );               // Sets and return status of the solver

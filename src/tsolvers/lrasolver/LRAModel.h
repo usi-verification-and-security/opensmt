@@ -64,8 +64,8 @@ public:
 
     bool isEquality(LVRef v) const;
     bool isUnbounded(LVRef v) const;
-    bool boundTriviallySatisfied(LVRef v, LABoundRef b) const;
-    bool boundTriviallyUnsatisfied(LVRef v, LABoundRef b) const;
+    bool boundTriviallySatisfied(LABoundRef b) const;
+    bool boundTriviallyUnsatisfied(LABoundRef b) const;
 
     void saveAssignment() {
         for (int i = 0; i < changed_vars_vec.size(); ++i) {
