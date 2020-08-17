@@ -44,7 +44,7 @@ LRAModel::write(const LVRef &v, Delta val)
 
 void
 LRAModel::pushBound(const LABoundRef br) {
-    LABound& b = bs[br];
+    LABound const & b = bs[br];
     LVRef vr = b.getLVRef();
     if (b.getType() == bound_u) {
         int_ubounds[getVarId(vr)].push(br);
@@ -52,24 +52,14 @@ LRAModel::pushBound(const LABoundRef br) {
     else {
         int_lbounds[getVarId(vr)].push(br);
     }
-
-    bound_trace.push(br);
 }
 
-void
-LRAModel::popBounds()
-{
-    for (int i = bound_trace.size()-1; i >= bound_limits.last(); i--) {
-        LABoundRef br = bound_trace[i];
-        LABound &b = bs[br];
-        LVRef vr = b.getLVRef();
-        if (b.getType() == bound_u) {
-            int_ubounds[getVarId(vr)].pop();
-        } else {
-            int_lbounds[getVarId(vr)].pop();
-        }
+void LRAModel::popBound(LVRef var, BoundT type) {
+    if (type == bound_u) {
+        int_ubounds[getVarId(var)].pop();
+    } else {
+        int_lbounds[getVarId(var)].pop();
     }
-    bound_trace.shrink(bound_trace.size() - bound_limits.last());
 }
 
 void LRAModel::clear() {
@@ -78,25 +68,17 @@ void LRAModel::clear() {
     this->changed_vars_set.reset();
     this->changed_vars_vec.clear();
     this->int_lbounds.clear();
-    this->bound_trace.clear();
     this->has_model.clear();
     this->int_ubounds.clear();
-    this->bound_limits.clear();
     this->n_vars_with_model = 0;
 
-    bound_limits.push(0);
 }
-
-int LRAModel::backtrackLevel() { return bound_limits.size() - 1; }
-
 
 LABoundRef LRAModel::readLBoundRef(LVRef v) const { assert(hasLBound(v)); return int_lbounds[getVarId(v)].last(); }
 const LABound& LRAModel::readLBound(const LVRef &v) const { return bs[readLBoundRef(v)]; }
 LABoundRef LRAModel::readUBoundRef(LVRef v) const { assert(hasUBound(v)); return int_ubounds[getVarId(v)].last(); }
 const LABound& LRAModel::readUBound(const LVRef &v) const { return bs[readUBoundRef(v)]; }
-void LRAModel::pushBacktrackPoint()      { bound_limits.push(bound_trace.size()); }
-void LRAModel::popBacktrackPoint() { popBounds(); bound_limits.pop(); }; // Returns the decision if the backtrack point had a decision
-int  LRAModel::getBacktrackSize() const { return bound_limits.size(); }
+
 
 bool LRAModel::isEquality(LVRef v) const {
     return hasLBound(v) && hasUBound(v)

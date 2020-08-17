@@ -22,9 +22,6 @@ protected:
     vec<vec<LABoundRef> > int_lbounds;
     vec<vec<LABoundRef> > int_ubounds;
 
-    vec<int> bound_limits;
-    vec<LABoundRef> bound_trace;
-
     vec<Delta>  current_assignment;
     vec<Delta>  last_consistent_assignment;
     nat_set     changed_vars_set;
@@ -33,11 +30,10 @@ protected:
     LABoundStore &bs;
     int n_vars_with_model;
     Map<LVRef,bool,LVRefHash> has_model;
-    int          backtrackLevel();
     void         popBounds();
 
 public:
-    LRAModel(LABoundStore & bs) : bs(bs), n_vars_with_model(0) { bound_limits.push(0); }
+    LRAModel(LABoundStore & bs) : bs(bs), n_vars_with_model(0) { }
     void init();
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
@@ -54,7 +50,9 @@ private:
     inline const Delta& readBackupValue (LVRef v) const { return last_consistent_assignment[getVarId(v)]; }
 public:
 
+    bool hasActiveBounds(LVRef v) const { return hasLBound(v) || hasUBound(v); }
     void pushBound(const LABoundRef br);
+    void popBound(LVRef var, BoundT type);
     bool hasLBound(LVRef v) const { return int_lbounds[getVarId(v)].size() != 0; }
     const LABound& readLBound(const LVRef &v) const;
     LABoundRef readLBoundRef(LVRef v) const;
@@ -63,9 +61,6 @@ public:
     LABoundRef readUBoundRef(LVRef v) const;
     inline const Delta& Lb(LVRef v) const { return readLBound(v).getValue(); }
     inline const Delta& Ub(LVRef v) const { return readUBound(v).getValue(); }
-    void pushBacktrackPoint();
-    void popBacktrackPoint();
-    int  getBacktrackSize() const ;
 
     bool isEquality(LVRef v) const;
     bool isUnbounded(LVRef v) const;

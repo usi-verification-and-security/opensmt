@@ -272,7 +272,6 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
-
         logic.splitTermToVarAndConst(expr, v, c);
         assert(logic.isNumVarOrIte(v) || (logic.isNegated(v) && logic.isNumVarOrIte(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
@@ -460,8 +459,6 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         PtAsgn dec = popTermBacktrackPoint();
         if (dec != PtAsgn_Undef) {
             clearPolarity(dec.tr);
-            LVRef it = getVarForLeq(dec.tr);
-            simplex.boundDeactivated(it);
         }
 
         TSolver::popBacktrackPoint();

@@ -237,13 +237,12 @@ Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref)
         return {{br, 1}, {itBound_ref, 1}};
     }
 
-    // Here we count the bound as activated
-    boundActivated(it);
+
 
     // Check if simple SAT can be given
     if (model->boundTriviallySatisfied(it, itBound_ref)) { return {}; }
 
-    model->pushBound(itBound_ref);
+    activateBound(itBound_ref);
 
     bufferOfActivatedBounds.emplace_back(it, itBound_ref);
     return {};
@@ -269,7 +268,7 @@ void Simplex::pivot(const LVRef bv, const LVRef nv){
     // after pivot, bv is not longer a candidate
     eraseCandidate(bv);
     // and nv can be a candidate
-    if (getNumOfBoundsActive(nv) == 0) {
+    if (not model->hasActiveBounds(nv)) {
         tableau.basicToQuasi(nv);
     }
     else {
@@ -507,5 +506,29 @@ void Simplex::processBufferOfActivatedBounds() {
             }
         }
     }
+}
+
+void
+Simplex::popBounds()
+{
+    for (int i = bound_trace.size()-1; i >= bound_limits.last(); i--) {
+        LABoundRef br = bound_trace[i];
+        LABound &b = boundStore[br];
+        LVRef vr = b.getLVRef();
+        model->popBound(vr, b.getType());
+        if (tableau.isBasic(vr) && not model->hasActiveBounds(vr)) {
+            tableau.basicToQuasi(vr);
+        }
+    }
+    bound_trace.shrink(bound_trace.size() - bound_limits.last());
+}
+
+void Simplex::clear() {
+    model->clear();
+    candidates.clear();
+    tableau.clear();
+    bound_trace.clear();
+    bound_limits.clear();
+    bound_limits.push(0);
 }
 

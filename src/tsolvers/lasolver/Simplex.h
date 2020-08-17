@@ -32,6 +32,11 @@ class Simplex {
 
     Tableau tableau;
     SimplexStats simplex_stats;
+
+    // Now simplex is in charge of backtrack points
+    vec<int> bound_limits;
+    vec<LABoundRef> bound_trace;
+
     void  pivot(LVRef basic, LVRef nonBasic);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
@@ -62,16 +67,15 @@ public:
     };
     using Explanation = std::vector<ExplTerm>;
 
-    Simplex(std::unique_ptr<LRAModel> model, LABoundStore &bs) : model(std::move(model)), boundStore(bs) {}
-    Simplex(LABoundStore&bs) : model(new LRAModel(bs)), boundStore(bs) {}
+    Simplex(LABoundStore&bs) : model(new LRAModel(bs)), boundStore(bs) { bound_limits.push(0); }
     ~Simplex();
 
     void initModel() { model->init(); }
 
-    void clear() { model->clear(); candidates.clear(); tableau.clear(); boundsActivated.clear(); }
+    void clear();
     Explanation checkSimplex();
-    void pushBacktrackPoint() { model->pushBacktrackPoint(); }
-    void popBacktrackPoint()  { model->popBacktrackPoint(); }
+    void pushBacktrackPoint() { bound_limits.push(bound_trace.size()); }
+    void popBacktrackPoint()  { popBounds(); bound_limits.pop(); }
     inline void finalizeBacktracking() {
         assert(model->changed_vars_vec.size() == 0);
         candidates.clear();
@@ -113,34 +117,26 @@ public:
     // Keeping track of activated bounds
 private:
     std::vector<std::pair<LVRef, LABoundRef>> bufferOfActivatedBounds;
-    std::vector<unsigned int> boundsActivated;
-    unsigned int getNumOfBoundsActive(LVRef var) const {
-        assert(getVarId(var) < boundsActivated.size());
-        return boundsActivated[getVarId(var)];
-    }
+
     void newVar(LVRef v) {
-        while (getVarId(v) >= boundsActivated.size()) {
-            boundsActivated.push_back(0);
-        }
+        // MB: is this needed for something?
     }
 
     void processBufferOfActivatedBounds();
-public:
-    void boundActivated(LVRef v) {
-        assert(!tableau.isQuasiBasic(v) || boundsActivated[getVarId(v)] == 0);
-        if(tableau.isQuasiBasic(v)) {
-            quasiToBasic(v);
-        }
-        ++boundsActivated[getVarId(v)];
 
-    }
-    void boundDeactivated(LVRef v) {
-        assert(boundsActivated[getVarId(v)] > 0);
-        --boundsActivated[getVarId(v)];
-        if (getNumOfBoundsActive(v) == 0 && tableau.isBasic(v)) {
-            tableau.basicToQuasi(v);
+    void activateBound(LABoundRef boundRef) {
+        LVRef var = boundStore[boundRef].getLVRef();
+        assert(not tableau.isQuasiBasic(var) || not model->hasActiveBounds(var));
+        model->pushBound(boundRef);
+        bound_trace.push(boundRef);
+        if (tableau.isQuasiBasic(var)) {
+            quasiToBasic(var);
         }
     }
+
+    void popBounds();
+
+public:
 
     lbool getPolaritySuggestion(LVRef var, LABoundRef pos, LABoundRef neg) const {
         if (tableau.isQuasiBasic(var)) {
