@@ -58,15 +58,13 @@ public:
     lbool getPolaritySuggestion(PTRef) const;
 
 public:
-    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager &pmanager );
-    PTRef getDecomposedInterpolant(const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager);
-    bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
-    bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
-    bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
-    bool usingDecomposing() {
-        return config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_strong ||
-               config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_weak; }
-    const char*  getStrengthFactor() { return config.getLRAStrengthFactor(); }
+    PTRef getInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
+
+    bool usingStrong() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
+    bool usingWeak() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
+    bool usingFactor() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
+    bool usingDecomposing() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_strong; }
+    bool usingDualDecomposing () const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_weak; }
 
 private:
 

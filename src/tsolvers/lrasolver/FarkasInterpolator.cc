@@ -14,8 +14,8 @@
 #endif
 
 
-#include "LRA_Interpolator.h"
-#include "LRALogic.h"
+#include "FarkasInterpolator.h"
+#include "LALogic.h"
 #include <Real.h>
 #include <LA.h>
 #include <unordered_set>
@@ -27,7 +27,7 @@ using namespace opensmt;
 using matrix_t = std::vector<std::vector<Real>>;
 
 // initializing static member
-DecomposedStatistics LRA_Interpolator::stats {};
+DecomposedStatistics FarkasInterpolator::stats {};
 
 namespace {
 
@@ -323,67 +323,6 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return basis;
     }
 
-//    MB: the methods commented out represent the old, incomplete approach
-//    bool containsNegative(std::vector<Real> const & vec){
-//        return std::any_of(vec.begin(), vec.end(), [](const Real & val) { return val < 0; });
-//    }
-//
-//
-//    /*
-//     * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
-//     */
-//    bool tryFixVec(std::size_t idx, std::vector<std::vector<Real>> & basis, std::vector<Real> & alphas){
-//        assert(std::all_of(alphas.begin(), alphas.end(), [](const Real & val) {return val > 0;}));
-//        auto & vec = basis[idx];
-//        auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
-//        assert(neg != vec.end());
-//        auto position = neg - vec.begin();
-//        auto fixer_it = basis.begin();
-//        Real diff{0};
-//        for( ; fixer_it != basis.end(); ++fixer_it) {
-//            auto const & fixCandidate = *fixer_it;
-//            if (fixCandidate[position] > 0 && !containsNegative(fixCandidate)) {
-//                // OK candidate, check alphas
-//                diff = vec[position] / fixCandidate[position];
-//                auto fixCandidateIndex = fixer_it - basis.begin();
-//                if (alphas[fixCandidateIndex] + diff > 0) {
-//                    // OK, the alphas will remain positive
-//                    break;
-//                }
-//            }
-//        }
-//        if(fixer_it == basis.end()) {return false;}
-//        auto const & fixer = *fixer_it;
-//        alphas[fixer_it - basis.begin()] += diff;
-//        assert(alphas[fixer_it - basis.begin()] > 0);
-//        diff.negate();
-//        addToWithCoeff(vec, fixer, diff);
-//        assert(vec[position].isZero());
-//        return true;
-//    }
-//
-//    /*
-//     * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
-//     * for the space where all coordinates of all vectors of the basis would be non-negative
-//     */
-//    bool tryFixBase(std::vector<std::vector<Real>> & basis, std::vector<Real> alphas) {
-//        auto first_unchecked_it = basis.begin();
-//        auto vec_with_neg_it = first_unchecked_it;
-//        while(vec_with_neg_it != basis.end()){
-//            vec_with_neg_it = std::find_if(first_unchecked_it, basis.end(), containsNegative);
-//            if(vec_with_neg_it == basis.end()){
-//                return true;
-//            }
-//            bool wasFixed = tryFixVec((vec_with_neg_it - basis.begin()), basis, alphas);
-//            if(!wasFixed){
-//                return false;
-//            }
-//            first_unchecked_it = vec_with_neg_it;
-//        }
-//        return true;
-//    }
-
-
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
         assert(ineqs.size() == coeffs.size());
         LAExpression init{logic};
@@ -474,7 +413,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
 }
 
-PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanager) {
+PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     assert(color == icolor_t::I_A || color == icolor_t::I_B);
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
@@ -486,8 +425,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
                   << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
-        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr, pmanager);
-        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr, pmanager);
+        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
+        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);
         if(isA){
             trace(std::cout << "This explanation is from A\n";)
         }
@@ -497,8 +436,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
 
     }
     auto it = std::partition(candidates.begin(), candidates.end(),
-                             [color, this, &pmanager](std::pair<PtAsgn, Real> const & expl) {
-                                 return this->isInPartitionOfColor(color, expl.first.tr, pmanager);
+                             [color, this](std::pair<PtAsgn, Real> const & expl) {
+                                 return this->isInPartitionOfColor(color, expl.first.tr);
                              });
     if (it == candidates.end() || it == candidates.begin()) {
         // all inequalities are of the same color -> trivial interpolant
@@ -519,7 +458,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
     std::vector<local_terms_t> ineqs_local_vars;
     std::vector<ItpHelper> explanations_with_locals;
     for (const auto & helper : helpers) {
-        local_terms_t local_terms = getLocalTerms(helper, [this, color, &pmanager](PTRef ptr) { return this->isLocalFor(color, ptr, pmanager); });
+        local_terms_t local_terms = getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
 
         // explanataion with all variables shared form standalone partition
         if (local_terms.empty()) {
@@ -605,16 +544,16 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
 
     if (!interpolant_inequalities.empty()) {
         if (statsHelper.moreThanOneInequality) {
-            LRA_Interpolator::stats.decompositionOpportunities++;
+            FarkasInterpolator::stats.decompositionOpportunities++;
         }
         if (interpolant_inequalities.size() > 1) {
-            LRA_Interpolator::stats.decomposedItps++;
+            FarkasInterpolator::stats.decomposedItps++;
             assert(statsHelper.nonTrivialBasis || statsHelper.standAloneIneq);
             if (statsHelper.nonTrivialBasis) {
-                LRA_Interpolator::stats.nonTrivialBasis++;
+                FarkasInterpolator::stats.nonTrivialBasis++;
             }
             if (statsHelper.standAloneIneq) {
-                LRA_Interpolator::stats.standAloneIneq++;
+                FarkasInterpolator::stats.standAloneIneq++;
             }
         }
     }
@@ -630,10 +569,144 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
     return itp;
 }
 
-bool LRA_Interpolator::isALocal(PTRef var, PartitionManager &pmanager) const {
+bool FarkasInterpolator::isALocal(PTRef var) const {
     return isAstrict(pmanager.getIPartitions(var), mask);
 }
 
-bool LRA_Interpolator::isBLocal(PTRef var, PartitionManager &pmanager) const {
+bool FarkasInterpolator::isBLocal(PTRef var) const {
     return isBstrict(pmanager.getIPartitions(var), mask);
+}
+
+PTRef FarkasInterpolator::getInterpolant(FarkasItpOptions const & options) {
+    assert(explanations.size() > 1);
+
+    auto const algorithmToUse = options.getAlgorithm();
+    if (algorithmToUse == ItpAlg::DECOMPOSING || algorithmToUse == ItpAlg::DECOMPOSING_DUAL){
+        auto itp = getDecomposedInterpolant(algorithmToUse == ItpAlg::DECOMPOSING ? icolor_t::I_A : icolor_t::I_B);
+        assert(itp != PTRef_Undef);
+        return itp;
+    }
+
+    LAExpression interpolant(logic);
+    LAExpression interpolant_dual(logic);
+    bool delta_flag = false;
+    bool delta_flag_dual = false;
+
+#ifdef ITP_DEBUG
+    vec<PTRef> tr_vec;
+    for (int i = 0; i < explanations.size(); i++) {
+        PTRef tr_vecel = explanations[i].tr;
+        tr_vec.push(explanations[i].sgn == l_False ? logic.mkNot(tr_vecel) : tr_vecel);
+    }
+    PTRef tr = logic.mkAnd(tr_vec);
+    printf("; Explanation: \n");
+    printf(";  %s\n", logic.printTerm(tr));
+#endif
+
+    for (int i = 0; i < explanations.size(); i++) {
+        icolor_t color = I_UNDEF;
+        const ipartitions_t & p = pmanager.getIPartitions(explanations[i].tr);
+        if (isAB(p, mask)) {
+            color = I_AB;
+        } else if (isAlocal(p, mask)) {
+            color = I_A;
+        } else if (isBlocal(p, mask)) {
+            color = I_B;
+        }
+        if (color != I_A && color != I_AB && color != I_B) {
+            printf("Error: color is not defined.\n");
+            printf("  equation: %s\n", logic.printTerm(explanations[i].tr));
+            printf("  mask: %s\n", mask.get_str().c_str());
+            printf("  p: %s\n", p.get_str().c_str());
+            assert(false);
+        }
+        assert(color == I_A || color == I_AB || color == I_B);
+
+        PTRef exp_pt = explanations[i].tr;
+        if (labels != nullptr && labels->find(exp_pt) != labels->end()) {
+            if (color != I_UNDEF) {
+                // Partitioning and labels can disagree under conditions that according to partitioning
+                // the explanation can be in both parts, but the label can be more strict
+//                std::cerr << "Color disagreement for term: " << logic.printTerm(explanation[i].tr) << '\n';
+//                std::cerr << "Color from partitioning: " << color << '\n';
+//                std::cerr << "Color from labels: " << labels->find(exp_pt)->second << '\n';
+                assert(color == I_AB || color == labels->find(exp_pt)->second);
+            }
+            // labels have priority of simple partitioning information
+            color = labels->find(exp_pt)->second;
+            //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
+        }
+
+        // Add the conflict to the interpolant (multiplied by the coefficient)
+        if (color == I_A || color == I_AB) {
+            if (explanations[i].sgn == l_False) {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false), explanation_coeffs[i]);
+                delta_flag = true;
+            } else {
+                interpolant.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false), -explanation_coeffs[i]);
+            }
+        }
+        if (color == I_B || color == I_AB) {
+            if (explanations[i].sgn == l_False) {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false),
+                                                  explanation_coeffs[i]);
+                // TODO: investigate where delta_flag_dual should be used and how it should be used properly
+                delta_flag_dual = true;
+            } else {
+                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false),
+                                                  -explanation_coeffs[i]);
+            }
+        }
+    }
+
+    PTRef itp;
+    if (interpolant.isTrue() && !delta_flag) {
+        itp = logic.getTerm_true();
+    } else if (interpolant.isFalse() || (interpolant.isTrue() && delta_flag)) {
+        itp = logic.getTerm_false();
+    } else {
+        vec<PTRef> args;
+        if (algorithmToUse == ItpAlg::FACTOR) {
+            opensmt::Real const_strong = interpolant.getRealConstant();
+            opensmt::Real const_weak = interpolant_dual.getRealConstant();
+            PTRef nonconst_strong = interpolant.getPTRefNonConstant();
+
+            opensmt::Real lower_bound = const_strong;
+            opensmt::Real upper_bound = const_weak * -1;
+
+            assert(upper_bound >= lower_bound);
+
+            //cout << "; Strength factor from config is " << getStrengthFactor() << endl;
+            opensmt::Real strength_factor = options.getStrengthFactor();
+            if (strength_factor < 0 || strength_factor >= 1) {
+                opensmt_error("LRA strength factor has to be in [0,1)");
+            }
+            opensmt::Real strength_diff = (upper_bound - lower_bound);
+            //cout << "; Diff is " << strength_diff << endl;
+            //cout << "; Factor is " << strength_factor << endl;
+            opensmt::Real strength_delta = strength_diff * strength_factor;
+            //cout << "; Delta is " << strength_delta << endl;
+            opensmt::Real new_constant = lower_bound + (strength_diff * strength_factor);
+            new_constant = new_constant * -1;
+            //cout << "; New constant is " << new_constant << endl;
+            args.push(logic.mkConst(new_constant));
+            args.push(nonconst_strong);
+        } else if (algorithmToUse == ItpAlg::STRONG) {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant.toPTRef());
+        } else if (algorithmToUse == ItpAlg::WEAK) {
+            args.push(logic.mkConst("0"));
+            args.push(interpolant_dual.toPTRef());
+        } else {
+            opensmt_error("Error: interpolation algorithm not set for LRA.");
+        }
+
+        if (algorithmToUse != ItpAlg::WEAK) {
+            itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
+        } else {
+            itp = delta_flag_dual ? logic.mkNumLt(args) : itp = logic.mkNumLeq(args);
+            itp = logic.mkNot(itp);
+        }
+    }
+    return itp;
 }
