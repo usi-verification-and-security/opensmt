@@ -155,6 +155,8 @@ public:
     virtual void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
     virtual PTRef normalizeSum(PTRef sum);
     virtual PTRef normalizeMul(PTRef mul);
+    // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
+    virtual PTRef sumToNormalizedInequality(PTRef sum);
     virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith,
                                         Map<PTRef, PtAsgn, PTRefHash> & substitutions);
     virtual void simplifyAndSplitEq(PTRef, PTRef &);
