@@ -196,11 +196,10 @@ private:
     friend inline void substractionAssign   ( FastRational &, const FastRational & );
     friend inline void multiplicationAssign( FastRational &, const FastRational & );
     friend inline void divisionAssign      ( FastRational &, const FastRational & );
-    friend FastRational gcd(FastRational&, FastRational&);
-    friend FastRational lcm(FastRational&, FastRational&);
-    friend FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
-    friend FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
-    friend FastRational divexact(FastRational& n, FastRational& d);
+    friend FastRational gcd(FastRational const &, FastRational const &);
+    friend FastRational lcm(FastRational const &, FastRational const &);
+    friend FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
+    friend FastRational divexact(FastRational const & n, FastRational const & d);
 public:
     void print_details ( std::ostream & ) const;
     void print         ( std::ostream & ) const;
@@ -391,15 +390,9 @@ public:
         return r;
     }
 };
-// Divide n by d, forming a quotient q.
-// Rounds q down towards -infinity, and r will have the same sign as d.
-FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
-FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
+
+FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
 FastRational fastrat_round_to_int(const FastRational& n);
-
-FastRational gcd(FastRational& a, FastRational& b);
-
-FastRational lcm(FastRational& a, FastRational& b);
 
 struct FastRationalHash {
     uint32_t operator() (const FastRational& s) const {
