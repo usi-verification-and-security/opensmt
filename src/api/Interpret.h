@@ -34,28 +34,71 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LogicFactory.h"
 #include "MainSolver.h"
 
-class LetFrame {
-  private:
-    static uint32_t id_cnt;
-    uint32_t id_;
-    Map<const char*, PTRef, StringHash, Equal<const char*> > *frameMap;
-  public:
-    LetFrame() : id_(id_cnt++), frameMap(new Map<const char*, PTRef, StringHash, Equal<const char*>>()) {}
-    LetFrame(const Map<const char*, PTRef, StringHash, Equal<const char*>>& imap) : id_(id_cnt++), frameMap(new Map<const char*, PTRef, StringHash, Equal<const char*>>()) { imap.copyTo(*frameMap); }
-    LetFrame(LetFrame&& o) : id_(o.id_) { frameMap = o.frameMap; o.frameMap = nullptr; }
-    LetFrame(const LetFrame& o) : id_(o.id_)  { o.frameMap->copyTo(*frameMap); }
-    ~LetFrame() { if (frameMap != nullptr) delete frameMap; }
-    LetFrame& operator= (LetFrame&& o) { if (this != &o) { delete frameMap; frameMap = o.frameMap; o.frameMap = nullptr; } return *this; }
-    bool        contains(const char* s) const { return frameMap->has(s); }
-//    void        insert  (const char* key, const vec<PTRef>& value) { frameMap.insert(key, value); }
-    void        insert  (const char* key, PTRef value) { frameMap->insert(key, value); }
-    uint32_t    getId   () const { return id_; }
-    PTRef       operator[] (const char* s) { return (*frameMap)[s]; }
-    PTRef       operator[] (const char* s) const { return (*frameMap)[s]; }
-//    vec<PTRef>&  operator[] (const char* s) { return frameMap[s]; }
-//    const vec<PTRef>& operator[] (const char* s) const { return frameMap[s]; }
+#include <unordered_map>
+
+
+class LetBinder {
+    PTRef currentValue;
+    std::vector<PTRef>* shadowedValues;
+public:
+    LetBinder(PTRef val) : currentValue(val), shadowedValues(nullptr) {}
+    ~LetBinder() { delete shadowedValues; }
+    LetBinder(const LetBinder&) = delete;
+    LetBinder& operator=(const LetBinder&) = delete;
+    LetBinder(LetBinder&&) = default;
+    LetBinder& operator=(LetBinder&&) = default;
+    PTRef getValue() const { return currentValue; }
+    bool hasShadowValue() const { return shadowedValues && !shadowedValues->empty(); }
+    void restoreShadowedValue() { assert(hasShadowValue()); currentValue = shadowedValues->back(); shadowedValues->pop_back(); }
+    void addValue(PTRef val) {
+        if (not shadowedValues) {
+            shadowedValues = new std::vector<PTRef>();
+        }
+        shadowedValues->push_back(currentValue);
+        currentValue = val;
+    }
 };
 
+class LetRecords {
+    std::unordered_map<const char*, LetBinder, StringHash, Equal<const char*> > letBinders;
+    std::vector<const char*> knownBinders;
+    std::vector<std::size_t> frameLimits;
+
+    bool has(const char* name) const { return letBinders.count(name) != 0; }
+public:
+    PTRef getOrUndef(const char* letSymbol) const {
+        auto it = letBinders.find(letSymbol);
+        if (it != letBinders.end()) {
+            return it->second.getValue();
+        }
+        return PTRef_Undef;
+    }
+    void pushFrame() { frameLimits.push_back(knownBinders.size()); }
+    void popFrame() {
+        auto limit = frameLimits.back();
+        frameLimits.pop_back();
+        while (knownBinders.size() > limit) {
+            const char* binder = knownBinders.back();
+            knownBinders.pop_back();
+            assert(this->has(binder));
+            auto& values = letBinders.at(binder);
+            if (values.hasShadowValue()) {
+                values.restoreShadowedValue();
+            } else {
+                letBinders.erase(binder);
+            }
+        }
+    }
+
+    void addBinding(const char* name, PTRef arg) {
+        knownBinders.push_back(name);
+        if (not this->has(name)) {
+            letBinders.insert(std::make_pair(name, LetBinder(arg)));
+        } else {
+            letBinders.at(name).addValue(arg);
+        }
+    }
+};
 
 class Interpret {
   protected:
@@ -95,7 +138,9 @@ class Interpret {
     void                        getModel();
     bool                        push();
     bool                        pop();
-    PTRef                       parseTerm(const ASTNode& term, vec<LetFrame>& let_branch);
+
+    PTRef                       parseTerm(const ASTNode& term, LetRecords& letRecords);
+
     void                        exit();
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
@@ -103,9 +148,9 @@ class Interpret {
     void                        notify_formatted(bool error, const char* s, ...);
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;
-    bool                        addLetName(const char* s, const PTRef args, LetFrame& frame);
-    PTRef                       letNameResolve(const char* s, const vec<LetFrame>& frame) const;
-    PTRef                       insertTerm(const char* s, const vec<PTRef>& args);
+
+    bool                        addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords);
+    PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
 
 
   public:
