@@ -55,6 +55,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iosfwd>
 #include <memory>
 #include <sstream>
+#include "PartitionManager.h"
 
 #include "Vec.h"
 #include "Heap.h"
@@ -690,7 +691,7 @@ public:
     bool   getTreeInterpolants(opensmt::InterpolationTree*, vec<PTRef>& interpolants);
     bool   checkImplication( PTRef f1, PTRef f2);
 
-    void   createProofGraph          ();
+    void   createProofGraph          (PartitionManager &pmanager);
     inline ProofGraph* getProofGraph ()
     {
         return proof_graph;

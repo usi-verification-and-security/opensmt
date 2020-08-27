@@ -25,6 +25,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "PTRef.h"
 #include "Theory.h"
 #include "THandler.h"
+#include "PartitionManager.h"
 
 #include <memory>
 #include <map>
@@ -131,8 +132,9 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode            (Logic& _logic)
-    : logic   (_logic)
+    ProofNode    (Logic& _logic, PartitionManager& pm)
+    : logic      (_logic)
+    , pmanager   (pm)
     , clause     (nullptr)
     , clause_ref (CRef_Undef)
     , pivot      (-1)
@@ -250,6 +252,7 @@ struct ProofNode
 
 private:
     Logic&             logic;
+    PartitionManager&  pmanager;
     clauseid_t         id;                 // id
     vector<Lit>*     clause;             // Clause
     CRef clause_ref;
@@ -271,11 +274,13 @@ public:
 			, Theory &        th
 			, TermMapper &    termMapper
 			, Proof &         t
+			, PartitionManager& pmanager
 			, int             n = -1 )
 : config   ( c )
 , solver   ( s )
 , proof	   ( t )
 , logic_ ( th.getLogic() )
+, pmanager (pmanager)
 , thandler {new THandler(th, termMapper)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
@@ -528,7 +533,7 @@ private:
     inline bool isAssumedVar(Var v) const {
         return isAssumedLiteral(mkLit(v, true)) || isAssumedLiteral(mkLit(v, false));
     }
-    ipartitions_t const& getVarPartition(Var v) const { return logic_.getIPartitions(varToPTRef(v)); }
+    ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
 
     void ensureNoLiteralsWithoutPartition();
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
@@ -543,6 +548,7 @@ private:
     //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;
+    PartitionManager&     pmanager;
     std::unique_ptr<THandler> thandler;
 
     vector< ProofNode * >*         graph_;                       // Graph

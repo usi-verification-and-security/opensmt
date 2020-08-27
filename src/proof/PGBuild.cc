@@ -24,7 +24,7 @@ void
 ProofNode::setInterpPartitionMask()
 {
     if(i_data == NULL) initIData();
-    i_data->partition_mask = logic.getClauseClassMask(clause_ref);
+    i_data->partition_mask = pmanager.getClauseClassMask(clause_ref);
     assert(i_data->partition_mask != 0);
 #ifdef ITP_DEBUG
     cerr << "In Set, Clause " << clause_ref << " has mask " << i_data->partition_mask << endl;
@@ -175,7 +175,7 @@ void ProofGraph::buildProofGraph( int nVars )
             if (currClause == CRef_Undef && clause_to_proof_der.at(currClause).chain_cla.empty())
             {
                 assert(graph.size() == 0);
-                ProofNode* n = new ProofNode(logic_);
+                ProofNode* n = new ProofNode(logic_, pmanager);
                 n->initIData();
                 // Add node to graph vector
                 int currId = (int)graph.size();
@@ -215,7 +215,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 if(ctype == clause_type::CLA_ORIG && currClause==CRef_Undef)
                 {
                     assert(graph.size()==0);
-                    ProofNode* n=new ProofNode(logic_);
+                    ProofNode* n=new ProofNode(logic_, pmanager);
                     n->initIData();
                     //n->initClause(proof.getClause(currClause));
                     // Add node to graph vector
@@ -249,7 +249,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 assert(chainvar.size() == chaincla.size()-1);
 
                 auto processNewClause = [&](CRef clause) {
-                    ProofNode* n=new ProofNode(logic_);
+                    ProofNode* n=new ProofNode(logic_, pmanager);
                     n->initIData();
                     clause_type  _ctype    = clause_to_proof_der.at(clause).type;
                     counters.recordNewClause(_ctype);
@@ -349,7 +349,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         //
                         //////////////////////////////////////////////////////////////////////////////////////////
 
-                        n=new ProofNode(logic_);
+                        n=new ProofNode(logic_, pmanager);
                         n->initIData();
                         //Add node to graph vector
                         n->setId(currId);
@@ -398,7 +398,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             //
                             //////////////////////////////////////////////////////////////////////////////////////////
 
-                            n = new ProofNode(logic_);
+                            n = new ProofNode(logic_, pmanager);
                             counters.recordNewClause(clause_type::CLA_LEARNT);
                             unsigned ssize = ( currClause == CRef_Undef ) ? 0 : proof.getClause(currClause).size();
                             if( ssize >= max_learnt_size ) max_learnt_size = ssize;
@@ -767,7 +767,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
         assert(res->getAnt1()==w || res->getAnt2()==w);
     }
 
-    ProofNode* n=new ProofNode(logic_);
+    ProofNode* n=new ProofNode(logic_, pmanager);
     n->initIData();
 
     // Create node and add to graph vector
@@ -814,10 +814,10 @@ void ProofGraph::ensureNoLiteralsWithoutPartition() {
         if(part == 0 && !this->isAssumedVar(v)) {
             PTRef term = varToPTRef(v);
             assert(this->logic_.isTheoryTerm(term));
-            auto allowedPartitions = logic_.computeAllowedPartitions(term);
+            auto allowedPartitions = pmanager.computeAllowedPartitions(term);
             if (allowedPartitions != 0) {
                 // MB: Update the partition information
-                logic_.addIPartitions(term, allowedPartitions);
+                pmanager.addIPartitions(term, allowedPartitions);
             }
             else {
                 noPartitionVars.push_back(v);

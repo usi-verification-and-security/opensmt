@@ -35,7 +35,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
-    unsigned nparts = logic_.getNofPartitions();
+    unsigned nparts = pmanager.getNofPartitions();
 
     if (nparts < 2)
     {
@@ -53,7 +53,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
-    configs.resize (logic_.getNofPartitions() + 1, 0);
+    configs.resize (pmanager.getNofPartitions() + 1, 0);
 
     // First interpolant is true -> all partitions in B
     for ( unsigned i = 1; i < configs.size(); i++ )
@@ -79,7 +79,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
-    unsigned nparts = logic_.getNofPartitions();
+    unsigned nparts = pmanager.getNofPartitions();
 
     if (nparts < 2)
     {
@@ -97,7 +97,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
-    configs.resize (logic_.getNofPartitions(), 0);
+    configs.resize (pmanager.getNofPartitions(), 0);
 
     for ( unsigned i = 0; i < configs.size(); i++ )
     {
@@ -122,7 +122,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
-    unsigned nparts = logic_.getNofPartitions();
+    unsigned nparts = pmanager.getNofPartitions();
 
     if (nparts < 2)
     {
@@ -167,7 +167,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
 bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants )
 {
     assert ( interpolants.size( ) == 0 );
-    unsigned npart = logic_.getNofPartitions();
+    unsigned npart = pmanager.getNofPartitions();
 
     if (npart < 2)
     {
@@ -252,7 +252,7 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     // NOTE partition ids start from 1, parts vector from 0
     // parts[i] contains configuration mask for partition id i+1
     std::vector< ipartitions_t > parts;
-    parts.resize (logic_.getNofPartitions(), 0);
+    parts.resize (pmanager.getNofPartitions(), 0);
 
     // Visit the tree in topological order bottom up and compute the configurations
     std::deque<opensmt::InterpolationTree *> q;
@@ -337,8 +337,8 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<i
         if(i > 0 && enabledInterpVerif()){
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() -1];
-            PTRef movedPartitions = logic_.mkAnd(logic_.getPartitions(A_masks[i] ^ A_masks[i-1]));
-            propertySatisfied &= VerificationUtils(config, logic_).implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
+            PTRef movedPartitions = logic_.mkAnd(pmanager.getPartitions(A_masks[i] ^ A_masks[i-1]));
+            propertySatisfied &= VerificationUtils(config, logic_, pmanager).implies(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
             if (!propertySatisfied){
                 std::cerr << "; Path interpolation does not hold for:\n"
                              << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
@@ -543,7 +543,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                     ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
                 }
 
-                partial_interp = thandler->getInterpolant (A_mask, &ptref2label);
+                partial_interp = thandler->getInterpolant (A_mask, &ptref2label, pmanager);
                 clearTSolver();
             }
             else {
@@ -589,7 +589,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
     if ( enabledInterpVerif() )
     {
-        bool sound = VerificationUtils(config, logic_).verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
+        bool sound = VerificationUtils(config, logic_, pmanager).verifyInterpolant (getRoot()->getPartialInterpolant(), A_mask );
 
         if(verbose())
         {

@@ -587,7 +587,7 @@ void ProofGraph::recycleUnits()
 		else
 		{
 			//printClause(unit);
-			ProofNode* newroot=new ProofNode(logic_);
+			ProofNode* newroot=new ProofNode(logic_, pmanager);
 			newroot->initClause();
 			if(produceInterpolants()) newroot->initIData();
 			newroot->setAnt1(oldroot);

@@ -1162,7 +1162,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         partitionings.push_c(p);
     }
         SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
-        smt_solver.createProofGraph();
+        smt_solver.createProofGraph(main_solver->getPartitionManager());
         if(config.proof_reduce())
             smt_solver.reduceProofGraph();
 //        cerr << "Computing interpolant with mask " << p << endl;

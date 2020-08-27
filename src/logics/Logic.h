@@ -290,44 +290,6 @@ class Logic {
 
     PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
-    PartitionInfo partitionInfo;
-
-    PTRef getPartitionA(const ipartitions_t&);
-    PTRef getPartitionB(const ipartitions_t&);
-
-    //partitions:
-    ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
-    void addIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.addIPartitions(_t, _p); }
-    ipartitions_t& getIPartitions(SymRef _s) { return partitionInfo.getIPartitions(_s); }
-    void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
-    void propagatePartitionMask(PTRef tr);
-    void assignTopLevelPartitionIndex(unsigned int n, PTRef tr)
-    {
-        partitionInfo.assignTopLevelPartitionIndex(n, tr);
-    }
-
-    ipartitions_t  computeAllowedPartitions(PTRef p);
-    ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
-    void addClauseClassMask(CRef c, const ipartitions_t& toadd);
-    void invalidatePartitions(const ipartitions_t& toinvalidate);
-    inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
-
-
-    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        throw std::logic_error{"Not supported at the moment!"};
-    }
-
-    unsigned getNofPartitions() { return partitionInfo.getNoOfPartitions(); }
-
-    void transferPartitionMembership(PTRef old, PTRef new_ptref)
-    {
-        this->addIPartitions(new_ptref, getIPartitions(old));
-        partitionInfo.transferPartitionMembership(old, new_ptref);
-    }
-
-    int getPartitionIndex(PTRef ref) const {
-        return partitionInfo.getPartitionIndex(ref);
-    }
 
 
     // The Boolean connectives

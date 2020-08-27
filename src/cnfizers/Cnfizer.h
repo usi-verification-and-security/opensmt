@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "Theory.h"
 #include "Logic.h"
+#include "PartitionManager.h"
 #include "TermMapper.h"
 
 #include <unordered_set>
@@ -49,6 +50,7 @@ public:
 protected:
     SMTConfig&          config;
     Logic&              logic;
+    PartitionManager&   pmanager;
     TermMapper&         tmap;
     bool                s_empty;
 
@@ -68,6 +70,7 @@ public:
 
     Cnfizer( SMTConfig &    config_
            , Logic&        logic_
+           , PartitionManager& pmanager_
            , TermMapper&    tmap_
            , SimpSMTSolver& solver_
            );

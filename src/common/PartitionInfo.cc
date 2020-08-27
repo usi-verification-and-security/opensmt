@@ -35,8 +35,8 @@ PartitionInfo::addIPartitions(SymRef _s, const ipartitions_t& _p) {
     sym_partitions[_s] |= _p;
 }
 
-ipartitions_t & PartitionInfo::getClausePartitions(CRef c) {
-    return clause_class[c];
+const ipartitions_t & PartitionInfo::getClausePartitions(CRef c) const {
+    return clause_class.at(c);
 }
 
 void PartitionInfo::addClausePartition(CRef c, const ipartitions_t & p) {

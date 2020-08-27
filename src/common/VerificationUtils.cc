@@ -57,11 +57,11 @@ bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
 
 bool VerificationUtils::verifyInterpolantA(PTRef itp, const ipartitions_t & mask) {
     // Check A -> I, i.e., A & !I
-    return implies(logic.getPartitionA(mask), itp);
+    return implies(pmanager.getPartitionA(mask), itp);
 }
 
 bool VerificationUtils::verifyInterpolantB(PTRef itp, const ipartitions_t & mask) {
-    PTRef nB = logic.mkNot(logic.getPartitionB(mask));
+    PTRef nB = logic.mkNot(pmanager.getPartitionB(mask));
     // Check A -> I, i.e., A & !I
     return implies(itp, nB);
 }

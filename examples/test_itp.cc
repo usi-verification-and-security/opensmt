@@ -56,7 +56,7 @@ main(int argc, char** argv)
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
 
         // Create the proof graph
-        solver.createProofGraph();
+        solver.createProofGraph(mainSolver.getPartitionManager());
 
         // Create the partitioning mask
         // Mask has first partition in A and second in B

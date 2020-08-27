@@ -61,11 +61,11 @@ MainSolver::pop()
             ipartitions_t mask = 0;
             for (int i = 0; i < partitionsToInvalidate.size(); ++i) {
                 PTRef part = partitionsToInvalidate[i];
-                auto index = logic.getPartitionIndex(part);
+                auto index = pmanager.getPartitionIndex(part);
                 assert(index != -1);
                 opensmt::setbit(mask, static_cast<unsigned int>(index));
             }
-            logic.invalidatePartitions(mask);
+            pmanager.invalidatePartitions(mask);
         }
         frames.pop();
         if (!isLastFrameUnsat()) {
@@ -120,8 +120,8 @@ MainSolver::insertFormula(PTRef root, char** msg)
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
         unsigned int partition_index = inserted_formulas_count++;
-        logic.assignTopLevelPartitionIndex(partition_index, root);
-        assert(logic.getPartitionIndex(root) != -1);
+        pmanager.assignTopLevelPartitionIndex(partition_index, root);
+        assert(pmanager.getPartitionIndex(root) != -1);
     }
     else {
         ++inserted_formulas_count;
@@ -147,7 +147,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     bool keepPartitionsSeparate = getConfig().produce_inter();
     // Process (and simplify) not yet processed frames. Stop processing if solver is in UNSAT state already
     for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size() && status != s_False; i++) {
-        getTheory().simplify(frames.getFrameReferences(), i);
+        getTheory().simplify(frames.getFrameReferences(), pmanager, i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
 
@@ -156,15 +156,15 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
-                assert(logic.getPartitionIndex(fla) != -1);
+                assert(pmanager.getPartitionIndex(fla) != -1);
                 // Optimize the dag for cnfization
                 if (logic.isBooleanOperator(fla)) {
                     PTRef old = fla;
                     fla = rewriteMaxArity(fla);
-                    logic.transferPartitionMembership(old, fla);
+                    pmanager.transferPartitionMembership(old, fla);
                 }
-                assert(logic.getPartitionIndex(fla) != -1);
-                logic.propagatePartitionMask(fla);
+                assert(pmanager.getPartitionIndex(fla) != -1);
+                pmanager.propagatePartitionMask(fla);
                 status = giveToSolver(fla, frame.getId());
             }
         } else {
@@ -469,4 +469,3 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
 
     return std::unique_ptr<Theory>(theory);
 }
-

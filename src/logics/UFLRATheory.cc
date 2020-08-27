@@ -1,6 +1,6 @@
 #include "UFLRATheory.h"
 
-bool UFLRATheory::simplify(const vec<PFRef>& formulas, int curr)
+bool UFLRATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     // Take care of UF simplifications as well

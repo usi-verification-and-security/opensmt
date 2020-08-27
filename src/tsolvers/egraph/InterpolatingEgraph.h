@@ -5,6 +5,7 @@
 #ifndef OPENSMT_INTERPOLATINGEGRAPH_H
 #define OPENSMT_INTERPOLATINGEGRAPH_H
 
+#include <PartitionManager.h>
 #include "Egraph.h"
 #include "UFInterpolator.h"
 
@@ -20,9 +21,9 @@ public:
         delete cgraph_;
     }
 
-    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
     {
-        return cgraph->getInterpolant(mask, labels);
+        return cgraph->getInterpolant(mask, labels, pmanager);
     }
 
 private:

@@ -7,12 +7,14 @@
 
 #include "SMTConfig.h"
 #include "Logic.h"
+#include "PartitionManager.h"
 
 class VerificationUtils {
     SMTConfig const & config;
     Logic & logic;
+    PartitionManager &pmanager;
 public:
-    VerificationUtils(SMTConfig const & config, Logic & logic) : config(config), logic(logic) {}
+    VerificationUtils(SMTConfig const & config, Logic & logic, PartitionManager &pmanager) : config(config), logic(logic), pmanager(pmanager) {}
 
     bool implies(PTRef, PTRef); // Check the result with an external solver
 

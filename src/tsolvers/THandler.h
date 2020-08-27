@@ -60,7 +60,7 @@ public:
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
     void    getNewSplits         ( vec<Lit>& ); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 
-    PTRef getInterpolant         (const ipartitions_t&, map<PTRef, icolor_t>*);
+    PTRef   getInterpolant       (const ipartitions_t&, map<PTRef, icolor_t>*, PartitionManager &pmanager);
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal

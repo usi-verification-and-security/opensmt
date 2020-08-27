@@ -46,15 +46,15 @@ void CGraph::addCNode ( PTRef e )
 #endif
 }
 
-void CGraph::colorNodes ( const ipartitions_t &mask )
+void CGraph::colorNodes ( const ipartitions_t &mask, PartitionManager &pmanager )
 {
     for ( size_t i = 0 ; i < cnodes.size( ) ; i ++ )
-        colorNodesRec ( cnodes[ i ], mask );
+        colorNodesRec ( cnodes[ i ], mask, pmanager );
 }
 
-icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
+icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask, PartitionManager &pmanager )
 {
-    assert ( logic.getIPartitions (c->e) != 0 );
+    assert ( pmanager.getIPartitions (c->e) != 0 );
 
     // Already done
     if ( colored_nodes.find ( c ) != colored_nodes.end( ) )
@@ -75,13 +75,13 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
 
     if (logic.isUF (c->e) || logic.isUP (c->e))
     {
-        if (isAB (logic.getIPartitions (p.symb()), mask))
+        if (isAB (pmanager.getIPartitions (p.symb()), mask))
             color = I_AB;
-        else if (isAstrict (logic.getIPartitions (p.symb()), mask))
+        else if (isAstrict (pmanager.getIPartitions (p.symb()), mask))
             color = I_A;
         else
         {
-            assert (isBstrict (logic.getIPartitions (p.symb()), mask));
+            assert (isBstrict (pmanager.getIPartitions (p.symb()), mask));
             color = I_B;
         }
 
@@ -95,7 +95,7 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
 
             if (cnodes_store.find (arg) != cnodes_store.end())
             {
-                colorNodesRec (cnodes_store[arg], mask);
+                colorNodesRec (cnodes_store[arg], mask, pmanager);
                 icolor_t child_color = cnodes_store[arg]->color;
 
                 if (color == I_AB)
@@ -120,13 +120,13 @@ icolor_t CGraph::colorNodesRec ( CNode *c, const ipartitions_t &mask )
     }
     else
     {
-        if (isAB (logic.getIPartitions (c->e), mask))
+        if (isAB (pmanager.getIPartitions (c->e), mask))
             color = I_AB;
-        else if (isAstrict (logic.getIPartitions (c->e), mask))
+        else if (isAstrict (pmanager.getIPartitions (c->e), mask))
             color = I_A;
         else
         {
-            assert (isBstrict (logic.getIPartitions (c->e), mask));
+            assert (isBstrict (pmanager.getIPartitions (c->e), mask));
             color = I_B;
         }
 
@@ -243,7 +243,7 @@ void CGraph::addCEdge ( PTRef s, PTRef t, PTRef r )
     */
 }
 
-void CGraph::color ( const ipartitions_t &mask )
+void CGraph::color ( const ipartitions_t &mask, PartitionManager &pmanager )
 {
     assert ( conf1 != PTRef_Undef);
     assert ( conf2 != PTRef_Undef);
@@ -253,7 +253,7 @@ void CGraph::color ( const ipartitions_t &mask )
     assert ( !colored );
     assert ( colored_nodes.empty( ) );
     // Color nodes
-    colorNodes ( mask );
+    colorNodes ( mask, pmanager );
 
     // Uncomment to print
     // ofstream nout( "nodecol_graph.dot" );
@@ -261,7 +261,7 @@ void CGraph::color ( const ipartitions_t &mask )
     // cerr << "[Dumped nodecol_graph.dot]" << endl;
 
     // Edges can be colored as consequence of nodes
-    const bool no_mixed = colorEdges ( c1, c2, mask );
+    const bool no_mixed = colorEdges ( c1, c2, mask, pmanager );
 
     if ( !no_mixed ) return;
 
@@ -316,7 +316,8 @@ void CGraph::colorReset( )
 
 bool CGraph::colorEdges ( CNode *c1
                           , CNode *c2
-                          , const ipartitions_t &mask )
+                          , const ipartitions_t &mask
+                          , PartitionManager &pmanager)
 {
     set< pair< CNode *, CNode * > > cache_nodes;
     set< CEdge * > cache_edges;
@@ -398,7 +399,7 @@ bool CGraph::colorEdges ( CNode *c1
         // Direction n1 <--- n2
         x = n2;
 
-        while ( x->next != NULL )
+        while ( x->next != nullptr)
         {
             // Consider only sub-paths with congruence edges
             if ( x->next->reason == PTRef_Undef
@@ -448,8 +449,8 @@ bool CGraph::colorEdges ( CNode *c1
         //
         // Color this path
         //
-        no_mixed = colorEdgesFrom ( n1, mask )
-                   && colorEdgesFrom ( n2, mask );
+        no_mixed = colorEdgesFrom ( n1, mask, pmanager )
+                   && colorEdgesFrom ( n2, mask, pmanager );
         //
         // Remember this path is done
         //
@@ -463,7 +464,7 @@ bool CGraph::colorEdges ( CNode *c1
 // It assumes that children have been already colored
 // and adjusted
 //
-bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
+bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask, PartitionManager &pmanager )
 {
     assert ( x );
 
@@ -473,7 +474,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
 #ifdef COLOR_DEBUG
     cerr << "; ColorEdgesFrom " << logic.printTerm(x->e) << endl;
 #endif
-    while ( x->next != NULL
+    while ( x->next != nullptr
             && x->next->color == I_UNDEF )
     {
         n = x->next->target;
@@ -797,7 +798,7 @@ bool CGraph::colorEdgesFrom ( CNode *x, const ipartitions_t &mask )
         else
         {
 
-            const ipartitions_t &p = logic.getIPartitions (x->next->reason);
+            const ipartitions_t &p = pmanager.getIPartitions (x->next->reason);
 
             //cerr << "; Partition = " << p << endl;
             //cerr << "; Mask = " << mask << endl;
@@ -1015,7 +1016,7 @@ CGraph::interpolate_flat (const path_t &p)
 // formula into A and B.
 //
 PTRef
-CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *labels)
+CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
     m_labels = labels;
     /*
@@ -1050,7 +1051,7 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
     }
 #endif
 
-    color ( mask );
+    color ( mask, pmanager );
 
     if ( !colored )
     {
@@ -1119,7 +1120,7 @@ CGraph::getInterpolant ( const ipartitions_t &mask , map<PTRef, icolor_t> *label
     // Conflict is due to a negated equality
     else if ( conf != PTRef_Undef )
     {
-        const ipartitions_t &p = logic.getIPartitions (conf);
+        const ipartitions_t &p = pmanager.getIPartitions (conf);
 
         //cerr << ";P = " << p << ", MASK = " << mask << endl;
         if ( isABmixed ( p ) )

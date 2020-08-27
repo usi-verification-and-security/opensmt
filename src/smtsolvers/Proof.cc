@@ -360,10 +360,10 @@ void Proof::cleanAssumedLiteral(Lit l) {
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
-void CoreSMTSolver::createProofGraph ()
+void CoreSMTSolver::createProofGraph (PartitionManager &pmanager)
 {
     deleteProofGraph();
-    proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(), theory_handler.getTMap(),  *proof, nVars());
+    proof_graph = new ProofGraph( config, *this, theory_handler.getTheory(), theory_handler.getTMap(),  *proof, pmanager, nVars());
 }
 
 void CoreSMTSolver::deleteProofGraph () { delete proof_graph; proof_graph = nullptr; }

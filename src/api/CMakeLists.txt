@@ -22,10 +22,12 @@ add_library(api OBJECT "")
 
 set(PRIVATE_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
 )
@@ -59,4 +61,11 @@ if (BUILD_STATIC_LIBS)
   install(TARGETS api_static ARCHIVE DESTINATION lib)
 endif()
 
-install(FILES Opensmt.h smt2tokens.h MainSolver.h DESTINATION ${INSTALL_HEADERS_DIR})
+install(FILES
+    Opensmt.h
+    smt2tokens.h
+    MainSolver.h
+    PartitionManager.h
+    DESTINATION
+    ${INSTALL_HEADERS_DIR}
+)

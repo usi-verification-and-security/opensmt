@@ -195,9 +195,9 @@ void THandler::getConflict (
 
 
 PTRef
-THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
-    return getSolverHandler().getInterpolant(mask, labels);
+    return getSolverHandler().getInterpolant(mask, labels, pmanager);
 }
 
 //

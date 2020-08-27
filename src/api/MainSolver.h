@@ -30,8 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Tseitin.h"
 #include "SimpSMTSolver.h"
 #include "Model.h"
+#include "PartitionManager.h"
 
 #include <memory>
+
 
 class Logic;
 
@@ -99,6 +101,7 @@ class MainSolver
     THandler                        thandler;
     std::unique_ptr<SimpSMTSolver>  smt_solver;
     Logic&                          logic;
+    PartitionManager                pmanager;
     SMTConfig&                      config;
     PushFrameAllocator&             pfstore;
     Tseitin                         ts;
@@ -159,9 +162,10 @@ class MainSolver
         thandler(getTheory(), term_mapper),
         smt_solver(createInnerSolver(conf, thandler)),
         logic(thandler.getLogic()),
+        pmanager(logic),
         config(conf),
         pfstore(getTheory().pfstore),
-        ts( config, logic, term_mapper, *smt_solver ),
+        ts( config, logic, pmanager, term_mapper, *smt_solver ),
         solver_name {std::move(name)},
         check_called(0),
         status(s_Undef),
@@ -182,6 +186,7 @@ class MainSolver
     Logic    &getLogic()    { return logic; }
     Theory   &getTheory()   { return *theory; }
     const Theory &getTheory() const { return *theory; }
+    PartitionManager &getPartitionManager() { return pmanager; }
     sstat     push(PTRef root);
     void      push();
     bool      pop();
@@ -208,12 +213,13 @@ class MainSolver
     ValPair getValue       (PTRef tr) const;
     void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
 
-    // Returns model of the last formula (must be in satisiable state)
+    // Returns model of the last formula (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
     void stop() { ts.solver.stop = true; }
 
     bool readFormulaFromFile(const char *file);
+
 };
 
 #endif //

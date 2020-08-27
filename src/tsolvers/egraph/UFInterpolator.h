@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SMTConfig.h"
 #include "PTRef.h"
 #include "TheoryInterpolator.h"
+#include <PartitionManager.h>
 
 struct CEdge;
 class Logic;
@@ -117,7 +118,7 @@ public:
   void     addCEdge      ( PTRef, PTRef, PTRef );
   void removeCEdge(CEdge *);
   void     revertEdges   ( CNode * );
-  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*);
+  PTRef    getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*, PartitionManager&);
   void     printAsDotty  ( ostream & );
 
   inline void setConf( PTRef c1, PTRef c2, PTRef r )
@@ -157,12 +158,12 @@ public:
 
 private:
 
-  void       color          ( const ipartitions_t & );
-  void       colorNodes     ( const ipartitions_t & );
-  icolor_t   colorNodesRec  ( CNode *, const ipartitions_t & );
-  bool       colorEdges     ( CNode *, CNode *, const ipartitions_t & );
+  void       color          ( const ipartitions_t &, PartitionManager& );
+  void       colorNodes     ( const ipartitions_t &, PartitionManager& );
+  icolor_t   colorNodesRec  ( CNode *, const ipartitions_t &, PartitionManager& );
+  bool       colorEdges     ( CNode *, CNode *, const ipartitions_t &, PartitionManager & );
   bool       colorEdgesRec  ( CNode *, CNode *, const ipartitions_t & );
-  bool       colorEdgesFrom ( CNode *, const ipartitions_t & );
+  bool       colorEdgesFrom ( CNode *, const ipartitions_t &, PartitionManager& );
   void       colorReset     ( );
 
   bool usingStrong() { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
