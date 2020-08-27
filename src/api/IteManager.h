@@ -9,8 +9,8 @@
 
 namespace ite {
     struct SwitchRow {
-        vec<PtAsgn> constrs;
         PTRef value;
+        vec<PtAsgn> constrs;
         SwitchRow prepend(PtAsgn cond) const;
         explicit SwitchRow(PTRef tr) : value(tr) {}
         SwitchRow(SwitchRow&& o) noexcept : value(o.value), constrs(std::move(o.constrs)) {}
@@ -22,7 +22,7 @@ namespace ite {
         vec<SwitchRow> rows;
     public:
         SwitchTable(PTRef cond, const SwitchTable &true_table, const SwitchTable &false_table);
-        explicit SwitchTable(PTRef tr) { rows.push_m(std::move(SwitchRow(tr))); }
+        explicit SwitchTable(PTRef tr) { rows.push_m(SwitchRow(tr)); }
         PTRef asConstrs(Logic &logic, PTRef target) const;
     };
 
