@@ -186,5 +186,5 @@ TEST_F(IteManagerTest, test_IteSum) {
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
     PTRef sum = logic.mkNumPlus(ite, c2);
-    PTRef eq = logic.mkEq(x, sum);
+    logic.mkEq(x, sum);
 }
