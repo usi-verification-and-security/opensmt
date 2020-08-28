@@ -31,7 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Vec.h"
 #include "Alloc.h"
 #include "SSort.h"
-#include "Map.h"
 
 #include "SymRef.h"
 
@@ -41,72 +40,35 @@ typedef uint32_t SymId; // Used as an array index
 class Symbol {
     struct {
         unsigned type       : 3;
-        unsigned learnt     : 1;
         unsigned commutes   : 1;
-        unsigned reloced    : 1;
         unsigned noscoping  : 1;
         unsigned constant   : 1;
         unsigned interpreted: 1;
-        unsigned size       : 23; }     header;
+        unsigned size       : 25; }     header;
     SymId                               id;
     // This has to be the last
     union { SRef sort; SymRef rel;  }   args[0];
 
-#ifdef PEDANTIC_DEBUG
-    void compare(Symbol& other) {
-        assert(header.type == other.header.type);
-        assert(header.learnt == other.header.learnt);
-        assert(header.commutes == other.header.commutes);
-        assert(header.reloced == other.header.reloced);
-        assert(header.noscoping == other.header.noscoping);
-        assert(header.constant == other.header.constant);
-        assert(header.size == other.header.size);
-        for (int i = 0; i < header.size; i++)
-            assert(args[i].sort.x == other.args[i].sort.x);
-        assert(id == other.id);
-    }
-#endif
-
-    friend class SymAllocator;
+    friend class SymbolAllocator;
     friend class SymStore;
-  public:
     // Note: do not use directly (no memory allocation for args)
     Symbol(const vec<SRef>& ps) {
         header.type      = 0;
-        header.learnt    = 0;
         header.commutes  = 0;
-        header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.constant  = false;
         header.interpreted = false;
         header.size      = ps.size();
 
-        for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i]; }
+        for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i];
+    }
+
   public:
-
-    // -- use this as a wrapper:
-    Symbol* Symbol_new(vec<SRef>& ps, bool left_assoc = false, bool right_assoc = false, bool chainable = false, bool pairwise = false) {
-        assert(sizeof(SRef) == sizeof(uint32_t));
-        void* mem = malloc(sizeof(header) + sizeof(SymId) + sizeof(uint32_t)*ps.size());
-        assert(left_assoc + right_assoc + chainable + pairwise <= 1);
-        if (left_assoc == true)
-            header.type = 1;
-        else if (right_assoc == true)
-            header.type = 2;
-        else if (chainable == true)
-            header.type = 3;
-        else if (pairwise == true)
-            header.type = 4;
-        return new (mem) Symbol(ps); }
-
     int      size        ()      const   { return header.size; }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
     SRef     rsort       ()      const   { return args[0].sort; }
     bool     commutes    ()      const   { return header.commutes; }
-    bool     reloced     ()      const   { return header.reloced; }
     SymRef   relocation  ()      const   { return args[0].rel; }
-    bool     learnt      ()      const   { return header.learnt; }
-    void     relocate    (SymRef t)      { header.reloced = 1; args[0].rel = t; }
     uint32_t type        ()      const   { return header.type; }
     void     type        (uint32_t m)    { header.type = m; }
     bool     left_assoc  ()      const   { return header.type == 1; }
@@ -145,21 +107,7 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    SymRef alloc(Symbol& ps, bool)
-    {
-        assert(false);
-        assert(sizeof(SRef)     == sizeof(uint32_t));
-        assert(sizeof(float)    == sizeof(uint32_t));
-
-        uint32_t v = RegionAllocator<uint32_t>::alloc(symWord32Size(ps.size()));
-        SymRef symid;
-        symid.x = v;
-
-        new (lea(symid)) Symbol(ps);
-        return symid;
-    }
-
-    SymRef alloc(const vec<SRef>& ps, bool)
+    SymRef alloc(const vec<SRef>& ps)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
@@ -183,21 +131,6 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
     {
         Symbol& s = operator[](symid);
         RegionAllocator<uint32_t>::free(symWord32Size(s.size()));
-    }
-
-    void reloc(SymRef& symr, SymbolAllocator& to)
-    {
-        Symbol& s = operator[](symr);
-
-        if (s.reloced()) { symr = s.relocation(); return; }
-
-        symr = to.alloc(s, s.learnt());
-        s.relocate(symr);
-
-        // Copy extra data-fields:
-        to[symr].type(s.type());
-//        if (to[tr].learnt())         to[tr].activity() = t.activity();
-//        else if (to[tr].has_extra()) to[tr].calcAbstraction();
     }
 };
 
