@@ -41,26 +41,28 @@ PTRef ite::SwitchTable::asConstrs(Logic &logic, PTRef target) const {
 void IteManager::constructSwitchTables(PTRef root) {
 
     vec<PTRef> queue;
-
-    vec<char> seen;
-    seen.growTo(logic.getNumberOfTerms());
+    enum class type { unknown, processed};
+    vec<type> flag;
+    flag.growTo(logic.getNumberOfTerms());
     queue.push(root);
-
     while (queue.size() != 0) {
         PTRef tr = queue.last();
         const Pterm &t = logic.getPterm(tr);
         auto index = Idx(t.getId());
+        if (flag[index] == type::processed) {
+            queue.pop();
+            continue;
+        }
 
         bool unprocessed_children = false;
 
         for (int i = 0; i < t.size(); i++) {
             auto childIndex = Idx(logic.getPterm(t[i]).getId());
-            if (seen[childIndex] == 0) {
+            if (flag[childIndex] != type::processed) {
                 queue.push(t[i]);
                 unprocessed_children = true;
             }
         }
-        seen[index] = true;
 
         if (unprocessed_children) {
             continue;
@@ -96,6 +98,7 @@ void IteManager::constructSwitchTables(PTRef root) {
                 }
             }
         }
+        flag[index] = type::processed;
     }
 }
 
