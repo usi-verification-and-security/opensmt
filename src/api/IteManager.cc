@@ -5,60 +5,118 @@
 #include "IteManager.h"
 #include "Logic.h"
 
-ite::SwitchRow ite::SwitchRow::prepend(PtAsgn constr) const {
-    SwitchRow row(value);
-    row.constrs.growTo(constrs.size() + 1);
-    row.constrs[0] = constr;
-    for (int i = 1; i < row.constrs.size(); i++) {
-        row.constrs[i] = constrs[i-1];
-    }
-    return row;
+ite::SwitchTable* ite::SwitchTables::newTable(PTRef val) {
+    assert(not tables.has(val));
+    tablePointers.push(new ite::SwitchTable(val));
+    tables.insert(val, tablePointers.last());
+    return tablePointers.last();
 }
 
-ite::SwitchTable::SwitchTable(PTRef cond, const SwitchTable &true_table, const SwitchTable &false_table) {
-    for (const auto &row : true_table.rows) {
-        rows.push_m(row.prepend({cond, l_True}));
-    }
-    for (const auto &row : false_table.rows) {
-        rows.push_m(row.prepend({cond, l_False}));
-    }
+ite::SwitchTable* ite::SwitchTables::newTable(PTRef tr, PTRef cond, ite::SwitchTable *true_table, ite::SwitchTable *false_table)
+{
+    assert(not tables.has(tr));
+    tablePointers.push(new ite::SwitchTable(cond, true_table, false_table));
+    tables.insert(tr, tablePointers.last());
+    return tablePointers.last();
 }
 
-PTRef ite::SwitchTable::asConstrs(Logic &logic, PTRef target) const {
-    vec<PTRef> impls;
-    for (int i = 0; i < rows.size(); i++) {
-        PTRef conj = logic.getTerm_true();
-        const SwitchRow &row = rows[i];
-        for (PtAsgn asgn : row.constrs) {
-            conj = logic.mkAnd(conj, asgn.sgn == l_True ? asgn.tr : logic.mkNot(asgn.tr));
+ite::CondValPair ite::SwitchTables::getPathConstr(const SwitchTable *leaf, const std::map<const SwitchTable*,std::pair<lbool,const SwitchTable*>> &parents, Logic &logic) {
+    assert(leaf->getCond() == PTRef_Undef);
+    assert(leaf->getVal() != PTRef_Undef);
+    assert(not logic.isIte(leaf->getVal()));
+
+    vec<PTRef> path;
+    const SwitchTable *node = leaf;
+    while (parents.find(node) != parents.end()) {
+        const auto &parent = parents.at(node);
+        node = parent.second;
+        assert(node->getCond() != PTRef_Undef);
+        assert(node->getVal() == PTRef_Undef);
+        lbool sign = parent.first;
+        PTRef tr = node->getCond();
+        path.push(sign == l_True ? tr : logic.mkNot(tr));
+    }
+    return {logic.mkAnd(path), leaf->getVal()};
+}
+
+vec<ite::CondValPair> ite::SwitchTables::asConstrs(Logic &logic, PTRef target) const {
+    assert(tables.has(target));
+    assert(logic.isIte(target));
+
+    std::map<const SwitchTable*,std::pair<lbool, const SwitchTable*>> parents;
+    vec<const SwitchTable*> queue;
+
+    queue.push(tables[target]);
+
+    vec<CondValPair> constrs;
+
+    while (queue.size() != 0) {
+        const SwitchTable *table = queue.last();
+        queue.pop();
+
+        bool isLeaf = true;
+        for (lbool child_cond : {l_True, l_False}) {
+            const SwitchTable *child = (child_cond == l_True ? table->getTrueChild() : table->getFalseChild());
+            if (child != nullptr) {
+                queue.push(child);
+                parents[table] = {child_cond, child};
+                isLeaf = false;
+            }
         }
-        PTRef eq = logic.mkEq(target, row.value);
-        impls.push(logic.mkImpl(conj, eq));
+        if (isLeaf) {
+            auto row = getPathConstr(table, parents, logic);
+            constrs.push(row);
+        }
     }
-    return logic.mkAnd(impls);
+    return constrs;
 }
 
-void IteManager::constructSwitchTables(PTRef root) {
+void IteManager::stackBasedDFS(PTRef root) const {
+
 
     vec<PTRef> queue;
-    enum class type { unknown, processed};
+
+    vec<type> flag;
+    flag.growTo(logic.getNumberOfTerms());
+
+    DFS(root, flag);
+}
+
+void IteManager::DFS(PTRef root, vec<type> &flag) const {
+    auto index = Idx(logic.getPterm(root).getId());
+    flag[index] = type::gray;
+    Pterm &t = logic.getPterm(root);
+    for (int i = 0; i < t.size(); i++) {
+        auto childIndex = Idx(logic.getPterm(t[i]).getId());
+        if (flag[childIndex] == type::white) {
+            DFS(t[i], flag);
+        }
+    }
+    flag[index] = type::black;
+}
+
+void IteManager::iterativeDFS(PTRef root) const {
+    vec<PTRef> queue;
     vec<type> flag;
     flag.growTo(logic.getNumberOfTerms());
     queue.push(root);
+
     while (queue.size() != 0) {
         PTRef tr = queue.last();
         const Pterm &t = logic.getPterm(tr);
         auto index = Idx(t.getId());
-        if (flag[index] == type::processed) {
+        if (flag[index] == type::black) {
             queue.pop();
             continue;
         }
+
+        flag[index] = type::gray;
 
         bool unprocessed_children = false;
 
         for (int i = 0; i < t.size(); i++) {
             auto childIndex = Idx(logic.getPterm(t[i]).getId());
-            if (flag[childIndex] != type::processed) {
+            if (flag[childIndex] == type::white) {
                 queue.push(t[i]);
                 unprocessed_children = true;
             }
@@ -67,6 +125,47 @@ void IteManager::constructSwitchTables(PTRef root) {
         if (unprocessed_children) {
             continue;
         }
+
+        flag[index] = type::black;
+
+        queue.pop();
+    }
+}
+
+void IteManager::constructSwitchTables(PTRef root) {
+
+    vec<PTRef> queue;
+    enum class type { white, gray, black };
+    vec<type> flag;
+    flag.growTo(logic.getNumberOfTerms());
+
+    queue.push(root);
+    while (queue.size() != 0) {
+        PTRef tr = queue.last();
+        const Pterm &t = logic.getPterm(tr);
+        auto index = Idx(t.getId());
+        if (flag[index] == type::black) {
+            queue.pop();
+            continue;
+        }
+
+        flag[index] = type::gray;
+
+        bool unprocessed_children = false;
+
+        for (int i = 0; i < t.size(); i++) {
+            auto childIndex = Idx(logic.getPterm(t[i]).getId());
+            if (flag[childIndex] == type::white) {
+                queue.push(t[i]);
+                unprocessed_children = true;
+            }
+        }
+
+        if (unprocessed_children) {
+            continue;
+        }
+
+        flag[index] = type::black;
 
         queue.pop();
 
@@ -80,8 +179,8 @@ void IteManager::constructSwitchTables(PTRef root) {
             PTRef true_tr = ite[1];
             PTRef false_tr = ite[2];
 
-            ite::SwitchTable *true_table = switchTables.getOrCreateSimpleTable(true_tr);
-            ite::SwitchTable *false_table = switchTables.getOrCreateSimpleTable(false_tr);
+            ite::SwitchTable *true_table = switchTables.getTableOrCreateLeafTable(true_tr);
+            ite::SwitchTable *false_table = switchTables.getTableOrCreateLeafTable(false_tr);
 
             switchTables.createAndStoreTable(tr, cond_tr, true_table, false_table);
 
@@ -93,13 +192,13 @@ void IteManager::constructSwitchTables(PTRef root) {
                     // Term t[i] is an ite which appears as a child of a non-ite.
                     // Therefore its corresponding switch table is stored.
                     top_level_ites.insert(t_safe[i], true);
-                    const auto table = switchTables.getTable(t_safe[i]);
-                    PTRef flatSwitches = table->asConstrs(logic, t_safe[i]); // breaks Pterm& t.
-                    flat_top_level_switches.push(flatSwitches);
+                    vec<ite::CondValPair> flatSwitches = switchTables.asConstrs(logic, t_safe[i]);
+                    for (auto condVal : flatSwitches) {
+                        flat_top_level_switches.push(logic.mkImpl(condVal.cond, logic.mkEq(t_safe[i], condVal.val)));
+                    }
                 }
             }
         }
-        flag[index] = type::processed;
     }
 }
 

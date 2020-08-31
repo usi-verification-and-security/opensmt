@@ -8,41 +8,50 @@
 #include "Logic.h"
 
 namespace ite {
-    struct SwitchRow {
-        PTRef value;
-        vec<PtAsgn> constrs;
-        SwitchRow prepend(PtAsgn cond) const;
-        explicit SwitchRow(PTRef tr) : value(tr) {}
-        SwitchRow(SwitchRow&& o) noexcept : value(o.value), constrs(std::move(o.constrs)) {}
-        SwitchRow() : value(PTRef_Undef) {}
-        SwitchRow& operator= (SwitchRow&& o) noexcept { value = o.value; constrs = std::move(o.constrs); return *this; }
+
+    class CondValPair {
+    public:
+        PTRef cond;
+        PTRef val;
+        CondValPair(PTRef cond, PTRef val) : cond(cond), val(val) {}
     };
 
     class SwitchTable {
-        vec<SwitchRow> rows;
+        SwitchTable* true_child;
+        SwitchTable* false_child;
+        const PTRef cond;
+        const PTRef val;
     public:
-        SwitchTable(PTRef cond, const SwitchTable &true_table, const SwitchTable &false_table);
-        explicit SwitchTable(PTRef tr) { rows.push_m(SwitchRow(tr)); }
-        PTRef asConstrs(Logic &logic, PTRef target) const;
+        SwitchTable(PTRef cond, SwitchTable *true_table, SwitchTable *false_table) : true_child(true_table), false_child(false_table), cond(cond), val(PTRef_Undef) {}
+        explicit SwitchTable(PTRef val) : true_child(nullptr), false_child(nullptr), cond(PTRef_Undef), val(val) {}
+        PTRef getCond() const { return cond; }
+        PTRef getVal() const { return val; }
+        const SwitchTable *getTrueChild() const { return true_child; }
+        const SwitchTable *getFalseChild() const { return false_child; }
     };
 
     class SwitchTables {
         Map<PTRef,ite::SwitchTable*,PTRefHash> tables;
         vec<ite::SwitchTable*> tablePointers;
-        SwitchTable *newTable(PTRef tr) { tablePointers.push(new ite::SwitchTable(tr)); tables.insert(tr, tablePointers.last()); return tablePointers.last(); }
-        SwitchTable *newTable(PTRef tr, PTRef cond, ite::SwitchTable *true_table, ite::SwitchTable *false_table) {
-            tablePointers.push(new ite::SwitchTable(cond, *true_table, *false_table));
-            tables.insert(tr, tablePointers.last()); return tablePointers.last();
-        }
+        SwitchTable *newTable(PTRef tr);
+        SwitchTable *newTable(PTRef tr, PTRef cond, ite::SwitchTable *true_table, ite::SwitchTable *false_table);
+        static CondValPair getPathConstr(const SwitchTable *node, const std::map<const SwitchTable*,std::pair<lbool, const SwitchTable*>> &parents, Logic &logic);
+
     public:
         void clear() { for (auto table : tablePointers) { delete table; } tables.clear(); tablePointers.clear(); }
         ~SwitchTables() { clear(); }
         bool has(PTRef tr) { return tables.has(tr); }
-        SwitchTable *getOrCreateSimpleTable(PTRef tr) { return tables.has(tr) ? tables[tr] : newTable(tr); }
+        SwitchTable *getTableOrCreateLeafTable(PTRef tr) { return tables.has(tr) ? tables[tr] : newTable(tr); }
         void createAndStoreTable(PTRef tr, PTRef cond, ite::SwitchTable *true_table, ite::SwitchTable *false_table) {
             assert(not tables.has(tr)); newTable(tr, cond, true_table, false_table);
         }
         const SwitchTable *getTable(PTRef tr) { assert(tables.has(tr)); return tables[tr]; }
+
+        SwitchTable* begin() { return tablePointers[0]; }
+        const SwitchTable* begin() const { return tablePointers[0]; }
+        SwitchTable* end() { return tablePointers.last(); }
+        const SwitchTable* end() const { return tablePointers.last(); }
+        vec<CondValPair> asConstrs(Logic &logic, PTRef ite) const;
     };
 }
 
@@ -68,6 +77,12 @@ public:
         ite_vars.clear();
         switchTables.clear();
     }
+    void stackBasedDFS(PTRef root) const;
+    void iterativeDFS(PTRef root) const;
+    enum class type {
+        white, gray, black
+    };
+    void DFS(PTRef root, vec<type> &flag) const;
 };
 
 #endif //OPENSMT_ITEMANAGER_H

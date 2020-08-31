@@ -41,6 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 
 namespace opensmt { extern bool stop; }
 //#include "symmetry/Symmetry.h"
@@ -113,10 +114,12 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
 
-    IteManager iteManager_local(logic);
     logic.conjoinExtras(root, root);
-    iteManager_local.constructSwitchTables(root);
-    iteManager_local.conjoinItes(root, root);
+
+    IteManager iteManager(logic);
+    iteManager.constructSwitchTables(root);
+    iteManager.conjoinItes(root, root);
+
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
