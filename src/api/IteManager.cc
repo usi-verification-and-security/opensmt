@@ -87,13 +87,14 @@ void IteManager::constructSwitchTables(PTRef root) {
 
         } else {
             // not Ite
-            for (int i = 0; i < t.size(); i++) {
-                if (logic.isIte(t[i]) and !top_level_ites.has(t[i])) {
+            for (int i = 0; i < logic.getPterm(tr).size(); i++) {
+                Pterm& t_safe = logic.getPterm(tr);
+                if (logic.isIte(t_safe[i]) and !top_level_ites.has(t_safe[i])) {
                     // Term t[i] is an ite which appears as a child of a non-ite.
                     // Therefore its corresponding switch table is stored.
-                    top_level_ites.insert(t[i], true);
-                    const auto table = switchTables.getTable(t[i]);
-                    PTRef flatSwitches = table->asConstrs(logic, t[i]);
+                    top_level_ites.insert(t_safe[i], true);
+                    const auto table = switchTables.getTable(t_safe[i]);
+                    PTRef flatSwitches = table->asConstrs(logic, t_safe[i]); // breaks Pterm& t.
                     flat_top_level_switches.push(flatSwitches);
                 }
             }
