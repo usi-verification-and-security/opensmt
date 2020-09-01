@@ -36,6 +36,7 @@ ite::CondValPair ite::SwitchTables::getPathConstr(const SwitchTable *leaf, const
         PTRef tr = node->getCond();
         path.push(sign == l_True ? tr : logic.mkNot(tr));
     }
+    std::cout << "path length: " << path.size() << std::endl;
     return {logic.mkAnd(path), leaf->getVal()};
 }
 
@@ -59,7 +60,7 @@ vec<ite::CondValPair> ite::SwitchTables::asConstrs(Logic &logic, PTRef target) c
             const SwitchTable *child = (child_cond == l_True ? table->getTrueChild() : table->getFalseChild());
             if (child != nullptr) {
                 queue.push(child);
-                parents[table] = {child_cond, child};
+                parents[child] = {child_cond, table};
                 isLeaf = false;
             }
         }
@@ -178,23 +179,29 @@ void IteManager::constructSwitchTables(PTRef root) {
             PTRef cond_tr = ite[0];
             PTRef true_tr = ite[1];
             PTRef false_tr = ite[2];
+            std::cout << "Found Ite" << std::endl;
+            {
+                auto t = timer("ite");
+                ite::SwitchTable *true_table = switchTables.getTableOrCreateLeafTable(true_tr);
+                ite::SwitchTable *false_table = switchTables.getTableOrCreateLeafTable(false_tr);
 
-            ite::SwitchTable *true_table = switchTables.getTableOrCreateLeafTable(true_tr);
-            ite::SwitchTable *false_table = switchTables.getTableOrCreateLeafTable(false_tr);
-
-            switchTables.createAndStoreTable(tr, cond_tr, true_table, false_table);
+                switchTables.createAndStoreTable(tr, cond_tr, true_table, false_table);
+            }
 
         } else {
             // not Ite
+            std::cout << "Found leaf" << std::endl;
             for (int i = 0; i < logic.getPterm(tr).size(); i++) {
                 Pterm& t_safe = logic.getPterm(tr);
                 if (logic.isIte(t_safe[i]) and !top_level_ites.has(t_safe[i])) {
                     // Term t[i] is an ite which appears as a child of a non-ite.
                     // Therefore its corresponding switch table is stored.
                     top_level_ites.insert(t_safe[i], true);
+                    auto t = timer("as Constrs");
                     vec<ite::CondValPair> flatSwitches = switchTables.asConstrs(logic, t_safe[i]);
                     for (auto condVal : flatSwitches) {
-                        flat_top_level_switches.push(logic.mkImpl(condVal.cond, logic.mkEq(t_safe[i], condVal.val)));
+                        PTRef impl = logic.mkImpl(condVal.cond, logic.mkEq(t_safe[i], condVal.val));
+                        flat_top_level_switches.push(impl);
                     }
                 }
             }

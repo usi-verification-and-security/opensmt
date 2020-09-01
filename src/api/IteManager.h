@@ -64,6 +64,13 @@ class IteManager {
     PTRef getTopLevelIte(PTRef tr) { assert (isIteVar(tr)); return ite_vars[tr]; }
     vec<PTRef> flat_top_level_switches;
     ite::SwitchTables switchTables;
+    class timer {
+        time_t start;
+        const std::string name;
+    public:
+        timer(std::string&& name) : start(time(nullptr)), name(name) {}
+        ~timer() { std::cout << name << ": " << time(nullptr) - start << std::endl; }
+    };
 public:
     explicit IteManager(Logic& l) : logic(l) {}
 

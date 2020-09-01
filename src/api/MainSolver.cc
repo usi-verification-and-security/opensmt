@@ -116,7 +116,9 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     logic.conjoinExtras(root, root);
 
+
     IteManager iteManager(logic);
+
     iteManager.constructSwitchTables(root);
     iteManager.conjoinItes(root, root);
 
