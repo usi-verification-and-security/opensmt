@@ -63,11 +63,15 @@ inline State& operator |= (State& lhs, State rhs)
 }
 
 inline uword absVal(word x) {
-    return x>=0 ? x : -x;
+    // Taking just (- WORD_MIN) is undefined behaviour, changed according to https://stackoverflow.com/questions/12231560/correct-way-to-take-absolute-value-of-int-min
+    return x < 0 ? -((uword)(x))
+                 : +((uword)(x));
 }
 
 inline ulword absVal(lword x) {
-    return x>=0 ? x : -x;
+    // Taking just (- LWORD_MIN) is undefined behaviour
+    return x < 0 ? -((ulword)(x))
+                 : +((ulword)(x));
 }
 
 class FastRational
@@ -106,7 +110,7 @@ public:
     FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
     FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
     FastRational(uint32_t);
-    FastRational(word num, word den) : state{State::WORD_VALID}, num(num), den(den) { }
+    inline FastRational(word n, uword d);
     explicit FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
     inline FastRational(FastRational&& other) noexcept;
@@ -206,7 +210,6 @@ public:
     inline FastRational operator-() const;
     inline void negate();
 private:
-    inline FastRational(word n, uword d);
     void print_(std::ostream& out) const;
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
