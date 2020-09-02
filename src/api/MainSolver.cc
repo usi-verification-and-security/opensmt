@@ -116,11 +116,10 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     logic.conjoinExtras(root, root);
 
-
-    IteManager iteManager(logic);
-
-    iteManager.constructSwitchTables(root);
-    iteManager.conjoinItes(root, root);
+    IteManager iteManager(logic, root);
+    iteManager.printDagToFile("debug.dot");
+    iteManager.traverseTopLevelItes();
+//    iteManager.conjoinItes(root, root);
 
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,

@@ -96,10 +96,10 @@ class Pterm {
     Pterm operator= (Pterm&) = delete;
     Pterm operator= (Pterm&&) = delete;
 
-    PTRef* begin() { assert(this->size() > 0); return &args[0]; }
-    const PTRef* begin() const { assert(this->size() > 0); return &args[0]; }
-    PTRef* end() { assert(this->size() > 0); return &args[this->size()-1]; }
-    const PTRef* end() const { assert(this->size() > 0); return &args[this->size()-1]; }
+//    PTRef* begin() { return &args[0]; }
+//    const PTRef* begin() const { return &args[0]; }
+//    PTRef* end() { return &args[this->size()-1]; }
+//    const PTRef* end() const { return &args[this->size()-1]; }
 
     int      size        ()          const   { return header.size; }
 

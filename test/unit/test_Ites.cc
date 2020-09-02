@@ -21,12 +21,11 @@ public:
 class IteManagerTest: public ::testing::Test {
 public:
     LRALogic logic;
-    IteManager iteManager;
     SRef lrasort;
 
-    IteManagerTest() : iteManager(logic), lrasort(logic.getSort_num()) {}
+    IteManagerTest() : lrasort(logic.getSort_num()) {}
 
-    void printTopLevelSwitches() {
+    void printTopLevelSwitches(const IteManager &iteManager) {
         const vec<PTRef> &switches = iteManager.getFlatTopLevelSwitches();
         for (auto tr : switches) {
             std::cout << logic.pp(tr) << endl;
@@ -105,8 +104,8 @@ TEST_F(IteManagerTest, test_Basic) {
     ASSERT_EQ(sr, logic.getSort_num());
     PTRef eq = logic.mkEq(x, ite);
 
-    iteManager.constructSwitchTables(eq);
-    printTopLevelSwitches();
+    IteManager iteManager(logic, eq);
+    printTopLevelSwitches(iteManager);
 
 }
 
@@ -120,8 +119,8 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
     PTRef ite = logic.mkIte(cond, c1, c2);
     PTRef prod = logic.mkNumTimes(ite, c2);
     PTRef eq = logic.mkEq(x, prod);
-    iteManager.constructSwitchTables(eq);
-    printTopLevelSwitches();
+    IteManager iteManager(logic, eq);
+    printTopLevelSwitches(iteManager);
 }
 
 TEST_F(IteManagerTest, test_IteTimesVar) {
@@ -174,8 +173,8 @@ TEST_F(IteManagerTest, test_IteChain) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, ite1, c1);
     PTRef eq = logic.mkEq(x, ite2);
-    iteManager.constructSwitchTables(eq);
-    printTopLevelSwitches();
+    IteManager iteManager(logic, eq);
+    printTopLevelSwitches(iteManager);
 }
 
 TEST_F(IteManagerTest, test_IteSum) {
