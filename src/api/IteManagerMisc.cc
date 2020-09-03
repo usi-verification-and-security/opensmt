@@ -76,9 +76,10 @@ std::stringstream ite::IteDag::getDagAsStream() const {
     std::stringstream edges;
     std::stringstream out;
     auto &nodes = getIteDagNodes();
+    std::cout << "Starting production of a graph" << std::endl;
     for (const ite::IteDagNode *node : nodes) {
         if (isTopLevelIte(node->getTerm())) {
-            annotations << node->getId() << " [shape=box]" << endl;
+            annotations << " " << node->getId() << " [shape=box];" << endl;
         }
         if (node->getTrueChild() != nullptr) {
             edges << " " << node->getId() << " -> " << node->getTrueChild()->getId() << ";" << std::endl;
@@ -88,10 +89,10 @@ std::stringstream ite::IteDag::getDagAsStream() const {
         }
     }
     out << "digraph G {" << std::endl;
-    out << annotations.rdbuf();
-    std::cout << out.rdbuf();
-    out << edges.rdbuf();
+//    out << annotations.rdbuf();
+//    out << edges.rdbuf();
     out << "}" << std::endl;
-    out << std::flush;
+    std::cout << out.rdbuf();
+    std::cout << "End production of a graph" << std::endl;
     return out;
 }
