@@ -202,49 +202,6 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
     return ::rewriteMaxArityClassic(logic, root);
 }
 
-//
-// Merge terms with shared signatures in egraph representation and remove redundancies in
-// equalities and disequalities
-//
-MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
-{
-#ifdef SIMPLIFY_DEBUG
-    for (int i = 0; i < terms.size(); i++) {
-        PtChild& ptc = terms[i];
-        // XXX The terms in here might have invalid symbols for some reason.
-//        assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
-    }
-#endif
-    PTRef root = terms[terms.size()-1].tr;
-    for (int i = 0; i < terms.size(); i++) {
-        PtChild& ptc = terms[i];
-        PTRef tr = ptc.tr;
-        if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
-            if (logic.isEquality(tr)) {
-                if (logic.simplifyEquality(ptc, true)) {
-                    // the root of the formula is trivially true
-                    root = logic.getTerm_true();
-                    break;
-                }
-
-#ifdef SIMPLIFY_DEBUG
-                if (ptc.parent != PTRef_Undef && tr != logic.getPterm(ptc.parent)[ptc.pos]) {
-                    cerr << "Simplified equality " << logic.printTerm(tr) << endl;
-                    cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
-                }
-#endif
-            }
-            else if (logic.isDisequality(tr)) {
-//                cerr << "Simplifying disequality " << logic.printTerm(tr) << endl;
-                logic.simplifyDisequality(ptc);
-//                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
-            }
-//            uf_solver.declareTerm(ptc);
-        }
-    }
-    return FContainer(root);
-}
-
 ValPair MainSolver::getValue(PTRef tr) const
 {
     if (logic.hasSortBool(tr)) {

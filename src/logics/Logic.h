@@ -447,10 +447,6 @@ class Logic {
     virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
-    // Simplify an equality.  TODO: See if this could be combined with
-    // simplifyTree
-    bool simplifyEquality(PtChild& ptc, bool simplify);
-    void simplifyDisequality(PtChild& ptc, bool simplify = true);
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
     // simplification resulted in constant true or false, or neither,
     // respectively

@@ -123,15 +123,17 @@ class MainSolver
         PTRef getRoot   ()        const         { return root; }
     };
 
+    FContainer root_instance; // Contains the root of the instance once simplifications are done
+
+    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
+    sstat simplifyFormulas(char** msg);
+    sstat solve           ();
+
     sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
 
-    FContainer simplifyEqualities(vec<PtChild>& terms);
-
     PTRef rewriteMaxArity(PTRef);
-
-    FContainer root_instance; // Contains the root of the instance once simplifications are done
 
     // helper private methods
     PushFrame& getLastFrame() const { return pfstore[frames.last()]; }
@@ -187,22 +189,16 @@ class MainSolver
 
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
-    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
-    sstat simplifyFormulas(char** msg);
+    sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
-    sstat solve           ();
-    sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 
-    void printFramesAsQuery();
-
+    void  printFramesAsQuery();
     sstat getStatus       ()       { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg);
-
     bool  writeFuns_smtlib2 (const char* file);
-
-    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
     bool  writeSolverSplits_smtlib2(const char* file, char** msg);
+    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

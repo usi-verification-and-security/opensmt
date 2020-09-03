@@ -504,47 +504,6 @@ bool Logic::declare_sort_hook(SRef sr) {
     return true;
 }
 
-void Logic::simplifyDisequality(PtChild& ptc, bool simplify) {
-
-    if (!simplify) return;
-
-    Pterm& t = term_store[ptc.tr];
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] == p) {
-            term_store.free(ptc.tr);
-            term_store[ptc.parent][ptc.pos] = getTerm_false();
-        }
-}
-
-bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
-    assert(isEquality(ptc.tr));
-    if (!simplify) return false;
-    Pterm& t = term_store[ptc.tr];
-
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] != p)
-            t[j++] = p = t[i];
-    if (j == 1) {
-        term_store.free(ptc.tr); // Lazy free
-        if (ptc.parent == PTRef_Undef)
-            return true;
-        term_store[ptc.parent][ptc.pos] = getTerm_true();
-        ptc.tr = getTerm_true();
-    }
-    else {// shrink the size!
-        t.shrink(i-j);
-#ifdef VERBOSE_EUF
-        if (i-j != 0)
-            cout << term_store.printTerm(ptc.tr) << endl;
-#endif
-    }
-    ptermSort(t);
-    return false;
-}
-
-
 void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
