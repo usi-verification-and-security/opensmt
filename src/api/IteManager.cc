@@ -22,79 +22,51 @@ ite::IteDagNode* ite::IteDag::newNode(PTRef tr, PTRef cond, ite::IteDagNode *tru
     return nodePointers.last();
 }
 
-ite::CondValPair ite::IteDag::getPathConstr(const IteDagNode *leaf, std::map<const IteDagNode*,IteParentRecord> &parents, Logic &logic) {
-    assert(leaf->getCond() == PTRef_Undef);
-    assert(leaf->getVal() != PTRef_Undef);
-    assert(not logic.isIte(leaf->getVal()));
-
-    vec<std::pair<PTRef,IteParentRecord*>> path;
-    const IteDagNode *node = leaf;
-
-    PTRef shortcutFormula = PTRef_Undef;
-
-    while (parents.find(node) != parents.end()) {
-        auto &parent = parents.at(node);
-        node = parent.getNode();
-        assert(node->getCond() != PTRef_Undef);
-        assert(node->getVal() == PTRef_Undef);
-        lbool sign = parent.getSign();
-        PTRef tr = node->getCond();
-        path.push(sign == l_True ? std::pair<PTRef,IteParentRecord*>{tr, &parent} : std::pair<PTRef,IteParentRecord*>{logic.mkNot(tr), &parent});
-        shortcutFormula = parent.getPathFormula();
-
-        if (shortcutFormula != PTRef_Undef) {
-            break;
-        }
-    }
-    if (shortcutFormula != PTRef_Undef) {
-//        PTRef cond = logic.getTerm_true();
-        for (int i = path.size() - 1; i >= 0; i--) {
-//            auto condAndRecord = path[i];
-//            PTRef cond = condAndRecord.first;
-//            IteParentRecord *pr = condAndRecord.second;
-//            pr->setPathFormula();
-        }
-    }
-    std::cout << "path length: " << path.size() << std::endl;
-//    return {logic.mkAnd(path), leaf->getVal()};
-    return {logic.getTerm_true(), leaf->getVal()};
-}
-
-vec<ite::CondValPair> ite::IteDag::asConstrs(Logic &logic, PTRef source) const {
-    assert(nodes.has(source));
-    assert(logic.isIte(source));
-    std::map<const IteDagNode*,IteParentRecord> parents;
+void ite::IteDag::annotateWithParentInfo(const IteDagNode *root) {
     vec<const IteDagNode*> queue;
-
-    queue.push(nodes[source]);
-
-    vec<CondValPair> constrs;
-
+    vec<type> flag;
+    flag.growTo(IteDagNode::getIdCount() + 1);
+    parents[root] = std::set<std::pair<const IteDagNode*,lbool>>();
+    queue.push(root);
     while (queue.size() != 0) {
-        const IteDagNode *node = queue.last();
-        queue.pop();
+        const IteDagNode &el = *queue.last();
+        if (flag[el.getId()] == type::black) {
+            queue.pop();
+            continue;
+        }
+        flag[el.getId()] = type::gray;
 
-        bool isLeaf = true;
-        for (lbool child_sign : {l_True, l_False}) {
-            const IteDagNode *child = (child_sign == l_True ? node->getTrueChild() : node->getFalseChild());
+        bool unprocessed_children = false;
+
+        for (lbool childPolarity : { l_False, l_True }) {
+            const IteDagNode *child = childPolarity == l_False ? el.getFalseChild() : el.getTrueChild();
             if (child != nullptr) {
-                queue.push(child);
-                parents[child] = IteParentRecord(child_sign, node);
-                isLeaf = false;
+                if (parents.find(child) == parents.end()) {
+                    parents[child] = std::set<std::pair<const IteDagNode *, lbool>>();
+                }
+                if (flag[child->getId()] == type::white) {
+                    unprocessed_children = true;
+                    queue.push(child);
+                }
+                parents[child].insert({&el, childPolarity});
+            }
+            else {
+                leaves.insert(&el);
             }
         }
-        if (isLeaf) {
-            auto row = getPathConstr(node, parents, logic);
-            constrs.push(row);
+
+        if (unprocessed_children) {
+            continue;
         }
+
+        flag[el.getId()] = type::black;
+        queue.pop();
     }
-    return constrs;
 }
 
 ite::IteDag ite::IteDag::getReachableSubGraph(const Logic &logic, PTRef root) {
     IteDag dag;
     vec<const IteDagNode*> queue;
-    enum class type { white, gray, black };
     vec<type> flag;
     flag.growTo(IteDagNode::getIdCount()+1);
     IteDagNode *rootNode = nodes[root];
@@ -128,8 +100,8 @@ ite::IteDag ite::IteDag::getReachableSubGraph(const Logic &logic, PTRef root) {
         if (logic.isIte(term)) {
             assert(el.getTrueChild() != nullptr);
             assert(el.getFalseChild() != nullptr);
-            ite::IteDagNode *true_node = dag.getNodeOrCreateLeafNode(term, el.getTrueChild()->getTerm());
-            ite::IteDagNode *false_node = dag.getNodeOrCreateLeafNode(term, el.getFalseChild()->getTerm());
+            ite::IteDagNode *true_node = dag.getNodeOrCreateLeafNode(el.getTrueChild()->getTerm());
+            ite::IteDagNode *false_node = dag.getNodeOrCreateLeafNode(el.getFalseChild()->getTerm());
             dag.createAndStoreNode(term, el.getCond(), true_node, false_node);
         } else {
             for (int i = 0; i < logic.getPterm(term).size(); i++) {
@@ -143,12 +115,76 @@ ite::IteDag ite::IteDag::getReachableSubGraph(const Logic &logic, PTRef root) {
     return dag;
 }
 
+vec<ite::CondValPair> ite::IteDag::getCondValPairs(Logic& logic) const {
+    // Reverse traversal starting from leaves
+    std::map<const IteDagNode*, PTRef> dagNodeToPTRef;
+    vec<const IteDagNode*> queue;
+    for (auto root : leaves) {
+        queue.push(root);
+    }
+    vec<type> flag;
+    flag.growTo(IteDagNode::getIdCount()+1);
+    vec<CondValPair> switches;
+
+    while (queue.size() != 0) {
+        const IteDagNode &el = *queue.last();
+
+        if (flag[el.getId()] == type::black) {
+            queue.pop();
+            continue;
+        }
+
+        bool unprocessed_parents = false;
+        for (const auto &parentAndPolarity : parents.at(&el)) {
+            auto parent = parentAndPolarity.first;
+            if (flag[parent->getId()] == type::white) {
+                flag[parent->getId()] = type::gray;
+                queue.push(parent);
+                unprocessed_parents = true;
+            }
+        }
+
+        if (unprocessed_parents) {
+            continue;
+        }
+
+        flag[el.getId()] = type::black;
+        queue.pop();
+
+        if (dagNodeToPTRef.find(&el) == dagNodeToPTRef.end()) {
+            auto &myParents = parents.at(&el);
+            vec<PTRef> parentConditions;
+            if (myParents.empty()) {
+                parentConditions.push(logic.getTerm_true());
+            } else {
+                for (auto &nodeAndPolarity : myParents) {
+                    PTRef cond = nodeAndPolarity.first->getCond();
+                    lbool pol = nodeAndPolarity.second;
+                    PTRef parentCondition = dagNodeToPTRef.at(nodeAndPolarity.first);
+                    PTRef edgeCondition = pol == l_True ? cond : logic.mkNot(cond);
+                    parentConditions.push(logic.mkAnd(parentCondition, edgeCondition));
+                }
+            }
+
+            PTRef pathCondition = logic.mkOr(parentConditions);
+            dagNodeToPTRef[&el] = pathCondition;
+
+            if (el.getCond() == PTRef_Undef) {
+                // A value node
+                assert(el.getVal() != PTRef_Undef and el.getTrueChild() == nullptr and el.getFalseChild() == nullptr);
+                switches.push_m(CondValPair(pathCondition, el.getVal()));
+            }
+        }
+    }
+
+    return switches;
+}
+
 ite::IteDag IteManager::constructIteDag(PTRef root, const Logic &logic) {
 
     ite::IteDag dag;
 
     vec<PTRef> queue;
-    enum class type { white, gray, black };
     vec<type> flag;
     flag.growTo(logic.getNumberOfTerms());
 
@@ -157,7 +193,7 @@ ite::IteDag IteManager::constructIteDag(PTRef root, const Logic &logic) {
         PTRef tr = queue.last();
         const Pterm &t = logic.getPterm(tr);
         auto index = Idx(t.getId());
-        if (flag[index] == type::black) {
+        if (flag[index] == ite::type::black) {
             queue.pop();
             continue;
         }
@@ -190,17 +226,14 @@ ite::IteDag IteManager::constructIteDag(PTRef root, const Logic &logic) {
             PTRef cond_tr = ite[0];
             PTRef true_tr = ite[1];
             PTRef false_tr = ite[2];
-            std::cout << "Found Ite" << std::endl;
             {
-                auto t = ite::timer("ite");
-                ite::IteDagNode *true_node = dag.getNodeOrCreateLeafNode(tr, true_tr);
-                ite::IteDagNode *false_node = dag.getNodeOrCreateLeafNode(tr, false_tr);
+                ite::IteDagNode *true_node = dag.getNodeOrCreateLeafNode(true_tr);
+                ite::IteDagNode *false_node = dag.getNodeOrCreateLeafNode(false_tr);
 
                 dag.createAndStoreNode(tr, cond_tr, true_node, false_node);
             }
 
         } else { // not Ite
-            std::cout << "Found a non-Ite" << std::endl;
             for (int i = 0; i < t.size(); i++) {
                 if (logic.isIte(t[i]) and !dag.isTopLevelIte(t[i])) {
                     // Term t[i] is an ite which appears as a child of a non-ite.
@@ -215,19 +248,28 @@ ite::IteDag IteManager::constructIteDag(PTRef root, const Logic &logic) {
 
 void IteManager::traverseTopLevelItes() {
     vec<PTRef> ites = iteDag.getTopLevelItes();
-    int i = 0;
+
     for (auto tl_ite : ites) {
-        auto t = ite::timer("as Constrs");
+//        auto t = ite::timer("as Constrs");
         ite::IteDag subDag = iteDag.getReachableSubGraph(logic, tl_ite);
-        std::string name("subgraph_");
-        name += std::to_string(i++) + ".dot";
-        printDagToFile(name, subDag);
+        PTRef switch_tr = makeSwitch(tl_ite);
+        switches.push(switch_tr);
     }
 }
 
-void IteManager::conjoinItes(PTRef root, PTRef& new_root)
-{
-    PTRef tmp = logic.mkAnd(flat_top_level_switches);
-    new_root = logic.mkAnd(tmp, new_root);
+PTRef IteManager::makeSwitch(PTRef root) {
+    assert(isIteVar(root));
+    ite::IteDag dag = iteDag.getReachableSubGraph(logic, root);
+    const ite::IteDagNode* root_node = dag.getNode(root);
+    dag.annotateWithParentInfo(root_node);
+    vec<ite::CondValPair> root_switches = dag.getCondValPairs(logic);
+    vec<PTRef> cases;
+    for (auto condVal : root_switches) {
+//        std::cout << logic.pp(condVal.cond) << " -> " << logic.pp(condVal.val) << std::endl;
+        cases.push(logic.mkImpl(condVal.cond, logic.mkEq(root, condVal.val)));
+    }
+    return logic.mkAnd(cases);
 }
+
+
 

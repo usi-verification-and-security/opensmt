@@ -7,7 +7,6 @@
 void IteManager::stackBasedDFS(PTRef root) const {
 
     vec<PTRef> queue;
-
     vec<type> flag;
     flag.growTo(logic.getNumberOfTerms());
 
@@ -72,27 +71,26 @@ void IteManager::printDagToFile(const std::string &fname, const ite::IteDag &dag
 }
 
 std::stringstream ite::IteDag::getDagAsStream() const {
-    std::stringstream annotations;
-    std::stringstream edges;
+//    std::stringstream annotations;
+    std::string annotations_str;
+//    std::stringstream edges;
+    std::string edges_str;
     std::stringstream out;
     auto &nodes = getIteDagNodes();
     std::cout << "Starting production of a graph" << std::endl;
     for (const ite::IteDagNode *node : nodes) {
         if (isTopLevelIte(node->getTerm())) {
-            annotations << " " << node->getId() << " [shape=box];" << endl;
+            annotations_str += " " + std::to_string(node->getId()) + " [shape=box];\n";
         }
         if (node->getTrueChild() != nullptr) {
-            edges << " " << node->getId() << " -> " << node->getTrueChild()->getId() << ";" << std::endl;
+            edges_str += " " + std::to_string(node->getId()) + " -> " + std::to_string(node->getTrueChild()->getId()) + ";\n";
         }
         if (node->getFalseChild() != nullptr) {
-            edges << " " << node->getId() << " -> " << node->getFalseChild()->getId() << ";" << std::endl;
+            edges_str += " " + std::to_string(node->getId()) + " -> " + std::to_string(node->getFalseChild()->getId()) + ";\n";
         }
     }
-    out << "digraph G {" << std::endl;
+    out << "digraph G {" << annotations_str << "\n" << edges_str << "}" << std::endl;
 //    out << annotations.rdbuf();
 //    out << edges.rdbuf();
-    out << "}" << std::endl;
-    std::cout << out.rdbuf();
-    std::cout << "End production of a graph" << std::endl;
     return out;
 }
