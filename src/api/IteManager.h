@@ -51,8 +51,8 @@ namespace ite {
             PTRef cond;
         };
         enum class NodeType { leaf = 0, inner = 1 };
-        uint32_t id : 31;
-        NodeType type : 1;
+        uint32_t id : 30;
+        bool type : 1;
         PTRef term;
         Tail tail[0];
         void setCond(PTRef cond) { assert(!isLeaf()); tail[0].cond = cond; }
@@ -61,7 +61,7 @@ namespace ite {
     public:
         Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, uint32_t id);
         Node() = delete;
-        bool isLeaf()           const { return type == NodeType::leaf; }
+        bool isLeaf()           const { return NodeType(type) == NodeType::leaf; }
         PTRef getCond()         const { assert(!isLeaf()); return tail[0].cond; }
         PTRef getVal()          const { assert(isLeaf()); return term; }
         NodeRef getTrueChild()  const { return isLeaf() ? NodeRef_Undef : tail[0].true_child; }

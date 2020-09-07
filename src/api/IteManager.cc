@@ -7,7 +7,7 @@
 
 ite::Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, uint32_t id)
     : id(id)
-    , type(cond != PTRef_Undef ? NodeType::inner : NodeType::leaf)
+    , type(cond != PTRef_Undef ? static_cast<bool>(NodeType::inner) : static_cast<bool>(NodeType::leaf))
     , term(term)
 {
     if (cond != PTRef_Undef) {
