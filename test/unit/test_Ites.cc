@@ -27,7 +27,7 @@ public:
 
     void printTopLevelSwitches(IteToSwitch &iteManager) {
         PTRef tr = logic.getTerm_true();
-        iteManager.conjoinSwitches(tr, tr);
+        tr = iteManager.conjoin(tr);
         std::cout << logic.pp(tr) << endl;
     }
 };

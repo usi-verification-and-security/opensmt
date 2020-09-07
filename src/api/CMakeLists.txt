@@ -11,6 +11,7 @@ $<TARGET_OBJECTS:cnfizers>
 $<TARGET_OBJECTS:common>
 $<TARGET_OBJECTS:simplifiers>
 $<TARGET_OBJECTS:models>
+$<TARGET_OBJECTS:itehandler>
 )
 
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:proof> ${OBJECTS_TO_ADD})
@@ -22,15 +23,12 @@ add_library(api OBJECT "")
 set(PRIVATE_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.cc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
-	"../itehandler/IteToSwitch.cc"
-    "../itehandler/IteToSwitchMisc.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
 	"${CMAKE_CURRENT_SOURCE_DIR}/Interpret.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/DimacsParser.h"
-	"../itehandler/IteToSwitch.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
 )

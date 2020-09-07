@@ -126,27 +126,25 @@ namespace ite {
         NodeRef newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node);
         using ParentSet = std::set<std::pair<NodeRef,lbool>,NodeRefLBool_lt>;
 
+        NodeRef getNode(PTRef tr) { assert(nodes.has(tr)); return nodes[tr]; }
+        const vec<NodeRef>& getNodes() const { return nodeRefs; }
         std::map<NodeRef,ParentSet,NodeRef_lt> parents;
+        void clear() { for (auto node : nodeRefs) { na.free(node); } nodes.clear(); nodeRefs.clear(); }
     public:
         Dag(Dag &&dag) = default;
         Dag() = default;
-        void clear() { for (auto node : nodeRefs) { na.free(node); } nodes.clear(); nodeRefs.clear(); }
         ~Dag() { clear(); }
-        bool has(PTRef tr) { return nodes.has(tr); }
         NodeRef getNodeOrCreateLeafNode(PTRef tr) { return nodes.has(tr) ? nodes[tr] : newNode(tr); }
         void createAndStoreNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node) {
             assert(not nodes.has(tr)); newNode(tr, cond, true_node, false_node);
         }
-        NodeRef getNode(PTRef tr) { assert(nodes.has(tr)); return nodes[tr]; }
-
-        const vec<NodeRef>& getNodes() const { return nodeRefs; }
 
         void addItePTRef(PTRef tr) { itePTRefs.insert(tr, true); }
         bool isTopLevelIte(PTRef tr) const { return top_level_ites.has(tr) and top_level_ites[tr]; }
         void addTopLevelIte(PTRef tr) { top_level_ites.insert(tr, true); }
         vec<PTRef> getTopLevelItes() const { vec<PTRef> keys; top_level_ites.getKeys(keys); return keys; }
         Dag getReachableSubGraph(const Logic& logic, PTRef root);
-        void annotateWithParentInfo(NodeRef root);
+        void annotateWithParentInfo(PTRef root);
         vec<ite::CondValPair> getCondValPairs(Logic& logic) const;
         // Debug
         std::stringstream getDagAsStream() const;
@@ -162,11 +160,11 @@ class IteToSwitch {
     vec<PTRef> switches;
     PTRef makeSwitch(PTRef root);
     static ite::Dag constructIteDag(PTRef root, const Logic& l); // Construct the IteDag that define values for the Ite-terms
+    void constructSwitches();
 
 public:
-    explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) {}
-    void conjoinSwitches(PTRef root, PTRef& new_root) { new_root = logic.mkAnd(root, logic.mkAnd(switches)); };
-    void constructSwitches();
+    explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) { constructSwitches(); }
+    PTRef conjoin(PTRef root) { return logic.mkAnd(root, logic.mkAnd(switches)); };
 
     // Debug
     void stackBasedDFS(PTRef root) const;

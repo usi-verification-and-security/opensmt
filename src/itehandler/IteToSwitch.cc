@@ -33,7 +33,8 @@ ite::NodeRef ite::Dag::newNode(PTRef tr, PTRef cond, ite::NodeRef true_node, ite
     return nodeRefs.last();
 }
 
-void ite::Dag::annotateWithParentInfo(NodeRef root) {
+void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
+    NodeRef root = getNode(root_tr);
     vec<NodeRef> queue;
     vec<type> flag;
     flag.growTo(na.getNumNodes());
@@ -272,8 +273,7 @@ void IteToSwitch::constructSwitches() {
 
 PTRef IteToSwitch::makeSwitch(PTRef root) {
     ite::Dag dag = iteDag.getReachableSubGraph(logic, root);
-    const ite::NodeRef root_node = dag.getNode(root);
-    dag.annotateWithParentInfo(root_node);
+    dag.annotateWithParentInfo(root);
     vec<ite::CondValPair> root_switches = dag.getCondValPairs(logic);
     vec<PTRef> cases;
     for (auto condVal : root_switches) {
