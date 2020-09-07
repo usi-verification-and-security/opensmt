@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <Logic.h>
 #include <LRALogic.h>
-#include <IteManager.h>
+#include "../../src/itehandler/IteToSwitch.h"
 
 class LogicIteTest: public ::testing::Test {
 public:
@@ -25,11 +25,10 @@ public:
 
     IteManagerTest() : lrasort(logic.getSort_num()) {}
 
-    void printTopLevelSwitches(const IteManager &iteManager) {
-        const vec<PTRef> &switches = iteManager.getFlatTopLevelSwitches();
-        for (auto tr : switches) {
-            std::cout << logic.pp(tr) << endl;
-        }
+    void printTopLevelSwitches(IteToSwitch &iteManager) {
+        PTRef tr = logic.getTerm_true();
+        iteManager.conjoinSwitches(tr, tr);
+        std::cout << logic.pp(tr) << endl;
     }
 };
 
@@ -104,7 +103,7 @@ TEST_F(IteManagerTest, test_Basic) {
     ASSERT_EQ(sr, logic.getSort_num());
     PTRef eq = logic.mkEq(x, ite);
 
-    IteManager iteManager(logic, eq);
+    IteToSwitch iteManager(logic, eq);
     printTopLevelSwitches(iteManager);
 
 }
@@ -119,7 +118,7 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
     PTRef ite = logic.mkIte(cond, c1, c2);
     PTRef prod = logic.mkNumTimes(ite, c2);
     PTRef eq = logic.mkEq(x, prod);
-    IteManager iteManager(logic, eq);
+    IteToSwitch iteManager(logic, eq);
     printTopLevelSwitches(iteManager);
 }
 
@@ -173,7 +172,7 @@ TEST_F(IteManagerTest, test_IteChain) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, ite1, c1);
     PTRef eq = logic.mkEq(x, ite2);
-    IteManager iteManager(logic, eq);
+    IteToSwitch iteManager(logic, eq);
     printTopLevelSwitches(iteManager);
 }
 

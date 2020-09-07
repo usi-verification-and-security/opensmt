@@ -1,10 +1,10 @@
 //
 // Created by prova on 02.09.20.
 //
-#include "IteManager.h"
+#include "IteToSwitch.h"
 #include <fstream>
 
-void IteManager::stackBasedDFS(PTRef root) const {
+void IteToSwitch::stackBasedDFS(PTRef root) const {
 
     vec<PTRef> queue;
     vec<type> flag;
@@ -13,7 +13,7 @@ void IteManager::stackBasedDFS(PTRef root) const {
     DFS(root, flag);
 }
 
-void IteManager::DFS(PTRef root, vec<type> &flag) const {
+void IteToSwitch::DFS(PTRef root, vec<type> &flag) const {
     auto index = Idx(logic.getPterm(root).getId());
     flag[index] = type::gray;
     Pterm &t = logic.getPterm(root);
@@ -26,7 +26,7 @@ void IteManager::DFS(PTRef root, vec<type> &flag) const {
     flag[index] = type::black;
 }
 
-void IteManager::iterativeDFS(PTRef root) const {
+void IteToSwitch::iterativeDFS(PTRef root) const {
     vec<PTRef> queue;
     vec<type> flag;
     flag.growTo(logic.getNumberOfTerms());
@@ -63,7 +63,7 @@ void IteManager::iterativeDFS(PTRef root) const {
     }
 }
 
-void IteManager::printDagToFile(const std::string &fname, const ite::Dag &dag) {
+void IteToSwitch::printDagToFile(const std::string &fname, const ite::Dag &dag) {
     std::fstream fs;
     fs.open(fname, std::fstream::out);
     fs << dag.getDagAsStream().rdbuf();

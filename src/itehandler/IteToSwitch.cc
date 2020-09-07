@@ -2,7 +2,7 @@
 // Created by prova on 04.08.20.
 //
 
-#include "IteManager.h"
+#include "IteToSwitch.h"
 #include "Logic.h"
 
 ite::Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, uint32_t id)
@@ -194,7 +194,7 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
     return switches;
 }
 
-ite::Dag IteManager::constructIteDag(PTRef root, const Logic &logic) {
+ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
 
     ite::Dag dag;
 
@@ -260,7 +260,7 @@ ite::Dag IteManager::constructIteDag(PTRef root, const Logic &logic) {
     return dag;
 }
 
-void IteManager::traverseTopLevelItes() {
+void IteToSwitch::constructSwitches() {
     vec<PTRef> ites = iteDag.getTopLevelItes();
 
     for (auto tl_ite : ites) {
@@ -270,8 +270,7 @@ void IteManager::traverseTopLevelItes() {
     }
 }
 
-PTRef IteManager::makeSwitch(PTRef root) {
-    assert(isIteVar(root));
+PTRef IteToSwitch::makeSwitch(PTRef root) {
     ite::Dag dag = iteDag.getReachableSubGraph(logic, root);
     const ite::NodeRef root_node = dag.getNode(root);
     dag.annotateWithParentInfo(root_node);
@@ -282,6 +281,3 @@ PTRef IteManager::makeSwitch(PTRef root) {
     }
     return logic.mkAnd(cases);
 }
-
-
-

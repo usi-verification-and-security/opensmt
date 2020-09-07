@@ -2,8 +2,8 @@
 // Created by prova on 04.08.20.
 //
 
-#ifndef OPENSMT_ITEMANAGER_H
-#define OPENSMT_ITEMANAGER_H
+#ifndef OPENSMT_ITETOSWITCH_H
+#define OPENSMT_ITETOSWITCH_H
 
 #include "Logic.h"
 
@@ -153,35 +153,27 @@ namespace ite {
     };
 }
 
-class IteManager {
+class IteToSwitch {
     using type = ite::type;
     Logic &logic;
-    Map<PTRef,bool,PTRefHash> ite_nodes;
     Map<PTRef,PTRef,PTRefHash> ite_vars;
-    bool isIteVar(PTRef tr) const { return iteDag.isTopLevelIte(tr); }
-    PTRef getTopLevelIte(PTRef tr) { assert (isIteVar(tr)); return ite_vars[tr]; }
     vec<PTRef> flat_top_level_switches;
     ite::Dag iteDag;
     vec<PTRef> switches;
+    PTRef makeSwitch(PTRef root);
+    static ite::Dag constructIteDag(PTRef root, const Logic& l); // Construct the IteDag that define values for the Ite-terms
 
 public:
-    explicit IteManager(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) {}
-
-    static ite::Dag constructIteDag(PTRef root, const Logic& l); // Construct the IteDag that define values for the Ite-terms
+    explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) {}
     void conjoinSwitches(PTRef root, PTRef& new_root) { new_root = logic.mkAnd(root, logic.mkAnd(switches)); };
-    const vec<PTRef> &getFlatTopLevelSwitches() const { return flat_top_level_switches; }
-
-    PTRef makeSwitch(PTRef root);
+    void constructSwitches();
 
     // Debug
     void stackBasedDFS(PTRef root) const;
     void iterativeDFS(PTRef root) const;
-
     void DFS(PTRef root, vec<type> &flag) const;
-
     static void printDagToFile(const std::string &fname, const ite::Dag&);
     void printDagToFile(const std::string &fname) const { printDagToFile(fname, iteDag); };
-    void traverseTopLevelItes();
 };
 
-#endif //OPENSMT_ITEMANAGER_H
+#endif //OPENSMT_ITETOSWITCH_H

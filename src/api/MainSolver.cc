@@ -116,9 +116,8 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     logic.conjoinExtras(root, root);
 
-    IteManager iteManager(logic, root);
-//    iteManager.printDagToFile("debug.dot");
-    iteManager.traverseTopLevelItes();
+    IteToSwitch iteManager(logic, root);
+    iteManager.constructSwitches();
     iteManager.conjoinSwitches(root, root);
 
     if (getConfig().produce_inter()) {
