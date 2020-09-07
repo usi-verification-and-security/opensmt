@@ -63,30 +63,30 @@ void IteManager::iterativeDFS(PTRef root) const {
     }
 }
 
-void IteManager::printDagToFile(const std::string &fname, const ite::IteDag &dag) {
+void IteManager::printDagToFile(const std::string &fname, const ite::Dag &dag) {
     std::fstream fs;
     fs.open(fname, std::fstream::out);
     fs << dag.getDagAsStream().rdbuf();
     fs.close();
 }
 
-std::stringstream ite::IteDag::getDagAsStream() const {
+std::stringstream ite::Dag::getDagAsStream() const {
 //    std::stringstream annotations;
     std::string annotations_str;
 //    std::stringstream edges;
     std::string edges_str;
     std::stringstream out;
-    auto &nodes = getIteDagNodes();
+    auto &nodes = getNodes();
     std::cout << "Starting production of a graph" << std::endl;
-    for (const ite::IteDagNode *node : nodes) {
-        if (isTopLevelIte(node->getTerm())) {
-            annotations_str += " " + std::to_string(node->getId()) + " [shape=box];\n";
+    for (const ite::NodeRef node : nodes) {
+        if (isTopLevelIte(na[node].getTerm())) {
+            annotations_str += " " + std::to_string(na[node].getId()) + " [shape=box];\n";
         }
-        if (node->getTrueChild() != nullptr) {
-            edges_str += " " + std::to_string(node->getId()) + " -> " + std::to_string(node->getTrueChild()->getId()) + ";\n";
+        if (na[node].getTrueChild() != NodeRef_Undef) {
+            edges_str += " " + std::to_string(na[node].getId()) + " -> " + std::to_string(na[na[node].getTrueChild()].getId()) + ";\n";
         }
-        if (node->getFalseChild() != nullptr) {
-            edges_str += " " + std::to_string(node->getId()) + " -> " + std::to_string(node->getFalseChild()->getId()) + ";\n";
+        if (na[node].getFalseChild() != NodeRef_Undef) {
+            edges_str += " " + std::to_string(na[node].getId()) + " -> " + std::to_string(na[na[node].getFalseChild()].getId()) + ";\n";
         }
     }
     out << "digraph G {" << annotations_str << "\n" << edges_str << "}" << std::endl;
