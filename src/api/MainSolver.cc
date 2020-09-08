@@ -250,7 +250,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
     return modelBuilder.build();
 }
 
-void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
+void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
     for (int i = 0; i < in.size(); i++) {
         vec<PtAsgn>& constr = in[i];
@@ -261,7 +261,7 @@ void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
     }
 }
 
-bool MainSolver::writeFuns_smtlib2(const char* file)
+bool MainSolver::writeFuns_smtlib2(const char* file) const
 {
     std::ofstream file_s;
     file_s.open(file);
@@ -272,7 +272,7 @@ bool MainSolver::writeFuns_smtlib2(const char* file)
     return false;
 }
 
-bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
+bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
 {
     char* name;
     int written = asprintf(&name, "%s.smt2", file);
@@ -296,7 +296,7 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
     return true;
 }
 
-bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
+bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
 {
     vec<SplitData>& splits = ts.solver.splits;
     for (int i = 0; i < splits.size(); i++) {
@@ -340,7 +340,7 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
     return true;
 }
 
-void MainSolver::printFramesAsQuery()
+void MainSolver::printFramesAsQuery() const
 {
     char* base_name = config.dump_query_name();
     if (base_name == NULL)

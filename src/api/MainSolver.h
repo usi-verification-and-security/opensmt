@@ -181,6 +181,7 @@ class MainSolver
     THandler &getTHandler() { return thandler; }
     Logic    &getLogic()    { return logic; }
     Theory   &getTheory()   { return *theory; }
+    const Theory &getTheory() const { return *theory; }
     sstat     push(PTRef root);
     void      push();
     bool      pop();
@@ -192,13 +193,13 @@ class MainSolver
     sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
 
-    void  printFramesAsQuery();
-    sstat getStatus       ()       { return status; }
+    void  printFramesAsQuery() const;
+    sstat getStatus       () const { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
-    bool  writeSolverState_smtlib2 (const char* file, char** msg);
-    bool  writeFuns_smtlib2 (const char* file);
-    bool  writeSolverSplits_smtlib2(const char* file, char** msg);
-    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
+    bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
+    bool  writeFuns_smtlib2 (const char* file) const;
+    bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
+    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

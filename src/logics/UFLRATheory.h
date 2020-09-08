@@ -40,9 +40,10 @@ class UFLRATheory : public Theory
         , lralogic(logic)
         , uflratshandler(c, lralogic)
     { }
-    virtual LRALogic& getLogic() { return lralogic; }
-    virtual UFLRATHandler& getTSolverHandler() { return uflratshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual LRALogic&       getLogic() { return lralogic; }
+    virtual const LRALogic& getLogic() const { return lralogic; }
+    virtual UFLRATHandler&  getTSolverHandler() { return uflratshandler; }
+    virtual bool            simplify(const vec<PFRef>&, int);
 };
 
 #endif

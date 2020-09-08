@@ -92,7 +92,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
 }
 
 void
-Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s)
+Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const
 {
     getLogic().dumpHeaderToFile(s);
     for (int i = 0; i < frames.size(); i++) {

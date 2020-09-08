@@ -1709,14 +1709,14 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
 }
 
 void
-Logic::dumpChecksatToFile(ostream& dump_out)
+Logic::dumpChecksatToFile(ostream& dump_out) const
 {
     dump_out << "(check-sat)" << endl;
     dump_out << "(exit)" << endl;
 }
 
 void
-Logic::dumpHeaderToFile(ostream& dump_out)
+Logic::dumpHeaderToFile(ostream& dump_out) const
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
     const vec<SRef>& sorts = sort_store.getSorts();
@@ -1744,7 +1744,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
         char* sym = printSym(s);
         dump_out << sym << " ";
         free(sym);
-        Symbol& symb = sym_store[s];
+        const Symbol& symb = sym_store[s];
         dump_out << "(";
         for(unsigned int j = 0; j < symb.nargs(); ++j)
         {
@@ -1755,7 +1755,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 }
 
 void
-Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool toassert )
+Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
@@ -1781,7 +1781,7 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
         }
 
         bool unprocessed_children = false;
-        Pterm& term = getPterm(e);
+        const Pterm& term = getPterm(e);
         for(int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
@@ -1843,7 +1843,7 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
     // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
     // Closes assert
-    if(toassert)
+    if (toassert)
         dump_out << ")" << endl;
 }
 
