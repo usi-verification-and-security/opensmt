@@ -18,5 +18,10 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Simplex.cc"
     )
 
+option(SIMPLEX_DEBUG "Deeper debugging of Simplex" OFF)
+
+if (SIMPLEX_DEBUG)
+    add_definitions(-DSIMPLEX_DEBUG)
+endif (SIMPLEX_DEBUG)
 
 
