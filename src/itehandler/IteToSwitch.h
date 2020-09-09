@@ -147,7 +147,7 @@ namespace ite {
         void annotateWithParentInfo(PTRef root);
         vec<ite::CondValPair> getCondValPairs(Logic& logic) const;
         // Debug
-        std::stringstream getDagAsStream() const;
+        void getDagAsStream(std::ostream&) const;
     };
 }
 

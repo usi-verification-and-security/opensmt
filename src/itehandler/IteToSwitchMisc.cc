@@ -66,16 +66,13 @@ void IteToSwitch::iterativeDFS(PTRef root) const {
 void IteToSwitch::printDagToFile(const std::string &fname, const ite::Dag &dag) {
     std::fstream fs;
     fs.open(fname, std::fstream::out);
-    fs << dag.getDagAsStream().rdbuf();
+    dag.getDagAsStream(fs);
     fs.close();
 }
 
-std::stringstream ite::Dag::getDagAsStream() const {
-//    std::stringstream annotations;
+void ite::Dag::getDagAsStream(std::ostream &out) const {
     std::string annotations_str;
-//    std::stringstream edges;
     std::string edges_str;
-    std::stringstream out;
     auto &nodes = getNodes();
     std::cout << "Starting production of a graph" << std::endl;
     for (const ite::NodeRef node : nodes) {
@@ -90,7 +87,4 @@ std::stringstream ite::Dag::getDagAsStream() const {
         }
     }
     out << "digraph G {" << annotations_str << "\n" << edges_str << "}" << std::endl;
-//    out << annotations.rdbuf();
-//    out << edges.rdbuf();
-    return out;
 }
