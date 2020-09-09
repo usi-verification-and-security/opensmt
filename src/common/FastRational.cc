@@ -80,75 +80,40 @@ std::string FastRational::get_str() const
     return os.str();
 }
 
-FastRational gcd(FastRational& a, FastRational& b)
+FastRational gcd(FastRational const & a, FastRational const & b)
 {
     assert(a.isInteger() & b.isInteger());
     if (a.wordPartValid() && b.wordPartValid()) {
         return FastRational(gcd(a.num, b.num));
     }
     else {
-        a.ensure_mpq_valid();
-        b.ensure_mpq_valid();
+        a.force_ensure_mpq_valid();
+        b.force_ensure_mpq_valid();
         mpz_t o;
         mpz_init(o);
         mpz_gcd(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        a.try_fit_word();
-        b.try_fit_word();
         FastRational o_gcd = FastRational(mpz_class(o));
         mpz_clear(o);
         return o_gcd;
     }
 }
 
-FastRational lcm(FastRational& a, FastRational& b)
+FastRational lcm(FastRational const & a, FastRational const & b)
 {
-    assert(a.isInteger() & b.isInteger());
+    assert(a.isInteger() and b.isInteger());
     if (a.wordPartValid() && b.wordPartValid()) {
         return lcm(a.num, b.num);
     }
     else {
-        a.ensure_mpq_valid();
-        b.ensure_mpq_valid();
+        a.force_ensure_mpq_valid();
+        b.force_ensure_mpq_valid();
         mpz_t o;
         mpz_init(o);
         mpz_lcm(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        if (!a.wordPartValid())
-            a.try_fit_word();
-        if (!b.wordPartValid())
-            b.try_fit_word();
         FastRational o_gcd = FastRational(mpz_class(o));
         mpz_clear(o);
         return o_gcd;
     }
-}
-
-// The quotient of n and d using the fast rationals.
-// Divide n by d, forming a quotient q.
-// Rounds q down towards -infinity, and q will satisfy n = q*d + r for some 0 <= abs(r) <= abs(d)
-// Don't care about converting n and d back to small values, since they're rvalues.
-FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d) {
-    assert(n.isInteger() && d.isInteger());
-    if (n.wordPartValid() && d.wordPartValid()) {
-        word num = n.num;
-        word den = d.num;
-        word quo;
-        if (num == INT_MIN) // The abs is guaranteed to overflow.  Otherwise this is always fine
-            goto overflow;
-        // After this -INT_MIN+1 <= numerator <= INT_MAX, and therefore the result always fits into a word.
-        quo = num / den;
-        if (num % den != 0 && ((num < 0 && den >=0) || (den < 0 && num >= 0))) // The result should be negative
-            quo--; // INT_MAX-1 >= quo >= -INT_MIN
-
-        return std::move(quo);
-    }
-overflow:
-    n.force_ensure_mpq_valid();
-    d.force_ensure_mpq_valid();
-    mpz_t t;
-    mpz_init(t);
-    mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-//    FastRational o = FastRational(mpz_class(t));
-    return FastRational(mpz_class(t));
 }
 
 FastRational fastrat_round_to_int(const FastRational& n) {
@@ -156,8 +121,10 @@ FastRational fastrat_round_to_int(const FastRational& n) {
     return fastrat_fdiv_q(res.get_num(), res.get_den());
 }
 
-//  Same as above, but convert n and d to small values since they might have further use.
-FastRational fastrat_fdiv_q(FastRational& n, FastRational& d) {
+// The quotient of n and d using the fast rationals.
+// Divide n by d, forming a quotient q.
+// Rounds q down towards -infinity, and q will satisfy n = q*d + r for some 0 <= abs(r) <= abs(d)
+FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d) {
     assert(n.isInteger() && d.isInteger());
     if (n.wordPartValid() && d.wordPartValid()) {
         word num = n.num;
@@ -170,31 +137,28 @@ FastRational fastrat_fdiv_q(FastRational& n, FastRational& d) {
         if (num % den != 0 && ((num < 0 && den >=0) || (den < 0 && num >= 0))) // The result should be negative
             quo--; // INT_MAX-1 >= quo >= -INT_MIN
 
-        return std::move(quo);
+        return quo;
     }
-    overflow:
+overflow:
     n.force_ensure_mpq_valid();
     d.force_ensure_mpq_valid();
     mpz_t t;
     mpz_init(t);
     mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-//    FastRational o = FastRational(mpz_class(t));
-    n.try_fit_word();
-    d.try_fit_word();
     return FastRational(mpz_class(t));
 }
 
 //void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
-FastRational divexact(FastRational& n, FastRational& d) {
+FastRational divexact(FastRational const & n, FastRational const & d) {
     assert(d != 0);
     assert(n.isInteger() && d.isInteger());
-    if (!n.mpqPartValid() && !d.mpqPartValid()) {
+    if (n.wordPartValid() && d.wordPartValid()) {
         word num = n.num;
         word den = d.num;
         word quo;
         if (den != 0){
             quo = num / den;
-            return std::move(quo);
+            return quo;
         }
         else {
             // Division by zero
@@ -208,8 +172,6 @@ FastRational divexact(FastRational& n, FastRational& d) {
         mpz_t t;
         mpz_init(t);
         mpz_divexact(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-        n.try_fit_word();
-        d.try_fit_word();
         return FastRational(mpz_class(t));
     }
 }
