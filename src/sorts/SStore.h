@@ -88,7 +88,7 @@ class SStore
     SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
     bool    containsSort    (const char* name) const
         { bool rval = sortTable.has(name); return rval; }
-    const char* getName     (SRef sr) { return ssa[sa[sr].getNameRef()].getName(); }
+    const char* getName     (SRef sr) const { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
 

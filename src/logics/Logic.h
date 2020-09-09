@@ -297,9 +297,9 @@ class Logic {
 
     PTRef       mkBoolVar     (const char* name);
 
-    void dumpHeaderToFile(ostream& dump_out);
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
-    void dumpChecksatToFile(ostream& dump_out);
+    void dumpHeaderToFile(ostream& dump_out) const;
+    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
+    void dumpChecksatToFile(ostream& dump_out) const;
 
     void dumpFunctions(ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
@@ -447,10 +447,6 @@ class Logic {
     virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
-    // Simplify an equality.  TODO: See if this could be combined with
-    // simplifyTree
-    bool simplifyEquality(PtChild& ptc, bool simplify);
-    void simplifyDisequality(PtChild& ptc, bool simplify = true);
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
     // simplification resulted in constant true or false, or neither,
     // respectively

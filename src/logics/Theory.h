@@ -135,7 +135,8 @@ public:
         allocatedFrames.push_back(r);
         return r;
     }
-    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame&       operator[](PFRef r)       { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const PushFrame& operator[](PFRef r) const { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
     PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
     PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
 
@@ -165,10 +166,11 @@ class Theory
 
     PushFrameAllocator      pfstore {1024};
     virtual Logic          &getLogic()              = 0;
+    virtual const Logic    &getLogic() const        = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
     virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     SubstitutionResult      computeSubstitutions(PTRef fla);
-    void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s);
+    void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
     virtual                ~Theory()                           {};
 };
 
@@ -184,9 +186,10 @@ class LRATheory : public Theory
         , lratshandler(c, lralogic)
     { }
     ~LRATheory() {};
-    virtual LRALogic&    getLogic() override { return lralogic; }
-    virtual LRATHandler& getTSolverHandler() override { return lratshandler; }
-    virtual bool simplify(const vec<PFRef>&, int) override; // Theory specific simplifications
+    virtual LRALogic&          getLogic() override { return lralogic; }
+    virtual const LRALogic&    getLogic() const override { return lralogic; }
+    virtual LRATHandler&       getTSolverHandler() override { return lratshandler; }
+    virtual bool               simplify(const vec<PFRef>&, int) override; // Theory specific simplifications
 };
 
 class LIATheory : public Theory
@@ -201,9 +204,10 @@ public:
     , liatshandler(c, lialogic)
     { }
     ~LIATheory() {};
-    virtual LIALogic& getLogic() override { return lialogic; }
-    virtual LIATHandler& getTSolverHandler() override { return liatshandler; }
-    virtual bool simplify(const vec<PFRef>&, int) override;
+    virtual LIALogic&       getLogic() override { return lialogic; }
+    virtual const LIALogic& getLogic() const override { return lialogic; }
+    virtual LIATHandler&    getTSolverHandler() override { return liatshandler; }
+    virtual bool            simplify(const vec<PFRef>&, int) override;
 };
 
 class UFTheory : public Theory
@@ -218,10 +222,11 @@ class UFTheory : public Theory
         , tshandler(c, uflogic)
     { }
     ~UFTheory() {}
-    virtual Logic& getLogic() override { return uflogic; }
-    virtual UFTHandler&  getTSolverHandler() override  { return tshandler; }
+    virtual Logic&            getLogic() override { return uflogic; }
+    virtual const Logic&      getLogic() const override { return uflogic; }
+    virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int) override;
+    virtual bool              simplify(const vec<PFRef>&, int) override;
 };
 
 class CUFTheory : public Theory
@@ -237,10 +242,11 @@ class CUFTheory : public Theory
       , tshandler(c, cuflogic)
     { }
     ~CUFTheory() {}
-    virtual BVLogic&  getLogic() override { return cuflogic; }
-    virtual CUFTHandler& getTSolverHandler() override { return tshandler; }
+    virtual BVLogic&           getLogic() override { return cuflogic; }
+    virtual const BVLogic&     getLogic() const override { return cuflogic; }
+    virtual CUFTHandler&       getTSolverHandler() override { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int) override;
+    virtual bool               simplify(const vec<PFRef>&, int) override;
 };
 
 
