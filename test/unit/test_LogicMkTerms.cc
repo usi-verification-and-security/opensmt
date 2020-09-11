@@ -3,6 +3,8 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
+#include <LIALogic.h>
+#include <LRALogic.h>
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
@@ -145,4 +147,51 @@ TEST_F(LogicMkTermsTest, testIteration) {
             ASSERT_TRUE(found);
         }
     }
+}
+
+/*
+ *  LA specific terms
+ */
+
+class LALogicMkTermsTest: public ::testing::Test {
+public:
+    LIALogic lialogic;
+    LRALogic lralogic;
+    LALogicMkTermsTest() {}
+};
+
+TEST_F(LALogicMkTermsTest, testNormalizationOfInequalitiesLRA) {
+    auto & logic = lralogic;
+    auto x = logic.mkNumVar("x");
+    auto y = logic.mkNumVar("y");
+    auto zero = logic.getTerm_NumZero();
+    auto two = logic.mkConst(2);
+    auto four = logic.mkConst(4);
+    auto twoy = logic.mkNumTimes(two, y);
+    auto foury = logic.mkNumTimes(four, y);
+    auto twox = logic.mkNumTimes(two, x);
+
+    auto term1 = logic.mkNumPlus(x, twoy);
+    auto term2 = logic.mkNumPlus(foury, twox);
+    auto ineq1 = logic.mkNumLeq(zero, term1);
+    auto ineq2 = logic.mkNumLeq(zero, term2);
+    ASSERT_EQ(ineq1, ineq2);
+}
+
+TEST_F(LALogicMkTermsTest, testNormalizationOfInequalitiesLIA) {
+    auto & logic = lialogic;
+    auto x = logic.mkNumVar("x");
+    auto y = logic.mkNumVar("y");
+    auto zero = logic.getTerm_NumZero();
+    auto two = logic.mkConst(2);
+    auto four = logic.mkConst(4);
+    auto twoy = logic.mkNumTimes(two, y);
+    auto foury = logic.mkNumTimes(four, y);
+    auto twox = logic.mkNumTimes(two, x);
+
+    auto term1 = logic.mkNumPlus(x, twoy);
+    auto term2 = logic.mkNumPlus(foury, twox);
+    auto ineq1 = logic.mkNumLeq(zero, term1);
+    auto ineq2 = logic.mkNumLeq(zero, term2);
+    ASSERT_EQ(ineq1, ineq2);
 }
