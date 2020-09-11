@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Bvector.h"
 
+#include "Map.h"
+
 class BVStore
 {
     BvectorAllocator bva;
