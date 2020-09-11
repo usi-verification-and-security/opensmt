@@ -34,8 +34,8 @@ bool LALogic::isLinearFactor(PTRef tr) const {
     if (isNumConst(tr) || isNumVar(tr) || isIte(tr)) { return true; }
     if (isNumTimes(tr)) {
         Pterm const& term = getPterm(tr);
-        return term.size() == 2 && ((isNumConst(term[0]) && (isNumVar(term[1]) || isIte(term[1])))
-                                    || (isNumConst(term[1]) && (isNumVar(term[0]) || isIte(term[0]))));
+        return term.size() == 2 && ((isNumConst(term[0]) && (isNumVarOrIte(term[1])))
+                                    || (isNumConst(term[1]) && (isNumVarOrIte(term[0]))));
     }
     return false;
 }
@@ -73,8 +73,8 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
             fac = t;
         }
         assert(isConstant(fac));
-        assert(isNumVar(var) || isUF(var) || isIte(var));
-    } else if (isNumVar(term) || isUF(term) || isIte(term)) {
+        assert(isNumVarOrIte(var) || isUF(var));
+    } else if (isNumVarOrIte(term) || isUF(term)) {
         var = term;
         fac = getTerm_NumOne();
     } else {
@@ -190,26 +190,17 @@ lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,
     return arithmeticElimination(top_level_arith, substs);
 }
 
-uint32_t LessThan_deepPTRef::getMin(PTRef tr) const {
+uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
+    assert(l.isNumTimes(tr));
     PTRef c_t;
     PTRef v_t;
     l.splitTermToVarAndConst(tr, v_t, c_t);
     return v_t.x;
 }
 
-bool LessThan_deepPTRef::operator()(PTRef& x_, PTRef& y_) {
-    uint32_t id_x;
-    uint32_t id_y;
-    if (l.isNumTimes(x_)) {
-        id_x = getMin(x_);
-    } else {
-        id_x = x_.x;
-    }
-    if (l.isNumTimes(y_)) {
-        id_y = getMin(y_);
-    } else {
-        id_y = y_.x;
-    }
+bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
+    uint32_t id_x = l.isNumTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
+    uint32_t id_y = l.isNumTimes(y_) ? getVarIdFromProduct(y_) : y_.x;;
     return id_x < id_y;
 }
 
@@ -250,12 +241,14 @@ bool LALogic::isBuiltinFunction(const SymRef sr) const
 }
 bool LALogic::isNumTerm(PTRef tr) const
 {
-    auto isVarOrUFOrIte = [this](PTRef tr) { return isNumVar(tr) || isUF(tr) || isIte(tr); };
+    auto isNumVarOrUFOrIte = [this](PTRef tr) { return isNumVarOrIte(tr) || isUF(tr); };
     const Pterm& t = getPterm(tr);
+    if (isNumVarOrIte(tr))
+        return true;
     if (t.size() == 2 && isNumTimes(tr))
-        return (isVarOrUFOrIte(t[0]) && isConstant(t[1])) || (isVarOrUFOrIte(t[1]) && isConstant(t[0]));
+        return (isNumVarOrUFOrIte(t[0]) && isConstant(t[1])) || (isNumVarOrUFOrIte(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
-        return isNumVar(tr) || isConstant(tr) || isIte(tr);
+        return isNumVar(tr) || isConstant(tr);
     else
         return false;
 }
@@ -337,9 +330,9 @@ bool LALogic::isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
 bool LALogic::isNumGt(SymRef sr) const { return sr == get_sym_Num_GT(); }
 bool LALogic::isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
 bool LALogic::isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == get_sort_NUM(); }
-bool LALogic::isNumVarOrIte(SymRef sr) const { return isVar(sr) || isIte(sr); }
+bool LALogic::isNumVarOrIte(SymRef sr) const { return isNumVar(sr) || isIte(sr); }
+bool LALogic::isNumVarOrIte(PTRef tr) const { return isNumVarOrIte(getPterm(tr).symb()); }
 bool LALogic::isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-bool LALogic::isNumVarOrIte(PTRef tr) const { return isNumVar(getPterm(tr).symb()) || isIte(tr); }
 bool LALogic::isNumZero(SymRef sr) const { return sr == get_sym_Num_ZERO(); }
 bool LALogic::isNumZero(PTRef tr) const { return tr == getTerm_NumZero(); }
 bool LALogic::isNumOne(SymRef sr) const { return sr == get_sym_Num_ONE(); }
@@ -570,7 +563,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     }
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
     if (isNumDiv(s_new)) {
-        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0]) || isIte(args_new[0])) && isConstant(args_new[1]));
+        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
@@ -634,10 +627,8 @@ PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
             args[1] = nonconst_args.size() == 1 ? nonconst_args[0] : mkFun(get_sym_Num_PLUS(), nonconst_args);
             assert(mkNumPlus(nonconst_args) == args[1]);
         }
-    } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp) || isIte(sum_tmp)) {
-        // The correct arguments are set up already
     } else {
-        assert(false);
+        assert(isNumVarOrIte(sum_tmp) || isNumTimes(sum_tmp));
     }
     PTRef r = mkFun(get_sym_Num_LEQ(), args);
     return r;
@@ -724,20 +715,6 @@ PTRef LALogic::mkConst(SRef s, const char* name)
     return ptr;
 }
 
-PTRef LALogic::mkIte(vec<PTRef>& terms) {
-    auto isConstantOrConstantIte = [this](PTRef tr) { return isConstant(tr) || constIteTerms.has(tr); };
-    PTRef tr = Logic::mkIte(terms);
-    if (isIte(tr)) {
-        Pterm &t = getPterm(tr);
-        PTRef true_term = t[1];
-        PTRef false_term = t[2];
-        if (isConstantOrConstantIte(true_term) && isConstantOrConstantIte(false_term)) {
-            constIteTerms.insert(tr, true);
-        }
-    }
-    return tr;
-}
-
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
@@ -752,8 +729,10 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
     vec<int> const_idx;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
-        if (l.isConstant(args[i]) && (not l.isIte(args[i])))
+        if (l.isConstant(args[i])) {
+            assert(not l.isIte(args[i]));
             const_idx.push(i);
+        }
     }
     if (const_idx.size() == 0) {
         s_new = s;

@@ -35,13 +35,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFLRATheory.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
+#include "IteToSwitch.h"
 
 #include <thread>
 #include <random>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <time.h>
 
 namespace opensmt { extern bool stop; }
 //#include "symmetry/Symmetry.h"

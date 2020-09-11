@@ -46,22 +46,19 @@ protected:
     static const char*  s_sort_num;
 
     Map<PTRef,bool,PTRefHash> la_split_inequalities;
-    Map<PTRef,bool,PTRefHash> constIteTerms;
 public:
     LALogic();
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
-    virtual bool    isBuiltinFunction(SymRef sr) const override;
-    virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
-    virtual SRef    getSort_num    ()              const;
-    virtual PTRef     mkConst         (const char* name, const char **msg) override;
-    virtual PTRef     mkConst         (SRef s, const char* name) override;
-    virtual PTRef     mkConst         (const opensmt::Number& c);
-    virtual PTRef     mkConst         (const char* num);
-    virtual PTRef     mkNumVar        (const char* name);
-    PTRef   mkIte                     (vec<PTRef>&) override;
-    PTRef   mkIte                     (PTRef cond, PTRef true_tr, PTRef false_tr) override { vec<PTRef> tmp{cond, true_tr, false_tr}; return mkIte(tmp); }
-    virtual bool isBuiltinSort  (SRef sr) const override;
-    virtual bool isBuiltinConstant(SymRef sr) const override;
+    virtual bool     isBuiltinFunction(SymRef sr) const override;
+    virtual PTRef    insertTerm       (SymRef sym, vec<PTRef>& terms, char** msg) override;
+    virtual SRef     getSort_num      ()              const;
+    virtual PTRef    mkConst          (const char* name, const char **msg) override;
+    virtual PTRef    mkConst          (SRef s, const char* name) override;
+    virtual PTRef    mkConst          (const opensmt::Number& c);
+    virtual PTRef    mkConst          (const char* num);
+    virtual PTRef    mkNumVar         (const char* name);
+    virtual bool     isBuiltinSort    (SRef sr) const override;
+    virtual bool     isBuiltinConstant(SymRef sr) const override;
 
     virtual bool  isNumConst     (SymRef sr)     const;
     virtual bool  isNumConst     (PTRef tr)      const;
@@ -121,7 +118,7 @@ public:
     virtual bool isNumZero(PTRef tr) const;
     bool isNumOne(SymRef sr) const;
     virtual bool isNumOne(PTRef tr) const;
-    // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
+    // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     virtual bool isNumTerm(PTRef tr) const;
 
     virtual PTRef getTerm_NumZero() const = 0;
@@ -178,16 +175,19 @@ public:
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
 // v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2)).
+//
+// This code is required for canonicalising the terms and correctly identifying their sign.
+//
 // If term contains a const-ite:
 //   (* ite v) or (* ite c) or (* v ite) or (* c ite)  => consider {v,c}.ptref
 //   (* ite1 ite2) => consider min(ite1.ptref, ite2.ptref)
 class LessThan_deepPTRef {
     const LALogic& l;
-    uint32_t getMin(PTRef term) const;
+    uint32_t getVarIdFromProduct(PTRef term) const;
 public:
     LessThan_deepPTRef(const LALogic* l) : l(*l) {}
 
-    bool operator ()  (PTRef& x_, PTRef& y_);
+    bool operator ()  (PTRef x_, PTRef y_) const;
 
 };
 

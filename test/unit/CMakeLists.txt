@@ -103,6 +103,15 @@ target_sources(LogicMkTermsTest
 target_link_libraries(LogicMkTermsTest api_static gtest gtest_main)
 gtest_add_tests(TARGET LogicMkTermsTest)
 
+add_executable(LIALogicMkTermsTest)
+target_sources(LIALogicMkTermsTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIALogicMkTerms.cc"
+        )
+
+target_link_libraries(LIALogicMkTermsTest api_static gtest gtest_main)
+gtest_add_tests(TARGET LIALogicMkTermsTest)
+
+
 add_executable(BoundTest)
 target_sources(BoundTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Bounds.cc"
