@@ -20,7 +20,7 @@ private:
         // this corresponds to edges 'y --c--> x'
         PTRef x;            // destination of the edge
         PTRef y;            // source of the edge
-        ptrdiff_t c;        // cost of the edge
+        SafeInt c;        // cost of the edge
     };
 
     LALogic& logic;
@@ -31,7 +31,7 @@ private:
 
     STPGraphManager graphMgr;
 
-    ptrdiff_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
+    size_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
 
     std::unique_ptr<STPModel> model;           // mapping of vertices (vars) to valid assignments, if it was computed

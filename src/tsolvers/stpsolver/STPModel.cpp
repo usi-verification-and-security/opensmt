@@ -33,7 +33,7 @@ VertexRef STPModel::addStartingPoint() {
 }
 
 void STPModel::bellmanFord(VertexRef start) {
-    std::unordered_map<uint32_t, ptrdiff_t> dist;
+    std::unordered_map<uint32_t, SafeInt> dist;
     std::queue<VertexRef> open;
     dist.emplace(start.x, 0);
     open.push(start);
@@ -56,7 +56,7 @@ void STPModel::bellmanFord(VertexRef start) {
 void STPModel::shiftZero() {
     VertexRef zero = STPStore::zero();
     if (!valMap.count(zero.x)) return; // if 'zero' isn't present, no need to shift anything
-    ptrdiff_t shift = valMap[zero.x];
+    SafeInt shift = valMap[zero.x];
     for (auto &pair : valMap) {
         pair.second -= shift;
     }

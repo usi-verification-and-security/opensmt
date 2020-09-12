@@ -67,7 +67,7 @@ EdgeRef STPMapper::getEdgeRef(PTRef leq) const {
 }
 
 // returns a registered EdgeRef corresponding to these parameters, if it exists
-EdgeRef STPMapper::getEdgeRef(VertexRef y, VertexRef x, ptrdiff_t c) const {
+EdgeRef STPMapper::getEdgeRef(VertexRef y, VertexRef x, SafeInt c) const {
     if (y == VertRef_Undef || x == VertRef_Undef) return EdgeRef_Undef;
 
     // scans through all edges of y to find the one matching our parameters

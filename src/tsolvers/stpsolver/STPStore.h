@@ -6,6 +6,7 @@
 #include <Number.h>
 #include <SolverTypes.h>
 #include <PtStructs.h>
+#include "SafeInt.hpp"
 
 struct VertexRef {
     uint32_t x;
@@ -25,7 +26,7 @@ static EdgeRef EdgeRef_Undef = EdgeRef { INT32_MAX };
 struct Edge {
     VertexRef from, to;     // vertices of this edge
     EdgeRef neg;            // the logical negation of this edge
-    ptrdiff_t cost;         // cost of this edge
+    SafeInt cost;         // cost of this edge
 
     uint32_t setTime;       // timestamp of when this was assigned as true (0 if it wasn't assigned)
 
@@ -44,7 +45,7 @@ private:
 public:
     STPStore() : vertices(1) {}         // the 'zero' vertex is created implicitly
     VertexRef createVertex();
-    EdgeRef createEdge(VertexRef from, VertexRef to, ptrdiff_t cost);
+    EdgeRef createEdge(VertexRef from, VertexRef to, SafeInt cost);
 
     size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }

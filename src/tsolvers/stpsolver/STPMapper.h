@@ -28,7 +28,7 @@ public:
     PtAsgn getAssignment(EdgeRef edge) const;
     VertexRef getVertRef(PTRef var) const;
     EdgeRef getEdgeRef(PTRef leq) const;
-    EdgeRef getEdgeRef(VertexRef y, VertexRef x, ptrdiff_t c) const;
+    EdgeRef getEdgeRef(VertexRef y, VertexRef x, SafeInt c) const;
     PTRef getPTRef(EdgeRef edge) const;
     const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
     void clear();

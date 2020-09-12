@@ -8,7 +8,7 @@ class STPModel {
 private:
     STPStore &store;
     EdgeGraph graph;
-    std::unordered_map<uint32_t, ptrdiff_t> valMap;  // for each vertex, distance from the added starting vertex
+    std::unordered_map<uint32_t, SafeInt> valMap;  // for each vertex, distance from the added starting vertex
 
     vec<VertexRef> vertsInGraph() const;
     VertexRef addStartingPoint();
@@ -18,7 +18,7 @@ public:
     STPModel(STPStore &store, const EdgeGraph& graph) : store(store), graph(graph) {}
     void createModel();
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
-    ptrdiff_t getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
+    SafeInt getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
 

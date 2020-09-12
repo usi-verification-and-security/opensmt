@@ -4,7 +4,7 @@ VertexRef STPStore::createVertex() {
     return VertexRef{vertices++};
 }
 
-EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, ptrdiff_t cost) {
+EdgeRef STPStore::createEdge(VertexRef from, VertexRef to, SafeInt cost) {
     uint32_t i = edges.size();
     EdgeRef r{i};
     edges.push_back(Edge{.from = from, .to = to, .neg = EdgeRef_Undef, .cost = cost, .setTime = 0});

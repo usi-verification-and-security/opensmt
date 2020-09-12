@@ -20,7 +20,7 @@ private:
     // helper struct to return results of DFS
     struct DFSResult {
         vec<bool> visited;              // map of which vertices were visited
-        vec<ptrdiff_t> distance;        // map of distances to each visited vertex
+        vec<SafeInt> distance;        // map of distances to each visited vertex
         size_t total;                   // sum of all edges each vertex appears in
     };
 

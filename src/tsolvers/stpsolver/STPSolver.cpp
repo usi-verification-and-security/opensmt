@@ -52,7 +52,7 @@ STPSolver::ParsedPTRef STPSolver::parseRef(PTRef ref) const {
         y = mulPt[1];
         assert( logic.isNumVar(y) );
     }
-    return ParsedPTRef{x, y, c};
+    return ParsedPTRef{x, y, SafeInt(c)};
 }
 
 EdgeRef STPSolver::createNegation(EdgeRef e) {
@@ -208,7 +208,7 @@ ValPair STPSolver::getValue(PTRef pt) {
     if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
         return ValPair_Undef;
 
-    ptrdiff_t value = model->getValue(v);
+    ptrdiff_t value = model->getValue(v).value();
     return ValPair(pt, std::to_string(value).c_str());
 }
 
