@@ -2028,7 +2028,7 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 }
 
 
-void Logic::conjoinExtras(PTRef root, PTRef& new_root) { new_root = root; }
+PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
 IdRef       Logic::newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
 IdRef       Logic::newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }

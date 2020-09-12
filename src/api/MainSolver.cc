@@ -114,7 +114,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
 
-    logic.conjoinExtras(root, root);
+    root = logic.conjoinExtras(root);
 
     IteToSwitch switches(logic, root);
     root = switches.conjoin(root);

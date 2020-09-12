@@ -196,7 +196,7 @@ class Logic {
     Logic();
     virtual ~Logic();
 
-    virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
+    virtual PTRef conjoinExtras(PTRef root);
 
     virtual const char * getName() const { return "QF_UF"; }
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }

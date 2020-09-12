@@ -269,7 +269,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         }
     }
 
-    if (logic.isNumVar(expr) || logic.isNumTimes(expr) || logic.isIte(expr)) {
+    if (logic.isNumVarOrIte(expr) || logic.isNumTimes(expr)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;

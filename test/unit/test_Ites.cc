@@ -4,7 +4,8 @@
 #include <gtest/gtest.h>
 #include <Logic.h>
 #include <LRALogic.h>
-#include "../../src/itehandler/IteToSwitch.h"
+#include <IteToSwitch.h>
+#include <MainSolver.h>
 
 class LogicIteTest: public ::testing::Test {
 public:
@@ -44,6 +45,7 @@ TEST_F(LogicIteTest, test_UFIte) {
     args.push(x);
     args.push(y);
     PTRef ite = logic.mkIte(args);
+    ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 
     args.clear();
@@ -74,6 +76,7 @@ TEST_F(LogicIteTest, test_BoolIte) {
     args.push(x);
     args.push(y);
     PTRef ite = logic.mkIte(args);
+    ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 }
 
@@ -89,6 +92,7 @@ TEST_F(LRAIteTest, test_LRAIte) {
     args.push(x);
     args.push(y);
     PTRef ite = logic.mkIte(args);
+    ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 }
 
@@ -104,6 +108,17 @@ TEST_F(IteManagerTest, test_Basic) {
     PTRef eq = logic.mkEq(x, ite);
 
     IteToSwitch iteManager(logic, eq);
+    PTRef ites = iteManager.conjoin(logic.getTerm_true());
+    // Write a check for ites /\ x == y -> ite == x
+    ASSERT_TRUE(logic.isAnd(ites));
+    Pterm& and_term = logic.getPterm(ites);
+    ASSERT_TRUE(logic.isOr(and_term[0]));
+    ASSERT_TRUE(logic.isOr(and_term[1]));
+    Pterm& or_term_0 = logic.getPterm(and_term[0]);
+    Pterm& or_term_1 = logic.getPterm(and_term[1]);
+    ASSERT_TRUE(or_term_0[0] == cond || or_term_1[0] == cond || or_term_0[0] == logic.mkNot(cond) || or_term_1[0] == logic.mkNot(cond));
+
+    std::cout << logic.pp(ites) << std::endl;
     printTopLevelSwitches(iteManager);
 
 }
