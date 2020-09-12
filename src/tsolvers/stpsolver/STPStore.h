@@ -32,6 +32,8 @@ struct Edge {
 
     Edge() = default;
     Edge(Edge &&other) = default;
+    Edge(VertexRef from, VertexRef to, EdgeRef neg, SafeInt cost, uint32_t setTime)
+    : from(from), to(to), neg(neg), cost(cost), setTime(setTime) {}
     Edge & operator=(Edge &&other) = default;
     // copy semantics are disabled (we want edges to only exist in a store)
     Edge(const Edge &other) = delete;

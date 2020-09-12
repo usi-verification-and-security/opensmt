@@ -14,11 +14,19 @@ public:
     ptrdiff_t value() const { return val; }
 
     SafeInt operator +(SafeInt other) const {
-        return val + other.val;
+        ptrdiff_t res;
+        if (__builtin_saddl_overflow(val, other.val, &res)) {
+            throw std::overflow_error("Overflow detected during SafeInt addition");
+        }
+        return SafeInt(res);
     }
 
     SafeInt & operator -=(SafeInt other) {
-        val -= other.val;
+        ptrdiff_t res;
+        if (__builtin_ssubl_overflow(val, other.val, &res)) {
+            throw std::underflow_error("Underflow detected during SafeInt subtraction");
+        }
+        val = res;
         return *this;
     }
 
@@ -39,7 +47,7 @@ public:
     }
 
     SafeInt operator -() const {
-        return {-val};
+        return SafeInt(-val);
     }
 };
 

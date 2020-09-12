@@ -91,10 +91,10 @@ TEST_F(STPSolverTest, test_SimpleTest){
     ptrdiff_t numX, numY, numZ;
     std::stringstream ss(valX.val);
     ss >> numX;
-    ss = std::stringstream(valY.val);
-    ss >> numY;
-    ss = std::stringstream(valZ.val);
-    ss >> numZ;
+    std::stringstream ss2(valY.val);
+    ss2 >> numY;
+    std::stringstream ss3(valZ.val);
+    ss3 >> numZ;
 
     ASSERT_LE(numX - numY, 0);
     ASSERT_LE(numY - numZ, 0);
