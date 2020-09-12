@@ -24,6 +24,8 @@ protected:
 };
 
 
+
+
 TEST_F(STPSolverTest, test_SimpleTest){
     PTRef ineq1 = logic.mkNumLeq(logic.mkNumMinus(x, y), logic.getTerm_NumZero());
     PTRef ineq2 = logic.mkNumLeq(logic.mkNumMinus(y, z), logic.getTerm_NumZero());
@@ -96,10 +98,50 @@ TEST_F(STPSolverTest, test_SimpleTest){
     std::stringstream ss3(valZ.val);
     ss3 >> numZ;
 
+
+
     ASSERT_LE(numX - numY, 0);
     ASSERT_LE(numY - numZ, 0);
     ASSERT_GT(numZ - numX, -1);
     ASSERT_LE(3, numX);
     ASSERT_GT(numY, -2);
 }
+
+class SafeIntTest : public ::testing::Test {};
+
+TEST_F(SafeIntTest, test_add_pass){
+    SafeInt a(PTRDIFF_MAX - 1), b(1);
+    SafeInt c(PTRDIFF_MIN + 1), d(-1);
+    SafeInt e = a + b;
+    e = c + d;
+}
+
+TEST_F(SafeIntTest, test_add_fail_over){
+    SafeInt a(PTRDIFF_MAX-2);
+    SafeInt b(3);
+    ASSERT_ANY_THROW(SafeInt c = a+b);
+}
+
+TEST_F(SafeIntTest, test_add_fail_under){
+   SafeInt a(PTRDIFF_MIN + 100), b(-200);
+   ASSERT_ANY_THROW(SafeInt c = a+b);
+}
+
+TEST_F(SafeIntTest, test_sub_pass){
+    SafeInt a(PTRDIFF_MAX - 10);
+    ASSERT_ANY_THROW(a -= SafeInt(-11));
+    SafeInt b(PTRDIFF_MIN + 5);
+    ASSERT_ANY_THROW(b -= 6);
+}
+
+TEST_F(SafeIntTest, test_sub_fail_under){
+    SafeInt a(PTRDIFF_MIN + 100);
+    ASSERT_ANY_THROW(a -= 101);
+}
+
+TEST_F(SafeIntTest, test_sub_fail_over){
+    SafeInt a(PTRDIFF_MAX - 42);
+    ASSERT_ANY_THROW(a -= SafeInt(-43));
+}
+
 
