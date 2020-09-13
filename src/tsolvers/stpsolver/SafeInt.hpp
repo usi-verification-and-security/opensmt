@@ -14,7 +14,8 @@ public:
     ptrdiff_t value() const { return val; }
 
     SafeInt operator +(SafeInt other) const {
-        if ((val >= 0 && PTRDIFF_MAX - val < other.val) || (val < 0 && PTRDIFF_MIN - val > other.val)) {
+           // a+b > MAX ==> MAX-a < b                     // a+b < MIN ==> MIN-a > b
+        if ((val > 0 && PTRDIFF_MAX - val < other.val) || (val < 0 && PTRDIFF_MIN - val > other.val)) {
             throw std::overflow_error("Overflow detected during SafeInt addition");
         }
         return {val + other.val};
@@ -28,25 +29,15 @@ public:
         return *this;
     }
 
-    bool operator ==(SafeInt other) const {
-        return val == other.val;
-    }
+    bool operator ==(SafeInt other) const { return val == other.val; }
 
-    bool operator >=(SafeInt other) const {
-        return val >= other.val;
-    }
+    bool operator >=(SafeInt other) const { return val >= other.val; }
 
-    bool operator >(SafeInt other) const {
-        return val > other.val;
-    }
+    bool operator >(SafeInt other) const { return val > other.val; }
 
-    bool operator <=(SafeInt other) const {
-        return val <= other.val;
-    }
+    bool operator <=(SafeInt other) const { return val <= other.val; }
 
-    SafeInt operator -() const {
-        return {-val};
-    }
+    SafeInt operator -() const { return {-val}; }
 };
 
 #endif //OPENSMT_SAFEINT_HPP
