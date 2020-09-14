@@ -138,11 +138,7 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    try {
-        logic.mkNumTimes(ite, c2);
-    } catch (LANonLinearException) {
-        ASSERT_FALSE(true);
-    }
+    EXPECT_NO_THROW(logic.mkNumTimes(ite, c2));
 }
 
 TEST_F(IteManagerTest, test_IteTimesVar) {
@@ -154,12 +150,8 @@ TEST_F(IteManagerTest, test_IteTimesVar) {
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
 
-    try {
-        logic.mkNumTimes(ite, x);
-    } catch (LANonLinearException) {
-        return;
-    }
-    ASSERT_FALSE(true);
+    EXPECT_THROW(logic.mkNumTimes(ite, x), LANonLinearException);
+
 }
 
 TEST_F(IteManagerTest, test_IteTimesIte) {
@@ -175,12 +167,7 @@ TEST_F(IteManagerTest, test_IteTimesIte) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, c2, c1);
 
-    try {
-        logic.mkNumTimes(ite1, ite2);
-    } catch (LANonLinearException) {
-        return;
-    }
-    ASSERT_FALSE(true);
+    EXPECT_THROW(logic.mkNumTimes(ite1, ite2), LANonLinearException);
 }
 
 TEST_F(IteManagerTest, test_IteChain) {
@@ -210,11 +197,7 @@ TEST_F(IteManagerTest, test_IteSum) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    try {
-        logic.mkNumPlus(ite, c2);
-    } catch (LANonLinearException) {
-        ASSERT_FALSE(true);
-    }
+    EXPECT_NO_THROW(logic.mkNumPlus(ite, c2));
 }
 
 TEST_F(IteManagerTest, testBoolean) {
