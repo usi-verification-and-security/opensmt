@@ -197,6 +197,10 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
     vec<type> flag;
     flag.growTo(logic.getNumberOfTerms());
 
+    if (logic.isIte(root)) {
+        dag.addTopLevelIte(root);
+    }
+
     queue.push(root);
     while (queue.size() != 0) {
         PTRef tr = queue.last();

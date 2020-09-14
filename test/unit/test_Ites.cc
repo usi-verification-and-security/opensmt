@@ -5,7 +5,6 @@
 #include <Logic.h>
 #include <LRALogic.h>
 #include <IteToSwitch.h>
-#include <MainSolver.h>
 
 class LogicIteTest: public ::testing::Test {
 public:
@@ -216,4 +215,20 @@ TEST_F(IteManagerTest, test_IteSum) {
     } catch (LANonLinearException) {
         ASSERT_FALSE(true);
     }
+}
+
+TEST_F(IteManagerTest, testBoolean) {
+    PTRef c = logic.mkBoolVar("c");
+    PTRef a = logic.mkBoolVar("a");
+    //  (ite c (and (ite c a (not a)) (not c)) (and a c)))
+    PTRef ite1 = logic.mkIte(c, a, logic.mkNot(a));
+    PTRef and_tr = logic.mkAnd(ite1, logic.mkNot(c));
+    PTRef ite2 = logic.mkIte(c, and_tr, logic.mkAnd(a, c));
+    IteToSwitchInternal iteToSwitch(logic, ite2);
+    ASSERT_TRUE(contains(iteToSwitch.getTopLevelItes(), ite1));
+    ASSERT_TRUE(contains(iteToSwitch.getTopLevelItes(), ite2));
+
+    PTRef tr = iteToSwitch.conjoin(logic.getTerm_true());
+    std::cout << logic.pp(tr) << std::endl << std::endl;
+    std::cout << logic.pp(ite2) << std::endl;
 }
