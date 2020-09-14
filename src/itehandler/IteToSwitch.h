@@ -23,21 +23,9 @@ namespace ite {
         inline friend bool operator!= (NodeRef a1, NodeRef a2)   { return a1.x != a2.x; }
         inline friend bool operator< (NodeRef a1, NodeRef a2)    { return a1.x < a2.x;  }
     };
-    struct NodeRef_lt {
-        bool operator() (const NodeRef &n1, const NodeRef &n2) const { return n1 < n2; }
-    };
-    static struct NodeRef NodeRef_Undef = {INT32_MAX};
 
-    struct NodeRefHash {
-        uint32_t operator () (const PTRef& s) const {
-            return (uint32_t)s.x; }
-    };
-    struct NodeRefLBoolHash {
-        uint32_t operator () (const std::pair<NodeRef,lbool> &s) const {
-            std::hash<uint32_t> hasher;
-            return hasher(s.first.x) ^ hasher(toInt(s.second));
-        }
-    };
+    static struct NodeRef NodeRef_Undef = {UINT32_MAX};
+
     struct NodeRefLBool_lt {
         uint32_t operator () (const std::pair<NodeRef,lbool> &s1, const std::pair<NodeRef,lbool> &s2) const {
             return (s1.first < s2.first) or (s1.first == s2.first and toInt(s1.second) < toInt(s2.second));
@@ -120,15 +108,14 @@ namespace ite {
         Map<PTRef,bool,PTRefHash> itePTRefs;
         vec<ite::NodeRef> nodeRefs;
         Map<PTRef,bool,PTRefHash> top_level_ites;
-        std::set<NodeRef, ite::NodeRef_lt> leaves;
-
+        std::set<NodeRef> leaves;
         NodeRef newNode(PTRef tr);
         NodeRef newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node);
         using ParentSet = std::set<std::pair<NodeRef,lbool>,NodeRefLBool_lt>;
 
         NodeRef getNode(PTRef tr) { assert(nodes.has(tr)); return nodes[tr]; }
         const vec<NodeRef>& getNodes() const { return nodeRefs; }
-        std::map<NodeRef,ParentSet,NodeRef_lt> parents;
+        std::map<NodeRef,ParentSet> parents;
         void clear() { for (auto node : nodeRefs) { na.free(node); } nodes.clear(); nodeRefs.clear(); }
     public:
         Dag(Dag &&dag) = default;
@@ -152,6 +139,7 @@ namespace ite {
 }
 
 class IteToSwitch {
+protected:
     using type = ite::type;
     Logic &logic;
     Map<PTRef,PTRef,PTRefHash> ite_vars;

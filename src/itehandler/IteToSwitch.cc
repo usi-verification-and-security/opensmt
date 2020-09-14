@@ -19,10 +19,7 @@ ite::Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, u
 }
 
 ite::NodeRef ite::Dag::newNode(PTRef val) {
-    assert(not nodes.has(val));
-    nodeRefs.push(na.alloc(val, PTRef_Undef, NodeRef_Undef, NodeRef_Undef));
-    nodes.insert(val, nodeRefs.last());
-    return nodeRefs.last();
+    return newNode(val, PTRef_Undef, NodeRef_Undef, NodeRef_Undef);
 }
 
 ite::NodeRef ite::Dag::newNode(PTRef tr, PTRef cond, ite::NodeRef true_node, ite::NodeRef false_node)
@@ -54,9 +51,6 @@ void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
         for (lbool childPolarity : { l_False, l_True }) {
             NodeRef child = childPolarity == l_False ? el.getFalseChild() : el.getTrueChild();
             if (child != NodeRef_Undef) {
-                if (parents.find(child) == parents.end()) {
-                    parents[child] = ParentSet();
-                }
                 parents[child].insert({el_r, childPolarity});
 
                 if (flag[na[child].getId()] == type::white) {
@@ -265,7 +259,6 @@ void IteToSwitch::constructSwitches() {
     vec<PTRef> ites = iteDag.getTopLevelItes();
 
     for (auto tl_ite : ites) {
-        ite::Dag subDag = iteDag.getReachableSubGraph(logic, tl_ite);
         PTRef switch_tr = makeSwitch(tl_ite);
         switches.push(switch_tr);
     }

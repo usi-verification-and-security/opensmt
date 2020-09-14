@@ -21,6 +21,11 @@ public:
 
 class IteManagerTest: public ::testing::Test {
 public:
+    class IteToSwitchInternal: public IteToSwitch  {
+    public:
+        vec<PTRef> getTopLevelItes() const { return iteDag.getTopLevelItes(); }
+        IteToSwitchInternal(Logic &l, PTRef tr) : IteToSwitch(l, tr) {}
+    };
     LRALogic logic;
     SRef lrasort;
 
@@ -30,6 +35,9 @@ public:
         PTRef tr = logic.getTerm_true();
         tr = iteManager.conjoin(tr);
         std::cout << logic.pp(tr) << endl;
+    }
+    static bool contains(const vec<PTRef>& trs, PTRef tr) {
+        return std::any_of(trs.begin(), trs.end(), [tr](PTRef tr_in_vec) { return tr_in_vec == tr; });
     }
 };
 
@@ -131,10 +139,11 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    PTRef prod = logic.mkNumTimes(ite, c2);
-    PTRef eq = logic.mkEq(x, prod);
-    IteToSwitch iteManager(logic, eq);
-    printTopLevelSwitches(iteManager);
+    try {
+        logic.mkNumTimes(ite, c2);
+    } catch (LANonLinearException) {
+        ASSERT_FALSE(true);
+    }
 }
 
 TEST_F(IteManagerTest, test_IteTimesVar) {
@@ -187,7 +196,11 @@ TEST_F(IteManagerTest, test_IteChain) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, ite1, c1);
     PTRef eq = logic.mkEq(x, ite2);
-    IteToSwitch iteManager(logic, eq);
+    IteToSwitchInternal iteManager(logic, eq);
+    vec<PTRef> ites = iteManager.getTopLevelItes();
+    ASSERT_TRUE(contains(ites, ite2));
+    ASSERT_FALSE(contains(ites, ite1));
+
     printTopLevelSwitches(iteManager);
 }
 
@@ -198,6 +211,9 @@ TEST_F(IteManagerTest, test_IteSum) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    PTRef sum = logic.mkNumPlus(ite, c2);
-    logic.mkEq(x, sum);
+    try {
+        logic.mkNumPlus(ite, c2);
+    } catch (LANonLinearException) {
+        ASSERT_FALSE(true);
+    }
 }
