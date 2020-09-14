@@ -146,7 +146,7 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
 
         bool unprocessed_parents = false;
         for (const auto &parentAndPolarity : parents.at(el_r)) {
-            auto parent = parentAndPolarity.first;
+            auto parent = parentAndPolarity.nr;
             if (flag[na[parent].getId()] == type::white) {
                 flag[na[parent].getId()] = type::gray;
                 queue.push(parent);
@@ -168,9 +168,9 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
                 parentConditions.push(logic.getTerm_true());
             } else {
                 for (auto &nodeAndPolarity : myParents) {
-                    PTRef cond = na[nodeAndPolarity.first].getCond();
-                    lbool pol = nodeAndPolarity.second;
-                    PTRef parentCondition = dagNodeToPTRef.at(nodeAndPolarity.first);
+                    PTRef cond = na[nodeAndPolarity.nr].getCond();
+                    lbool pol = nodeAndPolarity.sign;
+                    PTRef parentCondition = dagNodeToPTRef.at(nodeAndPolarity.nr);
                     PTRef edgeCondition = pol == l_True ? cond : logic.mkNot(cond);
                     parentConditions.push(logic.mkAnd(parentCondition, edgeCondition));
                 }

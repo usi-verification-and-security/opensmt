@@ -116,7 +116,7 @@ TEST_F(IteManagerTest, test_Basic) {
 
     IteToSwitch iteManager(logic, eq);
     PTRef ites = iteManager.conjoin(logic.getTerm_true());
-    // Write a check for ites /\ x == y -> ite == x
+
     ASSERT_TRUE(logic.isAnd(ites));
     Pterm& and_term = logic.getPterm(ites);
     ASSERT_TRUE(logic.isOr(and_term[0]));

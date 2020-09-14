@@ -1,6 +1,7 @@
 (set-logic QF_LIA)
 (declare-fun v0 () Int)
 (declare-fun v2 () Int)
+(set-info :status unsat)
 (assert
  (=
   (ite

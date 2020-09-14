@@ -31,7 +31,7 @@ bool LALogic::isNegated(PTRef tr) const {
 }
 
 bool LALogic::isLinearFactor(PTRef tr) const {
-    if (isNumConst(tr) || isNumVar(tr) || isIte(tr)) { return true; }
+    if (isNumConst(tr) || isNumVarOrIte(tr)) { return true; }
     if (isNumTimes(tr)) {
         Pterm const& term = getPterm(tr);
         return term.size() == 2 && ((isNumConst(term[0]) && (isNumVarOrIte(term[1])))
@@ -62,7 +62,7 @@ LALogic::getNumConst(PTRef tr) const
 
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
-    assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term) || isIte(term));
+    assert(isNumTimes(term) || isNumDiv(term) || isNumVarOrIte(term) || isConstant(term) || isUF(term));
     if (isNumTimes(term) || isNumDiv(term)) {
         assert(getPterm(term).size() == 2);
         fac = getPterm(term)[0];
@@ -200,7 +200,7 @@ uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
     uint32_t id_x = l.isNumTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
-    uint32_t id_y = l.isNumTimes(y_) ? getVarIdFromProduct(y_) : y_.x;;
+    uint32_t id_y = l.isNumTimes(y_) ? getVarIdFromProduct(y_) : y_.x;
     return id_x < id_y;
 }
 
@@ -806,7 +806,7 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         {
             if (l.isNumPlus(terms[i]))
                 plus = terms[i];
-            else if (l.isConstant(terms[i]) && not l.isIte(terms[i]))
+            else if (l.isConstant(terms[i]) and not l.isIte(terms[i]))
                 con = terms[i];
             else
                 terms_new.push(terms[i]);

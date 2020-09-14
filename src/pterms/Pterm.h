@@ -96,12 +96,7 @@ class Pterm {
     Pterm operator= (Pterm&) = delete;
     Pterm operator= (Pterm&&) = delete;
 
-//    PTRef* begin() { return &args[0]; }
-//    const PTRef* begin() const { return &args[0]; }
-//    PTRef* end() { return &args[this->size()-1]; }
-//    const PTRef* end() const { return &args[this->size()-1]; }
-
-    int      size        ()          const   { return header.size; }
+    int      size        ()          const   { return static_cast<int>(header.size); }
 
     const PTRef& operator [] (int i) const   { assert(i < size()); return args[i]; }
     PTRef&       operator [] (int i)         { assert(i < size()); return args[i]; }

@@ -26,11 +26,7 @@ namespace ite {
 
     static struct NodeRef NodeRef_Undef = {UINT32_MAX};
 
-    struct NodeRefLBool_lt {
-        uint32_t operator () (const std::pair<NodeRef,lbool> &s1, const std::pair<NodeRef,lbool> &s2) const {
-            return (s1.first < s2.first) or (s1.first == s2.first and toInt(s1.second) < toInt(s2.second));
-        }
-    };
+
     class Node {
         friend class NodeAllocator;
         struct Tail {
@@ -103,6 +99,15 @@ namespace ite {
 
 
     class Dag {
+        struct NodeRefLBool {
+            NodeRef nr;
+            lbool sign;
+            NodeRefLBool() : nr(NodeRef_Undef), sign(l_Undef) {}
+            NodeRefLBool(NodeRef nr, lbool sign): nr(nr), sign(sign) {};
+            bool operator<(const NodeRefLBool& o) const {
+                return (this->nr < o.nr) or (this->nr == o.nr and toInt(this->sign) < toInt(o.sign));
+            }
+        };
         NodeAllocator na;
         Map<PTRef,ite::NodeRef,PTRefHash> nodes;
         Map<PTRef,bool,PTRefHash> itePTRefs;
@@ -111,7 +116,7 @@ namespace ite {
         std::set<NodeRef> leaves;
         NodeRef newNode(PTRef tr);
         NodeRef newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node);
-        using ParentSet = std::set<std::pair<NodeRef,lbool>,NodeRefLBool_lt>;
+        using ParentSet = std::set<NodeRefLBool>;
 
         NodeRef getNode(PTRef tr) { assert(nodes.has(tr)); return nodes[tr]; }
         const vec<NodeRef>& getNodes() const { return nodeRefs; }
@@ -134,7 +139,7 @@ namespace ite {
         void annotateWithParentInfo(PTRef root);
         vec<ite::CondValPair> getCondValPairs(Logic& logic) const;
         // Debug
-        void getDagAsStream(std::ostream&) const;
+        void writeDagToStream(std::ostream&) const;
     };
 }
 
@@ -154,10 +159,6 @@ public:
     explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) { constructSwitches(); }
     PTRef conjoin(PTRef root) { return logic.mkAnd(root, logic.mkAnd(switches)); };
 
-    // Debug
-    void stackBasedDFS(PTRef root) const;
-    void iterativeDFS(PTRef root) const;
-    void DFS(PTRef root, vec<type> &flag) const;
     static void printDagToFile(const std::string &fname, const ite::Dag&);
     void printDagToFile(const std::string &fname) const { printDagToFile(fname, iteDag); };
 };

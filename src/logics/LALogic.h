@@ -51,7 +51,7 @@ public:
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
     virtual bool     isBuiltinFunction(SymRef sr) const override;
     virtual PTRef    insertTerm       (SymRef sym, vec<PTRef>& terms, char** msg) override;
-    virtual SRef     getSort_num      ()              const;
+    virtual SRef     getSort_num      () const;
     virtual PTRef    mkConst          (const char* name, const char **msg) override;
     virtual PTRef    mkConst          (SRef s, const char* name) override;
     virtual PTRef    mkConst          (const opensmt::Number& c);
