@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolver.h"
 #include "SymStore.h"
 #include "PtStore.h"
+#include "Explainer.h"
 // For debugging
 #include "TermMapper.h"
 
@@ -188,6 +189,7 @@ private:
   //***************************************************************************************************************
   ELAllocator   forbid_allocator;
 
+  std::unique_ptr<Explainer> explainer;
   EnodeStore    enode_store;
   ERef          ERef_Nil;
 
@@ -238,13 +240,6 @@ public:
 #ifdef STATISTICS
   void        printMemStats             ( ostream & );
 #endif
-  //
-  // Fast duplicates checking. Cannot be nested !
-  //
-  inline void initDup1 ()        { assert( !active_dup1 ); active_dup1 = true; dup_count1 ++; }
-  inline void storeDup1(PTRef e) { assert(  active_dup1 ); if (duplicates1.has(e)) duplicates1[e] = dup_count1; else duplicates1.insert(e, dup_count1); }
-  inline bool isDup1   (PTRef e) { assert(  active_dup1 ); return !duplicates1.has(e) ? false : duplicates1[e] == dup_count1; }
-  inline void doneDup1 ()        { assert(  active_dup1 ); active_dup1 = false; }
 
   void    computePolarities ( ERef );
 
@@ -276,12 +271,7 @@ public:
   void                clearModel              ( );
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
 
-  //===========================================================================
-  // Exported function for using egraph as supporting solver
 
-  bool                extAssertLit            ( ERef );                     // Assert a theory literal
-  void                extPushBacktrackPoint   ( );                          // Push a backtrack point
-  void                extPopBacktrackPoint    ( );                          // Backtrack to last saved point
 #if MORE_DEDUCTIONS
   bool                deduceMore              ( vector< ERef > & );
 #endif
@@ -318,9 +308,6 @@ private:
 #endif
   };
 
-  bool                        active_dup1;                      // To prevent nested usage
-  Map<PTRef,int,PTRefHash,Equal<PTRef> >  duplicates1;          // Fast duplicate checking
-  int                         dup_count1;                       // Current dup token
   bool                           model_computed;                // Has model been computed lately ?
   bool                           congruence_running;            // True if congruence is running
 
@@ -367,40 +354,13 @@ private:
   void    undoMerge       ( ERef );                             // Undoes a merge
   void    undoDisequality ( ERef );                             // Undoes a disequality
   void    undoDistinction ( PTRef );                            // Undoes a distinction
-  //
-  // Explanation routines and data
-  //
-protected:
-  virtual void doExplain(ERef, ERef, PtAsgn);                   // Explain why the Enodes are equivalent when PtAsgn says it should be different
-  virtual void explainConstants(ERef, ERef);
-  virtual void expExplainEdge(ERef v, ERef p);
-private:
-  void     expExplain           ( );                            // Main routine for explanation
-  void     expExplain(ERef, ERef);               // Enqueue equality and explain
-  void     expStoreExplanation  ( ERef, ERef, PtAsgn );         // Store the explanation for the merge
-  void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
-  void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
-  void     expReRootOn(ERef);                      // Reroot the proof tree on x
-  void     expUnion(ERef, ERef);               // Union of x and y in the explanation
-  ERef expFind(ERef);                      // Find for the eq classes of the explanation
-  ERef expHighestNode(ERef);                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
-  ERef expNCA(ERef, ERef);               // Return the nearest common ancestor of x and y
-  void     expRemoveExplanation ( );                            // Undoes the effect of expStoreExplanation
-  void     expCleanup           ( );                            // Undoes the effect of expExplain
 
 
   vec< ERef >                 pending;                          // Pending merges
   vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
-  vec< PtAsgn >               explanation;                      // Stores explanation
 
-#if MORE_DEDUCTIONS
-  vec< ERef>                  neq_list;
-#endif
-
-  vec< ERef >                 exp_pending;                      // Pending explanations
-  vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
-  vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
-  int                         time_stamp;                       // Need for finding NCA
+  void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
+  void explainConstants(ERef, ERef);
 
   //============================================================================
   // Memory management for forbid allocator

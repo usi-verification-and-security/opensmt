@@ -94,12 +94,9 @@ Egraph::Egraph(SMTConfig & c, Logic& l)
 #endif
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
-      , active_dup1        ( false )
-      , dup_count1         ( 0 )
       , congruence_running ( false )
-      , time_stamp         ( 0 )
 {
-
+    explainer.reset(new Explainer(enode_store));
     // For the uninterpreted predicates and propositional structures inside
     // uninterpreted functions define function not, the terms true and false,
     // and an asserted disequality true != false
@@ -567,7 +564,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // automatic way of retrieving a conflict.
 
         if ( en_p.isTerm( ) ) {
-            expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
+            explainer->expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
 #ifdef VERBOSE_EUF
             cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
 #endif
@@ -668,7 +665,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         pending.clear( );
         // Remove the last explanation that links
         // the two unmergable classes
-        expRemoveExplanation( );
+        explainer->expRemoveExplanation();
 //        expCleanup(); // called in expExplain(r1, r2)
         // Return conflict
         return false;
@@ -914,7 +911,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
-                expRemoveExplanation( );
+                explainer->expRemoveExplanation();
             }
         }
 
@@ -1427,25 +1424,6 @@ bool Egraph::assertLit(PtAsgn pta)
     return res;
 }
 
-//
-// Pushes a backtrack point
-//
-void Egraph::extPushBacktrackPoint( )
-{
-  // Save solver state if required
-  backtrack_points.push( undo_stack_main.size( ) );
-}
-
-//
-// Pops a backtrack point
-//
-void Egraph::extPopBacktrackPoint( )
-{
-  assert( backtrack_points.size( ) > 0 );
-  size_t undo_stack_new_size = backtrack_points.last( );
-  backtrack_points.pop( );
-  backtrackToStackSize( undo_stack_new_size );
-}
 
 // The value method
 
@@ -1854,7 +1832,8 @@ void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
     if (reason_inequality.tr != Eq_FALSE) {
         explanation.push(reason_inequality);
     }
-    expExplain(x,y);
+    explainer->expExplain(x,y);
+    explainer->fillExplanation(explanation);
     has_explanation = true;
 }
 
@@ -1865,37 +1844,9 @@ void Egraph::explainConstants(ERef p, ERef q) {
     assert(logic.isConstant(getEnode(enr_proot).getTerm()));
     assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
-    //
-    // We need explaining
-    //
-    // 1. why p and p->constant are equal
-    exp_pending.push( p );
-    exp_pending.push( enr_proot );
-    // 2. why q and q->constant are equal
-    exp_pending.push( q );
-    exp_pending.push( enr_qroot );
-    // 3. why p and q are equal
-    exp_pending.push( q );
-    exp_pending.push( p );
-#ifdef VERBOSE_EUF
-    cerr << "constant pushing (1): "
-                 << logic.printTerm(getEnode(p).getTerm()) << " and "
-                 << logic.printTerm(en_proot.getTerm()) << endl;
-
-    cerr << "constant pushing (2): "
-                 << logic.printTerm(getEnode(q).getTerm()) << " and "
-                 << logic.printTerm(en_qroot.getTerm()) << endl;
-
-    cerr << "constant pushing (3): "
-                 << logic.printTerm(getEnode(q).getTerm()) << " and "
-                 << logic.printTerm(getEnode(p).getTerm()) << endl;
-
-    cerr << "Explain XXX" << endl;
-#endif
-    initDup1( );
-    expExplain( );
-    doneDup1( );
-    expCleanup();
+    explainer->expExplain(p,q);
+    explainer->fillExplanation(explanation);
+    has_explanation = true;
 }
 
 uint32_t UseVector::addParent(ERef parent) {
