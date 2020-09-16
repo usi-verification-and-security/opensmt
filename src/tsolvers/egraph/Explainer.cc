@@ -3,7 +3,7 @@
 //
 
 #include "Explainer.h"
-
+#include "UFInterpolator.h"
 //=============================================================================
 // Explanation Routines: details about these routines are in paper
 //
@@ -413,4 +413,21 @@ void Explainer::expRemoveExplanation() {
         getEnode(y).setExpParent(ERef_Undef);
         getEnode(y).setExpReason(PtAsgn_Undef);
     }
+}
+
+void InterpolatingExplainer::expExplainEdge(ERef from, ERef to) {
+    Explainer::expExplainEdge(from, to);
+    const Enode& from_node = getEnode(from);
+    const Enode& to_node = getEnode(to);
+    assert(from_node.isTerm());
+    assert(to_node.isTerm());
+    cgraph->addCNode( from_node.getTerm() );
+    cgraph->addCNode( to_node.getTerm() );
+    cgraph->addCEdge( from_node.getTerm(), to_node.getTerm(), from_node.getExpReason().tr);
+}
+
+vec<PtAsgn> InterpolatingExplainer::expExplain(ERef x, ERef y) {
+    cgraph.reset(new CGraph());
+    cgraph->setConf(getEnode(x).getTerm(), getEnode(y).getTerm());
+    return Explainer::expExplain(x,y);
 }

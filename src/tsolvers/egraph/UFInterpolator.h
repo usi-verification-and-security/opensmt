@@ -44,6 +44,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TheoryInterpolator.h"
 #include <PartitionManager.h>
 
+#include <unordered_map>
+
 struct CEdge;
 class Logic;
 
@@ -85,94 +87,91 @@ struct CEdge
   icolor_t color;
 };
 
-class Egraph;
+class CGraph {
+    std::vector< CNode * >          cnodes;
+    std::vector< CEdge * >          cedges;
+    std::map< PTRef, CNode * >      cnodes_store;
 
-class CGraph : public TheoryInterpolator
+    PTRef                         conf1 = PTRef_Undef;
+    PTRef                         conf2 = PTRef_Undef;
+
+
+    void clear();
+
+public:
+    std::vector<CNode *> const & getNodes() { return cnodes; }
+    std::vector<CEdge *> const & getEdges() { return cedges; }
+    bool hasNode(PTRef term) const { return cnodes_store.find(term) != cnodes_store.end(); }
+    CNode * getNode(PTRef term) const { return cnodes_store.at(term); }
+
+    void     addCNode      (PTRef e);
+    void     addCEdge      ( PTRef, PTRef, PTRef );
+
+    void removeCEdge(CEdge *);
+    void revertEdges(CNode *);
+
+    CNode* getConflictStart() const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf1); }
+    CNode* getConflictEnd()   const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf2); }
+
+    inline void setConf( PTRef c1, PTRef c2)
+    {
+//      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
+        assert( conf1 == PTRef_Undef );
+        assert( conf2 == PTRef_Undef );
+        assert( c1 != PTRef_Undef);
+        assert( c2 != PTRef_Undef);
+        conf1 = c1;
+        conf2 = c2;
+    }
+
+
+    ~CGraph( ) { clear( ); }
+};
+
+class UFInterpolator : public TheoryInterpolator
 {
 public:
 
-  CGraph( Egraph & egraph_
-        , SMTConfig & config_
-        , Logic & logic_)
-    : egraph  ( egraph_ )
-    , config  ( config_ )
+  UFInterpolator( SMTConfig & config_
+        , Logic & logic_
+        , CGraph & cgraph)
+    : config  ( config_ )
     , logic   ( logic_ )
-    , colored ( false )
-    , conf1   ( PTRef_Undef )
-    , conf2   ( PTRef_Undef )
-    , conf    ( PTRef_Undef )
-    , interpolant (PTRef_Undef)
-    , conf_color (I_UNDEF)
+    , cgraph  (cgraph)
     , max_width(0)
     , max_height(0)
-    , flat(false)
     , divided(false)
-    , m_labels(NULL)
   { }
-
-  virtual ~CGraph( ) { clear( ); }
 
 	inline int     verbose                       ( ) const { return config.verbosity(); }
     void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
-  void     addCNode      ( PTRef );
-  void     addCEdge      ( PTRef, PTRef, PTRef );
-  void removeCEdge(CEdge *);
-  void     revertEdges   ( CNode * );
-  PTRef    getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*, PartitionManager&);
+  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*);
   void     printAsDotty  ( ostream & );
-
-  inline void setConf( PTRef c1, PTRef c2, PTRef r )
-  {
-//      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
-    assert( conf1 == PTRef_Undef );
-    assert( conf2 == PTRef_Undef );
-    assert( c1 != PTRef_Undef);
-    assert( c2 != PTRef_Undef);
-    conf1 = c1;
-    conf2 = c2;
-    conf  = r;
-  }
-
-  inline PTRef getConf( ) const { return conf; }
-
-  inline void clear     ( )
-  {
-    while( !cnodes.empty( ) )
-    {
-      assert( cnodes.back( ) );
-      delete cnodes.back( );
-      cnodes.pop_back( );
-    }
-    while ( !cedges.empty( ) )
-    {
-      assert( cedges.back( ) );
-      delete cedges.back( );
-      cedges.pop_back( );
-    }
-    colored = false;
-    conf1 = PTRef_Undef;
-    conf2 = PTRef_Undef;
-    conf = PTRef_Undef;
-    cnodes_store.clear( );
-  }
 
 private:
 
-  void       color          ( const ipartitions_t &, PartitionManager& );
-  void       colorNodes     ( const ipartitions_t &, PartitionManager& );
-  icolor_t   colorNodesRec  ( CNode *, const ipartitions_t &, PartitionManager& );
-  bool       colorEdges     ( CNode *, CNode *, const ipartitions_t &, PartitionManager & );
-  bool       colorEdgesRec  ( CNode *, CNode *, const ipartitions_t & );
-  bool       colorEdgesFrom ( CNode *, const ipartitions_t &, PartitionManager& );
-  void       colorReset     ( );
+    void computeAndStoreTermColors(std::map<PTRef, icolor_t> const & literalColors);
+    icolor_t getTermColor (PTRef term) const {
+        assert(termColors.find(term) != termColors.end());
+        return termColors.at(term);
+    }
 
-  bool usingStrong() { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
-  bool usingWeak() { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_weak; }
-  bool usingRandom() { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_random; }
+    void color ( const ipartitions_t &);
+    void colorNodes();
+    icolor_t colorNode(CNode * c);
+    bool       colorEdges     ( CNode *, CNode *, const ipartitions_t &);
+    bool       colorEdgesFrom ( CNode *, const ipartitions_t &);
+
+    size_t     getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );
+
+    icolor_t resolveABColor() const;
+
+  bool usingStrong() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
+  bool usingWeak() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_weak; }
+  bool usingRandom() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_random; }
 
   bool          getSubpaths          ( const path_t &, path_t &, path_t &, path_t & );
   bool          getSubpathsSwap          ( const path_t &, path_t &, path_t &, path_t & );
-  size_t        getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );
   PTRef       I                    ( const path_t & );
   PTRef       Iprime                    ( const path_t & );
   PTRef       ISwap                    ( const path_t & );
@@ -187,76 +186,24 @@ private:
   void          BrecSwap                 ( const path_t &, vector< path_t > &, set< path_t > & );
   bool          getFactorsAndParents ( const path_t &, vector< path_t > &, vector< path_t > & );
   void labelFactors( vector<path_t> & );
-  PTRef interpolate_flat(const path_t& p);
   inline path_t path                 ( CNode * c1, CNode * c2 ) { return make_pair( c1, c2 ); }
 
   bool          checkColors          ( );
 
   PTRef       maximize             ( PTRef );
 
-  Egraph &                        egraph;
   SMTConfig &                     config;
   Logic &                         logic;
-  std::vector< CNode * >          cnodes;
-  std::vector< CEdge * >          cedges;
-  std::map< PTRef, CNode * >      cnodes_store;
-  std::set< pair< PTRef, PTRef >> path_seen;
+  CGraph &                        cgraph;
+  std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
   std::set< CNode * >             colored_nodes;
   std::set< CEdge * >             colored_edges;
-  bool                            colored;
-  PTRef                         conf1;
-  PTRef                         conf2;
-  PTRef                         conf;
   std::map< path_t, icolor_t > L;
-  PTRef interpolant;
-  icolor_t conf_color;
-  vec<PTRef> A_basic;
-  vec<PTRef> B_basic;
   unsigned int max_width;
   unsigned int max_height;
-  bool flat;
   bool divided;
-  std::map<PTRef, icolor_t> *m_labels;
 
-  struct CAdjust
-  {
 
-    CAdjust( CNode * cnn_, CNode * x_, CNode * n_, CEdge * p_ )
-      : cnn( cnn_ ), x( x_ ), n( n_ ), prev( p_ )
-    { 
-      // Check some preconditions
-      assert( prev->source == x );
-      assert( prev->target == n );
-      assert( x->next );
-      assert( x->next == prev );
-      (void)n;
-    }
-
-    // Undo
-    inline void undo( )
-    {
-      // Check some preconditions
-      assert( prev->source == x );
-      assert( prev->target == n );
-      assert( x->next );
-      assert( x->next->target == cnn );
-      assert( cnn->next );
-      assert( cnn->next->target == n );
-      assert( x->next != prev );
-      assert( cnn->next != prev );
-      x->next = prev;
-      cnn->next = nullptr;
-    }
-
-  private:
-
-    CNode * cnn;
-    CNode * x;
-    CNode * n;
-    CEdge * prev;
-  };
-
-  vector< CAdjust * > undo_adjust;
 };
 
 #endif

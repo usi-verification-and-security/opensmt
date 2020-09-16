@@ -16,8 +16,8 @@ PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Explainer.cc"
 target_sources(tsolvers
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.cc"
-#    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.h"
-#    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cc"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cc"
 )
 
 install(FILES ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h DESTINATION ${INSTALL_HEADERS_DIR})

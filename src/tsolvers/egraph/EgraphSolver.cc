@@ -58,23 +58,9 @@ The algorithm and data structures are inspired by the following paper:
 
 #include "Egraph.h"
 #include "Enode.h"
-//#include "LA.h"
-// DO NOT REMOVE THIS COMMENT !!
-// IT IS USED BY CREATE_THEORY.SH SCRIPT !!
-// NEW_THEORY_HEADER
-//#include "EmptySolver.h"
-//#include "BVSolver.h"
-//#include "LRASolver.h"
-//#include "DLSolver.h"
-//#include "CostSolver.h"
-//#include "AXDiffSolver.h"
-// Added to support compiling templates
-//#include "DLSolver.C"
-//#include "SimpSMTSolver.h"
 #include "TreeOps.h"
 #include "Deductions.h"
 
-#define VERBOSE 0
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
@@ -84,7 +70,9 @@ const char* Egraph::s_any_prefix = "a";
 const char* Egraph::s_val_true = "true";
 const char* Egraph::s_val_false = "false";
 
-Egraph::Egraph(SMTConfig & c, Logic& l)
+Egraph::Egraph(SMTConfig & c, Logic & l) : Egraph(c,l,ExplainerType::CLASSIC) {}
+
+Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
       : TSolver            (descr_uf_solver, descr_uf_solver, c)
       , logic              (l)
 #if defined(PEDANTIC_DEBUG)
@@ -96,7 +84,17 @@ Egraph::Egraph(SMTConfig & c, Logic& l)
       , fa_garbage_frac    ( 0.5 )
       , congruence_running ( false )
 {
-    explainer.reset(new Explainer(enode_store));
+    auto rawExplainer = [this](ExplainerType type) -> Explainer * {
+        switch(type) {
+            case ExplainerType::CLASSIC: {
+                return new Explainer(enode_store);
+            }
+            case ExplainerType::INTERPOLATING: {
+                return new InterpolatingExplainer(enode_store);
+            }
+        }
+    }(explainerType);
+    explainer.reset(rawExplainer);
     // For the uninterpreted predicates and propositional structures inside
     // uninterpreted functions define function not, the terms true and false,
     // and an asserted disequality true != false

@@ -163,6 +163,8 @@ class Egraph : public TSolver
 {
 protected:
     Logic& logic;
+    enum class ExplainerType {CLASSIC, INTERPOLATING};
+    std::unique_ptr<Explainer> explainer;
 private:
   /*
    * fields and methods related to parent vectors
@@ -189,7 +191,6 @@ private:
   //***************************************************************************************************************
   ELAllocator   forbid_allocator;
 
-  std::unique_ptr<Explainer> explainer;
   EnodeStore    enode_store;
   ERef          ERef_Nil;
 
@@ -209,6 +210,8 @@ private:
   static const char* s_val_true;
   static const char* s_val_false;
 
+protected:
+    Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType);
 public:
   Egraph(SMTConfig & c, Logic & l);
 
