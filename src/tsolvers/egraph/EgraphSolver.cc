@@ -1844,7 +1844,7 @@ void Egraph::explainConstants(ERef p, ERef q) {
     assert(logic.isConstant(getEnode(enr_proot).getTerm()));
     assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
-    explainer->expExplain(p,q);
+    explainer->expExplain(enr_proot,enr_qroot);
     explainer->fillExplanation(explanation);
     has_explanation = true;
 }
