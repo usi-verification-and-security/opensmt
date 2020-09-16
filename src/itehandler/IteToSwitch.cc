@@ -245,6 +245,9 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
                 assert(logic.hasSortBool(cond_tr));
                 dag.createAndStoreNode(tr, cond_tr, true_node, false_node);
             }
+            if (logic.isIte(cond_tr) and !dag.isTopLevelIte(cond_tr)) {
+                dag.addTopLevelIte(cond_tr); // The (boolean) ites at condition are always top-level
+            }
 
         } else { // not Ite
             for (int i = 0; i < t.size(); i++) {
