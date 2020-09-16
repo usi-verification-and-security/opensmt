@@ -1294,27 +1294,28 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
 
-    dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
+    dist_t intersection = en_p.getDistClasses() & en_q.getDistClasses();
 
-    if ( intersection ) {
+    if (intersection) {
         // Compute the first index in the intersection
         // TODO: Use hacker's delight
         unsigned index = 0;
-        while ( ( intersection & 1 ) == 0 ) {
+        while ((intersection & 1) == 0) {
             intersection = intersection >> 1;
-            index ++;
+            ++index;
         }
         // Dist terms are all inequalities, hence their polarity's true
         r = PtAsgn(enode_store.getDistTerm(index), l_True);
-        assert( r.tr != PTRef_Undef );
+        assert(r.tr != PTRef_Undef);
         return true;
     }
     // Check forbid lists (binary distinction)
-    const ELRef pstart = en_p.getForbid( );
-    const ELRef qstart = en_q.getForbid( );
+    const ELRef pstart = en_p.getForbid();
+    const ELRef qstart = en_q.getForbid();
     // If at least one is empty, they can merge
-    if ( pstart == ELRef_Undef || qstart == ELRef_Undef )
+    if (pstart == ELRef_Undef || qstart == ELRef_Undef) {
         return false;
+    }
 
     ELRef pptr = pstart;
     ELRef qptr = qstart;
@@ -1325,7 +1326,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
         const Elist& el_pptr = forbid_allocator[pptr];
         const Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
-        if ( enode_store[el_pptr.e].getRoot( ) == q ) {
+        if (getEnode(el_pptr.e).getRoot() == q) {
 #ifdef VERBOSE_EUF
             cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
@@ -1333,7 +1334,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
             r = el_pptr.reason;
             return true;
         }
-        if ( enode_store[el_qptr.e].getRoot( ) == p ) {
+        if (getEnode(el_qptr.e).getRoot() == p) {
 #ifdef VERBOSE_EUF
             cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
@@ -1351,7 +1352,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
         if ( qptr == qstart ) break;
     }
     // If here they are mergable
-    assert( r.tr == PTRef_Undef );
+    assert(r.tr == PTRef_Undef);
     return false;
 }
 
