@@ -1818,9 +1818,8 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
 }
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
+    explanation = explainer->expExplain(x,y);
     explanation.push(reason_inequality);
-    explainer->expExplain(x,y);
-    explainer->fillExplanation(explanation);
     has_explanation = true;
 }
 
@@ -1831,8 +1830,7 @@ void Egraph::explainConstants(ERef p, ERef q) {
     assert(logic.isConstant(getEnode(enr_proot).getTerm()));
     assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
-    explainer->expExplain(enr_proot,enr_qroot);
-    explainer->fillExplanation(explanation);
+    explanation = explainer->expExplain(enr_proot,enr_qroot);
     has_explanation = true;
 }
 

@@ -136,7 +136,7 @@ void Explainer::expExplain() {
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-void Explainer::expExplain(ERef x, ERef y)
+vec<PtAsgn> Explainer::expExplain(ERef x, ERef y)
 {
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
@@ -145,6 +145,10 @@ void Explainer::expExplain(ERef x, ERef y)
     exp_pending.push(x);
     exp_pending.push(y);
     expExplain();
+    vec<PtAsgn> res;
+    explanation.moveTo(res);
+    explanation.clear();
+    return res;
 }
 
 void Explainer::expCleanup() {
@@ -409,11 +413,4 @@ void Explainer::expRemoveExplanation() {
         getEnode(y).setExpParent(ERef_Undef);
         getEnode(y).setExpReason(PtAsgn_Undef);
     }
-}
-
-void Explainer::fillExplanation(vec<PtAsgn> & expl) {
-    for (auto entry : explanation) {
-        expl.push(entry);
-    }
-    explanation.clear();
 }

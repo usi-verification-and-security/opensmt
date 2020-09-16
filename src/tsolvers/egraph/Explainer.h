@@ -17,27 +17,27 @@ protected:
     //
     // Explanation routines and data
     //
-    void     expExplainEdge(ERef v, ERef p);
-    void     expExplain           ( );                            // Main routine for explanation
-    void     expExplainAlongPath(ERef, ERef);               // Store explanation in explanation
-    void     expEnqueueArguments(ERef, ERef);               // Enqueue arguments to be explained
-    void     expReRootOn(ERef);                      // Reroot the proof tree on x
-    void     expUnion(ERef, ERef);               // Union of x and y in the explanation
-    ERef expFind(ERef);                      // Find for the eq classes of the explanation
-    ERef expHighestNode(ERef);                      // Returns the node of the eq class of x that is closest to the root of the explanation tree
-    ERef expNCA(ERef, ERef);               // Return the nearest common ancestor of x and y
-    void     expCleanup           ( );                            // Undoes the effect of expExplain
+    void    expExplain          ();                         // Main routine for explanation
+    void    expExplainEdge      (ERef v, ERef p);
+    void    expExplainAlongPath (ERef, ERef);               // Store explanation in explanation
+    void    expEnqueueArguments (ERef, ERef);               // Enqueue arguments to be explained
+    void    expReRootOn         (ERef);                     // Reroot the proof tree on x
+    void    expUnion            (ERef, ERef);               // Union of x and y in the explanation
+    ERef    expFind             (ERef);                     // Find for the eq classes of the explanation
+    ERef    expHighestNode      (ERef);                     // Returns the node of the eq class of x that is closest to the root of the explanation tree
+    ERef    expNCA              (ERef, ERef);               // Return the nearest common ancestor of x and y
+    void    expCleanup          ();                         // Undoes the effect of expExplain
 
 
 #if MORE_DEDUCTIONS
     vec< ERef>                  neq_list;
 #endif
 
-    vec< ERef >                 exp_pending;                      // Pending explanations
-    vec< ERef >                 exp_undo_stack;                   // Keep track of exp_parent merges
-    vec< ERef >                 exp_cleanup;                      // List of nodes to be restored
-    int                         time_stamp = 0;                   // Need for finding NCA
-    vec< PtAsgn >               explanation;                      // Stores explanation
+    vec<ERef>       exp_pending;                      // Pending explanations
+    vec<ERef>       exp_undo_stack;                   // Keep track of exp_parent merges
+    vec<ERef>       exp_cleanup;                      // List of nodes to be restored
+    int             time_stamp = 0;                   // Need for finding NCA
+    vec<PtAsgn>     explanation;                      // Stores explanation
 
     //
     // Fast duplicates checking. Cannot be nested !
@@ -52,10 +52,10 @@ protected:
 
 public:
     Explainer(EnodeStore & store) : store(store) {}
-    void expStoreExplanation(ERef, ERef, PtAsgn);         // Store the explanation for the merge
-    void expRemoveExplanation();                          // Undoes the effect of expStoreExplanation
-    void expExplain(ERef, ERef);               // Enqueue equality and explain
-    void fillExplanation(vec<PtAsgn> & expl);
+
+    void        expStoreExplanation    (ERef, ERef, PtAsgn);        // Store the explanation for the merge
+    void        expRemoveExplanation   ();                          // Undoes the effect of expStoreExplanation
+    vec<PtAsgn> expExplain             (ERef, ERef);                // Return explanation of why the given two terms are equal
 };
 
 
