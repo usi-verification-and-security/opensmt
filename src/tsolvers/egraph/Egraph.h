@@ -193,8 +193,6 @@ private:
   EnodeStore    enode_store;
   ERef          ERef_Nil;
 
-  PTRef         Eq_FALSE; // will be set to (= true false) in constructor
-
   bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
   double fa_garbage_frac;

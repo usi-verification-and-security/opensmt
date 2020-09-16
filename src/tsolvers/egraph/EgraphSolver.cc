@@ -109,17 +109,6 @@ Egraph::Egraph(SMTConfig & c, Logic& l)
 
     enode_store.ERef_True  = enode_store.termToERef[t];
     enode_store.ERef_False = enode_store.termToERef[f];
-
-    // add the term (= true false) to term store
-    vec<PTRef> tmp;
-    tmp.push(logic.getTerm_true());
-    tmp.push(logic.getTerm_false());
-    PTRef neq = logic.mkEq(tmp);
-
-    assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
-
-    Eq_FALSE = neq;
-
 }
 
 //
@@ -658,8 +647,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else if ( logic.isUP(reason_inequality.tr) ) {
             // The reason is an uninterpreted predicate
             assert(false);
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push(reason_inequality);
+            explanation.push(reason_inequality);
         }
         // Clear remaining pendings
         pending.clear( );
@@ -1829,9 +1817,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
 }
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
-    if (reason_inequality.tr != Eq_FALSE) {
-        explanation.push(reason_inequality);
-    }
+    explanation.push(reason_inequality);
     explainer->expExplain(x,y);
     explainer->fillExplanation(explanation);
     has_explanation = true;
