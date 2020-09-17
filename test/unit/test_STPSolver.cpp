@@ -112,8 +112,9 @@ class SafeIntTest : public ::testing::Test {};
 TEST_F(SafeIntTest, test_add_pass){
     SafeInt a(PTRDIFF_MAX - 1), b(1);
     SafeInt c(PTRDIFF_MIN + 1), d(-1);
-    SafeInt e = a + b;
-    e = c + d;
+    SafeInt e{};
+    ASSERT_NO_THROW(e = a + b);
+    ASSERT_NO_THROW(e = c + d);
 }
 
 TEST_F(SafeIntTest, test_add_fail_over){
@@ -129,9 +130,9 @@ TEST_F(SafeIntTest, test_add_fail_under){
 
 TEST_F(SafeIntTest, test_sub_pass){
     SafeInt a(PTRDIFF_MAX - 10);
-    ASSERT_ANY_THROW(a -= SafeInt(-11));
+    ASSERT_NO_THROW(a -= SafeInt(-10));
     SafeInt b(PTRDIFF_MIN + 5);
-    ASSERT_ANY_THROW(b -= 6);
+    ASSERT_NO_THROW(b -= 5);
 }
 
 TEST_F(SafeIntTest, test_sub_fail_under){
