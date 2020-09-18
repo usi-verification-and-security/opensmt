@@ -269,7 +269,7 @@ void Egraph::declareTermRecursively(PTRef tr) {
     if (declared.find(tr) != declared.end()) { return; } // already declared
     const Pterm& term = logic.getPterm(tr);
     // declare first the childen and then the current term
-    if (not logic.isNonBoolIte(tr)) {
+    if (not logic.isIte(tr)) {
         for (int i = 0; i < term.size(); ++i) {
             declareTermRecursively(term[i]);
         }
@@ -334,7 +334,7 @@ void Egraph::constructTerm(PTRef tr) {
         boolTermToERef.insert(tr_neg, er_neg);
     } else {
 
-        if (not logic.isNonBoolIte(tr)) {
+        if (not logic.isIte(tr)) {
             sym = enode_store.addSymb(tm.symb());
             cdr = ERef_Nil;
             for (int j = tm.size() - 1; j >= 0; j--) {

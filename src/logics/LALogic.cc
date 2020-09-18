@@ -804,12 +804,13 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         }
         if (!l.isNumOne(terms[i]))
         {
-            if (l.isNumPlus(terms[i]))
+            if (l.isNumPlus(terms[i])) {
                 plus = terms[i];
-            else if (l.isConstant(terms[i]) and not l.isIte(terms[i]))
+            } else if (l.isConstant(terms[i])) {
                 con = terms[i];
-            else
+            } else {
                 terms_new.push(terms[i]);
+            }
         }
     }
     if (con == PTRef_Undef && plus == PTRef_Undef);

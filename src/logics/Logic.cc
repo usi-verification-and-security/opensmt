@@ -586,7 +586,7 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
             for (int j = 0; j < t.size(); j++) {
                 PTRef cr = t[j];
-                if (isNonBoolIte(cr)) {
+                if (isIte(cr)) {
                     continue; // Treated as variables in this respect
                 }
                 if (!processed[Idx(this->getPterm(cr).getId())]) {
@@ -870,7 +870,7 @@ PTRef Logic::mkEq(vec<PTRef>& args) {
         return mkAnd(binaryEqualities);
     }
     assert(args.size() == 2);
-    if (isConstant(args[0]) && isConstant(args[1]) && (not isIte(args[0])) && (not isIte(args[1])))
+    if (isConstant(args[0]) && isConstant(args[1]))
         return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
     if (args[0] == args[1]) return getTerm_true();
     // Simplify more here now that the equals type is known
