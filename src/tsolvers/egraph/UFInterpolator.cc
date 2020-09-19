@@ -471,7 +471,7 @@ bool UFInterpolator::getSubpaths(const path_t & pi, path_t & pi_1, path_t & thet
 //    cerr << "; Computing subpaths" << endl;
     // Sorted list of edges from x
     vector<CEdge *> sorted_edges;
-    const size_t x_path_length = getSortedEdges(x, y, sorted_edges);
+    getSortedEdges(x, y, sorted_edges);
 
     CNode * lnode = nullptr;
     CNode * rnode = nullptr;
@@ -522,60 +522,6 @@ bool UFInterpolator::getSubpaths(const path_t & pi, path_t & pi_1, path_t & thet
     pi_2.first = theta.second;
     pi_2.second = pi.second;
     return true;
-
-
-    // Decide maximal B path
-    unsigned largest_path_length = 0;
-
-    for (size_t i = 0; i < sorted_edges.size();) {
-        // Skip A-path
-        while (i < sorted_edges.size()
-               && sorted_edges[i]->color == I_A)
-            i++;
-
-        if (i == sorted_edges.size()) continue;
-
-        unsigned path_length = 0;
-        // Save source
-        CNode * s = i < x_path_length
-                    ? sorted_edges[i]->source
-                    : sorted_edges[i]->target;
-        CNode * t = s;
-
-        // Now scan B-path
-        while (i < sorted_edges.size() && sorted_edges[i]->color == I_B) {
-            t = i < x_path_length
-                ? sorted_edges[i]->target
-                : sorted_edges[i]->source;
-            i++;
-            path_length++;
-        }
-
-        if (path_length > largest_path_length) {
-            assert (s != t);
-            largest_path_length = path_length;
-            theta.first = s;
-            theta.second = t;
-        }
-        assert (path_length != 0 || s == t);
-    }
-
-    // No path found: arbitrary split
-    if (largest_path_length == 0) {
-        pi_1.first = pi.first;
-        pi_1.second = pi.first;
-        pi_2.first = pi.first;
-        pi_2.second = pi.second;
-        return false;
-    }
-
-    // Set pi_1 theta pi_2
-    pi_1.first = pi.first;
-    pi_1.second = theta.first;
-    pi_2.first = theta.second;
-    pi_2.second = pi.second;
-
-    return true;
 }
 
 bool
@@ -587,7 +533,7 @@ UFInterpolator::getSubpathsSwap(const path_t & pi, path_t & pi_1, path_t & theta
 
     // Sorted list of edges from x
     vector<CEdge *> sorted_edges;
-    const size_t x_path_length = getSortedEdges(x, y, sorted_edges);
+    getSortedEdges(x, y, sorted_edges);
 
     CNode * lnode = nullptr;
     CNode * rnode = nullptr;
@@ -637,61 +583,6 @@ UFInterpolator::getSubpathsSwap(const path_t & pi, path_t & pi_1, path_t & theta
     pi_1.second = theta.first;
     pi_2.first = theta.second;
     pi_2.second = pi.second;
-    return true;
-
-    // Decide maximal A path
-    unsigned largest_path_length = 0;
-
-    for (size_t i = 0; i < sorted_edges.size();) {
-        // Skip B-path
-        while (i < sorted_edges.size()
-               && sorted_edges[i]->color == I_B)
-            i++;
-
-        if (i == sorted_edges.size()) continue;
-
-        unsigned path_length = 0;
-        // Save source
-        CNode * s = i < x_path_length
-                    ? sorted_edges[i]->source
-                    : sorted_edges[i]->target;
-        CNode * t = s;
-
-        // Now scan A-path
-        while (i < sorted_edges.size()
-               && sorted_edges[i]->color == I_A) {
-            t = i < x_path_length
-                ? sorted_edges[i]->target
-                : sorted_edges[i]->source;
-            i++;
-            path_length++;
-        }
-
-        if (path_length > largest_path_length) {
-            assert (s != t);
-            largest_path_length = path_length;
-            theta.first = s;
-            theta.second = t;
-        }
-
-        assert (path_length != 0 || s == t);
-    }
-
-    // No path found: arbitrary split
-    if (largest_path_length == 0) {
-        pi_1.first = pi.first;
-        pi_1.second = pi.first;
-        pi_2.first = pi.first;
-        pi_2.second = pi.second;
-        return false;
-    }
-
-    // Set pi_1 theta pi_2
-    pi_1.first = pi.first;
-    pi_1.second = theta.first;
-    pi_2.first = theta.second;
-    pi_2.second = pi.second;
-
     return true;
 }
 
