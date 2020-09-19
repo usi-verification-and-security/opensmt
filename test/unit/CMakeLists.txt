@@ -145,3 +145,12 @@ target_sources(LIAStrengtheningTest
 
 target_link_libraries(LIAStrengtheningTest api_static gtest gtest_main)
 gtest_add_tests(TARGET LIAStrengtheningTest)
+
+add_executable(InterpolationTest)
+target_sources(InterpolationTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_UFInterpolation.cc"
+    )
+
+target_link_libraries(InterpolationTest api_static gtest gtest_main)
+gtest_add_tests(TARGET InterpolationTest)
+
