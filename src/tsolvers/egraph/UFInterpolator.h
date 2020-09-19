@@ -138,9 +138,6 @@ public:
     : config  ( config_ )
     , logic   ( logic_ )
     , cgraph  (cgraph)
-    , max_width(0)
-    , max_height(0)
-    , divided(false)
   { }
 
 	inline int     verbose                       ( ) const { return config.verbosity(); }
@@ -176,8 +173,8 @@ private:
   PTRef       Iprime                    ( const path_t & );
   PTRef       ISwap                    ( const path_t & );
   PTRef       IprimeSwap                    ( const path_t & );
-  PTRef       Irec                 ( const path_t &, map< path_t, PTRef > & , unsigned int h = 0);
-  PTRef       IrecSwap                 ( const path_t &, map< path_t, PTRef > & , unsigned int h = 0);
+  PTRef Irec(const path_t & p, map<path_t, PTRef> & cache);
+  PTRef IrecSwap(const path_t & p, map<path_t, PTRef> & cache);
   PTRef       J                    ( const path_t &, vector< path_t > & );
   PTRef       JSwap                    ( const path_t &, vector< path_t > & );
   void          B                    ( const path_t &, vector< path_t > & );
@@ -199,9 +196,6 @@ private:
   std::set< CNode * >             colored_nodes;
   std::set< CEdge * >             colored_edges;
   std::map< path_t, icolor_t > L;
-  unsigned int max_width;
-  unsigned int max_height;
-  bool divided;
 
 
 };
