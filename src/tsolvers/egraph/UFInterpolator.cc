@@ -97,7 +97,7 @@ void CGraph::addCEdge(PTRef s, PTRef t, PTRef r) {
     cedges.push_back(edge);
 }
 
-void UFInterpolator::color(const ipartitions_t & mask) {
+void UFInterpolator::colorCGraph() {
     colorNodes();
 
     // Uncomment to print
@@ -109,12 +109,12 @@ void UFInterpolator::color(const ipartitions_t & mask) {
     CNode * c1 = cgraph.getConflictStart();
     CNode * c2 = cgraph.getConflictEnd();
     assert(c1 and c2);
-    const bool no_mixed = colorEdges(c1, c2, mask);
+    const bool no_mixed = colorEdges(c1, c2);
     if (!no_mixed) throw std::logic_error("Interpolation over mixed literals not supported");
 }
 
 
-bool UFInterpolator::colorEdges(CNode * c1, CNode * c2, const ipartitions_t & mask) {
+bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
     std::set<std::pair<CNode *, CNode *>> cache_nodes;
     std::set<CEdge *> cache_edges;
     std::vector<CNode *> unprocessed_nodes;
@@ -186,7 +186,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2, const ipartitions_t & ma
         //
         // Color this path
         //
-        no_mixed = colorEdgesFrom(n1, mask) && colorEdgesFrom(n2, mask);
+        no_mixed = colorEdgesFrom(n1) && colorEdgesFrom(n2);
         //
         // Remember this path is done
         //
@@ -199,7 +199,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2, const ipartitions_t & ma
 // It assumes that children have been already colored
 // and adjusted
 //
-bool UFInterpolator::colorEdgesFrom(CNode * x, const ipartitions_t & mask) {
+bool UFInterpolator::colorEdgesFrom(CNode * x) {
     assert (x);
     // Color from x
     CNode * n = nullptr;
@@ -353,9 +353,10 @@ bool UFInterpolator::colorEdgesFrom(CNode * x, const ipartitions_t & mask) {
 PTRef
 UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels) {
     assert(labels);
+    (void)mask;
     srand(2);
     computeAndStoreTermColors(*labels);
-    color(mask);
+    colorCGraph();
 
     // Uncomment to print
     // static int count = 1;

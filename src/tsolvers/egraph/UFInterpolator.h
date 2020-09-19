@@ -152,11 +152,11 @@ private:
         return termColors.at(term);
     }
 
-    void color ( const ipartitions_t &);
+    void colorCGraph();
     void colorNodes();
     icolor_t colorNode(CNode * c);
-    bool       colorEdges     ( CNode *, CNode *, const ipartitions_t &);
-    bool       colorEdgesFrom ( CNode *, const ipartitions_t &);
+    bool colorEdges(CNode * c1, CNode * c2);
+    bool colorEdgesFrom(CNode * x);
 
     size_t     getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );
 
