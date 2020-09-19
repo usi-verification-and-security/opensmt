@@ -346,36 +346,6 @@ bool UFInterpolator::colorEdgesFrom(CNode * x, const ipartitions_t & mask) {
 }
 
 //
-// Revert path starting from x, if
-// any outgoing edge is present
-//
-void CGraph::revertEdges(CNode * x) {
-    if (x->next == nullptr)
-        return;
-
-    // It has outgoing edge: rewrite
-    CNode * p = x;
-    CEdge * prev = p->next;
-
-    while (prev != nullptr) {
-        // Next is the connecting edge to reverse
-        CEdge * next = prev;
-        assert (next->source == p);
-        // from | p -- next --> t | to | p <-- next -- t
-        CNode * t = next->target;
-        // Adapt data structures
-        next->source = t;
-        next->target = p;
-        prev = t->next;
-        t->next = next;
-        // Next step
-        p = t;
-    }
-
-    x->next = nullptr;
-}
-
-//
 // Here mask is a bit-mask of the form 1..10..0
 // which indicates the current splitting for the
 // formula into A and B.

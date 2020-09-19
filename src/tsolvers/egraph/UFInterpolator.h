@@ -108,7 +108,6 @@ public:
     void     addCEdge      ( PTRef, PTRef, PTRef );
 
     void removeCEdge(CEdge *);
-    void revertEdges(CNode *);
 
     CNode* getConflictStart() const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf1); }
     CNode* getConflictEnd()   const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf2); }
