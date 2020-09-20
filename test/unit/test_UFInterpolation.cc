@@ -32,12 +32,13 @@ protected:
         char* msg;
         f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
         g = logic.declareFun("g", ufsort, {ufsort, ufsort}, &msg, false);
+        p = logic.declareFun("p", logic.getSort_bool(), {ufsort}, &msg, false);
     }
     Logic logic;
     SMTConfig config;
     SRef ufsort;
     PTRef x, y, x1, x2, x3, x4, y1, y2, z1, z2, z3, z4, z5, z6, z7, z8;
-    SymRef f, g;
+    SymRef f, g, p;
 
     bool verifyInterpolant(PTRef itp, ipartitions_t const & Amask) {
         // TODO: design properly
@@ -305,6 +306,29 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+}
+
+TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
+    /*
+     * Simple conflict using congruence: x=y, P(x), not(P(y))
+     */
+    PTRef eq = logic.mkEq(x,y);
+    PTRef px = logic.mkUninterpFun(p, {x});
+    PTRef py = logic.mkUninterpFun(p, {y});
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(px);
+    solver.insertFormula(eq);
+    solver.insertFormula(logic.mkNot(py));
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    solver.getSMTSolver().createProofGraph();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
     solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
 }
