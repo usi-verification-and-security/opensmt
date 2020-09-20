@@ -146,7 +146,13 @@ public:
 
 private:
 
-    void computeAndStoreTermColors(std::map<PTRef, icolor_t> const & literalColors);
+    void computeAndStoreColors(std::map<PTRef, icolor_t> const & literalColors);
+
+    icolor_t getLitColor (PTRef term) const {
+        assert(litColors.find(term) != litColors.end());
+        return litColors.at(term);
+    }
+
     icolor_t getTermColor (PTRef term) const {
         assert(termColors.find(term) != termColors.end());
         return termColors.at(term);
@@ -192,6 +198,7 @@ private:
   Logic &                         logic;
   CGraph &                        cgraph;
   std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
+  std::unordered_map<PTRef, icolor_t, PTRefHash> litColors;
   std::set< CNode * >             colored_nodes;
   std::set< CEdge * >             colored_edges;
   std::map< path_t, icolor_t > L;

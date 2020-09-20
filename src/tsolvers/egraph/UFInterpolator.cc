@@ -328,10 +328,10 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
         }
             // Color basic edge with proper color
         else {
-            x->next->color = getTermColor(x->next->reason);
+            x->next->color = getLitColor(x->next->reason);
             assert(x->next->color != I_AB);
             if (x->next->color == I_AB) {
-                x->next->color = resolveABColor();
+                throw std::logic_error("Error in coloring information");
             }
         }
 
@@ -355,7 +355,7 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolo
     assert(labels);
     (void)mask;
     srand(2);
-    computeAndStoreTermColors(*labels);
+    computeAndStoreColors(*labels);
     colorCGraph();
 
     // Uncomment to print
@@ -424,12 +424,15 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolo
     return result;
 }
 
-void UFInterpolator::computeAndStoreTermColors(const map<PTRef, icolor_t> & literalColors) {
+void UFInterpolator::computeAndStoreColors(const map<PTRef, icolor_t> & literalColors) {
+    // MB: NOTE! If P(a) is A-local, but both symbols P and a are shared, than P(a) should be shared and not A-local
     using entry_t = std::pair<const PTRef, icolor_t>;
     std::vector<entry_t> queue;
     for (auto entry : literalColors) {
         queue.push_back(entry);
+        this->litColors.insert(entry);
     }
+    std::unordered_map<SymRef, icolor_t, SymRefHash> symbolColors;
     while (not queue.empty()) {
         auto const & entry = queue.back();
         icolor_t colorToAssign = entry.second;
@@ -451,6 +454,28 @@ void UFInterpolator::computeAndStoreTermColors(const map<PTRef, icolor_t> & lite
         for (int i = 0; i < logic.getPterm(term).size(); ++i) {
             PTRef child = logic.getPterm(term)[i];
             queue.emplace_back(child, colorToAssign);
+        }
+        // add symbol information
+        auto insertRes = symbolColors.insert(std::make_pair(logic.getSymRef(term), colorToAssign));
+        if (not insertRes.second) { // there was entry for this symbol already
+            auto entryIt = insertRes.first;
+            entryIt->second = static_cast<opensmt::icolor_t>(entryIt->second | colorToAssign);
+        }
+    }
+    // Make sure complex terms have correct color assigned
+    for (auto & entry : termColors) {
+        PTRef term = entry.first;
+        auto color = entry.second;
+        if (color != I_AB and (logic.isUF(term) or logic.isUP(term))) {
+            // if symbol is AB and all children are AB, this term should also be AB
+            auto symbolColor = symbolColors.at(logic.getSymRef(term));
+            if (symbolColor != I_AB) { continue; }
+            for (int i = 0; i < logic.getPterm(term).size(); ++i) {
+                PTRef child = logic.getPterm(term)[i];
+                if (termColors.at(child) != I_AB) { continue; }
+            }
+            // everything is AB -> update
+            entry.second = I_AB;
         }
     }
     // Make sure true and false have color
