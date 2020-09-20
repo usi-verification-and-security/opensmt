@@ -46,9 +46,9 @@ protected:
         MainSolver validationSolver(logic, validationConfig, "validator");
         PTRef Apartition = logic.getPartitionA(Amask);
         PTRef Bpartition = logic.getPartitionB(Amask);
-        std::cout << "A part: " << logic.printTerm(Apartition) << '\n';
-        std::cout << "B part: " << logic.printTerm(Bpartition) << '\n';
-        std::cout << "Interpoolant " << logic.printTerm(itp) << std::endl;
+        std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
+        std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
+        std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
         validationSolver.push();
         validationSolver.insertFormula(logic.mkNot(logic.mkImpl(Apartition, itp)));
         auto res = validationSolver.check();
@@ -329,6 +329,93 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+}
+
+TEST_F(UFInterpolationTest, test_ConstantsConflict){
+    /*
+     * Simple conflict using uninterpreted constants (implicitly different): c=x, x=d
+     */
+    PTRef c = logic.mkConst(ufsort, "c");
+    PTRef d = logic.mkConst(ufsort, "d");
+    PTRef eqA = logic.mkEq(c,x);
+    PTRef eqB = logic.mkEq(x,d);
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(eqA);
+    solver.insertFormula(eqB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    solver.getSMTSolver().createProofGraph();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+}
+
+TEST_F(UFInterpolationTest, test_TwoLevelJustification){
+    /*
+     * B = {z1=g(y1,z3}, g(y1,z4)=z2
+     * A = {x1=f(z1), x2=f(z2), z3=z4}
+     * not(x1=x2) in A
+     */
+    PTRef eqB1 = logic.mkEq(z1,logic.mkUninterpFun(g, {y1,z3}));
+    PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {y1, z4}), z2);
+    PTRef eqA1 = logic.mkEq(x1,logic.mkUninterpFun(f, {z1}));
+    PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
+    PTRef eqA3 = logic.mkEq(z3,z4);
+    PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, dis}));
+    solver.insertFormula(logic.mkAnd({eqB1, eqB2}));
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    solver.getSMTSolver().createProofGraph();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    // change the interpolation algorithm
+    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    interpolants.clear();
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+}
+
+TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
+    /*
+     * B = {z1=g(y1,z3}, g(y1,z4)=z2
+     * A = {x1=f(z1), x2=f(z2), z3=z4}
+     * not(x1=x2) in B
+     */
+    PTRef eqB1 = logic.mkEq(z1,logic.mkUninterpFun(g, {y1,z3}));
+    PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {y1, z4}), z2);
+    PTRef eqA1 = logic.mkEq(x1,logic.mkUninterpFun(f, {z1}));
+    PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
+    PTRef eqA3 = logic.mkEq(z3,z4);
+    PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3}));
+    solver.insertFormula(logic.mkAnd({eqB1, eqB2, dis}));
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    solver.getSMTSolver().createProofGraph();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    // change the interpolation algorithm
+    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    interpolants.clear();
     solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
 }
