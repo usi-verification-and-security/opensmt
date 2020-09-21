@@ -1,7 +1,17 @@
-add_executable(exec opensmt.cc)
+add_executable(opensmt opensmt.cc)
 
-target_link_libraries(exec api_static)
+if (NOT USE_READLINE)
+    find_package(LibEdit REQUIRED)
+    target_link_libraries(opensmt PUBLIC ${LibEdit_LIBRARIES})
+    target_include_directories(opensmt PUBLIC ${LibEdit_INCLUDE_DIRS})
+else()
+    find_package(Readline REQUIRED)
+    target_link_libraries(opensmt PUBLIC ${Readline_LIBRARY})
+    target_include_directories(opensmt PUBLIC ${Readline_INCLUDE_DIRS})
+endif()
 
-set_target_properties(exec PROPERTIES OUTPUT_NAME opensmt)
+target_link_libraries(opensmt PUBLIC api_static)
 
-install(TARGETS exec RUNTIME DESTINATION bin)
+set_target_properties(opensmt PROPERTIES OUTPUT_NAME opensmt)
+
+install(TARGETS opensmt RUNTIME DESTINATION bin)

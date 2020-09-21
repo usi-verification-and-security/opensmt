@@ -40,28 +40,16 @@ PUBLIC ${PUBLIC_SOURCES_TO_ADD}
 
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD})
 
-if (NOT USE_READLINE)
-  set(line_library ${LibEdit_LIBRARIES})
-else()
-  set(line_library ${Readline_LIBRARY})
-endif()
-
 if (BUILD_SHARED_LIBS)
   add_library(api_shared SHARED ${OBJECTS_TO_ADD})
-  target_link_libraries(api_shared ${line_library} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
+  target_link_libraries(api_shared ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
   set_target_properties(api_shared PROPERTIES OUTPUT_NAME opensmt2)
-  target_include_directories(api_shared
-                             PRIVATE
-                             ${LibEdit_INCLUDE_DIRS})
   install(TARGETS api_shared DESTINATION lib)
 endif()
 
 if (BUILD_STATIC_LIBS)
   add_library(api_static STATIC ${OBJECTS_TO_ADD})
-  target_link_libraries(api_static ${line_library} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
-  target_include_directories(api_static
-                             PRIVATE
-                             ${LibEdit_INCLUDE_DIRS})
+  target_link_libraries(api_static ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
   set_target_properties(api_static PROPERTIES OUTPUT_NAME opensmt2)
 endif()
 

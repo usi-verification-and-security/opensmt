@@ -41,14 +41,6 @@ option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
 
-if (BUILD_EXECUTABLES)
-    if (NOT USE_READLINE)
-      find_package(LibEdit REQUIRED)
-    else()
-      find_package(Readline REQUIRED)
-    endif()
-endif(BUILD_EXECUTABLES)
-
 find_package(GMP REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -75,7 +67,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/proof
     ${CMAKE_SOURCE_DIR}/models
     ${CMAKE_SOURCE_DIR}/itehandler
-    ${GMP_INCLUDE_DIR}
+    ${GMP_INCLUDE_DIRS}
 )
 
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
