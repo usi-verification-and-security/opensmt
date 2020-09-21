@@ -12,6 +12,6 @@ endif()
 
 target_link_libraries(opensmt PUBLIC api_static)
 
-set_target_properties(opensmt PROPERTIES OUTPUT_NAME opensmt)
+set_target_properties(opensmt PROPERTIES OUTPUT_NAME opensmt RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 install(TARGETS opensmt RUNTIME DESTINATION bin)
