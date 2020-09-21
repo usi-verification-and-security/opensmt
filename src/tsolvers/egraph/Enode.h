@@ -94,6 +94,12 @@ typedef uint32_t CgId;
 
 class Enode
 {
+private:
+    // Defined for list and term Enodes
+    void setCar  (ERef er)       { assert(type() != et_symb); ex->lst.car = er; }
+    void setCdr  (ERef er)       { assert(type() != et_symb); ex->lst.cdr = er; }
+    void setPterm(PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
+
 protected:
     static uint32_t cgid_ctr;
 
@@ -143,11 +149,6 @@ public:
     // Defined for symbol enodes
     SymRef getSymb()             const { assert(type() == et_symb); return symb; }
 
-    // Defined for list and term Enodes
-private:
-    void setCar(ERef er)               { assert(type() != et_symb); ex->lst.car = er; }
-    void setCdr(ERef er)               { assert(type() != et_symb); ex->lst.cdr = er; }
-public:
     ERef getCar()                const { assert(type() != et_symb); return ex->lst.car; }
     ERef getCdr()                const { assert(type() != et_symb); return ex->lst.cdr; }
     ERef getRoot()               const { if (isSymb()) return er; else return root; }
@@ -174,9 +175,6 @@ public:
     void setExpRoot       (ERef r)       { assert(type() == et_term); ex->trm.exp_root   = r; }
     void setExpTimeStamp  (const int t)  { assert(type() == et_term); ex->trm.exp_time_stamp   = t; }
 
-private:
-    void  setPterm      (PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
-public:
     PTRef getTerm       ()        const { assert(isTerm()); return ex->trm.pterm; }
     ELRef getForbid     ()        const { assert(!isSymb()); if (isList()) return ELRef_Undef; else return ex->trm.forbid; }
     ELRef& altForbid    ()              { assert(isTerm()); return ex->trm.forbid; }

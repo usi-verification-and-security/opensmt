@@ -140,13 +140,14 @@ class EnodeStore {
         sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
         assert(containsSig(e));
     }
+
+    ERef addIteSymb(PTRef tr);
 // DEBUG
 #ifdef PEDANTIC_DEBUG
     bool checkInvariants();
 #endif
     friend class Egraph;
 
-    ERef addIteSymb(PTRef tr);
 };
 
 #endif
