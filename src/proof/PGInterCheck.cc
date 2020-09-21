@@ -82,7 +82,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
     vec<PTRef> AC_args;
-    AC_args.push(pmanager.getPartitionA(mask));
+    AC_args.push(pmanager.getPartition(mask, PartitionManager::part::A));
     AC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(AC_args);
 
@@ -134,7 +134,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
     vec<PTRef> BC_args;
-    BC_args.push(pmanager.getPartitionB(mask));
+    BC_args.push(pmanager.getPartition(mask, PartitionManager::part::B));
     BC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(BC_args);
 

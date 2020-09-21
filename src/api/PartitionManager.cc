@@ -49,44 +49,24 @@ ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
 }
 
 PTRef
-PartitionManager::getPartitionA(const ipartitions_t& mask)
+PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part p)
 {
+    auto isLocalToP = [p](const ipartitions_t& p_mask, const ipartitions_t& mask){ return p == part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask); };
+    auto hasNoPartition = [](const ipartitions_t& p_mask, const ipartitions_t&mask) { return !isAlocal(p_mask, mask) and !isBlocal(p_mask, mask); };
     auto parts = getPartitions();
-    vec<PTRef> a_args;
+    vec<PTRef> args;
     for (auto part : parts)
     {
         const auto & p_mask = getIPartitions(part);
-        if (isAlocal(p_mask, mask)) {
-            a_args.push(part);
+        if (isLocalToP(p_mask, mask)) {
+            args.push(part);
         }
-        else if (!isBlocal(p_mask, mask)) {
+        else if (hasNoPartition(p_mask, mask)) {
             opensmt_error("Assertion is neither A or B");
         }
     }
-
-    PTRef A = logic.mkAnd(a_args);
-
+    PTRef A = logic.mkAnd(args);
     return A;
-}
-
-PTRef
-PartitionManager::getPartitionB(const ipartitions_t& mask)
-{
-    auto parts = getPartitions();
-    vec<PTRef> b_args;
-    for (auto part : parts)
-    {
-        const auto & p_mask = getIPartitions(part);
-        if (isBlocal(p_mask, mask)) {
-            b_args.push(part);
-        }
-        else if (!isAlocal(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
-        }
-    }
-
-    PTRef B = logic.mkAnd(b_args);
-    return B;
 }
 
 void

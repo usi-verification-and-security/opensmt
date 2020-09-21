@@ -16,9 +16,8 @@ public:
         // MB: TODO: Is this necessary?
         ipartitions_t mask = 0; mask = ~mask;  addIPartitions(logic.getTerm_true(), mask); addIPartitions(logic.getTerm_false(), mask);
     }
-
-    PTRef getPartitionA(const ipartitions_t&);
-    PTRef getPartitionB(const ipartitions_t&);
+    enum class part { A, B };
+    PTRef getPartition(const ipartitions_t&, part);
 
     //partitions:
     ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
