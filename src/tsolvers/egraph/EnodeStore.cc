@@ -38,6 +38,11 @@ EnodeStore::EnodeStore(Logic& l)
     sym_uf_not = addSymb(logic.getSym_uf_not());
 }
 
+ERef EnodeStore::addIteSymb(PTRef tr) {
+    assert(logic.isNonBoolIte(tr));
+    ERef er = ea.alloc(logic.getSym_anon());
+    return er;
+}
 
 ERef EnodeStore::addSymb(SymRef t) {
     ERef rval;

@@ -74,6 +74,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/simplifiers
     ${CMAKE_SOURCE_DIR}/proof
     ${CMAKE_SOURCE_DIR}/models
+    ${CMAKE_SOURCE_DIR}/itehandler
     ${GMP_INCLUDE_DIR}
 )
 

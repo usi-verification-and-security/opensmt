@@ -136,6 +136,7 @@ bool        LIALogic::isNumGeq(PTRef tr)    const  { return isIntGeq(getPterm(tr
 bool        LIALogic::isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
 bool        LIALogic::isNumGt(PTRef tr)     const  { return isIntGt(getPterm(tr).symb()); }
 bool        LIALogic::isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+bool        LIALogic::isIntVarOrIte(SymRef sr) const { return isIntVar(sr) || (isIte(sr) && sym_store[sr].rsort() == sort_INTEGER); }
 bool        LIALogic::isNumVar(PTRef tr)    const  { return isIntVar(getPterm(tr).symb());}
 bool        LIALogic::isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
 bool        LIALogic::isNumZero(PTRef tr)   const  { return tr == term_Int_ZERO; }

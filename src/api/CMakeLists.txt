@@ -11,6 +11,7 @@ $<TARGET_OBJECTS:cnfizers>
 $<TARGET_OBJECTS:common>
 $<TARGET_OBJECTS:simplifiers>
 $<TARGET_OBJECTS:models>
+$<TARGET_OBJECTS:itehandler>
 )
 
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:proof> ${OBJECTS_TO_ADD})
@@ -64,5 +65,4 @@ if (BUILD_STATIC_LIBS)
   set_target_properties(api_static PROPERTIES OUTPUT_NAME opensmt2)
 endif()
 
-install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h
-DESTINATION ${INSTALL_HEADERS_DIR})
+install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h DESTINATION ${INSTALL_HEADERS_DIR})

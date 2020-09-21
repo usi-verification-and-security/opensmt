@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "UFLRATheory.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
+#include "IteToSwitch.h"
 
 #include <thread>
 #include <random>
@@ -113,7 +114,11 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
 
-    logic.conjoinExtras(root, root);
+    root = logic.conjoinExtras(root);
+
+    IteToSwitch switches(logic, root);
+    root = switches.conjoin(root);
+
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily

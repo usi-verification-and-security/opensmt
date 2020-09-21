@@ -35,7 +35,7 @@ void LIASolver::clearSolver()
 
 void LIASolver::notifyVar(LVRef v)
 {
-    assert(logic.isNumVar(getVarPTRef(v)));
+    assert(logic.isNumVarOrIte(getVarPTRef(v)));
     markVarAsInt(v);
 }
 

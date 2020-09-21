@@ -269,8 +269,10 @@ void Egraph::declareTermRecursively(PTRef tr) {
     if (declared.find(tr) != declared.end()) { return; } // already declared
     const Pterm& term = logic.getPterm(tr);
     // declare first the childen and then the current term
-    for (int i = 0; i < term.size(); ++i) {
-        declareTermRecursively(term[i]);
+    if (not logic.isIte(tr)) {
+        for (int i = 0; i < term.size(); ++i) {
+            declareTermRecursively(term[i]);
+        }
     }
 
     declareTerm(tr);
@@ -330,20 +332,24 @@ void Egraph::constructTerm(PTRef tr) {
 
         boolTermToERef.insert(tr_pure, er_pure);
         boolTermToERef.insert(tr_neg, er_neg);
-    }
+    } else {
 
-    else {
-        sym = enode_store.addSymb(tm.symb());
-        cdr = ERef_Nil;
-        for (int j = tm.size() - 1; j >= 0; j--) {
-            assert(enode_store.termToERef.has(tm[j])); // The child was not inserted
-            ERef car = enode_store.termToERef[tm[j]];
+        if (not logic.isIte(tr)) {
+            sym = enode_store.addSymb(tm.symb());
+            cdr = ERef_Nil;
+            for (int j = tm.size() - 1; j >= 0; j--) {
+                assert(enode_store.termToERef.has(tm[j])); // The child was not inserted
+                ERef car = enode_store.termToERef[tm[j]];
 #ifdef VERBOSE_EUF
-            ERef prev_cdr = cdr;
-            assert (enode_store[car].getRoot() == car);
-            assert (enode_store[cdr].getRoot() == cdr);
+                ERef prev_cdr = cdr;
+                assert (enode_store[car].getRoot() == car);
+                assert (enode_store[cdr].getRoot() == cdr);
 #endif
-            cdr = enode_store.addList(car, cdr);
+                cdr = enode_store.addList(car, cdr);
+            }
+        } else {
+            sym = enode_store.addIteSymb(tr);
+            cdr = ERef_Nil;
         }
         ERef er = enode_store.addTerm(sym, cdr, tr);
 

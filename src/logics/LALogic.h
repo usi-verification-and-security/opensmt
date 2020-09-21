@@ -49,16 +49,17 @@ protected:
 public:
     LALogic();
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
-    virtual bool    isBuiltinFunction(SymRef sr) const override;
-    virtual PTRef   insertTerm      (SymRef sym, vec<PTRef>& terms, char** msg) override;
-    virtual SRef    getSort_num    ()              const;
-    virtual PTRef     mkConst         (const char* name, const char **msg) override;
-    virtual PTRef     mkConst         (SRef s, const char* name) override;
-    virtual PTRef     mkConst         (const opensmt::Number& c);
-    virtual PTRef     mkConst         (const char* num);
-    virtual PTRef     mkNumVar        (const char* name);
-    virtual bool isBuiltinSort  (SRef sr) const override;
-    virtual bool isBuiltinConstant(SymRef sr) const override;
+    virtual bool     isBuiltinFunction(SymRef sr) const override;
+    virtual PTRef    insertTerm       (SymRef sym, vec<PTRef>& terms, char** msg) override;
+    virtual SRef     getSort_num      () const;
+    virtual PTRef    mkConst          (const char* name, const char **msg) override;
+    virtual PTRef    mkConst          (SRef s, const char* name) override;
+    virtual PTRef    mkConst          (const opensmt::Number& c);
+    virtual PTRef    mkConst          (const char* num);
+    virtual PTRef    mkNumVar         (const char* name);
+    virtual bool     isBuiltinSort    (SRef sr) const override;
+    virtual bool     isBuiltinConstant(SymRef sr) const override;
+
     virtual bool  isNumConst     (SymRef sr)     const;
     virtual bool  isNumConst     (PTRef tr)      const;
     virtual bool  isNonnegNumConst (PTRef tr)  const;
@@ -111,11 +112,13 @@ public:
     virtual bool isNumGt(PTRef tr) const;
     bool isNumVar(SymRef sr) const;
     virtual bool isNumVar(PTRef tr) const;
+    bool isNumVarOrIte(SymRef sr) const;
+    virtual bool isNumVarOrIte(PTRef tr) const;
     bool isNumZero(SymRef sr) const;
     virtual bool isNumZero(PTRef tr) const;
     bool isNumOne(SymRef sr) const;
     virtual bool isNumOne(PTRef tr) const;
-    // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable.
+    // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     virtual bool isNumTerm(PTRef tr) const;
 
     virtual PTRef getTerm_NumZero() const = 0;
@@ -168,35 +171,26 @@ public:
     virtual vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
 };
+
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
 // v2 which one is smaller, based on the PTRef of v1 and v2.  (i.e.
-// v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2))
+// v1.ptref <  v2.ptref iff (* k1 v1) < (* k2 v2)).
+//
+// This code is required for canonicalising the terms and correctly identifying their sign.
+//
+// If term contains a const-ite:
+//   (* ite v) or (* ite c) or (* v ite) or (* c ite)  => consider {v,c}.ptref
+//   (* ite1 ite2) => consider min(ite1.ptref, ite2.ptref)
 class LessThan_deepPTRef {
     const LALogic& l;
+    uint32_t getVarIdFromProduct(PTRef term) const;
 public:
     LessThan_deepPTRef(const LALogic* l) : l(*l) {}
-    bool operator ()  (PTRef& x_, PTRef& y_) {
-        uint32_t id_x;
-        uint32_t id_y;
-        if (l.isNumTimes(x_)) {
-            PTRef c_x;
-            PTRef v_x;
-            l.splitTermToVarAndConst(x_, v_x, c_x);
-            id_x = v_x.x;
-        } else {
-            id_x = x_.x;
-        }
-        if (l.isNumTimes(y_)) {
-            PTRef c_y;
-            PTRef v_y;
-            l.splitTermToVarAndConst(y_, v_y, c_y);
-            id_y = v_y.x;
-        } else {
-            id_y = y_.x;
-        }
-        return id_x < id_y;
-    }
+
+    bool operator ()  (PTRef x_, PTRef y_) const;
+
 };
+
 class SimplifyConst {
 protected:
     LALogic& l;
@@ -208,21 +202,24 @@ public:
     SimplifyConst(LALogic& log) : l(log) {}
     void simplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new, char** msg);
 };
-class SimplifyConstSum : public SimplifyConst{
+
+class SimplifyConstSum : public SimplifyConst {
     void Op(opensmt::Number& s, const opensmt::Number& v) const;// { s += v; }
     opensmt::Number getIdOp() const;// { return 0; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
 public:
     SimplifyConstSum(LALogic& log) : SimplifyConst(log) {}
 };
-class SimplifyConstTimes : public SimplifyConst{
+
+class SimplifyConstTimes : public SimplifyConst {
     void Op(opensmt::Number& s, const opensmt::Number& v) const;// { s *= v; }
     opensmt::Number getIdOp() const;// { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;
 public:
     SimplifyConstTimes(LALogic& log) : SimplifyConst(log) {}
 };
-class SimplifyConstDiv : public SimplifyConst{
+
+class SimplifyConstDiv : public SimplifyConst {
     void Op(opensmt::Number& s, const opensmt::Number& v) const;// { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
     opensmt::Number getIdOp() const;// { return 1; }
     void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const;

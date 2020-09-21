@@ -124,7 +124,7 @@ class CUFLogic: public Logic
     virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
-    virtual void conjoinExtras(PTRef root, PTRef& root_out) override;
+    PTRef conjoinExtras(PTRef root) override;
 
     bool isCUFNUMConst(SymRef sr) const { return isConstant(sr) && hasSortCUFNUM(sr); }
     bool isCUFNUMConst(PTRef tr)  const { return isCUFNUMConst(getPterm(tr).symb()); }

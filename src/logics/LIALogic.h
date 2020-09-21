@@ -72,6 +72,7 @@ public:
     bool        isIntGt(SymRef sr)    const;// { return sr == sym_Int_GT; }
     bool        isNumGt(PTRef tr)     const override;// { return isIntGt(getPterm(tr).symb()); }
     bool        isIntVar(SymRef sr)   const;// { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+    bool        isIntVarOrIte(SymRef sr) const;
     bool        isNumVar(PTRef tr)    const override;// { return isIntVar(getPterm(tr).symb());}
     bool        isIntZero(SymRef sr)  const;// { return sr == sym_Int_ZERO; }
     bool        isNumZero(PTRef tr)   const override;// { return tr == term_Int_ZERO; }

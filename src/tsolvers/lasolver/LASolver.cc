@@ -81,9 +81,9 @@ void LASolver::isProperLeq(PTRef tr)
     PTRef cons = leq_t[0];
     PTRef sum  = leq_t[1];
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
-    assert(!logic.isNumTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
-                                      (logic.isNumVar(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
+    assert(logic.isNumVarOrIte(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
+    assert(!logic.isNumTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
+                                      (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
     (void) cons; (void)sum;
 }
 
@@ -217,6 +217,7 @@ bool LASolver::hasVar(PTRef expr) {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
+
     assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
@@ -231,7 +232,6 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 }
 
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
-
     auto poly = std::unique_ptr<Polynomial>(new Polynomial());
     bool negated = logic.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
@@ -251,7 +251,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 
 //
 // Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
-// where x is a real variables and p_i are products of a real variable and a real constant
+// where x is a real variable or ite, and p_i are products of a real variable or ite and a real constant
 //
 // (1) x
 // (2a) (* x -1)
@@ -269,13 +269,13 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         }
     }
 
-    if (logic.isNumVar(expr) || logic.isNumTimes(expr)) {
+    if (logic.isNumVarOrIte(expr) || logic.isNumTimes(expr)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
 
         logic.splitTermToVarAndConst(expr, v, c);
-        assert(logic.isNumVar(v) || (logic.isNegated(v) && logic.isNumVar(logic.mkNumNeg(v))));
+        assert(logic.isNumVarOrIte(v) || (logic.isNegated(v) && logic.isNumVarOrIte(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
         notifyVar(x);

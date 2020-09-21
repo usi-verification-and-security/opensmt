@@ -573,7 +573,7 @@ const int CUFLogic::getCUFNUMConst(PTRef tr) const
     return atoi(getSymName(tr));
 }
 
-void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
+PTRef CUFLogic::conjoinExtras(PTRef root)
 {
     vec<PTRef> comm_eqs;
     vec<PTRef> diseq_eqs;
@@ -587,12 +587,12 @@ void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
     getCommEqs(mod_ineqs);
     getCommEqs(inc_diseqs);
     getCommEqs(compl_diseqs);
-    root_out = root;
+    PTRef root_out = root;
     root_out = mkAnd(root_out, mkAnd(comm_eqs));
     root_out = mkAnd(root_out, mkAnd(diseq_eqs));
     root_out = mkAnd(root_out, mkAnd(diseq_split));
     root_out = mkAnd(root_out, mkAnd(mod_ineqs));
     root_out = mkAnd(root_out, mkAnd(inc_diseqs));
     root_out = mkAnd(root_out, mkAnd(compl_diseqs));
-    Logic::conjoinItes(root_out, root_out);
+    return root_out;
 }
