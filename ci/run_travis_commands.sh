@@ -7,9 +7,9 @@ make
 ctest
 make install
 if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
-    cd ../regression && ./run-test-notiming.sh ../build/src/bin/opensmt;
-    cd ../regression_itp && ./run-tests.sh ../build/src/bin/opensmt;
-    cd ../regression_splitting && ./bin/run-tests.sh ../build/src/bin/opensmt;
+    cd ../regression && ./run-test-notiming.sh ../build/opensmt;
+    cd ../regression_itp && ./run-tests.sh ../build/opensmt;
+    cd ../regression_splitting && ./bin/run-tests.sh ../build/opensmt;
 fi
 
 cd ../examples && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DOPENSMT_DIR=${INSTALL} ..
