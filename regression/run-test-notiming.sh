@@ -1,24 +1,37 @@
 #!/bin/bash
+get_abs_filename() {
+  echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+}
+
+usage="Usage: $0 [-h] <path-to-opensmt>"
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -h|--help)
+            echo "${usage}"
+            exit 1
+            ;;
+        -*)
+            echo "Error: invalid option '$1'"
+            exit 1
+            ;;
+        *)
+            break
+    esac
+    shift; shift
+done
+
+opensmt=$1
+
+if [ -z ${opensmt} ]; then
+    echo "Opensmt binary not specified"
+    exit 1
+fi
+
 echo "This is the script for running regression tests"
 echo " - date: $(date '+%Y-%m-%d at %H:%M.%S')"
 echo " - host name $(hostname -f)"
-echo " - script path: $(readlink -f $0)"
-
-opensmt=../opensmt
-options=""
-if [[ ! $# -eq 0 ]] ; then
-    #echo 'Setting path to' $1
-    while [[ ! $# -eq 0 ]]; do
-        if [ "${1}" = "-c" ]; then
-            options="${options} ${2}"
-            shift;
-            shift;
-        else
-            opensmt=${1};
-            shift
-        fi
-    done;
-fi
+echo " - script path: $(get_abs_filename $0)"
 
 tmpfolder=log-$(date '+%Y-%m-%d-%H-%M-%S')
 mkdir ${tmpfolder}
@@ -32,10 +45,8 @@ for file in $(find . -name '*.smt2' |sort) generic/foo; do
     name=$(basename $file)
     dir=$(dirname $file)
 
-    #/usr/bin/time -p -o $tmpfolder/$name.time ${opensmt} $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp
     sh -c "ulimit -St 60; ${opensmt} $(echo ${options}) $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null 
-    #/usr/bin/time -p -o $tmpfolder/$name.time valgrind --leak-check=full ${opensmt} $dir/$name
-    #continue
+
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
     diff -q ${tmpfolder}/${name}.out ${dir}/${name}.expected.out
     if [ $? != 0 ]; then
