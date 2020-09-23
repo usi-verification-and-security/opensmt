@@ -10,7 +10,7 @@ if(OPENSMT_DIR)
         PATHS ${OPENSMT_DIR}
         PATH_SUFFIXES "" "include" NO_DEFAULT_PATH
         )
-    find_library(OPENSMT_LIBRARY NAMES opensmt2
+    find_library(OPENSMT_LIBRARY NAMES opensmt
         PATHS ${OPENSMT_DIR}
         PATH_SUFFIXES "" "lib" "lib64" NO_DEFAULT_PATH
         )
