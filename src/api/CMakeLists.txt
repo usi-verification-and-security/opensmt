@@ -59,7 +59,7 @@ if (BUILD_STATIC_LIBS)
       VERSION ${OPENSMT_VERSION}
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
-  install(TARGETS api_static LIBRARY DESTINATION lib)
+  install(TARGETS api_static ARCHIVE DESTINATION lib)
 endif()
 
 install(FILES Opensmt.h smt2tokens.h MainSolver.h Interpret.h DESTINATION ${INSTALL_HEADERS_DIR})
