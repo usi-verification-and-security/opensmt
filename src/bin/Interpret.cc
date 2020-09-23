@@ -44,10 +44,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #endif // ITP_DEBUG
 
-namespace opensmt {
-bool stop;
-};
-
 /***********************************************************
  * Class defining interpreter
  ***********************************************************/

@@ -26,8 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MainSolver.h"
 #include "TreeOps.h"
-#include "DimacsParser.h"
-#include "Interpret.h"
 #include "BoolRewriting.h"
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
@@ -43,8 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/stat.h>
 #include <fcntl.h>
 
-namespace opensmt { extern bool stop; }
-//#include "symmetry/Symmetry.h"
+namespace opensmt { bool stop; }
 
 void
 MainSolver::push()

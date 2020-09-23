@@ -1,4 +1,4 @@
-add_executable(opensmt opensmt.cc)
+add_executable(opensmt opensmt.cc Interpret.cc)
 
 if (NOT USE_READLINE)
     find_package(LibEdit REQUIRED)
