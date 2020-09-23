@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.3)
-cmake_policy(VERSION 3.12)
+
+if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need a check, otherwise older version would give an error
+cmake_policy(SET CMP0074 NEW)
+endif()
+
 set(OPENSMT_VERSION_MAJOR 2)
 set(OPENSMT_VERSION_MINOR 0)
 set(OPENSMT_VERSION_PATCH 1)
