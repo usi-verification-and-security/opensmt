@@ -217,7 +217,7 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     v3->addRes(ra.getW());
 
     //Creation new node y
-    ProofNode* y=new ProofNode(logic_, pmanager);
+    ProofNode* y=new ProofNode(logic_);
     y->initClause();
     //y given by resolution v2,v3 over v pivot
     mergeClauses(v2->getClause(),v3->getClause(),y->getClause(),v->getPivot());

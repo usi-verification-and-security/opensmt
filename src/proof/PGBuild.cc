@@ -21,17 +21,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
 
 void
-ProofNode::setInterpPartitionMask()
-{
-    if(i_data == NULL) initIData();
-    i_data->partition_mask = pmanager.getClauseClassMask(clause_ref);
-    assert(i_data->partition_mask != 0);
-#ifdef ITP_DEBUG
-    cerr << "In Set, Clause " << clause_ref << " has mask " << i_data->partition_mask << endl;
-#endif
-}
-
-void
 ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
 {
     if(i_data == NULL) initIData();
@@ -175,7 +164,7 @@ void ProofGraph::buildProofGraph( int nVars )
             if (currClause == CRef_Undef && clause_to_proof_der.at(currClause).chain_cla.empty())
             {
                 assert(graph.size() == 0);
-                ProofNode* n = new ProofNode(logic_, pmanager);
+                ProofNode* n = new ProofNode(logic_);
                 n->initIData();
                 // Add node to graph vector
                 int currId = (int)graph.size();
@@ -215,7 +204,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 if(ctype == clause_type::CLA_ORIG && currClause==CRef_Undef)
                 {
                     assert(graph.size()==0);
-                    ProofNode* n=new ProofNode(logic_, pmanager);
+                    ProofNode* n=new ProofNode(logic_);
                     n->initIData();
                     //n->initClause(proof.getClause(currClause));
                     // Add node to graph vector
@@ -249,7 +238,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 assert(chainvar.size() == chaincla.size()-1);
 
                 auto processNewClause = [&](CRef clause) {
-                    ProofNode* n=new ProofNode(logic_, pmanager);
+                    ProofNode* n=new ProofNode(logic_);
                     n->initIData();
                     clause_type  _ctype    = clause_to_proof_der.at(clause).type;
                     counters.recordNewClause(_ctype);
@@ -257,6 +246,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     {
                         n->initClause(proof.getClause(clause));
                         n->setClauseRef(clause);
+                        n->setInterpPartitionMask(pmanager.getClauseClassMask(clause));
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                         if( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
@@ -271,7 +261,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     else if(_ctype == clause_type::CLA_THEORY || _ctype == clause_type::CLA_ASSUMPTION)
                     {
                         n->initClause(proof.getClause(clause));
-                        n->setClauseRef(clause, false);
+                        n->setClauseRef(clause);
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                     }
@@ -349,7 +339,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         //
                         //////////////////////////////////////////////////////////////////////////////////////////
 
-                        n=new ProofNode(logic_, pmanager);
+                        n=new ProofNode(logic_);
                         n->initIData();
                         //Add node to graph vector
                         n->setId(currId);
@@ -398,7 +388,7 @@ void ProofGraph::buildProofGraph( int nVars )
                             //
                             //////////////////////////////////////////////////////////////////////////////////////////
 
-                            n = new ProofNode(logic_, pmanager);
+                            n = new ProofNode(logic_);
                             counters.recordNewClause(clause_type::CLA_LEARNT);
                             unsigned ssize = ( currClause == CRef_Undef ) ? 0 : proof.getClause(currClause).size();
                             if( ssize >= max_learnt_size ) max_learnt_size = ssize;
@@ -767,7 +757,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
         assert(res->getAnt1()==w || res->getAnt2()==w);
     }
 
-    ProofNode* n=new ProofNode(logic_, pmanager);
+    ProofNode* n=new ProofNode(logic_);
     n->initIData();
 
     // Create node and add to graph vector

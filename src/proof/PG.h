@@ -132,9 +132,8 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode    (Logic& _logic, PartitionManager& pm)
+    ProofNode    (Logic& _logic)
     : logic      (_logic)
-    , pmanager   (pm)
     , clause     (nullptr)
     , clause_ref (CRef_Undef)
     , pivot      (-1)
@@ -154,11 +153,9 @@ struct ProofNode
     //
     inline void                 resetClause() { delete clause; clause = NULL; }
 
-    void setClauseRef(CRef cref, bool itp = true)
+    void setClauseRef(CRef cref)
     {
         clause_ref = cref;
-        if(itp)
-            setInterpPartitionMask();
     }
     CRef getClauseRef() { return clause_ref; }
 
@@ -214,7 +211,6 @@ struct ProofNode
     inline void                  setType                ( clause_type new_type )         { type = new_type; }
     inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
     void                         setInterpPartitionMask( const ipartitions_t& mask);
-    void                         setInterpPartitionMask ();
     void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
     void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
     void                         initIData() { i_data = new InterpolData(); }
@@ -252,7 +248,6 @@ struct ProofNode
 
 private:
     Logic&             logic;
-    PartitionManager&  pmanager;
     clauseid_t         id;                 // id
     vector<Lit>*     clause;             // Clause
     CRef clause_ref;
