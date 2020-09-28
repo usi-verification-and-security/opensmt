@@ -137,7 +137,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_k                (1)
     , cuvti                 (false)
     , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
-    , proof_graph           ( nullptr )
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)

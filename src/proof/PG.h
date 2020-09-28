@@ -266,8 +266,8 @@ public:
 	ProofGraph ( SMTConfig &  c
 			, Theory &        th
 			, TermMapper &    termMapper
-			, Proof &         t
-			, PartitionManager& pmanager
+			, Proof const &   t
+			, PartitionManager & pmanager
 			, int             n = -1 )
 : config   ( c )
 , proof	   ( t )
@@ -535,11 +535,11 @@ private:
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
-    SMTConfig &           config;
-    Proof &				  proof;
-    Logic &               logic_;
-    PartitionManager&     pmanager;
-    std::unique_ptr<THandler> thandler;
+    SMTConfig &                 config;
+    Proof const &               proof;
+    Logic &                     logic_;
+    PartitionManager &          pmanager;
+    std::unique_ptr<THandler>   thandler;
 
     vector< ProofNode * >*         graph_;                       // Graph
     vector< ProofNode * >&         graph;

@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SimpSMTSolver.h"
 #include "Model.h"
 #include "PartitionManager.h"
+#include "InterpolationContext.h"
 
 #include <memory>
 
@@ -181,6 +182,7 @@ class MainSolver
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
+    SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
     THandler &getTHandler() { return thandler; }
     Logic    &getLogic()    { return logic; }
@@ -213,12 +215,15 @@ class MainSolver
     ValPair getValue       (PTRef tr) const;
     void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
 
-    // Returns model of the last formula (must be in satisfiable state)
+    // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
     void stop() { ts.solver.stop = true; }
 
     bool readFormulaFromFile(const char *file);
+
+    // Returns interpolation context for the last query (must be in UNSAT state)
+    std::unique_ptr<InterpolationContext> getInterpolationContext();
 
 };
 

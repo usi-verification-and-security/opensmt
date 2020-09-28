@@ -66,7 +66,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Timer.h"
 
 class Proof;
-class ProofGraph;
 class ModelBuilder;
 
 // Helper method to print Literal to a stream
@@ -331,6 +330,8 @@ public:
     int     nFreeVars  ()      const;
 
     void fillBooleanVars(ModelBuilder & modelBuilder);
+
+    Proof const & getProof() const { assert(proof); return *proof; }
 
     // Resource contraints:
     //
@@ -671,37 +672,7 @@ public:
 	char * printCnfClauses  ();
 	char * printCnfLearnts  ();
 
-    bool    smtSolve         ( );             // Solve
-
     void   printProofSMT2          ( ostream & ); // Print proof
-    void   printProofDotty         ( );           // Print proof
-    void   printInter              ( ostream & ); // Generate and print interpolants
-    void   getInterpolants         (const vec<vec<int> >& partitions, vec<PTRef>& interpolants);
-    void   getInterpolants         (const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants);
-    void   setColoringSuggestions  (  vec< std::map<PTRef, icolor_t>* > * mp );
-    bool   getPathInterpolants(vec<PTRef>& interpolants);
-    bool   getPathInterpolants(vec<PTRef>& interpolants, const vec<ipartitions_t>& A_masks);
-    void   getSingleInterpolant(vec<PTRef>& interpolants);
-    void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
-    void   getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask) // This is a wrapper for the above, used by hifrog
-            { vec<PTRef> itps; getSingleInterpolant(itps, A_mask); for (int i = 0; i < itps.size(); i++) interpolants.push_back(itps[i]); }
-    bool   getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
-    bool   getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
-    bool   getStateTransitionInterpolants(vec<PTRef>& interpolants);
-    bool   getTreeInterpolants(opensmt::InterpolationTree*, vec<PTRef>& interpolants);
-    bool   checkImplication( PTRef f1, PTRef f2);
-
-    void   createProofGraph          (PartitionManager &pmanager);
-    inline ProofGraph* getProofGraph ()
-    {
-        return proof_graph;
-    }
-    void   deleteProofGraph          ();
-    void   reduceProofGraph          ();
-    void   checkPartitions           ();
-
-    void   dumpRndInter           (std::ofstream&); // Dumps a random interpolation problem
-
 protected:
 
 #ifdef STATISTICS
@@ -741,7 +712,6 @@ protected:
     void finalizeProof(CRef finalConflict);
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
-    ProofGraph *        proof_graph;              // Proof graph
     // End of proof production
 
     //
