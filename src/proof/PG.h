@@ -34,7 +34,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 using namespace opensmt;
 
-class CoreSMTSolver;
 class Proof;
 class Logic;
 struct SMTConfig;
@@ -265,14 +264,12 @@ class ProofGraph
 public:
 
 	ProofGraph ( SMTConfig &  c
-			, CoreSMTSolver & s
 			, Theory &        th
 			, TermMapper &    termMapper
 			, Proof &         t
 			, PartitionManager& pmanager
 			, int             n = -1 )
 : config   ( c )
-, solver   ( s )
 , proof	   ( t )
 , logic_ ( th.getLogic() )
 , pmanager (pmanager)
@@ -539,8 +536,6 @@ private:
     Var 				  pred_to_push;
 
     SMTConfig &           config;
-    CoreSMTSolver &       solver;
-    //Egraph &              egraph;
     Proof &				  proof;
     Logic &               logic_;
     PartitionManager&     pmanager;

@@ -178,8 +178,19 @@ void ProofGraph::printClause(ProofNode* n, ostream & os)
 	}
 }
 
-void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & lits) {
-    this->solver.printSMTClause(out, lits);
+void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & c) {
+    if ( c.size( ) == 0 ) out << "-";
+    if ( c.size( ) > 1 ) out << "(or ";
+    for (unsigned i = 0; i < c.size(); i++)
+    {
+        Var v = var(c[i]);
+        if ( v <= 1 ) continue;
+        char* term_name;
+        thandler->getVarName(v, &term_name);
+        out << (sign(c[i])?"(not ":"") << term_name << (sign(c[i])?") ":" ");
+        free(term_name);
+    }
+    if ( c.size( ) > 1 ) out << ")";
 }
 
 void ProofGraph::printProofNode(clauseid_t vid)

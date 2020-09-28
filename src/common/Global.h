@@ -61,6 +61,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define opensmt_warning( S )      { cerr << "; Warning: " << S << endl; }
 #define opensmt_warning2( S, T )  { cerr << "; Warning: " << S << " " << T << endl; }
 
+#define reportf(format, args...) ( fflush(stdout), fprintf(stderr, format, ## args), fflush(stderr) )
+
 #if ( __WORDSIZE == 64 )
 #define BUILD_64
 #endif
