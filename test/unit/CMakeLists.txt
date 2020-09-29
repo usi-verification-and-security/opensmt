@@ -154,3 +154,10 @@ target_sources(InterpolationTest
 target_link_libraries(InterpolationTest api_static gtest gtest_main)
 gtest_add_tests(TARGET InterpolationTest)
 
+add_executable(FunkyExplainTest)
+target_sources(FunkyExplainTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_FunkyExplain.cc"
+        )
+
+target_link_libraries(FunkyExplainTest api_static gtest gtest_main)
+gtest_add_tests(TARGET FunkyExplainTest)
