@@ -248,25 +248,23 @@ class Logic {
 
     PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);
     // Boolean term generation
-    PTRef       mkAnd         (vec<PTRef>&);
-    PTRef       mkAnd         (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
-    PTRef       mkAnd         (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
-    PTRef       mkOr          (vec<PTRef>&);
-    PTRef       mkOr          (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
-    PTRef       mkOr          (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
-    PTRef       mkXor         (vec<PTRef>&);
-    PTRef       mkXor         (PTRef a1, PTRef a2);// { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
-    PTRef       mkImpl        (vec<PTRef>&);
+    PTRef       mkAnd         (const vec<PTRef>&);
+    PTRef       mkAnd         (PTRef a1, PTRef a2) { return mkAnd({a1, a2}); }
+    PTRef       mkOr          (const vec<PTRef>&);
+    PTRef       mkOr          (PTRef a1, PTRef a2) { return mkOr({a1, a2}); }
+    PTRef       mkXor         (const vec<PTRef>&);
+    PTRef       mkXor         (PTRef a1, PTRef a2) { return mkXor({a1, a2}); }
+    PTRef       mkImpl        (const vec<PTRef>&);
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkNot         (vec<PTRef>&);
-    PTRef       mkIte         (vec<PTRef>&);
-    PTRef       mkIte         (PTRef c, PTRef t, PTRef e);// { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
+    PTRef       mkIte         (const vec<PTRef>&);
+    PTRef       mkIte         (PTRef c, PTRef t, PTRef e) { return mkIte({c, t, e}); }
 
 
     // Generic equalities
-    PTRef       mkEq          (vec<PTRef>& args);
-    PTRef       mkEq          (PTRef a1, PTRef a2);// { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+    PTRef       mkEq          (const vec<PTRef>& args);
+    PTRef       mkEq          (PTRef a1, PTRef a2) { return mkEq({a1, a2}); }
 
     // General disequalities
     PTRef       mkDistinct    (vec<PTRef>& args);
@@ -444,6 +442,7 @@ class Logic {
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
     // XXX There's a need for non msg giving version
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms, nullptr); }
 
 
     // Top-level equalities based substitutions
