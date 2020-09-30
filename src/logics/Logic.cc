@@ -497,7 +497,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs(p.size());
-    char *msg;
+
     bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
@@ -509,7 +509,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
             newargs[i] = tr;
     }
     if (!changed) {return;}
-    PTRef trp = insertTerm(p.symb(), newargs, &msg);
+    PTRef trp = insertTerm(p.symb(), newargs);
     if (trp != tr) {
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -606,8 +606,8 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     }
     assert(sref != SymRef_Undef);
     PTRef rval;
-    char** msg2 = NULL;
-    rval = insertTerm(sref, args, msg2);
+
+    rval = insertTerm(sref, args);
     if (rval == PTRef_Undef)
         printf("Error in resolveTerm\n");
 
@@ -631,7 +631,7 @@ Logic::getDefaultValuePTRef(const SRef sref) const {
 }
 
 PTRef
-Logic::mkIte(vec<PTRef>& args)
+Logic::mkIte(const vec<PTRef>& args)
 {
     if (!hasSortBool(args[0])) return PTRef_Undef;
     if (args.size() != 3) throw OsmtApiException("ITE needs to have 3 arguments");
@@ -654,7 +654,7 @@ Logic::mkIte(vec<PTRef>& args)
 
 // Check if arguments contain trues or a false and return the simplified
 // term
-PTRef Logic::mkAnd(vec<PTRef>& args) {
+PTRef Logic::mkAnd(const vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -699,7 +699,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
     return mkFun(getSym_and(), newargs);
 }
 
-PTRef Logic::mkOr(vec<PTRef>& args) {
+PTRef Logic::mkOr(const vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -744,7 +744,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
     return mkFun(getSym_or(), newargs);
 }
 
-PTRef Logic::mkXor(vec<PTRef>& args) {
+PTRef Logic::mkXor(const vec<PTRef>& args) {
     PTRef tr = PTRef_Undef;
 
     for (int i = 0; i < args.size(); i++)
@@ -785,7 +785,7 @@ Logic::mkImpl(PTRef _a, PTRef _b)
     return mkImpl(args);
 }
 
-PTRef Logic::mkImpl(vec<PTRef>& args) {
+PTRef Logic::mkImpl(const vec<PTRef>& args) {
 
     for (int i = 0; i < args.size(); i++)
         if (!hasSortBool(args[i]))
@@ -815,7 +815,7 @@ PTRef Logic::mkImpl(vec<PTRef>& args) {
         return tr;
 }
 
-PTRef Logic::mkEq(vec<PTRef>& args) {
+PTRef Logic::mkEq(const vec<PTRef>& args) {
     if (args.size() < 2) { return PTRef_Undef; }
     if (args.size() > 2) { // split to chain of equalities with 2 arguments
         vec<PTRef> binaryEqualities;
@@ -1082,29 +1082,29 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     return true;
 }
 
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
 {
-    if(sym == getSym_and())
+    if (sym == getSym_and())
         return mkAnd(terms);
-    if(sym == getSym_or())
+    if (sym == getSym_or())
         return mkOr(terms);
-    if(sym == getSym_xor())
+    if (sym == getSym_xor())
         return mkXor(terms);
-    if(sym == getSym_not())
+    if (sym == getSym_not())
         return mkNot(terms[0]);
-    if(isEquality(sym))
+    if (isEquality(sym))
         return mkEq(terms);
-    if(isDisequality(sym))
+    if (isDisequality(sym))
         return mkDistinct(terms);
-    if(isIte(sym))
+    if (isIte(sym))
         return mkIte(terms);
-    if(sym == getSym_implies())
+    if (sym == getSym_implies())
         return mkImpl(terms);
-    if(sym == getSym_true())
+    if (sym == getSym_true())
         return getTerm_true();
-    if(sym == getSym_false())
+    if (sym == getSym_false())
         return getTerm_false();
-    if(isVar(sym)) {
+    if (isVar(sym)) {
         assert(terms.size() == 0);
         return mkFun(sym, terms);
     }
@@ -1360,8 +1360,8 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
                 }
-                char* msg;
-                result = changed ? insertTerm(t.symb(), args_mapped, &msg) : tr;
+
+                result = changed ? insertTerm(t.symb(), args_mapped) : tr;
 #ifdef SIMPLIFY_DEBUG
                 printf("  -> %s\n", printTerm(result));
 #endif
@@ -2002,20 +2002,6 @@ SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(s
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
 
-
-PTRef       Logic::mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
-PTRef      Logic::mkAnd         (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
-
-PTRef      Logic::mkOr          (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
-PTRef      Logic::mkOr          (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
-
-PTRef       Logic::mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
-
-PTRef       Logic::mkIte         (PTRef c, PTRef t, PTRef e) { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
-
-
-PTRef       Logic::mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
-
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
@@ -2026,12 +2012,12 @@ SymRef        Logic::getSym_false     ()              const { return sym_FALSE; 
 SymRef        Logic::getSym_and       ()              const { return sym_AND;      }
 SymRef        Logic::getSym_or        ()              const { return sym_OR;       }
 SymRef        Logic::getSym_xor       ()              const { return sym_XOR;      }
-SymRef       Logic::getSym_not       ()              const { return sym_NOT;      }
-SymRef       Logic::getSym_eq        ()              const { return sym_EQ;       }
-SymRef       Logic::getSym_ite       ()              const { return sym_ITE;      }
-SymRef       Logic::getSym_implies   ()              const { return sym_IMPLIES;  }
-SymRef       Logic::getSym_distinct  ()              const { return sym_DISTINCT; }
-SRef         Logic::getSort_bool     ()              const { return sort_BOOL;    }
+SymRef        Logic::getSym_not       ()              const { return sym_NOT;      }
+SymRef        Logic::getSym_eq        ()              const { return sym_EQ;       }
+SymRef        Logic::getSym_ite       ()              const { return sym_ITE;      }
+SymRef        Logic::getSym_implies   ()              const { return sym_IMPLIES;  }
+SymRef        Logic::getSym_distinct  ()              const { return sym_DISTINCT; }
+SRef          Logic::getSort_bool     ()              const { return sort_BOOL;    }
 
 PTRef         Logic::getTerm_true     ()              const { return term_TRUE;  }
 PTRef         Logic::getTerm_false    ()              const { return term_FALSE; }

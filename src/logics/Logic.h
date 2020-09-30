@@ -205,6 +205,7 @@ class Logic {
     // Fetching sorts
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
+    SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args);
     void        markConstant  (PTRef ptr);
@@ -218,8 +219,6 @@ class Logic {
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args)
-                                                            { return sym_store.newSymb(name, sort_args); }
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
@@ -248,25 +247,23 @@ class Logic {
 
     PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);
     // Boolean term generation
-    PTRef       mkAnd         (vec<PTRef>&);
-    PTRef       mkAnd         (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
-    PTRef       mkAnd         (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
-    PTRef       mkOr          (vec<PTRef>&);
-    PTRef       mkOr          (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
-    PTRef       mkOr          (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
-    PTRef       mkXor         (vec<PTRef>&);
-    PTRef       mkXor         (PTRef a1, PTRef a2);// { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
-    PTRef       mkImpl        (vec<PTRef>&);
+    PTRef       mkAnd         (const vec<PTRef>&);
+    PTRef       mkAnd         (PTRef a1, PTRef a2) { return mkAnd({a1, a2}); }
+    PTRef       mkOr          (const vec<PTRef>&);
+    PTRef       mkOr          (PTRef a1, PTRef a2) { return mkOr({a1, a2}); }
+    PTRef       mkXor         (const vec<PTRef>&);
+    PTRef       mkXor         (PTRef a1, PTRef a2) { return mkXor({a1, a2}); }
+    PTRef       mkImpl        (const vec<PTRef>&);
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkNot         (vec<PTRef>&);
-    PTRef       mkIte         (vec<PTRef>&);
-    PTRef       mkIte         (PTRef c, PTRef t, PTRef e);// { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
+    PTRef       mkIte         (const vec<PTRef>&);
+    PTRef       mkIte         (PTRef c, PTRef t, PTRef e) { return mkIte({c, t, e}); }
 
 
     // Generic equalities
-    PTRef       mkEq          (vec<PTRef>& args);
-    PTRef       mkEq          (PTRef a1, PTRef a2);// { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+    PTRef       mkEq          (const vec<PTRef>& args);
+    PTRef       mkEq          (PTRef a1, PTRef a2) { return mkEq({a1, a2}); }
 
     // General disequalities
     PTRef       mkDistinct    (vec<PTRef>& args);
@@ -442,8 +439,9 @@ class Logic {
     void        simplifyTree       (PTRef tr, PTRef& root_out);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
-    // XXX There's a need for non msg giving version
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
+
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
 
     // Top-level equalities based substitutions

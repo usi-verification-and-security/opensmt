@@ -76,10 +76,8 @@ protected:
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
         c = logic.mkConst(ufsort, "c");
-        vec<SRef> args;
-        args.push(ufsort);
-        args.push(ufsort);
-        f = logic.newSymb("f", args);
+        char* msg;
+        f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
     }
     Logic logic;
     SRef ufsort;
@@ -152,10 +150,8 @@ protected:
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
         c = logic.mkConst(ufsort, "c");
-        vec<SRef> args;
-        args.push(ufsort);
-        args.push(ufsort);
-        f = logic.newSymb("f", args);
+        char* msg;
+        f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
     }
     Logic logic;
     SRef ufsort;

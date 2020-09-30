@@ -30,8 +30,7 @@ PTRef Model::evaluate(PTRef term) {
             PTRef narg = evaluate(t[i]);
             nargs.push(narg);
         }
-        char* msg;
-        PTRef val = logic.insertTerm(symbol, nargs, &msg);
+        PTRef val = logic.insertTerm(symbol, nargs);
         assert(val != PTRef_Undef);
         addDerivedVal(term, val);
         return val;
