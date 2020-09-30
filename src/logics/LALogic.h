@@ -52,13 +52,13 @@ public:
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef>& terms) override;
     virtual SRef     getSort_num      () const;
-    virtual PTRef    mkConst          (const char* name, const char **msg) override;
-    virtual PTRef    mkConst          (SRef s, const char* name) override;
+    PTRef            mkConst          (const char* name, const char **msg) override;
+    PTRef            mkConst          (SRef s, const char* name) override;
     virtual PTRef    mkConst          (const opensmt::Number& c);
     virtual PTRef    mkConst          (const char* num);
     virtual PTRef    mkNumVar         (const char* name);
-    virtual bool     isBuiltinSort    (SRef sr) const override;
-    virtual bool     isBuiltinConstant(SymRef sr) const override;
+    bool             isBuiltinSort    (SRef sr) const override;
+    bool             isBuiltinConstant(SymRef sr) const override;
 
     virtual bool  isNumConst     (SymRef sr)     const;
     virtual bool  isNumConst     (PTRef tr)      const;
@@ -66,13 +66,13 @@ public:
     virtual bool   hasSortNum(SymRef sr) const;
     virtual bool   hasSortNum(PTRef tr)  const;
     virtual const opensmt::Number& getNumConst(PTRef tr) const;
-    virtual bool        isUFEquality(PTRef tr) const override;
-    virtual bool        isTheoryEquality(PTRef tr) const override;
-    virtual bool isAtom(PTRef tr) const override;
-    virtual bool        isUF(PTRef tr) const override;
-    virtual bool        isUF(SymRef sr) const override;
-    virtual const char* getDefaultValue(const PTRef tr) const override;
-    virtual PTRef getDefaultValuePTRef(const SRef sref) const override;
+    bool           isUFEquality(PTRef tr) const override;
+    bool           isTheoryEquality(PTRef tr) const override;
+    bool           isAtom(PTRef tr) const override;
+    bool           isUF(PTRef tr) const override;
+    bool           isUF(SymRef sr) const override;
+    const char*    getDefaultValue(const PTRef tr) const override;
+    PTRef          getDefaultValuePTRef(const SRef sref) const override;
 
 
     virtual const SymRef get_sym_Num_TIMES () const =0;
@@ -158,16 +158,16 @@ public:
                                         Map<PTRef, PtAsgn, PTRefHash> & substitutions);
     virtual void simplifyAndSplitEq(PTRef, PTRef &);
 
-    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &) override;
-    virtual lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
-    virtual void termSort(vec<PTRef> &v) const override;
-    virtual bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
-    virtual char *printTerm_(PTRef tr, bool ext, bool s) const override;
-    virtual char *printTerm(PTRef tr) const override;
-    virtual char *printTerm(PTRef tr, bool l, bool s) const override;
+    void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &) override;
+    lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
+    void termSort(vec<PTRef> &v) const override;
+    bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
+    char *printTerm_(PTRef tr, bool ext, bool s) const override;
+    char *printTerm(PTRef tr) const override;
+    char *printTerm(PTRef tr, bool l, bool s) const override;
 
     // MB: In pure LA, there are never nested boolean terms
-    virtual vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
+    vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
 };
 
