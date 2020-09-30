@@ -229,7 +229,7 @@ public:
 protected:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }
 private:
-    ERef termToERef(PTRef p)              { return enode_store.termToERef[p]; }
+    ERef termToERef(PTRef p)              { return enode_store.getERef(p); }
 public:
     inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
     PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
@@ -319,19 +319,15 @@ private:
   // Asserting literals
   //
 public:
-  bool       addDisequality      ( PtAsgn );
-  bool       addEquality         ( PtAsgn );
-  bool       addTrue             ( PTRef );
-  bool       addFalse            ( PTRef );
+  bool      addDisequality      ( PtAsgn );
+  bool      addEquality         ( PtAsgn );
+  bool      addTrue             ( PTRef );
+  bool      addFalse            ( PTRef );
 
-  void declareAtom(PTRef);
+  void      declareAtom(PTRef) override;
     // Non-recursive declare term
-  void        declareTerm         (PTRef);
-  void        constructTerm       (PTRef tr);
-  // Remove redundancies and replace with true if
-  // trivial.  Return true if root of the formula is trivially true
-  bool        simplifyEquality    ( PtChild&, bool simplify = true );
-  void        simplifyDisequality ( PtChild&, bool simplify = true );
+  void      declareTerm         (PTRef);
+
 private:
   std::unordered_set<PTRef, PTRefHash> declared;
   void declareTermRecursively(PTRef);
@@ -378,7 +374,7 @@ private:
 public:
   char* printEqClass               ( PTRef tr ) const;
   char* printDistinctions          ( PTRef tr ) const;
-  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.termToERef[tr]).c_str()); return tmp; }
+  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.getERef(tr)).c_str()); return tmp; }
 private:
   std::string toString                 (ERef er) const;
 public:

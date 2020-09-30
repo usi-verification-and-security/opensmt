@@ -202,7 +202,7 @@ char* Egraph::printEqClass(PTRef tr) const {
     char* out;
     char* old;
 
-    const ERef er = enode_store.termToERef[tr];
+    const ERef er = enode_store.getERef(tr);
     assert(enode_store[er].isTerm());
     ERef c_er = er;
     char* tmp = logic.printTerm(tr);
@@ -265,7 +265,7 @@ char* Egraph::printDistinctions(PTRef x) const
     ::free(tmp);
 
 
-    const ERef er = enode_store[enode_store.termToERef[x]].getRoot();
+    const ERef er = enode_store[enode_store.getERef(x)].getRoot();
     assert(enode_store[er].isTerm());
 
     ELRef elr = enode_store[er].getForbid();
