@@ -194,7 +194,7 @@ private:
   EnodeStore    enode_store;
   ERef          ERef_Nil;
 
-  bool          isValid(PTRef tr) { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
+  bool          isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
   double fa_garbage_frac;
 
@@ -222,9 +222,9 @@ public:
 #endif // STATISTICS
     }
 
-    void clearSolver() { clearModel(); } // Only clear the possible computed values
+    void clearSolver() override { clearModel(); } // Only clear the possible computed values
 
-    void print(ostream&) { return; }
+    void print(ostream&) override { return; }
 
 protected:
     inline Enode& getEnode(ERef er) { return enode_store[er]; }
@@ -253,22 +253,22 @@ public:
   bool    isRootUF                 ( ERef );
   ERef    canonizeDTC              ( ERef, bool = false );
 
-  Logic& getLogic() { return logic; }
+  Logic& getLogic() override { return logic; }
 
 public:
 
   //===========================================================================
   // Public APIs for Egraph Core Solver
 
-  bool                assertLit               (PtAsgn);
-  void                pushBacktrackPoint      ( );                          // Push a backtrack point
-  void                popBacktrackPoint       ( );                          // Backtrack to last saved point
+  bool                assertLit               (PtAsgn) override;
+  void                pushBacktrackPoint      ( ) override;                 // Push a backtrack point
+  void                popBacktrackPoint       ( ) override;                 // Backtrack to last saved point
   PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
   lbool               getPolaritySuggestion   (PTRef);                      // Return a suggested polarity for a given literal
-  void                getConflict             ( bool, vec<PtAsgn>& );       // Get explanation
-  TRes                check                   ( bool ) { return TRes::SAT; }// Check satisfiability
-  virtual ValPair     getValue                (PTRef tr);
-  void                computeModel            ( );
+  void                getConflict             ( bool, vec<PtAsgn>& ) override;// Get explanation
+  TRes                check                   ( bool ) override { return TRes::SAT; }// Check satisfiability
+  ValPair             getValue                (PTRef tr) override;
+  void                computeModel            ( ) override;
   void                clearModel              ( );
   void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
 
