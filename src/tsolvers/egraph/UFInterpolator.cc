@@ -470,10 +470,15 @@ void UFInterpolator::computeAndStoreColors(const map<PTRef, icolor_t> & literalC
             // if symbol is AB and all children are AB, this term should also be AB
             auto symbolColor = symbolColors.at(logic.getSymRef(term));
             if (symbolColor != I_AB) { continue; }
+            bool hasLocalChild = false;
             for (int i = 0; i < logic.getPterm(term).size(); ++i) {
                 PTRef child = logic.getPterm(term)[i];
-                if (termColors.at(child) != I_AB) { continue; }
+                if (termColors.at(child) != I_AB) {
+                    hasLocalChild = true;
+                    break;
+                }
             }
+            if (hasLocalChild) { continue; }
             // everything is AB -> update
             entry.second = I_AB;
         }
