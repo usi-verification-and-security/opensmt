@@ -49,8 +49,8 @@ protected:
 public:
     LALogic();
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
-    virtual bool     isBuiltinFunction(SymRef sr) const override;
-    virtual PTRef    insertTerm       (SymRef sym, vec<PTRef>& terms, char** msg) override;
+    bool             isBuiltinFunction(SymRef sr) const override;
+    PTRef            insertTerm       (SymRef sym, vec<PTRef>& terms) override;
     virtual SRef     getSort_num      () const;
     virtual PTRef    mkConst          (const char* name, const char **msg) override;
     virtual PTRef    mkConst          (SRef s, const char* name) override;
@@ -137,7 +137,6 @@ public:
     virtual PTRef mkNumTimes(const vec<PTRef> &args);
     virtual PTRef mkNumTimes(const PTRef p1, const PTRef p2);
     virtual PTRef mkNumTimes(const std::vector<PTRef> &args);
-    virtual PTRef mkNumDiv(const vec<PTRef> &, char **);
     virtual PTRef mkNumDiv(const vec<PTRef> &args);
     virtual PTRef mkNumDiv(const PTRef nom, const PTRef den);
     virtual PTRef mkNumLeq(const vec<PTRef> &args);
@@ -200,7 +199,7 @@ protected:
     virtual void constSimplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new) const = 0;
 public:
     SimplifyConst(LALogic& log) : l(log) {}
-    void simplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new, char** msg);
+    void simplify(const SymRef& s, const vec<PTRef>& terms, SymRef& s_new, vec<PTRef>& terms_new);
 };
 
 class SimplifyConstSum : public SimplifyConst {

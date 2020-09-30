@@ -440,9 +440,9 @@ class Logic {
     void        simplifyTree       (PTRef tr, PTRef& root_out);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
-    // XXX There's a need for non msg giving version
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms, nullptr); }
+
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
 
     // Top-level equalities based substitutions

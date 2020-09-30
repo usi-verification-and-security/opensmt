@@ -393,13 +393,7 @@ PTRef LALogic::mkNumTimes(const std::vector<PTRef> &args) {
     for (PTRef arg : args) { tmp.push(arg); }
     return mkNumTimes(tmp);
 }
-PTRef mkNumDiv(const vec<PTRef> &, char **);
-PTRef LALogic::mkNumDiv(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumDiv(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
+
 PTRef LALogic::mkNumDiv(const PTRef nom, const PTRef den) {
     vec<PTRef> tmp;
     tmp.push(nom), tmp.push(den);
@@ -477,7 +471,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     SimplifyConstSum simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new);
     if (args_new.size() == 1)
         return args_new[0];
     if (s_new != get_sym_Num_PLUS()) {
@@ -541,7 +535,7 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     SimplifyConstTimes simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new);
     PTRef tr = mkFun(s_new, args_new);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
@@ -552,7 +546,7 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     }
 }
 
-PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
+PTRef LALogic::mkNumDiv(const vec<PTRef>& args)
 {
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
@@ -561,7 +555,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     if(this->isNumZero(args[1])) {
         throw LADivisionByZeroException();
     }
-    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new);
     if (isNumDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
@@ -665,19 +659,18 @@ PTRef LALogic::mkNumGt(const vec<PTRef> & args)
     }
     return mkNot(tr);
 }
-PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
-
+PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms)
 {
     if (sym == get_sym_Num_NEG())
-        return mkNumNeg(terms[0], msg);
+        return mkNumNeg(terms[0]);
     if (sym == get_sym_Num_MINUS())
-        return mkNumMinus(terms, msg);
+        return mkNumMinus(terms);
     if (sym == get_sym_Num_PLUS())
-        return mkNumPlus(terms, msg);
+        return mkNumPlus(terms);
     if (sym == get_sym_Num_TIMES())
-        return mkNumTimes(terms, msg);
+        return mkNumTimes(terms);
     if (sym == get_sym_Num_DIV())
-        return mkNumDiv(terms, msg);
+        return mkNumDiv(terms);
     if (sym == get_sym_Num_LEQ())
         return mkNumLeq(terms);
     if (sym == get_sym_Num_LT())
@@ -688,8 +681,9 @@ PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
         return mkNumGt(terms);
     if (sym == get_sym_Num_ITE())
         return mkIte(terms);
-    return Logic::insertTerm(sym, terms, msg);
+    return Logic::insertTerm(sym, terms);
 }
+
 PTRef LALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_num(), name);
@@ -724,7 +718,7 @@ PTRef LALogic::mkConst(SRef s, const char* name)
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
-void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
+void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new)
 {
     vec<int> const_idx;
     for (int i = 0; i < args.size(); i++) {
@@ -744,10 +738,8 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
             for (int i = 0; i < const_idx.size(); i++)
                 const_terms.push(args[const_idx[i]]);
             PTRef tr = simplifyConstOp(const_terms);
-            if (tr == PTRef_Undef) {
-                printf("%s\n", *msg);
-                assert(false);
-            }
+            assert(tr != PTRef_Undef);
+
             vec<PTRef> args_new_2;
             args_new_2.capacity((args.size() - const_terms.size()) + 1);
             int i, k;

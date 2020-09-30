@@ -497,7 +497,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs(p.size());
-    char *msg;
+
     bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
@@ -509,7 +509,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
             newargs[i] = tr;
     }
     if (!changed) {return;}
-    PTRef trp = insertTerm(p.symb(), newargs, &msg);
+    PTRef trp = insertTerm(p.symb(), newargs);
     if (trp != tr) {
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -606,8 +606,8 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     }
     assert(sref != SymRef_Undef);
     PTRef rval;
-    char** msg2 = NULL;
-    rval = insertTerm(sref, args, msg2);
+
+    rval = insertTerm(sref, args);
     if (rval == PTRef_Undef)
         printf("Error in resolveTerm\n");
 
@@ -1082,29 +1082,29 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     return true;
 }
 
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
 {
-    if(sym == getSym_and())
+    if (sym == getSym_and())
         return mkAnd(terms);
-    if(sym == getSym_or())
+    if (sym == getSym_or())
         return mkOr(terms);
-    if(sym == getSym_xor())
+    if (sym == getSym_xor())
         return mkXor(terms);
-    if(sym == getSym_not())
+    if (sym == getSym_not())
         return mkNot(terms[0]);
-    if(isEquality(sym))
+    if (isEquality(sym))
         return mkEq(terms);
-    if(isDisequality(sym))
+    if (isDisequality(sym))
         return mkDistinct(terms);
-    if(isIte(sym))
+    if (isIte(sym))
         return mkIte(terms);
-    if(sym == getSym_implies())
+    if (sym == getSym_implies())
         return mkImpl(terms);
-    if(sym == getSym_true())
+    if (sym == getSym_true())
         return getTerm_true();
-    if(sym == getSym_false())
+    if (sym == getSym_false())
         return getTerm_false();
-    if(isVar(sym)) {
+    if (isVar(sym)) {
         assert(terms.size() == 0);
         return mkFun(sym, terms);
     }
@@ -1360,8 +1360,8 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
                 }
-                char* msg;
-                result = changed ? insertTerm(t.symb(), args_mapped, &msg) : tr;
+
+                result = changed ? insertTerm(t.symb(), args_mapped) : tr;
 #ifdef SIMPLIFY_DEBUG
                 printf("  -> %s\n", printTerm(result));
 #endif
