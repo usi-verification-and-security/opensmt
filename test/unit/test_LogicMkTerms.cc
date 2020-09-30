@@ -61,6 +61,10 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     args.push(b3);
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
+
+    PTRef z = logic.mkVar(ufsort, "z");
+    distinct = logic.mkDistinct({x, y, z});
+    ASSERT_TRUE(logic.isDistinct(distinct));
 }
 
 TEST_F(LogicMkTermsTest, test_ManyDistinct) {
