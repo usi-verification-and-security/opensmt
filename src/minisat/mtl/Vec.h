@@ -57,7 +57,7 @@ public:
     explicit vec(int size)      : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
     vec(int size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
     vec(const std::initializer_list<T> &iList);
-    vec(const std::vector<T>& v) : vec(v.size()) { for (int i = 0; i < v.size(); i++) { operator[](i) = v[i]; } };
+    vec(const std::vector<T>& v) : vec(v.size()) { for (unsigned i = 0; i < v.size(); i++) { operator[](i) = v[i]; } };
     vec(vec&& o)                : data(NULL) , sz(0)   , cap(0)    { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); }
    ~vec()                                                          { clear(true); }
     vec<T>& operator = (vec<T>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
