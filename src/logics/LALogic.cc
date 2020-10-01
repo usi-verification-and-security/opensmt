@@ -1000,7 +1000,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), varFactors);
     if (normalizationCoeff != 1) {
         // normalize the whole sum
-         normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
+        normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
         // DON'T forget to update also the constant factor!
         constantVal /= normalizationCoeff;
     }
