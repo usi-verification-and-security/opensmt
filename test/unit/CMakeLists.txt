@@ -136,3 +136,12 @@ target_sources(IteTest
 
 target_link_libraries(IteTest api_static gtest gtest_main)
 gtest_add_tests(TARGET IteTest)
+
+add_executable(LIAStrengtheningTest)
+target_sources(LIAStrengtheningTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIAStrengthening.cc"
+        )
+
+
+target_link_libraries(LIAStrengtheningTest api_static gtest gtest_main)
+gtest_add_tests(TARGET LIAStrengtheningTest)

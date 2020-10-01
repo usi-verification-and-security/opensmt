@@ -100,6 +100,8 @@ public:
     virtual const SymRef get_sym_Num_ONE () const override;
     virtual const SymRef get_sym_Num_ITE () const override;
     virtual const SRef get_sort_NUM () const override;
+
+    virtual PTRef sumToNormalizedInequality(PTRef sum) override;
 };
 
 #endif

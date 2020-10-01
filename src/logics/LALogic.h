@@ -154,6 +154,8 @@ public:
     virtual void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
     virtual PTRef normalizeSum(PTRef sum);
     virtual PTRef normalizeMul(PTRef mul);
+    // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
+    virtual PTRef sumToNormalizedInequality(PTRef sum);
     virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith,
                                         Map<PTRef, PtAsgn, PTRefHash> & substitutions);
     virtual void simplifyAndSplitEq(PTRef, PTRef &);
@@ -165,6 +167,15 @@ public:
     char *printTerm_(PTRef tr, bool ext, bool s) const override;
     char *printTerm(PTRef tr) const override;
     char *printTerm(PTRef tr, bool l, bool s) const override;
+
+    // Helper methods
+
+    // Given an inequality 'c <= t', return the constant c; checked version
+    PTRef getConstantFromLeq(PTRef);
+    // Given an inequality 'c <= t', return the term t; checked version
+    PTRef getTermFromLeq(PTRef);
+    // Given an inequality 'c <= t', return the pair <c,t> for a constant c and term t; unchecked version, for internal use
+    std::pair<PTRef, PTRef> leqToConstantAndTerm(PTRef);
 
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
