@@ -6,6 +6,7 @@
 #include "LALogic.h"
 #include "FastRational.h"
 #include "OsmtInternalException.h"
+#include "OsmtApiException.h"
 
 #include <memory>
 
@@ -1006,6 +1007,28 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
     }
     constantVal.negate(); // moving the constant to the LHS of the inequality
     return insertTermHash(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
+}
+
+PTRef LALogic::getConstantFromLeq(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    if (not isNumLeq(term.symb())) {
+        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+    }
+    return term[0];
+}
+
+PTRef LALogic::getTermFromLeq(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    if (not isNumLeq(term.symb())) {
+        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+    }
+    return term[1];
+}
+
+std::pair<PTRef, PTRef> LALogic::leqToConstantAndTerm(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    assert(isNumLeq(term.symb()));
+    return std::make_pair(term[0], term[1]);
 }
 
 void SimplifyConstSum::Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }

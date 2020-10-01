@@ -10,10 +10,9 @@ PtAsgn LASolver::getAsgnByBound(LABoundRef br) const {
 }
 
 LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
-//    printf(" -> bound store gets %s\n", logic.pp(leq_ref));
-    const Pterm& leq = logic.getPterm(leq_tr);
-    PTRef const_tr = leq[0];
-    PTRef sum_tr = leq[1];
+    auto constTermPair = logic.leqToConstantAndTerm(leq_tr);
+    PTRef const_tr = constTermPair.first;
+    PTRef sum_tr = constTermPair.second;
     assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
@@ -77,9 +76,9 @@ void LASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
     assert(logic.isNumLeq(tr));
-    Pterm& leq_t = logic.getPterm(tr);
-    PTRef cons = leq_t[0];
-    PTRef sum  = leq_t[1];
+    auto constTermPair = logic.leqToConstantAndTerm(tr);
+    PTRef cons = constTermPair.first;
+    PTRef sum  = constTermPair.second;
     assert(logic.isConstant(cons));
     assert(logic.isNumVarOrIte(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
     assert(!logic.isNumTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||

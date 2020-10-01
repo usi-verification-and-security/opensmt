@@ -22,6 +22,6 @@ TEST_F(LIAStrengthening, test_LIAStrengthening) {
     PTRef y = logic.mkNumVar("y");
     PTRef sum = logic.mkNumTimes(c2, logic.mkNumPlus(x, y));
     PTRef ineq = logic.mkNumGeq(sum, c3);
-    const Pterm& ineq_tm = logic.getPterm(ineq);
-    ASSERT_EQ(ineq_tm[0], logic.mkConst("2"));
+    ASSERT_EQ(logic.getConstantFromLeq(ineq), logic.mkConst("2"));
+    ASSERT_EQ(logic.getTermFromLeq(ineq), logic.mkNumPlus(x,y));
 }

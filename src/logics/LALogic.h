@@ -169,6 +169,15 @@ public:
     virtual char *printTerm(PTRef tr) const override;
     virtual char *printTerm(PTRef tr, bool l, bool s) const override;
 
+    // Helper methods
+
+    // Given an inequality 'c <= t', return the constant c; checked version
+    PTRef getConstantFromLeq(PTRef);
+    // Given an inequality 'c <= t', return the term t; checked version
+    PTRef getTermFromLeq(PTRef);
+    // Given an inequality 'c <= t', return the pair <c,t> for a constant c and term t; unchecked version, for internal use
+    std::pair<PTRef, PTRef> leqToConstantAndTerm(PTRef);
+
     // MB: In pure LA, there are never nested boolean terms
     virtual vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
