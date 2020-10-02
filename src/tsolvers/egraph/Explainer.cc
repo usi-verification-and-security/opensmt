@@ -106,15 +106,18 @@ void Explainer::reRootOn(ERef x) {
     }
 }
 
-void Explainer::explain() {
-    initDup();
+vec<PtAsgn> Explainer::explain(std::pair<ERef,ERef> nodePair) {
+    DupChecker dupChecker(dcd);
+    vec<PtAsgn> explanation;
+    PendingQueue exp_pending;
+    exp_pending.push(nodePair);
     while ( exp_pending.size() > 0 ) {
-        assert( exp_pending.size() % 2 == 0 );
 
-        ERef p = exp_pending.last(); exp_pending.pop();
-        ERef q = exp_pending.last(); exp_pending.pop();
+        ERef p = exp_pending.last().first;
+        ERef q = exp_pending.last().second;
+        exp_pending.pop();
 
-        if ( p == q ) continue;
+        if (p == q) continue;
 
 #ifdef VERBOSE_EUF
         assert( checkExpTree( getEnode(p).getTerm() ) );
@@ -131,14 +134,14 @@ void Explainer::explain() {
 #ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << toString(p) << " -> " << toString(w) << endl;
 #endif
-        explainAlongPath( p, w );
+        explainAlongPath(p, w, explanation, exp_pending, dupChecker);
 #ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << toString(q) << " -> " << toString(w) << endl;
 #endif
-        explainAlongPath( q, w );
+        explainAlongPath(q, w, explanation, exp_pending, dupChecker);
     }
-    doneDup();
     cleanup();
+    return explanation;
 }
 
 //
@@ -151,13 +154,7 @@ vec<PtAsgn> Explainer::explain(ERef x, ERef y)
     cerr << "exp pending size " << exp_pending.size() << endl;
     cerr << "explain pushing " << toString(x) << " and " << toString(y) << endl;
 #endif
-    exp_pending.push(x);
-    exp_pending.push(y);
-    explain();
-    vec<PtAsgn> res;
-    explanation.moveTo(res);
-    explanation.clear();
-    return res;
+    return explain({x, y});
 }
 
 void Explainer::cleanup() {
@@ -172,9 +169,6 @@ void Explainer::cleanup() {
 #ifdef VERBOSE_EUFEX
         cerr << "clean: " << toString(x) << endl;
 #endif
-// These are not used
-//        assert(expHighestNode.contains(x));
-//        expHighestNode[x] = x;
     }
     exp_cleanup.clear();
 }
@@ -183,7 +177,7 @@ void Explainer::cleanup() {
 // Subroutine of explain
 // A step of explanation for x and y
 //
-void Explainer::explainAlongPath(ERef x, ERef y) {
+void Explainer::explainAlongPath(ERef x, ERef y, vec<PtAsgn> &outExplanation, PendingQueue &pendingExplanations, DupChecker& dc) {
     auto v  = highestNode(x);
     // Why this? Not in the pseudo code!
     auto to = highestNode(y);
@@ -194,7 +188,10 @@ void Explainer::explainAlongPath(ERef x, ERef y) {
     while ( v != to ) {
         ERef p = getEnode(v).getExpParent();
         assert(p != ERef_Undef);
-        explainEdge(v,p);
+        PtAsgn edgeExplanation = explainEdge(v, p, pendingExplanations, dc);
+        if (edgeExplanation != PtAsgn_Undef) {
+            outExplanation.push(edgeExplanation);
+        }
         ERef v_old = v;
         v = highestNode( p );
         if (v_old == v)
@@ -202,63 +199,71 @@ void Explainer::explainAlongPath(ERef x, ERef y) {
     }
 }
 
-void Explainer::enqueueArguments(ERef x, ERef y) {
+/**
+ * Enqueue the equivalence query of two n-ary terms x(a1,...,an) and y(a1,...,an).
+ * Preconditions: x and y are n-ary terms of the same function symbol.
+ * @param x an n-ary term over function symbol f
+ * @param y an n-ary term over function symbol f
+ * @param exp_pending the vector where to place the equivalences to be queried.
+ */
+void Explainer::enqueueArguments(ERef x, ERef y, PendingQueue &exp_pending) {
     // No explanation needed if they are the same
     if (x == y) {
         return;
     }
     assert(getEnode(x).isTerm() && getEnode(y).isTerm());
-    // They have the same function symbol
+    assert(getEnode(x).getCar() == getEnode(y).getCar());
+
     // Recursively enqueue the explanations for the args
-    // Use the canonical representative here in case the UF solver
-    // detected an equivalence!
-    assert( getEnode(x).getCar() == getEnode(y).getCar() );
-    assert(getEnode(getEnode(x).getCar()).isSymb());
-    ERef cdr_x = getEnode(x).getCdr();
-    ERef cdr_y = getEnode(y).getCdr();
+
     ERef ERef_Nil = store.get_Nil();
-    while(cdr_x != ERef_Nil) {
-        assert(cdr_y != ERef_Nil);
-        assert(getEnode(cdr_x).isList());
-        assert(getEnode(cdr_y).isList());
-        ERef xptr = getEnode(cdr_x).getCar();
-        ERef yptr = getEnode(cdr_y).getCar();
+    std::pair<ERef,ERef> ERefNilPair{ERef_Nil,ERef_Nil};
+
+    auto getNext = [this, ERef_Nil](ERef x, ERef y) -> std::pair<ERef,ERef> {
+        assert(x != ERef_Nil and y != ERef_Nil);
+        return {this->getEnode(x).getCdr(), this->getEnode(y).getCdr()};
+    };
+
+    std::pair<ERef,ERef> xyPair;
+    while ((xyPair = getNext(x, y)) != ERefNilPair) {
+        x = xyPair.first;
+        y = xyPair.second;
+        ERef xptr = getEnode(x).getCar();
+        ERef yptr = getEnode(y).getCar();
         assert(getEnode(xptr).isTerm());
         assert(getEnode(yptr).isTerm());
 #ifdef VERBOSE_EUFEX
         cerr << "in loop pushing " << toString(xptr) << " and " << toString(yptr) << endl;
 #endif
-        exp_pending.push(xptr);
-        exp_pending.push(yptr);
-        cdr_x = getEnode(cdr_x).getCdr();
-        cdr_y = getEnode(cdr_y).getCdr();
+        exp_pending.push({xptr,yptr});
     }
-    assert(cdr_y == ERef_Nil);
 }
 
-void Explainer::explainEdge(const ERef v, const ERef p) {
+PtAsgn Explainer::explainEdge(const ERef v, const ERef p, PendingQueue &exp_pending, DupChecker &dc) {
     assert(getEnode(v).getExpParent() == p);
     PtAsgn r = getEnode(v).getExpReason();
 
-    // If it is not a congruence edge
+    PtAsgn expl;
+
     if (r.tr != PTRef_Undef) {
+        // Not a congruence edge
 //        AH: It seems that bringing the required propositional vars to the egraph reintroduces the duplicates
 //        assert(!isDup(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
-        if (not isDup(r.tr)) {
-            explanation.push(r);
-            storeDup(r.tr);
+        if (not dc.isDup(r.tr)) {
+            expl = r;
+            dc.storeDup(r.tr);
         }
-    }
-        // Otherwise it is a congruence edge
+    } else {
+        // A congruence edge
         // This means that the edge is linking nodes
         // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
         // a1,...,an = b1,...bn. For each pair ai,bi
         // we have therefore to compute the reasons
-    else {
         assert(getEnode(v).getCar() == getEnode(p).getCar());
-        enqueueArguments(v, p);
+        enqueueArguments(v, p, exp_pending);
     }
     makeUnion(v, p);
+    return expl;
 }
 
 void Explainer::makeUnion(ERef x, ERef y) {
@@ -396,7 +401,7 @@ ERef Explainer::NCA(ERef x, ERef y) {
 }
 
 //
-// Undoes the effect of expStoreExplanation
+// Undoes the effect of storeExplanation
 // No need for enodes
 //
 void Explainer::removeExplanation() {
@@ -424,8 +429,8 @@ void Explainer::removeExplanation() {
     }
 }
 
-void InterpolatingExplainer::explainEdge(ERef from, ERef to) {
-    Explainer::explainEdge(from, to);
+PtAsgn InterpolatingExplainer::explainEdge(ERef from, ERef to, PendingQueue &exp_pending, DupChecker &dc) {
+    PtAsgn expl = Explainer::explainEdge(from, to, exp_pending, dc);
     const Enode& from_node = getEnode(from);
     const Enode& to_node = getEnode(to);
     assert(from_node.isTerm());
@@ -433,6 +438,7 @@ void InterpolatingExplainer::explainEdge(ERef from, ERef to) {
     cgraph->addCNode( from_node.getTerm() );
     cgraph->addCNode( to_node.getTerm() );
     cgraph->addCEdge( from_node.getTerm(), to_node.getTerm(), from_node.getExpReason().tr);
+    return expl;
 }
 
 vec<PtAsgn> InterpolatingExplainer::explain(ERef x, ERef y) {

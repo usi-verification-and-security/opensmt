@@ -10,6 +10,41 @@
 
 class Explainer {
 protected:
+    //
+    // Fast duplicates checking. Cannot be nested !
+    //
+    struct DupChecker;
+    class DuplicateCheckerData {
+        Map<PTRef,int,PTRefHash>    duplicates;                       // Fast duplicate checking
+        int                         dup_count = 0;                    // Current dup token
+        bool                        free = true;
+        friend                      struct DupChecker;
+    };
+
+    DuplicateCheckerData duplicateCheckerData;
+
+    struct DupChecker {
+        DuplicateCheckerData &dc;
+        DupChecker(DuplicateCheckerData &dc) : dc(dc) {
+            if (!dc.free) {
+                throw OsmtInternalException(); // "Attempt to re-use DuplicateChecker without releasing"
+            }
+            dc.free = false;
+            if (dc.dup_count < std::numeric_limits<int>::max()) {
+                ++dc.dup_count;
+            } else {
+                dc.duplicates.clear();
+            }
+        }
+        inline void storeDup(PTRef e) { assert(!dc.free); if (dc.duplicates.has(e)) dc.duplicates[e] = dc.dup_count; else dc.duplicates.insert(e, dc.dup_count); }
+        inline bool isDup   (PTRef e) { assert(!dc.free); return !dc.duplicates.has(e) ? false : dc.duplicates[e] == dc.dup_count; }
+        ~DupChecker() {
+            dc.free = true;
+        }
+    };
+
+    DuplicateCheckerData dcd;
+
     EnodeStore & store;
 
     Enode const & getEnode(ERef ref) const { return store[ref]; }
@@ -18,10 +53,11 @@ protected:
     //
     // Explanation routines and data
     //
-    virtual void    explain          ();                         // Main routine for explanation
-    virtual void    explainEdge      (ERef v, ERef p);
-    virtual void    explainAlongPath (ERef, ERef);               // Store explanation in explanation
-    virtual void    enqueueArguments (ERef, ERef);               // Enqueue arguments to be explained
+    using PendingQueue = vec<std::pair<ERef,ERef>>;
+    virtual vec<PtAsgn> explain      (std::pair<ERef,ERef>);     // Main routine for explanation
+    virtual PtAsgn  explainEdge      (ERef v, ERef p, PendingQueue &exp_pending, DupChecker& dc);
+    virtual void    explainAlongPath (ERef, ERef, vec<PtAsgn> &outExplanation, PendingQueue &exp_pending, DupChecker& dc); // Store explanation in explanation
+    virtual void    enqueueArguments (ERef, ERef, PendingQueue &exp_pending); // Enqueue arguments to be explained
     virtual void    reRootOn         (ERef);                     // Reroot the proof tree on x
     virtual void    makeUnion        (ERef, ERef);               // Union of x and y in the explanation
     virtual ERef    find             (ERef);                     // Find for the eq classes of the explanation
@@ -34,29 +70,16 @@ protected:
     vec< ERef>                  neq_list;
 #endif
 
-    vec<ERef>       exp_pending;                      // Pending explanations
     vec<ERef>       exp_undo_stack;                   // Keep track of exp_parent merges
     vec<ERef>       exp_cleanup;                      // List of nodes to be restored
     int             time_stamp = 0;                   // Need for finding NCA
-    vec<PtAsgn>     explanation;                      // Stores explanation
-
-    //
-    // Fast duplicates checking. Cannot be nested !
-    //
-    Map<PTRef,int,PTRefHash>    duplicates;                       // Fast duplicate checking
-    int                         dup_count = 0;                    // Current dup token
-
-    inline void initDup ()        { ++dup_count; }
-    inline void storeDup(PTRef e) { if (duplicates.has(e)) duplicates[e] = dup_count; else duplicates.insert(e, dup_count); }
-    inline bool isDup   (PTRef e) { return !duplicates.has(e) ? false : duplicates[e] == dup_count; }
-    inline void doneDup ()        { }
 
 public:
     Explainer(EnodeStore & store) : store(store) {}
     virtual ~Explainer() = default;
 
     void                storeExplanation    (ERef, ERef, PtAsgn);        // Store the explanation for the merge
-    void                removeExplanation   ();                          // Undoes the effect of expStoreExplanation
+    void                removeExplanation   ();                          // Undoes the effect of storeExplanation
     virtual vec<PtAsgn> explain             (ERef, ERef);                // Return explanation of why the given two terms are equal
 };
 
@@ -64,7 +87,7 @@ class InterpolatingExplainer : public Explainer {
 protected:
     std::unique_ptr<CGraph> cgraph;
 
-    virtual void        explainEdge (ERef, ERef) override;
+    virtual PtAsgn explainEdge (ERef, ERef, PendingQueue &exp_pending, DupChecker& dc) override;
 public:
     InterpolatingExplainer(EnodeStore & store) : Explainer(store) {}
 
