@@ -7,6 +7,7 @@
 
 #include "EnodeStore.h"
 #include "UFInterpolator.h"
+#include <memory>
 
 class Explainer {
 protected:

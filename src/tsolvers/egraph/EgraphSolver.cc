@@ -92,6 +92,9 @@ Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
             case ExplainerType::INTERPOLATING: {
                 return new InterpolatingExplainer(enode_store);
             }
+            default: {
+                return new Explainer(enode_store);
+            }
         }
     }(explainerType);
     explainer.reset(rawExplainer);
