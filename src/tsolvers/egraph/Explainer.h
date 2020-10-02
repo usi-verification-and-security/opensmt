@@ -74,6 +74,7 @@ protected:
     vec<ERef>       exp_cleanup;                      // List of nodes to be restored
     int             time_stamp = 0;                   // Need for finding NCA
 
+    vec<std::pair<PTRef,PTRef>> congruences;
 public:
     Explainer(EnodeStore & store) : store(store) {}
     virtual ~Explainer() = default;
@@ -81,6 +82,7 @@ public:
     void                storeExplanation    (ERef, ERef, PtAsgn);        // Store the explanation for the merge
     void                removeExplanation   ();                          // Undoes the effect of storeExplanation
     virtual vec<PtAsgn> explain             (ERef, ERef);                // Return explanation of why the given two terms are equal
+    const vec<std::pair<PTRef,PTRef>> &getCongruences() const { return congruences; }
 };
 
 class InterpolatingExplainer : public Explainer {

@@ -1743,6 +1743,13 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
     explanation = explainer->explain(x,y);
+#ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
+    for (auto ptRefPair : explainer->getCongruences()) {
+        PTRef x = ptRefPair.first;
+        PTRef y = ptRefPair.second;
+        explainer->explain(enode_store.getERef(x), enode_store.getERef(y));
+    }
+#endif
     explanation.push(reason_inequality);
     has_explanation = true;
 }

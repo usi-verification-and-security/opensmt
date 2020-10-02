@@ -107,6 +107,11 @@ void Explainer::reRootOn(ERef x) {
 }
 
 vec<PtAsgn> Explainer::explain(std::pair<ERef,ERef> nodePair) {
+
+#ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
+    congruences.clear();
+#endif
+
     DupChecker dupChecker(dcd);
     vec<PtAsgn> explanation;
     PendingQueue exp_pending;
@@ -235,7 +240,12 @@ void Explainer::enqueueArguments(ERef x, ERef y, PendingQueue &exp_pending) {
 #ifdef VERBOSE_EUFEX
         cerr << "in loop pushing " << toString(xptr) << " and " << toString(yptr) << endl;
 #endif
-        exp_pending.push({xptr,yptr});
+        if (xptr != yptr) {
+            exp_pending.push({xptr, yptr});
+#ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
+            congruences.push({store.getPTRef(xptr), store.getPTRef(yptr)});
+#endif
+        }
     }
 }
 

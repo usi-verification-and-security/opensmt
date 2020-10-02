@@ -61,4 +61,13 @@ TEST_F(UFExplainTest, test_UFExplain) {
         std::cout << "  " << logic.pp(pta.tr) << std::endl;
     }
 
+    for (auto ptRefPair : explainer.getCongruences()) {
+        PTRef x = ptRefPair.first;
+        PTRef y = ptRefPair.second;
+        std::cout << logic.pp(x) << " = " << logic.pp(y) << std::endl;
+        for (PtAsgn pta : explainer.explain(store.getERef(x), store.getERef(y))) {
+            std::cout << "  " << logic.pp(pta.tr) << std::endl;
+        }
+    }
+
 }
