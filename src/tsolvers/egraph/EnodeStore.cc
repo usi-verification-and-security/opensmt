@@ -174,17 +174,22 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
     }
 
     else {
-        sym = addSymb(tm.symb());
-        cdr = ERef_Nil;
-        for (int j = tm.size() - 1; j >= 0; j--) {
-            assert(termToERef.has(tm[j])); // The child was not inserted
-            ERef car = termToERef[tm[j]];
+        if (not logic.isIte(tr)) {
+            sym = addSymb(tm.symb());
+            cdr = ERef_Nil;
+            for (int j = tm.size() - 1; j >= 0; j--) {
+                assert(termToERef.has(tm[j])); // The child was not inserted
+                ERef car = termToERef[tm[j]];
 #ifdef VERBOSE_EUF
-            ERef prev_cdr = cdr;
-            assert (operator[](car).getRoot() == car);
-            assert (operator[](cdr).getRoot() == cdr);
+                ERef prev_cdr = cdr;
+                assert (operator[](car).getRoot() == car);
+                assert (operator[](cdr).getRoot() == cdr);
 #endif
-            cdr = addList(car, cdr);
+                cdr = addList(car, cdr);
+            }
+        } else {
+            sym = addIteSymb(tr);
+            cdr = ERef_Nil;
         }
         ERef er = addTerm(sym, cdr, tr);
         new_enodes.push({tr, er});
