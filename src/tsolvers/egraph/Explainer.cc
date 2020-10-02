@@ -24,16 +24,23 @@
 //  year      = {2005},
 // }
 
-//
-// Store explanation for an eq merge
-//
-void Explainer::expStoreExplanation(ERef x, ERef y, PtAsgn reason)
+/**
+ * Store explanation for an eq merge.
+ * @arg x a term
+ * @arg y a term to be set to the class of x
+ * @Preconditions: x & y are terms and not in the same equivalence class.
+ * @Postcondition: let u, v be the node in {x, y} with the smaller, respectively larger, equivalence graph. The graph of u will be re-rooted on v.
+*/
+void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
 {
     assert(getEnode(x).isTerm());
     assert(getEnode(y).isTerm());
+    assert(getEnode(x).getRoot() != getEnode(y).getRoot());
 
     // They must be different because the merge hasn't occured yet
-    assert(getEnode(x).getRoot() != getEnode(y).getRoot());
+    if (getEnode(x).getRoot() == getEnode(y).getRoot()) {
+        throw OsmtInternalException(); // "Attempting to store explanation for already known equality"
+    }
     // The main observation here is that the explanation tree, altough
     // differently oriented, has the same size as the equivalence tree
     // (actually we don't keep the equivalence tree, because we use
@@ -51,7 +58,7 @@ void Explainer::expStoreExplanation(ERef x, ERef y, PtAsgn reason)
         y = tmp;
     }
     // Reroot the explanation tree on y. It has an amortized cost of logn
-    expReRootOn( y );
+    reRootOn( y );
 
     getEnode(y).setExpParent(x);
     getEnode(y).setExpReason(reason);
@@ -73,7 +80,7 @@ void Explainer::expStoreExplanation(ERef x, ERef y, PtAsgn reason)
 // Re-root the tree containing x, in such a way that
 // the new root is x itself
 //
-void Explainer::expReRootOn(ERef x) {
+void Explainer::reRootOn(ERef x) {
     ERef p = x;
     ERef parent = getEnode(p).getExpParent();
     PtAsgn reason = getEnode(p).getExpReason();
@@ -99,7 +106,7 @@ void Explainer::expReRootOn(ERef x) {
     }
 }
 
-void Explainer::expExplain() {
+void Explainer::explain() {
     initDup();
     while ( exp_pending.size() > 0 ) {
         assert( exp_pending.size() % 2 == 0 );
@@ -116,27 +123,29 @@ void Explainer::expExplain() {
 #ifdef VERBOSE_EUFEX
         cerr << "Explain " << toString(p) << " and " << toString(q) << endl;
 #endif
-        ERef w = expNCA(p, q);
-        assert(w != ERef_Undef);
+        ERef w = NCA(p, q);
+        if (w == ERef_Undef) {
+            throw OsmtInternalException(); // "Equality explanation queried for terms not in same equivalence class")
+        }
 
 #ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << toString(p) << " -> " << toString(w) << endl;
 #endif
-        expExplainAlongPath( p, w );
+        explainAlongPath( p, w );
 #ifdef VERBOSE_EUFEX
         cerr << "Explaining along path " << toString(q) << " -> " << toString(w) << endl;
 #endif
-        expExplainAlongPath( q, w );
+        explainAlongPath( q, w );
     }
     doneDup();
-    expCleanup();
+    cleanup();
 }
 
 //
 // Produce an explanation between nodes x and y
 // Wrapper for expExplain
 //
-vec<PtAsgn> Explainer::expExplain(ERef x, ERef y)
+vec<PtAsgn> Explainer::explain(ERef x, ERef y)
 {
 #ifdef VERBOSE_EUFEX
     cerr << "exp pending size " << exp_pending.size() << endl;
@@ -144,14 +153,14 @@ vec<PtAsgn> Explainer::expExplain(ERef x, ERef y)
 #endif
     exp_pending.push(x);
     exp_pending.push(y);
-    expExplain();
+    explain();
     vec<PtAsgn> res;
     explanation.moveTo(res);
     explanation.clear();
     return res;
 }
 
-void Explainer::expCleanup() {
+void Explainer::cleanup() {
     // Destroy the eq classes of the explanation
     // May be reversed once debug's fine
 #ifdef VERBOSE_EUFEX
@@ -174,10 +183,10 @@ void Explainer::expCleanup() {
 // Subroutine of explain
 // A step of explanation for x and y
 //
-void Explainer::expExplainAlongPath(ERef x, ERef y) {
-    auto v  = expHighestNode(x);
+void Explainer::explainAlongPath(ERef x, ERef y) {
+    auto v  = highestNode(x);
     // Why this? Not in the pseudo code!
-    auto to = expHighestNode(y);
+    auto to = highestNode(y);
 
 #ifdef VERBOSE_EUFEX
     cerr << "Explaining " << toString(v) << " to " << toString(to) << endl;
@@ -185,15 +194,15 @@ void Explainer::expExplainAlongPath(ERef x, ERef y) {
     while ( v != to ) {
         ERef p = getEnode(v).getExpParent();
         assert(p != ERef_Undef);
-        expExplainEdge(v,p);
+        explainEdge(v,p);
         ERef v_old = v;
-        v = expHighestNode( p );
+        v = highestNode( p );
         if (v_old == v)
             assert(false); // loop in the explanation graph!
     }
 }
 
-void Explainer::expEnqueueArguments(ERef x, ERef y) {
+void Explainer::enqueueArguments(ERef x, ERef y) {
     // No explanation needed if they are the same
     if (x == y) {
         return;
@@ -227,7 +236,7 @@ void Explainer::expEnqueueArguments(ERef x, ERef y) {
     assert(cdr_y == ERef_Nil);
 }
 
-void Explainer::expExplainEdge(const ERef v, const ERef p) {
+void Explainer::explainEdge(const ERef v, const ERef p) {
     assert(getEnode(v).getExpParent() == p);
     PtAsgn r = getEnode(v).getExpReason();
 
@@ -247,20 +256,20 @@ void Explainer::expExplainEdge(const ERef v, const ERef p) {
         // we have therefore to compute the reasons
     else {
         assert(getEnode(v).getCar() == getEnode(p).getCar());
-        expEnqueueArguments(v, p);
+        enqueueArguments(v, p);
     }
-    expUnion(v, p);
+    makeUnion(v, p);
 }
 
-void Explainer::expUnion(ERef x, ERef y) {
+void Explainer::makeUnion(ERef x, ERef y) {
 #ifdef VERBOSE_EUFEX
     cerr << "Union: " << toString(x) << " " << toString(y) << endl;
 #endif
     // Unions are always between a node and its parent
     assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
-    ERef x_exp_root = expFind(x);
-    ERef y_exp_root = expFind(y);
+    ERef x_exp_root = find(x);
+    ERef y_exp_root = find(y);
 #ifdef VERBOSE_EUFEX
     cerr << "Root of " << toString(x) << " is " << toString(x_exp_root) << endl;
     cerr << "Root of " << toString(y) << " is " << toString(y_exp_root) << endl;
@@ -298,14 +307,14 @@ void Explainer::expUnion(ERef x, ERef y) {
 // Find the representant of x's equivalence class
 // and meanwhile do path compression
 //
-ERef Explainer::expFind(ERef x) {
+ERef Explainer::find(ERef x) {
     // If x is the root, return x
     if (getEnode(x).getExpRoot() == x) return x;
     // Recurse
 #ifdef VERBOSE_EUFEX
     cerr << "expFind: " << toString(x) << endl;
 #endif
-    ERef exp_root = expFind(getEnode(x).getExpRoot());
+    ERef exp_root = find(getEnode(x).getExpRoot());
     // Path compression
     if (exp_root != getEnode(x).getExpRoot()) {
         getEnode(x).setExpRoot(exp_root);
@@ -317,8 +326,8 @@ ERef Explainer::expFind(ERef x) {
     return exp_root;
 }
 
-ERef Explainer::expHighestNode(ERef x) {
-    ERef x_exp_root = expFind(x);
+ERef Explainer::highestNode(ERef x) {
+    ERef x_exp_root = find(x);
     return x_exp_root;
 }
 
@@ -326,15 +335,15 @@ ERef Explainer::expHighestNode(ERef x) {
 // Explain Nearest Common Ancestor
 //
 
-ERef Explainer::expNCA(ERef x, ERef y) {
+ERef Explainer::NCA(ERef x, ERef y) {
     // Increase time stamp
     ++time_stamp;
 
-    auto h_x = expHighestNode(x);
+    auto h_x = highestNode(x);
 #ifdef VERBOSE_EUFEX
     cerr << "Highest node of " << toString(x) << " is " << toString(h_x) << endl;
 #endif
-    auto h_y = expHighestNode(y);
+    auto h_y = highestNode(y);
 #ifdef VERBOSE_EUFEX
     cerr << "Highest node of " << toString(y) << " is " << toString(h_y) << endl;
 #endif
@@ -390,7 +399,7 @@ ERef Explainer::expNCA(ERef x, ERef y) {
 // Undoes the effect of expStoreExplanation
 // No need for enodes
 //
-void Explainer::expRemoveExplanation() {
+void Explainer::removeExplanation() {
     assert(exp_undo_stack.size() >= 2);
 
     auto x = exp_undo_stack.last();
@@ -415,8 +424,8 @@ void Explainer::expRemoveExplanation() {
     }
 }
 
-void InterpolatingExplainer::expExplainEdge(ERef from, ERef to) {
-    Explainer::expExplainEdge(from, to);
+void InterpolatingExplainer::explainEdge(ERef from, ERef to) {
+    Explainer::explainEdge(from, to);
     const Enode& from_node = getEnode(from);
     const Enode& to_node = getEnode(to);
     assert(from_node.isTerm());
@@ -426,8 +435,8 @@ void InterpolatingExplainer::expExplainEdge(ERef from, ERef to) {
     cgraph->addCEdge( from_node.getTerm(), to_node.getTerm(), from_node.getExpReason().tr);
 }
 
-vec<PtAsgn> InterpolatingExplainer::expExplain(ERef x, ERef y) {
+vec<PtAsgn> InterpolatingExplainer::explain(ERef x, ERef y) {
     cgraph.reset(new CGraph());
     cgraph->setConf(getEnode(x).getTerm(), getEnode(y).getTerm());
-    return Explainer::expExplain(x,y);
+    return Explainer::explain(x,y);
 }

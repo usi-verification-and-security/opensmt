@@ -477,7 +477,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // automatic way of retrieving a conflict.
 
         if ( en_p.isTerm( ) ) {
-            explainer->expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
+            explainer->storeExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
 #ifdef VERBOSE_EUF
             cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
 #endif
@@ -577,7 +577,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         pending.clear( );
         // Remove the last explanation that links
         // the two unmergable classes
-        explainer->expRemoveExplanation();
+        explainer->removeExplanation();
 //        expCleanup(); // called in expExplain(r1, r2)
         // Return conflict
         return false;
@@ -823,7 +823,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
-                explainer->expRemoveExplanation();
+                explainer->removeExplanation();
             }
         }
 
@@ -1742,7 +1742,7 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
 }
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
-    explanation = explainer->expExplain(x,y);
+    explanation = explainer->explain(x,y);
     explanation.push(reason_inequality);
     has_explanation = true;
 }
@@ -1754,7 +1754,7 @@ void Egraph::explainConstants(ERef p, ERef q) {
     assert(logic.isConstant(getEnode(enr_proot).getTerm()));
     assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
-    explanation = explainer->expExplain(enr_proot,enr_qroot);
+    explanation = explainer->explain(enr_proot,enr_qroot);
     has_explanation = true;
 }
 
