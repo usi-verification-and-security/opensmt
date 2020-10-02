@@ -7,14 +7,15 @@
 
 #include "TSolverHandler.h"
 
-class STPSolver;
+template<class T> class STPSolver;
 class LIALogic;
+class SafeInt;
 
 class IDLTHandler : public TSolverHandler
 {
 private:
     LIALogic& logic;
-    STPSolver *stpsolver;
+    STPSolver<SafeInt> *stpsolver;
 public:
     IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap);
     virtual ~IDLTHandler() = default;

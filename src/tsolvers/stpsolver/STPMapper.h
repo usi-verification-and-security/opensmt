@@ -7,10 +7,10 @@
 #include "STPStore.h"
 
 
-class STPMapper {
+template<class T> class STPMapper {
     const LALogic &logic;
 
-    const STPStore &store;
+    const STPStore<T> &store;
 
     vec<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
     vec<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
@@ -19,7 +19,7 @@ class STPMapper {
     vec<vec<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
 
 public:
-    STPMapper(const LALogic &l, const STPStore &s);
+    STPMapper(const LALogic &l, const STPStore<T> &s);
     void setVert(PTRef var, VertexRef vert);
     void registerEdge(EdgeRef edge);
     void mapEdge(PTRef leq, EdgeRef edge);
@@ -28,10 +28,11 @@ public:
     PtAsgn getAssignment(EdgeRef edge) const;
     VertexRef getVertRef(PTRef var) const;
     EdgeRef getEdgeRef(PTRef leq) const;
-    EdgeRef getEdgeRef(VertexRef y, VertexRef x, SafeInt c) const;
+    EdgeRef getEdgeRef(VertexRef y, VertexRef x, T c) const;
     PTRef getPTRef(EdgeRef edge) const;
     const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
     void clear();
 };
 
+#include "STPMapper.cpp" //FIXME
 #endif //OPENSMT_STPMAPPER_H

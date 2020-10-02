@@ -1,3 +1,6 @@
+#ifndef OPENSMT_STPEDGEGRAPH_C
+#define OPENSMT_STPEDGEGRAPH_C
+
 #include <stack>
 #include "STPEdgeGraph.h"
 
@@ -24,12 +27,12 @@ void EdgeGraph::clear() {
     outgoing.clear();
 }
 
-bool STPGraphManager::isTrue(EdgeRef e) const {
+template<class T> bool STPGraphManager<T>::isTrue(EdgeRef e) const {
     return e != EdgeRef_Undef && store.getEdge(e).setTime != 0;
 }
 
-void STPGraphManager::setTrue(EdgeRef e, PtAsgn asgn) {
-    Edge &edge = store.getEdge(e);
+template<class T> void STPGraphManager<T>::setTrue(EdgeRef e, PtAsgn asgn) {
+    Edge<T> &edge = store.getEdge(e);
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
     ++timestamp;
@@ -38,13 +41,13 @@ void STPGraphManager::setTrue(EdgeRef e, PtAsgn asgn) {
     graph.addEdge(e, edge.from, edge.to);
 }
 
-void STPGraphManager::setDeduction(EdgeRef e) {
+template<class T> void STPGraphManager<T>::setDeduction(EdgeRef e) {
     deductions.push(e);
     store.getEdge(e).setTime = timestamp;
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
-vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
+template<class T> vec<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto &start = store.getEdge(e);
@@ -63,7 +66,7 @@ vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
         if (!thisRes.visited[i]) continue;
         for (auto eRef : mapper.edgesOf(VertexRef{i})) {
             if (eRef == e) continue;
-            const Edge &edge = store.getEdge(eRef);
+            const Edge<T> &edge = store.getEdge(eRef);
             auto thisSide = (aRes.total < bRes.total) ? edge.from.x : edge.to.x;
             auto otherSide = (aRes.total < bRes.total) ? edge.to.x : edge.from.x;
             if (thisSide == i && otherRes.visited[otherSide]
@@ -80,7 +83,7 @@ vec<EdgeRef> STPGraphManager::findConsequences(EdgeRef e) {
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
-STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forward) {
+template<class T> typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfsSearch(VertexRef init, bool forward) {
     vec<bool> visited(store.vertexNum());
     vec<SafeInt> length(store.vertexNum());
     size_t total = 0;
@@ -93,7 +96,7 @@ STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forwa
         VertexRef curr = open.top(); open.pop();
         auto &toScan = forward ? graph.outgoing[curr.x] : graph.incoming[curr.x];
         for (auto eRef : toScan) {
-            const Edge &edge = store.getEdge(eRef);
+            const Edge<T> &edge = store.getEdge(eRef);
             auto next = forward ? edge.to : edge.from;
             if (!visited[next.x]) {
                 visited[next.x] = true;
@@ -111,7 +114,7 @@ STPGraphManager::DFSResult STPGraphManager::dfsSearch(VertexRef init, bool forwa
 }
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
-void STPGraphManager::removeAfter(uint32_t point) {
+template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
     if (!graph.addedEdges.size()) return;
 
     for (int i = graph.addedEdges.size()-1; i >= 0; --i) {
@@ -142,8 +145,8 @@ void STPGraphManager::removeAfter(uint32_t point) {
     }
 }
 
-void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
-    const Edge &expl = store.getEdge(e);
+template<class T> void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
+    const Edge<T> &expl = store.getEdge(e);
     if (mapper.getAssignment(e) != PtAsgn_Undef) {      // explanation for explicitly assigned edge is trivial
         v.push(mapper.getAssignment(e));
         return;
@@ -159,7 +162,7 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
         if (curr == expl.to && length[curr.x] <= expl.cost) break;
         for (auto eRef : graph.outgoing[curr.x]) {
             if (eRef == e) continue;
-            const Edge &edge = store.getEdge(eRef);
+            const Edge<T> &edge = store.getEdge(eRef);
             if (edge.setTime > expl.setTime) continue;
             assert(mapper.getAssignment(eRef) != PtAsgn_Undef); // deductions aren't stored in graph
 
@@ -175,7 +178,7 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     auto backtrack = visited[expl.to.x];
     while (true) {
         assert( backtrack != EdgeRef_Undef);
-        const Edge &edge = store.getEdge(backtrack);
+        const Edge<T> &edge = store.getEdge(backtrack);
         assert( mapper.getAssignment(backtrack) != PtAsgn_Undef );
         v.push(mapper.getAssignment(backtrack));
         if (edge.from == expl.from) break;
@@ -183,10 +186,9 @@ void STPGraphManager::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     }
 }
 
-void STPGraphManager::clear() {
+template<class T> void STPGraphManager<T>::clear() {
     timestamp = 0;
     graph.clear();
 }
 
-
-
+#endif //OPENSMT_STPEDGEGRAPH_C

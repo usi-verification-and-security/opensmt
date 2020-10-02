@@ -4,22 +4,23 @@
 #include "STPEdgeGraph.h"
 
 // holds the mapping from vertices to their values
-class STPModel {
+template<class T> class STPModel {
 private:
-    STPStore &store;
+    STPStore<T> &store;
     EdgeGraph graph;
-    std::unordered_map<uint32_t, SafeInt> valMap;  // for each vertex, distance from the added starting vertex
+    std::unordered_map<uint32_t, T> valMap;  // for each vertex, distance from the added starting vertex
 
     vec<VertexRef> vertsInGraph() const;
     VertexRef addStartingPoint();
     void bellmanFord(VertexRef start);
     void shiftZero();
 public:
-    STPModel(STPStore &store, const EdgeGraph& graph) : store(store), graph(graph) {}
+    STPModel(STPStore<T> &store, const EdgeGraph& graph) : store(store), graph(graph) {}
     void createModel();
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
-    SafeInt getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
+    T getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
 
+#include "STPModel.cpp" // FIXME
 #endif //OPENSMT_STPVALMAPPER_HPP

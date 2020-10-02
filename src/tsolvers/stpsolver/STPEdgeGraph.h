@@ -15,18 +15,18 @@ struct EdgeGraph {
 };
 
 // stores edges set as true and finds consequences of each added edge
-class STPGraphManager {
+template<class T> class STPGraphManager {
 private:
     // helper struct to return results of DFS
     struct DFSResult {
         vec<bool> visited;              // map of which vertices were visited
-        vec<SafeInt> distance;        // map of distances to each visited vertex
+        vec<T> distance;        // map of distances to each visited vertex
         size_t total;                   // sum of all edges each vertex appears in
     };
 
-    STPStore & store;
+    STPStore<T> & store;
 
-    STPMapper & mapper;
+    STPMapper<T> & mapper;
 
     EdgeGraph graph;
 
@@ -39,7 +39,7 @@ private:
     void setDeduction(EdgeRef e);
 
 public:
-    explicit STPGraphManager(STPStore &store, STPMapper &mapper) : store(store), mapper(mapper), timestamp(0) {}
+    explicit STPGraphManager(STPStore<T> &store, STPMapper<T> &mapper) : store(store), mapper(mapper), timestamp(0) {}
     const EdgeGraph & getGraph() const { return graph; }
     bool isTrue(EdgeRef e) const;
     uint32_t getAddedCount() const { return timestamp; }
@@ -50,5 +50,5 @@ public:
     void clear();
 };
 
-
+#include "STPEdgeGraph.cpp" // FIXME
 #endif //OPENSMT_STPEDGEGRAPH_H

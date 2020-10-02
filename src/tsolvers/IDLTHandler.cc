@@ -4,14 +4,15 @@
 
 #include "IDLTHandler.h"
 #include "LIALogic.h"
-#include "stpsolver/STPSolver.h"
+#include "stpsolver/SafeInt.hpp"
+#include "stpsolver/STPSolver.cpp" // FIXME: Ugly. Fix references.
 #include "TreeOps.h"
 
 IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap)
         : TSolverHandler(c, tmap)
         , logic(l)
 {
-    stpsolver = new STPSolver(config, logic);
+    stpsolver = new STPSolver<SafeInt>(config, logic);
     SolverId my_id = stpsolver->getId();
     tsolvers[my_id.id] = stpsolver;
     solverSchedule.push(my_id.id);

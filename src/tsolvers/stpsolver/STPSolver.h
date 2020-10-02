@@ -13,7 +13,7 @@
 #include "STPEdgeGraph.h"
 #include "STPModel.h"
 
-class STPSolver : public TSolver {
+template<typename T> class STPSolver : public TSolver {
 private:
     struct ParsedPTRef {
         // represents inequalities of the form 'y - x <= c'
@@ -25,16 +25,16 @@ private:
 
     LALogic& logic;
 
-    STPStore store;
+    STPStore<T> store;
 
-    STPMapper mapper;
+    STPMapper<T> mapper;
 
-    STPGraphManager graphMgr;
+    STPGraphManager<T> graphMgr;
 
     size_t inv_bpoint;                      // backtrack point where we entered an inconsistent state
     PtAsgn inv_asgn;
 
-    std::unique_ptr<STPModel> model;           // mapping of vertices (vars) to valid assignments, if it was computed
+    std::unique_ptr<STPModel<T>> model;           // mapping of vertices (vars) to valid assignments, if it was computed
 
     ParsedPTRef parseRef(PTRef ref) const;
 
@@ -73,6 +73,5 @@ public:
     bool isValid(PTRef tr) override;
 
 };
-
 
 #endif //OPENSMT_STPSOLVER_H

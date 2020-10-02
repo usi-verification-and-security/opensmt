@@ -23,7 +23,7 @@ struct EdgeRef {
 static VertexRef VertRef_Undef = VertexRef { INT32_MAX };
 static EdgeRef EdgeRef_Undef = EdgeRef { INT32_MAX };
 
-struct Edge {
+template<class T> struct Edge {
     VertexRef from, to;     // vertices of this edge
     EdgeRef neg;            // the logical negation of this edge
     SafeInt cost;         // cost of this edge
@@ -40,10 +40,10 @@ struct Edge {
     Edge & operator=(const Edge &other) = delete;
 };
 
-class STPStore {
+template<class T> class STPStore {
 private:
     uint32_t vertices;                  // number of created vertices (a vertex doesn't actually carry any information)
-    std::vector<Edge> edges;            // list of all created edges
+    std::vector<Edge<T>> edges;            // list of all created edges
 public:
     STPStore() : vertices(1) {}         // the 'zero' vertex is created implicitly
     VertexRef createVertex();
@@ -51,12 +51,13 @@ public:
 
     size_t vertexNum() const  { return vertices; }
     size_t edgeNum() const { return edges.size(); }
-    Edge & getEdge(EdgeRef e) { return edges[e.x]; }
-    const Edge & getEdge(EdgeRef e) const { return edges[e.x]; }
+    Edge<T> & getEdge(EdgeRef e) { return edges[e.x]; }
+    const Edge<T> & getEdge(EdgeRef e) const { return edges[e.x]; }
     EdgeRef getNegation(EdgeRef e) { return edges[e.x].neg; }
     static VertexRef zero() { return VertexRef{0};}
     void setNegation(EdgeRef a, EdgeRef b);
     void clear();
 };
 
+#include "STPStore.cpp" // FIXME
 #endif //OPENSMT_STPSTORE_H
