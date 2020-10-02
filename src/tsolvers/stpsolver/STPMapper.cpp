@@ -13,7 +13,7 @@ template<class T>void STPMapper<T>::setVert(PTRef var, VertexRef vert) {
     assert( var != PTRef_Undef );
     uint32_t idx = Idx(logic.getPterm(var).getId());
     if (varToVertRef.size() <= idx)
-        varToVertRef.growTo(idx + 1, VertRef_Undef);
+        varToVertRef.resize(idx + 1, VertRef_Undef);
 
     varToVertRef[idx] = vert;
 }
@@ -22,18 +22,18 @@ template<class T>void STPMapper<T>::setVert(PTRef var, VertexRef vert) {
 template<class T> void STPMapper<T>::registerEdge(EdgeRef edge) {
     auto &e = store.getEdge(edge);
     if (edgesContainingVert.size() <= std::max(e.from.x, e.to.x))
-        edgesContainingVert.growTo(std::max(e.from.x, e.to.x) + 1);
-    edgesContainingVert[e.from.x].push(edge);
-    edgesContainingVert[e.to.x].push(edge);
+        edgesContainingVert.resize(std::max(e.from.x, e.to.x) + 1);
+    edgesContainingVert[e.from.x].push_back(edge);
+    edgesContainingVert[e.to.x].push_back(edge);
 }
 
 // assigns an EdgeRef to a PTRef inequality
 template<class T> void STPMapper<T>::mapEdge(PTRef leq, EdgeRef edge) {
     uint32_t idx = Idx(logic.getPterm(leq).getId());
     if (leqToEdgeRef.size() <= idx)
-        leqToEdgeRef.growTo(idx + 1, EdgeRef_Undef);
+        leqToEdgeRef.resize(idx + 1, EdgeRef_Undef);
     if (edgeRefToLeq.size() <= edge.x) {
-        edgeRefToLeq.growTo(edge.x + 1, PTRef_Undef);
+        edgeRefToLeq.resize(edge.x + 1, PTRef_Undef);
     }
     leqToEdgeRef[idx] = edge;
     edgeRefToLeq[edge.x] = leq;
@@ -41,7 +41,7 @@ template<class T> void STPMapper<T>::mapEdge(PTRef leq, EdgeRef edge) {
 
 template<class T> void STPMapper<T>::setAssignment(EdgeRef edge, PtAsgn asgn) {
     if (edgeRefToAsgn.size() <= edge.x)
-        edgeRefToAsgn.growTo(edge.x + 1, PtAsgn_Undef);
+        edgeRefToAsgn.resize(edge.x + 1, PtAsgn_Undef);
     edgeRefToAsgn[edge.x] = asgn;
 }
 

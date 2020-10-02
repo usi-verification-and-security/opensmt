@@ -134,7 +134,7 @@ template<class T> bool STPSolver<T>::assertLit(PtAsgn asgn) {
 
     // The assignment isn't decided yet, so we set it as true and find all of its consequences
     graphMgr.setTrue(set, asgn);
-    vec<EdgeRef> deductions = graphMgr.findConsequences(set);
+    std::vector<EdgeRef> deductions = graphMgr.findConsequences(set);
 
     // pass all found deductions to TSolver
     PTRef nleq = mapper.getPTRef(nset);

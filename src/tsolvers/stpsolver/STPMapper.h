@@ -12,11 +12,11 @@ template<class T> class STPMapper {
 
     const STPStore<T> &store;
 
-    vec<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
-    vec<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
-    vec<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
-    vec<PtAsgn> edgeRefToAsgn;                      // maps assigned edges to assignments that set them
-    vec<vec<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
+    std::vector<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
+    std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
+    std::vector<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
+    std::vector<PtAsgn> edgeRefToAsgn;                      // maps assigned edges to assignments that set them
+    std::vector<std::vector<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
 
 public:
     STPMapper(const LALogic &l, const STPStore<T> &s);
@@ -30,7 +30,7 @@ public:
     EdgeRef getEdgeRef(PTRef leq) const;
     EdgeRef getEdgeRef(VertexRef y, VertexRef x, T c) const;
     PTRef getPTRef(EdgeRef edge) const;
-    const vec<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+    const std::vector<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
     void clear();
 };
 

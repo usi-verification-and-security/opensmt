@@ -4,21 +4,15 @@
 #include <stack>
 #include "STPEdgeGraph.h"
 
-EdgeGraph::EdgeGraph(const EdgeGraph &other) {
-    other.addedEdges.copyTo(addedEdges);
-    other.incoming.copyTo(incoming);
-    other.outgoing.copyTo(outgoing);
-}
-
 void EdgeGraph::addEdge(EdgeRef e, VertexRef from, VertexRef to) {
     auto max = std::max(from.x, to.x);
     if (incoming.size() <= max) {
-        incoming.growTo(max + 1);
-        outgoing.growTo(max + 1);
+        incoming.resize(max + 1);
+        outgoing.resize(max + 1);
     }
-    addedEdges.push(e);
-    incoming[to.x].push(e);
-    outgoing[from.x].push(e);
+    addedEdges.push_back(e);
+    incoming[to.x].push_back(e);
+    outgoing[from.x].push_back(e);
 }
 
 void EdgeGraph::clear() {
@@ -42,12 +36,12 @@ template<class T> void STPGraphManager<T>::setTrue(EdgeRef e, PtAsgn asgn) {
 }
 
 template<class T> void STPGraphManager<T>::setDeduction(EdgeRef e) {
-    deductions.push(e);
+    deductions.push_back(e);
     store.getEdge(e).setTime = timestamp;
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
-template<class T> vec<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
+template<class T> std::vector<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto &start = store.getEdge(e);
@@ -59,7 +53,7 @@ template<class T> vec<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
     auto &thisRes = aRes.total < bRes.total ? aRes : bRes;
     auto &otherRes = aRes.total < bRes.total ? bRes : aRes;
 
-    vec<EdgeRef> ret;
+    std::vector<EdgeRef> ret;
     // for each (WLOG) 'a', go through its edges and find each 'a -> b' edge that has cost higher than length found by DFS
     // such edges are consequences of the current graph
     for (uint32_t i = 0; i < n; ++i) {
@@ -72,7 +66,7 @@ template<class T> vec<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
             if (thisSide == i && otherRes.visited[otherSide]
                 && edge.cost >= thisRes.distance[thisSide] + start.cost + otherRes.distance[otherSide]) {
                 if (edge.setTime == 0) {
-                    ret.push(eRef);
+                    ret.push_back(eRef);
                     setDeduction(eRef);
                 }
             }
@@ -84,8 +78,8 @@ template<class T> vec<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
 template<class T> typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfsSearch(VertexRef init, bool forward) {
-    vec<bool> visited(store.vertexNum());
-    vec<SafeInt> length(store.vertexNum());
+    std::vector<bool> visited(store.vertexNum());
+    std::vector<SafeInt> length(store.vertexNum());
     size_t total = 0;
     std::stack<VertexRef> open;
     visited[init.x] = true;
@@ -115,7 +109,7 @@ template<class T> typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfs
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
 template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
-    if (!graph.addedEdges.size()) return;
+    if (graph.addedEdges.empty()) return;
 
     for (int i = graph.addedEdges.size()-1; i >= 0; --i) {
         EdgeRef eRef = graph.addedEdges[i];
@@ -125,14 +119,14 @@ template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
             break;
         }
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
-        graph.incoming[edge.to.x].pop();
-        graph.outgoing[edge.from.x].pop();
-        graph.addedEdges.pop();
+        graph.incoming[edge.to.x].pop_back();
+        graph.outgoing[edge.from.x].pop_back();
+        graph.addedEdges.pop_back();
         edge.setTime = 0;
         mapper.removeAssignment(eRef);
     }
 
-    if (!deductions.size()) return;
+    if (deductions.empty()) return;
     for (int i = deductions.size() - 1; i >= 0; --i) {
         EdgeRef ded = deductions[i];
         auto &edge = store.getEdge(ded);
@@ -141,7 +135,7 @@ template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
         }
 
         edge.setTime = 0;
-        deductions.pop();
+        deductions.pop_back();
     }
 }
 
@@ -152,8 +146,8 @@ template<class T> void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn
         return;
     }
 
-    vec<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
-    vec<SafeInt> length(store.vertexNum());
+    std::vector<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
+    std::vector<SafeInt> length(store.vertexNum());
     std::stack<VertexRef> open;
 
     open.push(expl.from);

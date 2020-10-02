@@ -10,17 +10,18 @@ private:
     EdgeGraph graph;
     std::unordered_map<uint32_t, T> valMap;  // for each vertex, distance from the added starting vertex
 
-    vec<VertexRef> vertsInGraph() const;
+    std::vector<VertexRef> vertsInGraph() const;
     VertexRef addStartingPoint();
     void bellmanFord(VertexRef start);
     void shiftZero();
 public:
-    STPModel(STPStore<T> &store, const EdgeGraph& graph) : store(store), graph(graph) {}
+    STPModel(STPStore<T> &store, EdgeGraph  graph) : store(store), graph(std::move(graph)) {}
     void createModel();
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
     T getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
-
 #include "STPModel.cpp" // FIXME
+
+#include <utility>
 #endif //OPENSMT_STPVALMAPPER_HPP

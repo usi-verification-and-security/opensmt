@@ -5,19 +5,19 @@
 #include "STPModel.h"
 
 // returns a list of all vertices present in graph
-template<class T> vec<VertexRef> STPModel<T>::vertsInGraph() const {
-    vec<VertexRef> found;
+template<class T> std::vector<VertexRef> STPModel<T>::vertsInGraph() const {
+    std::vector<VertexRef> found;
     uint32_t n = std::min(graph.incoming.size(), graph.outgoing.size());
     uint32_t i = 0;
     // scans the incoming/outgoing vectors to see if they contain edges
     for (; i < n; ++i) {
-        if (graph.incoming[i].size() || graph.outgoing[i].size())
-            found.push(VertexRef{.x = i});
+        if (!graph.incoming[i].empty() || !graph.outgoing[i].empty())
+            found.push_back(VertexRef{.x = i});
     }
-    const vec<vec<EdgeRef>> &rest = (n == graph.incoming.size()) ? graph.outgoing : graph.incoming;
+    const std::vector<std::vector<EdgeRef>> &rest = (n == graph.incoming.size()) ? graph.outgoing : graph.incoming;
     for (; i < rest.size(); ++i) {
-        if (rest[i].size())
-            found.push(VertexRef{.x = i});
+        if (!rest[i].empty())
+            found.push_back(VertexRef{.x = i});
     }
 
     return found;
@@ -64,8 +64,6 @@ template<class T> void STPModel<T>::shiftZero() {
         pair.second -= shift;
     }
     assert( valMap[zero.x] == 0 );
-    vec<int> a;
-    a.copyTo(a);
 }
 
 template<class T> void STPModel<T>::createModel() {
