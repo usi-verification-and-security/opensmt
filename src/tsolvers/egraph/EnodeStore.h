@@ -100,24 +100,29 @@ public:
         index_to_dist.push(tr_d);
         dist_idx++;
     }
-    inline bool containsSig(ERef e) const
-    { const Enode& en_e = ea[e];
-        SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-        return sig_tab.has(sp); }
 
-    inline bool containsSig(ERef car, ERef cdr) const
-    { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
-        return sig_tab.has(sp); }
+    inline bool containsSig(ERef e) const {
+        const Enode & en_e = ea[e];
+        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
+        return sig_tab.has(sp);
+    }
+
+    inline bool containsSig(ERef car, ERef cdr) const {
+        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
+        return sig_tab.has(sp);
+    }
 
 
-    inline ERef lookupSig(ERef e) const
-    { const Enode& en_e = ea[e];
-        SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-        return sig_tab[sp]; }
+    inline ERef lookupSig(ERef e) const {
+        const Enode & en_e = ea[e];
+        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
+        return sig_tab[sp];
+    }
 
-    inline ERef lookupSig(ERef car, ERef cdr) const
-    { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
-        return sig_tab[sp]; }
+    inline ERef lookupSig(ERef car, ERef cdr) const {
+        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
+        return sig_tab[sp];
+    }
 
     inline void removeSig(ERef e) {
         assert(containsSig(e));
