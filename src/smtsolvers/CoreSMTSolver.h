@@ -55,7 +55,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iosfwd>
 #include <memory>
 #include <sstream>
-#include "PartitionManager.h"
 
 #include "Vec.h"
 #include "Heap.h"

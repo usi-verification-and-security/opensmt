@@ -29,7 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "PtStore.h"
 #include "SStore.h"
-#include "PartitionInfo.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
 
