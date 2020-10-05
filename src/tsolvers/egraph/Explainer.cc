@@ -225,7 +225,7 @@ void Explainer::enqueueArguments(ERef x, ERef y, PendingQueue &exp_pending) {
     std::pair<ERef,ERef> ERefNilPair{ERef_Nil,ERef_Nil};
 
     auto getNext = [this, ERef_Nil](ERef x, ERef y) -> std::pair<ERef,ERef> {
-        assert(x != ERef_Nil and y != ERef_Nil);
+        (void)ERef_Nil; assert(x != ERef_Nil and y != ERef_Nil);
         return {this->getEnode(x).getCdr(), this->getEnode(y).getCdr()};
     };
 
