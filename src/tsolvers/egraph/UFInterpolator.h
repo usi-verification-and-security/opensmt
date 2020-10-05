@@ -141,7 +141,7 @@ public:
 
 	inline int     verbose                       ( ) const { return config.verbosity(); }
     void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
-  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*);
+  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*, PartitionManager & );
   void     printAsDotty  ( ostream & );
 
 private:

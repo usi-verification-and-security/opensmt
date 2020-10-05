@@ -28,7 +28,7 @@ Logic &UFLRATHandler::getLogic()
     return logic;
 }
 
-PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
     throw std::logic_error("Not implemented");
 }

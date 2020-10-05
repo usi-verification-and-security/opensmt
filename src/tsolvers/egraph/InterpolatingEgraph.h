@@ -19,7 +19,7 @@ public:
     {
         InterpolatingExplainer * itp_explainer = static_cast<InterpolatingExplainer*>(explainer.get());
         auto cgraph = itp_explainer->getCGraph();
-        return UFInterpolator(config, logic, *cgraph).getInterpolant(mask, labels);
+        return UFInterpolator(config, logic, *cgraph).getInterpolant(mask, labels, pmanager);
     }
 };
 

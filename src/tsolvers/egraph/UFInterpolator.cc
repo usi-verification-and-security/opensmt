@@ -351,7 +351,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
 // formula into A and B.
 //
 PTRef
-UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels) {
+UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & ) {
     assert(labels);
     (void)mask;
     srand(2);

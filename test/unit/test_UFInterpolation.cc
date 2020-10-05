@@ -40,12 +40,10 @@ protected:
     PTRef x, y, x1, x2, x3, x4, y1, y2, z1, z2, z3, z4, z5, z6, z7, z8;
     SymRef f, g, p;
 
-    bool verifyInterpolant(PTRef itp, ipartitions_t const & Amask) {
+    bool verifyInterpolant(PTRef itp, PTRef Apartition, PTRef Bpartition) {
         // TODO: design properly
         SMTConfig validationConfig;
         MainSolver validationSolver(logic, validationConfig, "validator");
-        PTRef Apartition = logic.getPartitionA(Amask);
-        PTRef Bpartition = logic.getPartitionB(Amask);
         std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
         std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
         std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
@@ -60,6 +58,10 @@ protected:
         ok = res == s_False;
         if (not ok) { return false; }
         return checkSubsetCondition(itp, Apartition) and checkSubsetCondition(itp, Bpartition);
+    }
+
+    bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask) {
+        return verifyInterpolant(itp, pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B));
     }
 
     bool checkSubsetCondition(PTRef p1, PTRef p2) {
@@ -93,16 +95,16 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     solver.insertFormula(logic.mkNot(eq3));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     interpolants.clear();
     setbit(mask, 1);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
@@ -120,16 +122,16 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     solver.insertFormula(eq1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     interpolants.clear();
     setbit(mask, 1);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleCongruence){
@@ -145,12 +147,12 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
     solver.insertFormula(logic.mkNot(eq2));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
@@ -166,12 +168,12 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
     solver.insertFormula(eq1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
@@ -189,17 +191,17 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     solver.insertFormula(logic.mkAnd(eqB1, logic.mkNot(eqB2)));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
@@ -218,17 +220,17 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     solver.insertFormula(logic.mkAnd(eqB1, eqB2));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_JustificationRequired){
@@ -257,17 +259,17 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, logic.mkNot(eqB6)}));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
@@ -297,17 +299,17 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, eqB6, eqB7,eqB8}));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
@@ -325,12 +327,12 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     solver.insertFormula(logic.mkNot(py));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_ConstantsConflict){
@@ -348,12 +350,12 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     solver.insertFormula(eqB);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_TwoLevelJustification){
@@ -375,17 +377,17 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     solver.insertFormula(logic.mkAnd({eqB1, eqB2}));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
@@ -407,17 +409,17 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, dis}));
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
-    solver.getSMTSolver().createProofGraph();
+    auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
     setbit(mask, 0);
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
-    solver.getSMTSolver().getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], mask));
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
 
 
