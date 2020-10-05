@@ -5,7 +5,7 @@
 // inequalities.  If partitions cannot mix, only do the splitting to
 // inequalities.
 //
-bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
+bool LRATheory::simplify(const vec<PFRef>& formulas, PartitionManager& pmanager, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
@@ -14,7 +14,7 @@ bool LRATheory::simplify(const vec<PFRef>& formulas, int curr)
             PTRef & fla = flas[i];
             PTRef old = flas[i];
             lralogic.simplifyAndSplitEq(old, fla);
-            lralogic.transferPartitionMembership(old, fla);
+            pmanager.transferPartitionMembership(old, fla);
         }
         currentFrame.root = getLogic().mkAnd(flas);
     } else {

@@ -18,18 +18,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include "PG.h"
-#include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
-
-void
-ProofNode::setInterpPartitionMask()
-{
-    if(i_data == NULL) initIData();
-    i_data->partition_mask = logic.getClauseClassMask(clause_ref);
-    assert(i_data->partition_mask != 0);
-#ifdef ITP_DEBUG
-    cerr << "In Set, Clause " << clause_ref << " has mask " << i_data->partition_mask << endl;
-#endif
-}
 
 void
 ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
@@ -257,6 +245,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     {
                         n->initClause(proof.getClause(clause));
                         n->setClauseRef(clause);
+                        n->setInterpPartitionMask(pmanager.getClauseClassMask(clause));
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                         if( n->getClauseSize() >= max_leaf_size ) max_leaf_size = n->getClauseSize();
@@ -271,7 +260,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     else if(_ctype == clause_type::CLA_THEORY || _ctype == clause_type::CLA_ASSUMPTION)
                     {
                         n->initClause(proof.getClause(clause));
-                        n->setClauseRef(clause, false);
+                        n->setClauseRef(clause);
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                     }
@@ -814,10 +803,10 @@ void ProofGraph::ensureNoLiteralsWithoutPartition() {
         if(part == 0 && !this->isAssumedVar(v)) {
             PTRef term = varToPTRef(v);
             assert(this->logic_.isTheoryTerm(term));
-            auto allowedPartitions = logic_.computeAllowedPartitions(term);
+            auto allowedPartitions = pmanager.computeAllowedPartitions(term);
             if (allowedPartitions != 0) {
                 // MB: Update the partition information
-                logic_.addIPartitions(term, allowedPartitions);
+                pmanager.addIPartitions(term, allowedPartitions);
             }
             else {
                 noPartitionVars.push_back(v);

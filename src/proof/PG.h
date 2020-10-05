@@ -25,6 +25,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "PTRef.h"
 #include "Theory.h"
 #include "THandler.h"
+#include "PartitionManager.h"
 
 #include <memory>
 #include <map>
@@ -33,7 +34,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 using namespace opensmt;
 
-class CoreSMTSolver;
 class Proof;
 class Logic;
 struct SMTConfig;
@@ -131,8 +131,8 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode            (Logic& _logic)
-    : logic   (_logic)
+    ProofNode    (Logic& _logic)
+    : logic      (_logic)
     , clause     (nullptr)
     , clause_ref (CRef_Undef)
     , pivot      (-1)
@@ -152,11 +152,9 @@ struct ProofNode
     //
     inline void                 resetClause() { delete clause; clause = NULL; }
 
-    void setClauseRef(CRef cref, bool itp = true)
+    void setClauseRef(CRef cref)
     {
         clause_ref = cref;
-        if(itp)
-            setInterpPartitionMask();
     }
     CRef getClauseRef() { return clause_ref; }
 
@@ -212,7 +210,6 @@ struct ProofNode
     inline void                  setType                ( clause_type new_type )         { type = new_type; }
     inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
     void                         setInterpPartitionMask( const ipartitions_t& mask);
-    void                         setInterpPartitionMask ();
     void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
     void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
     void                         initIData() { i_data = new InterpolData(); }
@@ -267,15 +264,15 @@ class ProofGraph
 public:
 
 	ProofGraph ( SMTConfig &  c
-			, CoreSMTSolver & s
 			, Theory &        th
 			, TermMapper &    termMapper
-			, Proof &         t
+			, Proof const &   t
+			, PartitionManager & pmanager
 			, int             n = -1 )
 : config   ( c )
-, solver   ( s )
 , proof	   ( t )
 , logic_ ( th.getLogic() )
+, pmanager (pmanager)
 , thandler {new THandler(th, termMapper)}
 , graph_   ( new vector<ProofNode*> )
 , graph    ( *graph_ )
@@ -528,7 +525,7 @@ private:
     inline bool isAssumedVar(Var v) const {
         return isAssumedLiteral(mkLit(v, true)) || isAssumedLiteral(mkLit(v, false));
     }
-    ipartitions_t const& getVarPartition(Var v) const { return logic_.getIPartitions(varToPTRef(v)); }
+    ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
 
     void ensureNoLiteralsWithoutPartition();
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
@@ -538,12 +535,11 @@ private:
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
-    SMTConfig &           config;
-    CoreSMTSolver &       solver;
-    //Egraph &              egraph;
-    Proof &				  proof;
-    Logic &               logic_;
-    std::unique_ptr<THandler> thandler;
+    SMTConfig &                 config;
+    Proof const &               proof;
+    Logic &                     logic_;
+    PartitionManager &          pmanager;
+    std::unique_ptr<THandler>   thandler;
 
     vector< ProofNode * >*         graph_;                       // Graph
     vector< ProofNode * >&         graph;

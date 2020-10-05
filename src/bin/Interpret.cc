@@ -1161,25 +1161,20 @@ void Interpret::getInterpolants(const ASTNode& n)
         }
         partitionings.push_c(p);
     }
-        SimpSMTSolver& smt_solver = main_solver->getSMTSolver();
-        smt_solver.createProofGraph();
-        if(config.proof_reduce())
-            smt_solver.reduceProofGraph();
+    auto interpolationContext = main_solver->getInterpolationContext();
 //        cerr << "Computing interpolant with mask " << p << endl;
-        vec<PTRef> itps;
-        if(partitionings.size() > 1){
-            smt_solver.getPathInterpolants(itps, partitionings);
-        }
-        else{
-            smt_solver.getSingleInterpolant(itps, partitionings[0]);
-        }
-        smt_solver.deleteProofGraph();
+    vec<PTRef> itps;
+    if (partitionings.size() > 1) {
+        interpolationContext->getPathInterpolants(itps, partitionings);
+    } else {
+        interpolationContext->getSingleInterpolant(itps, partitionings[0]);
+    }
 
-        for (int j = 0; j < itps.size(); j++) {
-            char* itp = logic->pp(itps[j]);
-            notify_formatted(false, "%s", itp);
-            free(itp);
-        }
+    for (int j = 0; j < itps.size(); j++) {
+        char * itp = logic->pp(itps[j]);
+        notify_formatted(false, "%s", itp);
+        free(itp);
+    }
 }
 
 bool Interpret::is_top_level_assertion(PTRef ref) {

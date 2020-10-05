@@ -24,7 +24,7 @@ const Logic &LIATHandler::getLogic() const
     return logic;
 }
 
-PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &)
 {
     throw std::logic_error{"Interpolation currently not supported in LIA"};
 }

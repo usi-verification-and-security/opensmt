@@ -43,7 +43,7 @@ class UFLRATheory : public Theory
     virtual LRALogic&       getLogic() { return lralogic; }
     virtual const LRALogic& getLogic() const { return lralogic; }
     virtual UFLRATHandler&  getTSolverHandler() { return uflratshandler; }
-    virtual bool            simplify(const vec<PFRef>&, int);
+    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int);
 };
 
 #endif

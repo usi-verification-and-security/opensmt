@@ -9,6 +9,7 @@
 #include <PtStructs.h>
 #include <Global.h>
 #include <Real.h>
+#include <PartitionManager.h>
 
 class LRALogic;
 
@@ -47,35 +48,35 @@ public:
                                                                                        mask(mask),
                                                                                        labels(labels)
     {}
-    PTRef getInterpolant(icolor_t color);
+    PTRef getInterpolant(icolor_t color, PartitionManager &);
 
 
-    bool isLocalFor(icolor_t color, PTRef var) const{
+    bool isLocalFor(icolor_t color, PTRef var, PartitionManager &pmanager) const{
         switch (color){
             case icolor_t::I_A:
-                return isALocal(var);
+                return isALocal(var, pmanager);
             case icolor_t::I_B:
-                return isBLocal(var);
+                return isBLocal(var, pmanager);
             default:
                 throw std::logic_error("Invalid argument in isLocalFor");
         }
     }
 
-    bool isInPartitionOfColor(icolor_t color, PTRef atom) const {
+    bool isInPartitionOfColor(icolor_t color, PTRef atom, PartitionManager &pmanager) const {
         if(labels != nullptr && labels->find(atom) != labels->end()){
             return labels->at(atom) == color;
         }
         switch(color){
             case icolor_t::I_A:
-                return isALocal(atom);
+                return isALocal(atom, pmanager);
             case icolor_t::I_B:
-                return isBLocal(atom);
+                return isBLocal(atom, pmanager);
             default:
                 throw std::logic_error{"Invalid query in isInPartitionOfColor"};
         }
     }
-    bool isALocal(PTRef var) const;
-    bool isBLocal(PTRef var) const;
+    bool isALocal(PTRef var, PartitionManager &pmanager) const;
+    bool isBLocal(PTRef var, PartitionManager &pmanager) const;
 
     static DecomposedStatistics stats;
 private:

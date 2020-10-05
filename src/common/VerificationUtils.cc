@@ -55,28 +55,17 @@ bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
     return !tool_res;
 }
 
-bool VerificationUtils::verifyInterpolantA(PTRef itp, const ipartitions_t & mask) {
-    // Check A -> I, i.e., A & !I
-    return implies(logic.getPartitionA(mask), itp);
-}
-
-bool VerificationUtils::verifyInterpolantB(PTRef itp, const ipartitions_t & mask) {
-    PTRef nB = logic.mkNot(logic.getPartitionB(mask));
-    // Check A -> I, i.e., A & !I
-    return implies(itp, nB);
-}
-
-bool VerificationUtils::verifyInterpolant(PTRef itp, const ipartitions_t & mask) {
+bool VerificationUtils::verifyInterpolant(PTRef partA, PTRef partB, PTRef itp) {
     bool verbose = config.verbosity() > 0;
     if(verbose) {
         std::cout << "; Verifying final interpolant" << std::endl;
     }
-    bool res = verifyInterpolantA(itp, mask);
+    bool res = implies(partA, itp);
     if(!res) { return false; }
     if(verbose) {
         std::cout << "; A -> I holds" << std::endl;
     }
-    res = verifyInterpolantB(itp, mask);
+    res = implies(itp, logic.mkNot(partB));
     if(!res) { return false; }
     if(verbose) {
         std::cout << "; B -> !I holds" << std::endl;

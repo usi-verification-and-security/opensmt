@@ -37,11 +37,13 @@ public:
 
     Tseitin( SMTConfig&     config_
            , Logic&         logic_
+           , PartitionManager &pmanager_
            , TermMapper&    tmap_
            , SimpSMTSolver& solver_
            )
       : Cnfizer( config_
                 , logic_
+                , pmanager_
                 , tmap_
                 , solver_ )
         , alreadyCnfized(logic_.getTerm_true())

@@ -29,10 +29,10 @@ Logic &UFLRATHandler::getLogic()
     return logic;
 }
 
-PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
     {
         InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(ufsolver);
         assert(iegraph);
-        return iegraph->getInterpolant(mask, labels);
+        return iegraph->getInterpolant(mask, labels, pmanager);
     }
 

@@ -73,7 +73,7 @@ main(int argc, char** argv)
         const char* msg;
         c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
         // Create the proof graph
-        solver.createProofGraph();
+        auto itp_context = mainSolver.getInterpolationContext();
 
         // Create the partitioning mask
         // Mask has first partition in A and second in B
@@ -89,7 +89,7 @@ main(int argc, char** argv)
 	    	setbit(mask, part[i] + 1);
 
         vector<PTRef> itps;
-        solver.getSingleInterpolant(itps, mask);
+        itp_context->getSingleInterpolant(itps, mask);
         cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
     }
     else if (r == s_Undef)

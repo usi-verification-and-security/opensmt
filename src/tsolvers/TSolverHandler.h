@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
+#include "PartitionManager.h"
 #include "Deductions.h"
 #include "TermMapper.h"
 #include "TSolver.h"
@@ -65,7 +66,7 @@ public:
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
     void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
     Map<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }

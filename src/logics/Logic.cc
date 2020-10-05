@@ -197,11 +197,6 @@ Logic::Logic() :
     ites.insert(sym_ITE, true);
     sortToIte.insert(sort_BOOL, sym_ITE);
 
-    // MB: TODO: Is this necessary?
-    ipartitions_t mask = 0;
-    mask = ~mask;
-    addIPartitions(getTerm_true(), mask);
-    addIPartitions(getTerm_false(), mask);
     /////////////////////////////////////////
 }
 
@@ -1844,102 +1839,6 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
     }
 
     return tr_subst;
-}
-
-
-void Logic::propagatePartitionMask(PTRef root) {
-    ipartitions_t& p = getIPartitions(root);
-    std::vector<bool> seen;
-    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    auto size = Idx(this->getPterm(root).getId()) + 1;
-    seen.resize(size, false);
-    std::vector<PTRef> queue {root};
-    while (!queue.empty()) {
-        PTRef current = queue.back();
-        queue.pop_back();
-        const Pterm& c_term = this->getPterm(current);
-        auto id = Idx(c_term.getId());
-        assert(id < size);
-        if (!seen[id]) {
-            addIPartitions(current, p);
-            for (int j = 0; j < c_term.size(); ++j) {
-                queue.push_back(c_term[j]);
-            }
-            if (isUF(current) || isUP(current)) {
-                addIPartitions(c_term.symb(), p);
-            }
-            seen[id] = true;
-        }
-    }
-}
-
-ipartitions_t Logic::computeAllowedPartitions(PTRef p) {
-    vec<PtChild> subterms;
-    getTermList(p, subterms, *this);
-    vec<PTRef> vars;
-    for (int i = 0; i < subterms.size(); ++i) {
-        if (this->isVar(subterms[i].tr)) {
-            vars.push(subterms[i].tr);
-        }
-    }
-    if (vars.size() == 0) { return 0; }
-    ipartitions_t allowed = this->getIPartitions(vars[0]);
-    for (int i = 1; i < vars.size(); ++i) {
-        allowed &= this->getIPartitions(vars[i]);
-    }
-    return allowed;
-}
-
-PTRef
-Logic::getPartitionA(const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    auto parts = logic.getPartitions();
-    vec<PTRef> a_args;
-    for(auto part : parts)
-    {
-        const auto & p_mask = logic.getIPartitions(part);
-        if(isAlocal(p_mask, mask)) {
-            a_args.push(part);
-        }
-        else if(!isBlocal(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
-        }
-    }
-    PTRef A = logic.mkAnd(a_args);
-
-    return A;
-}
-
-PTRef
-Logic::getPartitionB(const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    auto parts = logic.getPartitions();
-    vec<PTRef> b_args;
-    for(auto part : parts)
-    {
-        const auto & p_mask = logic.getIPartitions(part);
-        if(isBlocal(p_mask, mask)) {
-            b_args.push(part);
-        }
-        else if(!isAlocal(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
-        }
-    }
-    PTRef B = logic.mkAnd(b_args);
-    return B;
-}
-
-void
-Logic::addClauseClassMask(CRef c, const ipartitions_t& toadd)
-{
-    partitionInfo.addClausePartition(c, toadd);
-}
-
-void
-Logic::invalidatePartitions(const ipartitions_t& toinvalidate) {
-    partitionInfo.invalidatePartitions(toinvalidate);
 }
 
 void

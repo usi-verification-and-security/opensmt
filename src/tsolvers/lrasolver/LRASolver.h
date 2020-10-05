@@ -1,6 +1,7 @@
 #ifndef LRASOLVER_H
 #define LRASOLVER_H
 
+#include <PartitionManager.h>
 #include "LRALogic.h"
 #include "LASolver.h"
 
@@ -57,8 +58,8 @@ public:
     lbool getPolaritySuggestion(PTRef) const;
 
 public:
-    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>* );
-    PTRef getDecomposedInterpolant(const ipartitions_t & mask , map<PTRef, icolor_t> *labels);
+    PTRef getInterpolant( const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager &pmanager );
+    PTRef getDecomposedInterpolant(const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager);
     bool usingStrong() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
     bool usingWeak() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
     bool usingFactor() { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }

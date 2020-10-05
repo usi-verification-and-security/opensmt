@@ -33,12 +33,14 @@ using namespace std;
 
 Cnfizer::Cnfizer ( SMTConfig       &config_
                    , Logic         &logic_
+                   , PartitionManager &pmanager_
                    , TermMapper    &tmap
                    , SimpSMTSolver &solver_
                  ) :
       solver   (solver_)
     , config   (config_  )
     , logic    (logic_)
+    , pmanager (pmanager_)
     , tmap     (tmap)
     , s_empty  (true)
     , alreadyAsserted(logic.getTerm_true())
@@ -148,8 +150,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #endif
 
     if (keepPartitionInfo()) {
-        assert(logic.getPartitionIndex(formula) != -1);
-        currentPartition = logic.getPartitionIndex(formula);
+        assert(pmanager.getPartitionIndex(formula) != -1);
+        currentPartition = pmanager.getPartitionIndex(formula);
     }
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
@@ -446,7 +448,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
             ipartitions_t parts = 0;
             assert(currentPartition != -1);
             setbit(parts, static_cast<unsigned int>(currentPartition));
-            logic.addClauseClassMask(ref, parts);
+            pmanager.addClauseClassMask(ref, parts);
         }
     }
     return res;

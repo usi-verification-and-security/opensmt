@@ -103,13 +103,13 @@ enum class ItpAlg {
 // Compute interpolants for the conflict
 //
 PTRef
-LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels)
+LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
     assert(status == UNSAT);
     assert(explanation.size() > 1);
 
     if (usingDecomposing()){
-        auto itp = getDecomposedInterpolant(mask, labels);
+        auto itp = getDecomposedInterpolant(mask, labels, pmanager);
         assert(itp != PTRef_Undef);
         return itp;
     }
@@ -153,7 +153,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
     for ( int i = 0; i < explanation.size( ); i++ )
     {
         icolor_t color = I_UNDEF;
-        const ipartitions_t & p = logic.getIPartitions(explanation[i].tr);
+        const ipartitions_t & p = pmanager.getIPartitions(explanation[i].tr);
         if ( isAB( p, mask ) ) {
             color = I_AB;
         }
@@ -312,9 +312,9 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 
 
 
-PTRef LRASolver::getDecomposedInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels) {
+PTRef LRASolver::getDecomposedInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
     LRA_Interpolator interpolator{logic, explanation, explanationCoefficients, mask, labels};
     icolor_t color = config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_strong ? icolor_t::I_A : icolor_t::I_B;
-    auto res = interpolator.getInterpolant(color);
+    auto res = interpolator.getInterpolant(color, pmanager);
     return res;
 }

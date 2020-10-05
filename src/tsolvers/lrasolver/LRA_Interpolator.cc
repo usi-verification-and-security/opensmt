@@ -474,7 +474,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
 }
 
-PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
+PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanager) {
     assert(color == icolor_t::I_A || color == icolor_t::I_B);
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
@@ -486,8 +486,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
                   << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
-        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
-        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);
+        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr, pmanager);
+        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr, pmanager);
         if(isA){
             trace(std::cout << "This explanation is from A\n";)
         }
@@ -497,8 +497,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
 
     }
     auto it = std::partition(candidates.begin(), candidates.end(),
-                             [color, this](std::pair<PtAsgn, Real> const & expl) {
-                                 return this->isInPartitionOfColor(color, expl.first.tr);
+                             [color, this, &pmanager](std::pair<PtAsgn, Real> const & expl) {
+                                 return this->isInPartitionOfColor(color, expl.first.tr, pmanager);
                              });
     if (it == candidates.end() || it == candidates.begin()) {
         // all inequalities are of the same color -> trivial interpolant
@@ -519,7 +519,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     std::vector<local_terms_t> ineqs_local_vars;
     std::vector<ItpHelper> explanations_with_locals;
     for (const auto & helper : helpers) {
-        local_terms_t local_terms = getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
+        local_terms_t local_terms = getLocalTerms(helper, [this, color, &pmanager](PTRef ptr) { return this->isLocalFor(color, ptr, pmanager); });
 
         // explanataion with all variables shared form standalone partition
         if (local_terms.empty()) {
@@ -630,10 +630,10 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color) {
     return itp;
 }
 
-bool LRA_Interpolator::isALocal(PTRef var) const {
-    return isAstrict(logic.getIPartitions(var), mask);
+bool LRA_Interpolator::isALocal(PTRef var, PartitionManager &pmanager) const {
+    return isAstrict(pmanager.getIPartitions(var), mask);
 }
 
-bool LRA_Interpolator::isBLocal(PTRef var) const {
-    return isBstrict(logic.getIPartitions(var), mask);
+bool LRA_Interpolator::isBLocal(PTRef var, PartitionManager &pmanager) const {
+    return isBstrict(pmanager.getIPartitions(var), mask);
 }

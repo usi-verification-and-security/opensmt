@@ -16,12 +16,7 @@ public:
 
     bool implies(PTRef, PTRef); // Check the result with an external solver
 
-    bool verifyInterpolant(PTRef, const ipartitions_t &);
-
-private:
-    bool verifyInterpolantA(PTRef, const ipartitions_t &);
-
-    bool verifyInterpolantB(PTRef, const ipartitions_t &);
+    bool verifyInterpolant(PTRef partA, PTRef partB, PTRef itp);
 };
 
 
