@@ -48,6 +48,8 @@ struct ERef {
 };
 static struct ERef ERef_Undef = {INT32_MAX};
 
+inline void swap(ERef & y, ERef & z) { ERef tmp = y; y = z; z = tmp; }
+
 //
 // Data structure used to store forbid lists
 //

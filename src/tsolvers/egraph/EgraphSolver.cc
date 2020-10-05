@@ -896,10 +896,8 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     // Step 1: Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
-    if (isConstant(y) ||
-        (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y))))
-    {
-        std::swap(x,y);
+    if (isConstant(y) || (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y)))) {
+        swap(x,y);
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False

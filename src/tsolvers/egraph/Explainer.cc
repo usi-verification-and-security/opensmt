@@ -53,9 +53,7 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
     const Enode& root_x = getEnode(getEnode(x).getRoot());
     const Enode& root_y = getEnode(getEnode(y).getRoot());
     if ( root_x.getSize() < root_y.getSize() ) {
-        ERef tmp = x;
-        x = y;
-        y = tmp;
+        swap(x,y);
     }
     // Reroot the explanation tree on y. It has an amortized cost of logn
     reRootOn( y );
