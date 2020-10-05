@@ -38,8 +38,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "PtStore.h"
 #include "Explainer.h"
-// For debugging
-#include "TermMapper.h"
 
 #ifdef PEDANTIC_DEBUG
 #include "GCTest.h"
@@ -155,68 +153,72 @@ public:
     const Entry& operator[](unsigned index) const { assert(index < data.size()); return data[index]; }
 private:
     uint32_t getFreeSlotIndex();
-
-
 };
 
-class Egraph : public TSolver
-{
+class Egraph : public TSolver {
 protected:
-    Logic& logic;
-    enum class ExplainerType {CLASSIC, INTERPOLATING};
+    Logic & logic;
+    enum class ExplainerType {
+        CLASSIC, INTERPOLATING
+    };
     std::unique_ptr<Explainer> explainer;
 private:
-  /*
-   * fields and methods related to parent vectors
-   */
-  //***************************************************************************************************************
-  std::vector<UseVector> parents;
+    /*
+     * fields and methods related to parent vectors
+     */
+    //***************************************************************************************************************
+    std::vector<UseVector> parents;
 
-  Map<PTRef,ERef,PTRefHash> boolTermToERef;
-  void addToParentVectors(ERef);
+    Map<PTRef, ERef, PTRefHash> boolTermToERef;
 
-  void updateParentsVector(PTRef);
+    void addToParentVectors(ERef);
+    void updateParentsVector(PTRef);
 
-  inline void addToCarUseVector(ERef parent, Enode& parentNode);
-  inline void addToCarUseVectorExceptSymbols(ERef parent, Enode& parentNode);
-  inline void addToCdrUseVector(ERef parent, Enode& parentNode);
-  inline void addToCdrUseVectorExceptNill(ERef parent, Enode& parentNode);
+    inline void addToCarUseVector(ERef parent, Enode & parentNode);
+    inline void addToCarUseVectorExceptSymbols(ERef parent, Enode & parentNode);
+    inline void addToCdrUseVector(ERef parent, Enode & parentNode);
+    inline void addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode);
 
-  inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
-  inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
-  inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
-  inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
+    inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
+    inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
+    inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
+    inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
 
-  unsigned getParentsSize(ERef ref) { assert(getEnode(ref).getCid() < parents.size()); return parents[getEnode(ref).getCid()].size(); }
-  //***************************************************************************************************************
-  ELAllocator   forbid_allocator;
+    unsigned getParentsSize(ERef ref) {
+        assert(getEnode(ref).getCid() < parents.size());
+        return parents[getEnode(ref).getCid()].size();
+    }
 
-  EnodeStore    enode_store;
-  ERef          ERef_Nil;
+    //***************************************************************************************************************
+    ELAllocator forbid_allocator;
 
-  bool          isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
+    EnodeStore enode_store;
+    ERef ERef_Nil;
 
-  double fa_garbage_frac;
+    bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
-  UFSolverStats tsolver_stats;
+    double fa_garbage_frac;
 
-  // Stuff for values on UF
-  bool values_ok;
-  Map<ERef,ERef,ERefHash> values;
+    UFSolverStats tsolver_stats;
 
-  static const char* s_val_prefix;
-  static const char* s_const_prefix;
-  static const char* s_any_prefix;
-  static const char* s_val_true;
-  static const char* s_val_false;
+    // Stuff for values on UF
+    bool values_ok;
+    Map<ERef, ERef, ERefHash> values;
+
+    static const char * s_val_prefix;
+    static const char * s_const_prefix;
+    static const char * s_any_prefix;
+    static const char * s_val_true;
+    static const char * s_val_false;
 
 protected:
     Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType);
-public:
-  Egraph(SMTConfig & c, Logic & l);
 
-    virtual ~Egraph( ) {
-        backtrackToStackSize( 0 );
+public:
+    Egraph(SMTConfig & c, Logic & l);
+
+    virtual ~Egraph() {
+        backtrackToStackSize(0);
 #ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
 #endif // STATISTICS
@@ -224,53 +226,55 @@ public:
 
     void clearSolver() override { clearModel(); } // Only clear the possible computed values
 
-    void print(ostream&) override { return; }
+    void print(ostream &) override { return; }
 
 protected:
-    inline Enode& getEnode(ERef er) { return enode_store[er]; }
-private:
-    ERef termToERef(PTRef p)              { return enode_store.getERef(p); }
-public:
-    inline const Enode& getEnode(ERef er) const { return enode_store[er]; }
-    PTRef ERefToTerm(ERef er)    const    { return getEnode(er).getTerm(); }
+    inline Enode & getEnode(ERef er) { return enode_store[er]; }
 
-    bool  isConstant(ERef er)    const    {
+private:
+    ERef termToERef(PTRef p) { return enode_store.getERef(p); }
+
+public:
+    inline const Enode & getEnode(ERef er) const { return enode_store[er]; }
+
+    PTRef ERefToTerm(ERef er) const { return getEnode(er).getTerm(); }
+
+    bool isConstant(ERef er) const {
         return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
     }
 
 #ifdef STATISTICS
-  void        printMemStats             ( ostream & );
+    void printMemStats (ostream &);
 #endif
+    void computePolarities (ERef);
 
-  void    computePolarities ( ERef );
+    //===========================================================================
+    // Public APIs for Theory Combination with DTC
 
-  //===========================================================================
-  // Public APIs for Theory Combination with DTC
+    void    gatherInterfaceTerms     (ERef);
+    int     getInterfaceTermsNumber  ();
+    ERef    getInterfaceTerm         (const int);
+    bool    isRootUF                 (ERef);
+    ERef    canonizeDTC              (ERef, bool = false);
 
-  void    gatherInterfaceTerms     ( ERef );
-  int     getInterfaceTermsNumber  ( );
-  ERef    getInterfaceTerm         ( const int );
-  bool    isRootUF                 ( ERef );
-  ERef    canonizeDTC              ( ERef, bool = false );
-
-  Logic& getLogic() override { return logic; }
+    Logic& getLogic() override { return logic; }
 
 public:
 
   //===========================================================================
   // Public APIs for Egraph Core Solver
 
-  bool                assertLit               (PtAsgn) override;
-  void                pushBacktrackPoint      ( ) override;                 // Push a backtrack point
-  void                popBacktrackPoint       ( ) override;                 // Backtrack to last saved point
-  PTRef               getSuggestion           ( );                          // Return a suggested literal based on the current state
-  lbool               getPolaritySuggestion   (PTRef);                      // Return a suggested polarity for a given literal
-  void                getConflict             ( bool, vec<PtAsgn>& ) override;// Get explanation
-  TRes                check                   ( bool ) override { return TRes::SAT; }// Check satisfiability
-  ValPair             getValue                (PTRef tr) override;
-  void                computeModel            ( ) override;
-  void                clearModel              ( );
-  void                splitOnDemand           ( vec<PTRef> &, int ) { };       // Splitting on demand modulo equality
+    bool       assertLit               (PtAsgn) override;
+    void       pushBacktrackPoint      () override;                 // Push a backtrack point
+    void       popBacktrackPoint       () override;                 // Backtrack to last saved point
+    PTRef      getSuggestion           ();                          // Return a suggested literal based on the current state
+    lbool      getPolaritySuggestion   (PTRef);                     // Return a suggested polarity for a given literal
+    void       getConflict             (bool, vec<PtAsgn>&) override;// Get explanation
+    TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
+    ValPair    getValue                (PTRef tr) override;
+    void       computeModel            () override;
+    void       clearModel              ();
+    void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 
 #if MORE_DEDUCTIONS
@@ -282,7 +286,7 @@ private:
   //
   // Defines the set of operations that can be performed and that should be undone
   //
-  typedef enum {      // These constants are stored on undo_stack_oper when
+    typedef enum {      // These constants are stored on undo_stack_oper when
       CONS            // An undoable cons is done
     , MERGE           // A merge is done
     , DISEQ           // A negated equality is asserted
@@ -291,125 +295,122 @@ private:
     , SET_DYNAMIC     // Dynamic info was set
     , SET_POLARITY    // A polarity of a PTRef was set
     , UNDEF_OP        // A dummy value for default constructor
-#if MORE_DEDUCTIONS
+    #if MORE_DEDUCTIONS
     , ASSERT_NEQ
-#endif
-  } oper_t;
+    #endif
+    } oper_t;
 
-  class Undo {
-    public:
-      oper_t oper;
-      union arg_t { PTRef ptr; ERef er; } arg;
-      Undo(oper_t o, PTRef r) : oper(o) { arg.ptr = r; }
-      Undo(oper_t o, ERef r)  : oper(o) { arg.er = r; }
-      Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
-#ifdef VERBOSE_EUF
-      ERef merged_with;
-      PTRef bool_term;
-#endif
-  };
+      class Undo {
+        public:
+          oper_t oper;
+          union arg_t { PTRef ptr; ERef er; } arg;
+          Undo(oper_t o, PTRef r) : oper(o) { arg.ptr = r; }
+          Undo(oper_t o, ERef r)  : oper(o) { arg.er = r; }
+          Undo()         : oper(UNDEF_OP)   { arg.ptr = PTRef_Undef; }
+    #ifdef VERBOSE_EUF
+          ERef merged_with;
+          PTRef bool_term;
+    #endif
+      };
 
-  bool                           model_computed;                // Has model been computed lately ?
-  bool                           congruence_running;            // True if congruence is running
 
-  //===========================================================================
-  // Private Routines for Core Theory Solver
+    //===========================================================================
+    // Private Routines for Core Theory Solver
 
-  //
-  // Asserting literals
-  //
+    //
+    // Asserting literals
+    //
 public:
-  bool      addDisequality      ( PtAsgn );
-  bool      addEquality         ( PtAsgn );
-  bool      addTrue             ( PTRef );
-  bool      addFalse            ( PTRef );
+    bool      addDisequality      ( PtAsgn );
+    bool      addEquality         ( PtAsgn );
+    bool      addTrue             ( PTRef );
+    bool      addFalse            ( PTRef );
 
-  void      declareAtom(PTRef) override;
+    void      declareAtom(PTRef) override;
     // Non-recursive declare term
-  void      declareTerm         (PTRef);
+    void      declareTerm         (PTRef);
 
 private:
-  std::unordered_set<PTRef, PTRefHash> declared;
-  void declareTermRecursively(PTRef);
+    std::unordered_set<PTRef, PTRefHash> declared;
+    void declareTermRecursively(PTRef);
 
-  bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
-  bool    assertEq        ( ERef, ERef, PtAsgn );                 // Called by the above
-  bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
-  bool    assertNEq       ( ERef, ERef, PtAsgn );                 // Called by the above
-  bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
-  //
-  // Backtracking
-  //
-  void    backtrackToStackSize ( size_t );                      // Backtrack to a certain operation
-  //
-  // Congruence closure main routines
-  //
-  bool    unmergeable     ( ERef, ERef, PtAsgn& ) const;        // Can two nodes be merged ?
-  void    merge           ( ERef, ERef, PtAsgn );               // Merge two nodes
-  bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
-  void    deduce          ( ERef, ERef, PtAsgn );               // Deduce from merging of two nodes (record the reason)
-  void    undoMerge       ( ERef );                             // Undoes a merge
-  void    undoDisequality ( ERef );                             // Undoes a disequality
-  void    undoDistinction ( PTRef );                            // Undoes a distinction
+    bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
+    bool    assertEq        ( ERef, ERef, PtAsgn );                 // Called by the above
+    bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
+    bool    assertNEq       ( ERef, ERef, PtAsgn );                 // Called by the above
+    bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
+    //
+    // Backtracking
+    //
+    void    backtrackToStackSize ( size_t );                      // Backtrack to a certain operation
+    //
+    // Congruence closure main routines
+    //
+    bool    unmergeable     ( ERef, ERef, PtAsgn& ) const;        // Can two nodes be merged ?
+    void    merge           ( ERef, ERef, PtAsgn );               // Merge two nodes
+    bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
+    void    deduce          ( ERef, ERef, PtAsgn );               // Deduce from merging of two nodes (record the reason)
+    void    undoMerge       ( ERef );                             // Undoes a merge
+    void    undoDisequality ( ERef );                             // Undoes a disequality
+    void    undoDistinction ( PTRef );                            // Undoes a distinction
 
 
-  vec< ERef >                 pending;                          // Pending merges
-  vec< Undo >                 undo_stack_main;                  // Keeps track of terms involved in operations
+    vec<ERef>                 pending;                          // Pending merges
+    vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
-  void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
-  void explainConstants(ERef, ERef);
+    void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
+    void explainConstants(ERef, ERef);
 
-  //============================================================================
-  // Memory management for forbid allocator
-  void faGarbageCollect();
-  inline void checkFaGarbage(void) { return checkFaGarbage(fa_garbage_frac); }
-  inline void checkFaGarbage(double gf) {
-    if (forbid_allocator.wasted() > forbid_allocator.size() * gf)
-        faGarbageCollect(); }
-  void relocAll(ELAllocator&);
-  //============================================================================
+    //============================================================================
+    // Memory management for forbid allocator
+    void faGarbageCollect();
+    inline void checkFaGarbage(void) { return checkFaGarbage(fa_garbage_frac); }
+    inline void checkFaGarbage(double gf) {
+        if (forbid_allocator.wasted() > forbid_allocator.size() * gf)
+            faGarbageCollect();
+    }
+    void relocAll(ELAllocator&);
+    //============================================================================
 
-  //===========================================================================
-  // Debugging routines - Implemented in EgraphDebug.C
+    //===========================================================================
+    // Debugging routines - Implemented in EgraphDebug.C
 public:
-  char* printEqClass               ( PTRef tr ) const;
-  char* printDistinctions          ( PTRef tr ) const;
-  char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.getERef(tr)).c_str()); return tmp; }
+    char* printEqClass               ( PTRef tr ) const;
+    char* printDistinctions          ( PTRef tr ) const;
+    char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.getERef(tr)).c_str()); return tmp; }
 private:
-  std::string toString                 (ERef er) const;
+    std::string toString                 (ERef er) const;
 public:
-  string printExplanationTreeDotty(ERef);
+    string printExplanationTreeDotty(ERef);
 private:
-  const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
-  void checkForbidReferences       ( ERef );
-  void checkRefConsistency         ( );
-  // Helper methods
-  void mergeForbidLists(Enode & to, const Enode & from);
-  void unmergeForbidLists(Enode & to, const Enode & from);
-  void mergeDistinctionClasses(Enode & to, const Enode & from);
-  void unmergeDistinctionClasses(Enode & to, const Enode & from);
-  void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
-  void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
-  void processParentsAfterMerge(UseVector & parents, ERef merged);
-  void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
+    const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
+    void checkForbidReferences       ( ERef );
+    void checkRefConsistency         ( );
+    // Helper methods
+    void mergeForbidLists(Enode & to, const Enode & from);
+    void unmergeForbidLists(Enode & to, const Enode & from);
+    void mergeDistinctionClasses(Enode & to, const Enode & from);
+    void unmergeDistinctionClasses(Enode & to, const Enode & from);
+    void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
+    void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
+    void processParentsAfterMerge(UseVector & parents, ERef merged);
+    void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
 
 #ifdef VERBOSE_EUF
 public:
-  const char* printUndoTrail     ( );
-  const char* printAsrtTrail     ( );
+    const char* printUndoTrail     ( );
+    const char* printAsrtTrail     ( );
 private:
-  bool checkParents              ( ERef );
-  bool checkInvariants           ( );
-//  bool checkInvariantFLS         ( );
-//  bool checkInvariantSTC         ( ) { return checkInvariants(); }
-  bool checkInvariantSTC         ( ) { return true; }
-  bool checkExp                  ( );
-  bool checkExpTree              ( PTRef );
-  bool checkExpReachable         ( PTRef, PTRef );
+    bool checkParents              ( ERef );
+    bool checkInvariants           ( );
+    bool checkInvariantSTC         ( ) { return true; }
+    bool checkExp                  ( );
+    bool checkExpTree              ( PTRef );
+    bool checkExpReachable         ( PTRef, PTRef );
 #endif
 
 #ifdef STATISTICS
-  void printStatistics ( ofstream & );
+    void printStatistics ( ofstream & );
 #endif
 };
 

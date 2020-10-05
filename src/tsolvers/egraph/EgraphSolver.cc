@@ -82,7 +82,6 @@ Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
 #endif
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
-      , congruence_running ( false )
 {
     auto rawExplainer = [this](ExplainerType type) -> Explainer * {
         switch(type) {
