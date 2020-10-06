@@ -251,12 +251,10 @@ PtAsgn Explainer::explainEdge(const ERef v, const ERef p, PendingQueue &exp_pend
     assert(getEnode(v).getExpParent() == p);
     PtAsgn r = getEnode(v).getExpReason();
 
-    PtAsgn expl;
+    PtAsgn expl = PtAsgn_Undef;
 
     if (r.tr != PTRef_Undef) {
         // Not a congruence edge
-//        AH: It seems that bringing the required propositional vars to the egraph reintroduces the duplicates
-//        assert(!isDup(r.tr)); // MB: It seems that with the shortcuts stored in expRoot, duplicates will never be encountered
         if (not dc.isDup(r.tr)) {
             expl = r;
             dc.storeDup(r.tr);

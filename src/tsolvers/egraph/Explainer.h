@@ -22,8 +22,6 @@ protected:
         friend                      struct DupChecker;
     };
 
-    DuplicateCheckerData duplicateCheckerData;
-
     struct DupChecker {
         DuplicateCheckerData &dc;
         DupChecker(DuplicateCheckerData &dc) : dc(dc) {
@@ -35,6 +33,7 @@ protected:
                 ++dc.dup_count;
             } else {
                 dc.duplicates.clear();
+                dc.dup_count = 0;
             }
         }
         inline void storeDup(PTRef e) { assert(!dc.free); if (dc.duplicates.has(e)) dc.duplicates[e] = dc.dup_count; else dc.duplicates.insert(e, dc.dup_count); }

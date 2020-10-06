@@ -142,9 +142,6 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
         addDistClass(tr);
     }
 
-    ERef sym, cdr;
-    const Pterm& tm = logic.getPterm(tr);
-
     // Add both the pure and the negated terms
     if (logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr)) {
         PTRef tr_pure;
@@ -156,12 +153,7 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
         // If tr is a complex Boolean operator, do not model the full logic but cut here (the ERef
         // will be treated as a UF constant with the anon name from the logic).  Otherwise, (tr is
         // a pure Boolean atom or its negation), use the term ref from the logic.
-        if (logic.isBooleanOperator(tr_pure)) {
-            sym = addSymb(logic.getSym_anon());
-        }
-        else {
-            sym = addSymb(logic.getSymRef(tr_pure));
-        }
+        ERef sym = logic.isBooleanOperator(tr_pure) ? addSymb(logic.getSym_anon()) : addSymb(logic.getSymRef(tr_pure));
 
         // Add the pure term
         ERef er_pure = addTerm(sym, ERef_Nil, tr_pure);
@@ -174,7 +166,9 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
     }
 
     else {
+        ERef sym, cdr;
         if (not logic.isIte(tr)) {
+            const Pterm& tm = logic.getPterm(tr);
             sym = addSymb(tm.symb());
             cdr = ERef_Nil;
             for (int j = tm.size() - 1; j >= 0; j--) {
