@@ -39,7 +39,7 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
 
     // They must be different because the merge hasn't occured yet
     if (getEnode(x).getRoot() == getEnode(y).getRoot()) {
-        throw OsmtInternalException(); // "Attempting to store explanation for already known equality"
+        throw OsmtInternalException("Attempting to store explanation for already known equality");
     }
     // The main observation here is that the explanation tree, altough
     // differently oriented, has the same size as the equivalence tree
@@ -131,7 +131,7 @@ vec<PtAsgn> Explainer::explain(std::pair<ERef,ERef> nodePair) {
 #endif
         ERef w = NCA(p, q);
         if (w == ERef_Undef) {
-            throw OsmtInternalException(); // "Equality explanation queried for terms not in same equivalence class")
+            throw OsmtInternalException("Equality explanation queried for terms not in same equivalence class");
         }
 
 #ifdef VERBOSE_EUFEX
