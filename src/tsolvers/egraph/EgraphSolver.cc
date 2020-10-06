@@ -285,7 +285,7 @@ void Egraph::declareTerm(PTRef tr) {
         updateParentsVector(PTRefERefPair.first);
     }
 
-    if (logic.hasSortBool(tr) && !logic.isDistinct(tr)) {
+    if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
         assert(PTRefERefPairVec.size() == 2);
         for (auto PTRefERefPair : PTRefERefPairVec) {
             boolTermToERef.insert(PTRefERefPair.first, PTRefERefPair.second);

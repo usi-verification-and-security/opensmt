@@ -371,8 +371,6 @@ class Logic {
     bool        isFalse(SymRef sr) const;// { return sr == getSym_false(); }
     bool        isFalse(PTRef tr)  const;// { return isFalse(getPterm(tr).symb()); }
     bool        isAnon(SymRef sr) const { return sr == getSym_anon(); }
-    bool        isDistinct(SymRef sr) const { return disequalities.has(sr); }
-    bool        isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const;// { return isIff(getPterm(tr).symb()); }
 
