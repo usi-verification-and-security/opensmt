@@ -211,9 +211,6 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
             // Incompatible colors: this is possible
             // for effect of congruence nodes: adjust
             if ((x->color == I_A && n->color == I_B) || (x->color == I_B && n->color == I_A)) {
-                vec<PTRef> eadj;
-                eadj.push(x->e);
-                eadj.push(n->e);
                 // Need to introduce auxiliary nodes and edges
                 // For each argument, find node that is equivalent
                 // and of shared color
@@ -351,9 +348,8 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
 // formula into A and B.
 //
 PTRef
-UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & ) {
+UFInterpolator::getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> * labels, PartitionManager & ) {
     assert(labels);
-    (void)mask;
     srand(2);
     computeAndStoreColors(*labels);
     colorCGraph();

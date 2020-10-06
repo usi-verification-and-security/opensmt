@@ -49,52 +49,40 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct CEdge;
 class Logic;
 
-struct CNode
-{
-  CNode( PTRef   e_ )
-    :
-    e     ( e_ )
-    , color ( I_UNDEF )
-    , next  ( NULL )
-  {
-  }
+struct CNode {
+    CNode(PTRef e_)
+        :
+        e(e_), color(I_UNDEF), next(nullptr)
+        { }
 
-  PTRef   e;
-  icolor_t color;
-  CEdge *   next;
-  set<CEdge*>   prev;
+    PTRef e;
+    icolor_t color;
+    CEdge * next;
+    std::set<CEdge *> prev;
 };
 
-typedef pair< CNode *, CNode * > path_t;
+typedef std::pair<CNode *, CNode *> path_t;
 
-struct CEdge
-{
-  CEdge ( CNode * s
-        , CNode * t
-        , PTRef r )
-    : source( s )
-    , target( t )
-    , reason( r )
-    , color ( I_UNDEF )
-  {
-    assert( source );
-    assert( target );
-  }
+struct CEdge {
+    CEdge(CNode * s, CNode * t, PTRef r)
+        : source(s), target(t), reason(r), color(I_UNDEF) {
+        assert(source);
+        assert(target);
+    }
 
-  CNode * source;
-  CNode * target;
-  PTRef reason;
-  icolor_t color;
+    CNode * source;
+    CNode * target;
+    PTRef reason;
+    icolor_t color;
 };
 
 class CGraph {
-    std::vector< CNode * >          cnodes;
-    std::vector< CEdge * >          cedges;
-    std::map< PTRef, CNode * >      cnodes_store;
+    std::vector<CNode *>          cnodes;
+    std::vector<CEdge *>          cedges;
+    std::map<PTRef, CNode *>      cnodes_store;
 
-    PTRef                         conf1 = PTRef_Undef;
-    PTRef                         conf2 = PTRef_Undef;
-
+    PTRef conf1 = PTRef_Undef;
+    PTRef conf2 = PTRef_Undef;
 
     void clear();
 
@@ -104,16 +92,15 @@ public:
     bool hasNode(PTRef term) const { return cnodes_store.find(term) != cnodes_store.end(); }
     CNode * getNode(PTRef term) const { return cnodes_store.at(term); }
 
-    void     addCNode      (PTRef e);
-    void     addCEdge      ( PTRef, PTRef, PTRef );
+    void  addCNode (PTRef e);
+    void  addCEdge (PTRef, PTRef, PTRef);
 
     void removeCEdge(CEdge *);
 
     CNode* getConflictStart() const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf1); }
     CNode* getConflictEnd()   const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf2); }
 
-    inline void setConf( PTRef c1, PTRef c2)
-    {
+    inline void setConf( PTRef c1, PTRef c2) {
 //      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
         assert( conf1 == PTRef_Undef );
         assert( conf2 == PTRef_Undef );
@@ -123,26 +110,20 @@ public:
         conf2 = c2;
     }
 
-
     ~CGraph( ) { clear( ); }
 };
 
-class UFInterpolator : public TheoryInterpolator
-{
+class UFInterpolator : public TheoryInterpolator {
 public:
 
-  UFInterpolator( SMTConfig & config_
-        , Logic & logic_
-        , CGraph & cgraph)
-    : config  ( config_ )
-    , logic   ( logic_ )
-    , cgraph  (cgraph)
-  { }
+    UFInterpolator(SMTConfig & config_, Logic & logic_, CGraph & cgraph)
+        : config(config_), logic(logic_), cgraph(cgraph) {}
 
-	inline int     verbose                       ( ) const { return config.verbosity(); }
-    void verifyInterpolantWithExternalTool( const ipartitions_t& mask );
-  PTRef  getInterpolant( const ipartitions_t & , map<PTRef, icolor_t>*, PartitionManager & );
-  void     printAsDotty  ( ostream & );
+    inline int verbose() const { return config.verbosity(); }
+
+    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &);
+
+    void printAsDotty(ostream &);
 
 private:
 
@@ -164,45 +145,48 @@ private:
     bool colorEdges(CNode * c1, CNode * c2);
     bool colorEdgesFrom(CNode * x);
 
-    size_t     getSortedEdges       ( CNode *, CNode *, vector< CEdge * > & );
+    size_t getSortedEdges(CNode *, CNode *, vector<CEdge *> &);
 
     icolor_t resolveABColor() const;
 
-  bool usingStrong() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
-  bool usingWeak() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_weak; }
-  bool usingRandom() const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_random; }
+    bool usingStrong()  const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
+    bool usingWeak()    const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_weak; }
+    bool usingRandom()  const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_random; }
 
-  bool          getSubpaths          ( const path_t &, path_t &, path_t &, path_t & );
-  bool          getSubpathsSwap          ( const path_t &, path_t &, path_t &, path_t & );
-  PTRef       I                    ( const path_t & );
-  PTRef       Iprime                    ( const path_t & );
-  PTRef       ISwap                    ( const path_t & );
-  PTRef       IprimeSwap                    ( const path_t & );
-  PTRef Irec(const path_t & p, map<path_t, PTRef> & cache);
-  PTRef IrecSwap(const path_t & p, map<path_t, PTRef> & cache);
-  PTRef       J                    ( const path_t &, vector< path_t > & );
-  PTRef       JSwap                    ( const path_t &, vector< path_t > & );
-  void          B                    ( const path_t &, vector< path_t > & );
-  void          BSwap                    ( const path_t &, vector< path_t > & );
-  void          Brec                 ( const path_t &, vector< path_t > &, set< path_t > & );
-  void          BrecSwap                 ( const path_t &, vector< path_t > &, set< path_t > & );
-  bool          getFactorsAndParents ( const path_t &, vector< path_t > &, vector< path_t > & );
-  void labelFactors( vector<path_t> & );
-  inline path_t path                 ( CNode * c1, CNode * c2 ) { return make_pair( c1, c2 ); }
+    bool getSubpaths(const path_t &, path_t &, path_t &, path_t &);
 
-  bool          checkColors          ( );
+    bool getSubpathsSwap(const path_t &, path_t &, path_t &, path_t &);
 
-  PTRef       maximize             ( PTRef );
+    PTRef I(const path_t &);
+    PTRef Iprime(const path_t &);
+    PTRef ISwap(const path_t &);
+    PTRef IprimeSwap(const path_t &);
+    PTRef Irec(const path_t & p, map<path_t, PTRef> & cache);
+    PTRef IrecSwap(const path_t & p, map<path_t, PTRef> & cache);
+    PTRef J(const path_t &, vector<path_t> &);
+    PTRef JSwap(const path_t &, vector<path_t> &);
 
-  SMTConfig &                     config;
-  Logic &                         logic;
-  CGraph &                        cgraph;
-  std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
-  std::unordered_map<PTRef, icolor_t, PTRefHash> litColors;
-  std::set< CNode * >             colored_nodes;
-  std::set< CEdge * >             colored_edges;
-  std::map< path_t, icolor_t > L;
+    void B(const path_t &, vector<path_t> &);
+    void BSwap(const path_t &, vector<path_t> &);
+    void Brec(const path_t &, vector<path_t> &, set<path_t> &);
+    void BrecSwap(const path_t &, vector<path_t> &, set<path_t> &);
 
+    bool getFactorsAndParents(const path_t &, vector<path_t> &, vector<path_t> &);
+
+    void labelFactors(vector<path_t> &);
+
+    inline path_t path(CNode * c1, CNode * c2) { return make_pair(c1, c2); }
+
+    bool checkColors();
+
+    SMTConfig & config;
+    Logic & logic;
+    CGraph & cgraph;
+    std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
+    std::unordered_map<PTRef, icolor_t, PTRefHash> litColors;
+    std::set<CNode *> colored_nodes;
+    std::set<CEdge *> colored_edges;
+    std::map<path_t, icolor_t> L;
 
 };
 
