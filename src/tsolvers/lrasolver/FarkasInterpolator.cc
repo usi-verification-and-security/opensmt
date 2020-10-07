@@ -705,7 +705,7 @@ PTRef FarkasInterpolator::getInterpolant(FarkasItpOptions const & options) {
         if (algorithmToUse != ItpAlg::WEAK) {
             itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
         } else {
-            itp = delta_flag_dual ? logic.mkNumLt(args) : itp = logic.mkNumLeq(args);
+            itp = delta_flag_dual ? logic.mkNumLt(args) : logic.mkNumLeq(args);
             itp = logic.mkNot(itp);
         }
     }
