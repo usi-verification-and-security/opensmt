@@ -58,23 +58,9 @@ The algorithm and data structures are inspired by the following paper:
 
 #include "Egraph.h"
 #include "Enode.h"
-//#include "LA.h"
-// DO NOT REMOVE THIS COMMENT !!
-// IT IS USED BY CREATE_THEORY.SH SCRIPT !!
-// NEW_THEORY_HEADER
-//#include "EmptySolver.h"
-//#include "BVSolver.h"
-//#include "LRASolver.h"
-//#include "DLSolver.h"
-//#include "CostSolver.h"
-//#include "AXDiffSolver.h"
-// Added to support compiling templates
-//#include "DLSolver.C"
-//#include "SimpSMTSolver.h"
 #include "TreeOps.h"
 #include "Deductions.h"
 
-#define VERBOSE 0
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
@@ -84,7 +70,9 @@ const char* Egraph::s_any_prefix = "a";
 const char* Egraph::s_val_true = "true";
 const char* Egraph::s_val_false = "false";
 
-Egraph::Egraph(SMTConfig & c, Logic& l)
+Egraph::Egraph(SMTConfig & c, Logic & l) : Egraph(c,l,ExplainerType::CLASSIC) {}
+
+Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
       : TSolver            (descr_uf_solver, descr_uf_solver, c)
       , logic              (l)
 #if defined(PEDANTIC_DEBUG)
@@ -94,35 +82,21 @@ Egraph::Egraph(SMTConfig & c, Logic& l)
 #endif
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
-      , active_dup1        ( false )
-      , dup_count1         ( 0 )
-      , congruence_running ( false )
-      , time_stamp         ( 0 )
 {
-
-    // For the uninterpreted predicates and propositional structures inside
-    // uninterpreted functions define function not, the terms true and false,
-    // and an asserted disequality true != false
-
-    constructTerm(logic.getTerm_true());
-    constructTerm(logic.getTerm_false());
-
-    PTRef t = logic.getTerm_true();
-    PTRef f = logic.getTerm_false();
-
-    enode_store.ERef_True  = enode_store.termToERef[t];
-    enode_store.ERef_False = enode_store.termToERef[f];
-
-    // add the term (= true false) to term store
-    vec<PTRef> tmp;
-    tmp.push(logic.getTerm_true());
-    tmp.push(logic.getTerm_false());
-    PTRef neq = logic.mkEq(tmp);
-
-    assertNEq(logic.getTerm_true(), logic.getTerm_false(), PtAsgn(neq, l_False));
-
-    Eq_FALSE = neq;
-
+    auto rawExplainer = [this](ExplainerType type) -> Explainer * {
+        switch(type) {
+            case ExplainerType::CLASSIC: {
+                return new Explainer(enode_store);
+            }
+            case ExplainerType::INTERPOLATING: {
+                return new InterpolatingExplainer(enode_store);
+            }
+            default: {
+                return new Explainer(enode_store);
+            }
+        }
+    }(explainerType);
+    explainer.reset(rawExplainer);
 }
 
 //
@@ -190,8 +164,8 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
     if(term.size() > 2) { return l_Undef; } // For now focus on 2 arguments
     PTRef lhs = term[0];
     PTRef rhs = term[1];
-    assert(enode_store.termToERef.has(lhs) && enode_store.termToERef.has(rhs));
-    if (!enode_store.termToERef.has(lhs) || !enode_store.termToERef.has(rhs)) { return l_Undef; }
+    assert(enode_store.has(lhs) && enode_store.has(rhs));
+    if (!enode_store.has(lhs) || !enode_store.has(rhs)) { return l_Undef; }
     ERef e_lhs = termToERef(lhs);
     ERef e_rhs = termToERef(rhs);
     if (getEnode(e_lhs).getRoot() == getEnode(e_rhs).getRoot()) {
@@ -292,94 +266,32 @@ void Egraph::declareTermRecursively(PTRef tr) {
  *
  * @param tr
  */
-void Egraph::constructTerm(PTRef tr) {
-
-    if (enode_store.termToERef.has(tr))
-        return;
-
-    ERef sym, cdr;
-    const Pterm& tm = logic.getPterm(tr);
-
-
-    // Add both the pure and the negated terms
-    if (logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr)) {
-        PTRef tr_pure;
-        PTRef tr_neg;
-        lbool sgn;
-        logic.purify(tr, tr_pure, sgn);
-        tr_neg = logic.mkNot(tr_pure);
-
-        // If tr is a complex Boolean operator, do not model the full logic but cut here (the ERef
-        // will be treated as a UF constant with the anon name from the logic).  Otherwise, (tr is
-        // a pure Boolean atom or its negation), use the term ref from the logic.
-        if (logic.isBooleanOperator(tr_pure)) {
-            sym = enode_store.addSymb(logic.getSym_anon());
-        }
-        else {
-            sym = enode_store.addSymb(logic.getSymRef(tr_pure));
-        }
-
-        // Add the pure term
-        ERef er_pure = enode_store.addTerm(sym, ERef_Nil, tr_pure);
-        // Add the negated term
-        ERef er_neg = enode_store.addTerm(enode_store.sym_uf_not, enode_store.addList(er_pure, ERef_Nil), logic.mkNot(tr_pure));
-
-        updateParentsVector(tr_pure);
-        updateParentsVector(logic.mkNot(tr_pure));
-
-        // Make sure er_pure and er_neg need to be different
-        assertNEq(er_pure, er_neg, PtAsgn_Undef);
-
-        boolTermToERef.insert(tr_pure, er_pure);
-        boolTermToERef.insert(tr_neg, er_neg);
-    } else {
-
-        if (not logic.isIte(tr)) {
-            sym = enode_store.addSymb(tm.symb());
-            cdr = ERef_Nil;
-            for (int j = tm.size() - 1; j >= 0; j--) {
-                assert(enode_store.termToERef.has(tm[j])); // The child was not inserted
-                ERef car = enode_store.termToERef[tm[j]];
-#ifdef VERBOSE_EUF
-                ERef prev_cdr = cdr;
-                assert (enode_store[car].getRoot() == car);
-                assert (enode_store[cdr].getRoot() == cdr);
-#endif
-                cdr = enode_store.addList(car, cdr);
-            }
-        } else {
-            sym = enode_store.addIteSymb(tr);
-            cdr = ERef_Nil;
-        }
-        ERef er = enode_store.addTerm(sym, cdr, tr);
-
-        updateParentsVector(tr);
-
-        if (logic.isUP(tr) || logic.isEquality(tr)) {
-            PTRef tr_neg = logic.mkNot(tr);
-            ERef er_neg = enode_store.addTerm(enode_store.sym_uf_not, enode_store.addList(er, ERef_Nil), tr_neg);
-            updateParentsVector(tr_neg);
-            boolTermToERef.insert(tr, er);
-            boolTermToERef.insert(tr_neg, er_neg);
-        }
-    }
-}
-
-//
-// No recursion here, we assume the caller has already introduced the
-// subterms
-//
 void Egraph::declareTerm(PTRef tr) {
-
     if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
     if ((logic.isBoolAtom(tr) || logic.isBooleanOperator(tr)) && !logic.appearsInUF(tr)) { return; }
-    constructTerm(tr);
+
+
+    auto PTRefERefPairVec = enode_store.constructTerm(tr);
+
 #ifdef VERBOSE_EUF
-        cerr << "EgraphSolver: Adding term " << logic.printTerm(tr) << " (" << tr.x << ")" << endl;
+    cerr << "EgraphSolver: Adding term " << logic.printTerm(tr) << " (" << tr.x << ")" << endl;
 #endif
 
-    if (logic.isDisequality(tr) && !enode_store.dist_classes.has(tr))
-        enode_store.addDistClass(tr);
+    if (PTRefERefPairVec.size() == 0) {
+        return;
+    }
+
+    for (auto PTRefERefPair : PTRefERefPairVec) {
+        updateParentsVector(PTRefERefPair.first);
+    }
+
+    if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
+        assert(PTRefERefPairVec.size() == 2);
+        for (auto PTRefERefPair : PTRefERefPairVec) {
+            boolTermToERef.insert(PTRefERefPair.first, PTRefERefPair.second);
+        }
+        assertNEq(PTRefERefPairVec[0].second, PTRefERefPairVec[1].second, PtAsgn_Undef);
+    }
 
     if (logic.hasSortBool(tr)) {
         setKnown(tr);
@@ -567,7 +479,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         // automatic way of retrieving a conflict.
 
         if ( en_p.isTerm( ) ) {
-            expStoreExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
+            explainer->storeExplanation( p, q, congruence_pending ? PtAsgn(PTRef_Undef, l_Undef) : reason );
 #ifdef VERBOSE_EUF
             cerr << "Exp store: " << (congruence_pending ? "undef" : logic.printTerm(reason.tr)) << endl;
 #endif
@@ -620,7 +532,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
                 // (4) Check if the root enode is the same as the root of p or q
 
                 PTRef ptr_arg = pt_reason[i];                             // (1)
-                ERef  enr_arg = enode_store.termToERef[ptr_arg];          // (2)
+                ERef  enr_arg = enode_store.getERef(ptr_arg);             // (2)
                 ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (3)
 
                 // (4)
@@ -646,9 +558,9 @@ bool Egraph::mergeLoop( PtAsgn reason )
             // If properly booleanized, the left and righ sides of equality
             // will always be UF terms
             // The left hand side of the equality
-            reason_1 = enode_store.termToERef[pt_reason[0]];
+            reason_1 = enode_store.getERef(pt_reason[0]);
             // The rhs of the equality
-            reason_2 = enode_store.termToERef[pt_reason[1]];
+            reason_2 = enode_store.getERef(pt_reason[1]);
 
             assert( reason_1 != ERef_Undef );
             assert( reason_2 != ERef_Undef );
@@ -661,14 +573,13 @@ bool Egraph::mergeLoop( PtAsgn reason )
         else if ( logic.isUP(reason_inequality.tr) ) {
             // The reason is an uninterpreted predicate
             assert(false);
-            if (reason_inequality.tr != Eq_FALSE)
-                explanation.push(reason_inequality);
+            explanation.push(reason_inequality);
         }
         // Clear remaining pendings
         pending.clear( );
         // Remove the last explanation that links
         // the two unmergable classes
-        expRemoveExplanation( );
+        explainer->removeExplanation();
 //        expCleanup(); // called in expExplain(r1, r2)
         // Return conflict
         return false;
@@ -701,8 +612,8 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r ) {
     undo_stack_term.push_back( r );
 #endif
 
-    ERef xe = enode_store.termToERef[x];
-    ERef ye = enode_store.termToERef[y];
+    ERef xe = enode_store.getERef(x);
+    ERef ye = enode_store.getERef(y);
     ERef p = getEnode(xe).getRoot();
     ERef q = getEnode(ye).getRoot();
     // They can't be different if the nodes are in the same class
@@ -817,7 +728,7 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
 #endif
     for (int i = 0; i < pt_d.size(); i++) {
         PTRef tr_c = pt_d[i];
-        ERef er_c = enode_store.termToERef[tr_c];
+        ERef er_c = enode_store.getERef(tr_c);
         Enode& en_c = enode_store[er_c];
         assert(en_c.isTerm());
         enodeid_t root_id = enode_store[en_c.getRoot()].getId();
@@ -872,7 +783,7 @@ void Egraph::undoDistinction(PTRef tr_d) {
     Pterm& pt_d = logic.getPterm(tr_d);
     for (int i = 0; i < pt_d.size(); i++) {
         PTRef tr_c = pt_d[i];
-        ERef er_c = enode_store.termToERef[tr_c];
+        ERef er_c = enode_store.getERef(tr_c);
         Enode& en_c = enode_store[er_c];
         assert(en_c.isTerm());
         en_c.setDistClasses( en_c.getDistClasses() & ~(SETBIT(index)) );
@@ -914,7 +825,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 #endif
             undoMerge( e );
             if ( en_e.isTerm( ) ) {
-                expRemoveExplanation( );
+                explainer->removeExplanation();
             }
         }
 
@@ -985,10 +896,8 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     // Step 1: Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
-    if (isConstant(y) ||
-        (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y))))
-    {
-        std::swap(x,y);
+    if (isConstant(y) || (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y)))) {
+        swap(x,y);
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
@@ -1050,11 +959,11 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     // Depends on the invariant that constants are always the root of its eq. class.
     // Also we assume that y is root of the class being merged into class with root x
     // That means only x can be constant.
-    assert(y != enode_store.ERef_True && y != enode_store.ERef_False);
-    if ( x == enode_store.ERef_True  ){
+    assert(y != enode_store.getEnode_true() && y != enode_store.getEnode_false());
+    if ( x == enode_store.getEnode_true() ){
         deduced_polarity = l_True;
     }
-    else if ( x == enode_store.ERef_False ){
+    else if ( x == enode_store.getEnode_false() ){
         deduced_polarity = l_False;
     }
 
@@ -1126,7 +1035,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             continue;
         }
         if (!hasPolarity(v_tr)) {
-            assert(v_tr == enode_store.ERefToTerm[v]);
+            assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
             cerr << "Deducing ";
@@ -1309,27 +1218,28 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
 
-    dist_t intersection = ( en_p.getDistClasses( ) & en_q.getDistClasses( ) );
+    dist_t intersection = en_p.getDistClasses() & en_q.getDistClasses();
 
-    if ( intersection ) {
+    if (intersection) {
         // Compute the first index in the intersection
         // TODO: Use hacker's delight
         unsigned index = 0;
-        while ( ( intersection & 1 ) == 0 ) {
+        while ((intersection & 1) == 0) {
             intersection = intersection >> 1;
-            index ++;
+            ++index;
         }
         // Dist terms are all inequalities, hence their polarity's true
         r = PtAsgn(enode_store.getDistTerm(index), l_True);
-        assert( r.tr != PTRef_Undef );
+        assert(r.tr != PTRef_Undef);
         return true;
     }
     // Check forbid lists (binary distinction)
-    const ELRef pstart = en_p.getForbid( );
-    const ELRef qstart = en_q.getForbid( );
+    const ELRef pstart = en_p.getForbid();
+    const ELRef qstart = en_q.getForbid();
     // If at least one is empty, they can merge
-    if ( pstart == ELRef_Undef || qstart == ELRef_Undef )
+    if (pstart == ELRef_Undef || qstart == ELRef_Undef) {
         return false;
+    }
 
     ELRef pptr = pstart;
     ELRef qptr = qstart;
@@ -1340,7 +1250,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
         const Elist& el_pptr = forbid_allocator[pptr];
         const Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
-        if ( enode_store[el_pptr.e].getRoot( ) == q ) {
+        if (getEnode(el_pptr.e).getRoot() == q) {
 #ifdef VERBOSE_EUF
             cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
@@ -1348,7 +1258,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
             r = el_pptr.reason;
             return true;
         }
-        if ( enode_store[el_qptr.e].getRoot( ) == p ) {
+        if (getEnode(el_qptr.e).getRoot() == p) {
 #ifdef VERBOSE_EUF
             cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
             cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
@@ -1366,7 +1276,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
         if ( qptr == qstart ) break;
     }
     // If here they are mergable
-    assert( r.tr == PTRef_Undef );
+    assert(r.tr == PTRef_Undef);
     return false;
 }
 
@@ -1406,19 +1316,19 @@ bool Egraph::assertLit(PtAsgn pta)
     }
     else if (logic.isUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
+        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
     }
     else if (logic.isUP(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
+        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_False, PtAsgn(pt_r, l_True));
+        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
     }
     else if (logic.hasSortBool(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.ERef_True, PtAsgn(pt_r, l_False));
+        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
     }
     else
         assert(false);
@@ -1427,25 +1337,6 @@ bool Egraph::assertLit(PtAsgn pta)
     return res;
 }
 
-//
-// Pushes a backtrack point
-//
-void Egraph::extPushBacktrackPoint( )
-{
-  // Save solver state if required
-  backtrack_points.push( undo_stack_main.size( ) );
-}
-
-//
-// Pops a backtrack point
-//
-void Egraph::extPopBacktrackPoint( )
-{
-  assert( backtrack_points.size( ) > 0 );
-  size_t undo_stack_new_size = backtrack_points.last( );
-  backtrack_points.pop( );
-  backtrackToStackSize( undo_stack_new_size );
-}
 
 // The value method
 
@@ -1468,9 +1359,9 @@ Egraph::getValue(PTRef tr)
         Enode& e = enode_store[tr];
         ERef e_root = values[e.getERef()];
 
-        if (e_root == enode_store.ERef_True)
+        if (e_root == enode_store.getEnode_true())
            written = asprintf(&name, "true");
-        else if (e_root == enode_store.ERef_False)
+        else if (e_root == enode_store.getEnode_false())
             written = asprintf(&name, "false");
         else if (isConstant(e_root)) {
             char* const_name = logic.printTerm(enode_store[e_root].getTerm());
@@ -1851,10 +1742,15 @@ void Egraph::processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot) {
 }
 
 void Egraph::doExplain(ERef x, ERef y, PtAsgn reason_inequality) {
-    if (reason_inequality.tr != Eq_FALSE) {
-        explanation.push(reason_inequality);
+    explanation = explainer->explain(x,y);
+#ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
+    for (auto ptRefPair : explainer->getCongruences()) {
+        PTRef x = ptRefPair.first;
+        PTRef y = ptRefPair.second;
+        explainer->explain(enode_store.getERef(x), enode_store.getERef(y));
     }
-    expExplain(x,y);
+#endif
+    explanation.push(reason_inequality);
     has_explanation = true;
 }
 
@@ -1865,37 +1761,8 @@ void Egraph::explainConstants(ERef p, ERef q) {
     assert(logic.isConstant(getEnode(enr_proot).getTerm()));
     assert(logic.isConstant(getEnode(enr_qroot).getTerm()));
     assert(enr_proot != enr_qroot);
-    //
-    // We need explaining
-    //
-    // 1. why p and p->constant are equal
-    exp_pending.push( p );
-    exp_pending.push( enr_proot );
-    // 2. why q and q->constant are equal
-    exp_pending.push( q );
-    exp_pending.push( enr_qroot );
-    // 3. why p and q are equal
-    exp_pending.push( q );
-    exp_pending.push( p );
-#ifdef VERBOSE_EUF
-    cerr << "constant pushing (1): "
-                 << logic.printTerm(getEnode(p).getTerm()) << " and "
-                 << logic.printTerm(en_proot.getTerm()) << endl;
-
-    cerr << "constant pushing (2): "
-                 << logic.printTerm(getEnode(q).getTerm()) << " and "
-                 << logic.printTerm(en_qroot.getTerm()) << endl;
-
-    cerr << "constant pushing (3): "
-                 << logic.printTerm(getEnode(q).getTerm()) << " and "
-                 << logic.printTerm(getEnode(p).getTerm()) << endl;
-
-    cerr << "Explain XXX" << endl;
-#endif
-    initDup1( );
-    expExplain( );
-    doneDup1( );
-    expCleanup();
+    explanation = explainer->explain(enr_proot,enr_qroot);
+    has_explanation = true;
 }
 
 uint32_t UseVector::addParent(ERef parent) {

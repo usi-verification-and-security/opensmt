@@ -266,6 +266,7 @@ class Logic {
 
     // General disequalities
     PTRef       mkDistinct    (vec<PTRef>& args);
+    PTRef       mkDistinct    (vec<PTRef>&& args) { return mkDistinct(args); }
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
@@ -370,8 +371,6 @@ class Logic {
     bool        isFalse(SymRef sr) const;// { return sr == getSym_false(); }
     bool        isFalse(PTRef tr)  const;// { return isFalse(getPterm(tr).symb()); }
     bool        isAnon(SymRef sr) const { return sr == getSym_anon(); }
-    bool        isDistinct(SymRef sr) const;// { return sr == getSym_distinct(); }
-    bool        isDistinct(PTRef tr) const;// { return isDistinct(getPterm(tr).symb()); }
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const;// { return isIff(getPterm(tr).symb()); }
 
@@ -403,7 +402,6 @@ class Logic {
 
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
-
 
     // Top-level equalities based substitutions
     void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);

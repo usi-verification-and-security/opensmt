@@ -1,7 +1,7 @@
 #include "UFTHandler.h"
 #include "TreeOps.h"
-#include "InterpolatingEgraph.h"
 #include "Egraph.h"
+#include "InterpolatingEgraph.h"
 
 UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
     : TSolverHandler(c)

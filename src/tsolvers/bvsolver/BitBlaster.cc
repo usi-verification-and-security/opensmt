@@ -229,7 +229,7 @@ BitBlaster::bbTerm(PTRef tr)
     if (logic.isBVEq(tr)) return bbEq           ( tr );
     if (logic.isBVSlt(tr)) return bbBvslt       ( tr );
     if (logic.isBVUleq(tr)) return bbBvule      ( tr );
-    if (logic.isDistinct(tr)) return bbDistinct ( tr );
+    if (logic.isDisequality(tr)) return bbDistinct ( tr );
     // if ( e->isUp         ( ) ) return bbUp   ( e );
     //
     // BitBlasts terms
@@ -1430,7 +1430,7 @@ BVRef
 BitBlaster::bbDistinct(PTRef tr)
 {
     assert(tr != PTRef_Undef);
-    assert(logic.isDistinct(tr));
+    assert(logic.isDisequality(tr));
 
     if (bs.has(tr)) return bs[tr];
 

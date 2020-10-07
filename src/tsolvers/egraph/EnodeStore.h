@@ -43,42 +43,45 @@ class EnodeStore {
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
     uint32_t       dist_idx;
 
+    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
+    Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
+    Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
+
 #ifdef PEDANTIC_DEBUG
     ELAllocator&   fa;
 #endif
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
-
     vec<ERef>      termEnodes;
 
-  public:
+    ERef  addTerm(ERef sym, ERef args, PTRef pt);
+    ERef  addSymb(SymRef t);
+    ERef  addList(ERef car, ERef cdr);
 
+
+public:
     EnodeStore(Logic& l);
+
 
     const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
 
-    ERef  addTerm(ERef sym, ERef args, PTRef pt);
-    ERef  addSymb(SymRef t);
-    ERef  addList(ERef car, ERef cdr);
-
     ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
 
-    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
-    Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
-    Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
 
     bool         has(PTRef tr)         const { return termToERef.has(tr); }
+    ERef         getERef(PTRef tr)     const { return termToERef[tr]; }
+    PTRef        getPTRef(ERef er)     const { return ERefToTerm[er]; }
+
+    vec<std::pair<PTRef,ERef>> constructTerm(PTRef tr);
 
     Enode&       operator[] (ERef e)         { return ea[e]; }
     const Enode& operator[] (ERef e)   const { return ea[e]; }
           Enode& operator[] (PTRef tr)       { return ea[termToERef[tr]]; }
     const Enode& operator[] (PTRef tr) const { return ea[termToERef[tr]]; }
-
-    char* printEnode(ERef);
 
     char getDistIndex(PTRef tr_d) const {
         assert(dist_classes.has(tr_d));
@@ -88,7 +91,7 @@ class EnodeStore {
     PTRef getDistTerm(dist_t idx) const { return index_to_dist[idx]; }
 
     void addDistClass(PTRef tr_d) {
-        assert(!dist_classes.has(tr_d));
+        if (dist_classes.has(tr_d)) { return; }
         if (dist_idx >= maxDistinctClasses) {
             throw OsmtInternalException();
         }
@@ -98,28 +101,28 @@ class EnodeStore {
         dist_idx++;
     }
 
-//    inline const SigPair& getSig(ERef e) const
-//        { const Enode& en_e = ea[e];
-//          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-//          return sp; }
-    inline bool containsSig(ERef e) const
-        { const Enode& en_e = ea[e];
-          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-          return sig_tab.has(sp); }
+    inline bool containsSig(ERef e) const {
+        const Enode & en_e = ea[e];
+        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
+        return sig_tab.has(sp);
+    }
 
-    inline bool containsSig(ERef car, ERef cdr) const
-        { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
-          return sig_tab.has(sp); }
+    inline bool containsSig(ERef car, ERef cdr) const {
+        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
+        return sig_tab.has(sp);
+    }
 
 
-    inline ERef lookupSig(ERef e) const
-        { const Enode& en_e = ea[e];
-          SigPair sp( ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid() );
-          return sig_tab[sp]; }
+    inline ERef lookupSig(ERef e) const {
+        const Enode & en_e = ea[e];
+        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
+        return sig_tab[sp];
+    }
 
-    inline ERef lookupSig(ERef car, ERef cdr) const
-        { SigPair sp( ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid() );
-          return sig_tab[sp]; }
+    inline ERef lookupSig(ERef car, ERef cdr) const {
+        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
+        return sig_tab[sp];
+    }
 
     inline void removeSig(ERef e) {
         assert(containsSig(e));
@@ -142,12 +145,15 @@ class EnodeStore {
     }
 
     ERef addIteSymb(PTRef tr);
+
 // DEBUG
 #ifdef PEDANTIC_DEBUG
     bool checkInvariants();
 #endif
-    friend class Egraph;
 
+    char* printEnode(ERef);
+
+//    friend class Egraph;
 };
 
 #endif

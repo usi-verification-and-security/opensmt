@@ -49,6 +49,7 @@ option(USE_READLINE "Use readline over libedit" OFF)
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
+option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
 
 find_package(GMP REQUIRED)
 
@@ -117,6 +118,9 @@ endif(STATISTICS)
 
 if (USE_READLINE)
   add_definitions(-DUSE_READLINE)
+endif()
+if (EXPLICIT_CONGRUENCE_EXPLANATIONS)
+  add_definitions(-DEXPLICIT_CONGRUENCE_EXPLANATIONS)
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})

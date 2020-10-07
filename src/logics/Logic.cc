@@ -176,6 +176,8 @@ Logic::Logic() :
     sym_store[sym_XOR].setCommutes();
     sym_store.setInterpreted(sym_OR);
 
+    // Boolean distincts will never be created (they are turned to a Boolean expression),
+    // but we need this symbol so that they can be processed.
     if ((sym_DISTINCT = declareFun(tk_distinct, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_distinct, msg);
         assert(false);
@@ -1959,8 +1961,6 @@ bool        Logic::isTrue(SymRef sr) const { return sr == getSym_true(); }
 bool        Logic::isTrue(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
 bool        Logic::isFalse(SymRef sr) const { return sr == getSym_false(); }
 bool        Logic::isFalse(PTRef tr)  const { return isFalse(getPterm(tr).symb()); }
-bool        Logic::isDistinct(SymRef sr) const { return sr == getSym_distinct(); }
-bool        Logic::isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
 bool        Logic::isIff(SymRef sr) const { return sr == getSym_eq(); }
 bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 

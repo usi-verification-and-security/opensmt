@@ -35,7 +35,18 @@ EnodeStore::EnodeStore(Logic& l)
       , dist_idx(0)
 {
     Enode::ERef_Nil = ERef_Nil;
+
+    // For the uninterpreted predicates and propositional structures inside
+    // uninterpreted functions, define function not, the terms true and false,
+    // and an asserted disequality true != false
+
     sym_uf_not = addSymb(logic.getSym_uf_not());
+    PTRef t = logic.getTerm_true();
+    PTRef f = logic.getTerm_false();
+    constructTerm(t);
+    constructTerm(f);
+    ERef_True = termToERef[t];
+    ERef_False = termToERef[f];
 }
 
 ERef EnodeStore::addIteSymb(PTRef tr) {
@@ -108,6 +119,82 @@ ERef EnodeStore::addList(ERef x, ERef y) {
         rval = lookupSig(x, y);
     }
     return rval;
+}
+/**
+ * Construct an Enode for a given PTRef, assuming that all the child PTRefs have
+ * already been introduced an Enode.  In case of a Boolean return valued Enode,
+ * add also an enode of the negation of the PTRef.  If the Boolean Enode is
+ * non-atomic, no child Enodes will be constructed.
+ * @param tr The PTRef for which the Enode(s) will be constructed
+ * @return a vector of <PTRef,ERef> pairs consisting either of a single element
+ * if the PTRef is non-boolean; two elements, the first of which corresponds to
+ * the positive form and and the second the negated form of the PTRef tr; or is empty
+ * if the PTRef has already been inserted.
+ */
+vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
+
+    if (termToERef.has(tr))
+        return {};
+
+    vec<std::pair<PTRef,ERef>> new_enodes;
+
+    if (logic.isDisequality(tr)) {
+        addDistClass(tr);
+    }
+
+    // Add both the pure and the negated terms
+    if (logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr)) {
+        PTRef tr_pure;
+        PTRef tr_neg;
+        lbool sgn;
+        logic.purify(tr, tr_pure, sgn);
+        tr_neg = logic.mkNot(tr_pure);
+
+        // If tr is a complex Boolean operator, do not model the full logic but cut here (the ERef
+        // will be treated as a UF constant with the anon name from the logic).  Otherwise, (tr is
+        // a pure Boolean atom or its negation), use the term ref from the logic.
+        ERef sym = logic.isBooleanOperator(tr_pure) ? addSymb(logic.getSym_anon()) : addSymb(logic.getSymRef(tr_pure));
+
+        // Add the pure term
+        ERef er_pure = addTerm(sym, ERef_Nil, tr_pure);
+
+        // Add the negated term
+        ERef er_neg = addTerm(sym_uf_not, addList(er_pure, ERef_Nil), logic.mkNot(tr_pure));
+
+        new_enodes.push({tr_pure, er_pure});
+        new_enodes.push({tr_neg, er_neg});
+    }
+
+    else {
+        ERef sym, cdr;
+        if (not logic.isIte(tr)) {
+            const Pterm& tm = logic.getPterm(tr);
+            sym = addSymb(tm.symb());
+            cdr = ERef_Nil;
+            for (int j = tm.size() - 1; j >= 0; j--) {
+                assert(termToERef.has(tm[j])); // The child was not inserted
+                ERef car = termToERef[tm[j]];
+#ifdef VERBOSE_EUF
+                ERef prev_cdr = cdr;
+                assert (operator[](car).getRoot() == car);
+                assert (operator[](cdr).getRoot() == cdr);
+#endif
+                cdr = addList(car, cdr);
+            }
+        } else {
+            sym = addIteSymb(tr);
+            cdr = ERef_Nil;
+        }
+        ERef er = addTerm(sym, cdr, tr);
+        new_enodes.push({tr, er});
+
+        if (logic.isUP(tr) || logic.isEquality(tr)) {
+            PTRef tr_neg = logic.mkNot(tr);
+            ERef er_neg = addTerm(sym_uf_not, addList(er, ERef_Nil), tr_neg);
+            new_enodes.push({tr_neg, er_neg});
+        }
+    }
+    return new_enodes;
 }
 
 // DEBUG

@@ -11,30 +11,16 @@
 
 class InterpolatingEgraph : public Egraph {
 public:
-    InterpolatingEgraph(SMTConfig & c, Logic & l) : Egraph{c, l}
-            , cgraph(nullptr)
-            , cgraph_( new CGraph( *this, config, l ) )
+    InterpolatingEgraph(SMTConfig & c, Logic & l) : Egraph{c, l, Egraph::ExplainerType::INTERPOLATING}
     {}
 
-    virtual ~InterpolatingEgraph() override {
-        delete cgraph;
-        delete cgraph_;
-    }
 
     PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
     {
-        return cgraph->getInterpolant(mask, labels, pmanager);
+        InterpolatingExplainer * itp_explainer = static_cast<InterpolatingExplainer*>(explainer.get());
+        auto cgraph = itp_explainer->getCGraph();
+        return UFInterpolator(config, logic, *cgraph).getInterpolant(mask, labels, pmanager);
     }
-
-private:
-
-    CGraph *                cgraph;                   // Holds congrunce graph and compute interpolant
-    CGraph *                cgraph_;                   // Holds congrunce graph and compute interpolant
-
-    // overriding base class
-    void doExplain(ERef, ERef, PtAsgn) override;
-    void explainConstants(ERef, ERef) override;
-    void expExplainEdge(ERef, ERef) override;
 };
 
 #endif //OPENSMT_INTERPOLATINGEGRAPH_H
