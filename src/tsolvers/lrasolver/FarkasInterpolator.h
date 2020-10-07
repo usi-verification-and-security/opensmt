@@ -55,11 +55,11 @@ public:
     ItpAlg getAlgorithm() const { return algorithm; }
     opensmt::Real getStrengthFactor() const { return stregthFactor; }
 
-    static std::unique_ptr<FarkasItpOptions> useFarkasAlgorithm() { return std::unique_ptr<FarkasItpOptions>(new FarkasItpOptions(ItpAlg::STRONG)); }
-    static std::unique_ptr<FarkasItpOptions> useDualFarkasAlgorithm() { return std::unique_ptr<FarkasItpOptions>(new FarkasItpOptions(ItpAlg::WEAK)); }
-    static std::unique_ptr<FarkasItpOptions> useFlexibleFarkasAlgorithm(FastRational factor) { return std::unique_ptr<FarkasItpOptions>(new FarkasItpOptions(ItpAlg::FACTOR, std::move(factor))); }
-    static std::unique_ptr<FarkasItpOptions> useDecomposingFarkasAlgorithm() { return std::unique_ptr<FarkasItpOptions>(new FarkasItpOptions(ItpAlg::DECOMPOSING)); }
-    static std::unique_ptr<FarkasItpOptions> useDualDecomposingFarkasAlgorithm() { return std::unique_ptr<FarkasItpOptions>(new FarkasItpOptions(ItpAlg::DECOMPOSING_DUAL)); }
+    static FarkasItpOptions useFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::STRONG); }
+    static FarkasItpOptions useDualFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::WEAK); }
+    static FarkasItpOptions useFlexibleFarkasAlgorithm(FastRational factor) { return FarkasItpOptions(ItpAlg::FACTOR, std::move(factor)); }
+    static FarkasItpOptions useDecomposingFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::DECOMPOSING); }
+    static FarkasItpOptions useDualDecomposingFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::DECOMPOSING_DUAL); }
 
 };
 

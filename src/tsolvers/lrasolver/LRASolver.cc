@@ -105,18 +105,19 @@ LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *la
 {
     assert(status == UNSAT);
     FarkasInterpolator interpolator(logic, pmanager, explanation, explanationCoefficients, mask, labels);
-    auto options = [this](){
-        if (usingStrong()) { return FarkasItpOptions::useFarkasAlgorithm(); }
-        else if (usingWeak()) { return FarkasItpOptions::useDualFarkasAlgorithm(); }
-        else if (usingFactor()) { return FarkasItpOptions::useFlexibleFarkasAlgorithm(opensmt::Real(config.getLRAStrengthFactor())); }
-        else if (usingDecomposing()) { return FarkasItpOptions::useDecomposingFarkasAlgorithm(); }
-        else if (usingDualDecomposing()) { return FarkasItpOptions::useDualDecomposingFarkasAlgorithm(); }
+    auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
+    auto options = [this, itpAlgorithm](){
+        if (itpAlgorithm == itp_lra_alg_strong) { return FarkasItpOptions::useFarkasAlgorithm(); }
+        else if (itpAlgorithm == itp_lra_alg_weak) { return FarkasItpOptions::useDualFarkasAlgorithm(); }
+        else if (itpAlgorithm == itp_lra_alg_factor) { return FarkasItpOptions::useFlexibleFarkasAlgorithm(opensmt::Real(config.getLRAStrengthFactor())); }
+        else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return FarkasItpOptions::useDecomposingFarkasAlgorithm(); }
+        else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return FarkasItpOptions::useDualDecomposingFarkasAlgorithm(); }
         else { // SHOULD NOT HAPPEN!
             assert(false);
             return FarkasItpOptions::useFarkasAlgorithm();
         }
     }();
-    return interpolator.getInterpolant(*options);
+    return interpolator.getInterpolant(options);
 
 }
 

@@ -60,17 +60,8 @@ public:
 public:
     PTRef getInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
 
-    bool usingStrong() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_strong; }
-    bool usingWeak() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_weak; }
-    bool usingFactor() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_factor; }
-    bool usingDecomposing() const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_strong; }
-    bool usingDualDecomposing () const { return config.getLRAInterpolationAlgorithm() == itp_lra_alg_decomposing_weak; }
-
 private:
-
     opensmt::Real getReal(PTRef);
-
-
 };
 
 #endif
