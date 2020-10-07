@@ -12,6 +12,10 @@ void ModelBuilder::processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subs
     auto model = this->build();
     auto entries = copy.getKeysAndValsPtrs();
     for (auto const * const entry : entries) {
+        if (logic.isIte(entry->key)) {
+            // We store only values of reals variables
+            continue;
+        }
         assert(logic.isVar(entry->key));
         if (entry->data.sgn == l_True) {
             PTRef mappedTerm = entry->data.tr;

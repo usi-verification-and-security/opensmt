@@ -135,8 +135,7 @@ TEST_F(ModelIntegrationTest, testSingleAssert) {
     PTRef y = logic.mkNumVar("y");
     PTRef fla = logic.mkNumLt(x, y);
     MainSolver& mainSolver = osmt->getMainSolver();
-    char* msg;
-    mainSolver.insertFormula(fla, &msg);
+    mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
     ASSERT_EQ(res, s_True);
     auto model = mainSolver.getModel();
@@ -150,8 +149,7 @@ TEST_F(ModelIntegrationTest, testSubstitutions) {
     PTRef y = logic.mkBoolVar("y");
     PTRef fla = logic.mkEq(x, logic.mkNot(y));
     MainSolver& mainSolver = osmt->getMainSolver();
-    char* msg;
-    mainSolver.insertFormula(fla, &msg);
+    mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
     ASSERT_EQ(res, s_True);
 //    auto xval = mainSolver.getValue(x);
@@ -168,13 +166,49 @@ TEST_F(ModelIntegrationTest, testTrivialBooleanSubstitutionNegation) {
     PTRef x = logic.mkBoolVar("x");
     PTRef fla = logic.mkNot(x);
     MainSolver& mainSolver = osmt->getMainSolver();
-    char* msg;
-    mainSolver.insertFormula(fla, &msg);
+    mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
     ASSERT_EQ(res, s_True);
     auto model = mainSolver.getModel();
     EXPECT_EQ(model->evaluate(x), logic.getTerm_false());
     EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+}
+
+TEST_F(ModelIntegrationTest, testIteWithSubstitution) {
+    auto osmt = getLRAOsmt();
+    LRALogic& logic = osmt->getLRALogic();
+    PTRef x = logic.mkNumVar("x");
+    PTRef y = logic.mkNumVar("y");
+    PTRef ite = logic.mkIte(logic.mkBoolVar("c"), x, logic.mkNumPlus(x, logic.getTerm_NumOne()));
+    PTRef fla = logic.mkEq(y, ite);
+    MainSolver & mainSolver = osmt->getMainSolver();
+    mainSolver.insertFormula(fla);
+    auto res = mainSolver.check();
+    ASSERT_EQ(res, s_True);
+    auto model = mainSolver.getModel();
+    EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+}
+
+TEST_F(ModelIntegrationTest, testIteWithSubstitution_SubtermsHaveValue) {
+    auto osmt = getLRAOsmt();
+    LRALogic& logic = osmt->getLRALogic();
+    PTRef x = logic.mkNumVar("x");
+    PTRef y = logic.mkNumVar("y");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef one = logic.getTerm_NumOne();
+    PTRef ite = logic.mkIte(c, x, logic.mkNumPlus(x, one));
+    PTRef eq = logic.mkEq(y, ite);
+    PTRef fla = logic.mkAnd({eq, logic.mkNumLeq(one, y), logic.mkNumLeq(x, logic.getTerm_NumZero())});
+    MainSolver & mainSolver = osmt->getMainSolver();
+    mainSolver.insertFormula(fla);
+    auto res = mainSolver.check();
+    ASSERT_EQ(res, s_True);
+    auto model = mainSolver.getModel();
+//    std::cout << logic.printTerm(x) << " := " << logic.printTerm(model->evaluate(x)) << '\n';
+//    std::cout << logic.printTerm(y) << " := " << logic.printTerm(model->evaluate(y)) << '\n';
+//    std::cout << logic.printTerm(c) << " := " << logic.printTerm(model->evaluate(c)) << '\n';
+    EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
+    EXPECT_EQ(model->evaluate(c), logic.getTerm_false());
 }
 
 
