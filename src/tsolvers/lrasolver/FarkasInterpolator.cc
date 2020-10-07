@@ -16,9 +16,10 @@
 
 #include "FarkasInterpolator.h"
 #include "LALogic.h"
-#include <Real.h>
-#include <LA.h>
-#include <unordered_set>
+#include "PartitionManager.h"
+#include "Real.h"
+#include "LA.h"
+
 #include <unordered_map>
 #include <functional>
 

@@ -9,9 +9,9 @@
 #include <PtStructs.h>
 #include <Global.h>
 #include <Real.h>
-#include <PartitionManager.h>
 
 class LALogic;
+class PartitionManager;
 
 struct DecomposedStatistics {
     unsigned int decompositionOpportunities = 0;
