@@ -39,30 +39,6 @@ struct DecomposedStatistics {
     }
 };
 
-enum class ItpAlg {
-    STRONG, WEAK, FACTOR, DECOMPOSING, DECOMPOSING_DUAL, UNDEF
-};
-
-class FarkasItpOptions {
-    ItpAlg algorithm;
-    opensmt::Real stregthFactor;
-
-public:
-    FarkasItpOptions(ItpAlg alg) : algorithm(alg) {}
-    FarkasItpOptions(ItpAlg alg, FastRational strengthFactor) : algorithm(alg), stregthFactor(std::move(strengthFactor))
-        { assert(alg == ItpAlg::FACTOR); }
-
-    ItpAlg getAlgorithm() const { return algorithm; }
-    opensmt::Real getStrengthFactor() const { return stregthFactor; }
-
-    static FarkasItpOptions useFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::STRONG); }
-    static FarkasItpOptions useDualFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::WEAK); }
-    static FarkasItpOptions useFlexibleFarkasAlgorithm(FastRational factor) { return FarkasItpOptions(ItpAlg::FACTOR, std::move(factor)); }
-    static FarkasItpOptions useDecomposingFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::DECOMPOSING); }
-    static FarkasItpOptions useDualDecomposingFarkasAlgorithm() { return FarkasItpOptions(ItpAlg::DECOMPOSING_DUAL); }
-
-};
-
 class FarkasInterpolator {
 public:
     FarkasInterpolator(LALogic & logic, PartitionManager & pmanager, vec<PtAsgn> const & explanations, std::vector<opensmt::Real> const & coeffs,
@@ -75,40 +51,40 @@ public:
           labels(labels)
     {}
 
-    PTRef getInterpolant(FarkasItpOptions const &);
+    PTRef getFarkasInterpolant();
+    PTRef getDualFarkasInterpolant();
+    PTRef getFlexibleInterpolant(opensmt::Real);
+    PTRef getDecomposedInterpolant();
+    PTRef getDualDecomposedInterpolant();
 
     static DecomposedStatistics stats;
 
 private:
 
     PTRef getDecomposedInterpolant(icolor_t color);
+    PTRef getFarkasInterpolant(icolor_t color);
 
     bool isLocalFor(icolor_t color, PTRef var) const{
-        switch (color){
-            case icolor_t::I_A:
-                return isALocal(var);
-            case icolor_t::I_B:
-                return isBLocal(var);
-            default:
-                throw std::logic_error("Invalid argument in isLocalFor");
-        }
+        return getColorFor(var) == color;
     }
 
     bool isInPartitionOfColor(icolor_t color, PTRef atom) const {
-        if(labels != nullptr && labels->find(atom) != labels->end()){
-            return labels->at(atom) == color;
-        }
-        switch(color){
-            case icolor_t::I_A:
-                return isALocal(atom);
-            case icolor_t::I_B:
-                return isBLocal(atom);
-            default:
-                throw std::logic_error{"Invalid query in isInPartitionOfColor"};
-        }
+        auto atomColor = getColorFor(atom);
+        return (color & atomColor) != 0;
     }
-    bool isALocal(PTRef var) const;
-    bool isBLocal(PTRef var) const;
+
+    icolor_t getColorFor(PTRef term) const {
+        // use labels
+        if(labels != nullptr && labels->find(term) != labels->end()){
+            return labels->at(term);
+        }
+        // otherwise use global partitioning information
+        return getGlobalColorFor(term);
+    }
+
+    icolor_t getGlobalColorFor(PTRef term) const;
+
+    PTRef weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system);
 
 private:
     LALogic & logic;

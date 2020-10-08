@@ -19,6 +19,8 @@
 #include "PartitionManager.h"
 #include "Real.h"
 #include "LA.h"
+#include "OsmtInternalException.h"
+#include "OsmtApiException.h"
 
 #include <unordered_map>
 #include <functional>
@@ -570,144 +572,108 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     return itp;
 }
 
-bool FarkasInterpolator::isALocal(PTRef var) const {
-    return isAstrict(pmanager.getIPartitions(var), mask);
+icolor_t FarkasInterpolator::getGlobalColorFor(PTRef term) const {
+    auto const & termMask = pmanager.getIPartitions(term);
+    bool isInA = (termMask & mask) != 0;
+    bool isInB = (termMask & ~mask) != 0;
+    if (isInA and not isInB) { return I_A; }
+    if (isInB and not isInA) { return I_B; }
+    if (isInA and isInB) { return I_AB; }
+    throw OsmtInternalException("No color detected for term");
 }
 
-bool FarkasInterpolator::isBLocal(PTRef var) const {
-    return isBstrict(pmanager.getIPartitions(var), mask);
+PTRef FarkasInterpolator::getDecomposedInterpolant() {
+    return getDecomposedInterpolant(I_A);
 }
 
-PTRef FarkasInterpolator::getInterpolant(FarkasItpOptions const & options) {
-    assert(explanations.size() > 1);
+PTRef FarkasInterpolator::getDualDecomposedInterpolant() {
+    return getDecomposedInterpolant(I_B);
+}
 
-    auto const algorithmToUse = options.getAlgorithm();
-    if (algorithmToUse == ItpAlg::DECOMPOSING || algorithmToUse == ItpAlg::DECOMPOSING_DUAL){
-        auto itp = getDecomposedInterpolant(algorithmToUse == ItpAlg::DECOMPOSING ? icolor_t::I_A : icolor_t::I_B);
-        assert(itp != PTRef_Undef);
-        return itp;
-    }
+PTRef FarkasInterpolator::getFarkasInterpolant() {
+    return getFarkasInterpolant(I_A);
+}
 
+PTRef FarkasInterpolator::getDualFarkasInterpolant() {
+    return getFarkasInterpolant(I_B);
+}
+
+PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system) {
     LAExpression interpolant(logic);
-    LAExpression interpolant_dual(logic);
     bool delta_flag = false;
-    bool delta_flag_dual = false;
-
-#ifdef ITP_DEBUG
-    vec<PTRef> tr_vec;
-    for (int i = 0; i < explanations.size(); i++) {
-        PTRef tr_vecel = explanations[i].tr;
-        tr_vec.push(explanations[i].sgn == l_False ? logic.mkNot(tr_vecel) : tr_vecel);
-    }
-    PTRef tr = logic.mkAnd(tr_vec);
-    printf("; Explanation: \n");
-    printf(";  %s\n", logic.printTerm(tr));
-#endif
-
-    for (int i = 0; i < explanations.size(); i++) {
-        icolor_t color = I_UNDEF;
-        const ipartitions_t & p = pmanager.getIPartitions(explanations[i].tr);
-        if (isAB(p, mask)) {
-            color = I_AB;
-        } else if (isAlocal(p, mask)) {
-            color = I_A;
-        } else if (isBlocal(p, mask)) {
-            color = I_B;
-        }
-        if (color != I_A && color != I_AB && color != I_B) {
-            printf("Error: color is not defined.\n");
-            printf("  equation: %s\n", logic.printTerm(explanations[i].tr));
-            printf("  mask: %s\n", mask.get_str().c_str());
-            printf("  p: %s\n", p.get_str().c_str());
-            assert(false);
-        }
-        assert(color == I_A || color == I_AB || color == I_B);
-
-        PTRef exp_pt = explanations[i].tr;
-        if (labels != nullptr && labels->find(exp_pt) != labels->end()) {
-            if (color != I_UNDEF) {
-                // Partitioning and labels can disagree under conditions that according to partitioning
-                // the explanation can be in both parts, but the label can be more strict
-//                std::cerr << "Color disagreement for term: " << logic.printTerm(explanation[i].tr) << '\n';
-//                std::cerr << "Color from partitioning: " << color << '\n';
-//                std::cerr << "Color from labels: " << labels->find(exp_pt)->second << '\n';
-                assert(color == I_AB || color == labels->find(exp_pt)->second);
-            }
-            // labels have priority of simple partitioning information
-            color = labels->find(exp_pt)->second;
-            //cout << "; PTRef " << logic.printTerm(exp_pt) << " has Boolean color " << color << endl;
-        }
-
-        // Add the conflict to the interpolant (multiplied by the coefficient)
-        if (color == I_A || color == I_AB) {
-            if (explanations[i].sgn == l_False) {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false), explanation_coeffs[i]);
-                delta_flag = true;
-            } else {
-                interpolant.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false), -explanation_coeffs[i]);
-            }
-        }
-        if (color == I_B || color == I_AB) {
-            if (explanations[i].sgn == l_False) {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false),
-                                                  explanation_coeffs[i]);
-                // TODO: investigate where delta_flag_dual should be used and how it should be used properly
-                delta_flag_dual = true;
-            } else {
-                interpolant_dual.addExprWithCoeff(LAExpression(logic, explanations[i].tr, false),
-                                                  -explanation_coeffs[i]);
-            }
+    for (auto const & entry : system) {
+        auto literal = entry.first;
+        PTRef atom = literal.tr;
+        lbool sign = literal.sgn;
+        if (sign == l_False) {
+            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), entry.second);
+            delta_flag = true;
+        } else {
+            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), -entry.second);
         }
     }
-
-    PTRef itp;
+    PTRef itp = PTRef_Undef;
     if (interpolant.isTrue() && !delta_flag) {
         itp = logic.getTerm_true();
     } else if (interpolant.isFalse() || (interpolant.isTrue() && delta_flag)) {
         itp = logic.getTerm_false();
     } else {
-        vec<PTRef> args;
-        if (algorithmToUse == ItpAlg::FACTOR) {
-            opensmt::Real const_strong = interpolant.getRealConstant();
-            opensmt::Real const_weak = interpolant_dual.getRealConstant();
-            PTRef nonconst_strong = interpolant.getPTRefNonConstant();
+        vec<PTRef> args {logic.getTerm_NumZero(), interpolant.toPTRef()};
+        itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
+    }
+    return itp;
+}
 
-            opensmt::Real lower_bound = const_strong;
-            opensmt::Real upper_bound = const_weak * -1;
-
-            assert(upper_bound >= lower_bound);
-
-            //cout << "; Strength factor from config is " << getStrengthFactor() << endl;
-            opensmt::Real strength_factor = options.getStrengthFactor();
-            if (strength_factor < 0 || strength_factor >= 1) {
-                opensmt_error("LRA strength factor has to be in [0,1)");
-            }
-            opensmt::Real strength_diff = (upper_bound - lower_bound);
-            //cout << "; Diff is " << strength_diff << endl;
-            //cout << "; Factor is " << strength_factor << endl;
-            opensmt::Real strength_delta = strength_diff * strength_factor;
-            //cout << "; Delta is " << strength_delta << endl;
-            opensmt::Real new_constant = lower_bound + (strength_diff * strength_factor);
-            new_constant = new_constant * -1;
-            //cout << "; New constant is " << new_constant << endl;
-            args.push(logic.mkConst(new_constant));
-            args.push(nonconst_strong);
-        } else if (algorithmToUse == ItpAlg::STRONG) {
-            args.push(logic.mkConst("0"));
-            args.push(interpolant.toPTRef());
-        } else if (algorithmToUse == ItpAlg::WEAK) {
-            args.push(logic.mkConst("0"));
-            args.push(interpolant_dual.toPTRef());
-        } else {
-            opensmt_error("Error: interpolation algorithm not set for LRA.");
-        }
-
-        if (algorithmToUse != ItpAlg::WEAK) {
-            itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
-        } else {
-            itp = delta_flag_dual ? logic.mkNumLt(args) : logic.mkNumLeq(args);
-            itp = logic.mkNot(itp);
+PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
+    std::vector<std::pair<PtAsgn, opensmt::Real>> system;
+    for (int i = 0; i < explanations.size(); ++i) {
+        auto litColor = getColorFor(explanations[i].tr);
+        if (litColor == color or litColor == I_AB) {
+            system.emplace_back(explanations[i], explanation_coeffs[i]);
         }
     }
+    PTRef itp = weightedSum(system);
+    assert(itp != PTRef_Undef);
+    return color == I_B ? logic.mkNot(itp) : itp;
+}
+
+PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
+    if (strengthFactor < 0 or strengthFactor >= 1) {
+        throw OsmtApiException("LRA strength factor has to be in [0,1)");
+    }
+    std::vector<std::pair<PtAsgn, opensmt::Real>> systemA;
+    std::vector<std::pair<PtAsgn, opensmt::Real>> systemB;
+    for (int i = 0; i < explanations.size(); ++i) {
+        auto litColor = getColorFor(explanations[i].tr);
+        if (litColor == I_A or litColor == I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
+            systemA.emplace_back(explanations[i], explanation_coeffs[i]);
+        } else if (litColor == I_B) {
+            systemB.emplace_back(explanations[i], explanation_coeffs[i]);
+        }
+    }
+    PTRef itpA = weightedSum(systemA);
+    if (itpA == logic.getTerm_true() or itpA == logic.getTerm_false()) {
+        assert(itpA == logic.mkNot(weightedSum(systemB)));
+        return itpA;
+    }
+    PTRef itpB = weightedSum(systemB);
+    auto extractSides = [this](PTRef inequality) {
+        assert(logic.isNumLeq(inequality) or logic.isNumLeq(logic.mkNot(inequality)));
+        bool negated = logic.isNot(inequality);
+        PTRef positive = negated ? logic.mkNot(inequality) : inequality;
+        PTRef term = logic.getTermFromLeq(positive);
+        PTRef constant = logic.getConstantFromLeq(positive);
+        return negated ? std::make_pair(logic.mkNumNeg(term), logic.mkNumNeg(constant)) : std::make_pair(term, constant);
+    };
+    auto sidesA = extractSides(itpA);
+    auto sidesB = extractSides(itpB);
+    assert(sidesA.first == logic.mkNumNeg(sidesB.first));
+    opensmt::Real c1 = logic.getNumConst(sidesA.second);
+    opensmt::Real c2 = logic.getNumConst(sidesB.second);
+    opensmt::Real lowerBound = c1;
+    opensmt::Real upperBound = -c2;
+    opensmt::Real strengthDiff = upperBound - lowerBound;
+    opensmt::Real newConstant = lowerBound + (strengthDiff * strengthFactor);
+    PTRef itp = logic.mkNumLeq(logic.mkConst(newConstant), sidesA.first);
     return itp;
 }

@@ -6,7 +6,6 @@
 #include <Logic.h>
 #include <MainSolver.h>
 #include "VerificationUtils.h"
-#include "TreeOps.h"
 
 class UFInterpolationTest : public ::testing::Test {
 protected:
@@ -40,42 +39,8 @@ protected:
     PTRef x, y, x1, x2, x3, x4, y1, y2, z1, z2, z3, z4, z5, z6, z7, z8;
     SymRef f, g, p;
 
-    bool verifyInterpolant(PTRef itp, PTRef Apartition, PTRef Bpartition) {
-        // TODO: design properly
-        SMTConfig validationConfig;
-        MainSolver validationSolver(logic, validationConfig, "validator");
-        std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
-        std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
-        std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
-        validationSolver.push();
-        validationSolver.insertFormula(logic.mkNot(logic.mkImpl(Apartition, itp)));
-        auto res = validationSolver.check();
-        bool ok = res == s_False;
-        if (not ok) { return false; }
-        validationSolver.pop();
-        validationSolver.insertFormula(logic.mkNot(logic.mkImpl(itp, logic.mkNot(Bpartition))));
-        res = validationSolver.check();
-        ok = res == s_False;
-        if (not ok) { return false; }
-        return checkSubsetCondition(itp, Apartition) and checkSubsetCondition(itp, Bpartition);
-    }
-
     bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask) {
-        return verifyInterpolant(itp, pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B));
-    }
-
-    bool checkSubsetCondition(PTRef p1, PTRef p2) {
-        Map<PTRef, bool, PTRefHash> vars_p1;
-        getVars(p1, logic, vars_p1);
-        Map<PTRef, bool, PTRefHash> vars_p2;
-        getVars(p2, logic, vars_p2);
-        auto entries = vars_p1.getKeysAndVals();
-        for (auto const & entry : entries) {
-            if (entry.data and (not vars_p2.has(entry.key))) {
-                return false;
-            }
-        }
-        return true;
+        return VerificationUtils(config, logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
     }
 
 };

@@ -101,23 +101,18 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
 // Compute interpolants for the conflict
 //
 PTRef
-LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
-{
+LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
     assert(status == UNSAT);
     FarkasInterpolator interpolator(logic, pmanager, explanation, explanationCoefficients, mask, labels);
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
-    auto options = [this, itpAlgorithm](){
-        if (itpAlgorithm == itp_lra_alg_strong) { return FarkasItpOptions::useFarkasAlgorithm(); }
-        else if (itpAlgorithm == itp_lra_alg_weak) { return FarkasItpOptions::useDualFarkasAlgorithm(); }
-        else if (itpAlgorithm == itp_lra_alg_factor) { return FarkasItpOptions::useFlexibleFarkasAlgorithm(opensmt::Real(config.getLRAStrengthFactor())); }
-        else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return FarkasItpOptions::useDecomposingFarkasAlgorithm(); }
-        else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return FarkasItpOptions::useDualDecomposingFarkasAlgorithm(); }
-        else { // SHOULD NOT HAPPEN!
-            assert(false);
-            return FarkasItpOptions::useFarkasAlgorithm();
-        }
-    }();
-    return interpolator.getInterpolant(options);
-
+    if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor())); }
+    else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
+    else {
+        assert(false); // Incoorrect value in config
+        return interpolator.getFarkasInterpolant();
+    }
 }
 

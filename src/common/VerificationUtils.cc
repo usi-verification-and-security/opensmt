@@ -4,6 +4,9 @@
 
 #include "VerificationUtils.h"
 
+#include "MainSolver.h"
+#include "TreeOps.h"
+
 #include <sys/wait.h>
 
 bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
@@ -72,4 +75,39 @@ bool VerificationUtils::verifyInterpolant(PTRef partA, PTRef partB, PTRef itp) {
     }
     return res;
 }
+
+bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bpartition, PTRef itp) {
+    SMTConfig validationConfig;
+    MainSolver validationSolver(logic, validationConfig, "validator");
+//    std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
+//    std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
+//    std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
+    validationSolver.push();
+    validationSolver.insertFormula(logic.mkNot(logic.mkImpl(Apartition, itp)));
+    auto res = validationSolver.check();
+    bool ok = res == s_False;
+    if (not ok) { return false; }
+    validationSolver.pop();
+    validationSolver.insertFormula(logic.mkNot(logic.mkImpl(itp, logic.mkNot(Bpartition))));
+    res = validationSolver.check();
+    ok = res == s_False;
+    if (not ok) { return false; }
+    return checkSubsetCondition(itp, Apartition) and checkSubsetCondition(itp, Bpartition);
+}
+
+bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) {
+    Map<PTRef, bool, PTRefHash> vars_p1;
+    getVars(p1, logic, vars_p1);
+    Map<PTRef, bool, PTRefHash> vars_p2;
+    getVars(p2, logic, vars_p2);
+    auto entries = vars_p1.getKeysAndVals();
+    for (auto const & entry : entries) {
+        if (entry.data and (not vars_p2.has(entry.key))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 
