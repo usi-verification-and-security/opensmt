@@ -12,6 +12,7 @@
 #include "STPMapper.h"
 #include "STPEdgeGraph.h"
 #include "STPModel.h"
+#include "SafeInt.hpp"
 
 template<typename T> class STPSolver : public TSolver {
 private:
@@ -20,7 +21,7 @@ private:
         // this corresponds to edges 'y --c--> x'
         PTRef x;            // destination of the edge
         PTRef y;            // source of the edge
-        SafeInt c;        // cost of the edge
+        T c;                // cost of the edge
     };
 
     LALogic& logic;
@@ -38,8 +39,9 @@ private:
 
     ParsedPTRef parseRef(PTRef ref) const;
 
-    // Given an edge, add the negation of that edge to 'store' and mark them as negations
-    EdgeRef createNegation(EdgeRef e);
+    static T convert(const opensmt::Number& cost);
+
+    static T negate(SafeInt cost);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l);

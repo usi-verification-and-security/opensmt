@@ -7,7 +7,7 @@ template<class T> VertexRef STPStore<T>::createVertex() {
     return VertexRef{vertices++};
 }
 
-template<class T> EdgeRef STPStore<T>::createEdge(VertexRef from, VertexRef to, SafeInt cost) {
+template<class T> EdgeRef STPStore<T>::createEdge(VertexRef from, VertexRef to, T cost) {
     uint32_t i = edges.size();
     EdgeRef r{i};
     edges.emplace_back(from, to, EdgeRef_Undef, cost, 0);

@@ -12,12 +12,12 @@ template<class T> std::vector<VertexRef> STPModel<T>::vertsInGraph() const {
     // scans the incoming/outgoing vectors to see if they contain edges
     for (; i < n; ++i) {
         if (!graph.incoming[i].empty() || !graph.outgoing[i].empty())
-            found.push_back(VertexRef{.x = i});
+            found.push_back(VertexRef{i});
     }
-    const std::vector<std::vector<EdgeRef>> &rest = (n == graph.incoming.size()) ? graph.outgoing : graph.incoming;
+    const auto &rest = (n == graph.incoming.size()) ? graph.outgoing : graph.incoming;
     for (; i < rest.size(); ++i) {
         if (!rest[i].empty())
-            found.push_back(VertexRef{.x = i});
+            found.push_back(VertexRef{i});
     }
 
     return found;
@@ -36,7 +36,7 @@ template<class T> VertexRef STPModel<T>::addStartingPoint() {
 }
 
 template<class T> void STPModel<T>::bellmanFord(VertexRef start) {
-    std::unordered_map<uint32_t, SafeInt> dist;
+    std::unordered_map<uint32_t, T> dist;
     std::queue<VertexRef> open;
     dist.emplace(start.x, 0);
     open.push(start);
@@ -59,7 +59,7 @@ template<class T> void STPModel<T>::bellmanFord(VertexRef start) {
 template<class T> void STPModel<T>::shiftZero() {
     VertexRef zero = STPStore<T>::zero();
     if (!valMap.count(zero.x)) return; // if 'zero' isn't present, no need to shift anything
-    SafeInt shift = valMap[zero.x];
+    T shift = valMap[zero.x];
     for (auto &pair : valMap) {
         pair.second -= shift;
     }

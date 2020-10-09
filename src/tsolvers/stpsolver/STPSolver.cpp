@@ -17,15 +17,12 @@ template<class T> STPSolver<T>::STPSolver(SMTConfig & c, LALogic & l)
 
 template<class T> STPSolver<T>::~STPSolver() = default;
 
-// TODO: make T-specific
 template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     assert( logic.isNumLeq(ref) );
     Pterm &leq = logic.getPterm(ref);
     assert( logic.isNumConst(leq[0]) );
-    auto con = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
-    assert( con.isInteger() );  // we're dealing with IDL for now
-    auto c = static_cast<ptrdiff_t>(con.get_d());
+    auto c = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
     PTRef rhs = leq[1];  // 'x + (-1 * y)'
 
     PTRef x{}, y{};  // variables on the right hand side
@@ -53,9 +50,10 @@ template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRe
         y = mulPt[1];
         assert( logic.isNumVar(y) );
     }
-    return ParsedPTRef{x, y, SafeInt(c)};
+    return ParsedPTRef{x, y, convert(c)};
 }
 
+/*
 // TODO make T-specific
 template<class T> EdgeRef STPSolver<T>::createNegation(EdgeRef e) {
     const Edge<T> &edge = store.getEdge(e);
@@ -64,7 +62,7 @@ template<class T> EdgeRef STPSolver<T>::createNegation(EdgeRef e) {
     store.setNegation(e, res);
     return res;
 }
-
+*/
 
 
 template<class T> void STPSolver<T>::declareAtom(PTRef tr) {
@@ -99,7 +97,8 @@ template<class T> void STPSolver<T>::declareAtom(PTRef tr) {
     }
     // e is definitely EdgeRef_Undef
     e = store.createEdge(y, x, parsed.c);
-    EdgeRef neg = createNegation(e);
+    EdgeRef neg = store.createEdge(x, y, negate(parsed.c));
+    store.setNegation(e, neg);
     mapper.registerEdge(e);
     mapper.mapEdge(tr, e);
     mapper.registerEdge(neg);       // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
@@ -210,7 +209,8 @@ template<class T> ValPair STPSolver<T>::getValue(PTRef pt) {
     if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
         return ValPair_Undef;
 
-    ptrdiff_t value = model->getValue(v).value();
+    // FIXME: This probably doesn't work. Will be fixed with new model interface
+    T value = model->getValue(v);
     return ValPair(pt, std::to_string(value).c_str());
 }
 

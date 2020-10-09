@@ -20,6 +20,10 @@ private:
         std::vector<bool> visited;              // map of which vertices were visited
         std::vector<T> distance;        // map of distances to each visited vertex
         size_t total{};                   // sum of all edges each vertex appears in
+
+        DFSResult(std::vector<bool> &&vis, std::vector<T> &&dist, size_t total) :
+            visited(std::move(vis)), distance(std::move(dist)), total(total)
+        {}
     };
 
     STPStore<T> & store;

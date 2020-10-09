@@ -21,11 +21,13 @@ void EdgeGraph::clear() {
     outgoing.clear();
 }
 
-template<class T> bool STPGraphManager<T>::isTrue(EdgeRef e) const {
+template<class T>
+bool STPGraphManager<T>::isTrue(EdgeRef e) const {
     return e != EdgeRef_Undef && store.getEdge(e).setTime != 0;
 }
 
-template<class T> void STPGraphManager<T>::setTrue(EdgeRef e, PtAsgn asgn) {
+template<class T>
+void STPGraphManager<T>::setTrue(EdgeRef e, PtAsgn asgn) {
     Edge<T> &edge = store.getEdge(e);
     if (edge.setTime != 0) return;              // edge was already set to true - it is already stored
 
@@ -35,13 +37,15 @@ template<class T> void STPGraphManager<T>::setTrue(EdgeRef e, PtAsgn asgn) {
     graph.addEdge(e, edge.from, edge.to);
 }
 
-template<class T> void STPGraphManager<T>::setDeduction(EdgeRef e) {
+template<class T>
+void STPGraphManager<T>::setDeduction(EdgeRef e) {
     deductions.push_back(e);
     store.getEdge(e).setTime = timestamp;
 }
 
 // Searches through the graph to find consequences of currently assigned edges, starting from 'e'
-template<class T> std::vector<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
+template<class T>
+std::vector<EdgeRef> STPGraphManager<T>::findConsequences(EdgeRef e) {
     size_t n = store.vertexNum();
 
     auto &start = store.getEdge(e);
@@ -77,9 +81,10 @@ template<class T> std::vector<EdgeRef> STPGraphManager<T>::findConsequences(Edge
 }
 
 // DFS through the graph to find shortest paths to all reachable vertices from 'init' in the given direction
-template<class T> typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfsSearch(VertexRef init, bool forward) {
+template<class T>
+typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfsSearch(VertexRef init, bool forward) {
     std::vector<bool> visited(store.vertexNum());
-    std::vector<SafeInt> length(store.vertexNum());
+    std::vector<T> length(store.vertexNum());
     size_t total = 0;
     std::stack<VertexRef> open;
     visited[init.x] = true;
@@ -104,14 +109,15 @@ template<class T> typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfs
         }
     }
 
-    return DFSResult{std::move(visited), std::move(length), total};
+    return DFSResult(std::move(visited), std::move(length), total);
 }
 
 // removes all edges that have timestamp strictly later than 'point' from the graph
-template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
+template<class T>
+void STPGraphManager<T>::removeAfter(uint32_t point) {
     if (graph.addedEdges.empty()) return;
 
-    for (int i = graph.addedEdges.size()-1; i >= 0; --i) {
+    for (int i = graph.addedEdges.size() - 1; i >= 0; --i) {
         EdgeRef eRef = graph.addedEdges[i];
         auto &edge = store.getEdge(eRef);
         if (edge.setTime <= point) {  // edges appear in 'addedEdges' in timestamp order
@@ -139,7 +145,8 @@ template<class T> void STPGraphManager<T>::removeAfter(uint32_t point) {
     }
 }
 
-template<class T> void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
+template<class T>
+void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
     const Edge<T> &expl = store.getEdge(e);
     if (mapper.getAssignment(e) != PtAsgn_Undef) {      // explanation for explicitly assigned edge is trivial
         v.push(mapper.getAssignment(e));
@@ -147,7 +154,7 @@ template<class T> void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn
     }
 
     std::vector<EdgeRef> visited(store.vertexNum(), EdgeRef_Undef);
-    std::vector<SafeInt> length(store.vertexNum());
+    std::vector<T> length(store.vertexNum());
     std::stack<VertexRef> open;
 
     open.push(expl.from);
@@ -171,16 +178,17 @@ template<class T> void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn
 
     auto backtrack = visited[expl.to.x];
     while (true) {
-        assert( backtrack != EdgeRef_Undef);
+        assert(backtrack != EdgeRef_Undef);
         const Edge<T> &edge = store.getEdge(backtrack);
-        assert( mapper.getAssignment(backtrack) != PtAsgn_Undef );
+        assert(mapper.getAssignment(backtrack) != PtAsgn_Undef);
         v.push(mapper.getAssignment(backtrack));
         if (edge.from == expl.from) break;
         backtrack = visited[edge.from.x];
     }
 }
 
-template<class T> void STPGraphManager<T>::clear() {
+template<class T>
+void STPGraphManager<T>::clear() {
     timestamp = 0;
     graph.clear();
 }
