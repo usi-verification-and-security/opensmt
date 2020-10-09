@@ -39,9 +39,9 @@ private:
 
     ParsedPTRef parseRef(PTRef ref) const;
 
-    static T convert(const opensmt::Number& cost);
+    static T convert(const opensmt::Number &cost);
 
-    static T negate(SafeInt cost);
+    static T negate(const T &cost);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l);
