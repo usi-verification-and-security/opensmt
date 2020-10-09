@@ -15,4 +15,5 @@ target_sources(tsolvers
 
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/SafeInt.h"
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/IDLSolver.h"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/RDLSolver.h"
     )
