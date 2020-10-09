@@ -3,6 +3,7 @@
 
 #include "STPStore.h"
 #include "STPMapper.h"
+// implementations of template functions #included below class definitions
 
 struct EdgeGraph {
     std::vector<EdgeRef> addedEdges;
@@ -52,5 +53,5 @@ public:
     void clear();
 };
 
-#include "STPEdgeGraph.cpp" // FIXME
+#include "STPEdgeGraph.cpp"
 #endif //OPENSMT_STPEDGEGRAPH_H

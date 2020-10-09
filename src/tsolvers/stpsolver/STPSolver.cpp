@@ -1,8 +1,11 @@
 //
 // Created by Martin Blicha on 12.12.19.
 //
+#ifndef OPENSMT_STPSOLVER_C
+#define OPENSMT_STPSOLVER_C
 
 #include "STPSolver.h"
+#include "Converter.h"
 
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
@@ -50,7 +53,7 @@ template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRe
         y = mulPt[1];
         assert( logic.isNumVar(y) );
     }
-    return ParsedPTRef{x, y, convert(c)};
+    return ParsedPTRef{x, y, Converter<T>::getValue(c)};
 }
 
 /*
@@ -97,7 +100,7 @@ template<class T> void STPSolver<T>::declareAtom(PTRef tr) {
     }
     // e is definitely EdgeRef_Undef
     e = store.createEdge(y, x, parsed.c);
-    EdgeRef neg = store.createEdge(x, y, negate(parsed.c));
+    EdgeRef neg = store.createEdge(x, y, Converter<T>::negate(parsed.c));
     store.setNegation(e, neg);
     mapper.registerEdge(e);
     mapper.mapEdge(tr, e);
@@ -209,9 +212,8 @@ template<class T> ValPair STPSolver<T>::getValue(PTRef pt) {
     if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
         return ValPair_Undef;
 
-    // FIXME: This probably doesn't work. Will be fixed with new model interface
     T value = model->getValue(v);
-    return ValPair(pt, show(value).c_str());
+    return ValPair(pt, Converter<T>::show(value).c_str());
 }
 
 template<class T> void STPSolver<T>::computeModel() {
@@ -245,3 +247,5 @@ template<class T> Logic & STPSolver<T>::getLogic() {
 template<class T> bool STPSolver<T>::isValid(PTRef tr) {
     return logic.isNumLeq(tr);
 }
+
+#endif //OPENSMT_STPSOLVER_C

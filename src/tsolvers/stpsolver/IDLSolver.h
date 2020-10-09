@@ -1,25 +1,25 @@
 #ifndef OPENSMT_IDLSOLVER_H
 #define OPENSMT_IDLSOLVER_H
 
-#include "STPSolver.cpp"
-#include "SafeInt.hpp"
+#include "STPSolver.h"
+#include "SafeInt.h"
+#include "Converter.h"
 
 class IDLSolver : public STPSolver<SafeInt> {
 public:
     IDLSolver(SMTConfig &c, LALogic &l) : STPSolver(c, l) {};
 };
 
-template<> SafeInt STPSolver<SafeInt>::convert(const opensmt::Number &cost) {
-    assert(cost.isInteger());
-    return {static_cast<ptrdiff_t>(cost.get_d())};
+template<> SafeInt Converter<SafeInt>::getValue(const FastRational &val) {
+    assert(val.isInteger());
+    return {static_cast<ptrdiff_t>(val.get_d())};
 }
 
-template<> SafeInt STPSolver<SafeInt>::negate(const SafeInt &cost) {
-    return -(cost + 1);
+template<> SafeInt Converter<SafeInt>::negate(const SafeInt &val) {
+    return -(val + 1);
 }
 
-template<> std::string STPSolver<SafeInt>::show(const SafeInt &val) {
+template<> std::string Converter<SafeInt>::show(const SafeInt &val) {
     return std::to_string(val.value());
 }
-
 #endif //OPENSMT_IDLSOLVER_H

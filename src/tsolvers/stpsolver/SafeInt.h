@@ -1,5 +1,5 @@
-#ifndef OPENSMT_SAFEINT_HPP
-#define OPENSMT_SAFEINT_HPP
+#ifndef OPENSMT_SAFEINT_H
+#define OPENSMT_SAFEINT_H
 
 #include <cstddef>
 #include <stdexcept>
@@ -40,4 +40,4 @@ public:
     SafeInt operator -() const { return {-val}; }
 };
 
-#endif //OPENSMT_SAFEINT_HPP
+#endif //OPENSMT_SAFEINT_H

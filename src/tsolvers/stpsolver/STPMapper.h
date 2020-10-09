@@ -5,7 +5,7 @@
 #include <LALogic.h>
 #include <Pterm.h>
 #include "STPStore.h"
-
+// implementations of template functions #included below class definition
 
 template<class T> class STPMapper {
     const LALogic &logic;
@@ -34,5 +34,5 @@ public:
     void clear();
 };
 
-#include "STPMapper.cpp" //FIXME
+#include "STPMapper.cpp"
 #endif //OPENSMT_STPMAPPER_H

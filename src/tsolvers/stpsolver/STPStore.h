@@ -6,6 +6,7 @@
 #include <Number.h>
 #include <SolverTypes.h>
 #include <PtStructs.h>
+// implementations of template functions #included below class definitions
 
 struct VertexRef {
     uint32_t x;
@@ -58,5 +59,5 @@ public:
     void clear();
 };
 
-#include "STPStore.cpp" // FIXME
+#include "STPStore.cpp"
 #endif //OPENSMT_STPSTORE_H

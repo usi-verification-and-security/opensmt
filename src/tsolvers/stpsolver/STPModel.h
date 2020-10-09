@@ -2,6 +2,7 @@
 #define OPENSMT_STPVALMAPPER_HPP
 
 #include "STPEdgeGraph.h"
+// implementations of template functions #included below class definition
 
 // holds the mapping from vertices to their values
 // FIXME: Incomplete for now. Will be fixed with new model interface
@@ -22,7 +23,5 @@ public:
     T getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
-#include "STPModel.cpp" // FIXME
-
-#include <utility>
+#include "STPModel.cpp"
 #endif //OPENSMT_STPVALMAPPER_HPP

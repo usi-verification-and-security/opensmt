@@ -12,7 +12,8 @@
 #include "STPMapper.h"
 #include "STPEdgeGraph.h"
 #include "STPModel.h"
-#include "SafeInt.hpp"
+#include "SafeInt.h"
+// implementations of template functions #included below class definition
 
 template<typename T> class STPSolver : public TSolver {
 private:
@@ -38,12 +39,6 @@ private:
     std::unique_ptr<STPModel<T>> model;           // mapping of vertices (vars) to valid assignments, if it was computed
 
     ParsedPTRef parseRef(PTRef ref) const;
-
-    static T convert(const opensmt::Number &cost);
-
-    static T negate(const T &cost);
-
-    static std::string show(const T &val);
 
 public:
     STPSolver(SMTConfig & c, LALogic & l);
@@ -78,4 +73,5 @@ public:
 
 };
 
+#include "STPSolver.cpp"
 #endif //OPENSMT_STPSOLVER_H
