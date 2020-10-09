@@ -74,6 +74,6 @@ public:
 
 };
 
-#include "STPSolver.cpp"
+#include "STPSolver_implementations.hpp"
 
 #endif //OPENSMT_STPSOLVER_H

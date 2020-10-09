@@ -32,6 +32,6 @@ public:
     T getValue(VertexRef v) const { return valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
-#include "STPModel.cpp"
+#include "STPModel_implementations.hpp"
 
 #endif //OPENSMT_STPVALMAPPER_HPP

@@ -48,6 +48,6 @@ public:
     void clear();
 };
 
-#include "STPMapper.cpp"
+#include "STPMapper_implementations.hpp"
 
 #endif //OPENSMT_STPMAPPER_H

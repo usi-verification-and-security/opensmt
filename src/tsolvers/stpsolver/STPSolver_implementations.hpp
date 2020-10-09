@@ -1,8 +1,8 @@
 //
 // Created by Martin Blicha on 12.12.19.
 //
-#ifndef OPENSMT_STPSOLVER_C
-#define OPENSMT_STPSOLVER_C
+#ifndef OPENSMT_STPSOLVER_IMPLEMENTATIONS_HPP
+#define OPENSMT_STPSOLVER_IMPLEMENTATIONS_HPP
 
 #include "STPSolver.h"
 #include "Converter.h"
@@ -248,4 +248,4 @@ bool STPSolver<T>::isValid(PTRef tr) {
     return logic.isNumLeq(tr);
 }
 
-#endif //OPENSMT_STPSOLVER_C
+#endif //OPENSMT_STPSOLVER_IMPLEMENTATIONS_HPP

@@ -79,6 +79,6 @@ public:
     void clear();
 };
 
-#include "STPStore.cpp"
+#include "STPStore_implementations.hpp"
 
 #endif //OPENSMT_STPSTORE_H

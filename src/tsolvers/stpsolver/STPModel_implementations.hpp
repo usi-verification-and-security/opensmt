@@ -1,5 +1,5 @@
-#ifndef OPENSMT_STPMODEL_C
-#define OPENSMT_STPMODEL_C
+#ifndef OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP
+#define OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP
 
 #include <memory>
 #include "STPModel.h"
@@ -78,4 +78,4 @@ void STPModel<T>::createModel() {
     shiftZero();
 }
 
-#endif //OPENSMT_STPMODEL_C
+#endif //OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP

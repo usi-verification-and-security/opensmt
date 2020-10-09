@@ -1,10 +1,9 @@
-#ifndef OPENSMT_STPEDGEGRAPH_C
-#define OPENSMT_STPEDGEGRAPH_C
+#ifndef OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP
+#define OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP
 
 #include <stack>
 #include "STPGraphManager.h"
 #include "Converter.h"
-
 
 template<class T>
 bool STPGraphManager<T>::isTrue(EdgeRef e) const {
@@ -180,4 +179,4 @@ void STPGraphManager<T>::clear() {
     graph.clear();
 }
 
-#endif //OPENSMT_STPEDGEGRAPH_C
+#endif //OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP

@@ -55,6 +55,6 @@ public:
     void clear();
 };
 
-#include "STPGraphManager.cpp"
+#include "STPGraphManager_implementations.hpp"
 
 #endif //OPENSMT_STPGRAPHMANAGER_H

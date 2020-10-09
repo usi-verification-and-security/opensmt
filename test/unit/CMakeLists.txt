@@ -86,7 +86,7 @@ target_link_libraries(LIACutTest api_static gtest gtest_main)
 
 gtest_add_tests(TARGET LIACutTest)
 
-add_executable(STPSolverTest ../../src/tsolvers/stpsolver/STPGraphManager.cpp ../../src/tsolvers/stpsolver/STPGraphManager.h)
+add_executable(STPSolverTest ../../src/tsolvers/stpsolver/STPGraphManager_implementations.hpp ../../src/tsolvers/stpsolver/STPGraphManager.h)
 target_sources(STPSolverTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_STPSolver.cpp"
     )

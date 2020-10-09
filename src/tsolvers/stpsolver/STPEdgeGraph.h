@@ -1,5 +1,5 @@
-#ifndef OPENSMT_STPEDGEGRAPH_HPP
-#define OPENSMT_STPEDGEGRAPH_HPP
+#ifndef OPENSMT_STPEDGEGRAPH_H
+#define OPENSMT_STPEDGEGRAPH_H
 
 #include "STPStore.h"
 
@@ -12,4 +12,4 @@ struct EdgeGraph {
     void clear();
 };
 
-#endif //OPENSMT_STPEDGEGRAPH_HPP
+#endif //OPENSMT_STPEDGEGRAPH_H

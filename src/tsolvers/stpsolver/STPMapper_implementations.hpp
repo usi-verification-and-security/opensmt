@@ -1,5 +1,5 @@
-#ifndef OPENSMT_STPMAPPER_C
-#define OPENSMT_STPMAPPER_C
+#ifndef OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP
+#define OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP
 
 #include <Pterm.h>
 #include "STPMapper.h"
@@ -106,4 +106,4 @@ void STPMapper<T>::clear() {
     edgeRefToAsgn.clear();
 }
 
-#endif //OPENSMT_STPMAPPER_C
+#endif //OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP

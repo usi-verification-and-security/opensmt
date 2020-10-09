@@ -1,5 +1,5 @@
-#ifndef OPENSMT_STPSTORE_C
-#define OPENSMT_STPSTORE_C
+#ifndef OPENSMT_STPSTORE_IMPLEMENTATIONS_HPP
+#define OPENSMT_STPSTORE_IMPLEMENTATIONS_HPP
 
 #include "STPStore.h"
 
@@ -28,4 +28,4 @@ void STPStore<T>::clear() {
     vertices = 1;   // clear all vertices except zero
 }
 
-#endif //OPENSMT_STPSTORE_C
+#endif //OPENSMT_STPSTORE_IMPLEMENTATIONS_HPP
