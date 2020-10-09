@@ -1,7 +1,7 @@
 #ifndef OPENSMT_STPVALMAPPER_HPP
 #define OPENSMT_STPVALMAPPER_HPP
 
-#include "STPEdgeGraph.h"
+#include "STPGraphManager.h"
 // implementations of template functions #included below class definition
 
 // holds the mapping from vertices to their values
@@ -28,7 +28,8 @@ public:
 
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
 
-    T getValue(VertexRef v) const { return -valMap.at(v.x); } // valid assignment is actually the inverse of distance
+    // FIXME: should be negated
+    T getValue(VertexRef v) const { return valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
 #include "STPModel.cpp"

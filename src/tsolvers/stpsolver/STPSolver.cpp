@@ -22,6 +22,7 @@ STPSolver<T>::~STPSolver() = default;
 template<class T>
 typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
+    // due to how LALogic creates terms, we won't ever encounter <, >, or >= inequalities
     assert(logic.isNumLeq(ref));
     Pterm &leq = logic.getPterm(ref);
     assert(logic.isNumConst(leq[0]));

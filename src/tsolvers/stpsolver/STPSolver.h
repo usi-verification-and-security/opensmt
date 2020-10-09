@@ -10,7 +10,7 @@
 #include "LALogic.h"
 #include "SMTConfig.h"
 #include "STPMapper.h"
-#include "STPEdgeGraph.h"
+#include "STPGraphManager.h"
 #include "STPModel.h"
 #include "SafeInt.h"
 // implementations of template functions #included below class definition

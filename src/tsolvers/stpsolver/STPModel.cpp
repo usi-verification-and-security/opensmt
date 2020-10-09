@@ -30,7 +30,7 @@ VertexRef STPModel<T>::addStartingPoint() {
     VertexRef start = store.createVertex();
 
     for (VertexRef v : vertsInGraph()) {
-        EdgeRef eRef = store.createEdge(start, v, 0);
+        EdgeRef eRef = store.createEdge(start, v, Converter<T>::getValue(0));
         graph.addEdge(eRef, start, v);
     }
 
@@ -68,7 +68,7 @@ void STPModel<T>::shiftZero() {
     for (auto &pair : valMap) {
         pair.second -= shift;
     }
-    assert(valMap[zero.x] == 0);
+    assert(valMap[zero.x] == Converter<T>::getValue(0));
 }
 
 template<class T>
