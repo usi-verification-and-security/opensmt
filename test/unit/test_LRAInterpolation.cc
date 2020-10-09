@@ -51,9 +51,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothNonstrict){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.printTerm(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
@@ -82,9 +80,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Astrict){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.printTerm(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
@@ -113,9 +109,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Bstrict){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.printTerm(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
@@ -144,9 +138,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothStrict){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     std::cout << logic.printTerm(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
@@ -174,9 +166,7 @@ TEST_F(LRAInterpolationTest, test_AllInA){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A}, {conflict[3].tr, I_A}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3, leq4}), logic.getTerm_true(), farkasItp));
     EXPECT_EQ(farkasItp, logic.getTerm_false());
@@ -210,9 +200,7 @@ TEST_F(LRAInterpolationTest, test_AllInB){
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::vector<opensmt::Real> coeffs {1,1,1,1};
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_B}, {conflict[1].tr, I_B}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
-    PartitionManager dummy(logic);
-    ipartitions_t dummyMask;
-    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.getTerm_true(), logic.mkAnd({leq1, leq2, leq3, leq4}), farkasItp));
     EXPECT_EQ(farkasItp, logic.getTerm_true());
@@ -230,37 +218,69 @@ TEST_F(LRAInterpolationTest, test_AllInB){
     EXPECT_EQ(dualDecomposedFarkasItp, logic.getTerm_true());
 }
 
-//TEST_F(LRAInterpolationTest, test_Decomposition_NonStrict){
-//    /*
-//     * A:   x1 >= 0
-//     *      x2 - x1 >= 0
-//     *      -x3 - x1 >= 0
-//     * B:
-//     *      x3 - x4 >= 0
-//     *      -x4 - x2 >= 0
-//     *      x4 >= 1
-//     */
-//    PTRef zero = logic.getTerm_NumZero();
-//    PTRef leq1 = logic.mkNumGeq(x1, zero);
-//    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(x2,x1), zero);
-//    PTRef leq3 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), zero);
-//
-//    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x3,x4), zero);
-//    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
-//    PTRef leq6 = logic.mkNumGeq(x4, logic.getTerm_NumOne());
-//    vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True),
-//                          PtAsgn(leq4, l_True), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
-//    ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-//    std::vector<opensmt::Real> coeffs {2,1,1,1,1,2};
-//    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
-//                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
-//    PartitionManager dummy(logic);
-//    ipartitions_t dummyMask;
-//    FarkasInterpolator interpolator(logic, dummy, conflict, coeffs, dummyMask, &labels);
-//    PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
-//    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
-//    ASSERT_TRUE(logic.isAnd(decomposedFarkasItp));
-//    EXPECT_EQ(decomposedFarkasItp, logic.mkAnd(logic.mkNumLeq(zero, x2), logic.mkNumLeq(zero, logic.mkNumNeg(x3))));
-//    PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
-//    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
-//}
+TEST_F(LRAInterpolationTest, test_Decomposition_NonStrict){
+    /*
+     * A:   x1 >= 0
+     *      x2 - x1 >= 0
+     *      -x3 - x1 >= 0
+     * B:
+     *      x3 - x4 >= 0
+     *      -x4 - x2 >= 0
+     *      x4 >= 1
+     */
+    PTRef zero = logic.getTerm_NumZero();
+    PTRef leq1 = logic.mkNumGeq(x1, zero);
+    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(x2,x1), zero);
+    PTRef leq3 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), zero);
+
+    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
+    PTRef leq6 = logic.mkNumGeq(x4, logic.getTerm_NumOne());
+    vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True),
+                          PtAsgn(leq4, l_True), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
+    ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
+    std::vector<opensmt::Real> coeffs {2,1,1,1,1,2};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
+                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
+    PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
+    ASSERT_TRUE(logic.isAnd(decomposedFarkasItp));
+    EXPECT_EQ(decomposedFarkasItp, logic.mkAnd(logic.mkNumLeq(zero, x2), logic.mkNumLeq(zero, logic.mkNumNeg(x3))));
+    PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
+}
+
+TEST_F(LRAInterpolationTest, test_Decomposition_Strict){
+    /*
+     * A:   x1 >= 0
+     *      x2 - x1 > 0
+     *      -x3 - x1 >= 0
+     * B:
+     *      x3 - x4 > 0
+     *      -x4 - x2 >= 0
+     *      x4 >= 0
+     */
+    PTRef zero = logic.getTerm_NumZero();
+    PTRef leq1 = logic.mkNumGeq(x1, zero);
+    PTRef leq2 = logic.mkNumGt(logic.mkNumMinus(x2,x1), zero);
+    PTRef leq3 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), zero);
+
+    PTRef leq4 = logic.mkNumGt(logic.mkNumMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
+    PTRef leq6 = logic.mkNumGeq(x4, logic.getTerm_NumOne());
+    vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(logic.mkNot(leq2), l_False), PtAsgn(leq3, l_True),
+                          PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
+    ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
+    std::vector<opensmt::Real> coeffs {2,1,1,1,1,2};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
+                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
+    FarkasInterpolator interpolator(logic, conflict, coeffs, labels);
+    PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
+    ASSERT_TRUE(logic.isAnd(decomposedFarkasItp));
+    EXPECT_EQ(decomposedFarkasItp, logic.mkAnd(logic.mkNumLt(zero, x2), logic.mkNumLeq(zero, logic.mkNumNeg(x3))));
+    PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
+//    std::cout << logic.printTerm(dualDecomposedFarkasItp) << std::endl;
+}

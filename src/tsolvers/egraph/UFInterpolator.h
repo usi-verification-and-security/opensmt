@@ -126,17 +126,14 @@ public:
     void printAsDotty(ostream &);
 
 private:
-
-    void computeAndStoreColors(std::map<PTRef, icolor_t> const & literalColors);
-
-    icolor_t getLitColor (PTRef term) const {
+    icolor_t getLitColor(PTRef term) const {
         assert(litColors.find(term) != litColors.end());
         return litColors.at(term);
     }
 
     icolor_t getTermColor (PTRef term) const {
-        assert(termColors.find(term) != termColors.end());
-        return termColors.at(term);
+        assert(colorInfo);
+        return colorInfo->getColorFor(term);
     }
 
     void colorCGraph();
@@ -182,10 +179,10 @@ private:
     SMTConfig & config;
     Logic & logic;
     CGraph & cgraph;
-    std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
-    std::unordered_map<PTRef, icolor_t, PTRefHash> litColors;
+    std::map<PTRef, icolor_t> litColors; // MB: this is needed because edges need to be colored exactly as the literals in the conflict
     std::set<CNode *> colored_nodes;
     std::set<CEdge *> colored_edges;
+    std::unique_ptr<TermColorInfo> colorInfo;
     std::map<path_t, icolor_t> L;
 
 };

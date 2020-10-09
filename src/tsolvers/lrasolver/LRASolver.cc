@@ -103,7 +103,8 @@ lbool LRASolver::getPolaritySuggestion(PTRef ptref) const {
 PTRef
 LRASolver::getInterpolant( const ipartitions_t & mask , map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
     assert(status == UNSAT);
-    FarkasInterpolator interpolator(logic, pmanager, explanation, explanationCoefficients, mask, labels);
+    FarkasInterpolator interpolator(logic, explanation, explanationCoefficients, labels,
+                                    std::unique_ptr<TermColorInfo>(new GlobalTermColorInfo(pmanager, mask)));
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
