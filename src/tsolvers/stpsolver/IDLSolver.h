@@ -4,6 +4,11 @@
 #include "STPSolver.cpp"
 #include "SafeInt.hpp"
 
+class IDLSolver : public STPSolver<SafeInt> {
+public:
+    IDLSolver(SMTConfig &c, LALogic &l) : STPSolver(c, l) {};
+};
+
 template<> SafeInt STPSolver<SafeInt>::convert(const opensmt::Number &cost) {
     assert(cost.isInteger());
     return {static_cast<ptrdiff_t>(cost.get_d())};

@@ -11,7 +11,7 @@ IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap)
         : TSolverHandler(c, tmap)
         , logic(l)
 {
-    idlsolver = new STPSolver<SafeInt>(config, logic);
+    idlsolver = new IDLSolver(config, logic);
     SolverId my_id = idlsolver->getId();
     tsolvers[my_id.id] = idlsolver;
     solverSchedule.push(my_id.id);
