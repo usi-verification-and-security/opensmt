@@ -9,22 +9,22 @@
 
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
-template<class T> STPSolver<T>::STPSolver(SMTConfig & c, LALogic & l)
-        : TSolver((SolverId)descr_stp_solver, (const char*)descr_stp_solver, c)
-        , logic(l)
-        , mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
-        , graphMgr(store, mapper)  // similarly, mapper is initialized before graph (per declaration in header)
-        , inv_bpoint(-1)
-        , inv_asgn(PtAsgn_Undef)
-{}
+template<class T>
+STPSolver<T>::STPSolver(SMTConfig &c, LALogic &l)
+        : TSolver((SolverId) descr_stp_solver, (const char *) descr_stp_solver, c), logic(l),
+          mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
+        , graphMgr(store, mapper)   // similarly, mapper is initialized before graph (per declaration in header)
+        , inv_bpoint(-1), inv_asgn(PtAsgn_Undef) {}
 
-template<class T> STPSolver<T>::~STPSolver() = default;
+template<class T>
+STPSolver<T>::~STPSolver() = default;
 
-template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
+template<class T>
+typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
-    assert( logic.isNumLeq(ref) );
+    assert(logic.isNumLeq(ref));
     Pterm &leq = logic.getPterm(ref);
-    assert( logic.isNumConst(leq[0]) );
+    assert(logic.isNumConst(leq[0]));
     auto c = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
     PTRef rhs = leq[1];  // 'x + (-1 * y)'
 
@@ -32,8 +32,7 @@ template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRe
     if (logic.isNumVar(rhs)) {  // inequality with a single positive variable
         x = rhs;
         y = PTRef_Undef;
-    }
-    else {  // right hand side contains at least a negative variable
+    } else {  // right hand side contains at least a negative variable
         Pterm &rhsPt = logic.getPterm(rhs);
         PTRef mul{};  // (-1 * y) term
         if (logic.isNumPlus(rhs)) {  // usual DL inequality with two variables
@@ -41,34 +40,22 @@ template<class T> typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRe
             uint8_t iy = 1 - ix;
             x = rhsPt[ix];
             mul = rhsPt[iy];
-        }
-        else { // RHS contains just a negative variable
+        } else { // RHS contains just a negative variable
             x = PTRef_Undef;
             mul = rhs;
         }
 
-        assert( logic.isNumTimes(mul) );
+        assert(logic.isNumTimes(mul));
         Pterm &mulPt = logic.getPterm(mul);
-        assert( logic.isNumConst(mulPt[0]) && logic.getNumConst(mulPt[0]) == -1);
+        assert(logic.isNumConst(mulPt[0]) && logic.getNumConst(mulPt[0]) == -1);
         y = mulPt[1];
-        assert( logic.isNumVar(y) );
+        assert(logic.isNumVar(y));
     }
     return ParsedPTRef{x, y, Converter<T>::getValue(c)};
 }
 
-/*
-// TODO make T-specific
-template<class T> EdgeRef STPSolver<T>::createNegation(EdgeRef e) {
-    const Edge<T> &edge = store.getEdge(e);
-    // TODO: The negation of edge cost as (-(cost+1)) only works for integer costs, not for real costs
-    EdgeRef res = store.createEdge(edge.to, edge.from, -(edge.cost + 1));
-    store.setNegation(e, res);
-    return res;
-}
-*/
-
-
-template<class T> void STPSolver<T>::declareAtom(PTRef tr) {
+template<class T>
+void STPSolver<T>::declareAtom(PTRef tr) {
     // This method is used from outside to tell the solver about a possible atom that can later be asserted positively
     // or negatively
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
@@ -104,20 +91,21 @@ template<class T> void STPSolver<T>::declareAtom(PTRef tr) {
     store.setNegation(e, neg);
     mapper.registerEdge(e);
     mapper.mapEdge(tr, e);
-    mapper.registerEdge(neg);       // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
+    mapper.registerEdge(neg);  // adding 'neg' to the 'edgesOf' map even without a PTRef to assign to it
 }
 
-template<class T> bool STPSolver<T>::assertLit(PtAsgn asgn) {
+template<class T>
+bool STPSolver<T>::assertLit(PtAsgn asgn) {
     // Actually asserting an atom to the solver - adding a new constraint to the current set
     // asgn.tr is the atom to add
     // asgn.sgn is the polarity (positive or negative)
 
-    if (inv_asgn != PtAsgn_Undef) return false;            // no need to check anything if we're inconsistent already
+    if (inv_asgn != PtAsgn_Undef) return false;     // no need to check anything if we're inconsistent already
 
     EdgeRef e = mapper.getEdgeRef(asgn.tr);
-    assert( e != EdgeRef_Undef );
+    assert(e != EdgeRef_Undef);
     EdgeRef neg = store.getNegation(e);
-    assert( neg != EdgeRef_Undef );
+    assert(neg != EdgeRef_Undef);
 
     EdgeRef set = (asgn.sgn == l_True) ? e : neg;   // edge corresponding to 'true' assignment of 'asgn.tr'
     EdgeRef nset = (set == e) ? neg : e;            //                       'false'
@@ -128,9 +116,9 @@ template<class T> bool STPSolver<T>::assertLit(PtAsgn asgn) {
     }
     // negation of literal was already assigned or found as a consequence
     if (graphMgr.isTrue(nset)) {
-        inv_bpoint = backtrack_points.size();               // remember the first time we reached inconsistent state
+        inv_bpoint = backtrack_points.size();       // remember the first time we reached inconsistent state
         inv_asgn = asgn;
-        has_explanation = true;                             // marks this TSolver as the cause of inconsistency
+        has_explanation = true;                     // marks this TSolver as the cause of inconsistency
         return false;
     }
 
@@ -154,7 +142,8 @@ template<class T> bool STPSolver<T>::assertLit(PtAsgn asgn) {
     return true;
 }
 
-template<class T> TRes STPSolver<T>::check(bool b) {
+template<class T>
+TRes STPSolver<T>::check(bool b) {
     // The main method checking the consistency of the current set of constraints
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
 
@@ -162,42 +151,47 @@ template<class T> TRes STPSolver<T>::check(bool b) {
     return inv_asgn == PtAsgn_Undef ? TRes::SAT : TRes::UNSAT;
 }
 
-template<class T> void STPSolver<T>::clearSolver() {
+template<class T>
+void STPSolver<T>::clearSolver() {
     TSolver::clearSolver();
     graphMgr.clear();
     mapper.clear();
     store.clear();
 }
 
-template<class T> void STPSolver<T>::print(ostream & out) {
+template<class T>
+void STPSolver<T>::print(ostream &out) {
 
 }
 
-template<class T> void STPSolver<T>::pushBacktrackPoint() {
+template<class T>
+void STPSolver<T>::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking
     TSolver::pushBacktrackPoint();
     backtrack_points.push(graphMgr.getAddedCount());
 }
 
-template<class T> void STPSolver<T>::popBacktrackPoint() {
+template<class T>
+void STPSolver<T>::popBacktrackPoint() {
     // This is just for compatibility with older architecture
     // Typically multiple backtrack points are popped together, hence popBacktackPoints is the important method to implement
     popBacktrackPoints(1);
 }
 
-template<class T> void STPSolver<T>::popBacktrackPoints(unsigned int i) {
+template<class T>
+void STPSolver<T>::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
     if (!i) return;
-    assert( backtrack_points.size() >= i );
+    assert(backtrack_points.size() >= i);
     if (inv_bpoint > backtrack_points.size() - i) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
         inv_asgn = PtAsgn_Undef;
         has_explanation = false;
     }
 
-    backtrack_points.shrink(i -1); // pop 'i-1' values from the backtrack stack
+    backtrack_points.shrink(i - 1); // pop 'i-1' values from the backtrack stack
     graphMgr.removeAfter(backtrack_points.last());
     backtrack_points.shrink(1);
     // no need to modify mapper or store - the values stored there can't change
@@ -205,7 +199,8 @@ template<class T> void STPSolver<T>::popBacktrackPoints(unsigned int i) {
         TSolver::popBacktrackPoint(); // calling TSolver::popBacktrackPoints(i) would result in a stack overflow
 }
 
-template<class T> ValPair STPSolver<T>::getValue(PTRef pt) {
+template<class T>
+ValPair STPSolver<T>::getValue(PTRef pt) {
     // In the current model, get the value (represented as string) of the term "pt".
     VertexRef v = mapper.getVertRef(pt);
     // we can assume no assertions happen between 'computeModel' and 'getValue', so an existing model must be valid
@@ -216,7 +211,8 @@ template<class T> ValPair STPSolver<T>::getValue(PTRef pt) {
     return ValPair(pt, Converter<T>::show(value).c_str());
 }
 
-template<class T> void STPSolver<T>::computeModel() {
+template<class T>
+void STPSolver<T>::computeModel() {
     // a model of an unsatisfiable assignment can't be created
     if (inv_asgn != PtAsgn_Undef) {
         model = nullptr;
@@ -227,7 +223,8 @@ template<class T> void STPSolver<T>::computeModel() {
     model->createModel();
 }
 
-template<class T> void STPSolver<T>::getConflict(bool b, vec<PtAsgn> & vec) {
+template<class T>
+void STPSolver<T>::getConflict(bool b, vec<PtAsgn> &vec) {
     // In case of unsatisfiability, return the witnessing subset of constraints
     // The bool parameter can be ignored, the second parameter is the output parameter
     if (inv_asgn == PtAsgn_Undef) return;
@@ -236,15 +233,17 @@ template<class T> void STPSolver<T>::getConflict(bool b, vec<PtAsgn> & vec) {
     if (inv_asgn.sgn == l_True) {
         e = store.getNegation(e);
     }
-    assert(graphMgr.isTrue(e) );
+    assert(graphMgr.isTrue(e));
     graphMgr.findExplanation(e, vec);
 }
 
-template<class T> Logic & STPSolver<T>::getLogic() {
+template<class T>
+Logic &STPSolver<T>::getLogic() {
     return logic;
 }
 
-template<class T> bool STPSolver<T>::isValid(PTRef tr) {
+template<class T>
+bool STPSolver<T>::isValid(PTRef tr) {
     return logic.isNumLeq(tr);
 }
 

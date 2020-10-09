@@ -15,7 +15,8 @@
 #include "SafeInt.h"
 // implementations of template functions #included below class definition
 
-template<typename T> class STPSolver : public TSolver {
+template<typename T>
+class STPSolver : public TSolver {
 private:
     struct ParsedPTRef {
         // represents inequalities of the form 'y - x <= c'
@@ -25,7 +26,7 @@ private:
         T c;                // cost of the edge
     };
 
-    LALogic& logic;
+    LALogic &logic;
 
     STPStore<T> store;
 
@@ -41,13 +42,13 @@ private:
     ParsedPTRef parseRef(PTRef ref) const;
 
 public:
-    STPSolver(SMTConfig & c, LALogic & l);
+    STPSolver(SMTConfig &c, LALogic &l);
 
     ~STPSolver() override;
 
     void clearSolver() override;
 
-    void print(ostream & out) override;
+    void print(ostream &out) override;
 
     bool assertLit(PtAsgn asgn) override;
 
@@ -63,15 +64,16 @@ public:
 
     void computeModel() override;
 
-    void getConflict(bool b, vec<PtAsgn> & vec) override;
+    void getConflict(bool b, vec<PtAsgn> &vec) override;
 
     void declareAtom(PTRef tr) override;
 
-    Logic & getLogic() override;
+    Logic &getLogic() override;
 
     bool isValid(PTRef tr) override;
 
 };
 
 #include "STPSolver.cpp"
+
 #endif //OPENSMT_STPSOLVER_H

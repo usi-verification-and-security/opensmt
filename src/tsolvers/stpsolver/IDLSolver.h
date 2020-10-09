@@ -10,16 +10,20 @@ public:
     IDLSolver(SMTConfig &c, LALogic &l) : STPSolver(c, l) {};
 };
 
-template<> SafeInt Converter<SafeInt>::getValue(const FastRational &val) {
+template<>
+SafeInt Converter<SafeInt>::getValue(const FastRational &val) {
     assert(val.isInteger());
     return {static_cast<ptrdiff_t>(val.get_d())};
 }
 
-template<> SafeInt Converter<SafeInt>::negate(const SafeInt &val) {
+template<>
+SafeInt Converter<SafeInt>::negate(const SafeInt &val) {
     return -(val + 1);
 }
 
-template<> std::string Converter<SafeInt>::show(const SafeInt &val) {
+template<>
+std::string Converter<SafeInt>::show(const SafeInt &val) {
     return std::to_string(val.value());
 }
+
 #endif //OPENSMT_IDLSOLVER_H

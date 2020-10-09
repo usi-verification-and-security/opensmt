@@ -7,7 +7,9 @@
 #include "STPStore.h"
 // implementations of template functions #included below class definition
 
-template<class T> class STPMapper {
+template<class T>
+class STPMapper {
+private:
     const LALogic &logic;
 
     const STPStore<T> &store;
@@ -16,23 +18,36 @@ template<class T> class STPMapper {
     std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
     std::vector<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
     std::vector<PtAsgn> edgeRefToAsgn;                      // maps assigned edges to assignments that set them
-    std::vector<std::vector<EdgeRef>> edgesContainingVert;          // list of edges each vertex appears in
+    std::vector<std::vector<EdgeRef>> edgesContainingVert;  // list of edges each vertex appears in
 
 public:
     STPMapper(const LALogic &l, const STPStore<T> &s);
+
     void setVert(PTRef var, VertexRef vert);
+
     void registerEdge(EdgeRef edge);
+
     void mapEdge(PTRef leq, EdgeRef edge);
+
     void setAssignment(EdgeRef edge, PtAsgn asgn);
+
     void removeAssignment(EdgeRef edge);
+
     PtAsgn getAssignment(EdgeRef edge) const;
+
     VertexRef getVertRef(PTRef var) const;
+
     EdgeRef getEdgeRef(PTRef leq) const;
+
     EdgeRef getEdgeRef(VertexRef y, VertexRef x, T c) const;
+
     PTRef getPTRef(EdgeRef edge) const;
-    const std::vector<EdgeRef> & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+
+    const std::vector<EdgeRef> &edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+
     void clear();
 };
 
 #include "STPMapper.cpp"
+
 #endif //OPENSMT_STPMAPPER_H

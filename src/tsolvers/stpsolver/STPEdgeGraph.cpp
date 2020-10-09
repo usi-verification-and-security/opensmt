@@ -92,7 +92,8 @@ typename STPGraphManager<T>::DFSResult STPGraphManager<T>::dfsSearch(VertexRef i
     open.push(init);
 
     while (!open.empty()) {
-        VertexRef curr = open.top(); open.pop();
+        VertexRef curr = open.top();
+        open.pop();
         auto &toScan = forward ? graph.outgoing[curr.x] : graph.incoming[curr.x];
         for (auto eRef : toScan) {
             const Edge<T> &edge = store.getEdge(eRef);
@@ -159,7 +160,8 @@ void STPGraphManager<T>::findExplanation(EdgeRef e, vec<PtAsgn> &v) {
 
     open.push(expl.from);
     while (!open.empty()) {
-        auto curr = open.top(); open.pop();
+        auto curr = open.top();
+        open.pop();
         if (curr == expl.to && length[curr.x] <= expl.cost) break;
         for (auto eRef : graph.outgoing[curr.x]) {
             if (eRef == e) continue;
