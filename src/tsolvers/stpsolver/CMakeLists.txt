@@ -1,5 +1,5 @@
 target_sources(tsolvers
-    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/STPSolver.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPSolver.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPStore.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPMapper.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPEdgeGraph.h"
@@ -9,5 +9,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPMapper.cpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPEdgeGraph.cpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPModel.cpp"
+
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/SafeInt.hpp"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/IDLSolver.h"
     )

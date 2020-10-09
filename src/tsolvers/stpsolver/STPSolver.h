@@ -43,6 +43,8 @@ private:
 
     static T negate(const T &cost);
 
+    static std::string show(const T &val);
+
 public:
     STPSolver(SMTConfig & c, LALogic & l);
 

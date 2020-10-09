@@ -211,7 +211,7 @@ template<class T> ValPair STPSolver<T>::getValue(PTRef pt) {
 
     // FIXME: This probably doesn't work. Will be fixed with new model interface
     T value = model->getValue(v);
-    return ValPair(pt, std::to_string(value).c_str());
+    return ValPair(pt, show(value).c_str());
 }
 
 template<class T> void STPSolver<T>::computeModel() {
