@@ -5,11 +5,11 @@
 #include <gtest/gtest.h>
 #include <SMTConfig.h>
 #include <LIALogic.h>
-#include <STPSolver.h>
+#include <IDLSolver.h>
 
-class STPSolverTest : public ::testing::Test {
+class IDLSolverTest : public ::testing::Test {
 protected:
-    STPSolverTest(): logic{config} {}
+    IDLSolverTest(): logic{config} {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
@@ -26,14 +26,14 @@ protected:
 
 
 
-TEST_F(STPSolverTest, test_SimpleTest){
+TEST_F(IDLSolverTest, test_SimpleTest){
     PTRef ineq1 = logic.mkNumLeq(logic.mkNumMinus(x, y), logic.getTerm_NumZero());
     PTRef ineq2 = logic.mkNumLeq(logic.mkNumMinus(y, z), logic.getTerm_NumZero());
     PTRef ineq3 = logic.mkNumLeq(logic.mkNumMinus(z, x), logic.mkConst(-1));
     PTRef ineq4 = logic.mkNumLeq(logic.mkConst(3), x);
     PTRef ineq5 = logic.mkNumLeq(y, logic.mkConst(-2));
 
-    STPSolver solver(config, logic);
+    IDLSolver solver(config, logic);
 
     solver.declareAtom(ineq1);
     solver.declareAtom(ineq2);
@@ -132,12 +132,12 @@ TEST_F(SafeIntTest, test_sub_pass){
     SafeInt a(PTRDIFF_MAX - 10);
     ASSERT_NO_THROW(a -= SafeInt(-10));
     SafeInt b(PTRDIFF_MIN + 5);
-    ASSERT_NO_THROW(b -= 5);
+    ASSERT_NO_THROW(b -= SafeInt(5));
 }
 
 TEST_F(SafeIntTest, test_sub_fail_under){
     SafeInt a(PTRDIFF_MIN + 100);
-    ASSERT_ANY_THROW(a -= 101);
+    ASSERT_ANY_THROW(a -= SafeInt(101));
 }
 
 TEST_F(SafeIntTest, test_sub_fail_over){

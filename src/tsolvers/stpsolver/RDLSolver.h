@@ -16,6 +16,11 @@ Delta Converter<Delta>::getValue(const FastRational &val) {
 }
 
 template<>
+Delta Converter<Delta>::getValue(ptrdiff_t val) {
+    return Delta(FastRational(val, 1), 0);
+}
+
+template<>
 Delta Converter<Delta>::negate(const Delta &val) {
     assert(!val.hasDelta());
     // not(a-b <= c) == (b-a < -c) == (b-a <= -c-delta)

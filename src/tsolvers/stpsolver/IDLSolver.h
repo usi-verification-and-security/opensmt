@@ -13,12 +13,17 @@ public:
 template<>
 SafeInt Converter<SafeInt>::getValue(const FastRational &val) {
     assert(val.isInteger());
-    return {static_cast<ptrdiff_t>(val.get_d())};
+    return SafeInt(static_cast<ptrdiff_t>(val.get_d()));
+}
+
+template<>
+SafeInt Converter<SafeInt>::getValue(ptrdiff_t val) {
+    return SafeInt(val);
 }
 
 template<>
 SafeInt Converter<SafeInt>::negate(const SafeInt &val) {
-    return -(val + 1);
+    return SafeInt(-(val.value() + 1));
 }
 
 template<>

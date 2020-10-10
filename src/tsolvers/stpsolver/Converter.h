@@ -6,8 +6,9 @@
 template<class T>
 class Converter {
 public:
-    // Converts a FastRational value to a T value
+    // Converts a given value to a T value
     static T getValue(const FastRational &val);
+    static T getValue(ptrdiff_t val);
 
     // given (a-b<=c), returns c' such that not(a-b<=c) == (b-a<=c')
     static T negate(const T &val);

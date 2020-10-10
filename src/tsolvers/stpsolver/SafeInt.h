@@ -10,7 +10,7 @@ private:
 public:
     SafeInt() = default;
 
-    SafeInt(ptrdiff_t val) : val(val) {}
+    explicit SafeInt(ptrdiff_t val) : val(val) {}
 
     ptrdiff_t value() const { return val; }
 
@@ -19,7 +19,7 @@ public:
         if ((val > 0 && PTRDIFF_MAX - val < other.val) || (val < 0 && PTRDIFF_MIN - val > other.val)) {
             throw std::overflow_error("Overflow detected during SafeInt addition");
         }
-        return {val + other.val};
+        return SafeInt(val + other.val);
     }
 
     SafeInt &operator-=(SafeInt other) {
@@ -38,7 +38,7 @@ public:
 
     bool operator<=(SafeInt other) const { return val <= other.val; }
 
-    SafeInt operator-() const { return {-val}; }
+    SafeInt operator-() const { return SafeInt(-val); }
 };
 
 #endif //OPENSMT_SAFEINT_H
