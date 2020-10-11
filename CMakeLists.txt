@@ -78,7 +78,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/proof
     ${CMAKE_SOURCE_DIR}/models
     ${CMAKE_SOURCE_DIR}/itehandler
-    ${GMP_INCLUDE_DIRS}
 )
 
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)

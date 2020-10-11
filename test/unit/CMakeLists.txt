@@ -7,7 +7,7 @@ target_sources(LRATest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
     )
 
-target_link_libraries(LRATest api_static gtest gtest_main)
+target_link_libraries(LRATest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET LRATest)
 
@@ -18,7 +18,7 @@ target_sources(RewritingTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rewriting.cpp"
     )
 
-target_link_libraries(RewritingTest api_static gtest gtest_main)
+target_link_libraries(RewritingTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET RewritingTest)
 
@@ -27,7 +27,7 @@ target_sources(ExpressionsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ArithmeticExpressions.cpp"
     )
 
-target_link_libraries(ExpressionsTest api_static gtest gtest_main)
+target_link_libraries(ExpressionsTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET ExpressionsTest)
 
@@ -36,7 +36,7 @@ target_sources(TheorySimplificationsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TheorySimplifications.cc"
     )
 
-target_link_libraries(TheorySimplificationsTest api_static gtest gtest_main)
+target_link_libraries(TheorySimplificationsTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET TheorySimplificationsTest)
 
@@ -45,7 +45,7 @@ target_sources(EGraphTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Egraph.cpp"
     )
 
-target_link_libraries(EGraphTest api_static gtest gtest_main)
+target_link_libraries(EGraphTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET EGraphTest)
 
@@ -54,7 +54,7 @@ target_sources(LATest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Lookahead.cpp"
     )
 
-target_link_libraries(LATest api_static gtest gtest_main)
+target_link_libraries(LATest opensmt gtest gtest_main)
 
 
 gtest_add_tests(TARGET LATest)
@@ -64,7 +64,7 @@ target_sources(SimplexTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Simplex.cc"
     )
 
-target_link_libraries(SimplexTest api_static gtest gtest_main)
+target_link_libraries(SimplexTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET SimplexTest)
 
@@ -73,7 +73,7 @@ target_sources(HermiteTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_HNF.cpp"
     )
 
-target_link_libraries(HermiteTest api_static gtest gtest_main)
+target_link_libraries(HermiteTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET HermiteTest)
 
@@ -82,7 +82,7 @@ target_sources(LIACutTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIACutSolver.cpp"
     )
 
-target_link_libraries(LIACutTest api_static gtest gtest_main)
+target_link_libraries(LIACutTest opensmt gtest gtest_main)
 
 gtest_add_tests(TARGET LIACutTest)
 
@@ -92,7 +92,7 @@ target_sources(SubstitutionsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIASubstitutionsRegression.cc"
     )
 
-target_link_libraries(SubstitutionsTest api_static gtest gtest_main)
+target_link_libraries(SubstitutionsTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET SubstitutionsTest)
 
 add_executable(LogicMkTermsTest)
@@ -100,7 +100,7 @@ target_sources(LogicMkTermsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LogicMkTerms.cc"
     )
 
-target_link_libraries(LogicMkTermsTest api_static gtest gtest_main)
+target_link_libraries(LogicMkTermsTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET LogicMkTermsTest)
 
 add_executable(LIALogicMkTermsTest)
@@ -108,7 +108,7 @@ target_sources(LIALogicMkTermsTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIALogicMkTerms.cc"
         )
 
-target_link_libraries(LIALogicMkTermsTest api_static gtest gtest_main)
+target_link_libraries(LIALogicMkTermsTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET LIALogicMkTermsTest)
 
 
@@ -117,7 +117,7 @@ target_sources(BoundTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Bounds.cc"
     )
 
-target_link_libraries(BoundTest api_static gtest gtest_main)
+target_link_libraries(BoundTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET BoundTest)
 
 add_executable(ModelTest)
@@ -125,7 +125,7 @@ target_sources(ModelTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Model.cc"
     )
 
-target_link_libraries(ModelTest api_static gtest gtest_main)
+target_link_libraries(ModelTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET ModelTest)
 
 add_executable(IteTest)
@@ -134,7 +134,7 @@ target_sources(IteTest
         )
 
 
-target_link_libraries(IteTest api_static gtest gtest_main)
+target_link_libraries(IteTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET IteTest)
 
 add_executable(LIAStrengtheningTest)
@@ -143,7 +143,7 @@ target_sources(LIAStrengtheningTest
         )
 
 
-target_link_libraries(LIAStrengtheningTest api_static gtest gtest_main)
+target_link_libraries(LIAStrengtheningTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET LIAStrengtheningTest)
 
 add_executable(InterpolationTest)
@@ -152,7 +152,7 @@ target_sources(InterpolationTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LRAInterpolation.cc"
     )
 
-target_link_libraries(InterpolationTest api_static gtest gtest_main)
+target_link_libraries(InterpolationTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET InterpolationTest)
 
 add_executable(ExplainTest)
@@ -160,8 +160,7 @@ target_sources(ExplainTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Explain.cc"
         )
 
-target_link_libraries(ExplainTest api_static gtest gtest_main)
-
+target_link_libraries(ExplainTest opensmt gtest gtest_main)
 gtest_add_tests(TARGET ExplainTest)
 
 add_executable(EnodeStoreTest)

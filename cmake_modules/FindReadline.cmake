@@ -15,24 +15,23 @@ find_library(Readline_LIBRARY
     HINTS ${Readline_ROOT_DIR}/lib
 )
  
-# Conditionally set READLINE_FOUND value
-if(Readline_INCLUDE_DIR AND Readline_LIBRARY 
-  AND Ncurses_LIBRARY)
-  set(READLINE_FOUND TRUE)
-else(Readline_INCLUDE_DIR AND Readline_LIBRARY 
-  AND Ncurses_LIBRARY)
-  FIND_LIBRARY(Readline_LIBRARY NAMES readline)
-  MESSAGE(STATUS "Readline library: " ${Readline_LIBRARY} )
-  include(FindPackageHandleStandardArgs)
-  FIND_PACKAGE_HANDLE_STANDARD_ARGS(Readline DEFAULT_MSG 
-    Readline_INCLUDE_DIR Readline_LIBRARY )
-  MARK_AS_ADVANCED(Readline_INCLUDE_DIR Readline_LIBRARY)
-endif(Readline_INCLUDE_DIR AND Readline_LIBRARY 
-  AND Ncurses_LIBRARY)
- 
 # Hide these variables in cmake GUIs
 mark_as_advanced(
     Readline_ROOT_DIR
     Readline_INCLUDE_DIR
     Readline_LIBRARY
 )
+
+MESSAGE(STATUS "Readline library: " ${Readline_LIBRARY} )
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Readline DEFAULT_MSG 
+Readline_INCLUDE_DIR Readline_LIBRARY )
+
+if(Readline_FOUND AND NOT TARGET Readline::Readline)
+    add_library(Readline::Readline UNKNOWN IMPORTED)
+    set_target_properties(Readline::Readline PROPERTIES
+        IMPORTED_LOCATION "${Readline_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${Readline_INCLUDE_DIR}"
+    )
+ endif()
+

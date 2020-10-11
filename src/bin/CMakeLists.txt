@@ -1,17 +1,15 @@
-add_executable(opensmt opensmt.cc Interpret.cc)
+add_executable(opensmt-bin opensmt.cc Interpret.cc)
 
 if (NOT USE_READLINE)
     find_package(LibEdit REQUIRED)
-    target_link_libraries(opensmt PUBLIC ${LibEdit_LIBRARIES})
-    target_include_directories(opensmt PUBLIC ${LibEdit_INCLUDE_DIRS})
+    target_link_libraries(opensmt-bin PUBLIC LibEdit::LibEdit)
 else()
     find_package(Readline REQUIRED)
-    target_link_libraries(opensmt PUBLIC ${Readline_LIBRARY})
-    target_include_directories(opensmt PUBLIC ${Readline_INCLUDE_DIRS})
+    target_link_libraries(opensmt-bin PUBLIC Readline::Readline)
 endif()
 
-target_link_libraries(opensmt PUBLIC api_static)
+target_link_libraries(opensmt-bin PUBLIC opensmt-static)
 
-set_target_properties(opensmt PROPERTIES OUTPUT_NAME opensmt RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_target_properties(opensmt-bin PROPERTIES OUTPUT_NAME opensmt RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-install(TARGETS opensmt RUNTIME DESTINATION bin)
+install(TARGETS opensmt-bin RUNTIME DESTINATION bin)

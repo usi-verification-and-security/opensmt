@@ -12,13 +12,10 @@ $<TARGET_OBJECTS:common>
 $<TARGET_OBJECTS:simplifiers>
 $<TARGET_OBJECTS:models>
 $<TARGET_OBJECTS:itehandler>
+$<TARGET_OBJECTS:proof>
 )
 
-set(OBJECTS_TO_ADD $<TARGET_OBJECTS:proof> ${OBJECTS_TO_ADD})
-
 add_library(api OBJECT "")
-
-
 
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
@@ -40,25 +37,51 @@ PUBLIC ${PUBLIC_SOURCES_TO_ADD}
 set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD})
 
 if (BUILD_SHARED_LIBS)
-  add_library(api_shared SHARED ${OBJECTS_TO_ADD})
-  target_link_libraries(api_shared ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
-  set_target_properties(api_shared PROPERTIES 
-      OUTPUT_NAME opensmt
+  add_library(opensmt SHARED ${OBJECTS_TO_ADD})
+  target_link_libraries(opensmt GMP::GMP Threads::Threads)
+  set_target_properties(opensmt PROPERTIES
       VERSION ${OPENSMT_VERSION}
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
-  install(TARGETS api_shared LIBRARY DESTINATION lib)
+  install(TARGETS opensmt EXPORT opensmtTargets
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib
+      RUNTIME DESTINATION bin
+      INCLUDES DESTINATION include
+      )
+
+  install(EXPORT opensmtTargets
+      FILE opensmtTargets.cmake
+      NAMESPACE opensmt::
+      DESTINATION lib/cmake/opensmt
+      )
+
+  include(CMakePackageConfigHelpers)
+  write_basic_package_version_file( "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfigVersion.cmake"
+    VERSION ${OPENSMT_VERSION}
+    COMPATIBILITY SameMinorVersion
+    )
+
+  configure_package_config_file(opensmtConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/opensmt
+    #PATH_VARS INCLUDE_INSTALL_DIR INSTALL_DIR
+    )
+
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfigVersion.cmake" "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfig.cmake"
+    DESTINATION lib/cmake/opensmt
+    )
 endif()
 
 if (BUILD_STATIC_LIBS)
-  add_library(api_static STATIC ${OBJECTS_TO_ADD})
-  target_link_libraries(api_static ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
-  set_target_properties(api_static PROPERTIES 
+  add_library(opensmt-static STATIC ${OBJECTS_TO_ADD})
+  target_link_libraries(opensmt-static GMP::GMP Threads::Threads)
+  set_target_properties(opensmt-static PROPERTIES
       OUTPUT_NAME opensmt
       VERSION ${OPENSMT_VERSION}
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
-  install(TARGETS api_static ARCHIVE DESTINATION lib)
+  install(TARGETS opensmt-static ARCHIVE DESTINATION lib)
 endif()
 
 install(FILES
