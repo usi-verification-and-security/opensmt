@@ -25,5 +25,9 @@ if(GMP_FOUND AND NOT TARGET GMP::GMP)
     )
 
     add_library(GMP::GMP INTERFACE IMPORTED)
-    target_link_libraries(GMP::GMP INTERFACE GMP::GMP_C GMP::GMP_CXX)
+    set_property(TARGET GMP::GMP APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES GMP::GMP_C GMP::GMP_CXX
+        )
+    # the above command is for compatibillity with old versions of CMAKE, the version below is simpler, but works only from CMake 3.11 
+    #target_link_libraries(GMP::GMP INTERFACE GMP::GMP_C GMP::GMP_CXX)
 endif()
