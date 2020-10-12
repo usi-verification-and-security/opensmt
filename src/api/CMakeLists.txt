@@ -38,11 +38,13 @@ set(OBJECTS_TO_ADD $<TARGET_OBJECTS:api> ${OBJECTS_TO_ADD})
 
 if (BUILD_SHARED_LIBS)
   add_library(opensmt SHARED ${OBJECTS_TO_ADD})
-  target_link_libraries(opensmt GMP::GMP Threads::Threads)
   set_target_properties(opensmt PROPERTIES
+      NO_SYSTEM_FROM_IMPORTED true
       VERSION ${OPENSMT_VERSION}
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
+
+  target_link_libraries(opensmt GMP::GMP Threads::Threads)
   install(TARGETS opensmt EXPORT opensmtTargets
       LIBRARY DESTINATION lib
       ARCHIVE DESTINATION lib
@@ -75,12 +77,14 @@ endif()
 
 if (BUILD_STATIC_LIBS)
   add_library(opensmt-static STATIC ${OBJECTS_TO_ADD})
-  target_link_libraries(opensmt-static GMP::GMP Threads::Threads)
   set_target_properties(opensmt-static PROPERTIES
       OUTPUT_NAME opensmt
+      NO_SYSTEM_FROM_IMPORTED true
       VERSION ${OPENSMT_VERSION}
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
+
+  target_link_libraries(opensmt-static GMP::GMP Threads::Threads)
   install(TARGETS opensmt-static ARCHIVE DESTINATION lib)
 endif()
 
