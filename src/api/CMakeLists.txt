@@ -44,7 +44,7 @@ if (BUILD_SHARED_LIBS)
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
 
-  target_link_libraries(opensmt GMP::GMP Threads::Threads)
+  target_link_libraries(opensmt PUBLIC GMP::GMP Threads::Threads)
   install(TARGETS opensmt EXPORT opensmtTargets
       LIBRARY DESTINATION lib
       ARCHIVE DESTINATION lib
@@ -84,7 +84,7 @@ if (BUILD_STATIC_LIBS)
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
 
-  target_link_libraries(opensmt-static GMP::GMP Threads::Threads)
+  target_link_libraries(opensmt-static PUBLIC GMP::GMP Threads::Threads)
   install(TARGETS opensmt-static ARCHIVE DESTINATION lib)
 endif()
 
