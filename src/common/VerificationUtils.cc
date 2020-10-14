@@ -9,7 +9,7 @@
 
 #include <sys/wait.h>
 
-bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
+bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
     const char * implies = "implies.smt2";
     std::ofstream dump_out( implies );
     logic.dumpHeaderToFile(dump_out);
@@ -58,17 +58,17 @@ bool VerificationUtils::implies(PTRef implicant, PTRef implicated) {
     return !tool_res;
 }
 
-bool VerificationUtils::verifyInterpolant(PTRef partA, PTRef partB, PTRef itp) {
+bool VerificationUtils::verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp) {
     bool verbose = config.verbosity() > 0;
     if(verbose) {
         std::cout << "; Verifying final interpolant" << std::endl;
     }
-    bool res = implies(partA, itp);
+    bool res = impliesExternal(partA, itp);
     if(!res) { return false; }
     if(verbose) {
         std::cout << "; A -> I holds" << std::endl;
     }
-    res = implies(itp, logic.mkNot(partB));
+    res = impliesExternal(itp, logic.mkNot(partB));
     if(!res) { return false; }
     if(verbose) {
         std::cout << "; B -> !I holds" << std::endl;
