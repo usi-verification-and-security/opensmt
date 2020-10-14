@@ -14,11 +14,14 @@
 #endif
 
 
-#include "LRA_Interpolator.h"
-#include "LRALogic.h"
-#include <Real.h>
-#include <LA.h>
-#include <unordered_set>
+#include "FarkasInterpolator.h"
+#include "LALogic.h"
+#include "PartitionManager.h"
+#include "Real.h"
+#include "LA.h"
+#include "OsmtInternalException.h"
+#include "OsmtApiException.h"
+
 #include <unordered_map>
 #include <functional>
 
@@ -27,7 +30,7 @@ using namespace opensmt;
 using matrix_t = std::vector<std::vector<Real>>;
 
 // initializing static member
-DecomposedStatistics LRA_Interpolator::stats {};
+DecomposedStatistics FarkasInterpolator::stats {};
 
 namespace {
 
@@ -323,67 +326,6 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return basis;
     }
 
-//    MB: the methods commented out represent the old, incomplete approach
-//    bool containsNegative(std::vector<Real> const & vec){
-//        return std::any_of(vec.begin(), vec.end(), [](const Real & val) { return val < 0; });
-//    }
-//
-//
-//    /*
-//     * Tries to replace a vector in basis with a negative coordinate with another vector having less negative coordinates.
-//     */
-//    bool tryFixVec(std::size_t idx, std::vector<std::vector<Real>> & basis, std::vector<Real> & alphas){
-//        assert(std::all_of(alphas.begin(), alphas.end(), [](const Real & val) {return val > 0;}));
-//        auto & vec = basis[idx];
-//        auto neg = std::find_if(vec.begin(), vec.end(), [](const Real& val) {return val < 0;});
-//        assert(neg != vec.end());
-//        auto position = neg - vec.begin();
-//        auto fixer_it = basis.begin();
-//        Real diff{0};
-//        for( ; fixer_it != basis.end(); ++fixer_it) {
-//            auto const & fixCandidate = *fixer_it;
-//            if (fixCandidate[position] > 0 && !containsNegative(fixCandidate)) {
-//                // OK candidate, check alphas
-//                diff = vec[position] / fixCandidate[position];
-//                auto fixCandidateIndex = fixer_it - basis.begin();
-//                if (alphas[fixCandidateIndex] + diff > 0) {
-//                    // OK, the alphas will remain positive
-//                    break;
-//                }
-//            }
-//        }
-//        if(fixer_it == basis.end()) {return false;}
-//        auto const & fixer = *fixer_it;
-//        alphas[fixer_it - basis.begin()] += diff;
-//        assert(alphas[fixer_it - basis.begin()] > 0);
-//        diff.negate();
-//        addToWithCoeff(vec, fixer, diff);
-//        assert(vec[position].isZero());
-//        return true;
-//    }
-//
-//    /*
-//     * Given a basis of vector space where some vector contains negative coordinate, it tries to find a different basis
-//     * for the space where all coordinates of all vectors of the basis would be non-negative
-//     */
-//    bool tryFixBase(std::vector<std::vector<Real>> & basis, std::vector<Real> alphas) {
-//        auto first_unchecked_it = basis.begin();
-//        auto vec_with_neg_it = first_unchecked_it;
-//        while(vec_with_neg_it != basis.end()){
-//            vec_with_neg_it = std::find_if(first_unchecked_it, basis.end(), containsNegative);
-//            if(vec_with_neg_it == basis.end()){
-//                return true;
-//            }
-//            bool wasFixed = tryFixVec((vec_with_neg_it - basis.begin()), basis, alphas);
-//            if(!wasFixed){
-//                return false;
-//            }
-//            first_unchecked_it = vec_with_neg_it;
-//        }
-//        return true;
-//    }
-
-
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
         assert(ineqs.size() == coeffs.size());
         LAExpression init{logic};
@@ -474,7 +416,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
 }
 
-PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanager) {
+PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     assert(color == icolor_t::I_A || color == icolor_t::I_B);
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
@@ -486,8 +428,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
                   << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
-        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr, pmanager);
-        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr, pmanager);
+        bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
+        bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);
         if(isA){
             trace(std::cout << "This explanation is from A\n";)
         }
@@ -497,8 +439,8 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
 
     }
     auto it = std::partition(candidates.begin(), candidates.end(),
-                             [color, this, &pmanager](std::pair<PtAsgn, Real> const & expl) {
-                                 return this->isInPartitionOfColor(color, expl.first.tr, pmanager);
+                             [color, this](std::pair<PtAsgn, Real> const & expl) {
+                                 return this->isInPartitionOfColor(color, expl.first.tr);
                              });
     if (it == candidates.end() || it == candidates.begin()) {
         // all inequalities are of the same color -> trivial interpolant
@@ -519,7 +461,7 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
     std::vector<local_terms_t> ineqs_local_vars;
     std::vector<ItpHelper> explanations_with_locals;
     for (const auto & helper : helpers) {
-        local_terms_t local_terms = getLocalTerms(helper, [this, color, &pmanager](PTRef ptr) { return this->isLocalFor(color, ptr, pmanager); });
+        local_terms_t local_terms = getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
 
         // explanataion with all variables shared form standalone partition
         if (local_terms.empty()) {
@@ -605,16 +547,16 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
 
     if (!interpolant_inequalities.empty()) {
         if (statsHelper.moreThanOneInequality) {
-            LRA_Interpolator::stats.decompositionOpportunities++;
+            FarkasInterpolator::stats.decompositionOpportunities++;
         }
         if (interpolant_inequalities.size() > 1) {
-            LRA_Interpolator::stats.decomposedItps++;
+            FarkasInterpolator::stats.decomposedItps++;
             assert(statsHelper.nonTrivialBasis || statsHelper.standAloneIneq);
             if (statsHelper.nonTrivialBasis) {
-                LRA_Interpolator::stats.nonTrivialBasis++;
+                FarkasInterpolator::stats.nonTrivialBasis++;
             }
             if (statsHelper.standAloneIneq) {
-                LRA_Interpolator::stats.standAloneIneq++;
+                FarkasInterpolator::stats.standAloneIneq++;
             }
         }
     }
@@ -630,10 +572,108 @@ PTRef LRA_Interpolator::getInterpolant(icolor_t color, PartitionManager &pmanage
     return itp;
 }
 
-bool LRA_Interpolator::isALocal(PTRef var, PartitionManager &pmanager) const {
-    return isAstrict(pmanager.getIPartitions(var), mask);
+icolor_t FarkasInterpolator::getGlobalColorFor(PTRef term) const {
+    auto const & termMask = pmanager.getIPartitions(term);
+    bool isInA = (termMask & mask) != 0;
+    bool isInB = (termMask & ~mask) != 0;
+    if (isInA and not isInB) { return I_A; }
+    if (isInB and not isInA) { return I_B; }
+    if (isInA and isInB) { return I_AB; }
+    throw OsmtInternalException("No color detected for term");
 }
 
-bool LRA_Interpolator::isBLocal(PTRef var, PartitionManager &pmanager) const {
-    return isBstrict(pmanager.getIPartitions(var), mask);
+PTRef FarkasInterpolator::getDecomposedInterpolant() {
+    return getDecomposedInterpolant(I_A);
+}
+
+PTRef FarkasInterpolator::getDualDecomposedInterpolant() {
+    return getDecomposedInterpolant(I_B);
+}
+
+PTRef FarkasInterpolator::getFarkasInterpolant() {
+    return getFarkasInterpolant(I_A);
+}
+
+PTRef FarkasInterpolator::getDualFarkasInterpolant() {
+    return getFarkasInterpolant(I_B);
+}
+
+PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system) {
+    LAExpression interpolant(logic);
+    bool delta_flag = false;
+    for (auto const & entry : system) {
+        auto literal = entry.first;
+        PTRef atom = literal.tr;
+        lbool sign = literal.sgn;
+        if (sign == l_False) {
+            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), entry.second);
+            delta_flag = true;
+        } else {
+            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), -entry.second);
+        }
+    }
+    PTRef itp = PTRef_Undef;
+    if (interpolant.isTrue() && !delta_flag) {
+        itp = logic.getTerm_true();
+    } else if (interpolant.isFalse() || (interpolant.isTrue() && delta_flag)) {
+        itp = logic.getTerm_false();
+    } else {
+        vec<PTRef> args {logic.getTerm_NumZero(), interpolant.toPTRef()};
+        itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
+    }
+    return itp;
+}
+
+PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
+    std::vector<std::pair<PtAsgn, opensmt::Real>> system;
+    for (int i = 0; i < explanations.size(); ++i) {
+        auto litColor = getColorFor(explanations[i].tr);
+        if (litColor == color or litColor == I_AB) {
+            system.emplace_back(explanations[i], explanation_coeffs[i]);
+        }
+    }
+    PTRef itp = weightedSum(system);
+    assert(itp != PTRef_Undef);
+    return color == I_B ? logic.mkNot(itp) : itp;
+}
+
+PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
+    if (strengthFactor < 0 or strengthFactor >= 1) {
+        throw OsmtApiException("LRA strength factor has to be in [0,1)");
+    }
+    std::vector<std::pair<PtAsgn, opensmt::Real>> systemA;
+    std::vector<std::pair<PtAsgn, opensmt::Real>> systemB;
+    for (int i = 0; i < explanations.size(); ++i) {
+        auto litColor = getColorFor(explanations[i].tr);
+        if (litColor == I_A or litColor == I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
+            systemA.emplace_back(explanations[i], explanation_coeffs[i]);
+        } else if (litColor == I_B) {
+            systemB.emplace_back(explanations[i], explanation_coeffs[i]);
+        }
+    }
+    PTRef itpA = weightedSum(systemA);
+    if (itpA == logic.getTerm_true() or itpA == logic.getTerm_false()) {
+        assert(itpA == logic.mkNot(weightedSum(systemB)));
+        return itpA;
+    }
+    PTRef itpB = weightedSum(systemB);
+    auto extractSides = [this](PTRef inequality) {
+        assert(logic.isNumLeq(inequality) or logic.isNumLeq(logic.mkNot(inequality)));
+        bool negated = logic.isNot(inequality);
+        PTRef positive = negated ? logic.mkNot(inequality) : inequality;
+        PTRef term = logic.getTermFromLeq(positive);
+        PTRef constant = logic.getConstantFromLeq(positive);
+        return negated ? std::make_pair(logic.mkNumNeg(term), logic.mkNumNeg(constant)) : std::make_pair(term, constant);
+    };
+    auto sidesA = extractSides(itpA);
+    auto sidesB = extractSides(itpB);
+    assert(sidesA.first == logic.mkNumNeg(sidesB.first));
+    opensmt::Real c1 = logic.getNumConst(sidesA.second);
+    opensmt::Real c2 = logic.getNumConst(sidesB.second);
+    opensmt::Real lowerBound = c1;
+    opensmt::Real upperBound = -c2;
+    opensmt::Real strengthDiff = upperBound - lowerBound;
+    opensmt::Real newConstant = lowerBound + (strengthDiff * strengthFactor);
+    PTRef itp = logic.mkNumLeq(logic.mkConst(newConstant), sidesA.first);
+    return itp;
 }

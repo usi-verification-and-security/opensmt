@@ -93,7 +93,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).implies(implicant, n->getPartialInterpolant());
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, n->getPartialInterpolant());
     assert(res);
     return res;
 }
@@ -145,7 +145,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).implies(implicant, logic.mkNot(n->getPartialInterpolant()));
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(n->getPartialInterpolant()));
     assert(res);
     return res;
 }
