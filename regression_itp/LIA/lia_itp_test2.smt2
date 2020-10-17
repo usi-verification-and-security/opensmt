@@ -1,0 +1,8 @@
+(set-option :produce-interpolants 1)
+(set-logic QF_LIA)
+(declare-fun x () Int)
+(declare-fun y () Int)
+(assert (! (and (<= (* 5 x) 4) (<= (+ (* (- 3) x) (* 2 y)) 1)) :named A))
+(assert (! (<= (* (- 1) y) (- 1)) :named B))
+(check-sat)
+(get-interpolants A B)

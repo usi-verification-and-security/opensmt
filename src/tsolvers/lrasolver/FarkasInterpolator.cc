@@ -16,7 +16,6 @@
 
 #include "FarkasInterpolator.h"
 #include "LALogic.h"
-#include "PartitionManager.h"
 #include "Real.h"
 #include "LA.h"
 #include "OsmtInternalException.h"
@@ -679,7 +678,7 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
 
 bool FarkasInterpolator::ensureHasColorForAllTerms() {
     if (termColorInfo) { return true; }
-    if (not labels) { return false; }
-    termColorInfo.reset(new LocalTermColorInfo(*labels, logic));
+    if (labels.empty()) { return false; }
+    termColorInfo.reset(new LocalTermColorInfo(labels, logic));
     return true;
 }
