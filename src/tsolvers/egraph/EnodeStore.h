@@ -62,6 +62,7 @@ class EnodeStore {
 public:
     EnodeStore(Logic& l);
 
+    bool needsEnode(PTRef tr) const;
 
     const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
@@ -144,7 +145,7 @@ public:
         assert(containsSig(e));
     }
 
-    ERef addIteSymb(PTRef tr);
+    ERef addAnonSymb(PTRef tr);
 
 // DEBUG
 #ifdef PEDANTIC_DEBUG

@@ -267,9 +267,9 @@ void Egraph::declareTermRecursively(PTRef tr) {
  * @param tr
  */
 void Egraph::declareTerm(PTRef tr) {
-    if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
-    if ((logic.isBoolAtom(tr) || logic.isBooleanOperator(tr)) && !logic.appearsInUF(tr)) { return; }
-
+    if (!enode_store.needsEnode(tr)) {
+        return;
+    }
 
     auto PTRefERefPairVec = enode_store.constructTerm(tr);
 
@@ -1304,34 +1304,27 @@ bool Egraph::assertLit(PtAsgn pta)
     // in fact lbool!
     if (logic.isEquality(pt.symb()) && sgn == l_True) {
         res = addEquality(PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isEquality(pt.symb()) && sgn == l_False) {
+    } else if (logic.isEquality(pt.symb()) && sgn == l_False) {
         res = addDisequality(PtAsgn(pt_r, l_False));
-    }
-    else if (logic.isDisequality(pt.symb()) && sgn == l_True) {
+    } else if (logic.isDisequality(pt.symb()) && sgn == l_True) {
         res = addDisequality(PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isDisequality(pt.symb()) && sgn == l_False) {
+    } else if (logic.isDisequality(pt.symb()) && sgn == l_False) {
         res = addEquality(PtAsgn(pt_r, l_False));
-    }
-    else if (logic.isUP(pt_r) && sgn == l_True) {
+    } else if (logic.isUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isUP(pt_r) && sgn == l_False) {
+    } else if (logic.isUP(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
-    }
-    else if (logic.hasSortBool(pt_r) && sgn == l_True) {
+    } else if (logic.hasSortBool(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
-    }
-    else if (logic.hasSortBool(pt_r) && sgn == l_False) {
+    } else if (logic.hasSortBool(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
-    }
-    else
+    } else {
         assert(false);
+    }
 
     !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
     return res;

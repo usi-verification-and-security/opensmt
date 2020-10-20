@@ -161,4 +161,13 @@ target_sources(ExplainTest
         )
 
 target_link_libraries(ExplainTest api_static gtest gtest_main)
+
 gtest_add_tests(TARGET ExplainTest)
+
+add_executable(EnodeStoreTest)
+target_sources(EnodeStoreTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_EnodeStore.cc"
+        )
+
+target_link_libraries(EnodeStoreTest api_static gtest gtest_main)
+gtest_add_tests(TARGET EnodeStoreTest)

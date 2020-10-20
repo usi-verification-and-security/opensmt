@@ -376,9 +376,9 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 bool Logic::isTheoryTerm(PTRef ptr) const {
     const Pterm& p = term_store[ptr];
     SymRef sr = p.symb();
-    if (sr == sym_EQ) {
+    if ((sr == sym_EQ) && not appearsInUF(ptr)) {
         assert(p.nargs() == 2);
-            return false;
+        return false;
     }
     else if (hasSortBool(sr) && appearsInUF(ptr)) {
         return true;
