@@ -125,7 +125,9 @@ class Pterm {
     void     setId(int i)   { id.x = i; }
 
     void     shrink(int s)   { header.size -= s; }
-    void     copyTo(Pterm& to);
+
+    const PTRef* begin() const { return args; }
+    const PTRef* end() const { return args + size(); }
 #ifdef PEDANTIC_DEBUG
     void     compare(Pterm& other) {
         assert(header.type == other.header.type);
