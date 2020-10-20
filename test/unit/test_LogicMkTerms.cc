@@ -3,6 +3,7 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
+#include <EnodeStore.h>
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
@@ -118,3 +119,31 @@ TEST_F(LogicMkTermsTest, testMkAndContradiction) {
     PTRef nota = logic.mkNot(a);
     ASSERT_EQ(logic.mkAnd(a, nota), logic.getTerm_false());
 }
+
+TEST_F(LogicMkTermsTest, testIteration) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef conj = logic.mkAnd({a, b});
+    PTRef c = logic.mkBoolVar("c");
+    PTRef disj = logic.mkOr({a, b, c});
+
+    for (auto tr : {a, b, c}) {
+        int count = 0;
+        for (auto ch : logic.getPterm(tr)) {
+            count++;
+        }
+        ASSERT_EQ(count, 0);
+    }
+
+    for (auto tr : {conj, disj}) {
+        Pterm &t = logic.getPterm(tr);
+        for (auto ch : t) {
+            bool found = false;
+            for (int i = 0; i < t.size(); i++) {
+                found |= ch == t[i];
+            }
+            ASSERT_TRUE(found);
+        }
+    }
+}
+
