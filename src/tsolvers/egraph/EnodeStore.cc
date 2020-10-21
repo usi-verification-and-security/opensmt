@@ -193,8 +193,8 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
             ERef car = termToERef[tm[j]];
 #ifdef VERBOSE_EUF
             ERef prev_cdr = cdr;
-                assert (operator[](car).getRoot() == car);
-                assert (operator[](cdr).getRoot() == cdr);
+            assert (operator[](car).getRoot() == car);
+            assert (operator[](cdr).getRoot() == cdr);
 #endif
             cdr = addList(car, cdr);
         }
