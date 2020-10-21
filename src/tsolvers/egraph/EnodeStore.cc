@@ -213,8 +213,6 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
 
         PTRef tr_neg = logic.mkNot(tr);
 
-        ERef sym;
-
         // Add the negated term
         ERef er_neg = addTerm(sym_uf_not, addList(er, ERef_Nil), logic.mkNot(tr));
 

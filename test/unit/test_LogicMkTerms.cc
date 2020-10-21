@@ -130,6 +130,7 @@ TEST_F(LogicMkTermsTest, testIteration) {
     for (auto tr : {a, b, c}) {
         int count = 0;
         for (auto ch : logic.getPterm(tr)) {
+            (void)ch;
             count++;
         }
         ASSERT_EQ(count, 0);
