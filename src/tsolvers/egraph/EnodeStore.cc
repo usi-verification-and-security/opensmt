@@ -137,6 +137,8 @@ bool EnodeStore::needsEnode(PTRef tr) const {
         return true;
     } else if (logic.isUP(tr)) {
         return true;
+    } else if (logic.isDisequality(tr)) {
+        return true;
     } else {
         return false;
     }
@@ -166,19 +168,20 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
         addDistClass(tr);
     }
 
-    bool needsRecursiveDefinition = false;
+    bool makeRecursiveDefinition = true;
     if (logic.isIte(tr)) {
-        needsRecursiveDefinition = false;
+        makeRecursiveDefinition = false;
     } else {
         for (auto ch : logic.getPterm(tr)) {
-            needsRecursiveDefinition |= needsEnode(ch);
+            makeRecursiveDefinition &= needsEnode(ch);
         }
     }
 
-    ERef sym, cdr;
+    ERef sym = ERef_Nil;
+    ERef cdr = ERef_Nil;
 
     const Pterm& tm = logic.getPterm(tr);
-    if (needsRecursiveDefinition) {
+    if (makeRecursiveDefinition) {
         sym = addSymb(tm.symb());
         for (int j = tm.size() - 1; j >= 0; j--) {
             assert(termToERef.has(tm[j])); // The child was not inserted
@@ -200,8 +203,7 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
 
     if (logic.hasSortBool(tr)) {
         // Add both the pure and the negated terms
-        assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr));
-
+        assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
         assert(not logic.isNot(tr));
 
         PTRef tr_neg = logic.mkNot(tr);
