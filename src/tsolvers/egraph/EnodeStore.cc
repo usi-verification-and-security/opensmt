@@ -120,6 +120,18 @@ ERef EnodeStore::addList(ERef x, ERef y) {
     return rval;
 }
 
+bool EnodeStore::needsRecursiveDefinition(PTRef tr) const {
+    bool recdef = true;
+    if (logic.isIte(tr)) {
+        recdef = false;
+    } else {
+        for (auto ch : logic.getPterm(tr)) {
+            recdef &= needsEnode(ch);
+        }
+    }
+    return recdef;
+}
+
 /**
  * Determine if a given term represented by the PTRef tr requires an enode term.
  * @param tr the PTRef
@@ -168,14 +180,7 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
         addDistClass(tr);
     }
 
-    bool makeRecursiveDefinition = true;
-    if (logic.isIte(tr)) {
-        makeRecursiveDefinition = false;
-    } else {
-        for (auto ch : logic.getPterm(tr)) {
-            makeRecursiveDefinition &= needsEnode(ch);
-        }
-    }
+    bool makeRecursiveDefinition = needsRecursiveDefinition(tr);
 
     ERef sym = ERef_Nil;
     ERef cdr = ERef_Nil;

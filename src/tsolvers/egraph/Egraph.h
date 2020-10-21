@@ -196,6 +196,9 @@ private:
     ERef ERef_Nil;
 
     bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
+    bool isEffectivelyEquality(PTRef tr) const;
+    bool isEffectivelyUP(PTRef tr) const;
+    bool isEffectivelyDisequality(PTRef tr) const;
 
     double fa_garbage_frac;
 

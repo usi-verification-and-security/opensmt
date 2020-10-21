@@ -63,6 +63,7 @@ public:
     EnodeStore(Logic& l);
 
     bool needsEnode(PTRef tr) const;
+    bool needsRecursiveDefinition(PTRef tr) const;
 
     const vec<ERef>& getTermEnodes() const { return termEnodes; };
 
