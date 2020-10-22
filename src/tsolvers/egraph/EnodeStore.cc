@@ -120,6 +120,13 @@ ERef EnodeStore::addList(ERef x, ERef y) {
     return rval;
 }
 
+/**
+ * A term needs a "recursive definition", i.e., a proper list
+ * enode with enodes of its child terms, if all its children
+ * need an enode, and if it is not an ITE term.
+ * @param tr
+ * @return true iff the term needs a recursive definition
+ */
 bool EnodeStore::needsRecursiveDefinition(PTRef tr) const {
     bool recdef = true;
     if (logic.isIte(tr)) {
@@ -207,15 +214,12 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
     new_enodes.push({tr, er});
 
     if (logic.hasSortBool(tr)) {
-        // Add both the pure and the negated terms
+        // Add the negated term
         assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
         assert(not logic.isNot(tr));
 
         PTRef tr_neg = logic.mkNot(tr);
-
-        // Add the negated term
         ERef er_neg = addTerm(sym_uf_not, addList(er, ERef_Nil), logic.mkNot(tr));
-
         new_enodes.push({tr_neg, er_neg});
     }
 

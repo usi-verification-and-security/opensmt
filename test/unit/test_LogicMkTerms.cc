@@ -3,7 +3,6 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <EnodeStore.h>
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
