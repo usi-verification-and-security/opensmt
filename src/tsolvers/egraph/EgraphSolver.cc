@@ -249,8 +249,12 @@ void Egraph::declareTermRecursively(PTRef tr) {
         }
     }
 
-    declareTerm(tr);
-    declared.insert(tr);
+    if (enode_store.needsEnode(tr)) {
+        // Only mark as declared if declareTerm actually declared the term.  This is important since whether
+        // tr needs an enode could change after incremental calls in surprising ways as a result of simplifications.
+        declareTerm(tr);
+        declared.insert(tr);
+    }
 }
 
 /**
@@ -267,9 +271,7 @@ void Egraph::declareTermRecursively(PTRef tr) {
  * @param tr
  */
 void Egraph::declareTerm(PTRef tr) {
-    if (!enode_store.needsEnode(tr)) {
-        return;
-    }
+    assert(enode_store.needsEnode(tr));
 
     auto PTRefERefPairVec = enode_store.constructTerm(tr);
 
