@@ -125,7 +125,17 @@ class Pterm {
     void     setId(int i)   { id.x = i; }
 
     void     shrink(int s)   { header.size -= s; }
-    void     copyTo(Pterm& to);
+
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the first child of the term
+     */
+    const PTRef* begin() const { return args; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the last child of the term
+     */
+    const PTRef* end() const { return args + size(); }
 #ifdef PEDANTIC_DEBUG
     void     compare(Pterm& other) {
         assert(header.type == other.header.type);

@@ -49,8 +49,7 @@ EnodeStore::EnodeStore(Logic& l)
     ERef_False = termToERef[f];
 }
 
-ERef EnodeStore::addIteSymb(PTRef tr) {
-    assert(logic.isNonBoolIte(tr));
+ERef EnodeStore::addAnonSymb(PTRef tr) {
     ERef er = ea.alloc(logic.getSym_anon());
     return er;
 }
@@ -120,6 +119,50 @@ ERef EnodeStore::addList(ERef x, ERef y) {
     }
     return rval;
 }
+
+/**
+ * A term needs a "recursive definition", i.e., a proper list
+ * enode with enodes of its child terms, if all its children
+ * need an enode, and if it is not an ITE term.
+ * @param tr
+ * @return true iff the term needs a recursive definition
+ */
+bool EnodeStore::needsRecursiveDefinition(PTRef tr) const {
+    bool recdef = true;
+    if (logic.isIte(tr)) {
+        recdef = false;
+    } else {
+        for (auto ch : logic.getPterm(tr)) {
+            recdef &= needsEnode(ch);
+        }
+    }
+    return recdef;
+}
+
+/**
+ * Determine if a given term represented by the PTRef tr requires an enode term.
+ * @param tr the PTRef
+ * @return true tr needs an enode, false otherwise.
+ * @note Could be implemented in Logic as well.
+ */
+bool EnodeStore::needsEnode(PTRef tr) const {
+    if (logic.isTrue(tr) || logic.isFalse(tr)) {
+        return true;
+    } else if (logic.isUFTerm(tr)) {
+        return true;
+    } else if (logic.isUFEquality(tr)) {
+        return true;
+    } else if (logic.appearsInUF(tr)) {
+        return true;
+    } else if (logic.isUP(tr)) {
+        return true;
+    } else if (logic.isDisequality(tr)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /**
  * Construct an Enode for a given PTRef, assuming that all the child PTRefs have
  * already been introduced an Enode.  In case of a Boolean return valued Enode,
@@ -133,6 +176,8 @@ ERef EnodeStore::addList(ERef x, ERef y) {
  */
 vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
 
+    assert(needsEnode(tr));
+
     if (termToERef.has(tr))
         return {};
 
@@ -142,58 +187,42 @@ vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
         addDistClass(tr);
     }
 
-    // Add both the pure and the negated terms
-    if (logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr)) {
-        PTRef tr_pure;
-        PTRef tr_neg;
-        lbool sgn;
-        logic.purify(tr, tr_pure, sgn);
-        tr_neg = logic.mkNot(tr_pure);
+    bool makeRecursiveDefinition = needsRecursiveDefinition(tr);
 
-        // If tr is a complex Boolean operator, do not model the full logic but cut here (the ERef
-        // will be treated as a UF constant with the anon name from the logic).  Otherwise, (tr is
-        // a pure Boolean atom or its negation), use the term ref from the logic.
-        ERef sym = logic.isBooleanOperator(tr_pure) ? addSymb(logic.getSym_anon()) : addSymb(logic.getSymRef(tr_pure));
+    ERef sym = ERef_Nil;
+    ERef cdr = ERef_Nil;
 
-        // Add the pure term
-        ERef er_pure = addTerm(sym, ERef_Nil, tr_pure);
+    const Pterm& tm = logic.getPterm(tr);
+    if (makeRecursiveDefinition) {
+        sym = addSymb(tm.symb());
+        for (int j = tm.size() - 1; j >= 0; j--) {
+            assert(termToERef.has(tm[j])); // The child was not inserted
+            ERef car = termToERef[tm[j]];
+#ifdef VERBOSE_EUF
+            ERef prev_cdr = cdr;
+            assert (operator[](car).getRoot() == car);
+            assert (operator[](cdr).getRoot() == cdr);
+#endif
+            cdr = addList(car, cdr);
+        }
+    } else {
+        sym = addAnonSymb(tr);
+        cdr = ERef_Nil;
+    }
 
+    ERef er = addTerm(sym, cdr, tr);
+    new_enodes.push({tr, er});
+
+    if (logic.hasSortBool(tr)) {
         // Add the negated term
-        ERef er_neg = addTerm(sym_uf_not, addList(er_pure, ERef_Nil), logic.mkNot(tr_pure));
+        assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
+        assert(not logic.isNot(tr));
 
-        new_enodes.push({tr_pure, er_pure});
+        PTRef tr_neg = logic.mkNot(tr);
+        ERef er_neg = addTerm(sym_uf_not, addList(er, ERef_Nil), logic.mkNot(tr));
         new_enodes.push({tr_neg, er_neg});
     }
 
-    else {
-        ERef sym, cdr;
-        if (not logic.isIte(tr)) {
-            const Pterm& tm = logic.getPterm(tr);
-            sym = addSymb(tm.symb());
-            cdr = ERef_Nil;
-            for (int j = tm.size() - 1; j >= 0; j--) {
-                assert(termToERef.has(tm[j])); // The child was not inserted
-                ERef car = termToERef[tm[j]];
-#ifdef VERBOSE_EUF
-                ERef prev_cdr = cdr;
-                assert (operator[](car).getRoot() == car);
-                assert (operator[](cdr).getRoot() == cdr);
-#endif
-                cdr = addList(car, cdr);
-            }
-        } else {
-            sym = addIteSymb(tr);
-            cdr = ERef_Nil;
-        }
-        ERef er = addTerm(sym, cdr, tr);
-        new_enodes.push({tr, er});
-
-        if (logic.isUP(tr) || logic.isEquality(tr)) {
-            PTRef tr_neg = logic.mkNot(tr);
-            ERef er_neg = addTerm(sym_uf_not, addList(er, ERef_Nil), tr_neg);
-            new_enodes.push({tr_neg, er_neg});
-        }
-    }
     return new_enodes;
 }
 

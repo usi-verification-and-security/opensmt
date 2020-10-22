@@ -267,9 +267,9 @@ void Egraph::declareTermRecursively(PTRef tr) {
  * @param tr
  */
 void Egraph::declareTerm(PTRef tr) {
-    if (!isValid(tr) && !logic.isTheoryTerm(tr) && !logic.isBoolAtom(tr)) { return; }
-    if ((logic.isBoolAtom(tr) || logic.isBooleanOperator(tr)) && !logic.appearsInUF(tr)) { return; }
-
+    if (!enode_store.needsEnode(tr)) {
+        return;
+    }
 
     auto PTRefERefPairVec = enode_store.constructTerm(tr);
 
@@ -1280,12 +1280,26 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     return false;
 }
 
+bool Egraph::isEffectivelyEquality(PTRef tr) const {
+    assert(enode_store.needsEnode(tr));
+    return logic.isEquality(tr) and enode_store.needsRecursiveDefinition(tr);
+}
+
+bool Egraph::isEffectivelyDisequality(PTRef tr) const {
+    assert(enode_store.needsEnode(tr));
+    return logic.isDisequality(tr) and enode_store.needsRecursiveDefinition(tr);
+}
+
+bool Egraph::isEffectivelyUP(PTRef tr) const {
+    assert(enode_store.needsEnode(tr));
+    return not isEffectivelyEquality(tr) and not isEffectivelyDisequality(tr);
+}
+
 bool Egraph::assertLit(PtAsgn pta)
 {
     // invalidate values
     lbool sgn = pta.sgn;
     PTRef pt_r = pta.tr;
-    const Pterm& pt = logic.getPterm(pt_r);
 
     if (hasPolarity(pt_r) && getPolarity(pt_r) == sgn) {
         // Already known, no new information;
@@ -1300,38 +1314,25 @@ bool Egraph::assertLit(PtAsgn pta)
     undo_stack_main.push(Undo(SET_POLARITY, pt_r));
     setPolarity(pt_r, sgn);
 
-    // Watch out here! the second argument of PtAsgn constructor is
-    // in fact lbool!
-    if (logic.isEquality(pt.symb()) && sgn == l_True) {
+    // Issue185: In some cases equalities do not have a recursive definition.
+    // They should be treated as UPs.
+    if (isEffectivelyEquality(pt_r) && sgn == l_True) {
         res = addEquality(PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isEquality(pt.symb()) && sgn == l_False) {
+    } else if (isEffectivelyEquality(pt_r) && sgn == l_False) {
         res = addDisequality(PtAsgn(pt_r, l_False));
-    }
-    else if (logic.isDisequality(pt.symb()) && sgn == l_True) {
+    } else if (isEffectivelyDisequality(pt_r) && sgn == l_True) {
         res = addDisequality(PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isDisequality(pt.symb()) && sgn == l_False) {
+    } else if (isEffectivelyDisequality(pt_r) && sgn == l_False) {
         res = addEquality(PtAsgn(pt_r, l_False));
-    }
-    else if (logic.isUP(pt_r) && sgn == l_True) {
+    } else if (isEffectivelyUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
-    }
-    else if (logic.isUP(pt_r) && sgn == l_False) {
+    } else if (isEffectivelyUP(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
         res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
-    }
-    else if (logic.hasSortBool(pt_r) && sgn == l_True) {
-        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
-    }
-    else if (logic.hasSortBool(pt_r) && sgn == l_False) {
-        // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
-    }
-    else
+    } else {
         assert(false);
+    }
 
     !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
     return res;
