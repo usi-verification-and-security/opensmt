@@ -137,7 +137,7 @@ TEST_F(LogicMkTermsTest, testIteration) {
     }
 
     for (auto tr : {conj, disj}) {
-        Pterm &t = logic.getPterm(tr);
+        Pterm const &t = logic.getPterm(tr);
         for (auto ch : t) {
             bool found = false;
             for (int i = 0; i < t.size(); i++) {
@@ -147,4 +147,3 @@ TEST_F(LogicMkTermsTest, testIteration) {
         }
     }
 }
-
