@@ -164,7 +164,9 @@ class Logic {
     void dumpFunction(ostream &, const TFun&);
 
   private:
-    vec<bool> appears_in_uf;
+    vec<int> appears_in_uf;
+    int getUFAppearanceCount(PTRef tr) const { uint32_t id = Idx(getPterm(tr).getId()); return appears_in_uf[id]; }
+    void decreaseUFAppearanceCount(PTRef tr) { uint32_t id = Idx(getPterm(tr).getId()); assert(appears_in_uf[id] >= 1); appears_in_uf[id] --; }
   public:
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
