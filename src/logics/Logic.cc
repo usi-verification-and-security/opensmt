@@ -406,7 +406,6 @@ void Logic::setAppearsInUF(PTRef tr) {
         appears_in_uf.push(-1);
 
     appears_in_uf[id] = (appears_in_uf[id] == -1 ? 1 : appears_in_uf[id] + 1);
-//    cout << pp(tr) << " appears in UF in total " << appears_in_uf[id] << " times" << endl;
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
@@ -1357,9 +1356,7 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
                     if (hasSub and appearsInUF(t[i])) {
-//                        cout << "A UF appearance " << pp(t[i]) << " was replaced by " << pp(sub) << endl;
                         decreaseUFAppearanceCount(t[i]);
-//                        cout << "Now it appears in UF " << getUFAppearanceCount(t[i]) << " times" << endl;
                     }
                 }
                 result = changed ? insertTerm(t.symb(), args_mapped) : tr;
