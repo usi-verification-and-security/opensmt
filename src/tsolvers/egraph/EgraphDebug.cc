@@ -314,7 +314,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
               << "| ELRef: " << x.x << endl
               << "| id: " << ela[x].getId() << endl
               << "| dirty: " << ela[x].isDirty() << endl
-              << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
 
             if (ela[x].reloced())
                 os << "| reloced to: " << ela[x].rel_e.x << endl;
@@ -328,7 +328,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
             os << "+-----------------------------------------------------------+" << endl
                << "| Forbid list node                                          |" << endl
                << "+-----------------------------------------------------------+" << endl
-               << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
 
             os << "| different from enode " << ela[x].e.x << endl;
             if (enode_store[ela[x].e].isTerm())
