@@ -1238,7 +1238,6 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
         }
         // Dist terms are all inequalities, hence their polarity's true
         PTRef ineq_tr = enode_store.getDistTerm(index);
-        Pterm& ineq = logic.getPterm(ineq_tr);
         r = Expl(Expl::Type::std, {ineq_tr, l_True}, PTRef_Undef);
         return true;
     }
