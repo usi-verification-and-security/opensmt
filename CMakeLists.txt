@@ -80,6 +80,16 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/itehandler
 )
 
+#######################################################################################################
+# workaround for older versions of CMake where we cannot use target_link_libraries for object libraries
+get_property(GMP_INCLUDE_DIRS TARGET GMP::GMP PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+if (NOT GMP_INCLUDE_DIRS)
+    message(FATAL_ERROR "GMP includes not found")
+endif()
+include_directories(${GMP_INCLUDE_DIRS})
+#######################################################################################################
+
+
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
   message(FATAL_ERROR "Cannot build executables without also building static libraries")
 endif()
