@@ -70,7 +70,11 @@ if (BUILD_SHARED_LIBS)
     #PATH_VARS INCLUDE_INSTALL_DIR INSTALL_DIR
     )
 
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfigVersion.cmake" "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfig.cmake"
+
+  install(FILES 
+      "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfigVersion.cmake" 
+      "${CMAKE_CURRENT_BINARY_DIR}/opensmtConfig.cmake"
+      "${PROJECT_SOURCE_DIR}/cmake_modules/FindGMP.cmake"
     DESTINATION lib/cmake/opensmt
     )
 endif()
