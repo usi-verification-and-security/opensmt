@@ -397,29 +397,24 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     return !(isBooleanOperator(tr));
 }
 
-int Logic::getUFAppearanceCount(PTRef tr) const {
-    tr = isNot(tr) ? getPterm(tr)[0] : tr;
-    uint32_t id = Idx(getPterm(tr).getId());
-    return appears_in_uf[id];
-}
-
-void Logic::decreaseUFAppearanceCount(PTRef tr) {
+void Logic::unsetAppearsInUF(PTRef tr) {
     tr = isNot(tr) ? getPterm(tr)[0]: tr;
     uint32_t id = Idx(getPterm(tr).getId());
-    assert(appears_in_uf[id] >= 1);
-    appears_in_uf[id] --;
+    appears_in_uf[id] = UFAppearanceStatus::removed;
 }
 
 void Logic::setAppearsInUF(PTRef tr) {
     assert(not isNot(tr));
     int id = static_cast<int>(Idx(getPterm(tr).getId()));
-    if (appears_in_uf.size() <= id || appears_in_uf[id] == -1)
+    if (appears_in_uf.size() <= id || appears_in_uf[id] == UFAppearanceStatus::unseen) {
         propFormulasAppearingInUF.push(tr);
+    }
 
-    while (id >= appears_in_uf.size())
-        appears_in_uf.push(-1);
+    while (id >= appears_in_uf.size()) {
+        appears_in_uf.push(UFAppearanceStatus::unseen);
+    }
 
-    appears_in_uf[id] = (appears_in_uf[id] == -1 ? 1 : appears_in_uf[id] + 1);
+    appears_in_uf[id] = UFAppearanceStatus::appears;
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
@@ -427,7 +422,7 @@ bool Logic::appearsInUF(PTRef tr) const {
 
     uint32_t id = Idx(getPterm(tr).getId());
     if (id < static_cast<unsigned int>(appears_in_uf.size()))
-        return appears_in_uf[id] > 0;
+        return appears_in_uf[id] == UFAppearanceStatus::appears;
     else
         return false;
 }
@@ -1371,7 +1366,7 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
                     if (hasSub and appearsInUF(t[i]) and isUF(tr)) {
-                        decreaseUFAppearanceCount(t[i]);
+                        unsetAppearsInUF(t[i]);
                     }
                 }
                 result = changed ? insertTerm(t.symb(), args_mapped) : tr;

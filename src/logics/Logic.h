@@ -164,9 +164,12 @@ class Logic {
     void dumpFunction(ostream &, const TFun&);
 
   private:
-    vec<int> appears_in_uf;
-    int getUFAppearanceCount(PTRef tr) const;
-    void decreaseUFAppearanceCount(PTRef tr);
+    enum class UFAppearanceStatus {
+        unseen, removed, appears
+    };
+    vec<UFAppearanceStatus> appears_in_uf;
+    void unsetAppearsInUF(PTRef tr);
+
   public:
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
