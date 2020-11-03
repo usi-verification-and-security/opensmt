@@ -263,7 +263,7 @@ void Egraph::declareTermRecursively(PTRef tr) {
  * For the Boolean terms (that appear as arguments in UF), we add also
  * their negations.  This means that we need the negation uninterpreted
  * function.  In this Boolean case we add that a term is not equal to
- * its negation, with the reason true
+ * its negation, with the reason true.
  *
  * @param tr
  */
