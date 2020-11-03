@@ -340,9 +340,9 @@ private:
 
     bool    assertEq        (PTRef, PTRef, PtAsgn);               // Asserts an equality
     bool    assertEq        (ERef, ERef, PtAsgn);                 // Called by the above
-    bool    assertNEq       (PTRef, PTRef, const Expl &r);               // Asserts a negated equality
-    bool    assertNEq       (ERef, ERef, const Expl &r);                 // Called by the above
-    bool    assertDist      ( PTRef, PtAsgn);                      // Asserts a distinction
+    bool    assertNEq       (PTRef, PTRef, const Expl &r);        // Asserts a negated equality
+    bool    assertNEq       (ERef, ERef, const Expl &r);          // Called by the above
+    bool    assertDist      ( PTRef, PtAsgn);                     // Asserts a distinction
     //
     // Backtracking
     //
