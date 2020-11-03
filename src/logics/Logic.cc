@@ -397,7 +397,21 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     return !(isBooleanOperator(tr));
 }
 
+int Logic::getUFAppearanceCount(PTRef tr) const {
+    tr = isNot(tr) ? getPterm(tr)[0] : tr;
+    uint32_t id = Idx(getPterm(tr).getId());
+    return appears_in_uf[id];
+}
+
+void Logic::decreaseUFAppearanceCount(PTRef tr) {
+    tr = isNot(tr) ? getPterm(tr)[0]: tr;
+    uint32_t id = Idx(getPterm(tr).getId());
+    assert(appears_in_uf[id] >= 1);
+    appears_in_uf[id] --;
+}
+
 void Logic::setAppearsInUF(PTRef tr) {
+    assert(not isNot(tr));
     int id = static_cast<int>(Idx(getPterm(tr).getId()));
     if (appears_in_uf.size() <= id || appears_in_uf[id] == -1)
         propFormulasAppearingInUF.push(tr);
@@ -409,6 +423,8 @@ void Logic::setAppearsInUF(PTRef tr) {
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
+    tr = isNot(tr) ? getPterm(tr)[0] : tr;
+
     uint32_t id = Idx(getPterm(tr).getId());
     if (id < static_cast<unsigned int>(appears_in_uf.size()))
         return appears_in_uf[id] > 0;
@@ -981,8 +997,7 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     if (isUFTerm(tr) || isUP(tr)) {
         for (int i = 0; i < args.size(); i++) {
             if (hasSortBool(args[i])) {
-                setAppearsInUF(args[i]);
-                setAppearsInUF(mkNot(args[i]));
+                setAppearsInUF(isNot(args[i]) ? getPterm(args[i])[0] : args[i]);
             }
         }
     }
