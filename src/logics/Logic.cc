@@ -1355,7 +1355,7 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
-                    if (hasSub and appearsInUF(t[i])) {
+                    if (hasSub and appearsInUF(t[i]) and isUF(tr)) {
                         decreaseUFAppearanceCount(t[i]);
                     }
                 }
