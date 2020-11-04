@@ -3,8 +3,9 @@ project(opensmt-examples)
 
 set(CMAKE_CXX_STANDARD 11)
 
-get_filename_component(CMAKE_MODULE_PATH
-    "${CMAKE_CURRENT_LIST_DIR}/../cmake_modules/" ABSOLUTE)
+if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need a check, otherwise older version would give an error
+cmake_policy(SET CMP0074 NEW)
+endif()
 
 set(OpenSMT_DIR CACHE PATH "Path to OpenSMT installation directry")
 
