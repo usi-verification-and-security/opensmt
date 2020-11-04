@@ -45,52 +45,51 @@ if (BUILD_SHARED_LIBS)
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
       )
 
-  target_link_libraries(OpenSMT PUBLIC GMP::GMP Threads::Threads)
-  install(TARGETS OpenSMT EXPORT OpenSMTTargets
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib
-      RUNTIME DESTINATION bin
-      INCLUDES DESTINATION include
-      )
-
-  install(EXPORT OpenSMTTargets
-      FILE OpenSMTTargets.cmake
-      NAMESPACE OpenSMT::
-      DESTINATION lib/cmake/opensmt
-      )
-
-  include(CMakePackageConfigHelpers)
-  write_basic_package_version_file( "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake"
-    VERSION ${OPENSMT_VERSION}
-    COMPATIBILITY SameMajorVersion # SameMinorVersion available only from CMake 3.11 
+    target_link_libraries(OpenSMT PUBLIC GMP::GMP Threads::Threads)
+    install(TARGETS OpenSMT EXPORT OpenSMTTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
     )
 
-configure_package_config_file(OpenSMTConfig.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/opensmt
-    #PATH_VARS INCLUDE_INSTALL_DIR INSTALL_DIR
+    install(EXPORT OpenSMTTargets
+        FILE OpenSMTTargets.cmake
+        NAMESPACE OpenSMT::
+        DESTINATION lib/cmake/opensmt
+    )
+
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file( "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake"
+        VERSION ${OPENSMT_VERSION}
+        COMPATIBILITY SameMajorVersion # SameMinorVersion available only from CMake 3.11 
+    )
+
+    configure_package_config_file(OpenSMTConfig.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfig.cmake"
+        INSTALL_DESTINATION lib/cmake/opensmt
     )
 
 
-  install(FILES 
-      "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake" 
-      "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfig.cmake"
-      "${PROJECT_SOURCE_DIR}/cmake_modules/FindGMP.cmake"
-    DESTINATION lib/cmake/opensmt
+    install(FILES 
+        "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake" 
+        "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfig.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake_modules/FindGMP.cmake"
+        DESTINATION lib/cmake/opensmt
     )
 endif()
 
 if (BUILD_STATIC_LIBS)
     add_library(OpenSMT-static STATIC ${OBJECTS_TO_ADD})
     set_target_properties(OpenSMT-static PROPERTIES
-      OUTPUT_NAME opensmt
-      NO_SYSTEM_FROM_IMPORTED true
-      VERSION ${OPENSMT_VERSION}
-      ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-      )
+        OUTPUT_NAME opensmt
+        NO_SYSTEM_FROM_IMPORTED true
+        VERSION ${OPENSMT_VERSION}
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    )
 
-  target_link_libraries(OpenSMT-static PUBLIC GMP::GMP Threads::Threads)
-  install(TARGETS OpenSMT-static ARCHIVE DESTINATION lib)
+    target_link_libraries(OpenSMT-static PUBLIC GMP::GMP Threads::Threads)
+    install(TARGETS OpenSMT-static ARCHIVE DESTINATION lib)
 endif()
 
 install(FILES
