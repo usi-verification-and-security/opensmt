@@ -82,7 +82,7 @@ private:
         }
         std::unordered_map<SymRef, icolor_t, SymRefHash> symbolColors;
         while (not queue.empty()) {
-            auto const & entry = queue.back();
+            auto const entry = queue.back();
             icolor_t colorToAssign = entry.second;
             PTRef term = entry.first;
             queue.pop_back();
@@ -111,7 +111,7 @@ private:
         }
         // Make sure complex terms have correct color assigned
         vec<PTRef> terms;
-        for (auto const & entry : termColors) {
+        for (auto const entry : termColors) {
             PTRef term = entry.first;
             if (entry.second != I_AB and (logic.isUF(term) or logic.isUP(term)) and
                 symbolColors.at(logic.getSymRef(term)) == I_AB) {
