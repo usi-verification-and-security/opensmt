@@ -172,7 +172,7 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
         // Already in the same equivalence class, avoid conflict
         return equality ? l_True : l_False;
     }
-    PtAsgn tmp(PTRef_Undef, l_Undef);
+    Expl tmp;
     bool res = unmergeable(getEnode(e_lhs).getRoot(), getEnode(e_rhs).getRoot(), tmp);
     if (res) {
         // they are unmergable so don't assert equality
@@ -233,7 +233,7 @@ void Egraph::computeModel( )
 }
 
 void Egraph::declareAtom(PTRef atom) {
-    if (!isValid(atom)) { return; }
+    if (!enode_store.needsEnode(atom)) { return; }
     if (isInformed(atom)) { return; }
     declareTermRecursively(atom);
     setInformed(atom);
@@ -249,27 +249,26 @@ void Egraph::declareTermRecursively(PTRef tr) {
         }
     }
 
-    declareTerm(tr);
-    declared.insert(tr);
+    if (enode_store.needsEnode(tr)) {
+        // Only mark as declared if declareTerm actually declared the term.  This is important since whether
+        // tr needs an enode could change after incremental calls in surprising ways as a result of simplifications.
+        declareTerm(tr);
+        declared.insert(tr);
+    }
 }
 
 /**
  * Adds the term to the solver taking into account the arguments.
- * - In general the arguments of the term have UF representation.
- * - However, if the term itself is a Boolean operator, its arguments
- *   will not have enodes as this case will be handled separately by
- *   the SAT solver
  *
  * For the Boolean terms (that appear as arguments in UF), we add also
  * their negations.  This means that we need the negation uninterpreted
- * function.
+ * function.  In this Boolean case we add that a term is not equal to
+ * its negation, with the reason true.
  *
  * @param tr
  */
 void Egraph::declareTerm(PTRef tr) {
-    if (!enode_store.needsEnode(tr)) {
-        return;
-    }
+    assert(enode_store.needsEnode(tr));
 
     auto PTRefERefPairVec = enode_store.constructTerm(tr);
 
@@ -290,7 +289,8 @@ void Egraph::declareTerm(PTRef tr) {
         for (auto PTRefERefPair : PTRefERefPairVec) {
             boolTermToERef.insert(PTRefERefPair.first, PTRefERefPair.second);
         }
-        assertNEq(PTRefERefPairVec[0].second, PTRefERefPairVec[1].second, PtAsgn_Undef);
+        assert(PTRefERefPairVec[0].first == logic.mkNot(PTRefERefPairVec[1].first));
+        assertNEq(PTRefERefPairVec[0].second, PTRefERefPairVec[1].second, Expl(Expl::Type::pol, PtAsgn_Undef, PTRefERefPairVec[0].first));
     }
 
     if (logic.hasSortBool(tr)) {
@@ -338,7 +338,7 @@ bool Egraph::addDisequality(PtAsgn pa) {
     bool res = true;
 
     if (pt.size() == 2)
-        res = assertNEq(pt[0], pt[1], pa);
+        res = assertNEq(pt[0], pt[1], Expl(Expl::Type::std, pa, PTRef_Undef));
     else
         res = assertDist(pa.tr, pa);
 
@@ -486,7 +486,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
         }
 
         // Check if they can't be merged
-        PtAsgn reason_inequality(PTRef_Undef, l_Undef);
+        Expl reason_inequality;
         bool res = unmergeable( en_p.getRoot(), en_q.getRoot(), reason_inequality );
 
         // They are not unmergable, so they can be merged
@@ -517,63 +517,68 @@ bool Egraph::mergeLoop( PtAsgn reason )
         ERef enr_proot = en_p.getRoot();
         ERef enr_qroot = en_q.getRoot();
 
-        if ( reason_inequality.tr == PTRef_Undef ) {
+        if ( reason_inequality.type == Expl::Type::cons) {
             explainConstants(p,q);
         }
         // Does the reason term correspond to disequality symbol
-        else if ( logic.isDisequality(logic.getPterm(reason_inequality.tr).symb()) ) {
-            // We should iterate through the elements of the distinction
-            // and find which atoms are causing the conflict
-            const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
-            for (int i = 0; i < pt_reason.size(); i++) {
-                // (1) Get the proper term reference from pos i in the distinction
-                // (2) Get the enode corresponding to the proper term
-                // (3) Find the enode corresponding to the root
-                // (4) Check if the root enode is the same as the root of p or q
+        else if (reason_inequality.type == Expl::Type::std) {
+            PtAsgn pta = reason_inequality.pta;
+            if ( logic.getPterm(pta.tr).size() > 2 ) {
+                // A distinction.
+                // We should iterate through the elements of the distinction
+                // and find which atoms are causing the conflict
+                const Pterm& pt_reason = logic.getPterm(pta.tr);
+                for (auto ptr_arg : pt_reason) {
+                    // (1) Get the enode corresponding to the proper term
+                    // (2) Find the enode corresponding to the root
+                    // (3) Check if the root enode is the same as the root of p or q
 
-                PTRef ptr_arg = pt_reason[i];                             // (1)
-                ERef  enr_arg = enode_store.getERef(ptr_arg);             // (2)
-                ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (3)
+                    ERef  enr_arg = enode_store.getERef(ptr_arg);             // (1)
+                    ERef  enr_arg_root = enode_store[enr_arg].getRoot();      // (2)
 
-                // (4)
-                if ( enr_arg_root == enr_proot ) { reason_1 = enr_arg; }
-                if ( enr_arg_root == enr_qroot ) { reason_2 = enr_arg; }
+                    // (3)
+                    if ( enr_arg_root == enr_proot ) { reason_1 = enr_arg; }
+                    if ( enr_arg_root == enr_qroot ) { reason_2 = enr_arg; }
+                }
+                assert( reason_1 != ERef_Undef );
+                assert( reason_2 != ERef_Undef );
+                #ifdef VERBOSE_EUF
+                cerr << "Explain YYY" << endl;
+                #endif
+                doExplain(reason_1, reason_2, reason_inequality.pta);
+            } else if ( logic.isEquality(reason_inequality.pta.tr) ) {
+                // The reason is a negated equality
+                assert(reason_inequality.pta.sgn == l_False);
+#ifdef VERBOSE_EUF
+                cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
+#endif
+                const Pterm& pt_reason = logic.getPterm(reason_inequality.pta.tr);
+
+                // The equality
+                // If properly booleanized, the left and righ sides of equality
+                // will always be UF terms
+                // The left hand side of the equality
+                reason_1 = enode_store.getERef(pt_reason[0]);
+                // The rhs of the equality
+                reason_2 = enode_store.getERef(pt_reason[1]);
+
+                assert( reason_1 != ERef_Undef );
+                assert( reason_2 != ERef_Undef );
+
+#ifdef VERBOSE_EUF
+                cerr << "Explain ZZZ " << toString(reason_1) << " " << toString(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
+#endif
+                doExplain(reason_1, reason_2, reason_inequality.pta);
+            } else if ( logic.isUP(reason_inequality.pta.tr) ) {
+                // The reason is an uninterpreted predicate
+                assert(false);
+                explanation.push(reason_inequality.pta);
             }
-            assert( reason_1 != ERef_Undef );
-            assert( reason_2 != ERef_Undef );
-#ifdef VERBOSE_EUF
-            cerr << "Explain YYY" << endl;
-#endif
-            doExplain(reason_1, reason_2, reason_inequality);
-        }
-        else if ( logic.isEquality(logic.getPterm(reason_inequality.tr).symb()) ) {
-            // The reason is a negated equality
-            assert(reason_inequality.sgn == l_False);
-#ifdef VERBOSE_EUF
-            cerr << "Reason inequality " << logic.printTerm(reason_inequality.tr) << endl;
-#endif
-            const Pterm& pt_reason = logic.getPterm(reason_inequality.tr);
-
-            // The equality
-            // If properly booleanized, the left and righ sides of equality
-            // will always be UF terms
-            // The left hand side of the equality
-            reason_1 = enode_store.getERef(pt_reason[0]);
-            // The rhs of the equality
-            reason_2 = enode_store.getERef(pt_reason[1]);
-
-            assert( reason_1 != ERef_Undef );
-            assert( reason_2 != ERef_Undef );
-
-#ifdef VERBOSE_EUF
-            cerr << "Explain ZZZ " << toString(reason_1) << " " << toString(reason_2) << " " << logic.printTerm(reason_inequality.tr) << endl;
-#endif
-            doExplain(reason_1, reason_2, reason_inequality);
-        }
-        else if ( logic.isUP(reason_inequality.tr) ) {
-            // The reason is an uninterpreted predicate
-            assert(false);
-            explanation.push(reason_inequality);
+        } else if (reason_inequality.type == Expl::Type::pol) {
+            // The reason is fundamentally that x and (not x) would go to the same eq class
+            ERef pos = enode_store.getERef(reason_inequality.pol_term);
+            ERef neg = enode_store.getERef(logic.mkNot(reason_inequality.pol_term));
+            doExplain(neg, pos, {logic.getTerm_false(), l_True});
         }
         // Clear remaining pendings
         pending.clear( );
@@ -590,7 +595,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
 //
 // Assert a disequality between nodes x and y
 //
-bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r ) {
+bool Egraph::assertNEq ( PTRef x, PTRef y, const Expl &r ) {
 #ifdef VERBOSE_EUF
     cerr << "Assert NEQ of " << logic.printTerm(x) << " and " << logic.printTerm(y) << " since " << logic.printTerm(r.tr) << endl;
 #endif
@@ -621,13 +626,13 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, PtAsgn r ) {
 #ifdef VERBOSE_EUF
         cerr << "Explain XXY" << endl;
 #endif
-        doExplain(xe,ye,r);
+        doExplain(xe, ye, r.pta);
         return false;
     }
     return assertNEq(p, q, r);
 }
 
-bool Egraph::assertNEq(ERef p, ERef q, PtAsgn r)
+bool Egraph::assertNEq(ERef p, ERef q, const Expl &r)
 {
     // Is it possible that x is already in the list of y
     // and viceversa ? YES. If things have
@@ -1185,7 +1190,7 @@ void Egraph::undoDisequality ( ERef x )
 }
 
 
-bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
+bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
 {
     assert( x != ERef_Undef );
     assert( y != ERef_Undef );
@@ -1214,7 +1219,10 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     // possible that the constant is the same. In fact if it was
     // the same, they would be in the same class, but they are not
     // Check if they are part of the same distinction (general distinction)
-    if ( isConstant(p) && isConstant(q)) return true;
+    if (isConstant(p) && isConstant(q)) {
+        r = Expl(Expl::Type::cons, PtAsgn_Undef, PTRef_Undef);
+        return true;
+    }
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
 
@@ -1229,8 +1237,8 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
             ++index;
         }
         // Dist terms are all inequalities, hence their polarity's true
-        r = PtAsgn(enode_store.getDistTerm(index), l_True);
-        assert(r.tr != PTRef_Undef);
+        PTRef ineq_tr = enode_store.getDistTerm(index);
+        r = Expl(Expl::Type::std, {ineq_tr, l_True}, PTRef_Undef);
         return true;
     }
     // Check forbid lists (binary distinction)
@@ -1244,8 +1252,6 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
     ELRef pptr = pstart;
     ELRef qptr = qstart;
 
-    r = PtAsgn(PTRef_Undef, l_True);
-
     for (;;) {
         const Elist& el_pptr = forbid_allocator[pptr];
         const Elist& el_qptr = forbid_allocator[qptr];
@@ -1256,6 +1262,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
             cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
 #endif
             r = el_pptr.reason;
+            assert((r.type == Expl::Type::pol) or ((logic.isEquality(r.pta.tr) and r.pta.sgn == l_False) or (logic.isDisequality(r.pta.tr) and r.pta.sgn == l_True)));
             return true;
         }
         if (getEnode(el_qptr.e).getRoot() == p) {
@@ -1264,6 +1271,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
             cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
 #endif
             r = el_qptr.reason;
+            assert((r.type == Expl::Type::pol) or ((logic.isEquality(r.pta.tr) and r.pta.sgn == l_False) or (logic.isDisequality(r.pta.tr) and r.pta.sgn == l_True)));
             return true;
         }
         // Pass to the next element
@@ -1276,7 +1284,7 @@ bool Egraph::unmergeable (ERef x, ERef y, PtAsgn& r) const
         if ( qptr == qstart ) break;
     }
     // If here they are mergable
-    assert(r.tr == PTRef_Undef);
+    assert(r.type == Expl::Type::undef);
     return false;
 }
 

@@ -397,22 +397,32 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     return !(isBooleanOperator(tr));
 }
 
+void Logic::unsetAppearsInUF(PTRef tr) {
+    tr = isNot(tr) ? getPterm(tr)[0]: tr;
+    uint32_t id = Idx(getPterm(tr).getId());
+    appears_in_uf[id] = UFAppearanceStatus::removed;
+}
+
 void Logic::setAppearsInUF(PTRef tr) {
+    assert(not isNot(tr));
     int id = static_cast<int>(Idx(getPterm(tr).getId()));
-
-    if (appears_in_uf.size() <= id || appears_in_uf[id] == false)
+    if (appears_in_uf.size() <= id || appears_in_uf[id] == UFAppearanceStatus::unseen) {
         propFormulasAppearingInUF.push(tr);
+    }
 
-    while (id >= appears_in_uf.size())
-        appears_in_uf.push(false);
+    while (id >= appears_in_uf.size()) {
+        appears_in_uf.push(UFAppearanceStatus::unseen);
+    }
 
-    appears_in_uf[id] = true;
+    appears_in_uf[id] = UFAppearanceStatus::appears;
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
+    tr = isNot(tr) ? getPterm(tr)[0] : tr;
+
     uint32_t id = Idx(getPterm(tr).getId());
     if (id < static_cast<unsigned int>(appears_in_uf.size()))
-        return appears_in_uf[id];
+        return appears_in_uf[id] == UFAppearanceStatus::appears;
     else
         return false;
 }
@@ -982,8 +992,7 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     if (isUFTerm(tr) || isUP(tr)) {
         for (int i = 0; i < args.size(); i++) {
             if (hasSortBool(args[i])) {
-                setAppearsInUF(args[i]);
-                setAppearsInUF(mkNot(args[i]));
+                setAppearsInUF(isNot(args[i]) ? getPterm(args[i])[0] : args[i]);
             }
         }
     }
@@ -1356,8 +1365,10 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
+                    if (hasSub and appearsInUF(t[i]) and isUF(tr)) {
+                        unsetAppearsInUF(t[i]);
+                    }
                 }
-
                 result = changed ? insertTerm(t.symb(), args_mapped) : tr;
 #ifdef SIMPLIFY_DEBUG
                 printf("  -> %s\n", printTerm(result));

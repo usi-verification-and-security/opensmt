@@ -334,14 +334,15 @@ public:
     void      declareTerm         (PTRef);
 
 private:
+
     std::unordered_set<PTRef, PTRefHash> declared;
     void declareTermRecursively(PTRef);
 
-    bool    assertEq        ( PTRef, PTRef, PtAsgn );               // Asserts an equality
-    bool    assertEq        ( ERef, ERef, PtAsgn );                 // Called by the above
-    bool    assertNEq       ( PTRef, PTRef, PtAsgn );               // Asserts a negated equality
-    bool    assertNEq       ( ERef, ERef, PtAsgn );                 // Called by the above
-    bool    assertDist      ( PTRef, PtAsgn );                      // Asserts a distinction
+    bool    assertEq        (PTRef, PTRef, PtAsgn);               // Asserts an equality
+    bool    assertEq        (ERef, ERef, PtAsgn);                 // Called by the above
+    bool    assertNEq       (PTRef, PTRef, const Expl &r);        // Asserts a negated equality
+    bool    assertNEq       (ERef, ERef, const Expl &r);          // Called by the above
+    bool    assertDist      ( PTRef, PtAsgn);                     // Asserts a distinction
     //
     // Backtracking
     //
@@ -349,7 +350,8 @@ private:
     //
     // Congruence closure main routines
     //
-    bool    unmergeable     ( ERef, ERef, PtAsgn& ) const;        // Can two nodes be merged ?
+
+    bool    unmergeable     ( ERef, ERef, Expl& ) const;        // Can two nodes be merged ?
     void    merge           ( ERef, ERef, PtAsgn );               // Merge two nodes
     bool    mergeLoop       ( PtAsgn reason );                    // Merge loop
     void    deduce          ( ERef, ERef, PtAsgn );               // Deduce from merging of two nodes (record the reason)

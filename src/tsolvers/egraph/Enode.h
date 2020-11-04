@@ -277,6 +277,20 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
 
 };
 
+
+/**
+ * Expl is a generalization of an explanation inequality that covers explicitly
+ * the standard inequality consisting of a negated equality or inequality,
+ * difference of two constants, and a boolean atom and its negation being distinct.
+ */
+struct Expl {
+    enum class Type { std, cons, pol, undef } type;
+    PtAsgn pta;
+    PTRef pol_term;
+    Expl() : type(Type::undef), pta(PtAsgn_Undef), pol_term(PTRef_Undef) {}
+    Expl(Type type, PtAsgn pta, PTRef pol_term) : type(type), pta(pta), pol_term(pol_term) {}
+};
+
 #define ID_BITS 30
 #define ID_MAX 2 << 30
 class Elist
@@ -296,15 +310,15 @@ public:
     unsigned getId()      const { return header.id; }
     void     setDirty()         { header.dirty = true; }
     bool     isDirty()    const { return header.dirty; }
-    PtAsgn   reason;                   // Reason for this distinction
+    Expl     reason;                   // Reason for this distinction
     union    { ERef e; ELRef rel_e; }; // Enode that differs from this, or the reference where I was relocated
     ELRef    link;                     // Link to the next element in the list
 
-    Elist(ERef e_, PtAsgn r) : reason(r), e(e_), link(ELRef_Undef) {
+    Elist(ERef e_, const Expl &r) : reason(r), e(e_), link(ELRef_Undef) {
         header.rlcd = false;
         header.dirty = false;
     }
-    Elist* Elist_new(ERef e_, PtAsgn r) {
+    Elist* Elist_new(ERef e_, const Expl &r) {
         assert(false);
         assert(sizeof(ELRef) == sizeof(uint32_t));
         size_t sz = sizeof(ELRef) + 2*sizeof(ERef);
@@ -312,6 +326,7 @@ public:
         return new (mem) Elist(e_, r);
     }
 };
+
 
 class ELAllocator : public RegionAllocator<uint32_t>
 {
@@ -340,7 +355,7 @@ public:
                 to.referenced_by.last().push(referenced_by[i][j]);
         }
     }
-    ELRef alloc(ERef e, PtAsgn r, ERef owner) {
+    ELRef alloc(ERef e, const Expl& r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
         ELRef elid;
