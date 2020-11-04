@@ -1,17 +1,19 @@
-add_executable(opensmt opensmt.cc Interpret.cc)
+add_executable(OpenSMT-bin opensmt.cc Interpret.cc)
+
+set_target_properties(OpenSMT-bin PROPERTIES
+    NO_SYSTEM_FROM_IMPORTED true # For some reason on MAC OS build in travis, the .cc files from this target were compiled with -isystem /usr/include and that was messing up the search order of include paths; This seems to fix it
+    OUTPUT_NAME opensmt
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 if (NOT USE_READLINE)
     find_package(LibEdit REQUIRED)
-    target_link_libraries(opensmt PUBLIC ${LibEdit_LIBRARIES})
-    target_include_directories(opensmt PUBLIC ${LibEdit_INCLUDE_DIRS})
+    target_link_libraries(OpenSMT-bin PUBLIC LibEdit::LibEdit)
 else()
     find_package(Readline REQUIRED)
-    target_link_libraries(opensmt PUBLIC ${Readline_LIBRARY})
-    target_include_directories(opensmt PUBLIC ${Readline_INCLUDE_DIRS})
+    target_link_libraries(OpenSMT-bin PUBLIC Readline::Readline)
 endif()
 
-target_link_libraries(opensmt PUBLIC api_static)
+target_link_libraries(OpenSMT-bin PUBLIC OpenSMT-static)
 
-set_target_properties(opensmt PROPERTIES OUTPUT_NAME opensmt RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-install(TARGETS opensmt RUNTIME DESTINATION bin)
+install(TARGETS OpenSMT-bin RUNTIME DESTINATION bin)
