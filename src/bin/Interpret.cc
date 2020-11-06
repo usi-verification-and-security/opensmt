@@ -1161,6 +1161,10 @@ void Interpret::getInterpolants(const ASTNode& n)
         }
         partitionings.push_c(p);
     }
+    if (main_solver->getStatus() != s_False) {
+        notify_formatted(true, "Cannot interpolate, solver is not in UNSAT state!");
+        return;
+    }
     auto interpolationContext = main_solver->getInterpolationContext();
 //        cerr << "Computing interpolant with mask " << p << endl;
     vec<PTRef> itps;
