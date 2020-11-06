@@ -418,6 +418,10 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
 PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     assert(color == icolor_t::I_A || color == icolor_t::I_B);
+    bool hasColors = ensureHasColorForAllTerms();
+    if (not hasColors) {
+        throw OsmtInternalException("Error in computation of decomposed Farkas interpolant, colors could not be determined!");
+    }
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
     std::vector<PTRef> interpolant_inequalities;
@@ -573,13 +577,8 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
 }
 
 icolor_t FarkasInterpolator::getGlobalColorFor(PTRef term) const {
-    auto const & termMask = pmanager.getIPartitions(term);
-    bool isInA = (termMask & mask) != 0;
-    bool isInB = (termMask & ~mask) != 0;
-    if (isInA and not isInB) { return I_A; }
-    if (isInB and not isInA) { return I_B; }
-    if (isInA and isInB) { return I_AB; }
-    throw OsmtInternalException("No color detected for term");
+    assert(termColorInfo);
+    return termColorInfo->getColorFor(term);
 }
 
 PTRef FarkasInterpolator::getDecomposedInterpolant() {
@@ -676,4 +675,11 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
     opensmt::Real newConstant = lowerBound + (strengthDiff * strengthFactor);
     PTRef itp = logic.mkNumLeq(logic.mkConst(newConstant), sidesA.first);
     return itp;
+}
+
+bool FarkasInterpolator::ensureHasColorForAllTerms() {
+    if (termColorInfo) { return true; }
+    if (not labels) { return false; }
+    termColorInfo.reset(new LocalTermColorInfo(*labels, logic));
+    return true;
 }
