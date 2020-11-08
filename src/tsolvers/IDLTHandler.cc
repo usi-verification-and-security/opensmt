@@ -7,8 +7,8 @@
 #include "IDLSolver.h"
 #include "TreeOps.h"
 
-IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap)
-        : TSolverHandler(c, tmap)
+IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l)
+        : TSolverHandler(c)
         , logic(l)
 {
     idlsolver = new IDLSolver(config, logic);

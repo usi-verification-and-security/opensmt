@@ -16,12 +16,12 @@ private:
     LIALogic& logic;
     IDLSolver *idlsolver;
 public:
-    IDLTHandler(SMTConfig& c, LIALogic& l, TermMapper& tmap);
+    IDLTHandler(SMTConfig& c, LIALogic& l);
     virtual ~IDLTHandler() = default;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 //    virtual lbool getPolaritySuggestion(PTRef) const override;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) override {
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) override {
         throw std::logic_error("Not implemented yet");
     }
 

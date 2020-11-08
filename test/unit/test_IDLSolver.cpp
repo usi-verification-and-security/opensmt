@@ -9,7 +9,7 @@
 
 class IDLSolverTest : public ::testing::Test {
 protected:
-    IDLSolverTest(): logic{config} {}
+    IDLSolverTest() {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
@@ -120,12 +120,13 @@ TEST_F(SafeIntTest, test_add_pass){
 TEST_F(SafeIntTest, test_add_fail_over){
     SafeInt a(PTRDIFF_MAX-2);
     SafeInt b(3);
-    ASSERT_ANY_THROW(SafeInt c = a+b);
+    ASSERT_ANY_THROW(a+b);
+
 }
 
 TEST_F(SafeIntTest, test_add_fail_under){
    SafeInt a(PTRDIFF_MIN + 100), b(-200);
-   ASSERT_ANY_THROW(SafeInt c = a+b);
+   ASSERT_ANY_THROW(a+b);
 }
 
 TEST_F(SafeIntTest, test_sub_pass){

@@ -256,41 +256,37 @@ class CUFTheory : public Theory
 class IDLTheory : public Theory
 {
 protected:
-    LIALogic    lialogic;
-    TermMapper  tmap;
+    LIALogic&    lialogic;
     IDLTHandler idlthandler;
 public:
-    IDLTheory(SMTConfig& c)
+    IDLTheory(SMTConfig & c, LIALogic & logic)
             : Theory(c)
-            , lialogic(c)
-            , tmap(lialogic)
-            , idlthandler(c, lialogic, tmap)
+            , lialogic(logic)
+            , idlthandler(c, lialogic)
     { }
     ~IDLTheory() = default;
-    virtual LIALogic&    getLogic()    { return lialogic; }
-    virtual TermMapper&  getTmap() { return tmap; }
+    virtual LIALogic & getLogic() { return lialogic; }
+    virtual LIALogic const & getLogic() const { return lialogic; }
     virtual IDLTHandler& getTSolverHandler() { return idlthandler; }
-    virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
+    virtual bool simplify(const vec<PFRef>&, PartitionManager&, int); // Theory specific simplifications
 };
 
 class RDLTheory : public Theory
 {
 protected:
-    LRALogic lralogic;
-    TermMapper tmap;
+    LRALogic & lralogic;
     RDLTHandler rdlthandler;
 public:
-    RDLTheory(SMTConfig &c)
+    RDLTheory(SMTConfig &c, LRALogic & logic)
             : Theory(c)
-            , lralogic(c)
-            , tmap(lralogic)
-            , rdlthandler(c, lralogic, tmap)
+            , lralogic(logic)
+            , rdlthandler(c, lralogic)
     { }
     ~RDLTheory() = default;
-    virtual LRALogic &getLogic() { return lralogic; }
-    virtual TermMapper &getTmap() { return tmap; }
+    virtual LRALogic & getLogic() { return lralogic; }
+    virtual LRALogic const & getLogic() const { return lralogic; }
     virtual RDLTHandler &getTSolverHandler() { return rdlthandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&,PartitionManager&, int);
 };
 
 

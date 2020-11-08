@@ -12,11 +12,11 @@ private:
     LRALogic& logic;
     RDLSolver *rdlsolver;
 public:
-    RDLTHandler(SMTConfig &c, LRALogic &l, TermMapper &tmap);
+    RDLTHandler(SMTConfig &c, LRALogic &l);
     virtual ~RDLTHandler() = default;
     Logic &getLogic() override;
     const Logic &getLogic() const override;
-    PTRef getInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t>*) override {
+    PTRef getInterpolant(const ipartitions_t &mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) override {
         throw std::logic_error("Not implemented yet");
     }
 

@@ -2,8 +2,8 @@
 #include "LRALogic.h"
 #include "RDLSolver.h"
 
-RDLTHandler::RDLTHandler(SMTConfig &c, LRALogic &l, TermMapper &tmap)
-        : TSolverHandler(c, tmap)
+RDLTHandler::RDLTHandler(SMTConfig &c, LRALogic &l)
+        : TSolverHandler(c)
         , logic(l)
 {
     rdlsolver = new RDLSolver(config, logic);

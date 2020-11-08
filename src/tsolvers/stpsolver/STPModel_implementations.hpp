@@ -1,8 +1,9 @@
 #ifndef OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP
 #define OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP
 
-#include <memory>
 #include "STPModel.h"
+
+#include <memory>
 
 // returns a list of all vertices present in graph
 template<class T>

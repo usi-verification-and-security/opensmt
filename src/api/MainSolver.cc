@@ -445,17 +445,27 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_LRA:
-        case Logic_t::QF_RDL:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
             theory = new LRATheory(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
-        case Logic_t::QF_IDL:
         {
             LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
             theory = new LIATheory(config, liaLogic);
+            break;
+        }
+        case Logic_t::QF_RDL:
+        {
+            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            theory = new RDLTheory(config, lraLogic);
+            break;
+        }
+        case Logic_t::QF_IDL:
+        {
+            LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
+            theory = new IDLTheory(config, liaLogic);
             break;
         }
         case Logic_t::QF_UFLRA:

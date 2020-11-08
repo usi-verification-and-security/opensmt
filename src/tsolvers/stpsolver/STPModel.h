@@ -2,6 +2,8 @@
 #define OPENSMT_STPVALMAPPER_HPP
 
 #include "STPGraphManager.h"
+
+#include <unordered_map>
 // implementations of template functions #included below class definition
 
 // holds the mapping from vertices to their values
