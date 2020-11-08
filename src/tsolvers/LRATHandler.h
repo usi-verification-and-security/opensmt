@@ -37,13 +37,13 @@ class LRATHandler : public TSolverHandler
     LRALogic& logic;
     LRASolver *lrasolver;
   public:
-    LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap);
+    LRATHandler(SMTConfig & c, LRALogic & l);
     virtual ~LRATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
     virtual lbool getPolaritySuggestion(PTRef) const override;
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 };
 
 #endif

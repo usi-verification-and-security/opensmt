@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
+#include "PartitionManager.h"
 #include "Deductions.h"
 #include "TermMapper.h"
 #include "TSolver.h"
@@ -36,23 +37,21 @@ class TheoryInterpolator;
 
 class THandler;
 class TSolver;
+class ModelBuilder;
 
 class TSolverHandler
 {
     friend THandler;
 protected:
     SMTConfig     &config;
-public:
-    TermMapper    &tmap;
 protected:
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
     Map<PTRef,PtAsgn,PTRefHash> substs;
 
-    TSolverHandler(SMTConfig & c, TermMapper & tmap)
+    TSolverHandler(SMTConfig & c)
         : config(c)
-        , tmap(tmap)
     {
         for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
             SolverDescr* sd = SolverDescr::getSolverList()[i];
@@ -67,10 +66,16 @@ public:
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
     void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
+    Map<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }
+
+
+    // DEPRECATED
     ValPair getValue          (PTRef tr) const;
+
+    void    fillTheoryVars    (ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
     void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers

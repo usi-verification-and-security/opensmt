@@ -63,11 +63,15 @@ inline State& operator |= (State& lhs, State rhs)
 }
 
 inline uword absVal(word x) {
-    return x>=0 ? x : -x;
+    // Taking just (- WORD_MIN) is undefined behaviour, changed according to https://stackoverflow.com/questions/12231560/correct-way-to-take-absolute-value-of-int-min
+    return x < 0 ? -((uword)(x))
+                 : +((uword)(x));
 }
 
 inline ulword absVal(lword x) {
-    return x>=0 ? x : -x;
+    // Taking just (- LWORD_MIN) is undefined behaviour
+    return x < 0 ? -((ulword)(x))
+                 : +((ulword)(x));
 }
 
 class FastRational
@@ -106,7 +110,7 @@ public:
     FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
     FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
     FastRational(uint32_t);
-    FastRational(word num, word den) : state{State::WORD_VALID}, num(num), den(den) { }
+    inline FastRational(word n, uword d);
     explicit FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
     inline FastRational(FastRational&& other) noexcept;
@@ -192,11 +196,10 @@ private:
     friend inline void substractionAssign   ( FastRational &, const FastRational & );
     friend inline void multiplicationAssign( FastRational &, const FastRational & );
     friend inline void divisionAssign      ( FastRational &, const FastRational & );
-    friend FastRational gcd(FastRational&, FastRational&);
-    friend FastRational lcm(FastRational&, FastRational&);
-    friend FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
-    friend FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
-    friend FastRational divexact(FastRational& n, FastRational& d);
+    friend FastRational gcd(FastRational const &, FastRational const &);
+    friend FastRational lcm(FastRational const &, FastRational const &);
+    friend FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
+    friend FastRational divexact(FastRational const & n, FastRational const & d);
 public:
     void print_details ( std::ostream & ) const;
     void print         ( std::ostream & ) const;
@@ -206,7 +209,6 @@ public:
     inline FastRational operator-() const;
     inline void negate();
 private:
-    inline FastRational(word n, uword d);
     void print_(std::ostream& out) const;
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
@@ -220,16 +222,21 @@ private:
     mpq_t mpq;
 public:
     FastRational get_den() const {
-        if (wordPartValid() && den <= INT32_MAX)
-            return (uword)den;
-        else
+        if (wordPartValid() && den <= INT32_MAX) {
+            return FastRational((uword)den);
+        }
+        else {
+            force_ensure_mpq_valid();
             return FastRational(mpz_class(mpq_denref(mpq)));
+        }
     }
     FastRational get_num() const {
-        if (wordPartValid())
-            return num;
-        else
+        if (wordPartValid()) {
+            return FastRational(num);
+        }
+        else {
             return FastRational(mpz_class(mpq_numref(mpq)));
+        }
     }
 
     inline int compare(const FastRational& b) const;
@@ -383,15 +390,9 @@ public:
         return r;
     }
 };
-// Divide n by d, forming a quotient q.
-// Rounds q down towards -infinity, and r will have the same sign as d.
-FastRational fastrat_fdiv_q(FastRational&& n, FastRational&& d);
-FastRational fastrat_fdiv_q(FastRational& n, FastRational& d);
+
+FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
 FastRational fastrat_round_to_int(const FastRational& n);
-
-FastRational gcd(FastRational& a, FastRational& b);
-
-FastRational lcm(FastRational& a, FastRational& b);
 
 struct FastRationalHash {
     uint32_t operator() (const FastRational& s) const {

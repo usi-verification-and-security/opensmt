@@ -64,8 +64,9 @@ bool Tseitin::cnfize(PTRef term) {
             res &= cnfizeIff(ptr);
         else if (logic.isImplies(ptr))
             res &= cnfizeImplies(ptr);
-        else if (logic.isIte(ptr))
-            res &= cnfizeIfthenelse(ptr);
+        // Ites are handled through the ite manager system and treated here as variables
+//        else if (logic.isIte(ptr))
+//            res &= cnfizeIfthenelse(ptr);
         else if (!logic.isNot(ptr) && sz > 0) {
             goto tseitin_end;
         }

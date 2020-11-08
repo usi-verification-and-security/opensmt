@@ -5,6 +5,12 @@
 #include "Tableau.h"
 #include <iostream>
 
+#ifdef SIMPLEX_DEBUG
+#define simplex_assert(x) assert(x)
+#else
+#define simplex_assert(x)
+#endif // SIMPLEX_DEBUG
+
 using namespace opensmt;
 namespace {
     template<class C, class E>
@@ -284,7 +290,7 @@ void Tableau::quasiToBasic(LVRef v) {
     }
     varTypes[getVarId(v)] = VarType::BASIC;
     assert(isBasic(v));
-    assert(checkConsistency());
+    simplex_assert(checkConsistency());
 }
 
 void Tableau::basicToQuasi(LVRef v) {
@@ -297,7 +303,7 @@ void Tableau::basicToQuasi(LVRef v) {
         assert(isNonBasic(term.var));
         removeRowFromColumn(v, term.var);
     }
-    assert(checkConsistency());
+    simplex_assert(checkConsistency());
 }
 
 void Tableau::ensureTableauReadyFor(LVRef v) {

@@ -3,15 +3,13 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 #include <Map.h>
 #include <SubstLoopBreaker.h>
 
 typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
 
 TEST(SubstitutionBreaker, test_getVars) {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
 
 
     char *tmp;
@@ -35,8 +33,7 @@ TEST(SubstitutionBreaker, test_getVars) {
 }
 
 TEST(SubstitutionBreaker, test_Simple) {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
 
 
     PTRef a = logic.mkVar(logic.getSort_bool(), "a");
@@ -50,8 +47,7 @@ TEST(SubstitutionBreaker, test_Simple) {
 }
 
 TEST(SubstitutionBreaker, test_getLoops) {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
 
     char* tmp;
     SRef U = logic.declareSort("U", &tmp);
@@ -79,8 +75,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
 }
 
 TEST(SubstitutionBreaker, test_getLoops2) {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
 
     char* tmp;
     SRef U = logic.declareSort("U", &tmp);
@@ -123,8 +118,7 @@ TEST(SubstitutionBreaker, test_getLoops2) {
 }
 
 TEST(SubstitutionBreaker, test_getLoops3) {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
 
     char* tmp;
     SRef U = logic.declareSort("U", &tmp);

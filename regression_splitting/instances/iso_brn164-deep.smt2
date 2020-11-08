@@ -1,10 +1,10 @@
+(set-option :lookahead-split)
 (set-logic QF_UF)
 (set-info :source |
 http://www.cs.bham.ac.uk/~vxs/quasigroups/benchmark/
 
 |)
 
-(set-option :lookahead-split)
 (set-option :lookahead-score-deep)
 (set-option :split-num 16)
 (set-option :split-format smt2)

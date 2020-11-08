@@ -67,15 +67,12 @@ protected:
     bool split_eq;
 
 public:
-    LRALogic                    (SMTConfig& c);
+    LRALogic();
     ~LRALogic                   () {
         for (int i = 0; i < reals.size(); i++) delete reals[i];
-        if (config.sat_split_type() != spt_none)
-            cerr << "; Num of LRA equalities in input: " << la_split_inequalities.getSize()/2 << "\n";
     }
     virtual const char*   getName()              const override { return "QF_LRA"; }
-    virtual const opensmt::Logic_t getLogic()    const override { return opensmt::Logic_t::QF_LRA; }
-
+    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_LRA; }
     virtual bool isBuiltinSort  (SRef sr) const override { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
     virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
     SRef        getSort_num    ()              const override { return sort_REAL;}

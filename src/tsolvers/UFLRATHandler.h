@@ -39,11 +39,11 @@ class UFLRATHandler : public LRATHandler
     LRASolver     *lrasolver;
     Egraph        *ufsolver;
   public:
-    UFLRATHandler(SMTConfig & c, LRALogic & l, TermMapper & tmap);
+    UFLRATHandler(SMTConfig & c, LRALogic & l);
     virtual ~UFLRATHandler();
     virtual Logic& getLogic();
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels);
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager);
 };
 
 #endif

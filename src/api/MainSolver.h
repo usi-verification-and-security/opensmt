@@ -27,9 +27,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MAINSOLVER_H
 
 
-#include <mutex>
 #include "Tseitin.h"
 #include "SimpSMTSolver.h"
+#include "Model.h"
+#include "PartitionManager.h"
+#include "InterpolationContext.h"
+
+#include <memory>
+
 
 class Logic;
 
@@ -91,21 +96,22 @@ class MainSolver
 
     };
 
-    Logic&              logic;
-    SMTConfig&          config;
-    THandler&           thandler;
-    PushFrameAllocator& pfstore;
-    TermMapper&         tmap;
-    SimpSMTSolver*      smt_solver;
-    Tseitin             ts;
-    PushFramesWrapper   frames;
+
+    std::unique_ptr<Theory>         theory;
+    TermMapper                      term_mapper;
+    THandler                        thandler;
+    std::unique_ptr<SimpSMTSolver>  smt_solver;
+    Logic&                          logic;
+    PartitionManager                pmanager;
+    SMTConfig&                      config;
+    PushFrameAllocator&             pfstore;
+    Tseitin                         ts;
+    PushFramesWrapper               frames;
 
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
     int            check_called;     // A counter on how many times check was called.
-    PTRef          prev_query;       // The previously executed query
-    PTRef          curr_query;       // The current query
     sstat          status;           // The status of the last solver call (initially s_Undef)
     unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
 
@@ -121,15 +127,17 @@ class MainSolver
         PTRef getRoot   ()        const         { return root; }
     };
 
+    FContainer root_instance; // Contains the root of the instance once simplifications are done
+
+    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
+    sstat simplifyFormulas(char** msg);
+    sstat solve           ();
+
     sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
 
-    FContainer simplifyEqualities(vec<PtChild>& terms);
-
     PTRef rewriteMaxArity(PTRef);
-
-    FContainer root_instance; // Contains the root of the instance once simplifications are done
 
     // helper private methods
     PushFrame& getLastFrame() const { return pfstore[frames.last()]; }
@@ -142,29 +150,30 @@ class MainSolver
         }
     }
 
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
-
+    static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
   public:
-    MainSolver(THandler& thandler, SMTConfig& c, SimpSMTSolver *s, const char* name)
-        : logic(thandler.getLogic())
-        , config(c)
-        , thandler(thandler)
-        , pfstore(getTheory().pfstore)
-        , tmap(thandler.getTMap())
-        , smt_solver(s)
-        , ts( config
-            , thandler.getLogic()
-            , tmap
-            , *s )
-        , solver_name {name}
-        , check_called(0)
-        , prev_query(PTRef_Undef)
-        , curr_query(PTRef_Undef)
-        , status(s_Undef)
-        , binary_init(false)
-        , root_instance(logic.getTerm_true())
+
+    MainSolver(Logic& logic, SMTConfig& conf, std::string name)
+        :
+        theory(createTheory(logic, conf)),
+        term_mapper(logic),
+        thandler(getTheory(), term_mapper),
+        smt_solver(createInnerSolver(conf, thandler)),
+        logic(thandler.getLogic()),
+        pmanager(logic),
+        config(conf),
+        pfstore(getTheory().pfstore),
+        ts( config, logic, pmanager, term_mapper, *smt_solver ),
+        solver_name {std::move(name)},
+        check_called(0),
+        status(s_Undef),
+        binary_init(false),
+        root_instance(logic.getTerm_true())
     {
+        conf.setUsedForInitiliazation();
         frames.push(pfstore.alloc());
         PushFrame& last = pfstore[frames.last()];
         last.push(logic.getTerm_true());
@@ -173,46 +182,49 @@ class MainSolver
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
+    SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
     THandler &getTHandler() { return thandler; }
-    Logic    &getLogic()    { return thandler.getLogic(); }
-    Theory   &getTheory()   { return thandler.getTheory(); }
+    Logic    &getLogic()    { return logic; }
+    Theory   &getTheory()   { return *theory; }
+    const Theory &getTheory() const { return *theory; }
+    PartitionManager &getPartitionManager() { return pmanager; }
     sstat     push(PTRef root);
     void      push();
     bool      pop();
     sstat     insertFormula(PTRef root, char** msg);
+    void      insertFormula(PTRef fla);
 
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
-    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
-    sstat simplifyFormulas(char** msg);
+    sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
-    sstat solve           ();
-    sstat check           ();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
 
-    void printFramesAsQuery();
-
-    sstat getStatus       ()       { return status; }
+    void  printFramesAsQuery() const;
+    sstat getStatus       () const { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
-    bool  writeSolverState_smtlib2 (const char* file, char** msg);
-
-    bool  writeFuns_smtlib2 (const char* file);
-
-    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out); // Add the contents of in as disjuncts to out
-    bool  writeSolverSplits_smtlib2(const char* file, char** msg);
+    bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
+    bool  writeFuns_smtlib2 (const char* file) const;
+    bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
+    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
+
+    // DEPRECATED. use the new Model structure
     ValPair getValue       (PTRef tr) const;
     void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
-    bool    getAssignment  (const char*);
 
+    // Returns model of the last query (must be in satisfiable state)
+    std::unique_ptr<Model> getModel();
 
     void stop() { ts.solver.stop = true; }
 
     bool readFormulaFromFile(const char *file);
 
-    PTRef getPrevQuery() const { return prev_query; }
+    // Returns interpolation context for the last query (must be in UNSAT state)
+    std::unique_ptr<InterpolationContext> getInterpolationContext();
+
 };
 
 #endif //

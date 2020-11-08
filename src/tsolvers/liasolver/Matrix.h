@@ -60,7 +60,7 @@ class LAVecAllocator : public RegionAllocator<uint32_t>
 private:
     vec<LAVecRef>   lavecs;
 public:
-    inline void   clear() { lavecs.clear(); };
+    inline void   clear() override { lavecs.clear(); RegionAllocator::clear(); }
     LAVecAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_vecs(0) {}
     LAVecAllocator()                   : n_vecs(0) {}
     unsigned getNumVecs() const { return n_vecs; };

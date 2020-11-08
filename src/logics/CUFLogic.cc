@@ -63,8 +63,8 @@ const char* CUFLogic::tk_cuf_cond   = "?";
 const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 const char*  CUFLogic::s_sort_cufstr = "CUFStr";
 
-CUFLogic::CUFLogic(SMTConfig& c) :
-      Logic(c)
+CUFLogic::CUFLogic() :
+    Logic()
     , sym_CUF_ZERO(SymRef_Undef)
     , sym_CUF_ONE(SymRef_Undef)
     , sym_CUF_NEG(SymRef_Undef)
@@ -102,7 +102,6 @@ CUFLogic::CUFLogic(SMTConfig& c) :
     , term_CUF_ZERO(PTRef_Undef)
     , term_CUF_ONE(PTRef_Undef)
 {
-    logic_type = opensmt::Logic_t::QF_CUF;
     char* msg;
     sort_CUFNUM = declareSort(s_sort_cufnum, &msg);
 
@@ -574,7 +573,7 @@ const int CUFLogic::getCUFNUMConst(PTRef tr) const
     return atoi(getSymName(tr));
 }
 
-void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
+PTRef CUFLogic::conjoinExtras(PTRef root)
 {
     vec<PTRef> comm_eqs;
     vec<PTRef> diseq_eqs;
@@ -588,12 +587,12 @@ void CUFLogic::conjoinExtras(PTRef root, PTRef& root_out)
     getCommEqs(mod_ineqs);
     getCommEqs(inc_diseqs);
     getCommEqs(compl_diseqs);
-    root_out = root;
+    PTRef root_out = root;
     root_out = mkAnd(root_out, mkAnd(comm_eqs));
     root_out = mkAnd(root_out, mkAnd(diseq_eqs));
     root_out = mkAnd(root_out, mkAnd(diseq_split));
     root_out = mkAnd(root_out, mkAnd(mod_ineqs));
     root_out = mkAnd(root_out, mkAnd(inc_diseqs));
     root_out = mkAnd(root_out, mkAnd(compl_diseqs));
-    Logic::conjoinItes(root_out, root_out);
+    return root_out;
 }

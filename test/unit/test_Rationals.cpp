@@ -26,6 +26,12 @@ TEST(Rationals_test, test_abs_val_int32min)
     ASSERT_EQ(absVal(x), 2147483648);
 }
 
+TEST(Rationals_test, test_normalized)
+{
+    FastRational toNormalize(2,4);
+    EXPECT_EQ(toNormalize.get_num(), 1);
+    EXPECT_EQ(toNormalize.get_den(), 2);
+}
 
 TEST(Rationals_test, test_hash_function)
 {

@@ -4,22 +4,20 @@
 // present.  If partitions cannot mix, do no simplifications but just
 // update the root.
 //
-bool UFTheory::simplify(const vec<PFRef>& formulas, int curr)
+bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
 {
+    auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
-        pfstore[formulas[curr]].root = getLogic().mkAnd(pfstore[formulas[curr]].formulas);
-        return true;
+        currentFrame.root = getLogic().mkAnd(currentFrame.formulas);
     }
     else {
         PTRef coll_f = getCollateFunction(formulas, curr);
-
         PTRef trans = getLogic().learnEqTransitivity(coll_f);
-        coll_f = getLogic().isTrue(trans) ? coll_f : getLogic().mkAnd(coll_f, trans);
-
-        bool res = computeSubstitutions(coll_f, formulas, curr);
-        PTRef substs_formula = getSubstitutionsFormulaFromUnits(pfstore[formulas[curr]].units);
-        pfstore[formulas[curr]].substs = substs_formula;
-        return res;
+        coll_f = getLogic().mkAnd(coll_f, trans);
+        auto subs_res = computeSubstitutions(coll_f);
+        currentFrame.root = flaFromSubstitutionResult(subs_res);
+        getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
     }
+    return true;
 }
 

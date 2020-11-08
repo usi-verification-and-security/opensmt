@@ -29,13 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "Global.h"
 #include "Deductions.h"
-#include "SMTConfig.h"
+#include "SubstLoopBreaker.h"
+#include "OsmtApiException.h"
+
 #include <queue>
 #include <set>
-#include "SubstLoopBreaker.h"
-
-#include <sys/wait.h>
-
 
 using namespace std;
 
@@ -67,9 +65,8 @@ const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic(SMTConfig& c) :
+Logic::Logic() :
       distinctClassCount(0)
-    , config(c)
     , sort_store(id_store)
     , term_store(sym_store)
     , sym_TRUE(SymRef_Undef)
@@ -89,9 +86,6 @@ Logic::Logic(SMTConfig& c) :
     , term_FALSE(PTRef_Undef)
     , subst_num(0)
 {
-    logic_type = opensmt::Logic_t::QF_UF;
-    config.logic = logic_type;
-
     char* msg;
     // We can't use declareSort here since it assumes that sort_BOOL
     // exists for making the equality symbol!
@@ -118,7 +112,7 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_FALSE].setNoScoping();
     sym_store.setInterpreted(sym_FALSE);
 
-    // The anonymous symbol for the enodes of propositional formulas nested inside UFs (or UPs)
+    // The anonymous symbol for the enodes of non-propositional Ites and propositional formulas nested inside UFs (or UPs)
     vec<SRef> params;
     sym_ANON = sym_store.newSymb(tk_anon, params);
 
@@ -182,6 +176,8 @@ Logic::Logic(SMTConfig& c) :
     sym_store[sym_XOR].setCommutes();
     sym_store.setInterpreted(sym_OR);
 
+    // Boolean distincts will never be created (they are turned to a Boolean expression),
+    // but we need this symbol so that they can be processed.
     if ((sym_DISTINCT = declareFun(tk_distinct, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
         printf("Error in declaring function %s: %s\n", tk_distinct, msg);
         assert(false);
@@ -201,12 +197,8 @@ Logic::Logic(SMTConfig& c) :
     sym_store.setInterpreted(sym_ITE);
 
     ites.insert(sym_ITE, true);
+    sortToIte.insert(sort_BOOL, sym_ITE);
 
-    // MB: TODO: Is this necessary?
-    ipartitions_t mask = 0;
-    mask = ~mask;
-    addIPartitions(getTerm_true(), mask);
-    addIPartitions(getTerm_false(), mask);
     /////////////////////////////////////////
 }
 
@@ -225,18 +217,6 @@ Logic::~Logic()
     cerr << "; -------------------------\n";
     cerr << "; Substitutions............: " << subst_num << endl;
 #endif // STATISTICS
-}
-
-const opensmt::Logic_t
-Logic::getLogic() const
-{
-    return logic_type;
-}
-
-const char*
-Logic::getName() const
-{
-    return "QF_UF";
 }
 
 //
@@ -353,20 +333,6 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
     char* out;
 
-    if (safe && this->isIteVar(tr)) {
-        Ite ite = top_level_ites[tr];
-        char *str_i = printTerm_(ite.i, ext, safe);
-        char *str_t = printTerm_(ite.t, ext, safe);
-        char *str_e = printTerm_(ite.e, ext, safe);
-
-        int res = asprintf(&out, "(ite %s %s %s)", str_i, str_t, str_e);
-        assert(res >= 0); (void)res;
-
-        free(str_i); free(str_t); free(str_e);
-
-        return out;
-    }
-
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
     char* name_escaped = printSym(sr);
@@ -410,9 +376,9 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 bool Logic::isTheoryTerm(PTRef ptr) const {
     const Pterm& p = term_store[ptr];
     SymRef sr = p.symb();
-    if (sr == sym_EQ) {
+    if ((sr == sym_EQ) && not appearsInUF(ptr)) {
         assert(p.nargs() == 2);
-            return false;
+        return false;
     }
     else if (hasSortBool(sr) && appearsInUF(ptr)) {
         return true;
@@ -431,22 +397,32 @@ bool Logic::isTheorySymbol(SymRef tr) const {
     return !(isBooleanOperator(tr));
 }
 
+void Logic::unsetAppearsInUF(PTRef tr) {
+    tr = isNot(tr) ? getPterm(tr)[0]: tr;
+    uint32_t id = Idx(getPterm(tr).getId());
+    appears_in_uf[id] = UFAppearanceStatus::removed;
+}
+
 void Logic::setAppearsInUF(PTRef tr) {
+    assert(not isNot(tr));
     int id = static_cast<int>(Idx(getPterm(tr).getId()));
-
-    if (appears_in_uf.size() <= id || appears_in_uf[id] == false)
+    if (appears_in_uf.size() <= id || appears_in_uf[id] == UFAppearanceStatus::unseen) {
         propFormulasAppearingInUF.push(tr);
+    }
 
-    while (id >= appears_in_uf.size())
-        appears_in_uf.push(false);
+    while (id >= appears_in_uf.size()) {
+        appears_in_uf.push(UFAppearanceStatus::unseen);
+    }
 
-    appears_in_uf[id] = true;
+    appears_in_uf[id] = UFAppearanceStatus::appears;
 }
 
 bool Logic::appearsInUF(PTRef tr) const {
+    tr = isNot(tr) ? getPterm(tr)[0] : tr;
+
     uint32_t id = Idx(getPterm(tr).getId());
     if (id < static_cast<unsigned int>(appears_in_uf.size()))
-        return appears_in_uf[id];
+        return appears_in_uf[id] == UFAppearanceStatus::appears;
     else
         return false;
 }
@@ -519,56 +495,16 @@ bool Logic::declare_sort_hook(SRef sr) {
     if (tr == SymRef_Undef) { return false; }
     sym_store[tr].setNoScoping();
     ites.insert(tr, true);
+    sortToIte.insert(sr, tr);
 
     return true;
 }
-
-void Logic::simplifyDisequality(PtChild& ptc, bool simplify) {
-
-    if (!simplify) return;
-
-    Pterm& t = term_store[ptc.tr];
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] == p) {
-            term_store.free(ptc.tr);
-            term_store[ptc.parent][ptc.pos] = getTerm_false();
-        }
-}
-
-bool Logic::simplifyEquality(PtChild& ptc, bool simplify) {
-    assert(isEquality(ptc.tr));
-    if (!simplify) return false;
-    Pterm& t = term_store[ptc.tr];
-
-    PTRef p; int i, j;
-    for (i = j = 0, p = PTRef_Undef; i < t.size(); i++)
-        if (t[i] != p)
-            t[j++] = p = t[i];
-    if (j == 1) {
-        term_store.free(ptc.tr); // Lazy free
-        if (ptc.parent == PTRef_Undef)
-            return true;
-        term_store[ptc.parent][ptc.pos] = getTerm_true();
-        ptc.tr = getTerm_true();
-    }
-    else {// shrink the size!
-        t.shrink(i-j);
-#ifdef VERBOSE_EUF
-        if (i-j != 0)
-            cout << term_store.printTerm(ptc.tr) << endl;
-#endif
-    }
-    ptermSort(t);
-    return false;
-}
-
 
 void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
 {
     Pterm& p = getPterm(tr);
     vec<PTRef> newargs(p.size());
-    char *msg;
+
     bool changed = false;
     for (int i = 0; i < p.size(); ++i) {
         PTRef tr = p[i];
@@ -580,7 +516,7 @@ void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
             newargs[i] = tr;
     }
     if (!changed) {return;}
-    PTRef trp = insertTerm(p.symb(), newargs, &msg);
+    PTRef trp = insertTerm(p.symb(), newargs);
     if (trp != tr) {
         if (tr_map.has(tr))
             assert(tr_map[tr] == trp);
@@ -616,6 +552,9 @@ void Logic::simplifyTree(PTRef tr, PTRef& root_out)
 #endif
             for (int j = 0; j < t.size(); j++) {
                 PTRef cr = t[j];
+                if (isIte(cr)) {
+                    continue; // Treated as variables in this respect
+                }
                 if (!processed[Idx(this->getPterm(cr).getId())]) {
                     unprocessed_children = true;
                     queue.push(pi(cr));
@@ -674,8 +613,8 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     }
     assert(sref != SymRef_Undef);
     PTRef rval;
-    char** msg2 = NULL;
-    rval = insertTerm(sref, args, msg2);
+
+    rval = insertTerm(sref, args);
     if (rval == PTRef_Undef)
         printf("Error in resolveTerm\n");
 
@@ -693,70 +632,36 @@ Logic::getDefaultValue(const PTRef tr) const
 }
 
 PTRef
-Logic::mkIte(vec<PTRef>& args)
+Logic::getDefaultValuePTRef(const SRef sref) const {
+    if (sref == sort_BOOL) { return term_TRUE; }
+    throw "default values not implemented yet for uninterpreted sorts\n";
+}
+
+PTRef
+Logic::mkIte(const vec<PTRef>& args)
 {
     if (!hasSortBool(args[0])) return PTRef_Undef;
+    if (args.size() != 3) throw OsmtApiException("ITE needs to have 3 arguments");
+
     assert(args.size() == 3);
     if (isTrue(args[0]))    return args[1];
     if (isFalse(args[0]))   return args[2];
     if (args[1] == args[2]) return args[1];
 
     SRef sr = getSortRef(args[1]);
-    if(sr != getSortRef(args[2]))
-    {
-        std::cerr << "ITE with different return sorts" << std::endl;
-        // MB: maybe do something more elegant here?
-        assert(0);
+    if (sr != getSortRef(args[2])) {
+        throw OsmtApiException("ITE arguments need to have same return sorts");
     }
 
-    char* name;
-    static unsigned ite_counter = 0;
-    int written = asprintf(&name, "%s%d", s_ite_prefix, ite_counter++);
-    assert(written >= 0); (void)written;
-    PTRef o_ite = mkVar(sr, name);
-    free(name);
+    assert(sortToIte.has(sr));
+    SymRef iteSym = sortToIte[sr];
+    return mkFun(iteSym, args);
 
-    vec<PTRef> eq_args;
-    eq_args.push(o_ite);
-    eq_args.push(args[1]);
-    PTRef eq1 = mkEq(eq_args);
-    vec<PTRef> impl_args;
-    impl_args.push(args[0]);
-    impl_args.push(eq1);
-    PTRef if_term = mkImpl(impl_args);
-
-    eq_args.clear();
-    eq_args.push(o_ite);
-    eq_args.push(args[2]);
-    PTRef eq2 = mkEq(eq_args);
-    impl_args.clear();
-    impl_args.push(mkNot(args[0]));
-    impl_args.push(eq2);
-    PTRef else_term = mkImpl(impl_args);
-
-    vec<PTRef> and_args;
-    and_args.push(if_term);
-    and_args.push(else_term);
-
-    PTRef repr = mkAnd(and_args);
-    assert (repr != PTRef_Undef && o_ite != PTRef_Undef);
-    assert(!top_level_ites.has(o_ite));
-
-    Ite ite = {
-            .i=args[0],
-            .t=args[1],
-            .e=args[2],
-            .repr=repr
-    };
-
-    top_level_ites.insert(o_ite, ite);
-
-    return o_ite;
 }
 
 // Check if arguments contain trues or a false and return the simplified
 // term
-PTRef Logic::mkAnd(vec<PTRef>& args) {
+PTRef Logic::mkAnd(const vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -801,7 +706,7 @@ PTRef Logic::mkAnd(vec<PTRef>& args) {
     return mkFun(getSym_and(), newargs);
 }
 
-PTRef Logic::mkOr(vec<PTRef>& args) {
+PTRef Logic::mkOr(const vec<PTRef>& args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -846,7 +751,7 @@ PTRef Logic::mkOr(vec<PTRef>& args) {
     return mkFun(getSym_or(), newargs);
 }
 
-PTRef Logic::mkXor(vec<PTRef>& args) {
+PTRef Logic::mkXor(const vec<PTRef>& args) {
     PTRef tr = PTRef_Undef;
 
     for (int i = 0; i < args.size(); i++)
@@ -887,7 +792,7 @@ Logic::mkImpl(PTRef _a, PTRef _b)
     return mkImpl(args);
 }
 
-PTRef Logic::mkImpl(vec<PTRef>& args) {
+PTRef Logic::mkImpl(const vec<PTRef>& args) {
 
     for (int i = 0; i < args.size(); i++)
         if (!hasSortBool(args[i]))
@@ -917,7 +822,7 @@ PTRef Logic::mkImpl(vec<PTRef>& args) {
         return tr;
 }
 
-PTRef Logic::mkEq(vec<PTRef>& args) {
+PTRef Logic::mkEq(const vec<PTRef>& args) {
     if (args.size() < 2) { return PTRef_Undef; }
     if (args.size() > 2) { // split to chain of equalities with 2 arguments
         vec<PTRef> binaryEqualities;
@@ -1087,8 +992,7 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     if (isUFTerm(tr) || isUP(tr)) {
         for (int i = 0; i < args.size(); i++) {
             if (hasSortBool(args[i])) {
-                setAppearsInUF(args[i]);
-                setAppearsInUF(mkNot(args[i]));
+                setAppearsInUF(isNot(args[i]) ? getPterm(args[i])[0] : args[i]);
             }
         }
     }
@@ -1180,46 +1084,33 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     if (defined_functions.has(fname))
         return false; // already there
     TFun tpl_fun(fname, args, rsort, tr);
-    // This part is a bit silly..
-    Tterm tmp;
-    defined_functions_vec.push(tmp);
-    Tterm& t = defined_functions_vec.last();
-    t.setName(tpl_fun.getName());
-    t.setBody(tpl_fun.getBody());
-    for (int i = 0; i < args.size(); i++) {
-        t.addArg(args[i]);
-    }
-    defined_functions.insert(t.getName(), tpl_fun);
+    defined_functions.insert(tpl_fun.getName(), tpl_fun);
     return true;
 }
 
-vec<Tterm>& Logic::getFunctions()
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
 {
-    return defined_functions_vec;
-}
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms, char** msg)
-{
-    if(sym == getSym_and())
+    if (sym == getSym_and())
         return mkAnd(terms);
-    if(sym == getSym_or())
+    if (sym == getSym_or())
         return mkOr(terms);
-    if(sym == getSym_xor())
+    if (sym == getSym_xor())
         return mkXor(terms);
-    if(sym == getSym_not())
+    if (sym == getSym_not())
         return mkNot(terms[0]);
-    if(isEquality(sym))
+    if (isEquality(sym))
         return mkEq(terms);
-    if(isDisequality(sym))
+    if (isDisequality(sym))
         return mkDistinct(terms);
-    if(isIte(sym))
+    if (isIte(sym))
         return mkIte(terms);
-    if(sym == getSym_implies())
+    if (sym == getSym_implies())
         return mkImpl(terms);
-    if(sym == getSym_true())
+    if (sym == getSym_true())
         return getTerm_true();
-    if(sym == getSym_false())
+    if (sym == getSym_false())
         return getTerm_false();
-    if(isVar(sym)) {
+    if (isVar(sym)) {
         assert(terms.size() == 0);
         return mkFun(sym, terms);
     }
@@ -1474,9 +1365,11 @@ bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & subs
 #ifdef SIMPLIFY_DEBUG
                     printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
 #endif
+                    if (hasSub and appearsInUF(t[i]) and isUF(tr)) {
+                        unsetAppearsInUF(t[i]);
+                    }
                 }
-                char* msg;
-                result = changed ? insertTerm(t.symb(), args_mapped, &msg) : tr;
+                result = changed ? insertTerm(t.symb(), args_mapped) : tr;
 #ifdef SIMPLIFY_DEBUG
                 printf("  -> %s\n", printTerm(result));
 #endif
@@ -1564,29 +1457,27 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
     return l_Undef;
 }
 
-lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn pta)
-{
-    PTRef tr = pta.tr;
-    lbool asgn = l_Undef;
-    for (int i = 0; i < hashes.size(); i++) {
-        Map<PTRef,lbool,PTRefHash>& h = *(hashes[i]);
-        if (h.has(tr)) {
-            asgn = h[tr];
-            break;
+void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs) {
+    bool changed = true;
+    auto keyValPairs = substs.getKeysAndValsPtrs(); // We can use direct pointers, since no elements are inserted or deleted in the loop
+    std::vector<char> notChangedElems(keyValPairs.size(), 0); // True if not changed in last iteration, initially False
+    while (changed) {
+        changed = false;
+        for (int i = 0; i < keyValPairs.size(); ++i) {
+            auto & val = keyValPairs[i]->data;
+            if (val.sgn != l_True || notChangedElems[i]) { continue; }
+            PTRef newVal = PTRef_Undef;
+            PTRef oldVal = val.tr;
+            this->varsubstitute(oldVal, substs, newVal);
+            if (oldVal != newVal) {
+                changed = true;
+                val = PtAsgn(newVal, l_True);
+            }
+            else {
+                notChangedElems[i] = 1;
+            }
         }
     }
-    if (asgn == l_Undef) {
-        if (curr_hash.has(tr))
-            asgn = curr_hash[tr];
-    }
-    if (asgn == l_Undef)
-        return l_Undef;
-    if (asgn != pta.sgn)
-        return l_False;
-    else if (asgn == pta.sgn)
-        return l_True;
-    assert(false);
-    throw std::logic_error("Unreachable code!");
 }
 
 //
@@ -1594,7 +1485,7 @@ lbool Logic::isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lboo
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts)
+void Logic::getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1609,14 +1500,14 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
         if (isdup.has(pta)) continue;
         isdup.insert(pta, true);
 
-        Pterm& t = getPterm(pta.tr);
+        Pterm const & t = getPterm(pta.tr);
 
         if (isAnd(pta.tr) and pta.sgn == l_True)
             for (int i = 0; i < t.size(); i++) {
                 PTRef c;
                 lbool c_sign;
                 purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c, pta.sgn == l_True ? c_sign : c_sign^true));
+                queue.push(PtAsgn(c,  c_sign));
             }
         else if (isOr(pta.tr) and (pta.sgn == l_False))
             for (int i = 0; i < t.size(); i++) {
@@ -1625,24 +1516,8 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
                 purify(t[i], c, c_sign);
                 queue.push(PtAsgn(c, c_sign^true));
             }
-        // unary and negated
-        else if (isAnd(pta.tr) and (pta.sgn == l_False) and (t.size() == 1)) {
-            PTRef c;
-            lbool c_sign;
-            purify(t[0], c, c_sign);
-            queue.push(PtAsgn(c, c_sign^true));
-        }
-        // unary or
-        else if (isOr(pta.tr) and (pta.sgn == l_True) and (t.size() == 1)) {
-            PTRef c;
-            lbool c_sign;
-            purify(t[0], c, c_sign);
-            queue.push(PtAsgn(c, c_sign));
-        }
-        // Found a fact.  It is important for soundness that we have also the original facts
-        // asserted to the euf solver in the future even though no search will be performed there.
         else {
-            lbool prev_val = isInHashes(prev_units, facts, pta);
+            lbool prev_val = facts.has(pta.tr) ? facts[pta.tr] : l_Undef;
             if (prev_val != l_Undef && prev_val != pta.sgn)
                 return; // conflict
             else if (prev_val == pta.sgn)
@@ -1656,8 +1531,8 @@ void Logic::getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units
                 facts.insert(pta.tr, pta.sgn);
             }
             else if (isXor(pta.tr) and pta.sgn == l_True) {
-                Pterm& t = getPterm(pta.tr);
-                facts.insert(mkEq(t[0], mkNot(t[1])), l_True);
+                Pterm const & xorTerm = getPterm(pta.tr);
+                facts.insert(mkEq(xorTerm[0], mkNot(xorTerm[1])), l_True);
             }
             else {
                 PTRef c;
@@ -1794,14 +1669,14 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
 }
 
 void
-Logic::dumpChecksatToFile(ostream& dump_out)
+Logic::dumpChecksatToFile(ostream& dump_out) const
 {
     dump_out << "(check-sat)" << endl;
     dump_out << "(exit)" << endl;
 }
 
 void
-Logic::dumpHeaderToFile(ostream& dump_out)
+Logic::dumpHeaderToFile(ostream& dump_out) const
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
     const vec<SRef>& sorts = sort_store.getSorts();
@@ -1829,7 +1704,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
         char* sym = printSym(s);
         dump_out << sym << " ";
         free(sym);
-        Symbol& symb = sym_store[s];
+        const Symbol& symb = sym_store[s];
         dump_out << "(";
         for(unsigned int j = 0; j < symb.nargs(); ++j)
         {
@@ -1840,7 +1715,7 @@ Logic::dumpHeaderToFile(ostream& dump_out)
 }
 
 void
-Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool toassert )
+Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
@@ -1866,7 +1741,7 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
         }
 
         bool unprocessed_children = false;
-        Pterm& term = getPterm(e);
+        const Pterm& term = getPterm(e);
         for(int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
@@ -1928,7 +1803,7 @@ Logic::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate, bool t
     // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
     // Closes assert
-    if(toassert)
+    if (toassert)
         dump_out << ")" << endl;
 }
 
@@ -1979,235 +1854,6 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
     return tr_subst;
 }
 
-
-bool
-Logic::implies(PTRef implicant, PTRef implicated)
-{
-    Logic& logic = *this;
-    const char * implies = "implies.smt2";
-    std::ofstream dump_out( implies );
-    logic.dumpHeaderToFile(dump_out);
-
-    logic.dumpFormulaToFile(dump_out, implicant);
-    logic.dumpFormulaToFile(dump_out, implicated, true);
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
-    dump_out.close( );
-    // Check !
-    bool tool_res;
-    int pid = fork();
-    if(pid == -1){
-        std::cerr << "Failed to fork\n";
-        // consider throwing and exception
-        return false;
-    }
-    else if( pid == 0){
-        // child process
-        execlp( config.certifying_solver, config.certifying_solver, implies, NULL );
-        perror( "Child process error: " );
-        exit( 1 );
-    }
-    else{
-        // parent
-        int status;
-        waitpid(pid, &status, 0);
-        switch ( WEXITSTATUS( status ) )
-        {
-            case 0:
-//                std::cerr << "Implication holds!\n";
-                tool_res = false;
-                break;
-            case 1:
-//                std::cerr << "Implication does not hold!\n";
-//                std::cerr << "Antecedent: " << logic.printTerm(implicant) << '\n';
-//                std::cerr << "Consequent: " << logic.printTerm(implicated) << '\n';
-                tool_res = true;
-                break;
-            default:
-                perror( "Parent process error" );
-                exit( EXIT_FAILURE );
-        }
-    }
-
-    return !tool_res;
-}
-
-void Logic::conjoinItes(PTRef root, PTRef& new_root)
-{
-    std::vector<bool> seen;
-    //MB: ITE var and its definition do not satisfy the id invariant of parent-child terms
-    //    We need to make sure we cover all possible ID in the bitmap.
-    auto size = getNumberOfTerms();
-    seen.resize(size, false);
-    std::vector<PTRef> queue {root};
-    vec<PTRef> args;
-    while (!queue.empty()) {
-        PTRef current = queue.back();
-        queue.pop_back();
-        const Pterm& c_term = this->getPterm(current);
-        auto id = Idx(c_term.getId());
-        assert(id < size);
-        if (!seen[id]) {
-            if (isVar(c_term.symb()) && isIteVar(current)) {
-                PTRef ite = getTopLevelIte(current);
-                args.push(ite);
-                queue.push_back(ite);
-            }
-            for (int i = 0; i < c_term.size(); i++) {
-                queue.push_back(c_term[i]);
-            }
-            seen[id] = true;
-        }
-    }
-    args.push(root);
-    new_root = mkAnd(args);
-}
-
-void Logic::propagatePartitionMask(PTRef root) {
-    ipartitions_t& p = getIPartitions(root);
-    std::vector<bool> seen;
-    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    auto size = Idx(this->getPterm(root).getId()) + 1;
-    seen.resize(size, false);
-    std::vector<PTRef> queue {root};
-    while (!queue.empty()) {
-        PTRef current = queue.back();
-        queue.pop_back();
-        const Pterm& c_term = this->getPterm(current);
-        auto id = Idx(c_term.getId());
-        assert(id < size);
-        if (!seen[id]) {
-            addIPartitions(current, p);
-            for (int j = 0; j < c_term.size(); ++j) {
-                queue.push_back(c_term[j]);
-            }
-            if (isUF(current) || isUP(current)) {
-                addIPartitions(c_term.symb(), p);
-            }
-            seen[id] = true;
-        }
-    }
-}
-
-ipartitions_t Logic::computeAllowedPartitions(PTRef p) {
-    vec<PtChild> subterms;
-    getTermList(p, subterms, *this);
-    vec<PTRef> vars;
-    for (int i = 0; i < subterms.size(); ++i) {
-        if (this->isVar(subterms[i].tr)) {
-            vars.push(subterms[i].tr);
-        }
-    }
-    if (vars.size() == 0) { return 0; }
-    ipartitions_t allowed = this->getIPartitions(vars[0]);
-    for (int i = 1; i < vars.size(); ++i) {
-        allowed &= this->getIPartitions(vars[i]);
-    }
-    return allowed;
-}
-
-bool
-Logic::verifyInterpolantA(PTRef itp, const ipartitions_t& mask)
-{
-    // Check A -> I, i.e., A & !I
-    return implies(getPartitionA(mask), itp);
-}
-
-PTRef
-Logic::getPartitionA(const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    auto parts = logic.getPartitions();
-    vec<PTRef> a_args;
-    for(auto part : parts)
-    {
-        const auto & p_mask = logic.getIPartitions(part);
-        if(isAlocal(p_mask, mask)) {
-            a_args.push(part);
-        }
-        else if(!isBlocal(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
-        }
-    }
-    // add ites:
-    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
-    top_level_ites.getKeysAndVals(entries);
-    for (int i = 0; i < entries.size(); ++i) {
-        if(isAlocal(getIPartitions(entries[i].key), mask)){
-            a_args.push(entries[i].data.repr);
-        }
-    }
-    PTRef A = logic.mkAnd(a_args);
-
-    return A;
-}
-
-PTRef
-Logic::getPartitionB(const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    auto parts = logic.getPartitions();
-    vec<PTRef> b_args;
-    for(auto part : parts)
-    {
-        const auto & p_mask = logic.getIPartitions(part);
-        if(isBlocal(p_mask, mask)) {
-            b_args.push(part);
-        }
-        else if(!isAlocal(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
-        }
-    }
-    // add ites:
-    vec<Map<PTRef,Ite,PTRefHash,Equal<PTRef>>::Pair> entries;
-    top_level_ites.getKeysAndVals(entries);
-    for (int i = 0; i < entries.size(); ++i) {
-        if(isBlocal(getIPartitions(entries[i].key), mask)){
-            b_args.push(entries[i].data.repr);
-        }
-    }
-    PTRef B = logic.mkAnd(b_args);
-    return B;
-}
-
-bool
-Logic::verifyInterpolantB(PTRef itp, const ipartitions_t& mask)
-{
-    Logic& logic = *this;
-    PTRef nB = logic.mkNot(getPartitionB(mask));
-    // Check A -> I, i.e., A & !I
-    return implies(itp, nB);
-}
-
-bool
-Logic::verifyInterpolant(PTRef itp, const ipartitions_t& mask)
-{
-    if(verbose())
-        cout << "; Verifying final interpolant" << endl;
-    bool res = verifyInterpolantA(itp, mask);
-    if(!res)
-        opensmt_error("A -> I does not hold");
-    if(verbose())
-        cout << "; A -> I holds" << endl;
-    res = verifyInterpolantB(itp, mask);
-    if(!res)
-        opensmt_error("I -> !B does not hold");
-    if(verbose())
-        cout << "; B -> !I holds" << endl;
-    return res;
-}
-
-void
-Logic::addClauseClassMask(CRef c, const ipartitions_t& toadd)
-{
-    partitionInfo.addClausePartition(c, toadd);
-}
-
-void
-Logic::invalidatePartitions(const ipartitions_t& toinvalidate) {
-    partitionInfo.invalidatePartitions(toinvalidate);
-}
-
 void
 Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if)
 {
@@ -2252,9 +1898,8 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
     }
 }
 
-bool Logic::isIteVar(PTRef tr) const { return top_level_ites.has(tr); }
-PTRef Logic::getTopLevelIte(PTRef tr) { return top_level_ites[tr].repr; }
-void Logic::conjoinExtras(PTRef root, PTRef& new_root) { conjoinItes(root, new_root); }
+
+PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
 IdRef       Logic::newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
 IdRef       Logic::newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
@@ -2269,25 +1914,9 @@ SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(s
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
 
-
-PTRef       Logic::mkAnd         (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
-PTRef      Logic::mkAnd         (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
-
-PTRef      Logic::mkOr          (PTRef a1, PTRef a2) { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
-PTRef      Logic::mkOr          (const std::vector<PTRef> & v) { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
-
-PTRef       Logic::mkXor         (PTRef a1, PTRef a2) { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
-
-PTRef       Logic::mkIte         (PTRef c, PTRef t, PTRef e) { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
-
-
-PTRef       Logic::mkEq          (PTRef a1, PTRef a2) { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
-
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
-
-void Logic::dumpFunction(ostream& dump_out, const Tterm& t) { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
 
 // The Boolean connectives
 SymRef        Logic::getSym_true      ()              const { return sym_TRUE;     }
@@ -2295,12 +1924,12 @@ SymRef        Logic::getSym_false     ()              const { return sym_FALSE; 
 SymRef        Logic::getSym_and       ()              const { return sym_AND;      }
 SymRef        Logic::getSym_or        ()              const { return sym_OR;       }
 SymRef        Logic::getSym_xor       ()              const { return sym_XOR;      }
-SymRef       Logic::getSym_not       ()              const { return sym_NOT;      }
-SymRef       Logic::getSym_eq        ()              const { return sym_EQ;       }
-SymRef       Logic::getSym_ite       ()              const { return sym_ITE;      }
-SymRef       Logic::getSym_implies   ()              const { return sym_IMPLIES;  }
-SymRef       Logic::getSym_distinct  ()              const { return sym_DISTINCT; }
-SRef         Logic::getSort_bool     ()              const { return sort_BOOL;    }
+SymRef        Logic::getSym_not       ()              const { return sym_NOT;      }
+SymRef        Logic::getSym_eq        ()              const { return sym_EQ;       }
+SymRef        Logic::getSym_ite       ()              const { return sym_ITE;      }
+SymRef        Logic::getSym_implies   ()              const { return sym_IMPLIES;  }
+SymRef        Logic::getSym_distinct  ()              const { return sym_DISTINCT; }
+SRef          Logic::getSort_bool     ()              const { return sort_BOOL;    }
 
 PTRef         Logic::getTerm_true     ()              const { return term_TRUE;  }
 PTRef         Logic::getTerm_false    ()              const { return term_FALSE; }
@@ -2318,7 +1947,7 @@ bool         Logic::isBooleanOperator  (PTRef tr)        const { return isBoolea
 bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
 bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
 bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
-bool         Logic::Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
+bool         Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
 bool         Logic::isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
 bool         Logic::isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
 
@@ -2343,8 +1972,6 @@ bool        Logic::isTrue(SymRef sr) const { return sr == getSym_true(); }
 bool        Logic::isTrue(PTRef tr)  const { return isTrue(getPterm(tr).symb()); }
 bool        Logic::isFalse(SymRef sr) const { return sr == getSym_false(); }
 bool        Logic::isFalse(PTRef tr)  const { return isFalse(getPterm(tr).symb()); }
-bool        Logic::isDistinct(SymRef sr) const { return sr == getSym_distinct(); }
-bool        Logic::isDistinct(PTRef tr) const { return isDistinct(getPterm(tr).symb()); }
 bool        Logic::isIff(SymRef sr) const { return sr == getSym_eq(); }
 bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
@@ -2360,5 +1987,3 @@ char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTer
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
-
-inline int     Logic::verbose                       ( ) const { return config.verbosity(); }

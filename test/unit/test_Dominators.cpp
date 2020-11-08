@@ -5,13 +5,11 @@
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 #include <algorithm>
 
 TEST(Dominators_test, test_PostOrderSimpleTree)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a,b);
@@ -22,8 +20,7 @@ TEST(Dominators_test, test_PostOrderSimpleTree)
 
 TEST(Dominators_test, test_PostOrderSimpleDAG)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a,b);
@@ -40,8 +37,7 @@ TEST(Dominators_test, test_PostOrderSimpleDAG)
 
 TEST(Dominators_test, test_Trivial)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     auto idom = getImmediateDominators(a, logic);
     ASSERT_EQ(idom.size(), 1);
@@ -50,8 +46,7 @@ TEST(Dominators_test, test_Trivial)
 
 TEST(Dominators_test, test_Tree)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a,b);
@@ -64,8 +59,7 @@ TEST(Dominators_test, test_Tree)
 
 TEST(Dominators_test, test_SimpleDAG)
 {
-    SMTConfig config;
-    Logic logic{config};
+    Logic logic;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef conj = logic.mkAnd(a,b);

@@ -74,6 +74,7 @@ const char* ASTNode::typestr[] = {
     , "info-flag"       , "info-flag-list"              // INFO
 };
 
+
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
  *********************************************************************/
@@ -86,7 +87,7 @@ ConfValue::ConfValue(const char* s) {
 ConfValue::ConfValue(const ASTNode& s_expr_n) {
     if (s_expr_n.getType() == SEXPRL_T) {
         type = O_LIST;
-        configs = new list<ConfValue*>;
+        configs = new std::list<ConfValue*>;
         for (auto i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
             configs->push_back(new ConfValue(**i));
     }
@@ -361,6 +362,10 @@ SMTOption::SMTOption(ASTNode& n) {
 
 bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*& msg) {
     msg = "ok";
+    if (usedForInitialization && isPreInitializationOption(name)) {
+        msg = "Option cannot be changed at this point";
+        return false;
+    }
     // Special options:
     // stats_out
     if (strcmp(name, o_stats_out) == 0) {
@@ -547,7 +552,6 @@ void
 SMTConfig::initializeConfig( )
 {
   // Set Global Default configuration
-  logic                         = opensmt::Logic_t::UNDEF;
   status                        = l_Undef;
   insertOption(o_produce_stats, new SMTOption(0));
 //  produce_stats                 = 0;

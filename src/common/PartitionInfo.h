@@ -26,7 +26,7 @@ public:
     void addIPartitions(PTRef t, const ipartitions_t& p);
     ipartitions_t& getIPartitions(SymRef _s);
     void addIPartitions(SymRef s, const ipartitions_t& p);
-    ipartitions_t& getClausePartitions(CRef);
+    const ipartitions_t& getClausePartitions(CRef) const;
     void addClausePartition(CRef c, const ipartitions_t& p);
 
     inline std::vector<PTRef> getTopLevelFormulas() const { return flaPartitionMap.get_top_level_flas(); }

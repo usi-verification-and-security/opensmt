@@ -41,7 +41,7 @@ class UFTHandler : public TSolverHandler
   protected:
     Egraph*    egraph;
   public:
-    UFTHandler(SMTConfig & c, Logic & l, TermMapper & tmap);
+    UFTHandler(SMTConfig & c, Logic & l);
     virtual ~UFTHandler();
     // This is for simplification, needed to run the theory solver code
     // as if it were running inside a SAT solver.
@@ -49,7 +49,7 @@ class UFTHandler : public TSolverHandler
     virtual const Logic& getLogic() const override;
     virtual lbool getPolaritySuggestion(PTRef) const override;
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 };
 
 #endif

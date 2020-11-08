@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.3)
-project(opensmt VERSION 2.0.0 LANGUAGES CXX)
+
+if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need a check, otherwise older version would give an error
+cmake_policy(SET CMP0074 NEW)
+endif()
+
+set(OPENSMT_VERSION_MAJOR 2)
+set(OPENSMT_VERSION_MINOR 0)
+set(OPENSMT_VERSION_PATCH 1)
+set(OPENSMT_VERSION ${OPENSMT_VERSION_MAJOR}.${OPENSMT_VERSION_MINOR}.${OPENSMT_VERSION_PATCH})
+project(opensmt VERSION ${OPENSMT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -40,12 +49,7 @@ option(USE_READLINE "Use readline over libedit" OFF)
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
-
-if (NOT USE_READLINE)
-  find_package(LibEdit REQUIRED)
-else()
-  find_package(Readline REQUIRED)
-endif()
+option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
 
 find_package(GMP REQUIRED)
 
@@ -65,6 +69,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/tsolvers/egraph
     ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
     ${CMAKE_SOURCE_DIR}/tsolvers/stpsolver
+    ${CMAKE_SOURCE_DIR}/tsolvers/lrasolver
     ${CMAKE_SOURCE_DIR}/cnfizers
     ${CMAKE_SOURCE_DIR}/pterms
     ${CMAKE_SOURCE_DIR}/logics
@@ -72,8 +77,19 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
     ${CMAKE_SOURCE_DIR}/proof
-    ${GMP_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/models
+    ${CMAKE_SOURCE_DIR}/itehandler
 )
+
+#######################################################################################################
+# workaround for older versions of CMake where we cannot use target_link_libraries for object libraries
+get_property(GMP_INCLUDE_DIRS TARGET GMP::GMP PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+if (NOT GMP_INCLUDE_DIRS)
+    message(FATAL_ERROR "GMP includes not found")
+endif()
+include_directories(${GMP_INCLUDE_DIRS})
+#######################################################################################################
+
 
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
   message(FATAL_ERROR "Cannot build executables without also building static libraries")
@@ -113,6 +129,9 @@ endif(STATISTICS)
 
 if (USE_READLINE)
   add_definitions(-DUSE_READLINE)
+endif()
+if (EXPLICIT_CONGRUENCE_EXPLANATIONS)
+  add_definitions(-DEXPLICIT_CONGRUENCE_EXPLANATIONS)
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})

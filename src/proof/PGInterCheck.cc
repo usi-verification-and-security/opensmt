@@ -18,8 +18,11 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include "PG.h"
-#include <sys/wait.h>
+
+#include "VerificationUtils.h"
+
 #include <fstream>
+#include <sys/wait.h>
 
 bool
 ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
@@ -47,7 +50,7 @@ bool
 ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 {
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
-    Logic& logic = theory.getLogic();
+    Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();
@@ -79,7 +82,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
     vec<PTRef> AC_args;
-    AC_args.push(logic.getPartitionA(mask));
+    AC_args.push(pmanager.getPartition(mask, PartitionManager::part::A));
     AC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(AC_args);
 
@@ -90,7 +93,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = logic.implies(implicant, n->getPartialInterpolant());
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, n->getPartialInterpolant());
     assert(res);
     return res;
 }
@@ -99,7 +102,7 @@ bool
 ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 {
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
-    Logic& logic = theory.getLogic();
+    Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
     vector< Lit > & cl = n->getClause();
@@ -131,7 +134,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
     vec<PTRef> BC_args;
-    BC_args.push(logic.getPartitionB(mask));
+    BC_args.push(pmanager.getPartition(mask, PartitionManager::part::B));
     BC_args.push(cl_ptref);
     PTRef implicant = logic.mkAnd(BC_args);
 
@@ -142,7 +145,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = logic.implies(implicant, logic.mkNot(n->getPartialInterpolant()));
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(n->getPartialInterpolant()));
     assert(res);
     return res;
 }
@@ -413,7 +416,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 {
     if( verbose() ) cerr << "# Verifying the path interpolation property " << endl;
-    unsigned no_part = logic_.getNofPartitions();
+    unsigned no_part = pmanager.getNofPartitions();
 
     // m partitions, m+1 interpolants
     assert( (no_part + 1) == static_cast<unsigned>(interps.size()) );
@@ -643,7 +646,7 @@ bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
     if( verbose() ) cerr << "# Verifying the state-transition interpolation property " << endl;
 
     // m partitions, 2m+1 interpolants
-    unsigned no_part = logic_.getNofPartitions();
+    unsigned no_part = pmanager.getNofPartitions();
     assert( (2*no_part + 1) == static_cast<unsigned>(interps.size()) );
 
     // Try ith constraint I_i /\ J_{i+1} -> I_{i+1}
@@ -836,7 +839,7 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
     // m partitions, one for each node of the tree
     // TODO m or less interpolants - not necessarily all nodes are approximated
     // for nodes non approximated, interpolants are the original formulae
-    assert( logic_.getNofPartitions() == static_cast<unsigned>(interps.size()) );
+    assert( pmanager.getNofPartitions() == static_cast<unsigned>(interps.size()) );
 
     // NOTE partition ids start from 1, interpolants vector from 0
     // interpolants[i] contains interpolant for node with partition id i+1

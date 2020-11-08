@@ -27,6 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "THandler.h"
 #include "CoreSMTSolver.h"
 #include "TSolver.h"
+#include "ModelBuilder.h"
+
 #include <sys/wait.h>
 #include <assert.h>
 
@@ -115,10 +117,9 @@ TRes THandler::check(bool complete) {
 }
 
 void THandler::getNewSplits(vec<Lit> &splits) {
-    int i;
     vec<PTRef> split_terms;
-    for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != NULL && getSolverHandler().tsolvers[i]->hasNewSplits()) {
+    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
+        if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
             getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
             break;
         }
@@ -131,14 +132,15 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     assert(split_terms.size() == 1);
     PTRef tr = split_terms[0];
     split_terms.pop();
-    assert(getLogic().isOr(tr));
-    Pterm& t = getLogic().getPterm(tr);
-    for (int i = 0; i < t.size(); i++) {
-        tmap.addBinding(t[i]);
-        assert(getLogic().isAtom(t[i])); // MB: Needs to be an atom, otherwise the declaration would not work.
-        declareAtom(t[i]);
-        informNewSplit(t[i]);
-        splits.push(tmap.getLit(t[i]));
+    Logic & logic = getLogic();
+    assert(logic.isOr(tr));
+    for (int i = 0; i < logic.getPterm(tr).size(); i++) {
+        PTRef arg = logic.getPterm(tr)[i];
+        Lit l = tmap.getOrCreateLit(arg);
+        assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
+        declareAtom(arg);
+        informNewSplit(arg);
+        splits.push(l);
     }
 }
 
@@ -193,9 +195,9 @@ void THandler::getConflict (
 
 
 PTRef
-THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
-    return getSolverHandler().getInterpolant(mask, labels);
+    return getSolverHandler().getInterpolant(mask, labels, pmanager);
 }
 
 //
@@ -492,6 +494,8 @@ const TSolverHandler& THandler::getSolverHandler() const { return theory.getTSol
 TermMapper&           THandler::getTMap()                { return tmap; }
 
 ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
+void    THandler::fillTheoryVars(ModelBuilder &modelBuilder) const { getSolverHandler().fillTheoryVars(modelBuilder); }
+void    THandler::addSubstitutions(ModelBuilder &modelBuilder) const { modelBuilder.processSubstitutions(getSolverHandler().substs); }
 
 bool    THandler::isTheoryTerm       ( Var v )       { return getLogic().isTheoryTerm(varToTerm(v)); }
 PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
@@ -508,7 +512,7 @@ void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ } 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
-PTRef THandler::getSubstitution(PTRef tr) {
+PTRef THandler::getSubstitution(PTRef tr) const {
     auto const & subst = getSolverHandler().substs;
     if (subst.has(tr)){
         PtAsgn subs = subst[tr];

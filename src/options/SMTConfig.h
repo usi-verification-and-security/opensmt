@@ -27,10 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SMTCONFIG_H
 #define SMTCONFIG_H
 
-#include "Global.h"
 #include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
+#include "Global.h"
+
 #include <libgen.h>
 
 enum ASTType {
@@ -105,7 +106,7 @@ enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATT
 class ConfValue {
   public:
     ConfType type;
-    union { char* strval; int numval; double decval; uint32_t unumval; list<ConfValue*>* configs; };
+    union { char* strval; int numval; double decval; uint32_t unumval; std::list<ConfValue*>* configs; };
     ConfValue() : type(O_EMPTY), strval(NULL) {};
     ConfValue(const ASTNode& s_expr_n);
     ConfValue(int i) : type(O_NUM), numval(i) {};
@@ -319,6 +320,14 @@ private:
   vec<char*>    info_names;
   Map<const char*,Info*,StringHash,Equal<const char*> >   infoTable;
   Map<const char*,SMTOption*,StringHash,Equal<const char*> > optionTable;
+
+  bool usedForInitialization = false; // Some options can be changed only before this config is used for initialization of MainSolver
+  bool isPreInitializationOption(const char* o_name) {
+      return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0
+        || strcmp(o_name, o_sat_pure_lookahead) == 0 || strcmp(o_name, o_sat_lookahead_split) == 0
+        || strcmp(o_name, o_ghost_vars) == 0;
+  }
+
   void          insertOption(const char* o_name, SMTOption* o) {
       options.push(o);
       if (optionTable.has(o_name)) optionTable[o_name] = o;
@@ -358,26 +367,17 @@ private:
   // For standard executable
   //
 public:
-  SMTConfig ( int    argc
-            , char * argv[ ] )
-    : filename ( argv[ argc - 1 ] )
-    , rocset   ( false )
-    , docset   ( false )
-  {
-    initializeConfig( );
-    // Parse command-line options
-    parseCMDLine( argc, argv );
-  }
-  //
-  // For API
-  //
-  SMTConfig ( )
-    : filename ( NULL )
-    , rocset   ( false )
-    , docset   ( false )
-  {
-    initializeConfig( );
-  }
+    SMTConfig(int argc, char* argv[]) : rocset(false), docset(false) {
+        initializeConfig( );
+        // Parse command-line options
+        parseCMDLine( argc, argv );
+    }
+    //
+    // For API
+    //
+    SMTConfig () : rocset(false), docset(false) {
+        initializeConfig( );
+    }
 
   ~SMTConfig ( )
   {
@@ -405,16 +405,16 @@ public:
   void parseConfig      ( char * );
   void parseCMDLine     ( int argc, char * argv[ ] );
   void printHelp        ( );
-  void printConfig      ( ostream & out );
+  void printConfig      ( std::ostream & out );
 
-  inline bool      isInit      ( ) { return logic != opensmt::Logic_t::UNDEF; }
-
-  inline ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
-  inline ostream & getRegularOut   ( ) { return rocset ? out : cout; }
-  inline ostream & getDiagnosticOut( ) { return docset ? err : cerr; }
-  inline int       getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
+  inline std::ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }
+  inline std::ostream & getRegularOut   ( ) { return rocset ? out : std::cout; }
+  inline std::ostream & getDiagnosticOut( ) { return docset ? err : std::cerr; }
+  inline int  getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
+
+  void setUsedForInitiliazation() { usedForInitialization = true; }
 
   inline bool produceProof( ) {
       return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
@@ -486,8 +486,6 @@ public:
     }
   }
 
-  const char * filename;                     // Holds the name of the input filename
-  opensmt::Logic_t logic;                    // SMT-Logic under consideration
   lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
@@ -904,8 +902,8 @@ public:
 
 private:
 
-  ofstream     stats_out;                    // File for statistics
-  ofstream     out;                          // Regular output channel
-  ofstream     err;                          // Diagnostic output channel
+  std::ofstream     stats_out;                    // File for statistics
+  std::ofstream     out;                          // Regular output channel
+  std::ofstream     err;                          // Diagnostic output channel
 };
 #endif

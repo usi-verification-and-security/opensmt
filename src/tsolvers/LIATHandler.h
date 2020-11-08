@@ -14,12 +14,12 @@ class LIATHandler : public TSolverHandler
     LIALogic& logic;
     LIASolver *liasolver;
   public:
-    LIATHandler(SMTConfig & c, LIALogic & l, TermMapper & tmap);
+    LIATHandler(SMTConfig & c, LIALogic & l);
     virtual ~LIATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels) override;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 };
 
 #endif

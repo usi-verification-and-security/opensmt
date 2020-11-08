@@ -3,19 +3,14 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <SMTConfig.h>
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
-    SMTConfig config;
     Logic logic;
-    LogicMkTermsTest(): logic{config} {}
+    LogicMkTermsTest(): logic{} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
-    SMTConfig config;
-    Logic logic{config};
-
     SRef ufsort = logic.declareSort("U", nullptr);
     PTRef x = logic.mkVar(ufsort, "x");
     PTRef y = logic.mkVar(ufsort, "y");
@@ -66,12 +61,13 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     args.push(b3);
     distinct = logic.mkDistinct(args);
     ASSERT_EQ(distinct, logic.getTerm_false());
+
+    PTRef z = logic.mkVar(ufsort, "z");
+    distinct = logic.mkDistinct({x, y, z});
+    ASSERT_TRUE(logic.isDisequality(distinct));
 }
 
 TEST_F(LogicMkTermsTest, test_ManyDistinct) {
-    SMTConfig config;
-    Logic logic{config};
-
     SRef ufsort = logic.declareSort("U", nullptr);
     vec<PTRef> names;
     for (int i = 0; i < 9; i++) {
@@ -121,4 +117,32 @@ TEST_F(LogicMkTermsTest, testMkAndContradiction) {
     PTRef a = logic.mkBoolVar("a");
     PTRef nota = logic.mkNot(a);
     ASSERT_EQ(logic.mkAnd(a, nota), logic.getTerm_false());
+}
+
+TEST_F(LogicMkTermsTest, testIteration) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef conj = logic.mkAnd({a, b});
+    PTRef c = logic.mkBoolVar("c");
+    PTRef disj = logic.mkOr({a, b, c});
+
+    for (auto tr : {a, b, c}) {
+        int count = 0;
+        for (auto ch : logic.getPterm(tr)) {
+            (void)ch;
+            count++;
+        }
+        ASSERT_EQ(count, 0);
+    }
+
+    for (auto tr : {conj, disj}) {
+        Pterm const &t = logic.getPterm(tr);
+        for (auto ch : t) {
+            bool found = false;
+            for (int i = 0; i < t.size(); i++) {
+                found |= ch == t[i];
+            }
+            ASSERT_TRUE(found);
+        }
+    }
 }

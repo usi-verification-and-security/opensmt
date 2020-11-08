@@ -7,6 +7,12 @@
 #include <limits>
 #include <algorithm>
 
+#ifdef SIMPLEX_DEBUG
+#define simplex_assert(x) assert(x)
+#else
+#define simplex_assert(x)
+#endif // SIMPLEX_DEBUG
+
 // MB: helper functions
 namespace{
     bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
@@ -256,7 +262,7 @@ void Simplex::eraseCandidate(LVRef candidateVar) {
 void Simplex::pivot(const LVRef bv, const LVRef nv){
     assert(tableau.isBasic(bv));
     assert(tableau.isNonBasic(nv));
-    assert(valueConsistent(bv));
+    simplex_assert(valueConsistent(bv));
 //    tableau.print();
     updateValues(bv, nv);
     tableau.pivot(bv, nv);
@@ -272,8 +278,8 @@ void Simplex::pivot(const LVRef bv, const LVRef nv){
         }
     }
 //    tableau.print();
-    assert(checkTableauConsistency());
-    assert(checkValueConsistency());
+    simplex_assert(checkTableauConsistency());
+    simplex_assert(checkValueConsistency());
 }
 
 void Simplex::changeValueBy(LVRef var, const Delta & diff) {

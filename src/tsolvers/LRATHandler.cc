@@ -2,8 +2,8 @@
 #include "TreeOps.h"
 #include "lrasolver/LRASolver.h"
 
-LRATHandler::LRATHandler(SMTConfig& c, LRALogic& l, TermMapper& tmap)
-        : TSolverHandler(c, tmap)
+LRATHandler::LRATHandler(SMTConfig & c, LRALogic & l)
+        : TSolverHandler(c)
         , logic(l)
 {
     lrasolver = new LRASolver(config, logic);
@@ -28,9 +28,9 @@ lbool LRATHandler::getPolaritySuggestion(PTRef p) const {
     return lrasolver->getPolaritySuggestion(p);
 }
 
-PTRef LRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+PTRef LRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
-    return lrasolver->getInterpolant(mask, labels);
+    return lrasolver->getInterpolant(mask, labels, pmanager);
 }
 
 

@@ -14,13 +14,11 @@ main(int argc, char** argv)
     }
     int c1_int = atoi(argv[1]);
     int c2_int = atoi(argv[2]);
+    BVLogic* logic_ = new BVLogic();
+    BVLogic& logic = *logic_;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c, 8);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkCUFNumVar("a");
     PTRef b = logic.mkCUFNumVar("b");

@@ -1,0 +1,7 @@
+(set-logic QF_UF)
+(declare-fun uf7 (Bool Bool Bool Bool Bool Bool Bool) Bool)
+(declare-fun v7 () Bool)
+(declare-fun v8 () Bool)
+(assert (uf7 true true true (not (distinct v7 v8)) true true true))
+(check-sat)
+(exit)

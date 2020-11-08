@@ -49,8 +49,8 @@ const char* BVLogic::tk_bv_coll32 = ".coll32";
 
 const int BVLogic::i_default_bitwidth = 32;
 
-BVLogic::BVLogic(SMTConfig& c, int width) :
-      CUFLogic(c)
+BVLogic::BVLogic(int width) :
+    CUFLogic()
     , sym_BV_ZERO(SymRef_Undef)
     , sym_BV_ONE(SymRef_Undef)
     , sym_BV_NEG(SymRef_Undef)
@@ -85,7 +85,6 @@ BVLogic::BVLogic(SMTConfig& c, int width) :
     , term_BV_ONE(PTRef_Undef)
     , bitwidth(width)
 {
-    logic_type = opensmt::Logic_t::QF_BV;
     char* msg;
     sort_BVNUM = declareSort(s_sort_bvnum, &msg);
 

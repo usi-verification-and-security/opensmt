@@ -2,8 +2,8 @@
 #include "TreeOps.h"
 #include <liasolver/LIASolver.h>
 
-LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l, TermMapper & tmap)
-        : TSolverHandler(c, tmap)
+LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l)
+        : TSolverHandler(c)
         , logic(l)
 {
     liasolver = new LIASolver(config, logic);
@@ -24,7 +24,7 @@ const Logic &LIATHandler::getLogic() const
     return logic;
 }
 
-PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels)
+PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &)
 {
     throw std::logic_error{"Interpolation currently not supported in LIA"};
 }

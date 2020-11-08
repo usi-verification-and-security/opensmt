@@ -47,8 +47,8 @@ const char* LRALogic::tk_real_gt    = ">";
 const char* LRALogic::tk_real_geq   = ">=";
 const char* LRALogic::s_sort_real = "Real";
 
-LRALogic::LRALogic(SMTConfig& c) :
-        LALogic(c)
+LRALogic::LRALogic() :
+    LALogic()
         , sym_Real_ZERO(SymRef_Undef)
         , sym_Real_ONE(SymRef_Undef)
         , sym_Real_NEG(SymRef_Undef)
@@ -70,7 +70,6 @@ LRALogic::LRALogic(SMTConfig& c) :
 {
     char* m;
     char** msg = &m;
-    logic_type = opensmt::Logic_t::QF_LRA;
     sort_REAL = declareSort(s_sort_real, msg);
     ufsorts.remove(sort_REAL);
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
@@ -127,6 +126,8 @@ LRALogic::LRALogic(SMTConfig& c) :
     sym_Real_ITE = declareFun(tk_ite, sort_REAL, ite_params, msg, true);
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Real_ITE].setNoScoping();
+    ites.insert(sym_Real_ITE, true);
+    sortToIte.insert(sort_REAL, sym_Real_ITE);
     sym_store.setInterpreted(sym_Real_ITE);
 }
 

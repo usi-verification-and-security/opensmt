@@ -41,12 +41,12 @@ protected:
     bool split_eq;
 
 public:
-    LIALogic (SMTConfig& c);
+    LIALogic();
     ~LIALogic () {
         for (int i = 0; i < integers.size(); i++) delete integers[i];
     }
     virtual const char*   getName()         const override { return "QF_LIA"; }
-    virtual const opensmt::Logic_t getLogic()        const override { return opensmt::Logic_t::QF_LIA; }
+    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_LIA; }
     virtual bool isBuiltinSort(SRef sr) const override;// { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
     virtual bool  isNonnegNumConst(PTRef tr) const override;// { return isNumConst(tr) && getNumConst(tr) >= 0; }
     virtual SRef   getSort_num()  const override;// {return sort_INTEGER;}
@@ -72,6 +72,7 @@ public:
     bool        isIntGt(SymRef sr)    const;// { return sr == sym_Int_GT; }
     bool        isNumGt(PTRef tr)     const override;// { return isIntGt(getPterm(tr).symb()); }
     bool        isIntVar(SymRef sr)   const;// { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+    bool        isIntVarOrIte(SymRef sr) const;
     bool        isNumVar(PTRef tr)    const override;// { return isIntVar(getPterm(tr).symb());}
     bool        isIntZero(SymRef sr)  const;// { return sr == sym_Int_ZERO; }
     bool        isNumZero(PTRef tr)   const override;// { return tr == term_Int_ZERO; }
@@ -99,6 +100,8 @@ public:
     virtual const SymRef get_sym_Num_ONE () const override;
     virtual const SymRef get_sym_Num_ITE () const override;
     virtual const SRef get_sort_NUM () const override;
+
+    virtual PTRef sumToNormalizedInequality(PTRef sum) override;
 };
 
 #endif

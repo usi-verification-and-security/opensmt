@@ -26,12 +26,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
-#include "Enode.h"
 
 #include <cstdlib>
 #include <cstdio>
 #include <csignal>
 #include <iostream>
+
+#if !defined(USE_READLINE)
+#include <editline/readline.h>
+#else
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 #if defined(__linux__)
 #include <fpu_control.h>
@@ -48,6 +54,8 @@ void        catcher            ( int );
  *                                  MAIN                                     *
  *                                                                           *
 \*****************************************************************************/
+
+void interpretInteractive(Interpret & interpret, FILE* input);
 
 int main( int argc, char * argv[] )
 {
@@ -116,7 +124,7 @@ int main( int argc, char * argv[] )
         }
         else {
             fin = stdin;
-            interpreter.interpInteractive(fin);
+            interpretInteractive(interpreter, fin);
         }
     }
     else {
@@ -145,6 +153,72 @@ int main( int argc, char * argv[] )
     }
 
     return 0;
+}
+
+void interpretInteractive(Interpret & interpret, FILE* input) {
+    char* line_read = nullptr;
+    bool done = false;
+    int par = 0;
+    int pb_cap = 1;
+    int pb_sz = 0;
+    char *parse_buf = (char *) malloc(pb_cap);
+
+    while (!done) {
+        if (line_read) {
+            free(line_read);
+            line_read = nullptr;
+        }
+        if (par == 0)
+            line_read = readline("> ");
+        else if (par > 0)
+            line_read = readline("... ");
+        else {
+            interpret.reportError("interactive reader: unbalanced parentheses");
+            parse_buf[pb_sz-1] = 0; // replace newline with end of string
+            add_history(parse_buf);
+            pb_sz = 0;
+            par = 0;
+        }
+
+        if (line_read && *line_read) {
+            for (int i = 0; line_read[i] != '\0'; i++) {
+                char c = line_read[i];
+                if (c == '(') par ++;
+                if (c == ')') par --;
+                while (pb_cap - 2 < pb_sz) { // the next char and terminating zero
+                    pb_cap *= 2;
+                    parse_buf = (char*) realloc(parse_buf, pb_cap);
+                }
+                parse_buf[pb_sz ++] = c;
+            }
+            if (par == 0) {
+                parse_buf[pb_sz] = '\0';
+                // Parse starting from the command nonterminal
+                // Parsing should be done from a string that I get from the readline
+                // library.
+                Smt2newContext context(parse_buf);
+                int rval = smt2newparse(&context);
+                if (rval != 0)
+                    interpret.reportError("scanner");
+                else {
+                    const ASTNode* r = context.getRoot();
+                    interpret.execute(r);
+                    done = interpret.gotExit();
+                }
+                add_history(parse_buf);
+                pb_sz = 0;
+            }
+            else { // add the line break
+                while (pb_cap - 2 < pb_sz) { // the next char and terminating zero
+                    pb_cap *= 2;
+                    parse_buf = (char*) realloc(parse_buf, pb_cap);
+                }
+                parse_buf[pb_sz ++] = '\n';
+            }
+        }
+    }
+    if (parse_buf) free(parse_buf);
+    if (line_read) free(line_read);
 }
 
 namespace opensmt {

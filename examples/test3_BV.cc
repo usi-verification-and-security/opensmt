@@ -12,14 +12,10 @@
 int
 main(int argc, char** argv)
 {
+    BVLogic bvlogic;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
-    CUFLogic& logic = cuftheory->getLogic();
-
-    BVLogic bvlogic(c);
+    MainSolver* mainSolver_ = new MainSolver(bvlogic, c, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
 
     PTRef y_bb = bvlogic.mkBVNumVar("y");
     PTRef z_bb = bvlogic.mkBVNumVar("z");
@@ -33,8 +29,8 @@ main(int argc, char** argv)
     PTRef eq_bb_neg = bvlogic.mkBVNot(eq_bb);
     // MB: TODO: How to turn BVsort to boolean?
 
-    mainSolver->push(eq_bb_neg);
-    sstat r = mainSolver->check();
+    mainSolver.push(eq_bb_neg);
+    sstat r = mainSolver.check();
 
     if (r == s_True)
         printf("sat\n");

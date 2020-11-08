@@ -61,7 +61,7 @@ SymRef SymStore::newSymb(const char * fname, const vec<SRef> & args) {
         }
     }
     bool newsym = (symrefs == nullptr);
-    SymRef tr = ta.alloc(args, false);
+    SymRef tr = ta.alloc(args);
     SymId id = symbols.size();
     symbols.push(tr);
 

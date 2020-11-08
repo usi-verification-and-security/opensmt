@@ -29,15 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymStore.h"
 #include "PtStore.h"
 #include "SStore.h"
-#include "Tterm.h"
-#include "PartitionInfo.h"
 #include "CgTypes.h"
-
+#include "LogicFactory.h"
 
 
 class SStore;
-struct SMTConfig;
-
 
 class Logic {
     class TFun {
@@ -56,12 +52,6 @@ class Logic {
         }
         TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
         TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
-        TFun(const Tterm& t, SRef rsort) : ret_sort(rsort), tr_body(t.getBody())
-        {
-            name = (char*)malloc(strlen(t.getName())+1);
-            strcpy(name, t.getName());
-            t.getArgs().copyTo(args);
-        }
         ~TFun() { free(name); }
         TFun& operator=(TFun& other) {
             if (&other != this) {
@@ -97,30 +87,52 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
 
     int distinctClassCount;
 
-    Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
-    vec<Tterm> defined_functions_vec; // A strange interface through the Tterms..
+    class DefinedFunctions {
+        Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+        vec<char*> defined_functions_names;
+
+    public:
+        bool has(const char* name) const { return defined_functions.has(name); }
+
+        void insert(const char* name, TFun const & templ) {
+            assert(not has(name));
+            defined_functions_names.push();
+            defined_functions_names.last() = strdup(name);
+            defined_functions.insert(defined_functions_names.last(), templ);
+        }
+
+        TFun & operator[](const char* name) {
+            assert(has(name));
+            return defined_functions[name];
+        }
+
+        void getKeys(vec<const char*> & keys_out) {
+            defined_functions.getKeys(keys_out);
+        }
+
+        ~DefinedFunctions() {
+            for (char* name : defined_functions_names) {
+                free(name);
+            }
+        }
+    };
+    DefinedFunctions defined_functions;
 
     vec<bool>           constants;
     vec<bool>           interpreted_functions;
 
-    typedef struct{
-        PTRef i;
-        PTRef t;
-        PTRef e;
-        PTRef repr;
-    } Ite;
-    Map<PTRef,Ite,PTRefHash,Equal<PTRef>>    top_level_ites;
 
-    SMTConfig&          config;
+
+
     IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
-    opensmt::Logic_t    logic_type;
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_ANON;
@@ -151,16 +163,16 @@ class Logic {
 
     void dumpFunction(ostream &, const TFun&);
 
-    void conjoinItes(PTRef root, PTRef& new_root);
-
-    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
-
   private:
-    vec<bool> appears_in_uf;
+    enum class UFAppearanceStatus {
+        unseen, removed, appears
+    };
+    vec<UFAppearanceStatus> appears_in_uf;
+    void unsetAppearsInUF(PTRef tr);
+
   public:
     vec<PTRef> propFormulasAppearingInUF;
-
-  public:
+    std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
     virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_val_uf_default;
@@ -183,17 +195,13 @@ class Logic {
     static const char*  s_ite_prefix;
     static const char*  s_framev_prefix;
 
-    Logic(SMTConfig& c);
+    Logic();
     virtual ~Logic();
 
-    bool isIteVar(PTRef tr) const;// { return top_level_ites.has(tr); }
-    PTRef getTopLevelIte(PTRef tr);// { return top_level_ites[tr].repr; }
+    virtual PTRef conjoinExtras(PTRef root);
 
-
-    virtual void conjoinExtras(PTRef root, PTRef& new_root);// { conjoinItes(root, new_root); }
-
-    virtual const opensmt::Logic_t getLogic() const;
-    virtual const char * getName() const;
+    virtual const char * getName() const { return "QF_UF"; }
+    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
     // Identifiers
     IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }
@@ -201,6 +209,7 @@ class Logic {
     // Fetching sorts
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
+    SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, const vec<PTRef>& args);
     void        markConstant  (PTRef ptr);
@@ -214,8 +223,6 @@ class Logic {
     const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
 
     // Symbols
-    SymRef      newSymb       (const char* name, vec<SRef>& sort_args)
-                                                            { return sym_store.newSymb(name, sort_args); }
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
@@ -232,31 +239,39 @@ class Logic {
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
     // Default values for the logic
+
+    // Deprecated! Use getDefaultValuePTRef instead
     virtual const char* getDefaultValue(const PTRef tr) const;
+
+    // Returns the default value of the sort of the argument term
+    PTRef getDefaultValuePTRef(const PTRef tr) const { return getDefaultValuePTRef(getSortRef(tr)); }
+
+    // Returns the default value of the given sort
+    virtual PTRef getDefaultValuePTRef(const SRef sref) const;
+
     PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);
     // Boolean term generation
-    PTRef       mkAnd         (vec<PTRef>&);
-    PTRef       mkAnd         (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkAnd(tmp); }
-    PTRef       mkAnd         (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkAnd(tmp); }
-    PTRef       mkOr          (vec<PTRef>&);
-    PTRef       mkOr          (PTRef a1, PTRef a2);// { vec<PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkOr(tmp); }
-    PTRef       mkOr          (const std::vector<PTRef> & v);// { vec<PTRef> tmp; for(PTRef ref : v) {tmp.push(ref);} return mkOr(tmp); }
-    PTRef       mkXor         (vec<PTRef>&);
-    PTRef       mkXor         (PTRef a1, PTRef a2);// { vec <PTRef> tmp; tmp.push(a1); tmp.push(a2); return mkXor(tmp); }
-    PTRef       mkImpl        (vec<PTRef>&);
+    PTRef       mkAnd         (const vec<PTRef>&);
+    PTRef       mkAnd         (PTRef a1, PTRef a2) { return mkAnd({a1, a2}); }
+    PTRef       mkOr          (const vec<PTRef>&);
+    PTRef       mkOr          (PTRef a1, PTRef a2) { return mkOr({a1, a2}); }
+    PTRef       mkXor         (const vec<PTRef>&);
+    PTRef       mkXor         (PTRef a1, PTRef a2) { return mkXor({a1, a2}); }
+    PTRef       mkImpl        (const vec<PTRef>&);
     PTRef       mkImpl        (PTRef _a, PTRef _b);
     PTRef       mkNot         (PTRef);
     PTRef       mkNot         (vec<PTRef>&);
-    PTRef       mkIte         (vec<PTRef>&);
-    PTRef       mkIte         (PTRef c, PTRef t, PTRef e);// { vec<PTRef> tmp; tmp.push(c); tmp.push(t); tmp.push(e); return mkIte(tmp); }
+    PTRef       mkIte         (const vec<PTRef>&);
+    PTRef       mkIte         (PTRef c, PTRef t, PTRef e) { return mkIte({c, t, e}); }
 
 
     // Generic equalities
-    PTRef       mkEq          (vec<PTRef>& args);
-    PTRef       mkEq          (PTRef a1, PTRef a2);// { vec<PTRef> v; v.push(a1); v.push(a2); return mkEq(v); }
+    PTRef       mkEq          (const vec<PTRef>& args);
+    PTRef       mkEq          (PTRef a1, PTRef a2) { return mkEq({a1, a2}); }
 
     // General disequalities
     PTRef       mkDistinct    (vec<PTRef>& args);
+    PTRef       mkDistinct    (vec<PTRef>&& args) { return mkDistinct(args); }
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
@@ -266,66 +281,20 @@ class Logic {
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    vec<Tterm>& getFunctions  ();
     SRef        declareSort   (const char* id, char** msg);
 
     PTRef       mkBoolVar     (const char* name);
 
-    void dumpHeaderToFile(ostream& dump_out);
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true);
-    void dumpChecksatToFile(ostream& dump_out);
+    void dumpHeaderToFile(ostream& dump_out) const;
+    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
+    void dumpChecksatToFile(ostream& dump_out) const;
 
     void dumpFunctions(ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
-    void dumpFunction(ostream& dump_out, const Tterm& t);// { dumpFunction(dump_out, TFun(t, getSortRef(t.getBody()))); }
-
     PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
 
-    bool implies(PTRef, PTRef); // Check the result with an external solver
-
-    PartitionInfo partitionInfo;
-
-    PTRef getPartitionA(const ipartitions_t&);
-    PTRef getPartitionB(const ipartitions_t&);
-    bool verifyInterpolantA(PTRef, const ipartitions_t&);
-    bool verifyInterpolantB(PTRef, const ipartitions_t&);
-    bool verifyInterpolant(PTRef, const ipartitions_t&);
-
-    //partitions:
-    ipartitions_t& getIPartitions(PTRef _t) { return partitionInfo.getIPartitions(_t); }
-    void addIPartitions(PTRef _t, const ipartitions_t& _p) { partitionInfo.addIPartitions(_t, _p); }
-    ipartitions_t& getIPartitions(SymRef _s) { return partitionInfo.getIPartitions(_s); }
-    void addIPartitions(SymRef _s, const ipartitions_t& _p) { partitionInfo.addIPartitions(_s, _p); }
-    void propagatePartitionMask(PTRef tr);
-    void assignTopLevelPartitionIndex(unsigned int n, PTRef tr)
-    {
-        partitionInfo.assignTopLevelPartitionIndex(n, tr);
-    }
-
-    ipartitions_t  computeAllowedPartitions(PTRef p);
-    ipartitions_t& getClauseClassMask(CRef c) { return partitionInfo.getClausePartitions(c); }
-    void addClauseClassMask(CRef c, const ipartitions_t& toadd);
-    void invalidatePartitions(const ipartitions_t& toinvalidate);
-    inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
-
-
-    std::vector<PTRef> getPartitions(ipartitions_t const & mask){
-        throw std::logic_error{"Not supported at the moment!"};
-    }
-
-    unsigned getNofPartitions() { return partitionInfo.getNoOfPartitions(); }
-
-    void transferPartitionMembership(PTRef old, PTRef new_ptref)
-    {
-        this->addIPartitions(new_ptref, getIPartitions(old));
-        partitionInfo.transferPartitionMembership(old, new_ptref);
-    }
-
-    int getPartitionIndex(PTRef ref) const {
-        return partitionInfo.getPartitionIndex(ref);
-    }
 
 
     // The Boolean connectives
@@ -355,7 +324,8 @@ class Logic {
     bool          isDisequality    (PTRef tr)      const;// { return disequalities.has(term_store[tr].symb()); }
     bool          isIte            (SymRef tr)     const;// { return ites.has(tr);          }
     bool          isIte            (PTRef tr)      const;// { return ites.has(term_store[tr].symb()); }
-
+    bool          isNonBoolIte     (SymRef sr)     const { return isIte(sr) and getSortRef(sr) != sort_BOOL; }
+    bool          isNonBoolIte     (PTRef tr)      const { return isNonBoolIte(getPterm(tr).symb()); }
 
     // tr is a theory symbol if it is not a boolean variable, nor one of the standard
     // boolean operators (and, not, or, etc...)
@@ -380,6 +350,8 @@ class Logic {
 
     bool        isVar              (SymRef sr)     const ;//{ return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool        isVar              (PTRef tr)      const;// { return isVar(getPterm(tr).symb()); }
+    bool        isVarOrIte         (SymRef sr)     const { return isVar(sr) or isIte(sr); }
+    bool        isVarOrIte         (PTRef tr)      const { return isVarOrIte(getPterm(tr).symb()); }
     virtual bool isAtom            (PTRef tr)      const;
     bool        isBoolAtom         (PTRef tr)      const;// { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
@@ -404,8 +376,6 @@ class Logic {
     bool        isFalse(SymRef sr) const;// { return sr == getSym_false(); }
     bool        isFalse(PTRef tr)  const;// { return isFalse(getPterm(tr).symb()); }
     bool        isAnon(SymRef sr) const { return sr == getSym_anon(); }
-    bool        isDistinct(SymRef sr) const;// { return sr == getSym_distinct(); }
-    bool        isDistinct(PTRef tr) const;// { return isDistinct(getPterm(tr).symb()); }
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const;// { return isIff(getPterm(tr).symb()); }
 
@@ -428,27 +398,21 @@ class Logic {
     virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
-    // Simplify an equality.  TODO: See if this could be combined with
-    // simplifyTree
-    bool simplifyEquality(PtChild& ptc, bool simplify);
-    void simplifyDisequality(PtChild& ptc, bool simplify = true);
     // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
     // simplification resulted in constant true or false, or neither,
     // respectively
     void        simplifyTree       (PTRef tr, PTRef& root_out);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
-    // XXX There's a need for non msg giving version
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms, char** msg);
 
-    // Check if an assignment is already in some previous frame's unit
-    // hashes (hashes) or the current hash (curr_hash)
-    lbool isInHashes(vec<Map<PTRef,lbool,PTRefHash>*>& hashes, Map<PTRef,lbool,PTRefHash>& curr_hash, PtAsgn tr);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
+
     // Top-level equalities based substitutions
-    void getNewFacts(PTRef root, vec<Map<PTRef,lbool,PTRefHash>*>& prev_units, Map<PTRef,lbool,PTRefHash>& facts);
+    void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);
     bool varsubstitute(PTRef  root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
-
+    void substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs);
 
 
 

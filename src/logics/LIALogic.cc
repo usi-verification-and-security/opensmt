@@ -23,8 +23,8 @@ const char* LIALogic::tk_int_geq   = ">=";
 
 const char* LIALogic::s_sort_integer = "Int";
 
-LIALogic::LIALogic(SMTConfig& c) :
-        LALogic(c)
+LIALogic::LIALogic() :
+    LALogic()
         , sym_Int_ZERO(SymRef_Undef)
         , sym_Int_ONE(SymRef_Undef)
         , sym_Int_NEG(SymRef_Undef)
@@ -46,8 +46,6 @@ LIALogic::LIALogic(SMTConfig& c) :
 {
     char* m;
     char** msg = &m;
-
-    logic_type = opensmt::Logic_t::QF_LIA;
 
     sort_INTEGER = declareSort(s_sort_integer, msg);
     ufsorts.remove(sort_INTEGER);
@@ -138,6 +136,7 @@ bool        LIALogic::isNumGeq(PTRef tr)    const  { return isIntGeq(getPterm(tr
 bool        LIALogic::isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
 bool        LIALogic::isNumGt(PTRef tr)     const  { return isIntGt(getPterm(tr).symb()); }
 bool        LIALogic::isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
+bool        LIALogic::isIntVarOrIte(SymRef sr) const { return isIntVar(sr) || (isIte(sr) && sym_store[sr].rsort() == sort_INTEGER); }
 bool        LIALogic::isNumVar(PTRef tr)    const  { return isIntVar(getPterm(tr).symb());}
 bool        LIALogic::isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
 bool        LIALogic::isNumZero(PTRef tr)   const  { return tr == term_Int_ZERO; }
@@ -164,3 +163,89 @@ const SymRef LIALogic::get_sym_Num_ZERO () const {return sym_Int_ZERO;}
 const SymRef LIALogic::get_sym_Num_ONE () const {return sym_Int_ONE;}
 const SymRef LIALogic::get_sym_Num_ITE () const {return sym_Int_ITE;}
 const SRef LIALogic::get_sort_NUM () const {return sort_INTEGER;}
+
+PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
+    vec<PTRef> varFactors;
+    PTRef constant = PTRef_Undef;
+    Pterm const & s = getPterm(sum);
+    for (int i = 0; i < s.size(); i++) {
+        if (isConstant(s[i])) {
+            assert(constant == PTRef_Undef);
+            constant = s[i];
+        } else {
+            assert(isLinearFactor(s[i]));
+            varFactors.push(s[i]);
+        }
+    }
+    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
+    auto constantValue = getNumConst(constant);
+    termSort(varFactors);
+    vec<PTRef> vars; vars.capacity(varFactors.size());
+    std::vector<opensmt::Number> coeffs; coeffs.reserve(varFactors.size());
+    for (PTRef factor : varFactors) {
+        PTRef var;
+        PTRef coeff;
+        splitTermToVarAndConst(factor, var, coeff);
+        assert(isNumVarOrIte(var) and isNumConst(coeff));
+        vars.push(var);
+        coeffs.push_back(getNumConst(coeff));
+    }
+    bool changed = false; // Keep track if any change to varFactors occurs
+
+    bool allIntegers = std::all_of(coeffs.begin(), coeffs.end(),
+                                   [](opensmt::Number const & coeff) { return coeff.isInteger(); });
+    if (not allIntegers) {
+        // first ensure that all coeffs are integers
+        using Integer = FastRational; // TODO: change when we have FastInteger
+        auto lcmOfDenominators = Integer(1);
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+            if (next.isInteger()) {
+                // denominator is 1 => lcm of denominators stays the same
+                return;
+            }
+            Integer den = next.get_den();
+            if (lcmOfDenominators == 1) {
+                lcmOfDenominators = std::move(den);
+                return;
+            }
+            lcmOfDenominators = lcm(lcmOfDenominators, den);
+        };
+        std::for_each(coeffs.begin(), coeffs.end(), accumulateLCMofDenominators);
+        for (auto & coeff : coeffs) {
+            coeff *= lcmOfDenominators;
+            assert(coeff.isInteger());
+        }
+        // DONT forget to update also the constant factor
+        constantValue *= lcmOfDenominators;
+        changed = true;
+    }
+    assert(std::all_of(coeffs.begin(), coeffs.end(), [](opensmt::Number const & coeff) { return coeff.isInteger(); }));
+    // Now make sure all coeffs are coprime
+    auto coeffs_gcd = abs(coeffs[0]);
+    for (std::size_t i = 1; i < coeffs.size() && coeffs_gcd != 1; ++i) {
+        coeffs_gcd = gcd(coeffs_gcd, abs(coeffs[i]));
+        assert(coeffs_gcd.isInteger());
+    }
+    if (coeffs_gcd != 1) {
+        for (auto & coeff : coeffs) {
+            coeff /= coeffs_gcd;
+            assert(coeff.isInteger());
+        }
+        // DONT forget to update also the constant factor
+        constantValue /= coeffs_gcd;
+        changed = true;
+    }
+    // update the factors
+    if (changed) {
+        for (int i = 0; i < varFactors.size(); ++i) {
+            varFactors[i] = mkNumTimes(vars[i], mkConst(coeffs[i]));
+        }
+    }
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), varFactors);
+    // 0 <= normalizedSum + constatValue
+    // in LIA we can strengthen the inequality to
+    // ceiling(-constantValue) <= normalizedSum
+    constantValue.negate();
+    constantValue = constantValue.ceil();
+    return mkFun(get_sym_Num_LEQ(), {mkConst(constantValue), normalizedSum});
+}

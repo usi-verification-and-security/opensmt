@@ -30,22 +30,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TermMapper.h"
 #include "TSolverHandler.h"
 #include "Theory.h"
-#include "TSolver.h"
+
+class ModelBuilder;
 
 class THandler
 {
 private:
-    Theory             &theory;
-    TermMapper         &tmap;                     // Mappings between TRefs and Lits
+    Theory &          theory;
+    TermMapper &      tmap;                     // Mappings between TRefs and Lits
 public:
 
-    THandler(Theory & tsh)
+    THandler(Theory & tsh, TermMapper & termMapper)
     : theory             (tsh)
-    , tmap               (tsh.getTmap())
+    , tmap               (termMapper)
     , checked_trail_size (0)
     { }
 
-    virtual ~THandler ( ) { }
+    ~THandler() = default;
 
     void clear();// { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
 
@@ -59,13 +60,17 @@ public:
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
     void    getNewSplits         ( vec<Lit>& ); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 
-    PTRef getInterpolant         (const ipartitions_t&, map<PTRef, icolor_t>*);
+    PTRef   getInterpolant       (const ipartitions_t&, map<PTRef, icolor_t>*, PartitionManager &pmanager);
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
-    PTRef   getSubstitution     (PTRef tr);               // Returns the substituted term, or PTRef_Undef if this term was not substituted
+    PTRef   getSubstitution     (PTRef tr) const;         // Returns the substituted term, or PTRef_Undef if this term was not substituted
 
+    // DEPRECATED
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
+
+    void fillTheoryVars       (ModelBuilder & modelBuilder) const;
+    void addSubstitutions     (ModelBuilder & modelBuilder) const;
 
     bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable

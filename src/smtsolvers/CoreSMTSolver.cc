@@ -46,6 +46,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "CoreSMTSolver.h"
 #include "Sort.h"
+#include "ModelBuilder.h"
+
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -58,7 +60,6 @@ namespace opensmt
     extern bool stop;
 }
 
-using opensmt::Logic_t;
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -98,7 +99,8 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , forced_split          (lit_Undef)
 
     , ok                    (true)
-    , n_clauses(0)
+    , conflict_frame        (0)
+    , n_clauses             (0)
     , cla_inc               (1)
     , var_inc               (1)
     , watches               (WatcherDeleted(ca))
@@ -135,7 +137,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_k                (1)
     , cuvti                 (false)
     , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
-    , proof_graph           ( nullptr )
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
@@ -145,8 +146,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
 void
 CoreSMTSolver::initialize( )
 {
-    assert( config.isInit( ) );
-//  assert( !init );
     random_seed = config.getRandomSeed();
     restart_first = config.sat_restart_first();
     restart_inc = config.sat_restart_inc();
@@ -1072,14 +1071,15 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
         {
             if (reason(x) == CRef_Undef)
             {
-                out_conflict.push(~trail[i]);
-                if (logsProofForInterpolation()) {
-                    assert(level(x) > 0);
-                    assert(std::find(&assumptions[0], &assumptions[0] + assumptions.size(), trail[i])
-                           != &assumptions[0] + assumptions.size());
-                    // Add a resolution step with unit clauses for this assumption
-                    CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
-                    proof->addResolutionStep(assumptionUnitClause, x);
+                if (assumptions_order.has(x)) {
+                    out_conflict.push(~trail[i]);
+                    if (logsProofForInterpolation()) {
+                        assert(level(x) > 0);
+                        assert(std::find(assumptions.begin(), assumptions.end(), trail[i]) != assumptions.end());
+                        // Add a resolution step with unit clauses for this assumption
+                        CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
+                        proof->addResolutionStep(assumptionUnitClause, x);
+                    }
                 }
             }
             else
@@ -1114,7 +1114,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     }
     assert(seen[var(p)] == 0);
     seen[var(p)] = 0;
-     if (logsProofForInterpolation()) {
+    if (logsProofForInterpolation()) {
         // MB: Hopefully we have resolved away all literals including assumptions
         proof->endChain(CRef_Undef);
     }
@@ -1547,7 +1547,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     // (Incomplete) Check of Level-0 atoms
 
     TPropRes res = checkTheory(false, conflictC);
-    if ( res == TPropRes::Unsat) return l_False;
+    if ( res == TPropRes::Unsat) {
+        return zeroLevelConflictHandler();
+    }
 
     assert( res == TPropRes::Decide || res == TPropRes::Propagate ); // Either good for decision (from TSolver's perspective) or propagate
 #ifdef STATISTICS
@@ -1649,11 +1651,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
                 TPropRes res = checkTheory(false, conflictC);
                 if (res == TPropRes::Unsat) {
-                    if (splits.size() > 0) {
-                        opensmt::stop = true;
-                        return l_Undef;
-                    }
-                    else return l_False;    // Top-Level conflict: unsat
+                    return zeroLevelConflictHandler();
                 }
                 else if (res == TPropRes::Propagate) {
                     continue; // Theory conflict: time for bcp
@@ -1688,6 +1686,13 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else if (value(p) == l_False)
                 {
                     analyzeFinal(~p, conflict);
+                    int max = 0;
+                    for (Lit q : conflict) {
+                        if (!sign(q)) {
+                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                        }
+                    }
+                    conflict_frame = max+1;
                     return zeroLevelConflictHandler();
                 }
                 else
@@ -1757,16 +1762,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     // Model found:
                     return l_True;
             }
-
-
-            // This case may happen only during DTC
-            if ( value( next ) != l_Undef )
-            {
-                assert( config.logic == opensmt::Logic_t::QF_UFIDL
-                        || config.logic == opensmt::Logic_t::QF_UFLRA );
-                continue;
-            }
-
+            assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
             newDecisionLevel();
@@ -1853,7 +1849,7 @@ void CoreSMTSolver::declareVarsToTheories()
             if (!var_seen[v]) {
                 var_seen[v] = true;
                 const Logic & logic = theory_handler.getLogic();
-                assert(logic.getPterm(theory_handler.varToTerm(v)).getVar() != -1);
+                assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
                 const PTRef term = theory_handler.varToTerm(v);
                 if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
                     theory_handler.declareAtom(term);
@@ -1913,16 +1909,6 @@ lbool CoreSMTSolver::solve_()
     if (config.dump_only()) return l_Undef;
 
     random_seed = config.getRandomSeed();
-//    assert( init );
-    // Check some invariants before we start ...
-    assert( config.logic != Logic_t::UNDEF );
-    // Incrementality should be enabled for arrays
-    // assert( config.logic != QF_AX || config.incremental );
-    // Incrementality should be enabled for lazy dtc
-    assert( config.logic != Logic_t::QF_UFRDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != Logic_t::QF_UFIDL || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != Logic_t::QF_UFLRA || config.sat_lazy_dtc == 0 || config.isIncremental() );
-    assert( config.logic != Logic_t::QF_UFLIA || config.sat_lazy_dtc == 0 || config.isIncremental() );
     // UF solver should be enabled for lazy dtc
     assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 
@@ -2088,7 +2074,14 @@ void CoreSMTSolver::garbageCollect()
 
 void CoreSMTSolver::setAssumptions(vec<Lit> const & assumps) {
     assumptions.clear();
+    assumptions_order.clear();
     assumps.copyTo(assumptions);
+    int active_assumptions = 0;
+    for (int i = 0; i < assumptions.size(); i++) {
+        if (sign(assumptions[i])) {
+            assumptions_order.insert(var(assumps[i]), active_assumptions++);
+        }
+    }
     if(proof) {
         proof->setCurrentAssumptionLiterals(&assumps[0], &assumps[0] + assumps.size());
     }
@@ -2245,4 +2238,15 @@ void CoreSMTSolver::printStatistics( ostream & os )
 std::ostream& operator <<(std::ostream& out, Lit l) {
     out << (sign(l) ? "-" : "") << var(l);
     return out;
+}
+
+void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
+    Logic& logic = theory_handler.getLogic();
+    for (Var v = 0; v < model.size(); ++v) {
+        PTRef atom = theory_handler.varToTerm(v);
+        if (logic.isBoolAtom(atom) && model[v] != l_Undef) {
+            PTRef val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+            modelBuilder.addVarValue(atom, val);
+        }
+    }
 }

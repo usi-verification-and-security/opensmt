@@ -88,11 +88,11 @@ void LAExpression::initialize( PTRef e, bool do_canonize )
         curr_const.push_back( std::move(new_c) );
     }
     //
-    // Otherwise it is a variable or UF or constant
+    // Otherwise it is a variable, Ite, UF or constant
     //
     else
     {
-      assert(logic.isVar(t) || logic.isConstant(t) || logic.isUF(t));
+      assert(logic.isNumVarOrIte(t) || logic.isConstant(t) || logic.isUF(t));
       if ( logic.isConstant(t) ) {
         const opensmt::Real tval = logic.getNumConst(t);
         polynome[ PTRef_Undef ] += tval * c;

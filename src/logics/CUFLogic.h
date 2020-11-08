@@ -111,20 +111,20 @@ class CUFLogic: public Logic
     static const char*  s_sort_cufstr;
 
   public:
-    CUFLogic (SMTConfig& c);
+    CUFLogic();
     ~CUFLogic();
-    virtual const char*   getName()  const { return "QF_CUF"; }
-    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_CUF; }
+    virtual const char*   getName() const override { return "QF_CUF"; }
+    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     using Logic::mkConst;
     virtual PTRef         mkConst   (const int c) { return mkCUFConst(c); }
     PTRef                 mkCUFConst   (const int c) { std::string num = std::to_string(c); PTRef tr = Logic::mkConst(sort_CUFNUM, num.c_str()); return tr; }
     virtual PTRef         mkCUFNumVar(const char* name) { return mkVar(sort_CUFNUM, name); }
-    virtual bool          isBuiltinSort(SRef sr) const { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
-    virtual bool          isBuiltinConstant(SymRef sr) const { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinConstant(SymRef sr) const override { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
-    virtual void conjoinExtras(PTRef root, PTRef& root_out);
+    PTRef conjoinExtras(PTRef root) override;
 
     bool isCUFNUMConst(SymRef sr) const { return isConstant(sr) && hasSortCUFNUM(sr); }
     bool isCUFNUMConst(PTRef tr)  const { return isCUFNUMConst(getPterm(tr).symb()); }
@@ -199,9 +199,9 @@ class CUFLogic: public Logic
 //    bool isCUFCond(SymRef sr)   const { return sr == sym_CUF_COND; }
 //    bool isCUFCond(PTRef tr)    const { return isCUFCond(getPterm(tr).symb()); }
 
-    bool isUFEquality(PTRef tr) const { return !isCUFEq(tr) && Logic::isUFEquality(tr); }
-    bool isTheoryEquality(PTRef tr) const { return isCUFEq(tr); }
-    bool isUF(PTRef tr) const { return !hasSortCUFNUM(tr) && Logic::isUF(tr); }
+    bool isUFEquality(PTRef tr) const override { return !isCUFEq(tr) && Logic::isUFEquality(tr); }
+    bool isTheoryEquality(PTRef tr) const override { return isCUFEq(tr); }
+    bool isUF(PTRef tr) const override { return !hasSortCUFNUM(tr) && Logic::isUF(tr); }
 
     PTRef getTerm_CUFZero() { return term_CUF_ZERO; }
     PTRef getTerm_CUFOne()  { return term_CUF_ONE; }

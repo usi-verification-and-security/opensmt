@@ -26,17 +26,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "MainSolver.h"
 #include "TreeOps.h"
-#include "DimacsParser.h"
-#include "Interpret.h"
 #include "BoolRewriting.h"
+#include "LookaheadSMTSolver.h"
+#include "LookaheadSplitter.h"
+#include "GhostSMTSolver.h"
+#include "UFLRATheory.h"
+#include "OsmtApiException.h"
+#include "ModelBuilder.h"
+#include "IteToSwitch.h"
+
 #include <thread>
 #include <random>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-namespace opensmt { extern bool stop; }
-//#include "symmetry/Symmetry.h"
+namespace opensmt { bool stop; }
 
 void
 MainSolver::push()
@@ -56,11 +61,11 @@ MainSolver::pop()
             ipartitions_t mask = 0;
             for (int i = 0; i < partitionsToInvalidate.size(); ++i) {
                 PTRef part = partitionsToInvalidate[i];
-                auto index = logic.getPartitionIndex(part);
+                auto index = pmanager.getPartitionIndex(part);
                 assert(index != -1);
                 opensmt::setbit(mask, static_cast<unsigned int>(index));
             }
-            logic.invalidatePartitions(mask);
+            pmanager.invalidatePartitions(mask);
         }
         frames.pop();
         if (!isLastFrameUnsat()) {
@@ -84,6 +89,17 @@ MainSolver::push(PTRef root)
     return res;
 }
 
+void
+MainSolver::insertFormula(PTRef fla) {
+    char* msg;
+    auto res = insertFormula(fla, &msg);
+    if (res == s_Error) {
+        OsmtApiException ex(msg);
+        free(msg);
+        throw ex;
+    }
+}
+
 sstat
 MainSolver::insertFormula(PTRef root, char** msg)
 {
@@ -95,13 +111,17 @@ MainSolver::insertFormula(PTRef root, char** msg)
         return s_Error;
     }
 
-    logic.conjoinExtras(root, root);
+    root = logic.conjoinExtras(root);
+
+    IteToSwitch switches(logic, root);
+    root = switches.conjoin(root);
+
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
         unsigned int partition_index = inserted_formulas_count++;
-        logic.assignTopLevelPartitionIndex(partition_index, root);
-        assert(logic.getPartitionIndex(root) != -1);
+        pmanager.assignTopLevelPartitionIndex(partition_index, root);
+        assert(pmanager.getPartitionIndex(root) != -1);
     }
     else {
         ++inserted_formulas_count;
@@ -109,9 +129,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     PushFrame& lastFrame =  pfstore[frames.last()];
     lastFrame.push(root);
-    lastFrame.units.clear();
     lastFrame.root = PTRef_Undef;
-    lastFrame.substs = logic.getTerm_true();
     // New formula has been added to the last frame. If the frame has been simplified before, we need to do it again
     frames.setSimplifiedUntil(std::min(frames.getSimplifiedUntil(), frames.size() - 1));
     return s_Undef;
@@ -129,25 +147,24 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
     bool keepPartitionsSeparate = getConfig().produce_inter();
     // Process (and simplify) not yet processed frames. Stop processing if solver is in UNSAT state already
     for (std::size_t i = frames.getSimplifiedUntil(); i < frames.size() && status != s_False; i++) {
-        getTheory().simplify(frames.getFrameReferences(), i);
+        getTheory().simplify(frames.getFrameReferences(), pmanager, i);
         frames.setSimplifiedUntil(i + 1);
         const PushFrame & frame = pfstore[frames.getFrameReference(i)];
 
         if (keepPartitionsSeparate) {
-            assert(frame.substs == logic.getTerm_true());
             vec<PTRef> const & flas = frame.formulas;
             for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
-                assert(logic.getPartitionIndex(fla) != -1);
+                assert(pmanager.getPartitionIndex(fla) != -1);
                 // Optimize the dag for cnfization
                 if (logic.isBooleanOperator(fla)) {
                     PTRef old = fla;
                     fla = rewriteMaxArity(fla);
-                    logic.transferPartitionMembership(old, fla);
+                    pmanager.transferPartitionMembership(old, fla);
                 }
-                assert(logic.getPartitionIndex(fla) != -1);
-                logic.propagatePartitionMask(fla);
+                assert(pmanager.getPartitionIndex(fla) != -1);
+                pmanager.propagatePartitionMask(fla);
                 status = giveToSolver(fla, frame.getId());
             }
         } else {
@@ -161,8 +178,6 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             if (logic.isBooleanOperator(root)) {
                 root = rewriteMaxArity(root);
             }
-            // root_instance is updated to the and of the simplified formulas currently in the solver, together with the substitutions
-            root = logic.mkAnd(root, frame.substs);
             root_instance.setRoot(root);
             status = giveToSolver(root, frame.getId());
         }
@@ -189,49 +204,6 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
     return ::rewriteMaxArityClassic(logic, root);
 }
 
-//
-// Merge terms with shared signatures in egraph representation and remove redundancies in
-// equalities and disequalities
-//
-MainSolver::FContainer MainSolver::simplifyEqualities(vec<PtChild>& terms)
-{
-#ifdef SIMPLIFY_DEBUG
-    for (int i = 0; i < terms.size(); i++) {
-        PtChild& ptc = terms[i];
-        // XXX The terms in here might have invalid symbols for some reason.
-//        assert(logic.hasSym(logic.getPterm(ptc.tr).symb()));
-    }
-#endif
-    PTRef root = terms[terms.size()-1].tr;
-    for (int i = 0; i < terms.size(); i++) {
-        PtChild& ptc = terms[i];
-        PTRef tr = ptc.tr;
-        if (logic.isTheoryTerm(tr) && logic.getTerm_true() != tr && logic.getTerm_false() != tr) {
-            if (logic.isEquality(tr)) {
-                if (logic.simplifyEquality(ptc, true)) {
-                    // the root of the formula is trivially true
-                    root = logic.getTerm_true();
-                    break;
-                }
-
-#ifdef SIMPLIFY_DEBUG
-                if (ptc.parent != PTRef_Undef && tr != logic.getPterm(ptc.parent)[ptc.pos]) {
-                    cerr << "Simplified equality " << logic.printTerm(tr) << endl;
-                    cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
-                }
-#endif
-            }
-            else if (logic.isDisequality(tr)) {
-//                cerr << "Simplifying disequality " << logic.printTerm(tr) << endl;
-                logic.simplifyDisequality(ptc);
-//                cerr << "  " << logic.printTerm(logic.getPterm(ptc.parent)[ptc.pos]) << endl;
-            }
-//            uf_solver.declareTerm(ptc);
-        }
-    }
-    return FContainer(root);
-}
-
 ValPair MainSolver::getValue(PTRef tr) const
 {
     if (logic.hasSortBool(tr)) {
@@ -242,7 +214,11 @@ ValPair MainSolver::getValue(PTRef tr) const
         // Try if it was not substituted away
         PTRef subs = thandler.getSubstitution(tr);
         if (subs != PTRef_Undef) {
-            return getValue(subs);
+            auto res = getValue(subs);
+            // MB: getValue returns pair where first element is the queried PTRef;
+            //     In case of substitutions, we need to replace it with the original query
+            res.tr = tr;
+            return res;
         }
         // Term not seen in the formula, any value can be returned since it cannot have any effect on satisfiability
         return ValPair(tr, Logic::tk_true);
@@ -266,7 +242,23 @@ void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
     }
 }
 
-void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
+std::unique_ptr<Model> MainSolver::getModel() {
+
+    ModelBuilder modelBuilder {logic};
+    ts.solver.fillBooleanVars(modelBuilder);
+    thandler.fillTheoryVars(modelBuilder);
+    thandler.addSubstitutions(modelBuilder);
+
+    return modelBuilder.build();
+}
+
+std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
+    if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
+    return std::unique_ptr<InterpolationContext>(new InterpolationContext(config, *theory, term_mapper,
+                                                                          getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()));
+}
+
+void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
     for (int i = 0; i < in.size(); i++) {
         vec<PtAsgn>& constr = in[i];
@@ -277,7 +269,7 @@ void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out)
     }
 }
 
-bool MainSolver::writeFuns_smtlib2(const char* file)
+bool MainSolver::writeFuns_smtlib2(const char* file) const
 {
     std::ofstream file_s;
     file_s.open(file);
@@ -288,7 +280,7 @@ bool MainSolver::writeFuns_smtlib2(const char* file)
     return false;
 }
 
-bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
+bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
 {
     char* name;
     int written = asprintf(&name, "%s.smt2", file);
@@ -312,7 +304,7 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg)
     return true;
 }
 
-bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
+bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
 {
     vec<SplitData>& splits = ts.solver.splits;
     for (int i = 0; i < splits.size(); i++) {
@@ -356,7 +348,7 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg)
     return true;
 }
 
-void MainSolver::printFramesAsQuery()
+void MainSolver::printFramesAsQuery() const
 {
     char* base_name = config.dump_query_name();
     if (base_name == NULL)
@@ -393,7 +385,8 @@ sstat MainSolver::check()
     if (rval == s_Undef) {
         rval = solve();
         if (rval == s_False) {
-            rememberLastFrameUnsat();
+            assert(not smt_solver->isOK());
+            rememberUnsatFrame(smt_solver->getConflictFrame());
         }
     }
 
@@ -419,18 +412,66 @@ sstat MainSolver::solve()
     return status;
 }
 
-bool
-MainSolver::readFormulaFromFile(const char *file)
-{
-    FILE *f;
-    if((f = fopen(file, "rt")) == NULL)
-    {
-        //opensmt_error("can't open file");
-        return false;
-    }
-    Interpret interp(config, &logic, &getTheory(), &thandler, smt_solver, this);
-    interp.setParseOnly();
-    interp.interpFile(f);
-    return true;
+std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
+    SimpSMTSolver* solver = nullptr;
+    if (config.sat_pure_lookahead())
+        solver = new LookaheadSMTSolver(config, thandler);
+    else if (config.sat_lookahead_split())
+        solver = new LookaheadSplitter(config, thandler);
+    else if (config.use_ghost_vars())
+        solver = new GhostSMTSolver(config, thandler);
+    else
+        solver = new SimpSMTSolver(config, thandler);
+
+    return std::unique_ptr<SimpSMTSolver>(solver);
 }
 
+std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
+    using Logic_t = opensmt::Logic_t;
+    Logic_t logicType = logic.getLogic();
+    Theory* theory = nullptr;
+    switch (logicType) {
+        case Logic_t::QF_UF:
+        case Logic_t::QF_BOOL:
+        {
+            theory = new UFTheory(config, logic);
+            break;
+        }
+        case Logic_t::QF_CUF:
+        case Logic_t::QF_BV:
+        {
+            BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
+            theory = new CUFTheory(config, bvLogic);
+            break;
+        }
+        case Logic_t::QF_LRA:
+        case Logic_t::QF_RDL:
+        {
+            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            theory = new LRATheory(config, lraLogic);
+            break;
+        }
+        case Logic_t::QF_LIA:
+        case Logic_t::QF_IDL:
+        {
+            LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
+            theory = new LIATheory(config, liaLogic);
+            break;
+        }
+        case Logic_t::QF_UFLRA:
+        {
+            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            theory = new UFLRATheory(config, lraLogic);
+            break;
+        }
+        case Logic_t::UNDEF:
+            throw OsmtApiException{"Error in creating reasoning engine: Engige type not specified"};
+            break;
+        default:
+            assert(false);
+            throw std::logic_error{"Unreachable code - error in logic selection"};
+
+    };
+
+    return std::unique_ptr<Theory>(theory);
+}

@@ -5,6 +5,11 @@
 #include "LA.h"
 #include "LALogic.h"
 #include "FastRational.h"
+#include "OsmtInternalException.h"
+#include "OsmtApiException.h"
+
+#include <memory>
+
 bool LALogic::isNegated(PTRef tr) const {
     //static const opensmt::Integer zero = 0;
     if (isNumConst(tr))
@@ -18,6 +23,9 @@ bool LALogic::isNegated(PTRef tr) const {
         splitTermToVarAndConst(tr, v, c);
         return isNegated(c);
     }
+    if (isIte(tr)) {
+        return false;
+    }
     else {
         // Cases(3)
         return isNegated(getPterm(tr)[0]);
@@ -25,11 +33,11 @@ bool LALogic::isNegated(PTRef tr) const {
 }
 
 bool LALogic::isLinearFactor(PTRef tr) const {
-    if (isNumConst(tr) || isNumVar(tr)) { return true; }
+    if (isNumConst(tr) || isNumVarOrIte(tr)) { return true; }
     if (isNumTimes(tr)) {
         Pterm const& term = getPterm(tr);
-        return term.size() == 2 && ((isNumConst(term[0]) && isNumVar(term[1]))
-                                    || (isNumConst(term[1]) && isNumVar(term[0])));
+        return term.size() == 2 && ((isNumConst(term[0]) && (isNumVarOrIte(term[1])))
+                                    || (isNumConst(term[1]) && (isNumVarOrIte(term[0]))));
     }
     return false;
 }
@@ -53,9 +61,10 @@ LALogic::getNumConst(PTRef tr) const
     assert(id < static_cast<unsigned int>(numbers.size()) && numbers[id] != nullptr);
     return *numbers[id];
 }
+
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
-    assert(isNumTimes(term) || isNumDiv(term) || isNumVar(term) || isConstant(term) || isUF(term));
+    assert(isNumTimes(term) || isNumDiv(term) || isNumVarOrIte(term) || isConstant(term) || isUF(term));
     if (isNumTimes(term) || isNumDiv(term)) {
         assert(getPterm(term).size() == 2);
         fac = getPterm(term)[0];
@@ -66,8 +75,8 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
             fac = t;
         }
         assert(isConstant(fac));
-        assert(isNumVar(var) || isUF(var));
-    } else if (isNumVar(term) || isUF(term)) {
+        assert(isNumVarOrIte(var) || isUF(var));
+    } else if (isNumVarOrIte(term) || isUF(term)) {
         var = term;
         fac = getTerm_NumOne();
     } else {
@@ -75,6 +84,7 @@ void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) 
         fac = term;
     }
 }
+
 // Find the lexicographically first factor of a term and divide the other terms with it.
 PTRef LALogic::normalizeSum(PTRef sum) {
     vec<PTRef> args;
@@ -126,114 +136,40 @@ PTRef LALogic::normalizeMul(PTRef mul)
     PTRef v = PTRef_Undef;
     PTRef c = PTRef_Undef;
     splitTermToVarAndConst(mul, v, c);
-    opensmt::Number r = getNumConst(c); //PS. shall I add opensmt::Integer j = getNumConst(c)
-    if (r < 0) //PS. OR (l < 0)
+    if (getNumConst(c).sign() < 0) {
         return mkNumNeg(v);
-    else
+    } else {
         return v;
+    }
 }
 lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTRef, PtAsgn, PTRefHash> & substitutions)
 {
-    vec<LAExpression*> equalities;
+    std::vector<std::unique_ptr<LAExpression>> equalities;
     LALogic& logic = *this;
     // I don't know if reversing the order makes any sense but osmt1
     // does that.
-    for (int i = top_level_arith.size()-1; i >= 0; i--) {
-        equalities.push(new LAExpression(logic, top_level_arith[i]));
+    for (int i = top_level_arith.size() - 1; i >= 0; i--) {
+        equalities.emplace_back(new LAExpression(logic, top_level_arith[i]));
     }
-#ifdef SIMPLIFY_DEBUG
-    for (int i = 0; i < equalities.size(); i++) {
-        cerr << "; ";
-        equalities[i]->print(cerr);
-        cerr << endl;
-    }
-#endif
-    //
-    // If just one equality, produce substitution right away
-    //
-    if ( equalities.size( ) == 0 )
-        ; // Do nothing
-    else if ( equalities.size( ) == 1 ) {
-        LAExpression & lae = *equalities[ 0 ];
-        if (lae.solve() == PTRef_Undef) {
-            // Constant substituted by a constant.  No new info from
-            // here.
-//            printf("there is something wrong here\n");
-            return l_Undef;
+
+    for (auto const& equality : equalities) {
+        PTRef res = equality->solve();
+        if (res == PTRef_Undef) { // MB: special case where the equality simplifies to "c = 0" with c constant
+            // This is a conflicting equality unless the constant "c" is also 0.
+            // We do nothing here and let the main code deal with this
+            continue;
         }
-        pair<PTRef, PTRef> sub = lae.getSubst();
-        assert( sub.first != PTRef_Undef );
-        assert( sub.second != PTRef_Undef );
-        if(substitutions.has(sub.first))
-        {
-            //cout << "ARITHMETIC ELIMINATION FOUND DOUBLE SUBSTITUTION:\n" << printTerm(sub.first) << " <- " << printTerm(sub.second) << " | " << printTerm(substitutions[sub.first].tr) << endl;
-            if(sub.second != substitutions[sub.first].tr)
-                return l_False;
-        } else
-            substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-    } else {
-        // Otherwise obtain substitutions
-        // by means of Gaussian Elimination
-        //
-        // FORWARD substitution
-        // We put the matrix equalities into upper triangular form
-        //
-        for (int i = 0; i < equalities.size()-1; i++) {
-            LAExpression &s = *equalities[i];
-            // Solve w.r.t. first variable
-            if (s.solve( ) == PTRef_Undef) {
-                if (logic.isTrue(s.toPTRef())) continue;
-                assert(logic.isFalse(s.toPTRef()));
-                return l_False;
-            }
-            // Use the first variable x in s to generate a
-            // substitution and replace x in lac
-            for ( int j = i + 1 ; j < equalities.size( ) ; j ++ ) {
-                LAExpression & lac = *equalities[ j ];
-                combine( s, lac );
-            }
-        }
-        //
-        // BACKWARD substitution
-        // From the last equality to the first we put
-        // the matrix equalities into canonical form
-        //
-        for (int i = equalities.size() - 1; i >= 1; i--) {
-            LAExpression & s = *equalities[i];
-            // Solve w.r.t. first variable
-            if (s.solve() == PTRef_Undef) {
-                if (logic.isTrue(s.toPTRef())) continue;
-                assert(logic.isFalse(s.toPTRef()));
-                return l_False;
-            }
-            // Use the first variable x in s as a
-            // substitution and replace x in lac
-            for (int j = i - 1; j >= 0; j--) {
-                LAExpression& lac = *equalities[j];
-                combine(s, lac);
-            }
-        }
-        //
-        // Now, for each row we get a substitution
-        //
-        for (int i = 0 ;i < equalities.size(); i++) {
-            LAExpression& lae = *equalities[i];
-            pair<PTRef, PTRef> sub = lae.getSubst();
-            if (sub.first == PTRef_Undef) continue;
-            assert(sub.second != PTRef_Undef);
-            //cout << printTerm(sub.first) << " <- " << printTerm(sub.second) << endl;
-            if(!substitutions.has(sub.first)) {
-                substitutions.insert(sub.first, PtAsgn(sub.second, l_True));
-//                cerr << "; gaussian substitution: " << logic.printTerm(sub.first) << " -> " << logic.printTerm(sub.second) << endl;
-            } else {
-                if (isConstant(sub.second) && isConstant(sub.first) && (sub.second != substitutions[sub.first].tr))
-                    return l_False;
-            }
+        auto sub = equality->getSubst();
+        PTRef var = sub.first;
+        assert(var != PTRef_Undef && isNumVarOrIte(var) && sub.second != PTRef_Undef);
+        if (substitutions.has(var)) {
+            // Already has substitution for this var, let the main substitution code deal with this situation
+            continue;
+        } else {
+            substitutions.insert(var, PtAsgn(sub.second, l_True));
         }
     }
-    // Clean constraints
-    for (int i = 0; i < equalities.size(); i++)
-        delete equalities[i];
+    // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
 }
 void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
@@ -255,6 +191,21 @@ lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,
     }
     return arithmeticElimination(top_level_arith, substs);
 }
+
+uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
+    assert(l.isNumTimes(tr));
+    PTRef c_t;
+    PTRef v_t;
+    l.splitTermToVarAndConst(tr, v_t, c_t);
+    return v_t.x;
+}
+
+bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
+    uint32_t id_x = l.isNumTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
+    uint32_t id_y = l.isNumTimes(y_) ? getVarIdFromProduct(y_) : y_.x;
+    return id_x < id_y;
+}
+
 void LALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LessThan_deepPTRef(this));
@@ -292,9 +243,12 @@ bool LALogic::isBuiltinFunction(const SymRef sr) const
 }
 bool LALogic::isNumTerm(PTRef tr) const
 {
+    auto isNumVarOrUFOrIte = [this](PTRef tr) { return isNumVarOrIte(tr) || isUF(tr); };
     const Pterm& t = getPterm(tr);
+    if (isNumVarOrIte(tr))
+        return true;
     if (t.size() == 2 && isNumTimes(tr))
-        return ((isNumVar(t[0]) || isUF(t[0])) && isConstant(t[1])) || ((isNumVar(t[1]) || isUF(t[1])) && isConstant(t[0]));
+        return (isNumVarOrUFOrIte(t[0]) && isConstant(t[1])) || (isNumVarOrUFOrIte(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
         return isNumVar(tr) || isConstant(tr);
     else
@@ -347,7 +301,7 @@ PTRef  LALogic::mkConst  (const char* num) { return mkConst(getSort_num(), num);
 PTRef  LALogic::mkNumVar (const char* name) { return mkVar(getSort_num(), name); }
 bool LALogic::isBuiltinSort  (SRef sr) const { return sr == get_sort_NUM() || Logic::isBuiltinSort(sr); }
 bool LALogic::isBuiltinConstant(SymRef sr) const { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
-bool LALogic::isNumConst     (SymRef sr)     const { return isConstant(sr) && hasSortNum(sr); }
+bool LALogic::isNumConst     (SymRef sr)     const { return Logic::isConstant(sr) && hasSortNum(sr); }
 bool LALogic::isNumConst     (PTRef tr)      const { return isNumConst(getPterm(tr).symb()); }
 bool LALogic::isNonnegNumConst (PTRef tr)  const { return isNumConst(tr) && getNumConst(tr) >= 0; }
 bool LALogic::hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == get_sort_NUM(); }
@@ -378,6 +332,8 @@ bool LALogic::isNumGeq(PTRef tr) const { return isNumGeq(getPterm(tr).symb()); }
 bool LALogic::isNumGt(SymRef sr) const { return sr == get_sym_Num_GT(); }
 bool LALogic::isNumGt(PTRef tr) const { return isNumGt(getPterm(tr).symb()); }
 bool LALogic::isNumVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == get_sort_NUM(); }
+bool LALogic::isNumVarOrIte(SymRef sr) const { return isNumVar(sr) || isIte(sr); }
+bool LALogic::isNumVarOrIte(PTRef tr) const { return isNumVarOrIte(getPterm(tr).symb()); }
 bool LALogic::isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
 bool LALogic::isNumZero(SymRef sr) const { return sr == get_sym_Num_ZERO(); }
 bool LALogic::isNumZero(PTRef tr) const { return tr == getTerm_NumZero(); }
@@ -404,7 +360,12 @@ PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
     tmp.push(a2);
     return mkNumMinus(tmp);
 }
-//PTRef mkNumPlus(const vec<PTRef> &, char **);
+
+PTRef LALogic::mkNumPlus(const PTRef p1, const PTRef p2) {
+    vec<PTRef> tmp {p1, p2};
+    return mkNumPlus(tmp);
+}
+
 PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
     char *msg;
     PTRef tr = mkNumPlus(args, &msg);
@@ -434,13 +395,7 @@ PTRef LALogic::mkNumTimes(const std::vector<PTRef> &args) {
     for (PTRef arg : args) { tmp.push(arg); }
     return mkNumTimes(tmp);
 }
-PTRef mkNumDiv(const vec<PTRef> &, char **);
-PTRef LALogic::mkNumDiv(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumDiv(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
+
 PTRef LALogic::mkNumDiv(const PTRef nom, const PTRef den) {
     vec<PTRef> tmp;
     tmp.push(nom), tmp.push(den);
@@ -518,10 +473,10 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
     SimplifyConstSum simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new);
     if (args_new.size() == 1)
         return args_new[0];
-    if(s_new != get_sym_Num_PLUS()) {
+    if (s_new != get_sym_Num_PLUS()) {
         return mkFun(s_new, args_new);
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
@@ -582,17 +537,18 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
     SimplifyConstTimes simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new);
     PTRef tr = mkFun(s_new, args_new);
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
-    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr))
+    if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr) || isIte(tr))
         return tr;
     else {
         throw LANonLinearException(printTerm(tr));
     }
 }
-PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
+
+PTRef LALogic::mkNumDiv(const vec<PTRef>& args)
 {
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
@@ -601,7 +557,7 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args, char** msg)
     if(this->isNumZero(args[1])) {
         throw LADivisionByZeroException();
     }
-    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new, msg);
+    simp.simplify(get_sym_Num_DIV(), args, s_new, args_new);
     if (isNumDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
@@ -626,54 +582,30 @@ PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
     // Should be in the form that on one side there is a constant
     // and on the other there is a sum
     PTRef sum_tmp = [&](){
-       if (lhs == getTerm_NumZero()) {return rhs;}
-       if (rhs == getTerm_NumZero()) {return mkNumNeg(lhs);}
+       if (lhs == getTerm_NumZero()) { return rhs; }
+       if (rhs == getTerm_NumZero()) { return mkNumNeg(lhs); }
        vec<PTRef> sum_args;
        sum_args.push(rhs);
        sum_args.push(mkNumNeg(lhs));
        return mkNumPlus(sum_args);
-    }();
+    }(); // now the inequality is "0 <= sum_tmp" where "sum_tmp = rhs - lhs"
     if (isConstant(sum_tmp)) {
         opensmt::Number const & v = this->getNumConst(sum_tmp);
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
-    } if (isNumTimes(sum_tmp)) {
-        sum_tmp = normalizeMul(sum_tmp);
+    } if (isNumVarOrIte(sum_tmp) || isNumTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
+        sum_tmp = isNumTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
+        vec<PTRef> args;
+        args.push(getTerm_NumZero());
+        args.push(sum_tmp);
+        return mkFun(get_sym_Num_LEQ(), args);
     } else if (isNumPlus(sum_tmp)) {
         // Normalize the sum
-        sum_tmp = normalizeSum(sum_tmp); //Now the sum is normalized by dividing with the "first" factor.
+        return sumToNormalizedInequality(sum_tmp);
     }
-    vec<PTRef> args;
-    args.push(getTerm_NumZero());
-    args.push(sum_tmp);
-    // Otherwise no operation, already normalized
-    if (isNumPlus(sum_tmp)) {
-        vec<PTRef> nonconst_args;
-        PTRef c = PTRef_Undef;
-        const Pterm& t = getPterm(sum_tmp);
-        nonconst_args.capacity(t.size());
-        for (int i = 0; i < t.size(); i++) {
-            if (!isConstant(t[i]))
-                nonconst_args.push(t[i]);
-            else {
-                assert(c == PTRef_Undef);
-                c = t[i];
-            }
-        }
-        if (c == PTRef_Undef) {
-            assert(args[1] == mkNumPlus(nonconst_args));
-            // The correct arguments are set up already
-        } else {
-            args[0] = mkNumNeg(c);
-            args[1] = nonconst_args.size() == 1 ? nonconst_args[0] : mkFun(get_sym_Num_PLUS(), nonconst_args);
-            assert(mkNumPlus(nonconst_args) == args[1]);
-        }
-    } else if (isNumVar(sum_tmp) || isNumTimes(sum_tmp)) {
-        // The correct arguments are set up already
-    } else assert(false);
-    PTRef r = mkFun(get_sym_Num_LEQ(), args);
-    return r;
-
+    assert(false);
+    throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
 }
+
 PTRef LALogic::mkNumGeq(const vec<PTRef> & args)
 {
     assert(args.size() == 2);
@@ -705,19 +637,18 @@ PTRef LALogic::mkNumGt(const vec<PTRef> & args)
     }
     return mkNot(tr);
 }
-PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
-
+PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms)
 {
     if (sym == get_sym_Num_NEG())
-        return mkNumNeg(terms[0], msg);
+        return mkNumNeg(terms[0]);
     if (sym == get_sym_Num_MINUS())
-        return mkNumMinus(terms, msg);
+        return mkNumMinus(terms);
     if (sym == get_sym_Num_PLUS())
-        return mkNumPlus(terms, msg);
+        return mkNumPlus(terms);
     if (sym == get_sym_Num_TIMES())
-        return mkNumTimes(terms, msg);
+        return mkNumTimes(terms);
     if (sym == get_sym_Num_DIV())
-        return mkNumDiv(terms, msg);
+        return mkNumDiv(terms);
     if (sym == get_sym_Num_LEQ())
         return mkNumLeq(terms);
     if (sym == get_sym_Num_LT())
@@ -728,8 +659,9 @@ PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
         return mkNumGt(terms);
     if (sym == get_sym_Num_ITE())
         return mkIte(terms);
-    return Logic::insertTerm(sym, terms, msg);
+    return Logic::insertTerm(sym, terms);
 }
+
 PTRef LALogic::mkConst(const char *name, const char **msg)
 {
     return mkConst(getSort_num(), name);
@@ -754,6 +686,7 @@ PTRef LALogic::mkConst(SRef s, const char* name)
         ptr = Logic::mkConst(s, name);
     return ptr;
 }
+
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
@@ -763,13 +696,15 @@ PTRef LALogic::mkConst(SRef s, const char* name)
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
-void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new, char** msg)
+void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_new, vec<PTRef>& args_new)
 {
     vec<int> const_idx;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNumNeg(args[i])); // MB: No minus nodes, the check can be simplified
-        if (l.isConstant(args[i]))
+        if (l.isConstant(args[i])) {
+            assert(not l.isIte(args[i]));
             const_idx.push(i);
+        }
     }
     if (const_idx.size() == 0) {
         s_new = s;
@@ -781,10 +716,8 @@ void SimplifyConst::simplify(const SymRef& s, const vec<PTRef>& args, SymRef& s_
             for (int i = 0; i < const_idx.size(); i++)
                 const_terms.push(args[const_idx[i]]);
             PTRef tr = simplifyConstOp(const_terms);
-            if (tr == PTRef_Undef) {
-                printf("%s\n", *msg);
-                assert(false);
-            }
+            assert(tr != PTRef_Undef);
+
             vec<PTRef> args_new_2;
             args_new_2.capacity((args.size() - const_terms.size()) + 1);
             int i, k;
@@ -841,18 +774,19 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         }
         if (!l.isNumOne(terms[i]))
         {
-            if(l.isNumPlus(terms[i]))
+            if (l.isNumPlus(terms[i])) {
                 plus = terms[i];
-            else if(l.isConstant(terms[i]))
+            } else if (l.isConstant(terms[i])) {
                 con = terms[i];
-            else
+            } else {
                 terms_new.push(terms[i]);
+            }
         }
     }
-    if(con == PTRef_Undef && plus == PTRef_Undef);
+    if (con == PTRef_Undef && plus == PTRef_Undef);
     else if(con == PTRef_Undef && plus != PTRef_Undef)
         terms_new.push(plus);
-    else if(con != PTRef_Undef && plus == PTRef_Undef)
+    else if (con != PTRef_Undef && plus == PTRef_Undef)
         terms_new.push(con);
     else
     {
@@ -937,8 +871,8 @@ const char* LALogic::tk_num_gt    = ">";
 const char* LALogic::tk_num_geq   = ">=";
 const char* LALogic::s_sort_num = "Number";
 
-LALogic::LALogic(SMTConfig& c) :
-        Logic(c)
+LALogic::LALogic() :
+    Logic()
         , split_eq(false)
 {}
 
@@ -951,6 +885,17 @@ LALogic::getDefaultValue(const PTRef tr) const
     else
         return Logic::getDefaultValue(tr);
 }
+
+PTRef
+LALogic::getDefaultValuePTRef(const SRef sref) const
+{
+    if (sref == getSort_num())
+        return getTerm_NumZero();
+    else
+        return Logic::getDefaultValuePTRef(sref);
+}
+
+
 // Handle the printing of real constants that are negative and the
 // rational constants
 char*
@@ -1018,6 +963,64 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     else
         out = Logic::printTerm_(tr, ext, safe);
     return out;
+}
+
+PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
+    assert(isNumPlus(sum));
+    vec<PTRef> varFactors;
+    PTRef constant = PTRef_Undef;
+    Pterm const & s = getPterm(sum);
+    for (int i = 0; i < s.size(); i++) {
+        if (isConstant(s[i])) {
+            assert(constant == PTRef_Undef);
+            constant = s[i];
+        } else {
+            assert(isLinearFactor(s[i]));
+            varFactors.push(s[i]);
+        }
+    }
+
+    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
+    opensmt::Number constantVal = getNumConst(constant);
+    assert(varFactors.size() > 0);
+    termSort(varFactors);
+    PTRef leadingFactor = varFactors[0];
+    // normalize the sum according to the leading factor
+    PTRef var, coeff;
+    splitTermToVarAndConst(leadingFactor, var, coeff);
+    opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
+    // varFactors come from a normalized sum, no need to call normalization code again
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), varFactors);
+    if (normalizationCoeff != 1) {
+        // normalize the whole sum
+        normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
+        // DON'T forget to update also the constant factor!
+        constantVal /= normalizationCoeff;
+    }
+    constantVal.negate(); // moving the constant to the LHS of the inequality
+    return insertTermHash(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
+}
+
+PTRef LALogic::getConstantFromLeq(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    if (not isNumLeq(term.symb())) {
+        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+    }
+    return term[0];
+}
+
+PTRef LALogic::getTermFromLeq(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    if (not isNumLeq(term.symb())) {
+        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+    }
+    return term[1];
+}
+
+std::pair<PTRef, PTRef> LALogic::leqToConstantAndTerm(PTRef leq) {
+    Pterm const & term = getPterm(leq);
+    assert(isNumLeq(term.symb()));
+    return std::make_pair(term[0], term[1]);
 }
 
 void SimplifyConstSum::Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }

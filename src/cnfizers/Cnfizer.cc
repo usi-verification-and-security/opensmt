@@ -33,12 +33,14 @@ using namespace std;
 
 Cnfizer::Cnfizer ( SMTConfig       &config_
                    , Logic         &logic_
+                   , PartitionManager &pmanager_
                    , TermMapper    &tmap
                    , SimpSMTSolver &solver_
                  ) :
       solver   (solver_)
     , config   (config_  )
     , logic    (logic_)
+    , pmanager (pmanager_)
     , tmap     (tmap)
     , s_empty  (true)
     , alreadyAsserted(logic.getTerm_true())
@@ -148,8 +150,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #endif
 
     if (keepPartitionInfo()) {
-        assert(logic.getPartitionIndex(formula) != -1);
-        currentPartition = logic.getPartitionIndex(formula);
+        assert(pmanager.getPartitionIndex(formula) != -1);
+        currentPartition = pmanager.getPartitionIndex(formula);
     }
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
@@ -438,21 +440,18 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
+    std::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
+    bool res = solver.addOriginalSMTClause(c, iorefs);
     if (keepPartitionInfo()) {
-        std::pair<CRef, CRef> iorefs = std::make_pair(CRef_Undef, CRef_Undef);
-        bool res = solver.addOriginalSMTClause(c, iorefs);
         CRef ref = iorefs.first;
         if (ref != CRef_Undef) {
             ipartitions_t parts = 0;
             assert(currentPartition != -1);
             setbit(parts, static_cast<unsigned int>(currentPartition));
-            logic.addClauseClassMask(ref, parts);
+            pmanager.addClauseClassMask(ref, parts);
         }
-        return res;
     }
-    else {
-        return solver.addOriginalSMTClause(c);
-    }
+    return res;
 }
 //
 // Give the formula to the solver
@@ -568,17 +567,12 @@ void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
 lbool Cnfizer::getTermValue (PTRef tr) const
 {
     assert (solver.isOK());
-    vec<lbool> &model = solver.model;
-    PTRef p;
-    bool sgn;
-    tmap.getTerm (tr, p, sgn);
-
-    if (logic.getPterm (p).getVar() != var_Undef)
+    if (tmap.hasLit(tr))
     {
-        Var v = logic.getPterm (p).getVar();
-        lbool val = model[v];
+        Lit l = tmap.getLit(tr);
+        lbool val = solver.modelValue(l);
         assert (val != l_Undef);
-        return sgn == false ? val : (val == l_True ? l_False : l_True);
+        return val;
     }
     else return l_Undef;
 }

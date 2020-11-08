@@ -202,7 +202,7 @@ char* Egraph::printEqClass(PTRef tr) const {
     char* out;
     char* old;
 
-    const ERef er = enode_store.termToERef[tr];
+    const ERef er = enode_store.getERef(tr);
     assert(enode_store[er].isTerm());
     ERef c_er = er;
     char* tmp = logic.printTerm(tr);
@@ -265,7 +265,7 @@ char* Egraph::printDistinctions(PTRef x) const
     ::free(tmp);
 
 
-    const ERef er = enode_store[enode_store.termToERef[x]].getRoot();
+    const ERef er = enode_store[enode_store.getERef(x)].getRoot();
     assert(enode_store[er].isTerm());
 
     ELRef elr = enode_store[er].getForbid();
@@ -314,7 +314,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
               << "| ELRef: " << x.x << endl
               << "| id: " << ela[x].getId() << endl
               << "| dirty: " << ela[x].isDirty() << endl
-              << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
 
             if (ela[x].reloced())
                 os << "| reloced to: " << ela[x].rel_e.x << endl;
@@ -328,7 +328,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
             os << "+-----------------------------------------------------------+" << endl
                << "| Forbid list node                                          |" << endl
                << "+-----------------------------------------------------------+" << endl
-               << "| reason: " << (ela[x].reason.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.tr) << endl;
+               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
 
             os << "| different from enode " << ela[x].e.x << endl;
             if (enode_store[ela[x].e].isTerm())

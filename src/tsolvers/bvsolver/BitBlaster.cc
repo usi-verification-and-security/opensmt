@@ -143,8 +143,8 @@ BitBlaster::assertLit (PtAsgn pta)
     // This needs to be re-thought.  I'd like to have this activation
     // logic in MainSolver somehow and use the incremental interface.
     assert( pta.tr != PTRef_Undef );
-    Pterm& p = logic.getPterm(pta.tr);
-    Var act_var = p.getVar();
+    assert(thandler.getTMap().hasLit(pta.tr));
+    Var act_var = thandler.ptrefToVar(pta.tr);
 
     if ( ((pta.sgn == l_False) && (thandler.varToTerm(act_var) == logic.getTerm_true() ))
       || thandler.varToTerm(act_var) == logic.getTerm_false())
@@ -229,7 +229,7 @@ BitBlaster::bbTerm(PTRef tr)
     if (logic.isBVEq(tr)) return bbEq           ( tr );
     if (logic.isBVSlt(tr)) return bbBvslt       ( tr );
     if (logic.isBVUleq(tr)) return bbBvule      ( tr );
-    if (logic.isDistinct(tr)) return bbDistinct ( tr );
+    if (logic.isDisequality(tr)) return bbDistinct ( tr );
     // if ( e->isUp         ( ) ) return bbUp   ( e );
     //
     // BitBlasts terms
@@ -1430,7 +1430,7 @@ BVRef
 BitBlaster::bbDistinct(PTRef tr)
 {
     assert(tr != PTRef_Undef);
-    assert(logic.isDistinct(tr));
+    assert(logic.isDisequality(tr));
 
     if (bs.has(tr)) return bs[tr];
 

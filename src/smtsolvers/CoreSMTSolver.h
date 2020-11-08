@@ -65,7 +65,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Timer.h"
 
 class Proof;
-class ProofGraph;
+class ModelBuilder;
 
 // Helper method to print Literal to a stream
 std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
@@ -328,6 +328,10 @@ public:
     int     nVars      ()      const;       // The current number of variables.
     int     nFreeVars  ()      const;
 
+    void fillBooleanVars(ModelBuilder & modelBuilder);
+
+    Proof const & getProof() const { assert(proof); return *proof; }
+
     // Resource contraints:
     //
     void    setConfBudget(int64_t x);
@@ -347,8 +351,9 @@ public:
     void        pushBacktrackPoint ( );
     void        popBacktrackPoint  ( );
     void        reset              ( );
-    inline void restoreOK          ( )       { ok = true; }
+    inline void restoreOK          ( )       { ok = true; conflict_frame = 0; }
     inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
+    inline int  getConflictFrame   ( ) const { assert(not isOK()); return conflict_frame; }
 
     template<class C>
     void     printSMTClause   ( ostream &, const C& );
@@ -480,7 +485,8 @@ protected:
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-    uint32_t n_clauses;             // number of clauses in the problem
+    int                 conflict_frame;   // Contains the frame (the assumption literal index+1) where conflict was detected.  (Default is 0)
+    uint32_t            n_clauses;        // number of clauses in the problem
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
@@ -511,6 +517,7 @@ protected:
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
+    Map<Var,int, VarHash> assumptions_order; // Defined for active assumption variables: how manyeth active assumption variable this is in assumptions
     Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
     double              random_seed;      // Used by the random variable selection.
     double              progress_estimate;// Set by 'search()'.
@@ -664,37 +671,7 @@ public:
 	char * printCnfClauses  ();
 	char * printCnfLearnts  ();
 
-    bool    smtSolve         ( );             // Solve
-
     void   printProofSMT2          ( ostream & ); // Print proof
-    void   printProofDotty         ( );           // Print proof
-    void   printInter              ( ostream & ); // Generate and print interpolants
-    void   getInterpolants         (const vec<vec<int> >& partitions, vec<PTRef>& interpolants);
-    void   getInterpolants         (const vec<ipartitions_t>& partitions, vec<PTRef>& interpolants);
-    void   setColoringSuggestions  (  vec< std::map<PTRef, icolor_t>* > * mp );
-    bool   getPathInterpolants(vec<PTRef>& interpolants);
-    bool   getPathInterpolants(vec<PTRef>& interpolants, const vec<ipartitions_t>& A_masks);
-    void   getSingleInterpolant(vec<PTRef>& interpolants);
-    void   getSingleInterpolant(vec<PTRef>& interpolants, const ipartitions_t& A_mask);
-    void   getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask) // This is a wrapper for the above, used by hifrog
-            { vec<PTRef> itps; getSingleInterpolant(itps, A_mask); for (int i = 0; i < itps.size(); i++) interpolants.push_back(itps[i]); }
-    bool   getSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
-    bool   getGenSimultaneousAbstractionInterpolants(vec<PTRef>& interpolants);
-    bool   getStateTransitionInterpolants(vec<PTRef>& interpolants);
-    bool   getTreeInterpolants(opensmt::InterpolationTree*, vec<PTRef>& interpolants);
-    bool   checkImplication( PTRef f1, PTRef f2);
-
-    void   createProofGraph          ();
-    inline ProofGraph* getProofGraph ()
-    {
-        return proof_graph;
-    }
-    void   deleteProofGraph          ();
-    void   reduceProofGraph          ();
-    void   checkPartitions           ();
-
-    void   dumpRndInter           (std::ofstream&); // Dumps a random interpolation problem
-
 protected:
 
 #ifdef STATISTICS
@@ -734,7 +711,6 @@ protected:
     void finalizeProof(CRef finalConflict);
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
-    ProofGraph *        proof_graph;              // Proof graph
     // End of proof production
 
     //
@@ -1025,8 +1001,6 @@ inline void     CoreSMTSolver::toDimacs(const char* file, Lit p, Lit q, Lit r)
 }
 //=================================================================================================
 // Debug + etc:
-
-#define reportf(format, args...) ( fflush(stdout), fprintf(stderr, format, ## args), fflush(stderr) )
 
 static inline void logLit(FILE* f, Lit l)
 {

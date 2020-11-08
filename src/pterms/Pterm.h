@@ -81,7 +81,6 @@ class Pterm {
         unsigned size       : 26; }     header;
     PTId        id;
     SymRef      sym;
-    Var         var;     // This is defined if the PTRef has a Boolean var associated with it
     PTRef       args[0]; // Either the terms or the relocation reference
 
 
@@ -97,7 +96,7 @@ class Pterm {
     Pterm operator= (Pterm&) = delete;
     Pterm operator= (Pterm&&) = delete;
 
-    int      size        ()          const   { return header.size; }
+    int      size        ()          const   { return static_cast<int>(header.size); }
 
     const PTRef& operator [] (int i) const   { assert(i < size()); return args[i]; }
     PTRef&       operator [] (int i)         { assert(i < size()); return args[i]; }
@@ -125,13 +124,18 @@ class Pterm {
     PTId     getId() const  { return id; }
     void     setId(int i)   { id.x = i; }
 
-    void     setVar(Var v)   { var = v; }
-    void     clearVar()      { var = var_Undef; }
-    Var      getVar() const  { return var; }
-    bool     hasVar() const  { return var != var_Undef; }
-
     void     shrink(int s)   { header.size -= s; }
-    void     copyTo(Pterm& to);
+
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the first child of the term
+     */
+    const PTRef* begin() const { return args; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the last child of the term
+     */
+    const PTRef* end() const { return args + size(); }
 #ifdef PEDANTIC_DEBUG
     void     compare(Pterm& other) {
         assert(header.type == other.header.type);
@@ -153,8 +157,6 @@ private:
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = ps.size();
-
-        var              = var_Undef;
 
         for (int i = 0; i < ps.size(); i++) { args[i] = ps[i]; }
     }

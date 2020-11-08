@@ -40,6 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "RDLTHandler.h"
 #include "Alloc.h"
 
+#include "PartitionManager.h"
+
 // Simplification in frames:
 // A frame F_i consists of:
 //  P_i : a list of asserts given on this frame
@@ -84,19 +86,12 @@ struct PushFrame
     friend PushFrameAllocator;
 private:
     FrameId id;
-    //  If a lower frame F contains a substitution x = f(Y), x = f(Y)
-    //  needs to be inserted into the root of the lower frame
-    Map<PTRef,lbool,PTRefHash> seen; // Contains all the variables x seen in this frame.
 public:
     FrameId getId() const                          { return id; }
     int     size()  const                         { return formulas.size(); }
     void    push(PTRef tr)                        { formulas.push(tr); }
     PTRef operator[] (int i) const                 { return formulas[i]; }
-    Map<PTRef,lbool,PTRefHash> units; // Contains the unit (theory) clauses that are implied up to here
     PTRef root;
-    PTRef substs;                     // Contains the substitutions as a conjunction (equalities possibly split)
-    void addSeen(PTRef tr)                       { seen.insert(tr, l_True); }
-    bool isSeen(PTRef tr)                       { return seen.has(tr); }
     vec<PTRef> formulas;
     bool unsat;                       // If true than the stack of frames with this frame at top is UNSAT
     PushFrame(PushFrame& pf);
@@ -144,7 +139,8 @@ public:
         allocatedFrames.push_back(r);
         return r;
     }
-    PushFrame& operator[](PFRef r) { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    PushFrame&       operator[](PFRef r)       { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const PushFrame& operator[](PFRef r) const { return (PushFrame&)RegionAllocator<uint32_t>::operator[](r.x); }
     PushFrame* lea       (PFRef r) { return (PushFrame*)RegionAllocator<uint32_t>::lea(r.x); }
     PFRef      ael       (const PushFrame* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return { r }; }
 
@@ -154,105 +150,107 @@ public:
 class Theory
 {
   protected:
+    struct SubstitutionResult {
+        Map<PTRef,PtAsgn,PTRefHash> usedSubstitution;
+        PTRef result;
+    };
+
+
     SMTConfig &         config;
     PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
     Theory(SMTConfig &c) : config(c) { }
     void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
     inline bool keepPartitions() const { return config.produce_inter(); }
-    PTRef getSubstitutionsFormulaFromUnits(Map<PTRef,lbool,PTRefHash> & units);
+
+    /* Computes the final formula from substitution result.
+     * The formula is the computed formula wiht all subbstitutions conjoined in form of equalities
+     */
+    PTRef flaFromSubstitutionResult(const SubstitutionResult & sr);
   public:
+
     PushFrameAllocator      pfstore {1024};
-    virtual TermMapper     &getTmap() = 0;
     virtual Logic          &getLogic()              = 0;
+    virtual const Logic    &getLogic() const        = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
-    virtual bool            simplify(const vec<PFRef>&, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
-    virtual void            purify(const vec<PFRef>&, int);        // Purify a vector of PushFrames
-    bool                    computeSubstitutions(PTRef coll_f, const vec<PFRef>& frames, int curr);
-    void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s);
+    virtual bool            simplify(const vec<PFRef>&, PartitionManager& pmanager, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
+    SubstitutionResult      computeSubstitutions(PTRef fla);
+    void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
     virtual                ~Theory()                           {};
 };
 
 class LRATheory : public Theory
 {
   protected:
-    LRALogic    lralogic;
-    TermMapper  tmap;
-    LRATHandler lratshandler;
+    LRALogic&    lralogic;
+    LRATHandler  lratshandler;
   public:
-    virtual TermMapper& getTmap();// { return tmap; }
-    LRATheory(SMTConfig& c)
+    LRATheory(SMTConfig & c, LRALogic & logic)
         : Theory(c)
-        , lralogic(c)
-        , tmap(lralogic)
-        , lratshandler(c, lralogic, tmap)
+        , lralogic(logic)
+        , lratshandler(c, lralogic)
     { }
     ~LRATheory() {};
-    virtual LRALogic&    getLogic();//    { return lralogic; }
-    virtual LRATHandler& getTSolverHandler();// { return lratshandler; }
-    virtual bool simplify(const vec<PFRef>&, int); // Theory specific simplifications
+    virtual LRALogic&          getLogic() override { return lralogic; }
+    virtual const LRALogic&    getLogic() const override { return lralogic; }
+    virtual LRATHandler&       getTSolverHandler() override { return lratshandler; }
+    virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
 };
 
 class LIATheory : public Theory
 {
 protected:
-    LIALogic    lialogic;
-    TermMapper  tmap;
+    LIALogic &  lialogic;
     LIATHandler liatshandler;
 public:
-    virtual TermMapper& getTmap();// { return tmap; }
-    LIATheory(SMTConfig& c)
+    LIATheory(SMTConfig & c, LIALogic & logic)
     : Theory(c)
-    , lialogic(c)
-    , tmap(lialogic)
-    , liatshandler(c, lialogic, tmap)
+    , lialogic(logic)
+    , liatshandler(c, lialogic)
     { }
     ~LIATheory() {};
-    virtual LIALogic&    getLogic();//    { return lialogic; }
-    virtual LIATHandler& getTSolverHandler();// { return liatshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual LIALogic&       getLogic() override { return lialogic; }
+    virtual const LIALogic& getLogic() const override { return lialogic; }
+    virtual LIATHandler&    getTSolverHandler() override { return liatshandler; }
+    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
 };
 
 class UFTheory : public Theory
 {
   private:
-    Logic      uflogic;
-    TermMapper  tmap;
+    Logic &    uflogic;
     UFTHandler tshandler;
   public:
-    UFTheory(SMTConfig& c)
+    UFTheory(SMTConfig & c, Logic & logic )
         : Theory(c)
-        , uflogic(c)
-        , tmap(uflogic)
-        , tshandler(c, uflogic, tmap)
-    {}
+        , uflogic(logic)
+        , tshandler(c, uflogic)
+    { }
     ~UFTheory() {}
-    virtual TermMapper&  getTmap()              { return tmap; }
-    virtual Logic&       getLogic()             { return uflogic; }
-    virtual UFTHandler&  getTSolverHandler()    { return tshandler; }
+    virtual Logic&            getLogic() override { return uflogic; }
+    virtual const Logic&      getLogic() const override { return uflogic; }
+    virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 
 class CUFTheory : public Theory
 {
   private:
-    BVLogic     cuflogic;
-    TermMapper  tmap;
+    BVLogic &   cuflogic;
     CUFTHandler tshandler;
     static const int i_default_bitwidth;
   public:
-    CUFTheory(SMTConfig& c, int width = i_default_bitwidth)
+    CUFTheory(SMTConfig & c, BVLogic & logic)
       : Theory(c)
-      , cuflogic(c, width)
-      , tmap(cuflogic)
-      , tshandler(c, cuflogic, tmap)
-    {}
+      , cuflogic(logic)
+      , tshandler(c, cuflogic)
+    { }
     ~CUFTheory() {}
-    virtual TermMapper& getTmap()            { return tmap; }
-    virtual BVLogic&  getLogic()             { return cuflogic; }
-    virtual CUFTHandler& getTSolverHandler() { return tshandler; }
+    virtual BVLogic&           getLogic() override { return cuflogic; }
+    virtual const BVLogic&     getLogic() const override { return cuflogic; }
+    virtual CUFTHandler&       getTSolverHandler() override { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, int);
+    virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 
 class IDLTheory : public Theory

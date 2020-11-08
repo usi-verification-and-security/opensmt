@@ -17,13 +17,10 @@
 
 int main(int argc, char** argv)
 {
+    BVLogic logic;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef const1 = logic.mkBVConst(7);

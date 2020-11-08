@@ -12,12 +12,10 @@
 int
 main(int argc, char** argv)
 {
+    BVLogic logic;
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver = new MainSolver(*thandler, c, solver, "test solver");
-    BVLogic& logic = cuftheory->getLogic();
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
+    MainSolver& mainSolver = *mainSolver_;
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef const1 = logic.mkBVConst(-1);
@@ -47,7 +45,7 @@ main(int argc, char** argv)
 	vec<PtAsgn> asgns;
 	vec<PTRef> foo;
 
-	BitBlaster bbb({42}, c, *mainSolver, logic, asgns, foo);
+	BitBlaster bbb({42}, c, mainSolver, logic, asgns, foo);
 
 	BVRef output1;
 	lbool stat;
@@ -108,7 +106,7 @@ main(int argc, char** argv)
 	std::cout << logic.printTerm(d2) << "\n";
 	std::cout << logic.printTerm(eq4) << "\n";
 
-    sstat r = mainSolver->check();
+    sstat r = mainSolver.check();
 
     if (r == s_True)
         printf("sat\n");

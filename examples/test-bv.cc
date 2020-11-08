@@ -20,12 +20,10 @@ main(int argc, char** argv)
     int bw = atoi(argv[1]);
 
     SMTConfig c;
-    CUFTheory* cuftheory = new CUFTheory(c, bw);
-    THandler* thandler = new THandler(*cuftheory);
-    SimpSMTSolver* solver = new SimpSMTSolver(c, *thandler);
-    MainSolver* mainSolver_ = new MainSolver(*thandler, c, solver, "test solver");
+    BVLogic* logic_ = new BVLogic(bw);
+    BVLogic& logic = *logic_;
+    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
-    BVLogic& logic = cuftheory->getLogic();
 
     PTRef a = logic.mkBVNumVar("a");
     PTRef b = logic.mkBVNumVar("b");
