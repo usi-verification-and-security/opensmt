@@ -639,40 +639,18 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
 
 inline void substraction(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        if (b.num == 0) {
-            dst.num = a.num;
-            dst.den = a.den;
-        }
-        else if (a.num == 0) {
-            if (b.num == WORD_MIN)
-                goto overflow;
-            dst.num = -b.num; // This overflows if b = -2147483648
-            dst.den = b.den;
-        }
-        else if (b.den == 1) {
-            CHECK_WORD(dst.num, lword(a.num) - lword(b.num)*a.den);
-            dst.den = a.den;
-        }
-        else if (a.den == 1) {
-            CHECK_WORD(dst.num, -lword(b.num) + lword(a.num)*b.den);
-            dst.den = b.den;
-        }
-        else {
-            lword n = lword(a.num)*b.den - lword(b.num)*a.den;
-            ulword d = ulword(a.den) * b.den;
-            lword common = gcd(absVal(n), d);
-            word zn;
-            uword zd;
-            if (common > 1) {
-                CHECK_WORD(zn, n/common);
-                CHECK_UWORD(zd, d/common);
-            } else {
-                CHECK_WORD(zn, n);
-                CHECK_UWORD(zd, d);
-            }
-            dst.num = zn;
-            dst.den = zd;
-        }
+        uword common = gcd(a.den, b.den);
+        COMPUTE_WORD(n1, lword(a.num) * (b.den / common));
+        COMPUTE_WORD(n2, lword(b.num) * (a.den / common));
+        lword n = lword(n1) - lword(n2);
+        ulword d = ulword(a.den) * (b.den / common);
+        common = gcd(absVal(n), d);
+        word zn;
+        uword zd;
+        CHECK_WORD(zn, n/common);
+        CHECK_UWORD(zd, d/common);
+        dst.num = zn;
+        dst.den = zd;
         dst.kill_mpq();
         return;
     }
