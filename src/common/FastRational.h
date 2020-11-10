@@ -674,14 +674,27 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common1 = gcd(absVal(a.num), absVal(b.num));
         uword common2 = gcd(a.den, b.den);
+        assert( common1 != 0 );
+        assert( common2 != 0 );
         word zn;
         uword zd;
         CHECK_WORD(zn, (lword(a.num)/common1) * (b.den/common2));
         CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
+
+        // Note: dst and a or b might be the same FastRational.
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
         dst.num = zn;
         dst.den = zd;
-        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) dst.num = -absVal(dst.num);
-        if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) dst.num = absVal(dst.num);
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) dst.num = -absVal(dst.num);
+//        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) dst.num = -absVal(dst.num);
+        else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) dst.num = absVal(dst.num);
+//        else if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) dst.num = absVal(dst.num);
+
         dst.setWordPartValid();
         dst.kill_mpq();
         return;
@@ -809,6 +822,11 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
 */
 
 inline void divisionAssign(FastRational& a, const FastRational& b) {
+    division(a, a, b);
+}
+
+/*
+inline void divisionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         lword common1 = gcd(absVal(a.num), absVal(b.num));
         lword common2 = gcd(a.den, b.den);
@@ -834,6 +852,7 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+*/
 
 inline unsigned FastRational::size() const {
     if (wordPartValid()) return 64;
