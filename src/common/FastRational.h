@@ -635,6 +635,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
         dst.num = zn;
         dst.den = zd;
         dst.kill_mpq();
+        dst.setWordPartValid();
         return;
     }
     overflow:
@@ -780,6 +781,11 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
 }
 
 */
+
+inline void substractionAssign(FastRational& a, const FastRational& b) {
+    substraction(a, a, b);
+}
+/*
 inline void substractionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common = gcd(a.den, b.den);
@@ -804,6 +810,7 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+*/
 
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
