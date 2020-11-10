@@ -593,39 +593,22 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
 
 inline void addition(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        if (b.num == 0) {
-            dst.num = a.num;
-            dst.den = a.den;
-        } else if (a.num == 0) {
-            dst.num = b.num;
-            dst.den = b.den;
-        } else if (b.den == 1) {
-            CHECK_WORD(dst.num, lword(a.num) + lword(b.num)*a.den);
-            dst.den = a.den;
-        } else if (a.den == 1) {
-            CHECK_WORD(dst.num, lword(b.num) + lword(a.num)*b.den);
-            dst.den = b.den;
-        } else {
-            lword c1 = lword(a.num)*b.den; // No overflow
-            lword c2 = lword(b.num)*a.den; // No overflow
-            lword n;
-            CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
+        lword c1 = lword(a.num)*b.den; // No overflow
+        lword c2 = lword(b.num)*a.den; // No overflow
+        lword n;
+        CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
 //            lword n = lword(a.num)*b.den + lword(b.num)*a.den;
-            ulword d = ulword(a.den) * b.den;
-            lword common = gcd(absVal(n), d);
-            word zn;
-            uword zd;
-            if (common > 1) {
-                CHECK_WORD(zn, n/common);
-                CHECK_UWORD(zd, d/common);
-            } else {
-                CHECK_WORD(zn, n);
-                CHECK_UWORD(zd, d);
-            }
-            dst.num = zn;
-            dst.den = zd;
-        }
+        ulword d = ulword(a.den) * b.den;
+        lword common = gcd(absVal(n), d);
+        word zn;
+        uword zd;
+        CHECK_WORD(zn, n/common);
+        CHECK_UWORD(zd, d/common);
+
+        dst.num = zn;
+        dst.den = zd;
         dst.kill_mpq();
+        dst.setWordPartValid();
         return;
     }
     overflow:
@@ -751,6 +734,11 @@ inline double FastRational::get_d() const {
 }
 
 inline void additionAssign(FastRational& a, const FastRational& b) {
+    addition(a, a, b);
+}
+
+/*
+inline void additionAssign(FastRational& a, const FastRational& b) {
     if (b.wordPartValid()) {
         if (b.num == 0) return;
         if (a.wordPartValid()) {
@@ -791,6 +779,7 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
     a.try_fit_word();
 }
 
+*/
 inline void substractionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common = gcd(a.den, b.den);
