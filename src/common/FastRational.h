@@ -648,47 +648,17 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
 }
 
 inline void multiplication(FastRational& dst, const FastRational& a, const FastRational& b) {
-    if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
-        dst.num=0;
-        dst.den=1;
-        dst.setWordPartValid();
-        dst.kill_mpq();
-        return;
-    }
-    if (a.wordPartValid() && a.num==1 && a.den==1) {
-        dst = b;
-        return;
-    }
-    if (b.wordPartValid() && b.num==1 && b.den==1) {
-        dst = a;
-        return;
-    }
     if (a.wordPartValid() && b.wordPartValid()) {
+        lword common1 = gcd(absVal(a.num), b.den);
+        lword common2 = gcd(a.den, absVal(b.num));
         word zn;
         uword zd;
-        word common1 = gcd(absVal(a.num), b.den), common2 = gcd(a.den, absVal(b.num));
-        lword k1, k2;
-        ulword k3, k4; // Changed lword => ulword
-        if (common1 > 1) {
-            k1 = lword(a.num)/common1;
-            k4 = ulword(b.den)/common1;
-        } else {
-            k1 = lword(a.num);
-            k4 = ulword(b.den);
-        }
-        if (common2 > 1) {
-            k2 = lword(b.num)/common2;
-            k3 = ulword(a.den)/common2;
-        } else {
-            k2 = lword(b.num);
-            k3 = ulword(a.den);
-        }
-        CHECK_WORD(zn, k1 * k2);
-        CHECK_UWORD(zd, k3 * k4);
+        CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
+        CHECK_UWORD(zd, ulword(a.den/common2) * (b.den/common1));
         dst.num = zn;
         dst.den = zd;
-        dst.setWordPartValid();
         dst.kill_mpq();
+        dst.setWordPartValid();
         return;
     }
     overflow:
@@ -811,7 +781,11 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
     a.try_fit_word();
 }
 */
+inline void multiplicationAssign(FastRational& a, const FastRational& b) {
+    multiplication(a, a, b);
+}
 
+/*
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         lword common1 = gcd(absVal(a.num), b.den);
@@ -832,6 +806,7 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
 }
+*/
 
 inline void divisionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
