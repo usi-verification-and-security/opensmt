@@ -1,5 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.com/usi-verification-and-security/opensmt.svg?branch=master)](https://travis-ci.com/usi-verification-and-security/opensmt)
+[![Gitter](https://badges.gitter.im/usi-verification-and-security/opensmt.svg)](https://gitter.im/usi-verification-and-security/opensmt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # OpenSMT2
 Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
