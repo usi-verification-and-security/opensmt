@@ -208,7 +208,12 @@ TEST_F(ArithmeticExpressions_test, test_Inequality_Constant)
     ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
 }
 
-
+TEST_F(ArithmeticExpressions_test, test_subtractionAssign)
+{
+    FastRational f = 0;
+    f -= FastRational(-3) * FastRational(-1);
+    ASSERT_EQ(f, -3);
+}
 
 
 
