@@ -208,11 +208,20 @@ TEST_F(ArithmeticExpressions_test, test_Inequality_Constant)
     ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
 }
 
-TEST_F(ArithmeticExpressions_test, test_subtractionAssign)
+TEST_F(ArithmeticExpressions_test, test_operatorAssign)
 {
     FastRational f = 0;
     f -= FastRational(-3) * FastRational(-1);
     ASSERT_EQ(f, -3);
+    f = 0;
+    f += FastRational(-3) * FastRational(-1);
+    ASSERT_EQ(f, 3);
+
+    // (/ 1333332 329664997) += (- 332667998001/329664997000)
+    f = FastRational(1333332, 329664997);
+    f += - FastRational("332667998001/329664997000");
+    // 331334666001/329664997000
+    ASSERT_EQ(f, -FastRational("331334666001/329664997000"));
 }
 
 

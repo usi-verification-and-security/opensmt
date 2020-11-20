@@ -11,6 +11,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <cassert>
 #include <climits>
 #include "Vec.h"
+#include <iostream>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -111,6 +112,7 @@ public:
     FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
     FastRational(uint32_t);
     inline FastRational(word n, uword d);
+    // The string must be in the format accepted by mpq_set_str, e.g., "1/2"
     explicit FastRational(const char* s, const int base = 10);
     inline FastRational( const FastRational & );
     inline FastRational(FastRational&& other) noexcept;
@@ -193,6 +195,7 @@ private:
     friend inline void multiplication      ( FastRational &, const FastRational &, const FastRational & );
     friend inline void division            ( FastRational &, const FastRational &, const FastRational & );
     friend inline void additionAssign      ( FastRational &, const FastRational & );
+    friend inline void additionAssign_explicit( FastRational &, const FastRational & );
     friend inline void substractionAssign   ( FastRational &, const FastRational & );
     friend inline void multiplicationAssign( FastRational &, const FastRational & );
     friend inline void divisionAssign      ( FastRational &, const FastRational & );
@@ -594,21 +597,19 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
 inline void addition(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
-            dst.num = a.num;
-            dst.den = a.den;
+            dst = a;
         } else if (a.num == 0) {
-            dst.num = b.num;
-            dst.den = b.den;
-        } else if (b.den == 1) {
-            CHECK_WORD(dst.num, lword(a.num) + lword(b.num)*a.den);
-            lword common = gcd(absVal(dst.num), a.den);
-            dst.num = dst.num / common;
-            dst.den = a.den / common;
-        } else if (a.den == 1) {
-            CHECK_WORD(dst.num, lword(b.num) + lword(a.num)*b.den);
-            lword common = gcd(absVal(dst.num), b.den);
-            dst.num = dst.num / common;
-            dst.den = b.den / common;
+            dst = b;
+//        } else if (b.den == 1) {
+//            CHECK_WORD(dst.num, lword(a.num) + lword(b.num)*a.den);
+//            lword common = gcd(absVal(dst.num), a.den);
+//            dst.num = dst.num / common;
+//            dst.den = a.den / common;
+//        } else if (a.den == 1) {
+//            CHECK_WORD(dst.num, lword(b.num) + lword(a.num)*b.den);
+//            lword common = gcd(absVal(dst.num), b.den);
+//            dst.num = dst.num / common;
+//            dst.den = b.den / common;
         } else {
             lword c1 = lword(a.num) * b.den; // No overflow
             lword c2 = lword(b.num) * a.den; // No overflow
@@ -643,9 +644,10 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
         if (a == b) {
             dst.num = 0;
             dst.den = 1;
+            dst.kill_mpq();
+            dst.setWordPartValid();
         } else if (b.num == 0) {
-            dst.num = a.num;
-            dst.den = a.den;
+            dst = a;
         } else if (a.num == 0) {
             if (b.num == WORD_MIN) {
                 goto overflow;
@@ -655,8 +657,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             } else {
                 // These overflows if b == WORD_MIN
                 // dst := 0 - b
-                dst.num = -b.num;
-                dst.den = b.den;
+                dst = -b;
             }
         } else if (b.den == 1) {
             CHECK_WORD(dst.num, lword(a.num) - lword(b.num)*a.den);
@@ -764,11 +765,24 @@ inline double FastRational::get_d() const {
 }
 
 inline void additionAssign(FastRational& a, const FastRational& b) {
+//    std::cout << "Computing " << a << " += " << b << std::endl;
+//    FastRational a_tmp_1 = a;
+//    FastRational b_tmp_1 = b;
+//    addition(a_tmp_1, a_tmp_1, b_tmp_1);
+//    FastRational a_tmp_2 = a;
+//    FastRational b_tmp_2 = b;
+//    additionAssign_explicit(a_tmp_2, b_tmp_2);
+//    assert(a_tmp_1 == a_tmp_2);
     addition(a, a, b);
+//    if (a != a_tmp_1) {
+//        std::cout << a << " != " << a_tmp_1 << std::endl;
+//        assert(false);
+//    }
+//    a = a_tmp_1;
 }
 
-/*
-inline void additionAssign(FastRational& a, const FastRational& b) {
+
+inline void additionAssign_explicit(FastRational& a, const FastRational& b) {
     if (b.wordPartValid()) {
         if (b.num == 0) return;
         if (a.wordPartValid()) {
@@ -809,7 +823,6 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
     a.try_fit_word();
 }
 
-*/
 
 
 inline void substractionAssign(FastRational& a, const FastRational& b) {

@@ -353,6 +353,9 @@ bool Simplex::valueConsistent(LVRef v) const
 {
     const Delta& value = model->read(v);
     Delta sum(0);
+#ifdef TRACE_VALUE_CONSISTENT
+    cout << "New value consistency check" << endl;
+#endif
     for (auto & term : tableau.getRowPoly(v)){
 #ifdef TRACE_VALUE_CONSISTENT
         cout << sum << " += " << term.coeff << " * " << model->read(term.var) << endl;
