@@ -222,6 +222,16 @@ TEST_F(ArithmeticExpressions_test, test_operatorAssign)
     f += - FastRational("332667998001/329664997000");
     // 331334666001/329664997000
     ASSERT_EQ(f, -FastRational("331334666001/329664997000"));
+
+    f = -1;
+    f += FastRational("-1/2") * FastRational(-1);
+    ASSERT_EQ(f, FastRational("-1/2"));
+
+    FastRational res = FastRational(1) - FastRational(0);
+    ASSERT_EQ(res, 1);
+    // 1 - (/ (- 335) 666) = (/ (- 1001) 666)
+    res = FastRational(1) - FastRational("-335/666");
+    ASSERT_EQ(res, FastRational("1001/666"));
 }
 
 
