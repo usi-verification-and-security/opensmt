@@ -32,7 +32,7 @@ class RationalEfficiencyTest : public ::testing::Test {
         ~Timer() {
             tp stop = Clock::now();
             auto diff = duration_cast<OutDuration>(stop - start);
-            std::cout  << "Time elapsed: " << diff.count() << "s\n";
+            std::cout  << "Time elapsed: " << diff.count() << "ms\n";
         }
     };
 
@@ -57,7 +57,7 @@ public:
 TEST_F(RationalEfficiencyTest, test_division)
 {
 
-    int rounds = 10000000;
+    int rounds = 1000000;
     runBigNumTest(rounds);
     runSmallNumTest(rounds);
 

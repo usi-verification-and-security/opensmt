@@ -554,13 +554,16 @@ template<uword> uword gcd(uword a, uword b);
         var = tmp;\
     } while(0)
 
+// Adapted from https://codereview.stackexchange.com/questions/37177/simple-method-to-detect-int-overflow
 #define CHECK_SUM_OVERFLOWS_LWORD(var, s1, s2) \
-    do { \
-        if ((s1 > LWORD_MAX/2 || s2 > LWORD_MAX/2) || (s1 < LWORD_MIN/2 || s2 < LWORD_MIN/2)) { \
-            goto overflow; \
-        } \
-        var = s1 + s2; \
-    } while (0)
+    do {                                       \
+        if (s1 > 0 and s2 > LWORD_MAX - s1) {  \
+            goto overflow;                     \
+        } if (s1 < 0 and s2 < LWORD_MIN - s1) {\
+            goto overflow;                     \
+        }                                      \
+        var = s1 + s2;                         \
+    } while (0)                                \
 
 #define CHECK_SUB_OVERFLOWS_LWORD(var, s1, s2) \
     do {                                       \
@@ -596,12 +599,8 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
     if (n == 0) {
         num = 0;
         den = 1;
-    } else if (n > 0) {
-        word common = gcd(uword(n), d);
-        num = n/common;
-        den = d/common;
     } else {
-        word common = gcd(uword(-n), d);
+        uword common = gcd<uword>(absVal(n), d);
         num = n/common;
         den = d/common;
     }
@@ -617,17 +616,26 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             dst.num = 0;
             dst.den = 1;
         } else if (b.den == 1) {
-            lword num_tmp;
-            CHECK_SUM_OVERFLOWS_LWORD(num_tmp, lword(a.num), lword(b.num)*a.den); // overflow possible
-            lword common = gcd<lword>(absVal(num_tmp), a.den);
-            CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = a.den / common; // No overflow
+            // Maximum sum here is INT_MAX + INT_MAX*UINT_MAX, which does not overflow.
+            // Minimum sum here is INT_MIN + UINT_MAX*INT_MIN = 2^63, which does not overflow.
+            lword num_tmp = lword(a.num) + lword(b.num)*a.den;
+            // (a.num + b.num*a.den)/a.den is already canonicalized, as can be seen from the following:
+            // From the preconditions we know that a.num and a.den are relatively prime.
+            // Assume now that (a.num + b.num*a.den)/a.den is not relatively prime.
+            // Then there exists m > 1, and n1, n2 relatively prime s.t.
+            //  (1) m*n1 = a.num + b.num*a.den, and
+            //  (2) m*n2 = a.den
+            // From first (1) and then (2), n1 = a.num/m + b.num*a.den/m = a.num/m + b.num * n2
+            // Hence a.num/m must be a natural number and therefore a.num is divisible by m.  Byt by (2),
+            // also a.den is divisible by m, and therefore a.num and a.den are not relatively prime, in
+            // contradiction with the precondition.
+            CHECK_WORD(dst.num, num_tmp);
+            dst.den = a.den; // No overflow
         } else if (a.den == 1) {
-            lword num_tmp;
-            CHECK_SUM_OVERFLOWS_LWORD(num_tmp, lword(b.num), lword(a.num)*b.den); // overflow possible
-            lword common = gcd<lword>(absVal(num_tmp), b.den);
-            CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = b.den / common; //No overflow
+            // See comments above.
+            lword num_tmp = lword(b.num) + lword(a.num)*b.den;
+            CHECK_WORD(dst.num, num_tmp);
+            dst.den = b.den;
         } else {
             uword common = gcd(a.den, b.den);
             lword n1 = lword(a.num)*(b.den / common);

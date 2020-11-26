@@ -208,6 +208,86 @@ TEST_F(ArithmeticExpressions_test, test_Inequality_Constant)
     ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
 }
 
+TEST_F(ArithmeticExpressions_test, test_creation)
+{
+    {
+        // a = INT_MIN / INT_MAX is the number that has the smallest nominator and biggest denominator such that it still fits the word representation
+        FastRational a(INT_MIN, INT_MAX);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_EQ(a, FastRational("-2147483648/2147483647"));
+    }
+    {
+        // a = INT_MAX / INT_MAX = 1 but in current implementation handles big values.
+        FastRational a(INT_MAX,INT_MAX);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_EQ(a, 1);
+    }
+}
+
+TEST_F(ArithmeticExpressions_test, test_addition)
+{
+    {
+        // b.num == 0
+        FastRational a(1, 3);
+        FastRational b(0);
+        ASSERT_EQ(a + b, FastRational(1, 3));
+        ASSERT_EQ(-a + b, FastRational(-1, 3));
+    }
+
+    {
+        // a.num == 0
+        FastRational a(0);
+        FastRational b(1, 3);
+        ASSERT_EQ(a + b, FastRational(1, 3));
+        ASSERT_EQ(a + (-b), FastRational(-1, 3));
+    }
+
+    {
+        // a == -b
+        FastRational a(1,3);
+        FastRational b(-1,3);
+        ASSERT_EQ(a+b, 0);
+    }
+
+    {
+        // b.den == 1
+        // result fits in word
+        FastRational a(1,3);
+        FastRational b(1);
+        ASSERT_EQ(a+b, FastRational(4,3));
+    }
+    {
+        // b.den == 1
+        // a.num + b.num*a.den does not fit in word (but fits by definition in lword)
+        // (a.num + b.num*a.den) / gcd(a.num+b.num*a.den, a.den) does not fit in word
+        FastRational a(INT_MAX,UINT_MAX);
+        FastRational b(INT_MAX);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("9223372032559808512/4294967295"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+    {
+        // b.den == 1
+        // a and b negative
+        // a.num + b.num*a.den does not fit in word (but fits by definition in lword)
+        // (a.num + b.num*a.den) / gcd(a.num+b.num*a.den, a.den) does not fit in word
+        FastRational a(INT_MIN,UINT_MAX);
+        FastRational b(INT_MIN);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("-9223372036854775808/4294967295"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+    {
+        // b.den == 1
+        // a.num + b.num*a.den does not fit in a word (but fits by definition in lword)
+        FastRational a(INT_MAX,8);
+        FastRational b(2);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("2147483663/8"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+}
+
 TEST_F(ArithmeticExpressions_test, test_operatorAssign)
 {
     FastRational f = 0;
