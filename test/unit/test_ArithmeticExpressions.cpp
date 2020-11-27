@@ -214,12 +214,14 @@ TEST_F(ArithmeticExpressions_test, test_creation)
         // a = INT_MIN / INT_MAX is the number that has the smallest nominator and biggest denominator such that it still fits the word representation
         FastRational a(INT_MIN, INT_MAX);
         ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
         ASSERT_EQ(a, FastRational("-2147483648/2147483647"));
     }
     {
         // a = INT_MAX / INT_MAX = 1 but in current implementation handles big values.
         FastRational a(INT_MAX,INT_MAX);
         ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
         ASSERT_EQ(a, 1);
     }
 }
@@ -288,31 +290,112 @@ TEST_F(ArithmeticExpressions_test, test_addition)
     }
 }
 
-TEST_F(ArithmeticExpressions_test, test_operatorAssign)
+TEST_F(ArithmeticExpressions_test, test_subtraction)
 {
-    FastRational f = 0;
-    f -= FastRational(-3) * FastRational(-1);
-    ASSERT_EQ(f, -3);
-    f = 0;
-    f += FastRational(-3) * FastRational(-1);
-    ASSERT_EQ(f, 3);
+    {
+        FastRational a(10);
+        FastRational b(0);
+        FastRational c = a-b;
+        ASSERT_EQ(c, a);
+        ASSERT_TRUE(c.wordPartValid());
+        ASSERT_FALSE(c.mpqPartValid());
+    }
+    {
+        FastRational a(0);
+        FastRational s = a - FastRational(INT_MIN);
+        ASSERT_FALSE(s.wordPartValid());
+        ASSERT_TRUE(s.mpqPartValid());
+        ASSERT_EQ(s, FastRational(INT_MAX)+1);
+    }
+    {
+        FastRational a(INT_MAX,UINT_MAX);
+        FastRational b(INT_MIN);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_TRUE(b.wordPartValid());
+        ASSERT_FALSE(b.mpqMemoryAllocated());
+        FastRational c = a - b;
+        FastRational res("9223372036854775807/4294967295");
+        ASSERT_TRUE(res.mpqPartValid());
+        ASSERT_EQ(c, res);
+    }
+    {
+        FastRational a(INT_MIN, UINT_MAX);
+        FastRational b(INT_MAX);
+        FastRational c = a - b;
 
-    // (/ 1333332 329664997) += (- 332667998001/329664997000)
-    f = FastRational(1333332, 329664997);
-    f += - FastRational("332667998001/329664997000");
-    // 331334666001/329664997000
-    ASSERT_EQ(f, -FastRational("331334666001/329664997000"));
-
-    f = -1;
-    f += FastRational("-1/2") * FastRational(-1);
-    ASSERT_EQ(f, FastRational("-1/2"));
-
-    FastRational res = FastRational(1) - FastRational(0);
-    ASSERT_EQ(res, 1);
-    // 1 - (/ (- 335) 666) = (/ (- 1001) 666)
-    res = FastRational(1) - FastRational("-335/666");
-    ASSERT_EQ(res, FastRational("1001/666"));
+    }
 }
 
+TEST_F(ArithmeticExpressions_test, test_division)
+{
+    {
+        FastRational a(-1);
+        FastRational b(-1);
+        a /= b;
+        ASSERT_EQ(a, 1);
+    }
+    {
+        FastRational a(-3);
+        FastRational b(2);
+        a /= b;
+        ASSERT_EQ(a, FastRational(-3, 2));
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+    }
+}
 
-
+TEST_F(ArithmeticExpressions_test, test_operatorAssign)
+{
+    {
+        FastRational f(0);
+        f -= FastRational(-3) * FastRational(-1);
+        ASSERT_EQ(f, -3);
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        FastRational f(0);
+        f += FastRational(-3) * FastRational(-1);
+        ASSERT_EQ(f, 3);
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        // (/ 1333332 329664997) += (- 332667998001/329664997000)
+        FastRational f(1333332, 329664997);
+        f += -FastRational("332667998001/329664997000");
+        // 331334666001/329664997000
+        ASSERT_EQ(f, -FastRational("331334666001/329664997000"));
+        ASSERT_TRUE(f.mpqMemoryAllocated());
+        ASSERT_FALSE(f.wordPartValid());
+    }
+    {
+        FastRational f(-1);
+        f += FastRational("-1/2") * FastRational(-1);
+        ASSERT_EQ(f, FastRational("-1/2"));
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        FastRational res = FastRational(1) - FastRational(0);
+        ASSERT_EQ(res, 1);
+        ASSERT_TRUE(res.wordPartValid());
+        ASSERT_FALSE(res.mpqMemoryAllocated());
+        // 1 - (/ (- 335) 666) = (/ (- 1001) 666)
+        res = FastRational(1) - FastRational("-335/666");
+        ASSERT_EQ(res, FastRational("1001/666"));
+        ASSERT_TRUE(res.wordPartValid());
+        ASSERT_FALSE(res.mpqMemoryAllocated());
+    }
+    {
+        FastRational a(-1,12);
+        FastRational b(-1);
+        a += b;
+        ASSERT_EQ(a, FastRational(-13,12));
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_TRUE(b.wordPartValid());
+        ASSERT_FALSE(b.mpqMemoryAllocated());
+    }
+}

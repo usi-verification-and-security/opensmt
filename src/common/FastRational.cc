@@ -45,7 +45,7 @@ void FastRational::print(std::ostream & out) const
 //  const bool sign = num < 0;
     const bool sign = this->sign() < 0;
     if (wordPartValid()) {
-        word abs_num = (sign?-num:num);
+        uword abs_num = absVal(num);
         if (den == 1) {
             out << (sign?"(- ":"") << abs_num << (sign?")":"");
         } else {

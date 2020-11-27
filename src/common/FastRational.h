@@ -13,6 +13,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include "Vec.h"
 #include <iostream>
 
+static int debug_count = 0;
+
 typedef int32_t  word;
 typedef uint32_t uword;
 typedef int64_t  lword;
@@ -207,7 +209,6 @@ private:
     friend FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
     friend FastRational divexact(FastRational const & n, FastRational const & d);
 public:
-    void print_details ( std::ostream & ) const;
     void print         ( std::ostream & ) const;
     inline double get_d  ( ) const;
     std::string   get_str( ) const;
@@ -545,14 +546,14 @@ inline int cmpabs(FastRational op1, FastRational op2)
 };
 template<ulword> ulword gcd(ulword a, ulword b);
 template<uword> uword gcd(uword a, uword b);
-#define CHECK_WORD(var, value) \
-    do { \
-        lword tmp = value; \
+#define CHECK_WORD(var, value)                  \
+    do {                                        \
+        lword tmp = value;                      \
         if (tmp < WORD_MIN || tmp > WORD_MAX) { \
-            goto overflow; \
-        } \
-        var = tmp;\
-    } while(0)
+            goto overflow;                      \
+        }                                       \
+        var = tmp;                              \
+    } while(0)                                  \
 
 // Adapted from https://codereview.stackexchange.com/questions/37177/simple-method-to-detect-int-overflow
 #define CHECK_SUM_OVERFLOWS_LWORD(var, s1, s2) \
@@ -677,6 +678,9 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             dst.den = 1;
         } else if (b.den == 1) {
             lword num_tmp;
+            // num_tmp = a.num - b.num * a.den
+            // Maximum subtraction here is INT_MAX - (INT_MIN)*(UINT_MAX) = 2^63-1 which does not overflow lword
+            // Minimum subtraction here is INT_MIN - (INT_MAX)*(UINT_MAX) = -9223372028264841217 which does not underflow lword
             CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num), lword(b.num)*a.den);
             lword common = gcd<lword>(absVal(num_tmp), a.den);
             CHECK_WORD(dst.num, num_tmp/common);
@@ -755,16 +759,25 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         bool b_num_gt_0 = b.num > 0;
         bool a_num_le_0 = a.num <= 0;
 
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
+            lword tmp = -(lword)(absVal(zn));
+            if (tmp < WORD_MIN || tmp > WORD_MAX) {
+                goto overflow;
+            }
+            zn = tmp;
+        }
+//        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) zn = -absVal(zn);
+        else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) CHECK_WORD(zn, (lword)(absVal(zn)));
+//        else if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) zn = absVal(zn);
+
         dst.num = zn;
         dst.den = zd;
 
-        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) dst.num = -absVal(dst.num);
-//        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) dst.num = -absVal(dst.num);
-        else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) dst.num = absVal(dst.num);
-//        else if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) dst.num = absVal(dst.num);
-
         dst.setWordPartValid();
         dst.kill_mpq();
+
+
+
         return;
     }
     overflow:
