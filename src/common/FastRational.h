@@ -781,7 +781,22 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
 }
 
 inline void division(FastRational& dst, const FastRational& a, const FastRational& b) {
+    if (b.wordPartValid() && b.num == 1 && b.den == 1) {
+        dst = a;
+        return;
+    }
+    if (a.wordPartValid() && a.num == 0) {
+        dst = 0;
+        return;
+    }
     if (a.wordPartValid() && b.wordPartValid()) {
+        if (a.num == b.num && a.den == b.den) {
+            dst.num = 1;
+            dst.den = 1;
+            dst.setWordPartValid();
+            dst.kill_mpq();
+            return;
+        }
         uword common1 = gcd(absVal(a.num), absVal(b.num));
         uword common2 = gcd(a.den, b.den);
         assert( common1 != 0 );
