@@ -720,6 +720,21 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
 }
 
 inline void multiplication(FastRational& dst, const FastRational& a, const FastRational& b) {
+    if ((a.wordPartValid() && a.num == 0) || (b.wordPartValid() && b.num == 0)) {
+        dst.num = 0;
+        dst.den = 1;
+        dst.setWordPartValid();
+        dst.kill_mpq();
+        return;
+    }
+    if (a.wordPartValid() && a.num == 1 && a.den == 1) {
+        dst = b;
+        return;
+    }
+    if (b.wordPartValid() && b.num == 1 && b.den == 1) {
+        dst = a;
+        return;
+    }
     if (a.wordPartValid() && b.wordPartValid()) {
         lword common1 = gcd(absVal(a.num), b.den);
         lword common2 = gcd(a.den, absVal(b.num));
