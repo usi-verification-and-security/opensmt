@@ -52,13 +52,63 @@ public:
             sn += 1;
         }
     }
+
+    void runSmallNumSumCommonUnity(int rounds) const {
+        Timer t;
+        Real a(1,3);
+        Real b(1,5);
+        for (int i = 0; i < rounds; i++) {
+            Real c = a + b;
+        }
+    }
+
+    void runSmallNumSumCommonNonUnity(int rounds) const {
+        Timer t;
+        Real a(1,3);
+        Real b(1,6);
+        for (int i = 0; i < rounds; i++) {
+            Real c = a + b;
+        }
+    }
+
+    void runSmallMulInv(int rounds) const {
+        Timer t;
+        Real a(13,29);
+        Real b(29, 13);
+        for (int i = 0; i < rounds; i++) {
+            Real c = a * b;
+        }
+    }
+
+    void runSmallMulNonInv(int rounds) const {
+        Timer t;
+        Real a(13,29);
+        Real b(29, 7);
+        for (int i = 0; i < rounds; i++) {
+            Real c = a * b;
+        }
+    }
 };
 
-TEST_F(RationalEfficiencyTest, test_division)
+TEST_F(RationalEfficiencyTest, test_additionAssign)
 {
 
     int rounds = 1000000;
     runBigNumTest(rounds);
     runSmallNumTest(rounds);
 
+}
+
+TEST_F(RationalEfficiencyTest, test_sumCommonUnity)
+{
+    int rounds = 1000000;
+    runSmallNumSumCommonUnity(rounds);
+    runSmallNumSumCommonNonUnity(rounds);
+}
+
+TEST_F(RationalEfficiencyTest, test_mulInverse)
+{
+    int rounds = 10000000;
+    runSmallMulInv(rounds);
+    runSmallMulNonInv(rounds);
 }
