@@ -602,8 +602,13 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
         den = 1;
     } else {
         uword common = gcd<uword>(absVal(n), d);
-        num = n/common;
-        den = d/common;
+        if (common > 1) {
+            num = n / common;
+            den = d / common;
+        } else {
+            num = n;
+            den = d;
+        }
     }
 }
 
@@ -649,7 +654,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             }
             lword n;
             CHECK_SUM_OVERFLOWS_LWORD(n, n1, n2);
-            ulword d = ulword(a.den) * (b.den / common);
+            ulword d = ulword(a.den) * (common > 1 ? b.den / common : b.den);
             common = gcd(absVal(n), d);
             word zn;
             uword zd;
@@ -893,8 +898,13 @@ inline void substractionAssign_explicit(FastRational& a, const FastRational& b) 
         common = gcd(absVal(n), d);
         word zn;
         uword zd;
-        CHECK_WORD(zn, n/common);
-        CHECK_UWORD(zd, d/common);
+        if (common > 1) {
+            CHECK_WORD(zn, n / common);
+            CHECK_UWORD(zd, d / common);
+        } else {
+            CHECK_WORD(zn, n);
+            CHECK_UWORD(zd, d);
+        }
         a.num = zn;
         a.den = zd;
         a.kill_mpq();
@@ -918,8 +928,8 @@ inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b
         lword common2 = gcd(a.den, absVal(b.num));
         word zn;
         uword zd;
-        CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
-        CHECK_UWORD(zd, ulword(a.den/common2) * (b.den/common1));
+        CHECK_WORD(zn, lword(common1 > 1 ? a.num/common1 : a.num) * (common2 > 1 ? b.num/common2 : b.num));
+        CHECK_UWORD(zd, ulword(common2 > 1 ? a.den/common2 : a.den) * (common1 > 1 ? b.den/common1 : b.den));
         a.num = zn;
         a.den = zd;
         a.kill_mpq();

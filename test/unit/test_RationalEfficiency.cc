@@ -108,7 +108,7 @@ TEST_F(RationalEfficiencyTest, test_sumCommonUnity)
 
 TEST_F(RationalEfficiencyTest, test_mulInverse)
 {
-    int rounds = 10000000;
+    int rounds = 1000000;
     runSmallMulInv(rounds);
     runSmallMulNonInv(rounds);
 }
