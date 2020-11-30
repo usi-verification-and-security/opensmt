@@ -705,8 +705,13 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             lword num_tmp;
             CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num) * b.den, lword(b.num));
             lword common = gcd<lword>(absVal(num_tmp), b.den);
-            CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = common > 1 ? b.den / common : b.den; // No overflow
+            if (common != 1) {
+                CHECK_WORD(dst.num, num_tmp / common);
+                dst.den = b.den / common; // No overflow
+            } else {
+                CHECK_WORD(dst.num, num_tmp);
+                dst.den = b.den; // No overflow
+            }
         } else {
             uword common = gcd(a.den, b.den);
             lword n1 = lword(a.num) * (common > 1 ? b.den / common : b.den);
@@ -717,8 +722,8 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             common = gcd(absVal(n), d);
             word zn;
             uword zd;
-            CHECK_WORD(zn, common > 1 ? n / common : n);
-            CHECK_UWORD(zd, common > 1 ? d / common : d);
+            CHECK_WORD(zn, (common > 1 ? (n / common) : n));
+            CHECK_UWORD(zd, (common > 1 ? (d / common) : d));
             dst.num = zn;
             dst.den = zd;
         }
