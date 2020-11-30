@@ -639,16 +639,27 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             dst.den = b.den;
         } else {
             uword common = gcd(a.den, b.den);
-            lword n1 = lword(a.num)*(b.den / common);
-            lword n2 = lword(b.num)*(a.den / common);
+            lword n1, n2;
+            if (common != 1) {
+                n1 = lword(a.num) * (b.den / common);
+                n2 = lword(b.num) * (a.den / common);
+            } else {
+                n1 = lword(a.num) * b.den;
+                n2 = lword(b.num) * a.den;
+            }
             lword n;
             CHECK_SUM_OVERFLOWS_LWORD(n, n1, n2);
             ulword d = ulword(a.den) * (b.den / common);
             common = gcd(absVal(n), d);
             word zn;
             uword zd;
-            CHECK_WORD(zn, n / common);
-            CHECK_UWORD(zd, d / common);
+            if (common != 1) {
+                CHECK_WORD(zn, n / common);
+                CHECK_UWORD(zd, d / common);
+            } else {
+                CHECK_WORD(zn, n);
+                CHECK_UWORD(zd, d);
+            }
             dst.num = zn;
             dst.den = zd;
         }
@@ -684,25 +695,25 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num), lword(b.num)*a.den);
             lword common = gcd<lword>(absVal(num_tmp), a.den);
             CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = a.den / common; // No overflow
+            dst.den = common > 1 ? a.den / common : a.den; // No overflow
         } else if (a.den == 1) {
             lword num_tmp;
             CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num) * b.den, lword(b.num));
             lword common = gcd<lword>(absVal(num_tmp), b.den);
             CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = b.den / common; // No overflow
+            dst.den = common > 1 ? b.den / common : b.den; // No overflow
         } else {
             uword common = gcd(a.den, b.den);
-            lword n1 = lword(a.num) * (b.den / common);
-            lword n2 = lword(b.num) * (a.den / common);
+            lword n1 = lword(a.num) * (common > 1 ? b.den / common : b.den);
+            lword n2 = lword(b.num) * (common > 1 ? a.den / common : a.den);
             lword n;
             CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
-            ulword d = ulword(a.den) * (b.den / common);
+            ulword d = ulword(a.den) * (common > 1 ? b.den / common : b.den);
             common = gcd(absVal(n), d);
             word zn;
             uword zd;
-            CHECK_WORD(zn, n / common);
-            CHECK_UWORD(zd, d / common);
+            CHECK_WORD(zn, common > 1 ? n / common : n);
+            CHECK_UWORD(zd, common > 1 ? d / common : d);
             dst.num = zn;
             dst.den = zd;
         }
@@ -736,6 +747,13 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
         return;
     }
     if (a.wordPartValid() && b.wordPartValid()) {
+        if (a.num > 0 and b.num > 0 and (uword)a.num == b.den and a.den == (uword)b.num) {
+            dst.num = 1;
+            dst.den = 1;
+            dst.kill_mpq();
+            dst.setWordPartValid();
+            return;
+        }
         lword common1 = gcd(absVal(a.num), b.den);
         lword common2 = gcd(a.den, absVal(b.num));
         word zn;
