@@ -871,7 +871,8 @@ inline double FastRational::get_d() const {
 }
 
 inline void additionAssign(FastRational& a, const FastRational& b) {
-    addition(a, a, b);
+//    addition(a, a, b);
+    additionAssign_explicit(a, b);
 }
 
 
@@ -919,7 +920,8 @@ inline void additionAssign_explicit(FastRational& a, const FastRational& b) {
 
 
 inline void substractionAssign(FastRational& a, const FastRational& b) {
-    substraction(a, a, b);
+//    substraction(a, a, b);
+    substractionAssign_explicit(a, b);
 }
 
 inline void substractionAssign_explicit(FastRational& a, const FastRational& b) {
@@ -953,7 +955,8 @@ inline void substractionAssign_explicit(FastRational& a, const FastRational& b) 
 }
 
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
-    multiplication(a, a, b);
+//    multiplication(a, a, b);
+    multiplicationAssign_explicit(a, b);
 }
 
 inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b) {
@@ -978,7 +981,8 @@ inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b
 }
 
 inline void divisionAssign(FastRational& a, const FastRational& b) {
-    division(a, a, b);
+//    division(a, a, b);
+    divisionAssign_explicit(a, b);
 }
 
 inline void divisionAssign_explicit(FastRational& a, const FastRational& b) {
