@@ -195,6 +195,7 @@ private:
     friend inline void addition            ( FastRational &, const FastRational &, const FastRational & );
     friend inline void substraction         ( FastRational &, const FastRational &, const FastRational & );
     friend inline void multiplication      ( FastRational &, const FastRational &, const FastRational & );
+    friend inline void multiplication_ref  ( FastRational &, const FastRational &, const FastRational & );
     friend inline void division            ( FastRational &, const FastRational &, const FastRational & );
     friend inline void additionAssign      ( FastRational &, const FastRational & );
     friend inline void additionAssign_explicit( FastRational &, const FastRational & );
@@ -329,7 +330,7 @@ public:
         FastRational dest;
         assert(isWellFormed());
         assert(b.isWellFormed());
-        multiplication(dest, *this, b);
+        multiplication_ref(dest, *this, b);
         assert(dest.isWellFormed());
         return dest;
     }
@@ -750,6 +751,59 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
     b.force_ensure_mpq_valid();
     dst.ensure_mpq_memory_allocated();
     mpq_sub(dst.mpq, a.mpq, b.mpq);
+    dst.state = State::MPQ_ALLOCATED_AND_VALID;
+    dst.try_fit_word();
+}
+
+inline void multiplication_ref(FastRational& dst, const FastRational& a, const FastRational& b) {
+    if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
+        dst.num=0;
+        dst.den=1;
+        dst.setWordPartValid();
+        dst.kill_mpq();
+        return;
+    }
+    if (a.wordPartValid() && a.num==1 && a.den==1) {
+        dst = b;
+        return;
+    }
+    if (b.wordPartValid() && b.num==1 && b.den==1) {
+        dst = a;
+        return;
+    }
+    if (a.wordPartValid() && b.wordPartValid()) {
+        word zn;
+        uword zd;
+        word common1 = gcd(absVal(a.num), b.den), common2 = gcd(a.den, absVal(b.num));
+        lword k1, k2;
+        ulword k3, k4; // Changed lword => ulword
+        if (common1 > 1) {
+            k1 = lword(a.num)/common1;
+            k4 = ulword(b.den)/common1;
+        } else {
+            k1 = lword(a.num);
+            k4 = ulword(b.den);
+        }
+        if (common2 > 1) {
+            k2 = lword(b.num)/common2;
+            k3 = ulword(a.den)/common2;
+        } else {
+            k2 = lword(b.num);
+            k3 = ulword(a.den);
+        }
+        CHECK_WORD(zn, k1 * k2);
+        CHECK_UWORD(zd, k3 * k4);
+        dst.num = zn;
+        dst.den = zd;
+        dst.setWordPartValid();
+        dst.kill_mpq();
+        return;
+    }
+    overflow:
+    a.force_ensure_mpq_valid();
+    b.force_ensure_mpq_valid();
+    dst.ensure_mpq_memory_allocated();
+    mpq_mul(dst.mpq, a.mpq, b.mpq);
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
     dst.try_fit_word();
 }
