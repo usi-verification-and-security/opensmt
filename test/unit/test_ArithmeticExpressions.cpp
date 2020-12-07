@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "LRALogic.h"
+#include "FastRational.h"
 
 class ArithmeticExpressions_test : public ::testing::Test {
 protected:
@@ -398,4 +399,15 @@ TEST_F(ArithmeticExpressions_test, test_operatorAssign)
         ASSERT_TRUE(b.wordPartValid());
         ASSERT_FALSE(b.mpqMemoryAllocated());
     }
+}
+
+TEST_F(ArithmeticExpressions_test, test_CHECK_WORD)
+{
+    word a(INT_MAX);
+    uword b(UINT_MAX);
+    uword res;
+    CHECK_WORD(res, lword(a)*b);
+    ASSERT_EQ(res, (lword)(9223372030412324865));
+    overflow:
+    cout << "Overflow" << endl;
 }

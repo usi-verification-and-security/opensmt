@@ -832,8 +832,8 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
             dst.setWordPartValid();
             return;
         }
-        lword common1 = gcd(absVal(a.num), b.den);
-        lword common2 = gcd(a.den, absVal(b.num));
+        uword common1 = gcd(absVal(a.num), b.den);
+        uword common2 = gcd(a.den, absVal(b.num));
         word zn;
         uword zd;
         CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
@@ -876,7 +876,7 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         assert( common2 != 0 );
         word zn;
         uword zd;
-        CHECK_WORD(zn, (lword(a.num)/common1) * (b.den/common2));
+        CHECK_WORD(zn, ulword(absVal(a.num)/common1) * (b.den/common2));
         CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
 
         // Note: dst and a or b might be the same FastRational.
@@ -1015,12 +1015,29 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
 
 inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        lword common1 = gcd(absVal(a.num), b.den);
-        lword common2 = gcd(a.den, absVal(b.num));
+        uword common1 = gcd(absVal(a.num), b.den);
+        uword common2 = gcd(a.den, absVal(b.num));
         word zn;
         uword zd;
-        CHECK_WORD(zn, lword(common1 > 1 ? a.num/common1 : a.num) * (common2 > 1 ? b.num/common2 : b.num));
+        // Without the absVal, this fails for a.num < 0 when common1 > 1 and b.num < 0 when common2 > 1 since the result of the division is unsigned.
+        CHECK_WORD(zn, lword(common1 > 1 ? absVal(a.num)/common1 : absVal(a.num)) * (common2 > 1 ? absVal(b.num)/common2 : absVal(b.num)));
         CHECK_UWORD(zd, ulword(common2 > 1 ? a.den/common2 : a.den) * (common1 > 1 ? b.den/common1 : b.den));
+
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
+            lword tmp = -(lword)(absVal(zn));
+            if (tmp < WORD_MIN || tmp > WORD_MAX) {
+                goto overflow;
+            }
+            zn = tmp;
+        } else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) {
+            CHECK_WORD(zn, (lword)(absVal(zn)));
+        }
+
         a.num = zn;
         a.den = zd;
         a.kill_mpq();
@@ -1041,21 +1058,38 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
 
 inline void divisionAssign_explicit(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        lword common1 = gcd(absVal(a.num), absVal(b.num));
-        lword common2 = gcd(a.den, b.den);
-        assert( common1 != 0 );
-        assert( common2 != 0 );
+        uword common1 = gcd(absVal(a.num), absVal(b.num));
+        uword common2 = gcd(a.den, b.den);
+        assert(common1 != 0);
+        assert(common2 != 0);
         word zn;
         uword zd;
-        if (b.num < 0) {
-            CHECK_WORD(zn, -lword(a.num/common1) * (b.den/common2));
-        } else {
-            CHECK_WORD(zn,  lword(a.num/common1) * (b.den/common2));
+        CHECK_WORD(zn, ulword(absVal(a.num) / common1) * (b.den / common2));
+        CHECK_UWORD(zd, ulword(absVal(b.num) / common1) * (a.den / common2));
+
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
+            lword tmp = -(lword) (absVal(zn));
+            if (tmp < WORD_MIN || tmp > WORD_MAX) {
+                goto overflow;
+            }
+            zn = tmp;
+        } else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) {
+            CHECK_WORD(zn, (lword) (absVal(zn)));
         }
-        CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
+//  This implementation messes up the signs, since a.num/common1 is an unsigned word
+//        if (b.num < 0) {
+//            CHECK_WORD(zn, -lword(a.num/common1) * (b.den/common2));
+//        } else {
+//            CHECK_WORD(zn,  lword(a.num/common1) * (b.den/common2));
+//        }
+//        CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
         a.den = zd;
         a.num = zn;
-        a.kill_mpq();
         return;
     }
     overflow:
