@@ -1090,6 +1090,7 @@ inline void divisionAssign_explicit(FastRational& a, const FastRational& b) {
 //        CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
         a.den = zd;
         a.num = zn;
+        a.kill_mpq();
         return;
     }
     overflow:
