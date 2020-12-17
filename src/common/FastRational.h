@@ -391,9 +391,9 @@ public:
     // Return *this % d.  The return value will have the sign of d
     FastRational operator%(const FastRational& d) {
         assert(isInteger() && d.isInteger());
-        if (!mpqPartValid() && !d.mpqPartValid()) {
-            lword w = absVal(num % d.num);
-            return (word)(d.num > 0 ? w : -w);
+        if (wordPartValid() && d.wordPartValid()) {
+            uword w = absVal(num % d.num);  // Largest value is absVal(INT_MAX % INT_MIN) = INT_MAX
+            return (word)(d.num > 0 ? w : -w); // No overflow since 0 <= w <= INT_MAX
         }
         FastRational r = (*this) / d;
         r = r.floor();

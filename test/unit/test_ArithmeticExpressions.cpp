@@ -419,3 +419,11 @@ TEST_F(ArithmeticExpressions_test, test_ceil)
     FastRational f(a, b);
     f.ceil();
 }
+
+TEST_F(ArithmeticExpressions_test, test_mod)
+{
+    FastRational a(INT_MAX);
+    FastRational b(INT_MIN);
+    FastRational res = a % b;
+    ASSERT_EQ(res, (INT_MIN+1));
+}
