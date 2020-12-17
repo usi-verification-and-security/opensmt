@@ -11,9 +11,6 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <cassert>
 #include <climits>
 #include "Vec.h"
-#include <iostream>
-
-static int debug_count = 0;
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -79,7 +76,14 @@ inline ulword absVal(lword x) {
 
 class FastRational
 {
+    State state;
+    word num;
+    uword den;
+    mpq_t mpq;
+
     static const MpzUnit unit;
+
+
 
     // Bit masks for questioning state:
     static const unsigned char wordValidMask = 0x1;
@@ -110,23 +114,16 @@ public:
     //
     // Constructors
     //
-    FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
-    FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
-    FastRational(uint32_t);
+    FastRational       () : state{State::WORD_VALID}, num(0), den(1) {}
+    FastRational       (word x) : state{State::WORD_VALID}, num(x), den(1) {}
+    FastRational       (uint32_t);
     inline FastRational(word n, uword d);
     // The string must be in the format accepted by mpq_set_str, e.g., "1/2"
     explicit FastRational(const char* s, const int base = 10);
-    inline FastRational( const FastRational & );
-    inline FastRational(FastRational&& other) noexcept;
-    FastRational & operator=(FastRational && other) {
-        std::swap(this->state, other.state);
-        std::swap(this->num, other.num);
-        std::swap(this->den, other.den);
-        std::swap(this->mpq, other.mpq);
-        return *this;
-    }
+    inline FastRational  (const FastRational &);
+    inline FastRational  (FastRational&& other) noexcept;
 
-    FastRational( const mpz_class & x )
+    FastRational         ( const mpz_class & x )
     {
         if ( x.fits_sint_p() ) {
             num = x.get_si();
@@ -141,10 +138,19 @@ public:
             state = State::MPQ_ALLOCATED_AND_VALID;
         }
     }
+
     //
     // Destroyer
     //
     ~FastRational( ) { kill_mpq(); }
+    FastRational & operator=(FastRational && other) {
+        std::swap(this->state, other.state);
+        std::swap(this->num, other.num);
+        std::swap(this->den, other.den);
+        std::swap(this->mpq, other.mpq);
+        return *this;
+    }
+
     void reset();
     inline FastRational & operator=( const FastRational & );
 private:
@@ -192,43 +198,39 @@ private:
             setWordPartValid();
         }
     }
-    friend inline void addition            ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void substraction         ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void multiplication      ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void multiplication_ref  ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void division            ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void additionAssign      ( FastRational &, const FastRational & );
-    friend inline void additionAssign_explicit( FastRational &, const FastRational & );
-    friend inline void substractionAssign   ( FastRational &, const FastRational & );
-    friend inline void substractionAssign_explicit( FastRational &, const FastRational & );
-    friend inline void multiplicationAssign( FastRational &, const FastRational & );
-    friend inline void multiplicationAssign_explicit( FastRational &, const FastRational & );
-    friend inline void divisionAssign      ( FastRational &, const FastRational & );
-    friend inline void divisionAssign_explicit( FastRational &, const FastRational & );
-    friend FastRational gcd(FastRational const &, FastRational const &);
-    friend FastRational lcm(FastRational const &, FastRational const &);
-    friend FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
-    friend FastRational divexact(FastRational const & n, FastRational const & d);
-public:
-    void print         ( std::ostream & ) const;
-    inline double get_d  ( ) const;
-    std::string   get_str( ) const;
-    inline bool operator==(const FastRational& b) const;
-    inline FastRational operator-() const;
-    inline void negate();
-private:
-    void print_(std::ostream& out) const;
+    friend inline void addition            (FastRational &, const FastRational &, const FastRational &);
+    friend inline void substraction        (FastRational &, const FastRational &, const FastRational &);
+    friend inline void multiplication      (FastRational &, const FastRational &, const FastRational &);
+    friend inline void division            (FastRational &, const FastRational &, const FastRational &);
+    friend inline void additionAssign      (FastRational &, const FastRational &);
+    friend inline void substractionAssign  (FastRational &, const FastRational &);
+    friend inline void multiplicationAssign(FastRational &, const FastRational &);
+    friend inline void divisionAssign      (FastRational &, const FastRational &);
+    friend FastRational gcd                (FastRational const &, FastRational const &);
+    friend FastRational lcm                (FastRational const &, FastRational const &);
+    friend FastRational fastrat_fdiv_q     (FastRational const & n, FastRational const & d);
+    friend FastRational divexact           (FastRational const & n, FastRational const & d);
+
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
         else if (a > b) return 1;
         else return 0;
     }
-//    bool has_mpq, has_word;
-    State state;
-    word num;
-    uword den;
-    mpq_t mpq;
+
+    void print_(std::ostream& out) const;
+
+
 public:
+    void print           (std::ostream &) const;
+    std::string   get_str() const;
+
+    inline double get_d  () const;
+
+    inline bool operator==(const FastRational& b) const;
+    inline FastRational operator-() const;
+
+    inline void negate();
+
     FastRational get_den() const {
         if (wordPartValid() && den <= INT32_MAX) {
             return FastRational((uword)den);
@@ -297,14 +299,14 @@ public:
         else {
             mpz_class q;
             mpz_cdiv_q (q.get_mpz_t() , mpq_numref(mpq) , mpq_denref(mpq));
-            FastRational ret( q );
+            FastRational ret(q);
             return ret;
         }
     }
-    inline FastRational floor( ) const
+    inline FastRational floor() const
     {
         if (isInteger()) return *this;
-        return ceil( ) - 1;
+        return ceil() - 1;
     }
     bool isWellFormed() const;
     FastRational operator+(const FastRational& b) const
@@ -330,7 +332,7 @@ public:
         FastRational dest;
         assert(isWellFormed());
         assert(b.isWellFormed());
-        multiplication_ref(dest, *this, b);
+        multiplication(dest, *this, b);
         assert(dest.isWellFormed());
         return dest;
     }
@@ -501,6 +503,9 @@ inline int FastRational::compare(const FastRational& b) const {
 
 inline int FastRational::sign() const {
     if (wordPartValid()) {
+        // Based on benchmarking, the tricks in
+        // https://stackoverflow.com/questions/14579920/fast-sign-of-integer-in-c
+        // either degrade performance or have no effect apart from making code less readable
         if (num < 0) return -1;
         else if (num > 0) return 1;
         else return 0;
@@ -625,17 +630,8 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
         } else if (b.den == 1) {
             // Maximum sum here is INT_MAX + INT_MAX*UINT_MAX, which does not overflow.
             // Minimum sum here is INT_MIN + UINT_MAX*INT_MIN = 2^63, which does not overflow.
+            // (a.num + b.num*a.den)/a.den is already canonicalized as can be seen with simple number theory.
             lword num_tmp = lword(a.num) + lword(b.num)*a.den;
-            // (a.num + b.num*a.den)/a.den is already canonicalized, as can be seen from the following:
-            // From the preconditions we know that a.num and a.den are relatively prime.
-            // Assume now that (a.num + b.num*a.den)/a.den is not relatively prime.
-            // Then there exists m > 1, and n1, n2 relatively prime s.t.
-            //  (1) m*n1 = a.num + b.num*a.den, and
-            //  (2) m*n2 = a.den
-            // From first (1) and then (2), n1 = a.num/m + b.num*a.den/m = a.num/m + b.num * n2
-            // Hence a.num/m must be a natural number and therefore a.num is divisible by m.  Byt by (2),
-            // also a.den is divisible by m, and therefore a.num and a.den are not relatively prime, in
-            // contradiction with the precondition.
             CHECK_WORD(dst.num, num_tmp);
             dst.den = a.den; // No overflow
         } else if (a.den == 1) {
@@ -755,7 +751,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
     dst.try_fit_word();
 }
 
-inline void multiplication_ref(FastRational& dst, const FastRational& a, const FastRational& b) {
+inline void multiplication(FastRational& dst, const FastRational& a, const FastRational& b) {
     if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
         dst.num=0;
         dst.den=1;
@@ -808,51 +804,6 @@ inline void multiplication_ref(FastRational& dst, const FastRational& a, const F
     dst.try_fit_word();
 }
 
-inline void multiplication(FastRational& dst, const FastRational& a, const FastRational& b) {
-    if ((a.wordPartValid() && a.num == 0) || (b.wordPartValid() && b.num == 0)) {
-        dst.num = 0;
-        dst.den = 1;
-        dst.setWordPartValid();
-        dst.kill_mpq();
-        return;
-    }
-    if (a.wordPartValid() && a.num == 1 && a.den == 1) {
-        dst = b;
-        return;
-    }
-    if (b.wordPartValid() && b.num == 1 && b.den == 1) {
-        dst = a;
-        return;
-    }
-    if (a.wordPartValid() && b.wordPartValid()) {
-        if (a.num > 0 and b.num > 0 and (uword)a.num == b.den and a.den == (uword)b.num) {
-            dst.num = 1;
-            dst.den = 1;
-            dst.kill_mpq();
-            dst.setWordPartValid();
-            return;
-        }
-        uword common1 = gcd(absVal(a.num), b.den);
-        uword common2 = gcd(a.den, absVal(b.num));
-        word zn;
-        uword zd;
-        CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
-        CHECK_UWORD(zd, ulword(a.den/common2) * (b.den/common1));
-        dst.num = zn;
-        dst.den = zd;
-        dst.kill_mpq();
-        dst.setWordPartValid();
-        return;
-    }
-    overflow:
-    a.force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
-    dst.ensure_mpq_memory_allocated();
-    mpq_mul(dst.mpq, a.mpq, b.mpq);
-    dst.state = State::MPQ_ALLOCATED_AND_VALID;
-    dst.try_fit_word();
-}
-
 inline void division(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (b.wordPartValid() && b.num == 1 && b.den == 1) {
         dst = a;
@@ -872,8 +823,6 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         }
         uword common1 = gcd(absVal(a.num), absVal(b.num));
         uword common2 = gcd(a.den, b.den);
-        assert( common1 != 0 );
-        assert( common2 != 0 );
         word zn;
         uword zd;
         CHECK_WORD(zn, ulword(absVal(a.num)/common1) * (b.den/common2));
@@ -892,17 +841,13 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
             }
             zn = tmp;
         }
-//        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) zn = -absVal(zn);
         else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) CHECK_WORD(zn, (lword)(absVal(zn)));
-//        else if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) zn = absVal(zn);
 
         dst.num = zn;
         dst.den = zd;
 
         dst.setWordPartValid();
         dst.kill_mpq();
-
-
 
         return;
     }
@@ -925,12 +870,6 @@ inline double FastRational::get_d() const {
 }
 
 inline void additionAssign(FastRational& a, const FastRational& b) {
-//    addition(a, a, b);
-    additionAssign_explicit(a, b);
-}
-
-
-inline void additionAssign_explicit(FastRational& a, const FastRational& b) {
     if (b.wordPartValid()) {
         if (b.num == 0) return;
         if (a.wordPartValid()) {
@@ -944,7 +883,6 @@ inline void additionAssign_explicit(FastRational& a, const FastRational& b) {
                 lword c2 = lword(b.num)*a.den; // No overflow
                 lword n;
                 CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
-//                lword n = lword(a.num)*b.den + lword(b.num)*a.den;
                 ulword d = ulword(a.den) * b.den;
                 lword common = gcd(absVal(n), d);
                 word zn;
@@ -971,19 +909,12 @@ inline void additionAssign_explicit(FastRational& a, const FastRational& b) {
     a.try_fit_word();
 }
 
-
-
 inline void substractionAssign(FastRational& a, const FastRational& b) {
-//    substraction(a, a, b);
-    substractionAssign_explicit(a, b);
-}
-
-inline void substractionAssign_explicit(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common = gcd(a.den, b.den);
         COMPUTE_WORD(n1, lword(a.num) * (b.den / common));
         COMPUTE_WORD(n2, lword(b.num) * (a.den / common));
-        lword n = lword(n1) - lword(n2);
+        lword n = lword(n1) - lword(n2); // Cannot overflow
         ulword d = ulword(a.den) * (b.den / common);
         common = gcd(absVal(n), d);
         word zn;
@@ -1009,11 +940,6 @@ inline void substractionAssign_explicit(FastRational& a, const FastRational& b) 
 }
 
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
-//    multiplication(a, a, b);
-    multiplicationAssign_explicit(a, b);
-}
-
-inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common1 = gcd(absVal(a.num), b.den);
         uword common2 = gcd(a.den, absVal(b.num));
@@ -1052,16 +978,9 @@ inline void multiplicationAssign_explicit(FastRational& a, const FastRational& b
 }
 
 inline void divisionAssign(FastRational& a, const FastRational& b) {
-//    division(a, a, b);
-    divisionAssign_explicit(a, b);
-}
-
-inline void divisionAssign_explicit(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common1 = gcd(absVal(a.num), absVal(b.num));
         uword common2 = gcd(a.den, b.den);
-        assert(common1 != 0);
-        assert(common2 != 0);
         word zn;
         uword zd;
         CHECK_WORD(zn, ulword(absVal(a.num) / common1) * (b.den / common2));
@@ -1081,13 +1000,6 @@ inline void divisionAssign_explicit(FastRational& a, const FastRational& b) {
         } else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) {
             CHECK_WORD(zn, (lword) (absVal(zn)));
         }
-//  This implementation messes up the signs, since a.num/common1 is an unsigned word
-//        if (b.num < 0) {
-//            CHECK_WORD(zn, -lword(a.num/common1) * (b.den/common2));
-//        } else {
-//            CHECK_WORD(zn,  lword(a.num/common1) * (b.den/common2));
-//        }
-//        CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
         a.den = zd;
         a.num = zn;
         a.kill_mpq();
