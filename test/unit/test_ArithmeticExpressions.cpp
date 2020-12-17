@@ -411,3 +411,11 @@ TEST_F(ArithmeticExpressions_test, test_CHECK_WORD)
     overflow:
     cout << "Overflow" << endl;
 }
+
+TEST_F(ArithmeticExpressions_test, test_ceil)
+{
+    word a(INT_MIN);
+    uword b(3);
+    FastRational f(a, b);
+    f.ceil();
+}

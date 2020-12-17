@@ -286,14 +286,14 @@ public:
             return mpz_fits_uint_p(mpq_denref(mpq)) && (mpz_get_ui(mpq_denref(mpq)) == 1);
         }
     }
-    inline FastRational ceil( ) const
+    inline FastRational ceil() const
     {
         if (isInteger())
             return *this;
 
         if (wordPartValid()) {
-            word ret = (num > 0 ? (uword)num : (uword)(-num) ) / den;
-            if ( num < 0 ) ret = -ret;
+            word ret = absVal(num) / den; // Use correct abs
+            if ( num < 0 ) ret = -ret; // Guaranteed not to overflow since den >= 2
             else ++ret;
             return ret;
         }
