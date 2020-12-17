@@ -700,25 +700,15 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             dst.num = 0;
             dst.den = 1;
         } else if (b.den == 1) {
-            lword num_tmp;
-            // num_tmp = a.num - b.num * a.den
             // Maximum subtraction here is INT_MAX - (INT_MIN)*(UINT_MAX) = 2^63-1 which does not overflow lword
             // Minimum subtraction here is INT_MIN - (INT_MAX)*(UINT_MAX) = -9223372028264841217 which does not underflow lword
-            CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num), lword(b.num)*a.den);
-            lword common = gcd<lword>(absVal(num_tmp), a.den);
-            CHECK_WORD(dst.num, num_tmp/common);
-            dst.den = a.den / common; // No overflow
+            // (a.num - b.num*a.den) / a.den is already canonicalized
+            CHECK_WORD(dst.num, lword(a.num) - lword(b.num)*a.den);
+            dst.den = a.den;
         } else if (a.den == 1) {
-            lword num_tmp;
-            CHECK_SUB_OVERFLOWS_LWORD(num_tmp, lword(a.num) * b.den, lword(b.num));
-            lword common = gcd<lword>(absVal(num_tmp), b.den);
-            if (common != 1) {
-                CHECK_WORD(dst.num, num_tmp / common);
-                dst.den = b.den / common; // No overflow
-            } else {
-                CHECK_WORD(dst.num, num_tmp);
-                dst.den = b.den; // No overflow
-            }
+            // (a.num*b.den - b.den)/b.den is already canonicalized.
+            CHECK_WORD(dst.num, lword(a.num)*b.den - lword(b.num));
+            dst.den = b.den;
         } else {
             uword common = gcd(a.den, b.den);
             lword n1, n2, n;
