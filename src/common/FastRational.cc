@@ -8,8 +8,6 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <sstream>
 #include <Sort.h>
 
-//mpz_init(FastRational::one);
-//mpz_set_si(FastRational::one, 1);
 FastRational::FastRational( const char * s, const int base )
 {
     mpq_init(mpq);
@@ -42,7 +40,6 @@ void FastRational::reset()
 
 void FastRational::print(std::ostream & out) const
 {
-//  const bool sign = num < 0;
     const bool sign = this->sign() < 0;
     if (wordPartValid()) {
         uword abs_num = absVal(num);
