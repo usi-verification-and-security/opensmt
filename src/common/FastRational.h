@@ -108,6 +108,7 @@ class FastRational
 public:
     // Methods for questioning inner state
     inline bool wordPartValid() const { return  static_cast<state_t>(state) & wordValidMask; }
+    inline bool wordAndMpqEqual() const;
     inline bool mpqMemoryAllocated() const { return  static_cast<state_t>(state) & mpqMemoryAllocatedMask; }
     inline bool mpqPartValid() const { return  static_cast<state_t>(state) & mpqValidMask; }
 
@@ -598,7 +599,16 @@ inline bool FastRational::isWellFormed() const
 {
     return (  wordPartValid() || mpqPartValid() )
            && ( !wordPartValid() || (den != 0 && gcd(absVal(num), den)==1) )
-           && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 );
+           && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 )
+           && ( !(wordPartValid() && mpqPartValid()) || wordAndMpqEqual());
+    // Check that if both wordPartValid() and mpqPartValid(), the are the same number
+}
+
+inline bool FastRational::wordAndMpqEqual() const {
+    assert(wordPartValid() && mpqPartValid());
+    uword int_den = mpz_get_ui(mpq_denref(mpq));
+    word int_num = mpz_get_si(mpq_numref(mpq));
+    return int_den == den and int_num == num;
 }
 
 inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
