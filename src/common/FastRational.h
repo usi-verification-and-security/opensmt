@@ -83,8 +83,6 @@ class FastRational
 
     static const MpzUnit unit;
 
-
-
     // Bit masks for questioning state:
     static const unsigned char wordValidMask = 0x1;
     static const unsigned char mpqMemoryAllocatedMask = 0x2;
@@ -676,8 +674,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             dst.den = zd;
         }
         dst.kill_mpq();
-        dst.setWordPartValid();
-////        assert(dst.isWellFormed());
+        assert(dst.isWellFormed());
         return;
     }
     overflow:
