@@ -634,7 +634,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
         } else if (a.num == 0) {
             dst.num = b.num;
             dst.den = b.den;
-        } else if (a == -b) {
+        } else if (a.den == b.den and b.num > WORD_MIN and a.num == -b.num) {
             dst.num = 0;
             dst.den = 1;
         } else if (b.den == 1) {
@@ -695,7 +695,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
         } else if (a.num == 0) {
             CHECK_WORD(dst.num, -lword(b.num));
             dst.den = b.den;
-        } else if (a == b) {
+        } else if (a.den == b.den and a.num == b.num) {
             dst.num = 0;
             dst.den = 1;
         } else if (b.den == 1) {
