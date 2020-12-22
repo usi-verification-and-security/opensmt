@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <string.h>
 
 #include <inttypes.h>
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include "Vec.h"
 #include "ParseUtils.h"
 

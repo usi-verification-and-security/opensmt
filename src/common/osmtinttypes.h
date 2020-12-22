@@ -1,4 +1,4 @@
-/**************************************************************************************[IntTypes.h]
+/**************************************************************************************[osmtinttypes.h]
 Copyright (c) 2009-2010, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
