@@ -156,3 +156,222 @@ TEST(Rationals_test, test_modulo)
     FastRational mod = a % b;
     ASSERT_EQ(mod, 0);
 }
+
+TEST(Rationals_test, test_creation)
+{
+    {
+        // a = INT_MIN / INT_MAX is the number that has the smallest nominator and biggest denominator such that it still fits the word representation
+        FastRational a(INT_MIN, INT_MAX);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_EQ(a, FastRational("-2147483648/2147483647"));
+    }
+    {
+        // a = INT_MAX / INT_MAX = 1 but in current implementation handles big values.
+        FastRational a(INT_MAX,INT_MAX);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_EQ(a, 1);
+    }
+}
+
+TEST(Rationals_test, test_addition)
+{
+    {
+        // b.num == 0
+        FastRational a(1, 3);
+        FastRational b(0);
+        ASSERT_EQ(a + b, FastRational(1, 3));
+        ASSERT_EQ(-a + b, FastRational(-1, 3));
+    }
+
+    {
+        // a.num == 0
+        FastRational a(0);
+        FastRational b(1, 3);
+        ASSERT_EQ(a + b, FastRational(1, 3));
+        ASSERT_EQ(a + (-b), FastRational(-1, 3));
+    }
+
+    {
+        // a == -b
+        FastRational a(1,3);
+        FastRational b(-1,3);
+        ASSERT_EQ(a+b, 0);
+    }
+
+    {
+        // b.den == 1
+        // result fits in word
+        FastRational a(1,3);
+        FastRational b(1);
+        ASSERT_EQ(a+b, FastRational(4,3));
+    }
+    {
+        // b.den == 1
+        // a.num + b.num*a.den does not fit in word (but fits by definition in lword)
+        // (a.num + b.num*a.den) / gcd(a.num+b.num*a.den, a.den) does not fit in word
+        FastRational a(INT_MAX,UINT_MAX);
+        FastRational b(INT_MAX);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("9223372032559808512/4294967295"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+    {
+        // b.den == 1
+        // a and b negative
+        // a.num + b.num*a.den does not fit in word (but fits by definition in lword)
+        // (a.num + b.num*a.den) / gcd(a.num+b.num*a.den, a.den) does not fit in word
+        FastRational a(INT_MIN,UINT_MAX);
+        FastRational b(INT_MIN);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("-9223372036854775808/4294967295"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+    {
+        // b.den == 1
+        // a.num + b.num*a.den does not fit in a word (but fits by definition in lword)
+        FastRational a(INT_MAX,8);
+        FastRational b(2);
+        FastRational sum = a+b;
+        ASSERT_EQ(sum, FastRational("2147483663/8"));
+        ASSERT_FALSE(sum.wordPartValid());
+    }
+}
+
+TEST(Rationals_test, test_subtraction)
+{
+    {
+        FastRational a(10);
+        FastRational b(0);
+        FastRational c = a-b;
+        ASSERT_EQ(c, a);
+        ASSERT_TRUE(c.wordPartValid());
+        ASSERT_FALSE(c.mpqPartValid());
+    }
+    {
+        FastRational a(0);
+        FastRational s = a - FastRational(INT_MIN);
+        ASSERT_FALSE(s.wordPartValid());
+        ASSERT_TRUE(s.mpqPartValid());
+        ASSERT_EQ(s, FastRational(INT_MAX)+1);
+    }
+    {
+        FastRational a(INT_MAX,UINT_MAX);
+        FastRational b(INT_MIN);
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_TRUE(b.wordPartValid());
+        ASSERT_FALSE(b.mpqMemoryAllocated());
+        FastRational c = a - b;
+        FastRational res("9223372036854775807/4294967295");
+        ASSERT_TRUE(res.mpqPartValid());
+        ASSERT_EQ(c, res);
+    }
+    {
+        FastRational a(INT_MIN, UINT_MAX);
+        FastRational b(INT_MAX);
+        FastRational c = a - b;
+
+    }
+}
+
+TEST(Rationals_test, test_division)
+{
+    {
+        FastRational a(-1);
+        FastRational b(-1);
+        a /= b;
+        ASSERT_EQ(a, 1);
+    }
+    {
+        FastRational a(-3);
+        FastRational b(2);
+        a /= b;
+        ASSERT_EQ(a, FastRational(-3, 2));
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+    }
+}
+
+TEST(Rationals_test, test_operatorAssign)
+{
+    {
+        FastRational f(0);
+        f -= FastRational(-3) * FastRational(-1);
+        ASSERT_EQ(f, -3);
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        FastRational f(0);
+        f += FastRational(-3) * FastRational(-1);
+        ASSERT_EQ(f, 3);
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        // (/ 1333332 329664997) += (- 332667998001/329664997000)
+        FastRational f(1333332, 329664997);
+        f += -FastRational("332667998001/329664997000");
+        // 331334666001/329664997000
+        ASSERT_EQ(f, -FastRational("331334666001/329664997000"));
+        ASSERT_TRUE(f.mpqMemoryAllocated());
+        ASSERT_FALSE(f.wordPartValid());
+    }
+    {
+        FastRational f(-1);
+        f += FastRational("-1/2") * FastRational(-1);
+        ASSERT_EQ(f, FastRational("-1/2"));
+        ASSERT_TRUE(f.wordPartValid());
+        ASSERT_FALSE(f.mpqMemoryAllocated());
+    }
+    {
+        FastRational res = FastRational(1) - FastRational(0);
+        ASSERT_EQ(res, 1);
+        ASSERT_TRUE(res.wordPartValid());
+        ASSERT_FALSE(res.mpqMemoryAllocated());
+        // 1 - (/ (- 335) 666) = (/ (- 1001) 666)
+        res = FastRational(1) - FastRational("-335/666");
+        ASSERT_EQ(res, FastRational("1001/666"));
+        ASSERT_TRUE(res.wordPartValid());
+        ASSERT_FALSE(res.mpqMemoryAllocated());
+    }
+    {
+        FastRational a(-1,12);
+        FastRational b(-1);
+        a += b;
+        ASSERT_EQ(a, FastRational(-13,12));
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_FALSE(a.mpqMemoryAllocated());
+        ASSERT_TRUE(b.wordPartValid());
+        ASSERT_FALSE(b.mpqMemoryAllocated());
+    }
+}
+
+TEST(Rationals_test, test_CHECK_WORD)
+{
+    word a(INT_MAX);
+    uword b(UINT_MAX);
+    uword res;
+    CHECK_WORD(res, lword(a)*b);
+    ASSERT_EQ(res, (lword)(9223372030412324865));
+    overflow:
+    std::cout << "Overflow" << std::endl;
+}
+
+TEST(Rationals_test, test_ceil)
+{
+    word a(INT_MIN);
+    uword b(3);
+    FastRational f(a, b);
+    f.ceil();
+}
+
+TEST(Rationals_test, test_mod)
+{
+    FastRational a(INT_MAX);
+    FastRational b(INT_MIN);
+    FastRational res = a % b;
+    ASSERT_EQ(res, (INT_MIN+1));
+}
