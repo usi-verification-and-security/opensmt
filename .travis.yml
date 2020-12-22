@@ -16,6 +16,7 @@ compiler:
 env:
   global:
     - USE_READLINE=OFF
+    - PACKAGE_BENCHMARKS=ON
   matrix:
     - CMAKE_BUILD_TYPE=Release
     - CMAKE_BUILD_TYPE=Debug
