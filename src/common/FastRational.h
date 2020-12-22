@@ -629,9 +629,11 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
 inline void addition(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
-            dst = a;
+            dst.num = a.num;
+            dst.den = a.den;
         } else if (a.num == 0) {
-            dst = b;
+            dst.num = b.num;
+            dst.den = b.den;
         } else if (a == -b) {
             dst.num = 0;
             dst.den = 1;
