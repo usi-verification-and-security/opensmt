@@ -51,7 +51,6 @@ option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
 option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
 option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
-option(VALUE_CONSISTENT "Print the value consistency calculation" OFF)
 
 find_package(GMP REQUIRED)
 
@@ -137,10 +136,6 @@ endif()
 
 if (MATRIX_DEBUG)
     add_definitions(-DENABLE_MATRIX_TRACE)
-endif()
-
-if (VALUE_CONSISTENT)
-    add_definitions(-DTRACE_VALUE_CONSISTENT)
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})

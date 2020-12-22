@@ -532,7 +532,6 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
     if (Ri1 != MId_Undef)
         setIdMatrix(Ri1);
 
-
     curcol=1;
     for (int p = 1; p <= U1m.nRows(); p++)
     {
