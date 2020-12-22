@@ -375,3 +375,19 @@ TEST(Rationals_test, test_mod)
     FastRational res = a % b;
     ASSERT_EQ(res, (INT_MIN+1));
 }
+
+TEST(Rationals_test, test_addNegated)
+{
+    {
+        FastRational a(15);
+        FastRational b(-15);
+        FastRational res = a+b;
+        ASSERT_EQ(res, 0);
+    }
+    {
+        FastRational a(INT_MAX);
+        FastRational b(INT_MIN);
+        FastRational res = a + b;
+        ASSERT_EQ(res, -1);
+    }
+}
