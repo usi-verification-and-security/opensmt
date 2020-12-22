@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <initializer_list>
 #include <vector>
 #include <utility>
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include "XAlloc.h"
 
 

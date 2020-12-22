@@ -20,7 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef Minisat_Alloc_h
 #define Minisat_Alloc_h
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include "XAlloc.h"
 #include "Vec.h"
 

@@ -1,6 +1,6 @@
 #ifndef LABOUNDREFS_H
 #define LABOUNDREFS_H
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include <ostream>
 #include <cassert>
 

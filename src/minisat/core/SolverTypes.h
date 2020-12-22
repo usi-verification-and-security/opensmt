@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <assert.h>
 
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include "Alg.h"
 #include "Vec.h"
 #include "Map.h"
