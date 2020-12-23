@@ -284,6 +284,14 @@ TEST(Rationals_test, test_subtraction)
         FastRational res("-18446744050087231493/18446744060824649730");
         ASSERT_EQ(c, res);
     }
+    {
+        FastRational a("-2147483647/4294967292");
+        FastRational b("2147483645/4294967294");
+        ASSERT_TRUE(a.wordPartValid());
+        ASSERT_TRUE(b.wordPartValid());
+        FastRational c = a - b;
+        ASSERT_TRUE(c.mpqPartValid());
+    }
 }
 
 TEST(Rationals_test, test_division)

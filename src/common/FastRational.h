@@ -713,9 +713,13 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             lword n1, n2, n;
             ulword d;
             if (common != 1) {
+                // Worst case for n1-n2 seems to be
+                // - 2147483647/4294967292 - 2147483645/4294967294
+                // This does not overflow.  The positive case is the same
                 n1 = lword(a.num) * (b.den / common);
                 n2 = lword(b.num) * (a.den / common);
-                CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
+                n = n1 - n2;
+//                CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
                 d = ulword(a.den) * (b.den / common);
             } else {
                 n1 = lword(a.num) * b.den;
