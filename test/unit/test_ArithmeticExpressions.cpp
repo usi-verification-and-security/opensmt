@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 #include "LRALogic.h"
-#include "FastRational.h"
 
 class ArithmeticExpressions_test : public ::testing::Test {
 protected:
