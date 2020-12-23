@@ -834,14 +834,9 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         bool b_num_gt_0 = b.num > 0;
         bool a_num_le_0 = a.num <= 0;
 
-        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
-            lword tmp = -(lword)(absVal(zn));
-            if (tmp < WORD_MIN || tmp > WORD_MAX) {
-                goto overflow;
-            }
-            zn = tmp;
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip the sign if necessary
+            zn = -zn; // Cannot overflow since zn is a positive word
         }
-        else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) CHECK_WORD(zn, (lword)(absVal(zn)));
 
         dst.num = zn;
         dst.den = zd;
@@ -954,14 +949,8 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
         bool b_num_gt_0 = b.num > 0;
         bool a_num_le_0 = a.num <= 0;
 
-        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
-            lword tmp = -(lword)(absVal(zn));
-            if (tmp < WORD_MIN || tmp > WORD_MAX) {
-                goto overflow;
-            }
-            zn = tmp;
-        } else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) {
-            CHECK_WORD(zn, (lword)(absVal(zn)));
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip sign
+            zn = -zn; // Cannot overflow since zn is a positive word
         }
 
         a.num = zn;
@@ -991,15 +980,10 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
         bool b_num_gt_0 = b.num > 0;
         bool a_num_le_0 = a.num <= 0;
 
-        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { //CHECK_WORD(zn, (lword)(-absVal(zn)));
-            lword tmp = -(lword) (absVal(zn));
-            if (tmp < WORD_MIN || tmp > WORD_MAX) {
-                goto overflow;
-            }
-            zn = tmp;
-        } else if ((b_num_gt_0 && a_num_ge_0) || (b_num_lt_0 && a_num_le_0)) {
-            CHECK_WORD(zn, (lword) (absVal(zn)));
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip sign
+            zn = -zn; // Cannot overflow since zn is a positive word
         }
+
         a.den = zd;
         a.num = zn;
         a.kill_mpq();
