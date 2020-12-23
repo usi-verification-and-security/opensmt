@@ -720,6 +720,7 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             } else {
                 n1 = lword(a.num) * b.den;
                 n2 = lword(b.num) * a.den;
+                // Consider -2147483645/4294967294 - 2147483647/4294967295.  The following underflows lword
                 CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
                 d = ulword(a.den) * b.den;
             }
