@@ -371,7 +371,7 @@ TEST(Rationals_test, test_CHECK_WORD)
 {
     word a(INT_MAX);
     uword b(UINT_MAX);
-    uword res;
+    uword res = 0;
     CHECK_WORD(res, lword(a)*b);
     ASSERT_EQ(res, (lword)(9223372030412324865));
     overflow:
@@ -381,6 +381,7 @@ TEST(Rationals_test, test_CHECK_WORD)
 TEST(Rationals_test, test_sub_lword_underflow_min)
 {
     lword res;
+    (void)res;
     lword s1 = 0;
     lword s2 = LWORD_MIN;
     CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
@@ -392,6 +393,7 @@ TEST(Rationals_test, test_sub_lword_underflow_min)
 TEST(Rationals_test, test_sub_lword_nounderflow)
 {
     lword res;
+    (void)res;
     lword s1 = 0;
     lword s2 = LWORD_MIN+1;
     CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
@@ -403,6 +405,7 @@ TEST(Rationals_test, test_sub_lword_nounderflow)
 TEST(Rationals_test, test_sub_lword_nooverflow)
 {
     lword res;
+    (void)res;
     lword s1 = -1;
     lword s2 = LWORD_MAX;
     CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
@@ -414,6 +417,7 @@ TEST(Rationals_test, test_sub_lword_nooverflow)
 TEST(Rationals_test, test_sub_lword_overflow)
 {
     lword res;
+    (void)res;
     lword s1 = -2;
     lword s2 = LWORD_MAX;
     CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
