@@ -573,11 +573,13 @@ template<uword> uword gcd(uword a, uword b);
 
 #define CHECK_SUB_OVERFLOWS_LWORD(var, s1, s2) \
     do {                                       \
-        if ((s1 > LWORD_MAX/2 || s2 < LWORD_MIN/2) || (s1 < LWORD_MIN/2 || s2 > LWORD_MAX/2)) { \
-            goto overflow; \
-        } \
-        var = s1 - s2; \
-    } while (0)
+        if (s1 >= 0 and s2 < s1 - LWORD_MAX) { \
+            goto overflow;                     \
+        } if (s1 < 0 and s2 > (s1 + 1) + LWORD_MAX) { \
+            goto overflow;                     \
+        }                                      \
+        var = s1 - s2;                         \
+    } while (0)                                \
 
 #define CHECK_POSITIVE(value) \
     if (value < 1) abort()

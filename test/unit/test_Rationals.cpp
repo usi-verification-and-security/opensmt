@@ -378,6 +378,50 @@ TEST(Rationals_test, test_CHECK_WORD)
     std::cout << "Overflow" << std::endl;
 }
 
+TEST(Rationals_test, test_sub_lword_underflow_min)
+{
+    lword res;
+    lword s1 = 0;
+    lword s2 = LWORD_MIN;
+    CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
+    ASSERT_TRUE(false);
+    overflow:
+    ASSERT_TRUE(true);
+}
+
+TEST(Rationals_test, test_sub_lword_nounderflow)
+{
+    lword res;
+    lword s1 = 0;
+    lword s2 = LWORD_MIN+1;
+    CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
+    return;
+    overflow:
+    ASSERT_TRUE(false);
+}
+
+TEST(Rationals_test, test_sub_lword_nooverflow)
+{
+    lword res;
+    lword s1 = -1;
+    lword s2 = LWORD_MAX;
+    CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
+    return;
+    overflow:
+    ASSERT_TRUE(false);
+}
+
+TEST(Rationals_test, test_sub_lword_overflow)
+{
+    lword res;
+    lword s1 = -2;
+    lword s2 = LWORD_MAX;
+    CHECK_SUB_OVERFLOWS_LWORD(res, s1, s2);
+    ASSERT_FALSE(true);
+    overflow:
+    ASSERT_TRUE(true);
+}
+
 TEST(Rationals_test, test_ceil)
 {
     word a(INT_MIN);
