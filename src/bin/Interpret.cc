@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <assert.h>
 #include <stdarg.h>
-#include <string.h>
+#include <string>
 #include <sstream>
 #include <ctime>
 #include <cstdlib>
@@ -343,14 +343,38 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_push:
         {
-            push();
-            notify_success();
+            std::string str((**(n.children->begin())).getValue());
+            try {
+                int num = std::stoi(str);
+                if (num < 0) {
+                    notify_formatted(true, "Incorrect push command, value is negative.");
+                    break;
+                }
+                bool success = true;
+                while (num-- and success) { success = push(); }
+                if (success) { notify_success(); }
+            }
+            catch(std::out_of_range const & ex) {
+                notify_formatted(true, "Incorrect push command, the value is out of range.");
+            }
             break;
         }
         case t_pop:
         {
-            pop();
-            notify_success();
+            std::string str((**(n.children->begin())).getValue());
+            try {
+                int num = std::stoi(str);
+                if (num < 0) {
+                    notify_formatted(true, "Incorrect pop command, value is negative.");
+                    break;
+                }
+                bool success = true;
+                while (num-- and success) { success = pop(); }
+                if (success) { notify_success(); }
+            }
+            catch(std::out_of_range const & ex) {
+                notify_formatted(true, "Incorrect pop command, the value is out of range.");
+            }
             break;
         }
         case t_exit:
