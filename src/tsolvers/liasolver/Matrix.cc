@@ -119,15 +119,22 @@ LAMatrixStore::submul_column(MId A, int j, int jpivot, const opensmt::Real& x)
 
 #ifdef ENABLE_MATRIX_TRACE
     printf("Before: ");
-    for (int i = 1; i <= operator[](A).nCols(); i++)
+    for (int i = 1; i <= operator[](A).nRows(); i++)
         printf("%s%s", i == 1 ? "" : " ", MM(A, i, j).get_str().c_str());
     printf("\n");
 #endif
-    for (int i = 1; i <= operator[](A).nRows(); i++)
-        MM(A, i, j) -= x*MM(A, i, jpivot);
+    for (int i = 1; i <= operator[](A).nRows(); i++) {
+#ifdef ENABLE_MATRIX_TRACE
+        cout << MM(A, i, j).get_str() << " -= " << x.get_str() << " * " << MM(A, i, jpivot).get_str() << endl;
+#endif
+        MM(A, i, j) -= x * MM(A, i, jpivot);
+#ifdef ENABLE_MATRIX_TRACE
+        cout << " => " << MM(A, i, j).get_str() << endl;
+#endif
+    }
 #ifdef ENABLE_MATRIX_TRACE
     printf("After: ");
-    for (int i = 1; i <= operator[](A).nCols(); i++)
+    for (int i = 1; i <= operator[](A).nRows(); i++)
         printf("%s%s", i == 1 ? "" : " ", MM(A, i, j).get_str().c_str());
     printf("\n");
 #endif
@@ -545,6 +552,7 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
             {
                 pivot.negate();
                 neg_column(H, j);
+                assert(([this, Hm, H, j]()->bool { bool val = true; for (int i = 0; i < Hm.nRows(); i++) { val &= MM(H, i+1, j).isInteger(); } return val; })());
                 if (R1 != MId_Undef)
                     neg_row(R1, j);
                 if (Ri1 != MId_Undef)
@@ -556,8 +564,11 @@ LAMatrixStore::compute_hnf_v1(const MId U1, MId &H, int &dim1, MId &R1, MId &Ri1
                 if (MM(H, p, l) == 0)
                     continue;
                 x = fastrat_fdiv_q(MM(H, p, l), pivot);
+                assert(x.isInteger());
                 //We subtract from the column l, x times the column j
+                assert(([this, Hm, H, l]()->bool { bool val = true; for (int i = 0; i < Hm.nRows(); i++) { val &= MM(H, i+1, l).isInteger(); } return val; })());
                 submul_column(H, l, j, x);
+                assert(([this, Hm, H, l]()->bool { bool val = true; for (int i = 0; i < Hm.nRows(); i++) { val &= MM(H, i+1, l).isInteger(); } return val; })());
                 //We add to the line l, x times the line j [To check]
                 if (R1 != MId_Undef)
                     addmul_row(R1, j, l, x);

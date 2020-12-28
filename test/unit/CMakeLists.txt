@@ -170,3 +170,11 @@ target_sources(EnodeStoreTest
 
 target_link_libraries(EnodeStoreTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET EnodeStoreTest)
+
+add_executable(RationalEfficiencyTest)
+target_sources(RationalEfficiencyTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_RationalEfficiency.cc"
+        )
+
+target_link_libraries(RationalEfficiencyTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET RationalEfficiencyTest)

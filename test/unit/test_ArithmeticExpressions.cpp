@@ -208,7 +208,3 @@ TEST_F(ArithmeticExpressions_test, test_Inequality_Constant)
     ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
 }
 
-
-
-
-

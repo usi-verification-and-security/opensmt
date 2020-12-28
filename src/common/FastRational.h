@@ -76,6 +76,11 @@ inline ulword absVal(lword x) {
 
 class FastRational
 {
+    State state;
+    word num;
+    uword den;
+    mpq_t mpq;
+
     static const MpzUnit unit;
 
     // Bit masks for questioning state:
@@ -101,28 +106,23 @@ class FastRational
 public:
     // Methods for questioning inner state
     inline bool wordPartValid() const { return  static_cast<state_t>(state) & wordValidMask; }
+    inline bool wordAndMpqEqual() const;
     inline bool mpqMemoryAllocated() const { return  static_cast<state_t>(state) & mpqMemoryAllocatedMask; }
     inline bool mpqPartValid() const { return  static_cast<state_t>(state) & mpqValidMask; }
 
     //
     // Constructors
     //
-    FastRational( ) : state{State::WORD_VALID}, num(0), den(1) { }
-    FastRational( word x ) : state{State::WORD_VALID}, num(x), den(1) { }
-    FastRational(uint32_t);
+    FastRational       () : state{State::WORD_VALID}, num(0), den(1) {}
+    FastRational       (word x) : state{State::WORD_VALID}, num(x), den(1) {}
+    FastRational       (uint32_t);
     inline FastRational(word n, uword d);
+    // The string must be in the format accepted by mpq_set_str, e.g., "1/2"
     explicit FastRational(const char* s, const int base = 10);
-    inline FastRational( const FastRational & );
-    inline FastRational(FastRational&& other) noexcept;
-    FastRational & operator=(FastRational && other) {
-        std::swap(this->state, other.state);
-        std::swap(this->num, other.num);
-        std::swap(this->den, other.den);
-        std::swap(this->mpq, other.mpq);
-        return *this;
-    }
+    inline FastRational  (const FastRational &);
+    inline FastRational  (FastRational&& other) noexcept;
 
-    FastRational( const mpz_class & x )
+    FastRational         ( const mpz_class & x )
     {
         if ( x.fits_sint_p() ) {
             num = x.get_si();
@@ -137,10 +137,19 @@ public:
             state = State::MPQ_ALLOCATED_AND_VALID;
         }
     }
+
     //
     // Destroyer
     //
     ~FastRational( ) { kill_mpq(); }
+    FastRational & operator=(FastRational && other) {
+        std::swap(this->state, other.state);
+        std::swap(this->num, other.num);
+        std::swap(this->den, other.den);
+        std::swap(this->mpq, other.mpq);
+        return *this;
+    }
+
     void reset();
     inline FastRational & operator=( const FastRational & );
 private:
@@ -188,39 +197,39 @@ private:
             setWordPartValid();
         }
     }
-    friend inline void addition            ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void substraction         ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void multiplication      ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void division            ( FastRational &, const FastRational &, const FastRational & );
-    friend inline void additionAssign      ( FastRational &, const FastRational & );
-    friend inline void substractionAssign   ( FastRational &, const FastRational & );
-    friend inline void multiplicationAssign( FastRational &, const FastRational & );
-    friend inline void divisionAssign      ( FastRational &, const FastRational & );
-    friend FastRational gcd(FastRational const &, FastRational const &);
-    friend FastRational lcm(FastRational const &, FastRational const &);
-    friend FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
-    friend FastRational divexact(FastRational const & n, FastRational const & d);
-public:
-    void print_details ( std::ostream & ) const;
-    void print         ( std::ostream & ) const;
-    inline double get_d  ( ) const;
-    std::string   get_str( ) const;
-    inline bool operator==(const FastRational& b) const;
-    inline FastRational operator-() const;
-    inline void negate();
-private:
-    void print_(std::ostream& out) const;
+    friend inline void addition            (FastRational &, const FastRational &, const FastRational &);
+    friend inline void substraction        (FastRational &, const FastRational &, const FastRational &);
+    friend inline void multiplication      (FastRational &, const FastRational &, const FastRational &);
+    friend inline void division            (FastRational &, const FastRational &, const FastRational &);
+    friend inline void additionAssign      (FastRational &, const FastRational &);
+    friend inline void substractionAssign  (FastRational &, const FastRational &);
+    friend inline void multiplicationAssign(FastRational &, const FastRational &);
+    friend inline void divisionAssign      (FastRational &, const FastRational &);
+    friend FastRational gcd                (FastRational const &, FastRational const &);
+    friend FastRational lcm                (FastRational const &, FastRational const &);
+    friend FastRational fastrat_fdiv_q     (FastRational const & n, FastRational const & d);
+    friend FastRational divexact           (FastRational const & n, FastRational const & d);
+
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
         else if (a > b) return 1;
         else return 0;
     }
-//    bool has_mpq, has_word;
-    State state;
-    word num;
-    uword den;
-    mpq_t mpq;
+
+    void print_(std::ostream& out) const;
+
+
 public:
+    void print           (std::ostream &) const;
+    std::string   get_str() const;
+
+    inline double get_d  () const;
+
+    inline bool operator==(const FastRational& b) const;
+    inline FastRational operator-() const;
+
+    inline void negate();
+
     FastRational get_den() const {
         if (wordPartValid() && den <= INT32_MAX) {
             return FastRational((uword)den);
@@ -275,28 +284,28 @@ public:
             return mpz_fits_uint_p(mpq_denref(mpq)) && (mpz_get_ui(mpq_denref(mpq)) == 1);
         }
     }
-    inline FastRational ceil( ) const
+    inline FastRational ceil() const
     {
         if (isInteger())
             return *this;
 
         if (wordPartValid()) {
-            word ret = (num > 0 ? (uword)num : (uword)(-num) ) / den;
-            if ( num < 0 ) ret = -ret;
+            word ret = absVal(num) / den; // Use correct abs
+            if ( num < 0 ) ret = -ret; // Guaranteed not to overflow since den >= 2
             else ++ret;
             return ret;
         }
         else {
             mpz_class q;
             mpz_cdiv_q (q.get_mpz_t() , mpq_numref(mpq) , mpq_denref(mpq));
-            FastRational ret( q );
+            FastRational ret(q);
             return ret;
         }
     }
-    inline FastRational floor( ) const
+    inline FastRational floor() const
     {
         if (isInteger()) return *this;
-        return ceil( ) - 1;
+        return ceil() - 1;
     }
     bool isWellFormed() const;
     FastRational operator+(const FastRational& b) const
@@ -380,9 +389,9 @@ public:
     // Return *this % d.  The return value will have the sign of d
     FastRational operator%(const FastRational& d) {
         assert(isInteger() && d.isInteger());
-        if (!mpqPartValid() && !d.mpqPartValid()) {
-            lword w = absVal(num % d.num);
-            return (word)(d.num > 0 ? w : -w);
+        if (wordPartValid() && d.wordPartValid()) {
+            uword w = absVal(num % d.num);  // Largest value is absVal(INT_MAX % INT_MIN) = INT_MAX
+            return (word)(d.num > 0 ? w : -w); // No overflow since 0 <= w <= INT_MAX
         }
         FastRational r = (*this) / d;
         r = r.floor();
@@ -493,6 +502,9 @@ inline int FastRational::compare(const FastRational& b) const {
 
 inline int FastRational::sign() const {
     if (wordPartValid()) {
+        // Based on benchmarking, the tricks in
+        // https://stackoverflow.com/questions/14579920/fast-sign-of-integer-in-c
+        // either degrade performance or have no effect apart from making code less readable
         if (num < 0) return -1;
         else if (num > 0) return 1;
         else return 0;
@@ -539,21 +551,36 @@ inline int cmpabs(FastRational op1, FastRational op2)
 };
 template<ulword> ulword gcd(ulword a, ulword b);
 template<uword> uword gcd(uword a, uword b);
-#define CHECK_WORD(var, value) \
-    do { \
-        lword tmp = value; \
-        if (tmp < WORD_MIN/2 || tmp > WORD_MAX/2) { \
-            goto overflow; \
-        } \
-        var = tmp;\
-    } while(0)
+#define CHECK_WORD(var, value)                  \
+    do {                                        \
+        lword tmp = value;                      \
+        if (tmp < WORD_MIN || tmp > WORD_MAX) { \
+            goto overflow;                      \
+        }                                       \
+        var = tmp;                              \
+    } while(0)                                  \
+
+// Adapted from https://codereview.stackexchange.com/questions/37177/simple-method-to-detect-int-overflow
 #define CHECK_SUM_OVERFLOWS_LWORD(var, s1, s2) \
-    do { \
-        if ((s1 > LWORD_MAX/2 || s2 > LWORD_MAX/2) || (s1 < LWORD_MIN/2 || s2 < LWORD_MIN/2)) { \
-            goto overflow; \
-        } \
-        var = s1 + s2;\
-    } while(0)
+    do {                                       \
+        if (s1 > 0 and s2 > LWORD_MAX - s1) {  \
+            goto overflow;                     \
+        } if (s1 < 0 and s2 < LWORD_MIN - s1) {\
+            goto overflow;                     \
+        }                                      \
+        var = s1 + s2;                         \
+    } while (0)                                \
+
+#define CHECK_SUB_OVERFLOWS_LWORD(var, s1, s2) \
+    do {                                       \
+        if (s1 >= 0 and s2 < s1 - LWORD_MAX) { \
+            goto overflow;                     \
+        } if (s1 < 0 and s2 > (s1 + 1) + LWORD_MAX) { \
+            goto overflow;                     \
+        }                                      \
+        var = s1 - s2;                         \
+    } while (0)                                \
+
 #define CHECK_POSITIVE(value) \
     if (value < 1) abort()
 #define CHECK_UWORD(var, value) \
@@ -572,7 +599,16 @@ inline bool FastRational::isWellFormed() const
 {
     return (  wordPartValid() || mpqPartValid() )
            && ( !wordPartValid() || (den != 0 && gcd(absVal(num), den)==1) )
-           && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 );
+           && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 )
+           && ( !(wordPartValid() && mpqPartValid()) || wordAndMpqEqual());
+    // Check that if both wordPartValid() and mpqPartValid(), the are the same number
+}
+
+inline bool FastRational::wordAndMpqEqual() const {
+    assert(wordPartValid() && mpqPartValid());
+    uword int_den = mpz_get_ui(mpq_denref(mpq));
+    word int_num = mpz_get_si(mpq_numref(mpq));
+    return int_den == den and int_num == num;
 }
 
 inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
@@ -580,14 +616,15 @@ inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
     if (n == 0) {
         num = 0;
         den = 1;
-    } else if (n > 0) {
-        word common = gcd(uword(n), d);
-        num = n/common;
-        den = d/common;
     } else {
-        word common = gcd(uword(-n), d);
-        num = n/common;
-        den = d/common;
+        uword common = gcd<uword>(absVal(n), d);
+        if (common > 1) {
+            num = n / common;
+            den = d / common;
+        } else {
+            num = n;
+            den = d;
+        }
     }
 }
 
@@ -599,25 +636,40 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
         } else if (a.num == 0) {
             dst.num = b.num;
             dst.den = b.den;
+        } else if (a.den == b.den and b.num > WORD_MIN and a.num == -b.num) {
+            dst.num = 0;
+            dst.den = 1;
         } else if (b.den == 1) {
-            CHECK_WORD(dst.num, lword(a.num) + lword(b.num)*a.den);
-            dst.den = a.den;
+            // Maximum sum here is INT_MAX + INT_MAX*UINT_MAX, which does not overflow.
+            // Minimum sum here is INT_MIN + UINT_MAX*INT_MIN = 2^63, which does not overflow.
+            // (a.num + b.num*a.den)/a.den is already canonicalized as can be seen with simple number theory.
+            lword num_tmp = lword(a.num) + lword(b.num)*a.den;
+            CHECK_WORD(dst.num, num_tmp);
+            dst.den = a.den; // No overflow
         } else if (a.den == 1) {
-            CHECK_WORD(dst.num, lword(b.num) + lword(a.num)*b.den);
+            // See comments above.
+            lword num_tmp = lword(b.num) + lword(a.num)*b.den;
+            CHECK_WORD(dst.num, num_tmp);
             dst.den = b.den;
         } else {
-            lword c1 = lword(a.num)*b.den; // No overflow
-            lword c2 = lword(b.num)*a.den; // No overflow
+            uword common = gcd(a.den, b.den);
+            lword n1, n2;
+            if (common != 1) {
+                n1 = lword(a.num) * (b.den / common);
+                n2 = lword(b.num) * (a.den / common);
+            } else {
+                n1 = lword(a.num) * b.den;
+                n2 = lword(b.num) * a.den;
+            }
             lword n;
-            CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
-//            lword n = lword(a.num)*b.den + lword(b.num)*a.den;
-            ulword d = ulword(a.den) * b.den;
-            lword common = gcd(absVal(n), d);
+            CHECK_SUM_OVERFLOWS_LWORD(n, n1, n2);
+            ulword d = ulword(a.den) * (b.den / common);
+            common = gcd(absVal(n), d);
             word zn;
             uword zd;
-            if (common > 1) {
-                CHECK_WORD(zn, n/common);
-                CHECK_UWORD(zd, d/common);
+            if (common != 1) {
+                CHECK_WORD(zn, n / common);
+                CHECK_UWORD(zd, d / common);
             } else {
                 CHECK_WORD(zn, n);
                 CHECK_UWORD(zd, d);
@@ -626,6 +678,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             dst.den = zd;
         }
         dst.kill_mpq();
+        assert(dst.isWellFormed());
         return;
     }
     overflow:
@@ -642,30 +695,49 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
         if (b.num == 0) {
             dst.num = a.num;
             dst.den = a.den;
-        }
-        else if (a.num == 0) {
-            if (b.num == WORD_MIN)
-                goto overflow;
-            dst.num = -b.num; // This overflows if b = -2147483648
+        } else if (a.num == 0) {
+            CHECK_WORD(dst.num, -lword(b.num));
             dst.den = b.den;
-        }
-        else if (b.den == 1) {
+        } else if (a.den == b.den and a.num == b.num) {
+            dst.num = 0;
+            dst.den = 1;
+        } else if (b.den == 1) {
+            // Maximum subtraction here is INT_MAX - (INT_MIN)*(UINT_MAX) = 2^63-1 which does not overflow lword
+            // Minimum subtraction here is INT_MIN - (INT_MAX)*(UINT_MAX) = -9223372028264841217 which does not underflow lword
+            // (a.num - b.num*a.den) / a.den is already canonicalized
             CHECK_WORD(dst.num, lword(a.num) - lword(b.num)*a.den);
             dst.den = a.den;
-        }
-        else if (a.den == 1) {
-            CHECK_WORD(dst.num, -lword(b.num) + lword(a.num)*b.den);
+        } else if (a.den == 1) {
+            // (a.num*b.den - b.den)/b.den is already canonicalized.
+            CHECK_WORD(dst.num, lword(a.num)*b.den - lword(b.num));
             dst.den = b.den;
-        }
-        else {
-            lword n = lword(a.num)*b.den - lword(b.num)*a.den;
-            ulword d = ulword(a.den) * b.den;
-            lword common = gcd(absVal(n), d);
+        } else {
+            uword common = gcd(a.den, b.den);
+            lword n1, n2, n;
+            ulword d;
+            if (common != 1) {
+                // Worst case for n1-n2 seems to be
+                // - 2147483647/4294967292 - 2147483645/4294967294
+                // This does not overflow.  The positive case is the same
+                n1 = lword(a.num) * (b.den / common);
+                n2 = lword(b.num) * (a.den / common);
+                n = n1 - n2;
+//                CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
+                d = ulword(a.den) * (b.den / common);
+            } else {
+                n1 = lword(a.num) * b.den;
+                n2 = lword(b.num) * a.den;
+                // Consider -2147483645/4294967294 - 2147483647/4294967295.  The following underflows lword
+                CHECK_SUB_OVERFLOWS_LWORD(n, n1, n2);
+                d = ulword(a.den) * b.den;
+            }
+
+            common = gcd(absVal(n), d);
             word zn;
             uword zd;
-            if (common > 1) {
-                CHECK_WORD(zn, n/common);
-                CHECK_UWORD(zd, d/common);
+            if (common != 1) {
+                CHECK_WORD(zn, n / common);
+                CHECK_UWORD(zd, d / common);
             } else {
                 CHECK_WORD(zn, n);
                 CHECK_UWORD(zd, d);
@@ -689,7 +761,6 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
         dst.num=0;
         dst.den=1;
-        dst.setWordPartValid();
         dst.kill_mpq();
         return;
     }
@@ -704,7 +775,7 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     if (a.wordPartValid() && b.wordPartValid()) {
         word zn;
         uword zd;
-        word common1 = gcd(absVal(a.num), b.den), common2 = gcd(a.den, absVal(b.num));
+        uword common1 = gcd(absVal(a.num), b.den), common2 = gcd(a.den, absVal(b.num));
         lword k1, k2;
         ulword k3, k4; // Changed lword => ulword
         if (common1 > 1) {
@@ -725,7 +796,6 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
         CHECK_UWORD(zd, k3 * k4);
         dst.num = zn;
         dst.den = zd;
-        dst.setWordPartValid();
         dst.kill_mpq();
         return;
     }
@@ -739,19 +809,43 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
 }
 
 inline void division(FastRational& dst, const FastRational& a, const FastRational& b) {
+    if (b.wordPartValid() && b.num == 1 && b.den == 1) {
+        dst = a;
+        return;
+    }
+    if (a.wordPartValid() && a.num == 0) {
+        dst = 0;
+        return;
+    }
     if (a.wordPartValid() && b.wordPartValid()) {
+        if (a.num == b.num && a.den == b.den) {
+            dst.num = 1;
+            dst.den = 1;
+            dst.kill_mpq();
+            return;
+        }
         uword common1 = gcd(absVal(a.num), absVal(b.num));
         uword common2 = gcd(a.den, b.den);
         word zn;
         uword zd;
-        CHECK_WORD(zn, (lword(a.num)/common1) * (b.den/common2));
+        CHECK_WORD(zn, ulword(absVal(a.num)/common1) * (b.den/common2));
         CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
+
+        // Note: dst and a or b might be the same FastRational.
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip the sign if necessary
+            zn = -zn; // Cannot overflow since zn is a positive word
+        }
+
         dst.num = zn;
         dst.den = zd;
-        if ((b.num < 0 && a.num >= 0) || (b.num > 0 && a.num <= 0)) dst.num = -absVal(dst.num);
-        if ((b.num > 0 && a.num >= 0) || (b.num < 0 && a.num <= 0)) dst.num = absVal(dst.num);
-        dst.setWordPartValid();
+
         dst.kill_mpq();
+
         return;
     }
     overflow:
@@ -786,7 +880,6 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
                 lword c2 = lword(b.num)*a.den; // No overflow
                 lword n;
                 CHECK_SUM_OVERFLOWS_LWORD(n, c1, c2); // Overflow possible
-//                lword n = lword(a.num)*b.den + lword(b.num)*a.den;
                 ulword d = ulword(a.den) * b.den;
                 lword common = gcd(absVal(n), d);
                 word zn;
@@ -818,13 +911,18 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
         uword common = gcd(a.den, b.den);
         COMPUTE_WORD(n1, lword(a.num) * (b.den / common));
         COMPUTE_WORD(n2, lword(b.num) * (a.den / common));
-        lword n = lword(n1) - lword(n2);
+        lword n = lword(n1) - lword(n2); // Cannot overflow
         ulword d = ulword(a.den) * (b.den / common);
         common = gcd(absVal(n), d);
         word zn;
         uword zd;
-        CHECK_WORD(zn, n/common);
-        CHECK_UWORD(zd, d/common);
+        if (common > 1) {
+            CHECK_WORD(zn, n / common);
+            CHECK_UWORD(zd, d / common);
+        } else {
+            CHECK_WORD(zn, n);
+            CHECK_UWORD(zd, d);
+        }
         a.num = zn;
         a.den = zd;
         a.kill_mpq();
@@ -840,12 +938,23 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
 
 inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        lword common1 = gcd(absVal(a.num), b.den);
-        lword common2 = gcd(a.den, absVal(b.num));
+        uword common1 = gcd(absVal(a.num), b.den);
+        uword common2 = gcd(a.den, absVal(b.num));
         word zn;
         uword zd;
-        CHECK_WORD(zn, lword(a.num/common1) * (b.num/common2));
-        CHECK_UWORD(zd, ulword(a.den/common2) * (b.den/common1));
+        // Without the absVal, this fails for a.num < 0 when common1 > 1 and b.num < 0 when common2 > 1 since the result of the division is unsigned.
+        CHECK_WORD(zn, lword(common1 > 1 ? absVal(a.num)/common1 : absVal(a.num)) * (common2 > 1 ? absVal(b.num)/common2 : absVal(b.num)));
+        CHECK_UWORD(zd, ulword(common2 > 1 ? a.den/common2 : a.den) * (common1 > 1 ? b.den/common1 : b.den));
+
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip sign
+            zn = -zn; // Cannot overflow since zn is a positive word
+        }
+
         a.num = zn;
         a.den = zd;
         a.kill_mpq();
@@ -861,18 +970,22 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
 
 inline void divisionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
-        lword common1 = gcd(absVal(a.num), absVal(b.num));
-        lword common2 = gcd(a.den, b.den);
-        assert( common1 != 0 );
-        assert( common2 != 0 );
+        uword common1 = gcd(absVal(a.num), absVal(b.num));
+        uword common2 = gcd(a.den, b.den);
         word zn;
         uword zd;
-        if (b.num < 0) {
-            CHECK_WORD(zn, -lword(a.num/common1) * (b.den/common2));
-        } else {
-            CHECK_WORD(zn,  lword(a.num/common1) * (b.den/common2));
+        CHECK_WORD(zn, ulword(absVal(a.num) / common1) * (b.den / common2));
+        CHECK_UWORD(zd, ulword(absVal(b.num) / common1) * (a.den / common2));
+
+        bool b_num_lt_0 = b.num < 0;
+        bool a_num_ge_0 = a.num >= 0;
+        bool b_num_gt_0 = b.num > 0;
+        bool a_num_le_0 = a.num <= 0;
+
+        if ((b_num_lt_0 && a_num_ge_0) || (b_num_gt_0 && a_num_le_0)) { // Flip sign
+            zn = -zn; // Cannot overflow since zn is a positive word
         }
-        CHECK_UWORD(zd, ulword(absVal(b.num)/common1) * (a.den/common2));
+
         a.den = zd;
         a.num = zn;
         a.kill_mpq();
