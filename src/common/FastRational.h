@@ -693,7 +693,8 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
 inline void substraction(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
-            dst = a;
+            dst.num = a.num;
+            dst.den = a.den;
         } else if (a.num == 0) {
             CHECK_WORD(dst.num, -lword(b.num));
             dst.den = b.den;
