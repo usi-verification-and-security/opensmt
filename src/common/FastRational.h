@@ -745,7 +745,6 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             dst.den = zd;
         }
         dst.kill_mpq();
-        dst.setWordPartValid();
         return;
     }
     overflow:
@@ -761,7 +760,6 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
         dst.num=0;
         dst.den=1;
-        dst.setWordPartValid();
         dst.kill_mpq();
         return;
     }
@@ -797,7 +795,6 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
         CHECK_UWORD(zd, k3 * k4);
         dst.num = zn;
         dst.den = zd;
-        dst.setWordPartValid();
         dst.kill_mpq();
         return;
     }
@@ -823,7 +820,6 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         if (a.num == b.num && a.den == b.den) {
             dst.num = 1;
             dst.den = 1;
-            dst.setWordPartValid();
             dst.kill_mpq();
             return;
         }
@@ -847,7 +843,6 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         dst.num = zn;
         dst.den = zd;
 
-        dst.setWordPartValid();
         dst.kill_mpq();
 
         return;
