@@ -1,0 +1,57 @@
+version: 2.1
+jobs:
+    build:
+        docker:
+          - image: cimg/base:stable
+            auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+            environment:
+                CMAKE_BUILD_TYPE: Release
+                FLAGS: -Wall -Werror
+                INSTALL: ~/osmt-install
+                USE_READLINE: OFF
+
+        steps:
+            - checkout
+            - run:
+                name: apt-get update
+                command: sudo apt-get update
+            - run:
+                name: install dependencies
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0
+            - run:
+                name: Create the build directory
+                command: mkdir build
+            - run:
+                name: Release build gcc
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+            - run:
+                name: Debug build gcc
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Debug
+            - run:
+                name: Clean build directory
+                command: |
+                    rm -rf build
+                    mkdir build
+            - run:
+                name: Install clang
+                command: |
+                    sudo apt-get install clang
+                    sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
+            - run:
+                name: Release build llvm
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+            - run:
+                name: Debug build llvm
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Debug
+                    FLAGS: -Wall -Werror -Werror=sign-compare -Wunused-lambda-capture -fsanitize=signed-integer-overflow
+
