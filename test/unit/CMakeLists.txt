@@ -171,3 +171,11 @@ target_sources(EnodeStoreTest
 
 target_link_libraries(EnodeStoreTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET EnodeStoreTest)
+
+add_executable(VecMoveableTest)
+target_sources(VecMoveableTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_VecMoveable.cc"
+        )
+
+target_link_libraries(VecMoveableTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET VecMoveableTest)
