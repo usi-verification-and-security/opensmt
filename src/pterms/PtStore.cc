@@ -144,19 +144,13 @@ void PtStore::addToCtermMap(SymRef& k, PTRef tr) {
 }
 PTRef PtStore::getFromCtermMap(SymRef& k) { return cterm_map[k]; }
 
-bool PtStore::hasBoolKey(PTLKey& k) { return bool_map.has(k); }
-void PtStore::addToBoolMap(PTLKey& k, PTRef tr) {
-    bool_map.insert(k, tr);
-//        bool_keys.push(k);
-}
-PTRef PtStore::getFromBoolMap(PTLKey& k) { return bool_map[k]; }
+bool PtStore::hasBoolKey(const PTLKey& k) { return bool_map.find(k) != bool_map.end(); }
+void PtStore::addToBoolMap(PTLKey &&k, PTRef tr) { bool_map[std::move(k)] = tr; }
+PTRef PtStore::getFromBoolMap(const PTLKey& k) { return bool_map.at(k); }
 
-bool PtStore::hasCplxKey(PTLKey& k) { return cplx_map.has(k); }
-void PtStore::addToCplxMap(PTLKey& k, PTRef tr) {
-    cplx_map.insert(k, tr);
-//        cplx_keys.push(k);
-}
-PTRef PtStore::getFromCplxMap(PTLKey& k) { return cplx_map[k]; }
+bool PtStore::hasCplxKey(const PTLKey& k) { return cplx_map.find(k) != cplx_map.end(); }
+void PtStore::addToCplxMap(PTLKey && k, PTRef tr) { cplx_map[std::move(k)] = tr; }
+PTRef PtStore::getFromCplxMap(const PTLKey& k) { return cplx_map.at(k); }
 
 PtermIter PtStore::getPtermIter() { return PtermIter(idToPTRef); }
 

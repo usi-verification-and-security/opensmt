@@ -885,7 +885,7 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     else {
         if (distinctClassCount < maxDistinctClasses) {
             PTRef res = term_store.newTerm(diseq_sym, args);
-            term_store.addToCplxMap(key, res);
+            term_store.addToCplxMap(std::move(key), res);
             distinctClassCount++;
             return res;
         }
@@ -1151,7 +1151,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
             res = term_store.getFromCplxMap(k);
         else {
             res = term_store.newTerm(sym, k.args);
-            term_store.addToCplxMap(k, res);
+            term_store.addToCplxMap(std::move(k), res);
         }
     }
     else {
@@ -1169,7 +1169,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         }
         else {
             res = term_store.newTerm(sym, terms);
-            term_store.addToBoolMap(k, res); //bool_map.insert(k, res);
+            term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
             cerr << "new: " << ts << endl;
