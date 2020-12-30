@@ -538,7 +538,7 @@ TEST(lcm_test, lcm_list)
     FastRational p2(3, 7);
     FastRational p3(5, 11);
 
-    vec<FastRational> l = {p1, p2, p3};
+    vector<FastRational> l = {p1, p2, p3};
     FastRational r = get_multiplicand(l);
     ASSERT_EQ(r, 385);
 }
