@@ -63,6 +63,7 @@ before_script:
     - export FLAGS="-Wall -Werror"
     - export INSTALL=${TRAVIS_BUILD_DIR}/install
     - mkdir build && mkdir ${INSTALL}
+    - cmake --version
 
 script:
     - ./ci/run_travis_commands.sh
