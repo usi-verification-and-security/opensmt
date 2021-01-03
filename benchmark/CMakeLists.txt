@@ -10,9 +10,9 @@ FetchContent_GetProperties(googlebenchmark)
 
 if (NOT benchmark_POPULATED)
   FetchContent_Populate(googlebenchmark)
-  set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-  set(BENCHMARK_ENABLE_INSTALL OFF)
-  set(BENCHMARK_ENABLE_TESTING OFF)
+  set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE INTERNAL "")
+  set(BENCHMARK_ENABLE_INSTALL OFF CACHE INTERNAL "")
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE INTERNAL "")
   add_subdirectory(${googlebenchmark_SOURCE_DIR} ${googlebenchmark_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
 

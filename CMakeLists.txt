@@ -157,8 +157,12 @@ endif()
 ################# BENCHMARKING ##########################################
 option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
 if (PACKAGE_BENCHMARKS)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/benchmark)
-endif ()
+    if(CMAKE_VERSION VERSION_LESS 3.11)
+        MESSAGE(WARNING "Minimum CMAKE version for building benchmarking is 3.11")
+    else()
+        add_subdirectory(${PROJECT_SOURCE_DIR}/benchmark)
+    endif()
+endif()
 
 #########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
