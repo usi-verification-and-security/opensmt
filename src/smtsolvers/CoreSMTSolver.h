@@ -56,6 +56,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory>
 #include <sstream>
 
+#include <vector>
+
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
@@ -77,51 +79,38 @@ class SplitData
 {
     bool                no_instance;    // Does SplitData store the instance?
 
-    vec<vec<Lit> >      constraints;    // The split constraints
-    vec<vec<Lit> >      learnts;        // The learnt clauses
+    std::vector<vec<Lit>>      constraints;    // The split constraints
+    std::vector<vec<Lit>>      learnts;        // The learnt clauses
 
     char* litToString(const Lit);
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     int getLitSize(const Lit l) const;
-    void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler &thandler);
+    void toPTRefs(std::vector<vec<PtAsgn> >& out, std::vector<vec<Lit> >& in, const THandler &thandler);
 
 public:
     SplitData(bool no_instance = true)
         : no_instance(no_instance)
-
     { assert(no_instance); }
-    SplitData(SplitData&& other)
-        : no_instance(other.no_instance)
-    { other.constraints.moveTo(constraints); other.learnts.moveTo(learnts); }
-
-    SplitData(const SplitData& other)
-        : no_instance(other.no_instance)
-    { other.constraints.copyTo(constraints); other.learnts.copyTo(learnts); }
-
-    SplitData& operator= (SplitData&& o)
-    {
-        o.constraints.moveTo(constraints); o.learnts.moveTo(learnts); return *this;
-    }
 
     template<class C> void addConstraint(const C& c)
     {
-        constraints.push();
-        vec<Lit>& cstr = constraints.last();
+        constraints.emplace_back();
+        vec<Lit>& cstr = constraints.back();
         for (int i = 0; i < c.size(); i++)
             cstr.push(c[i]);
     }
     void addLearnt(Clause& c)
     {
-        learnts.push();
-        vec<Lit>& learnt = learnts.last();
+        learnts.emplace_back();
+        vec<Lit>& learnt = learnts.back();
         for (unsigned i = 0; i < c.size(); i++)
             learnt.push(c[i]);
     }
 
     char* splitToString();
-    inline void  constraintsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
-    inline void  learntsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
+    inline void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
+    inline void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
 };
 
 inline int SplitData::getLitSize(const Lit l) const
@@ -233,12 +222,12 @@ inline char* SplitData::splitToString()
     return buf;
 }
 
-inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler& theory_handler)
+inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, std::vector<vec<Lit> >& in, const THandler& theory_handler)
 {
     for (int i = 0; i < in.size(); i++)
     {
         vec<Lit>& c = in[i];
-        out.push();
+        out.emplace_back();
         vec<PtAsgn>& out_clause = out[out.size()-1];
         for (int j = 0; j < c.size(); j++)
         {

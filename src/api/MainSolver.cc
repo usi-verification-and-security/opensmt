@@ -258,7 +258,7 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
                                                                           getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()));
 }
 
-void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const
+void MainSolver::addToConj(std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
     for (int i = 0; i < in.size(); i++) {
         vec<PtAsgn>& constr = in[i];
@@ -309,11 +309,11 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
     vec<SplitData>& splits = ts.solver.splits;
     for (int i = 0; i < splits.size(); i++) {
         vec<PTRef> conj_vec;
-        vec<vec<PtAsgn> > constraints;
+        std::vector<vec<PtAsgn> > constraints;
         splits[i].constraintsToPTRefs(constraints, thandler);
         addToConj(constraints, conj_vec);
 
-        vec<vec<PtAsgn> > learnts;
+        std::vector<vec<PtAsgn> > learnts;
         splits[i].learntsToPTRefs(learnts, thandler);
         addToConj(learnts, conj_vec);
 

@@ -2127,7 +2127,7 @@ bool CoreSMTSolver::scatterLevel()
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
     assert(splits.size() == split_assumptions.size());
-    splits.push_c(SplitData(config.smt_split_format_length() == spformat_brief));
+    splits.push_m(SplitData(config.smt_split_format_length() == spformat_brief));
     split_assumptions.push();
     SplitData& sp = splits.last();
     vec<Lit> constraints_negated;
