@@ -96,11 +96,12 @@ TEST(Matrix_test, vec_creation)
     LAVecStore vecStore(va, logic);
     // INT32_MIN
     Real r {"-2147483648"};
-    vec<Real> reals;
+    std::vector<Real> reals;
+    reals.resize(10);
     for (int i = 0; i < 10; i++) {
-        reals.push_c(Real(i));
+        reals[i] = Real(i);
     }
-    LAVecRef vr = vecStore.getNewVec(reals);
+    LAVecRef vr = vecStore.getNewVec(std::move(reals));
     for (int i = 1; i <= va[vr].size(); i++) {
         ASSERT_EQ(va[vr][i], i-1);
     }

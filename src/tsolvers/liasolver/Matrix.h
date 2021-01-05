@@ -26,10 +26,10 @@ private:
     opensmt::Real args[0]; // Either the elements or the relocation reference
 
 public:
-    LAVec(const vec<opensmt::Real>& ps, const opensmt::Real& den) : den(den) {
+    LAVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den) : den(den) {
         header.size = ps.size();
         header.reloced = 0;
-        for (int i = 0; i < ps.size(); i++) {
+        for (int i = 0; i < static_cast<int>(ps.size()); i++) {
             new (&args[i]) opensmt::Real(ps[i]);
         }
     }
@@ -65,10 +65,10 @@ public:
     LAVecAllocator()                   : n_vecs(0) {}
     unsigned getNumVecs() const { return n_vecs; };
 
-    LAVecRef alloc(const vec<opensmt::Real>& ps, const opensmt::Real& den) {
+    LAVecRef alloc(std::vector<opensmt::Real>&& ps, const opensmt::Real& den) {
         uint32_t v = RegionAllocator<uint32_t>::alloc(lavecWord32Size(ps.size()));
         LAVecRef vid = {v};
-        new (lea(vid)) LAVec(ps, den);
+        new (lea(vid)) LAVec(std::move(ps), den);
         n_vecs++;
         return vid;
     }
@@ -93,9 +93,9 @@ private:
 public:
     LAVecStore(LAVecAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
     inline void   clear() { lavecs.clear(); };
-    LAVecRef getNewVec(const vec<opensmt::Real>& ps, const opensmt::Real& den);
-    LAVecRef getNewVec(const vec<opensmt::Real>& ps) { return getNewVec(ps, 1); }
-    LAVecRef getNewVec(int size) { vec<opensmt::Real> tmp; for (int i = 0; i < size; i++) tmp.push_c(0); return getNewVec(tmp); }
+    LAVecRef getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den);
+    LAVecRef getNewVec(std::vector<opensmt::Real>&& ps) { return getNewVec(std::move(ps), 1); }
+    LAVecRef getNewVec(int size) { std::vector<opensmt::Real> tmp; tmp.resize(size); return getNewVec(std::move(tmp)); }
     int    numVecs() const ;
     void   remove(const LAVecRef r);
     LAVec& operator [] (LAVecRef vr) { return lva[vr]; }

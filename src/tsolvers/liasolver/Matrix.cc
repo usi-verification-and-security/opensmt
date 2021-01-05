@@ -5,9 +5,9 @@
 #include <liasolver/Matrix.h>
 
 LAVecRef
-LAVecStore::getNewVec(const vec<opensmt::Real>& ps, const opensmt::Real& den)
+LAVecStore::getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den)
 {
-    LAVecRef vr = lva.alloc(ps, den);
+    LAVecRef vr = lva.alloc(std::move(ps), den);
     return vr;
 }
 
