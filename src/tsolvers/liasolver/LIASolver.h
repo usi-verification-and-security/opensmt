@@ -4,6 +4,8 @@
 #include "LIALogic.h"
 #include "LASolver.h"
 #include "lasolver/LARefs.h"
+#include <unordered_map>
+#include <vector>
 
 #include <map>
 
@@ -76,7 +78,7 @@ protected:
 
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
-    vec<Map<opensmt::Real, bool, FastRationalHash> > cuts;
+    std::vector<std::unordered_map<opensmt::Real, bool, FastRationalHash> > cuts;
 
 };
 
