@@ -86,7 +86,7 @@ class SplitData
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     int getLitSize(const Lit l) const;
-    void toPTRefs(std::vector<vec<PtAsgn> >& out, std::vector<vec<Lit> >& in, const THandler &thandler);
+    void toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler &thandler) const;
 
 public:
     SplitData(bool no_instance = true)
@@ -109,8 +109,8 @@ public:
     }
 
     char* splitToString();
-    inline void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
-    inline void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
+    inline void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, constraints, thandler); }
+    inline void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, learnts, thandler); }
 };
 
 inline int SplitData::getLitSize(const Lit l) const
@@ -171,12 +171,8 @@ inline char* SplitData::splitToString()
     }
 */
     // The constraints
-    for (int i = 0; i < constraints.size(); i++)
-    {
-        vec<Lit>& c = constraints[i];
-        for (int j = 0; j < c.size(); j++)
-        {
-            Lit l = c[j];
+    for (vec<Lit>& c : constraints) {
+        for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // Lit, space, and NULL
             {
@@ -195,12 +191,8 @@ inline char* SplitData::splitToString()
         sz += 2;
     }
 
-    for (int i = 0; i < learnts.size(); i++)
-    {
-        vec<Lit>& c = learnts[i];
-        for (int j = 0; j < c.size(); j++)
-        {
-            Lit l = c[j];
+    for (vec<Lit> & c : learnts) {
+        for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // The size of lit, space, and NULL
             {
@@ -222,17 +214,15 @@ inline char* SplitData::splitToString()
     return buf;
 }
 
-inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, std::vector<vec<Lit> >& in, const THandler& theory_handler)
+inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler& theory_handler) const
 {
-    for (int i = 0; i < in.size(); i++)
-    {
-        vec<Lit>& c = in[i];
+    for (const vec<Lit>& c : in) {
         out.emplace_back();
         vec<PtAsgn>& out_clause = out[out.size()-1];
-        for (int j = 0; j < c.size(); j++)
+        for (Lit l : c)
         {
-            PTRef tr = theory_handler.varToTerm(var(c[j]));
-            PtAsgn pta(tr, sign(c[j]) ? l_False : l_True);
+            PTRef tr = theory_handler.varToTerm(var(l));
+            PtAsgn pta(tr, sign(l) ? l_False : l_True);
             out_clause.push(pta);
         }
     }
@@ -395,8 +385,8 @@ public:
     uint64_t top_level_lits;
 
     // Splits
-    vec<SplitData> splits;
-    vec<vec<Lit> > split_assumptions;
+    std::vector<SplitData> splits;
+    std::vector<vec<Lit>> split_assumptions;
 
 protected:
     Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
