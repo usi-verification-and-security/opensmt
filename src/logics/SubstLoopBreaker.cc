@@ -97,8 +97,8 @@ void TarjanAlgorithm::addNode(SNRef n) {
     sna[n].setStatus(NStatus::inStack);
 }
 
-vec<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
-    vec<vec<SNRef>> loops;
+std::vector<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
+    std::vector<vec<SNRef>> loops;
     addNode(startNode);
     while (controlStack.size() > 0) {
         SNRef n = controlStack.last();
@@ -122,9 +122,9 @@ vec<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
                     scc.push(w);
                 } while (w != n);
                 if (scc.size() > 1) {
-                    loops.push();
+                    loops.emplace_back();
                     for (int i = scc.size()-1; i >= 0; i--)
-                        loops.last().push(scc[i]);
+                        loops.back().push(scc[i]);
                 }
             }
         }
@@ -198,13 +198,14 @@ vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const Map<PTRef,PtAsgn,P
     return minimizeRoots(std::move(roots));
 }
 
-vec<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
-    vec<vec<SNRef>> loops;
+std::vector<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
+    std::vector<vec<SNRef>> loops;
     TarjanAlgorithm tarjan(sna);
     for (int i = 0; i < startNodes.size(); i++) {
-        vec<vec<SNRef>> loops_tmp = tarjan.getLoops(startNodes[i]);
-        for (int i = 0; i < loops_tmp.size(); i++)
-            loops.push(std::move(loops_tmp[i]));
+        std::vector<vec<SNRef>> loops_tmp = tarjan.getLoops(startNodes[i]);
+        for (auto & loop : loops_tmp) {
+            loops.emplace_back(std::move(loop));
+        }
     }
     return loops;
 }
@@ -236,7 +237,7 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRef
     vec<SNRef> startNodes = constructSubstitutionGraph(substs);
 
     while (true) {
-        vec<vec<SNRef>> loops = findLoops(startNodes);
+        std::vector<vec<SNRef>> loops = findLoops(startNodes);
 
         // Terminate if no loops found
         if (loops.size() == 0)
@@ -244,8 +245,8 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRef
 
 //        printGraphAndLoops(startNodes, loops);
         vec<SNRef> orphans = breakLoops(loops);
-        for (int i = 0; i < orphans.size(); i++)
-            startNodes.push(orphans[i]);
+        for (SNRef orphan : orphans)
+            startNodes.push(orphan);
         sort(startNodes);
         uniq(startNodes);
 //        printGraphAndLoops(startNodes, loops);
@@ -253,28 +254,28 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRef
     return constructLooplessSubstitution(std::move(substs));
 }
 
-vec<SNRef> SubstLoopBreaker::breakLoops(const vec<vec<SNRef>>& loops) {
+vec<SNRef> SubstLoopBreaker::breakLoops(const std::vector<vec<SNRef>>& loops) {
     // Break the found loops.  Return the orphaned children as new start nodes
     vec<SNRef> orphans;
-    for (int i = 0; i < loops.size(); i++) {
-        int last_idx = loops[i].size()-1;
+    for (auto & loop : loops) {
+        int last_idx = loop.size()-1;
         assert(last_idx >= 0);
-        for (int j = 0; j < sna[loops[i][last_idx]].nChildren(); j++) {
-            orphans.push(sna[loops[i][last_idx]][j]);
+        for (int j = 0; j < sna[loop[last_idx]].nChildren(); j++) {
+            orphans.push(sna[loop[last_idx]][j]);
         }
-        sna[loops[i][last_idx]].swipeChildren();
+        sna[loop[last_idx]].swipeChildren();
     }
     return orphans;
 }
 
-std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const vec<vec<SNRef>>& loops) {
+std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const std::vector<vec<SNRef>>& loops) {
     if (loops.size() == 0)
         cerr << "No loops\n";
-    for (int i = 0; i < loops.size(); i++) {
-        cerr << "Loop " << i << endl;
-        const vec<SNRef> &loop = loops[i];
-        for (int j = 0; j < loop.size(); j++)
-            cerr << "  " << logic.pp(sna[loop[j]].getTr()) << endl;
+    int count = 0;
+    for (const vec<SNRef> & loop : loops) {
+        cerr << "Loop " << count++ << endl;
+        for (SNRef snr: loop)
+            cerr << "  " << logic.pp(sna[snr].getTr()) << endl;
     }
     stringstream ss;
 
@@ -313,15 +314,15 @@ std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, c
             }
         }
     }
-    for (int i = 0; i < loops.size(); i++) {
-        for (int j = 0; j < loops[i].size()-1; j++) {
-            char *in = logic.pp(sna[loops[i][j]].getTr());
-            char *out = logic.pp(sna[loops[i][(j + 1)]].getTr());
+    for (const auto & loop : loops) {
+        for (int j = 0; j < loop.size()-1; j++) {
+            char *in = logic.pp(sna[loop[j]].getTr());
+            char *out = logic.pp(sna[loop[(j + 1)]].getTr());
             ss << "  " << in << " -> " << out << " [style=dotted];\n";
             free(in);
             free(out);
         }
-        SNRef last = loops[i][loops[i].size()-1];
+        SNRef last = loop[loop.size()-1];
         char* in = logic.pp(sna[last].getTr());
         for (int j = 0; j < sna[last].nChildren(); j++) {
             char* out = logic.pp(sna[sna[last][j]].getTr());

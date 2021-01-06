@@ -69,7 +69,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
     vec<SNRef> startNodes = slb.constructSubstitutionGraph(std::move(substs));
     std::cerr << slb.printGraphAndLoops(startNodes, {}) << std::endl;
     ASSERT_GT(startNodes.size(), 0);
-    vec<vec<SNRef>> loops = slb.findLoops(startNodes);
+    auto loops = slb.findLoops(startNodes);
     ASSERT_EQ(loops.size(), 0); // The system does not remove self-loops
     std::cerr << slb.printGraphAndLoops(startNodes, loops) << std::endl;
 }
@@ -113,7 +113,7 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     SubstLoopBreaker slb(logic);
     vec<SNRef> startNodes = slb.constructSubstitutionGraph(std::move(substs));
     ASSERT_GT(startNodes.size(), 0);
-    vec<vec<SNRef>> loops = slb.findLoops(startNodes);
+    auto loops = slb.findLoops(startNodes);
     ASSERT_EQ(loops.size(), 1);
 }
 
@@ -148,6 +148,6 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs));
 
     std::cerr << slb2.printGraphAndLoops(startNodes, {}) << std::endl;
-    vec<vec<SNRef>> loops = slb2.findLoops(startNodes);
+    auto loops = slb2.findLoops(startNodes);
     ASSERT_EQ(loops.size(), 0);
 }
