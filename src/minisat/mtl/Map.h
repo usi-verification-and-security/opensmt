@@ -297,9 +297,11 @@ class VecMap {
         table = new std::vector<Pair>[newsize];
         cap   = newsize;
 
-        for (int i = 0; i < old_cap; i++){
-            for (int j = 0; j < old[i].size(); j++){
-                _insert(old[i][j].key, old[i][j].data); }}
+        for (int i = 0; i < old_cap; i++) {
+            for (const auto & pair : old[i]) {
+                _insert(pair.key, pair.data);
+            }
+        }
 
         delete [] old;
 
@@ -319,9 +321,9 @@ class VecMap {
         assert(size != 0);
         const vec<D>*    res = NULL;
         const std::vector<Pair>& ps  = table[index(k)];
-        for (int i = 0; i < ps.size(); i++)
-            if (equals(ps[i].key, k))
-                res = &ps[i].data;
+        for (const Pair& p : ps)
+            if (equals(p.key, k))
+                res = &p.data;
         assert(res != NULL);
         return *res;
     }
@@ -332,9 +334,9 @@ class VecMap {
         assert(size != 0);
         vec<D>*    res = NULL;
         std::vector<Pair>& ps  = table[index(k)];
-        for (int i = 0; i < ps.size(); i++)
-            if (equals(ps[i].key, k))
-                res = &ps[i].data;
+        for (Pair & p : ps)
+            if (equals(p.key, k))
+                res = &p.data;
         assert(res != NULL);
         return *res;
     }
@@ -354,8 +356,8 @@ class VecMap {
     bool has(const K& k) const {
         if (size == 0) return false;
         const std::vector<Pair>& ps = table[index(k)];
-        for (int i = 0; i < ps.size(); i++)
-            if (equals(ps[i].key, k))
+        for (const Pair& p : ps)
+            if (equals(p.key, k))
                 return true;
         return false;
     }
@@ -363,17 +365,18 @@ class VecMap {
     const vec<D>* getOrNull(const K& k) const {
         if (size == 0) return nullptr;
         const std::vector<Pair>& ps = table[index(k)];
-        for (int i = 0; i < ps.size(); i++)
-            if (equals(ps[i].key, k))
-                return &ps[i].data;
+        for (const Pair & p : ps)
+            if (equals(p.key, k))
+                return &p.data;
         return nullptr;
     }
 
     void getKeys(vec<K>& out) const {
         if (size == 0) return;
-        for (int i = 0; i < cap; i++) {
-            for (int j = 0; j < table[i].size(); j++)
-                out.push(table[i][j].key);
+        for (auto i = 0; i < cap; i++) {
+            for (const auto & pair : table[i]) {
+                out.push(pair.key);
+            }
         }
     }
 
