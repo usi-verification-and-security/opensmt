@@ -260,11 +260,10 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
 
 void MainSolver::addToConj(std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
-    for (int i = 0; i < in.size(); i++) {
-        vec<PtAsgn>& constr = in[i];
+    for (const auto & constr : in) {
         vec<PTRef> disj_vec;
-        for (int k = 0; k < constr.size(); k++)
-            disj_vec.push(constr[k].sgn == l_True ? constr[k].tr : logic.mkNot(constr[k].tr));
+        for (PtAsgn pta : constr)
+            disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
         out.push(logic.mkOr(disj_vec));
     }
 }
