@@ -213,7 +213,7 @@ class MainSolver
 
     // DEPRECATED. use the new Model structure
     ValPair getValue       (PTRef tr) const;
-    void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
+    void    getValues      (const vec<PTRef>&, std::vector<ValPair>&) const;
 
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();

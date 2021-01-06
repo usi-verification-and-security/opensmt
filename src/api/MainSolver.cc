@@ -232,13 +232,13 @@ ValPair MainSolver::getValue(PTRef tr) const
     }
 }
 
-void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
+void MainSolver::getValues(const vec<PTRef>& trs, std::vector<ValPair>& vals) const
 {
     vals.clear();
     for (int i = 0; i < trs.size(); i++)
     {
         PTRef tr = trs[i];
-        vals.push(getValue(tr));
+        vals.emplace_back(getValue(tr));
     }
 }
 
