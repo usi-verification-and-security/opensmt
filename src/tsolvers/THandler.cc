@@ -423,17 +423,17 @@ THandler::dumpHeaderToFile(ostream& dump_out)
     logic.dumpHeaderToFile(dump_out);
 }
 
-const char* THandler::printAsrtClause(vec<Lit>& r) {
+char* THandler::printAsrtClause(vec<Lit>& r) {
     stringstream os;
     for (int i = 0; i < r.size(); i++) {
         Var v = var(r[i]);
         bool sgn = sign(r[i]);
         os << (sgn ? "not " : "") << getLogic().printTerm(tmap.varToPTRef(v)) << " ";
     }
-    return os.str().c_str();
+    return strdup(os.str().c_str());
 }
 
-const char* THandler::printAsrtClause(Clause* c) {
+char* THandler::printAsrtClause(Clause* c) {
     vec<Lit> v;
     for (unsigned i = 0; i < c->size(); i++)
         v.push((*c)[i]);
