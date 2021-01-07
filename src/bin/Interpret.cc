@@ -956,7 +956,7 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
         cout << "\")" << endl;
 //    else
 //        cout << ")" << endl;
-        cout << endl;
+    cout << endl;
 }
 
 void Interpret::notify_success() {
