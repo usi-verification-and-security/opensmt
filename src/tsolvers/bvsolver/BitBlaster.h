@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SimpSMTSolver.h"
 #include "BVStore.h"
+#include <unordered_map>
 
 // forward declarations
 class BVLogic;
@@ -138,8 +139,8 @@ private:
     BVRef bbDistinct   (PTRef);
 
     PTRef bbBvadd_carryonly(PTRef sum, PTRef cin); // for signed comparison
-    void ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table); // Helper function for shifts
-    PTRef ls_read(int s, int i, vec<vec<PTRef> >& table); // Helper function for shifts
+    void ls_write(int s, int i, PTRef tr, std::vector<vec<PTRef> >& table); // Helper function for shifts
+    PTRef ls_read(int s, int i, std::vector<vec<PTRef> >& table); // Helper function for shifts
 
   // Not yet considered
   // vector< Enode * > & bbUf         ( Enode * );
@@ -171,7 +172,7 @@ private:
     vec<PTRef>                      variables;                     // Variables
     map< int, Var >                 cnf_var;                       // BB variable to cnf var
     bool                            has_model;                     // Is the model computed
-    Map<PTRef,ValPair,PTRefHash>    model;                         // Model is stored here
+    std::unordered_map<PTRef,ValPair,PTRefHash>    model;          // Model is stored here
 
     int                             bitwidth;
 };

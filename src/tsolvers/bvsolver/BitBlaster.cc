@@ -1128,13 +1128,13 @@ BitBlaster::bbBvurem(PTRef tr)
 }
 
 void
-BitBlaster::ls_write(int s, int i, PTRef tr, vec<vec<PTRef> >& table)
+BitBlaster::ls_write(int s, int i, PTRef tr, std::vector<vec<PTRef> >& table)
 {
     table[s+1][i] = tr;
 }
 
 PTRef
-BitBlaster::ls_read(int s, int i, vec<vec<PTRef> >& table)
+BitBlaster::ls_read(int s, int i, std::vector<vec<PTRef> >& table)
 {
     return table[s+1][i];
 }
@@ -1166,11 +1166,11 @@ BitBlaster::bbBvlshift(PTRef tr)
     int l = bs[a].size();
     int n = opensmt::getLogFromPowOfTwo(bs[a].size());
 
-    vec<vec<PTRef> > ls;
+    std::vector<vec<PTRef> > ls;
     for (int s = -1; s <= n-1; s++) {
-        ls.push();
+        ls.emplace_back();
         for (int i = 0; i < l; i++)
-            ls.last().push(PTRef_Undef);
+            ls.back().push(PTRef_Undef);
     }
 
     for (int i = 0; i < l; i++)
@@ -1184,7 +1184,7 @@ BitBlaster::bbBvlshift(PTRef tr)
                 ls_write(s, i, logic.mkIte(bs[b][s], logic.getTerm_false(), ls_read(s-1, i, ls)), ls);
         }
     }
-    return bs.newBvector(names, ls.last(), mkActVar(s_bbBvlsh), tr);
+    return bs.newBvector(names, ls.back(), mkActVar(s_bbBvlsh), tr);
 }
 
 BVRef
@@ -1227,11 +1227,11 @@ BitBlaster::bbBvrshift(PTRef tr, bool arith)
     int l = bs[a].size();
     int n = opensmt::getLogFromPowOfTwo(bs[a].size());
 
-    vec<vec<PTRef> > ls;
+    std::vector<vec<PTRef>> ls;
     for (int s = -1; s <= n-1; s++) {
-        ls.push();
+        ls.emplace_back();
         for (int i = 0; i < l; i++)
-            ls.last().push(PTRef_Undef);
+            ls.back().push(PTRef_Undef);
     }
 
     for (int i = 0; i < l; i++)
@@ -1247,7 +1247,7 @@ BitBlaster::bbBvrshift(PTRef tr, bool arith)
         }
     }
     PTRef actVar = arith ? mkActVar(s_bbBvarsh) : mkActVar(s_bbBvlrsh);
-    return bs.newBvector(names, ls.last(), actVar, tr);
+    return bs.newBvector(names, ls.back(), actVar, tr);
 }
 
 
@@ -2138,7 +2138,7 @@ void BitBlaster::computeModel( )
         }
         ValPair v(e, value.get_str().c_str());
 
-        model.insert(e, v);
+        model[e] = v;
     }
     has_model = true;
 }
