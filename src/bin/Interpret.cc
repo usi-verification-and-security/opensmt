@@ -687,9 +687,9 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
-    for (int i = 0; i < values.size(); i++) {
-        char* name = logic.printTerm(values[i].tr);
-        printf("(%s %s)", name, values[i].val);
+    for (const ValPair & valPair : values) {
+        char* name = logic.printTerm(valPair.tr);
+        printf("(%s %s)", name, valPair.val);
         free(name);
     }
     printf(")\n");
