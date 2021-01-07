@@ -440,7 +440,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-    std::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
+    opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     bool res = solver.addOriginalSMTClause(c, iorefs);
     if (keepPartitionInfo()) {
         CRef ref = iorefs.first;

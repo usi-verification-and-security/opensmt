@@ -279,6 +279,7 @@ namespace opensmt {
         return true;
     }
 
+    template <class T, class U> struct pair { T first; U second; };
 
 #define Pair(T) pair< T, T >
 

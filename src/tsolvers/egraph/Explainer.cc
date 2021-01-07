@@ -104,7 +104,7 @@ void Explainer::reRootOn(ERef x) {
     }
 }
 
-vec<PtAsgn> Explainer::explain(::pair<ERef,ERef> nodePair) {
+vec<PtAsgn> Explainer::explain(opensmt::pair<ERef,ERef> nodePair) {
 
 #ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
     congruences.clear();

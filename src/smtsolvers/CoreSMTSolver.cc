@@ -272,14 +272,14 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 {
-    std::pair<CRef, CRef> fake;
+    opensmt::pair<CRef, CRef> fake;
     return addOriginalClause_(_ps, fake);
 }
 
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
-    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
+    inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
     vec<Lit> ps;
@@ -316,7 +316,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
         CRef inputClause = ca.alloc(original, false);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
                 ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
-        inOutCRefs = std::make_pair<>(inputClause, outputClause);
+        inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
             proof->beginChain( inputClause );

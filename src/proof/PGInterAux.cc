@@ -306,12 +306,12 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 			if(fa)
 			{
 				if(qtta > qttb) ++avars; else ++aevars;
-				labels->insert(pair<Var, icolor_t>(v, I_A));
+				labels->insert(std::pair<Var, icolor_t>(v, I_A));
 			}
 			else
 			{
 				if(qttb > qtta) ++bvars; else ++bevars;
-				labels->insert(pair<Var, icolor_t>(v, I_B));
+				labels->insert(std::pair<Var, icolor_t>(v, I_B));
 			}
 		}
 		//cout << avars << " A> " << aevars << " A=\n" << bvars << " B> " << bevars << " B=" << endl;
