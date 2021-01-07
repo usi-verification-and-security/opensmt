@@ -673,13 +673,13 @@ bool Interpret::getAssignment() {
 void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
     Logic& logic = main_solver->getLogic();
-    vec<ValPair> values;
+    std::vector<ValPair> values;
     for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            values.push(main_solver->getValue(tr));
+            values.emplace_back(main_solver->getValue(tr));
             char* pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str);
             free(pt_str);
@@ -1152,7 +1152,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         opensmt_error("Cannot interpolate");
 
     assert(grouping.size() >= 2);
-    vec<ipartitions_t> partitionings;
+    std::vector<ipartitions_t> partitionings;
     ipartitions_t p = 0;
     // We assume that together the groupings cover all query, so we ignore the last argument, since that should contain all that was missing at that point
     for (int i = 0; i < grouping.size() - 1; i++)
@@ -1183,7 +1183,7 @@ void Interpret::getInterpolants(const ASTNode& n)
                 return;
             }
         }
-        partitionings.push_c(p);
+        partitionings.emplace_back(p);
     }
     if (main_solver->getStatus() != s_False) {
         notify_formatted(true, "Cannot interpolate, solver is not in UNSAT state!");
