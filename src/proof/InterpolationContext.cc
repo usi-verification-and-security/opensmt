@@ -22,12 +22,12 @@ void InterpolationContext::printProofDotty() {
 }
 
 // Create interpolants with each A consisting of the specified partitions
-void InterpolationContext::getInterpolants(const vec<vec<int> > & partitions, vec<PTRef> & interpolants) {
+void InterpolationContext::getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants) {
     assert(proof_graph);
     proof_graph->produceConfigMatrixInterpolants(partitions, interpolants);
 }
 
-void InterpolationContext::getInterpolants(const vec<ipartitions_t> & partitions, vec<PTRef> & interpolants) {
+void InterpolationContext::getInterpolants(const std::vector<ipartitions_t> & partitions, vec<PTRef> & interpolants) {
     assert(proof_graph);
     proof_graph->produceMultipleInterpolants(partitions, interpolants);
 }
@@ -51,7 +51,7 @@ void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolant
     for (int i = 0; i < itps.size(); i++) interpolants.push_back(itps[i]);
 }
 
-bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const vec<ipartitions_t> & A_masks) {
+bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks) {
     assert(proof_graph);
     return proof_graph->producePathInterpolants(interpolants, A_masks);
 }

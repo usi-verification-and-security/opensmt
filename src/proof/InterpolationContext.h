@@ -23,9 +23,9 @@ public:
     void printProofDotty();
 
     // Create interpolants with each A consisting of the specified partitions
-    void getInterpolants(const vec<vec<int> > & partitions, vec<PTRef> & interpolants);
+    void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
 
-    void getInterpolants(const vec<ipartitions_t> & partitions, vec<PTRef> & interpolants);
+    void getInterpolants(const std::vector<ipartitions_t> & partitions, vec<PTRef> & interpolants);
 
     void setColoringSuggestions(vec<std::map<PTRef, icolor_t> *> * mp);
 
@@ -35,7 +35,7 @@ public:
 
     void getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask);
 
-    bool getPathInterpolants(vec<PTRef> & interpolants, const vec<ipartitions_t> & A_masks);
+    bool getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks);
 
     bool getPathInterpolants(vec<PTRef> & interpolants);
 

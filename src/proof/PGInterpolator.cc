@@ -212,7 +212,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
     return property_holds;
 }
 
-void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs, vec<PTRef> &interpolants)
+void ProofGraph::produceConfigMatrixInterpolants (const std::vector< vec<int> > &configs, vec<PTRef> &interpolants)
 {
     if ( verbose() ) cerr << "; General interpolation via configuration matrix " << endl;
 
@@ -320,15 +320,15 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     return property_holds;
 }
 
-bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<ipartitions_t> &A_masks){
+bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const std::vector<ipartitions_t> &A_masks){
     bool propertySatisfied = true;
     // check that masks are subset of each other
 #ifndef NDEBUG
-    for(int i = 0; i < A_masks.size()-1; ++i) {
+    for (int i = 0; i < static_cast<int>(A_masks.size()-1); ++i) {
         assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
     }
 #endif // NDEBUG
-    for(int i = 0; i < A_masks.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(A_masks.size()); ++i) {
         produceSingleInterpolant(interpolants, A_masks[i]);
 //        if(verbose() > 1){
 //            std::cerr << "; Interpolant for mask: " << A_masks[i] << " is: "
@@ -648,15 +648,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     {
         cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << endl;
     }
-}
-
-void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants ) {
-    std::vector<ipartitions_t> v;
-    v.reserve(configs.size());
-    for (int i = 0; i < configs.size(); ++i) {
-        v.push_back(configs[i]);
-    }
-    produceMultipleInterpolants(v, sequence_of_interpolants);
 }
 
 void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )
