@@ -6,6 +6,7 @@
 #include <LIALogic.h>
 #include <VerificationUtils.h>
 #include <LIAInterpolator.h>
+#include <MainSolver.h>
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
@@ -85,4 +86,117 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
     PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
 //    std::cout << logic.printTerm(dualDecomposedFarkasItp) << std::endl;
+}
+
+TEST_F(LIAInterpolationTest, test_Split_ALocal){
+    /*
+     * A:   3y - 2x >= 0
+     *      2x - y >= 2
+     * B:
+     *      y <= 1
+     */
+    PTRef zero = logic.getTerm_NumZero();
+    PTRef one = logic.getTerm_NumOne();
+    PTRef two = logic.mkConst("2");
+    PTRef three = logic.mkConst("3");
+    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
+    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+
+    PTRef leq3 = logic.mkNumLeq(y, one);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    PTRef partA = logic.mkAnd(leq1, leq2);
+    PTRef partB = leq3;
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
+}
+
+TEST_F(LIAInterpolationTest, test_Split_BLocal){
+    /*
+     * B:   3y - 2x >= 0
+     *      2x - y >= 2
+     * A:
+     *      y <= 1
+     */
+    PTRef zero = logic.getTerm_NumZero();
+    PTRef one = logic.getTerm_NumOne();
+    PTRef two = logic.mkConst("2");
+    PTRef three = logic.mkConst("3");
+    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
+    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+
+    PTRef leq3 = logic.mkNumLeq(y, one);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    PTRef partB = logic.mkAnd(leq1, leq2);
+    PTRef partA = leq3;
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
+}
+
+TEST_F(LIAInterpolationTest, test_Split_ABShared) {
+    /*
+     * A:   3y - 2x >= 0
+     *
+     * B:
+     *      2x - y >= 2
+     *      y <= 1
+     */
+    PTRef zero = logic.getTerm_NumZero();
+    PTRef one = logic.getTerm_NumOne();
+    PTRef two = logic.mkConst("2");
+    PTRef three = logic.mkConst("3");
+    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
+    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+    PTRef leq3 = logic.mkNumLeq(y, one);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    PTRef partA = leq1;
+    PTRef partB = logic.mkAnd(leq2, leq3);
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
+    interpolants.clear();
+    config.setBooleanInterpolationAlgorithm(itp_alg_pudlak);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
+    interpolants.clear();
+    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillanp);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
+    interpolants.clear();
 }
