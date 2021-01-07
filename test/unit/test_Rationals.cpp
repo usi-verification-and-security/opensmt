@@ -132,16 +132,6 @@ TEST(Rationals_test, test_overwrite)
     r = q;
 }
 
-TEST(Rationals_test, test_unique)
-{
-    vec<Real> v = {1, 1, 2, 3, 3, 4};
-    vec<Real> w = {1, 2, 3, 4};
-    uniq(v);
-    ASSERT_EQ(v.size(), w.size());
-    for (int i = 0; i < v.size(); i++)
-        ASSERT_EQ(v[i], w[i]);
-}
-
 TEST(Rationals_test, test_uword)
 {
     uint32_t x = 2589903246;
