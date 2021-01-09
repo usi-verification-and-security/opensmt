@@ -316,9 +316,12 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower)
 {
     LABoundRef br_f = conflictOnLower ? model->readLBoundRef(x) : model->readUBoundRef(x);
-    Explanation expl = {{br_f,1}};
+    auto const & row = tableau.getRowPoly(x);
+    Explanation expl;
+    expl.reserve(row.size() + 1);
+    expl.push_back({br_f,1});
     // add all bounds for polynomial elements which limit the given bound
-    for (auto const & term : tableau.getRowPoly(x)) {
+    for (auto const & term : row) {
         Real const & coeff = term.coeff;
         auto const var = term.var;
         assert(!coeff.isZero() && var != x);
