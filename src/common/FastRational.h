@@ -1042,4 +1042,20 @@ inline FastRational FastRational_inverse(const FastRational& x) {
 }
 
 FastRational get_multiplicand(const vec<FastRational>& reals);
+
+inline bool isNegative(FastRational const& num) {
+    return num.sign() < 0;
+}
+
+inline bool isPositive(FastRational const& num) {
+    return num.sign() > 0;
+}
+
+inline bool isNonNegative(FastRational const& num) {
+    return num.sign() >= 0;
+}
+
+inline bool isNonPositive(FastRational const& num) {
+    return num.sign() <= 0;
+}
 #endif

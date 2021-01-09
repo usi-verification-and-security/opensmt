@@ -140,7 +140,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
             auto const &coeff = term.coeff;
-            const bool is_coeff_pos = coeff > 0;
+            const bool is_coeff_pos = isPositive(coeff);
 
             if ((is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (!is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
@@ -161,7 +161,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
             auto const &coeff = term.coeff;
-            const bool is_coeff_pos = coeff > 0;
+            const bool is_coeff_pos = isPositive(coeff);
 
             if ((!is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
@@ -194,7 +194,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
-            const bool coeff_is_pos = (coeff > 0);
+            const bool coeff_is_pos = isPositive(coeff);
             if ((coeff_is_pos && isModelStrictlyUnderUpperBound(y))
                 || (!coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -211,7 +211,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
-            const bool &coeff_is_pos = (coeff > 0);
+            const bool &coeff_is_pos = isPositive(coeff);
             if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y))
                 || (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -325,7 +325,7 @@ Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower
         Real const & coeff = term.coeff;
         auto const var = term.var;
         assert(!coeff.isZero() && var != x);
-        if (coeff < 0) {
+        if (isNegative(coeff)) {
             LABoundRef br = conflictOnLower ? model->readLBoundRef(var) : model->readUBoundRef(var);
             expl.push_back({br, -coeff});
         }
