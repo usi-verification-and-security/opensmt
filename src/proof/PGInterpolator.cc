@@ -538,7 +538,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 std::map<PTRef, icolor_t> ptref2label;
                 std::vector<Lit>& cl = n->getClause();
 
-                for(std::size_t j = 0; j < cl.size(); ++j) {
+                for (std::size_t j = 0; j < cl.size(); ++j) {
                     ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
                 }
 

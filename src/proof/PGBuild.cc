@@ -251,7 +251,7 @@ void ProofGraph::buildProofGraph( int nVars )
                         if (ssize >= max_learnt_size) { max_learnt_size = ssize; }
                         avg_learnt_size += ssize;
                     }
-                    else if(_ctype == clause_type::CLA_THEORY || _ctype == clause_type::CLA_ASSUMPTION || _ctype == clause_type::CLA_SPLIT) {
+                    else if (_ctype == clause_type::CLA_THEORY || _ctype == clause_type::CLA_ASSUMPTION || _ctype == clause_type::CLA_SPLIT) {
                         n->initClause(proof.getClause(clause));
                         n->setClauseRef(clause);
                         //Sort clause literals
@@ -274,7 +274,7 @@ void ProofGraph::buildProofGraph( int nVars )
 
                 // First clause not yet processed
                 CRef clause_0 = chaincla[0];
-                while(clause_to_proof_der.at(clause_0).chain_cla.size() == 1) {
+                while (clause_to_proof_der.at(clause_0).chain_cla.size() == 1) {
                     clause_0 = clause_to_proof_der.at(clause_0).chain_cla[0];
                 }
 

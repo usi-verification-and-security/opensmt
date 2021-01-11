@@ -90,7 +90,7 @@ private:
 
     icolor_t getColorFor(PTRef term) const {
         // use labels
-        if(labels.find(term) != labels.end()){
+        if (labels.find(term) != labels.end()){
             return labels.at(term);
         }
         // otherwise use global partitioning information
