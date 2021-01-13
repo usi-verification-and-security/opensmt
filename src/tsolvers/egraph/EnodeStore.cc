@@ -174,14 +174,14 @@ bool EnodeStore::needsEnode(PTRef tr) const {
  * the positive form and and the second the negated form of the PTRef tr; or is empty
  * if the PTRef has already been inserted.
  */
-vec<std::pair<PTRef,ERef>> EnodeStore::constructTerm(PTRef tr) {
+vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
 
     assert(needsEnode(tr));
 
     if (termToERef.has(tr))
         return {};
 
-    vec<std::pair<PTRef,ERef>> new_enodes;
+    vec<PTRefERefPair> new_enodes;
 
     if (logic.isDisequality(tr)) {
         addDistClass(tr);

@@ -32,6 +32,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class Logic;
 
+struct PTRefERefPair { PTRef tr; ERef er; };
+
 class EnodeStore {
     Logic&         logic;
     Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
@@ -78,7 +80,7 @@ public:
     ERef         getERef(PTRef tr)     const { return termToERef[tr]; }
     PTRef        getPTRef(ERef er)     const { return ERefToTerm[er]; }
 
-    vec<std::pair<PTRef,ERef>> constructTerm(PTRef tr);
+    vec<PTRefERefPair> constructTerm(PTRef tr);
 
     Enode&       operator[] (ERef e)         { return ea[e]; }
     const Enode& operator[] (ERef e)   const { return ea[e]; }
