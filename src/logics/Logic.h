@@ -51,9 +51,9 @@ class Logic {
             args_.copyTo(args);
         }
         TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
-        TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
+        TFun(const TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
         ~TFun() { free(name); }
-        TFun& operator=(TFun& other) {
+        TFun& operator=(TFun&& other) {
             if (&other != this) {
                 free(name);
                 ret_sort = other.ret_sort;
