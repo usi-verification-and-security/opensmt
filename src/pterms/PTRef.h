@@ -26,22 +26,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef OPENSMT_PTREF_H
 #define OPENSMT_PTREF_H
 
-#include "Map.h"
 #include <functional>
 
 struct PTRef {
     uint32_t x;
-//    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
-    inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
-    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
+    inline friend bool operator== (PTRef a1, PTRef a2)   { return a1.x == a2.x; }
+    inline friend bool operator!= (PTRef a1, PTRef a2)   { return a1.x != a2.x; }
+    inline friend bool operator<  (PTRef a1, PTRef a2)   { return a1.x < a2.x;  }
 };
 
 const struct PTRef PTRef_Undef = {INT32_MAX};
 
 struct PTRefHash {
-    uint32_t operator () (const PTRef& s) const {
-        return (uint32_t)s.x; }
+    uint32_t operator () (PTRef s) const { return s.x; }
 };
 
 struct PTRefPairHash {
@@ -49,12 +46,6 @@ struct PTRefPairHash {
         std::hash<uint32_t> hasher;
         return (hasher(p.first.x) ^ hasher(p.second.x));
     }
-};
-
-
-template <>
-struct Equal<const PTRef> {
-    bool operator() (const PTRef& s1, const PTRef& s2) const { return s1 == s2; }
 };
 
 #endif //OPENSMT_PTREF_H

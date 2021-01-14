@@ -44,10 +44,6 @@ struct BVRefHash {
         return (uint32_t)s.x; }
 };
 
-template <>
-struct Equal<const BVRef> {
-    bool operator() (const BVRef& s1, const BVRef& s2) const { return s1 == s2; }
-};
 typedef uint32_t BVId; // Used as an array index
 
 struct NameAsgn {

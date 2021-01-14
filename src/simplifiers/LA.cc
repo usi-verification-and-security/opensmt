@@ -273,94 +273,41 @@ void LAExpression::print( ostream & os ) const
 //
 // Produce a substitution
 //
-//pair< Enode *, Enode * > LAExpression::getSubst( Egraph & egraph )
-pair<PTRef, PTRef> LAExpression::getSubst()
-{
-  assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-  assert( r != UNDEF );
-
-  //if ( integers )
-   // return getSubstInt();
- // else
-  return getSubstReal();
+std::pair<PTRef, PTRef> LAExpression::getSubst() {
+    assert(polynome.find(PTRef_Undef) != polynome.end());
+    assert(r != UNDEF);
+    return getSubstReal();
 }
 
-/*
-//pair< Enode *, Enode * > LAExpression::getSubstInt( Egraph & egraph )
-pair<PTRef, PTRef> LAExpression::getSubstInt()
-{
-  // See if cheap substitution, not requiring our friend
-  // Euler, can be done
-  bool all_ones = true;
-  for ( polynome_t::iterator it = polynome.begin( )
-      ; it != polynome.end( ) && all_ones
-      ; it ++ )
-  {
-     all_ones = it->first  == PTRef_Undef
-             || it->second == 1
-             || it->second == -1;
-  }
-
-  if ( all_ones )
-    return getSubstReal();
-
-  opensmt_error( "IMPLEMENT EULER" );
-//  Enode * v1, * v2;
-  PTRef v1, v2;
-  return make_pair( v1, v2 );
-}*/
-
-//pair< Enode *, Enode * > LAExpression::getSubstReal( Egraph & egraph )
-pair<PTRef, PTRef> LAExpression::getSubstReal()
-{
-  if ( polynome.size( ) == 1 )
-  {
-    assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-    PTRef v1 = PTRef_Undef, v2 = PTRef_Undef;
-    return make_pair( v1, v2 );
-  }
-  //
-  // There is at least one variable
-  //
-  //
-  // Solve w.r.t. first variable
-  //
-  solve( );
-//  list< Enode * > sum_list;
-  vec<PTRef> sum_list;
-  opensmt::Real constant = 0;
-  PTRef var = PTRef_Undef;
-  for ( polynome_t::iterator it = polynome.begin( )
-      ; it != polynome.end( )
-      ; it ++ )
-  {
-    if ( it->first == PTRef_Undef )
-      constant = -it->second;
-    else
-    {
-      if (var == PTRef_Undef)
-      {
-        var = it->first;
-        assert( it->second == 1 );
-      }
-      else
-      {
-          opensmt::Real coeff = -it->second;
-          PTRef c = logic.mkConst(coeff);
-//          Enode * c = egraph.mkNum( coeff );
-          PTRef vv = it->first;
-//          Enode * vv = it->first;
-          vec<PTRef> term;
-          term.push(c);
-          term.push(vv);
-          sum_list.push(logic.mkNumTimes(term));
-      }
+std::pair<PTRef, PTRef> LAExpression::getSubstReal() {
+    if (polynome.size() == 1) {
+        assert(polynome.find(PTRef_Undef) != polynome.end());
+        return std::make_pair(PTRef_Undef, PTRef_Undef);
     }
-  }
-  sum_list.push(logic.mkConst(constant ));
-  PTRef poly = logic.mkNumPlus(sum_list);
-
-  return make_pair( var, poly );
+    // There is at least one variable
+    // Solve w.r.t. first variable
+    solve();
+    vec<PTRef> sum_list;
+    opensmt::Real constant = 0;
+    PTRef var = PTRef_Undef;
+    for (auto rit = polynome.rbegin(); rit != polynome.rend(); ++rit) {
+        if (rit->first == PTRef_Undef)
+            constant = -rit->second;
+        else {
+            if (var == PTRef_Undef) {
+                var = rit->first;
+                assert(rit->second == 1);
+            } else {
+                opensmt::Real coeff = -rit->second;
+                PTRef c = logic.mkConst(coeff);
+                PTRef vv = rit->first;
+                sum_list.push(logic.mkNumTimes(c, vv));
+            }
+        }
+    }
+    sum_list.push(logic.mkConst(constant));
+    PTRef poly = logic.mkNumPlus(sum_list);
+    return std::make_pair(var, poly);
 }
 //
 // Solve w.r.t. first variable
@@ -372,38 +319,26 @@ pair<PTRef, PTRef> LAExpression::getSubstReal()
 //
 // it modifies the polynome internally
 //
-//Enode * LAExpression::solve( )
 PTRef LAExpression::solve()
 {
-  assert(  r == EQ );
-  assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-  if ( polynome.size( ) == 1 )
-  {
-    assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-    return PTRef_Undef;
-  }
-  //
-  // Get first useful variable
-  //
-  polynome_t::iterator it = polynome.begin( );
-  if ( it->first == PTRef_Undef ) it ++;
-//  Enode * var = it->first;
-  PTRef var = it->first;
-  const opensmt::Real coeff = it->second;
-  //
-  // Divide polynome by coeff
-  //
-  for ( it = polynome.begin( )
-      ; it != polynome.end( )
-      ; it ++ )
-  {
-    it->second /= coeff;
-  }
-  assert( polynome[ var ] == 1 );
-  //
-  // Return substitution
-  //
-  return var;
+    assert(r == EQ);
+    assert(polynome.find(PTRef_Undef) != polynome.end());
+    if (polynome.size() == 1) {
+        return PTRef_Undef;
+    }
+    // Get first useful variable
+    // MB: We start from the end to pick a PTRef with highest ID. This is important in the presence if ITEs
+    // to prevent a substitution of the form "x -> ite(b,x,y)" which would cause cycle in the substitution loop
+    auto rit = polynome.rbegin();
+    if (rit->first == PTRef_Undef) { ++rit; }
+    PTRef var = rit->first;
+    const opensmt::Real coeff = rit->second;
+    // Divide polynome by coeff
+    for (auto & term : polynome) {
+        term.second /= coeff;
+    }
+    assert(polynome.at(var) == 1);
+    return var;
 }
 //
 // Canonize w.r.t. first variable
@@ -418,148 +353,42 @@ PTRef LAExpression::solve()
 void
 LAExpression::canonize( )
 {
-  assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-
-//  if ( integers )
-//    canonizeInt( );
-//  else
-    canonizeReal( );
+    assert(polynome.find(PTRef_Undef) != polynome.end());
+    canonizeReal();
 }
-
-/*
-//
-// We assume (and check) that denominators
-// of coefficients are 1
-//
-void
-LAExpression::canonizeInt( )
-{
-  assert( checkIntCoefficients( ) );
-
-  if ( polynome.size( ) == 1 )
-  {
-    assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-    return;
-  }
-
-  // Iterate through the polynome and
-  // collect the GCD
-  polynome_t::iterator it = polynome.begin( );
-  opensmt::Integer igcd = 0;
-  for ( ; it != polynome.end( ) ; ++ it )
-  {
-    // Skip constant (if there)
-    if ( it->first == PTRef_Undef ) continue;
-    opensmt::Integer coeff = (it->second).get_num( );
-    if ( igcd == 0 )
-    {
-      igcd = coeff;
-      continue;
-    }
-    assert(false);
-//      Meh.. Figure this out later...
-//    mpz_t int_out;
-//    mpz_gcd( int_out, igcd, coeff );
-//    igcd = int_out;
-  }
-
-  // Nothing to do
-  if ( igcd == 1 )
-    return;
-  const opensmt::Real abs_igcd = ( igcd > 0 ? igcd : opensmt::Integer(-igcd) );
-  const opensmt::Real rgcd = opensmt::Real( abs_igcd ); 
-
-  // Divide each term by gcd
-  for ( it = polynome.begin( ) 
-      ; it != polynome.end( ) 
-      ; ++ it )
-  {
-    it->second /= rgcd;
-  }
-  // Nothing to do
-  if ( polynome.find( PTRef_Undef ) == polynome.end( ) )
-    return;
-  // Check if equality is unsat
-  if ( (polynome[ PTRef_Undef ]).get_den( ) != 1 )
-  {
-    // Write a false polynome
-    if ( r == EQ )
-    {
-      polynome.clear( );
-      polynome[ PTRef_Undef ] = 1;
-    }
-    // Tighten
-    if ( r == LEQ ) {
-        // Try to find out what's wrong...
-        assert(false);
-//      polynome[ PTRef_Undef ] = opensmt::Real( ceil(polynome[ PTRef_Undef ]) );
-//      polynome[ PTRef_Undef ] = opensmt::Real( polynome[ PTRef_Undef ].ceil( ) );
-    }
-  }
-  assert( checkIntCoefficients( ) );
-}
-*/
-
-/*
-bool
-LAExpression::checkIntCoefficients( )
-{
-  polynome_t::iterator it;
-  for ( it = polynome.begin()
-      ; it != polynome.end()
-      ; ++ it )
-  {
-    const opensmt::Real coeff = it->second;
-    if ( coeff.get_den( ) != 1 )
-      return false;
-  }
-
-  return true;
-}
-*/
 
 void
-LAExpression::canonizeReal()
-{
-  if ( polynome.size() == 1 )
-  {
-    assert( polynome.find( PTRef_Undef ) != polynome.end( ) );
-    return;
-  }
-  //
-  // Get first useful variable
-  //
-  polynome_t::iterator it = polynome.begin( );
-  if ( it->first == PTRef_Undef ) it ++;
-  if ( r == LEQ )
-  {
-    const opensmt::Real abs_coeff = ( it->second > 0 ? it->second : opensmt::Real(-it->second));
-    for ( it = polynome.begin( ) ; it != polynome.end( ) ; it ++ ) it->second /= abs_coeff;
-  }
-  else
-  {
-    const opensmt::Real coeff = it->second;
-    for ( it = polynome.begin( ) ; it != polynome.end( ) ; it ++ ) it->second /= coeff;
-  }
-
-  assert( isCanonized( ) );
+LAExpression::canonizeReal() {
+    if (polynome.size() == 1) {
+        assert(polynome.find(PTRef_Undef) != polynome.end());
+        return;
+    }
+    // Get first useful variable
+    auto rit = polynome.rbegin();
+    if (rit->first == PTRef_Undef) { ++rit; }
+    opensmt::Real coeff;
+    if (r == LEQ) {
+        coeff = (rit->second > 0 ? rit->second : opensmt::Real(-rit->second));
+    } else {
+         coeff = rit->second;
+    }
+    for (auto & term : polynome) {
+        term.second /= coeff;
+    }
+    assert(isCanonized());
 }
 
-void LAExpression::addExprWithCoeff( const LAExpression & a, const opensmt::Real & coeff )
-{
-    //
+void LAExpression::addExprWithCoeff(const LAExpression &a, const opensmt::Real &coeff) {
     // Iterate over expression to add
-    //
-    for (polynome_t::const_iterator it = a.polynome.begin( ); it != a.polynome.end( ); it++)
-    {
-        polynome_t::iterator it2 = polynome.find( it->first );
-        if ( it2 != polynome.end( ) )
-        {
+    for (auto it = a.polynome.begin(); it != a.polynome.end(); ++it) {
+        auto it2 = polynome.find(it->first);
+        if (it2 != polynome.end()) {
             it2->second += coeff * it->second;
-            if ( it2->first != PTRef_Undef && it2->second == 0 )
-                polynome.erase( it2 );
+            if (it2->first != PTRef_Undef && it2->second == 0) {
+                polynome.erase(it2);
+            }
+        } else {
+            polynome.insert(std::make_pair(it->first, coeff * it->second));
         }
-        else
-            polynome[it->first] = coeff * it->second;
     }
 }

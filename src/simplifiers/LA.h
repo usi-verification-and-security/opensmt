@@ -64,7 +64,7 @@ public:
   inline bool              isTrue     ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] == 0 : polynome[ PTRef_Undef ] >= 0 ); }
   inline bool              isFalse    ( ) { return polynome.size( ) == 1 && ( r == EQ ? polynome[ PTRef_Undef ] != 0 : polynome[ PTRef_Undef ] < 0 ); }
 
-  typedef map< PTRef, opensmt::Real >    polynome_t;
+  using polynome_t = std::map<PTRef, opensmt::Real>;
 
   void                     initialize   (PTRef, bool canonize = true);      // Initialize
   PTRef                    solve        ();           // Solve w.r.t. some variable
