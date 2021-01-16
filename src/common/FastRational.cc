@@ -177,7 +177,7 @@ FastRational divexact(FastRational const & n, FastRational const & d) {
 FastRational get_multiplicand(const std::vector<FastRational>& reals)
 {
     std::vector<FastRational> dens;
-    for (auto & r : reals) {
+    for (const auto & r : reals) {
         if (!r.isInteger()) {
             dens.push_back(r.get_den());
         }
@@ -188,7 +188,8 @@ FastRational get_multiplicand(const std::vector<FastRational>& reals)
     while (dens.size() > 0) {
         // Unique denominators
         std::sort(dens.begin(), dens.end());
-        std::unique(dens.begin(), dens.end());
+        auto last = std::unique(dens.begin(), dens.end());
+        dens.erase(last, dens.end());
 #ifdef PRINTALOT
         char *buf = (char*) malloc(1);
         buf[0] = '\0';

@@ -102,7 +102,7 @@ class Logic {
         void insert(const char* name, TFun const & templ) {
             assert(not has(name));
             defined_functions_names.push();
-            defined_functions_names.last() = strdup(std::string(name).c_str());
+            defined_functions_names.last() = strdup(name);
             defined_functions[defined_functions_names.last()] = templ;
         }
 
@@ -113,7 +113,7 @@ class Logic {
 
         void getKeys(vec<const char*> & keys_out) {
             for (auto k : defined_functions_names) {
-                defined_functions_names.push(strdup(k));
+                keys_out.push(strdup(k));
             }
         }
 

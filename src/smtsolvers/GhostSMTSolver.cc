@@ -188,8 +188,8 @@ GhostSMTSolver::pickBranchLit() {
 }
 
 void GhostSMTSolver::relocAll() {
-    for (auto & appearances : thLitToClauses) {
-        for (CRef & cr : appearances) {
+    for (const auto & appearances : thLitToClauses) {
+        for (CRef cr : appearances) {
             cr = ca[cr].relocation();
         }
     }

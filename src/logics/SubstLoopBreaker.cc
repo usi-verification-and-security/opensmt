@@ -257,7 +257,7 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRef
 vec<SNRef> SubstLoopBreaker::breakLoops(const std::vector<vec<SNRef>>& loops) {
     // Break the found loops.  Return the orphaned children as new start nodes
     vec<SNRef> orphans;
-    for (auto & loop : loops) {
+    for (const auto & loop : loops) {
         int last_idx = loop.size()-1;
         assert(last_idx >= 0);
         for (int j = 0; j < sna[loop[last_idx]].nChildren(); j++) {

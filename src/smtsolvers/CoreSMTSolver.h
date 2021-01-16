@@ -156,22 +156,8 @@ inline char* SplitData::splitToString()
     int sz = 0;
     char* buf = (char*) malloc(1024);
 
-/*
-    // Units in dl 0
-    for (int i = 0; i < (trail_idx > 0 ? trail_idx : trail.size()); i++)
-    {
-        int n = getLitSize(trail[i]);
-        while (buf_cap < sz + n + 4)   // The size of lit, trailing space, the zero, the newline, and NULL
-        {
-            buf_cap *= 2;
-            buf = (char*) realloc(buf, buf_cap);
-        }
-        sprintf(&buf[sz], "%s%d 0\n", sign(trail[i]) ? "-" : "", var(trail[i])+1);
-        sz += n+3; // points to NULL
-    }
-*/
     // The constraints
-    for (vec<Lit>& c : constraints) {
+    for (const vec<Lit>& c : constraints) {
         for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // Lit, space, and NULL
@@ -191,7 +177,7 @@ inline char* SplitData::splitToString()
         sz += 2;
     }
 
-    for (vec<Lit> & c : learnts) {
+    for (const vec<Lit> & c : learnts) {
         for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // The size of lit, space, and NULL

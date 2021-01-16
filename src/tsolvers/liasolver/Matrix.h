@@ -29,7 +29,7 @@ public:
     LAVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den) : den(den) {
         header.size = ps.size();
         header.reloced = 0;
-        for (int i = 0; i < static_cast<int>(ps.size()); i++) {
+        for (size_t i = 0; i < ps.size(); i++) {
             new (&args[i]) opensmt::Real(ps[i]);
         }
     }

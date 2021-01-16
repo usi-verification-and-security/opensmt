@@ -258,7 +258,7 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
                                                                           getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()));
 }
 
-void MainSolver::addToConj(std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
+void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
     for (const auto & constr : in) {
         vec<PTRef> disj_vec;

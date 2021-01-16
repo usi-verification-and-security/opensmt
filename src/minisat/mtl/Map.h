@@ -263,8 +263,9 @@ class Map {
 
 template<class K, class D, class H, class E = Equal<K> >
 class VecMap {
- public:
-    struct Pair { static_assert(std::is_trivially_copyable<D>::value, "elements of mtl::VecMap vectors need to be trivially copyable"); K key; vec<D> data; };
+    static_assert(std::is_trivially_copyable<D>::value, "elements of mtl::VecMap vectors need to be trivially copyable");
+public:
+    struct Pair { K key; vec<D> data; };
 
  private:
     H          hash;

@@ -137,20 +137,17 @@ void   PtStore::free(PTRef r) { pta.free(r); }  // this is guaranteed to be lazy
 Pterm& PtStore::operator[] (PTRef tr) { return pta[tr]; }
 const Pterm& PtStore::operator[] (PTRef tr) const { return pta[tr]; }
 
-bool PtStore::hasCtermKey(SymRef& k) { return cterm_map.has(k); }
-void PtStore::addToCtermMap(SymRef& k, PTRef tr) {
-    cterm_map.insert(k, tr);
-//        cterm_keys.push(k);
-}
-PTRef PtStore::getFromCtermMap(SymRef& k) { return cterm_map[k]; }
+bool  PtStore::hasCtermKey    (SymRef& k)             { return cterm_map.has(k); }
+void  PtStore::addToCtermMap  (SymRef& k, PTRef tr)   { cterm_map.insert(k, tr); }
+PTRef PtStore::getFromCtermMap(SymRef& k)             { return cterm_map[k]; }
 
-bool PtStore::hasBoolKey(const PTLKey& k) { return bool_map.find(k) != bool_map.end(); }
-void PtStore::addToBoolMap(PTLKey &&k, PTRef tr) { bool_map[std::move(k)] = tr; }
-PTRef PtStore::getFromBoolMap(const PTLKey& k) { return bool_map.at(k); }
+bool  PtStore::hasBoolKey     (const PTLKey& k)       { return bool_map.find(k) != bool_map.end(); }
+void  PtStore::addToBoolMap   (PTLKey &&k, PTRef tr)  { bool_map[std::move(k)] = tr; }
+PTRef PtStore::getFromBoolMap (const PTLKey& k)       { return bool_map.at(k); }
 
-bool PtStore::hasCplxKey(const PTLKey& k) { return cplx_map.find(k) != cplx_map.end(); }
-void PtStore::addToCplxMap(PTLKey && k, PTRef tr) { cplx_map[std::move(k)] = tr; }
-PTRef PtStore::getFromCplxMap(const PTLKey& k) { return cplx_map.at(k); }
+bool  PtStore::hasCplxKey     (const PTLKey& k)       { return cplx_map.find(k) != cplx_map.end(); }
+void  PtStore::addToCplxMap   (PTLKey && k, PTRef tr) { cplx_map[std::move(k)] = tr; }
+PTRef PtStore::getFromCplxMap (const PTLKey& k)       { return cplx_map.at(k); }
 
 PtermIter PtStore::getPtermIter() { return PtermIter(idToPTRef); }
 

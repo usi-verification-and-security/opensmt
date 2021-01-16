@@ -206,7 +206,7 @@ class MainSolver
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;
     bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
-    void  addToConj(std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
+    void  addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

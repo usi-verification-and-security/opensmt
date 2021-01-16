@@ -2146,7 +2146,8 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
         // space
         constraints_negated.push(~l);
     }
-    for (const auto & split_assumption : split_assumptions) {
+    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
+        const auto & split_assumption = split_assumptions[i];
         vec<Lit> tmp;
         for (auto tr : split_assumption)
             tmp.push(~tr);
