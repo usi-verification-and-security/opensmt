@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Pterm.h"
 #include "SymStore.h"
+#include <unordered_map>
 
 class SStore; // forward declaration
 
@@ -55,10 +56,10 @@ class PtStore {
     Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
 //    vec<SymRef> cterm_keys;
 
-    Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
+    std::unordered_map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
 //    vec<PTLKey> cplx_keys;
 
-    Map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
+    std::unordered_map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
 //    vec<PTLKey> bool_keys;
 //    friend class Logic;
     static const int ptstore_buf_idx;
@@ -86,19 +87,13 @@ class PtStore {
     }*/
     PTRef getFromCtermMap(SymRef& k);// { return cterm_map[k]; }
 
-    bool hasBoolKey(PTLKey& k);// { return bool_map.has(k); }
-    void addToBoolMap(PTLKey& k, PTRef tr);/* {
-        bool_map.insert(k, tr);
-//        bool_keys.push(k);
-    }*/
-    PTRef getFromBoolMap(PTLKey& k);// { return bool_map[k]; }
+    bool hasBoolKey(const PTLKey& k);
+    void addToBoolMap(PTLKey && k, PTRef tr);
+    PTRef getFromBoolMap(const PTLKey& k);
 
-    bool hasCplxKey(PTLKey& k);// { return cplx_map.has(k); }
-    void addToCplxMap(PTLKey& k, PTRef tr);/* {
-        cplx_map.insert(k, tr);
-//        cplx_keys.push(k);
-    }*/
-    PTRef getFromCplxMap(PTLKey& k);// { return cplx_map[k]; }
+    bool hasCplxKey(const PTLKey& k);
+    void addToCplxMap(PTLKey && k, PTRef tr);
+    PTRef getFromCplxMap(const PTLKey& k);
 
     PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
 

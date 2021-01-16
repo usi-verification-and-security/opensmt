@@ -132,16 +132,6 @@ TEST(Rationals_test, test_overwrite)
     r = q;
 }
 
-TEST(Rationals_test, test_unique)
-{
-    vec<Real> v = {1, 1, 2, 3, 3, 4};
-    vec<Real> w = {1, 2, 3, 4};
-    uniq(v);
-    ASSERT_EQ(v.size(), w.size());
-    for (int i = 0; i < v.size(); i++)
-        ASSERT_EQ(v[i], w[i]);
-}
-
 TEST(Rationals_test, test_uword)
 {
     uint32_t x = 2589903246;
@@ -236,6 +226,20 @@ TEST(Rationals_test, test_addition)
         FastRational sum = a+b;
         ASSERT_EQ(sum, FastRational("2147483663/8"));
         ASSERT_FALSE(sum.wordPartValid());
+    }
+}
+
+TEST(Rationals_test, test_multiplicand)
+{
+    {
+        std::vector<FastRational> rs{FastRational(1, 3), FastRational(1, 5), FastRational(1, 6)};
+        FastRational mul = get_multiplicand(rs);
+        ASSERT_EQ(mul, 30);
+    }
+    {
+        std::vector<FastRational> rs{FastRational(1, 3), FastRational(1, 5), FastRational(2, 5)};
+        FastRational mul = get_multiplicand(rs);
+        ASSERT_EQ(mul, 15);
     }
 }
 

@@ -47,10 +47,6 @@ struct PTLKey {
             if (k1.args[i] != k2.args[i]) break;
         return i == k1.args.size();
     }
-    void operator= (const PTLKey& k) {
-        sym = k.sym;
-        k.args.copyTo(args);
-    }
 };
 
 struct PTLHash {

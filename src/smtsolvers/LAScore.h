@@ -16,7 +16,8 @@ template<class EV>
 class LABestLitBuf {
 private:
     int size;
-    vec<std::pair < EV, Lit> > buf;
+    using EVLitPair = opensmt::pair<EV, Lit>;
+    vec<EVLitPair> buf;
     const vec<lbool> &assigns;
     EV  heur_worst;     // the lowest heuristic value currently in buf
     int heur_worst_loc; // The location of heur_worst in buf
@@ -44,7 +45,7 @@ public:
             : size(sz), assigns(assigns), randomize(randomize), rnd_seed(rnd_seed)
     {
         for (int i = 0; i < size; i++)
-            buf.push(std::pair < EV, Lit > {EV(), lit_Undef});
+            buf.push(EVLitPair{EV(), lit_Undef});
         heur_worst_loc = 0;
         heur_worst = buf[heur_worst_loc].first;
     }
@@ -52,7 +53,7 @@ public:
     void insert(Lit l, EV &val) {
         int i;
         if (val < heur_worst) { return; }
-        buf[heur_worst_loc] = std::pair<EV,Lit>(val, l);
+        buf[heur_worst_loc] = EVLitPair{val, l};
         EV current_worst = EV::max_val;
         for (i = 0; i < size; i++) {
             int loc = (heur_worst_loc+i) % size;
@@ -140,8 +141,6 @@ public:
     public:
         DoubleVal() : round(-1), val(std::numeric_limits<double>::lowest()) {}
         DoubleVal(int round, double val) : round(round), val(val) {}
-        DoubleVal(const DoubleVal& o) { round = o.round; val = o.val; }
-        DoubleVal& operator=(const DoubleVal& o) { round = o.round; val = o.val; return *this; }
         static const DoubleVal max_val;
 
         bool operator<  (const DoubleVal& o) const {

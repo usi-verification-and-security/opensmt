@@ -53,8 +53,8 @@ protected:
     //
     // Explanation routines and data
     //
-    using PendingQueue = vec<std::pair<ERef,ERef>>;
-    virtual vec<PtAsgn> explain      (std::pair<ERef,ERef>);     // Main routine for explanation
+    using PendingQueue = vec<opensmt::pair<ERef,ERef>>;
+    virtual vec<PtAsgn> explain      (opensmt::pair<ERef,ERef>);        // Main routine for explanation
     virtual PtAsgn  explainEdge      (ERef v, ERef p, PendingQueue &exp_pending, DupChecker& dc);
     virtual void    explainAlongPath (ERef, ERef, vec<PtAsgn> &outExplanation, PendingQueue &exp_pending, DupChecker& dc); // Store explanation in explanation
     virtual void    enqueueArguments (ERef, ERef, PendingQueue &exp_pending); // Enqueue arguments to be explained
@@ -74,7 +74,7 @@ protected:
     vec<ERef>       exp_cleanup;                      // List of nodes to be restored
     int             time_stamp = 0;                   // Need for finding NCA
 
-    vec<std::pair<PTRef,PTRef>> congruences;
+    vec<opensmt::pair<PTRef,PTRef>> congruences;
 public:
     Explainer(EnodeStore & store) : store(store) {}
     virtual ~Explainer() = default;
@@ -82,7 +82,7 @@ public:
     void                storeExplanation    (ERef, ERef, PtAsgn);        // Store the explanation for the merge
     void                removeExplanation   ();                          // Undoes the effect of storeExplanation
     virtual vec<PtAsgn> explain             (ERef, ERef);                // Return explanation of why the given two terms are equal
-    const vec<std::pair<PTRef,PTRef>> &getCongruences() const { return congruences; }
+    const vec<opensmt::pair<PTRef,PTRef>> &getCongruences() const { return congruences; }
 };
 
 class InterpolatingExplainer : public Explainer {

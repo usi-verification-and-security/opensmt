@@ -232,13 +232,13 @@ ValPair MainSolver::getValue(PTRef tr) const
     }
 }
 
-void MainSolver::getValues(const vec<PTRef>& trs, vec<ValPair>& vals) const
+void MainSolver::getValues(const vec<PTRef>& trs, std::vector<ValPair>& vals) const
 {
     vals.clear();
     for (int i = 0; i < trs.size(); i++)
     {
         PTRef tr = trs[i];
-        vals.push(getValue(tr));
+        vals.emplace_back(getValue(tr));
     }
 }
 
@@ -258,13 +258,12 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
                                                                           getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()));
 }
 
-void MainSolver::addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const
+void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
 {
-    for (int i = 0; i < in.size(); i++) {
-        vec<PtAsgn>& constr = in[i];
+    for (const auto & constr : in) {
         vec<PTRef> disj_vec;
-        for (int k = 0; k < constr.size(); k++)
-            disj_vec.push(constr[k].sgn == l_True ? constr[k].tr : logic.mkNot(constr[k].tr));
+        for (PtAsgn pta : constr)
+            disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
         out.push(logic.mkOr(disj_vec));
     }
 }
@@ -306,15 +305,16 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
 
 bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
 {
-    vec<SplitData>& splits = ts.solver.splits;
-    for (int i = 0; i < splits.size(); i++) {
+    std::vector<SplitData>& splits = ts.solver.splits;
+    int i = 0;
+    for (const auto & split : splits) {
         vec<PTRef> conj_vec;
-        vec<vec<PtAsgn> > constraints;
-        splits[i].constraintsToPTRefs(constraints, thandler);
+        std::vector<vec<PtAsgn> > constraints;
+        split.constraintsToPTRefs(constraints, thandler);
         addToConj(constraints, conj_vec);
 
-        vec<vec<PtAsgn> > learnts;
-        splits[i].learntsToPTRefs(learnts, thandler);
+        std::vector<vec<PtAsgn> > learnts;
+        split.learntsToPTRefs(learnts, thandler);
         addToConj(learnts, conj_vec);
 
         if (config.smt_split_format_length() == spformat_full)
@@ -323,7 +323,7 @@ bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
         PTRef problem = logic.mkAnd(conj_vec);
 
         char* name;
-        int written = asprintf(&name, "%s-%02d.smt2", file, i);
+        int written = asprintf(&name, "%s-%02d.smt2", file, i ++);
         assert(written >= 0);
         (void)written;
         std::ofstream file;

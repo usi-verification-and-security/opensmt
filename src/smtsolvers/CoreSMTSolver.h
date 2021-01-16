@@ -56,6 +56,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory>
 #include <sstream>
 
+#include <vector>
+
 #include "Vec.h"
 #include "Heap.h"
 #include "Alg.h"
@@ -77,51 +79,38 @@ class SplitData
 {
     bool                no_instance;    // Does SplitData store the instance?
 
-    vec<vec<Lit> >      constraints;    // The split constraints
-    vec<vec<Lit> >      learnts;        // The learnt clauses
+    std::vector<vec<Lit>>      constraints;    // The split constraints
+    std::vector<vec<Lit>>      learnts;        // The learnt clauses
 
     char* litToString(const Lit);
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     int getLitSize(const Lit l) const;
-    void toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler &thandler);
+    void toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler &thandler) const;
 
 public:
     SplitData(bool no_instance = true)
         : no_instance(no_instance)
-
     { assert(no_instance); }
-    SplitData(SplitData&& other)
-        : no_instance(other.no_instance)
-    { other.constraints.moveTo(constraints); other.learnts.moveTo(learnts); }
-
-    SplitData(const SplitData& other)
-        : no_instance(other.no_instance)
-    { other.constraints.copyTo(constraints); other.learnts.copyTo(learnts); }
-
-    SplitData& operator= (SplitData&& o)
-    {
-        o.constraints.moveTo(constraints); o.learnts.moveTo(learnts); return *this;
-    }
 
     template<class C> void addConstraint(const C& c)
     {
-        constraints.push();
-        vec<Lit>& cstr = constraints.last();
+        constraints.emplace_back();
+        vec<Lit>& cstr = constraints.back();
         for (int i = 0; i < c.size(); i++)
             cstr.push(c[i]);
     }
     void addLearnt(Clause& c)
     {
-        learnts.push();
-        vec<Lit>& learnt = learnts.last();
+        learnts.emplace_back();
+        vec<Lit>& learnt = learnts.back();
         for (unsigned i = 0; i < c.size(); i++)
             learnt.push(c[i]);
     }
 
     char* splitToString();
-    inline void  constraintsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, constraints, thandler); }
-    inline void  learntsToPTRefs(vec<vec<PtAsgn>>& out, const THandler& thandler) { toPTRefs(out, learnts, thandler); }
+    inline void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, constraints, thandler); }
+    inline void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, learnts, thandler); }
 };
 
 inline int SplitData::getLitSize(const Lit l) const
@@ -167,27 +156,9 @@ inline char* SplitData::splitToString()
     int sz = 0;
     char* buf = (char*) malloc(1024);
 
-/*
-    // Units in dl 0
-    for (int i = 0; i < (trail_idx > 0 ? trail_idx : trail.size()); i++)
-    {
-        int n = getLitSize(trail[i]);
-        while (buf_cap < sz + n + 4)   // The size of lit, trailing space, the zero, the newline, and NULL
-        {
-            buf_cap *= 2;
-            buf = (char*) realloc(buf, buf_cap);
-        }
-        sprintf(&buf[sz], "%s%d 0\n", sign(trail[i]) ? "-" : "", var(trail[i])+1);
-        sz += n+3; // points to NULL
-    }
-*/
     // The constraints
-    for (int i = 0; i < constraints.size(); i++)
-    {
-        vec<Lit>& c = constraints[i];
-        for (int j = 0; j < c.size(); j++)
-        {
-            Lit l = c[j];
+    for (const vec<Lit>& c : constraints) {
+        for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // Lit, space, and NULL
             {
@@ -206,12 +177,8 @@ inline char* SplitData::splitToString()
         sz += 2;
     }
 
-    for (int i = 0; i < learnts.size(); i++)
-    {
-        vec<Lit>& c = learnts[i];
-        for (int j = 0; j < c.size(); j++)
-        {
-            Lit l = c[j];
+    for (const vec<Lit> & c : learnts) {
+        for (Lit l : c) {
             int n = getLitSize(l);
             while (buf_cap < sz + n + 2)   // The size of lit, space, and NULL
             {
@@ -233,17 +200,15 @@ inline char* SplitData::splitToString()
     return buf;
 }
 
-inline void SplitData::toPTRefs(vec<vec<PtAsgn> >& out, vec<vec<Lit> >& in, const THandler& theory_handler)
+inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler& theory_handler) const
 {
-    for (int i = 0; i < in.size(); i++)
-    {
-        vec<Lit>& c = in[i];
-        out.push();
+    for (const vec<Lit>& c : in) {
+        out.emplace_back();
         vec<PtAsgn>& out_clause = out[out.size()-1];
-        for (int j = 0; j < c.size(); j++)
+        for (Lit l : c)
         {
-            PTRef tr = theory_handler.varToTerm(var(c[j]));
-            PtAsgn pta(tr, sign(c[j]) ? l_False : l_True);
+            PTRef tr = theory_handler.varToTerm(var(l));
+            PtAsgn pta(tr, sign(l) ? l_False : l_True);
             out_clause.push(pta);
         }
     }
@@ -290,7 +255,7 @@ public:
     bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
     bool addOriginalClause_(const vec<Lit> & _ps);                                          // Add a clause to the solver
-    bool addOriginalClause_(const vec<Lit> & _ps, pair<CRef, CRef> & inOutCRefs);           // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
     // Solving:
     //
@@ -406,8 +371,8 @@ public:
     uint64_t top_level_lits;
 
     // Splits
-    vec<SplitData> splits;
-    vec<vec<Lit> > split_assumptions;
+    std::vector<SplitData> splits;
+    std::vector<vec<Lit>> split_assumptions;
 
 protected:
     Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic

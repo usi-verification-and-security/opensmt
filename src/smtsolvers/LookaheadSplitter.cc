@@ -88,7 +88,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
     root->print();
 #endif
     copySplits(root);
-    assert(splits.size() == config.sat_split_num());
+    assert(static_cast<int>(splits.size()) == config.sat_split_num());
     return LALoopRes::unknown_final;
 }
 
@@ -144,7 +144,7 @@ void LookaheadSplitter::copySplits(LASplitNode *root)
         }
         queue.pop();
         if (n->sd != nullptr) {
-            splits.push_m(std::move(*n->sd));
+            splits.emplace_back(std::move(*n->sd));
             n->sd = nullptr;
         }
     }

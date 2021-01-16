@@ -279,6 +279,8 @@ namespace opensmt {
         return true;
     }
 
+    // std::pair is not trivially copyable.  This version seems to allow on current compilers faster implementations.
+    template <class T, class U> struct pair { T first; U second; };
 
 #define Pair(T) pair< T, T >
 

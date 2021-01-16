@@ -272,14 +272,14 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
 
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 {
-    std::pair<CRef, CRef> fake;
+    opensmt::pair<CRef, CRef> fake;
     return addOriginalClause_(_ps, fake);
 }
 
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
-    inOutCRefs = std::make_pair(CRef_Undef, CRef_Undef);
+    inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
     vec<Lit> ps;
@@ -316,7 +316,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, std::pair<CRef, CRe
         CRef inputClause = ca.alloc(original, false);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
                 ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
-        inOutCRefs = std::make_pair<>(inputClause, outputClause);
+        inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
             proof->beginChain( inputClause );
@@ -1564,7 +1564,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (split_type == spt_none || splits.size() < split_num - 1)
+    while (split_type == spt_none || static_cast<int>(splits.size()) < split_num - 1)
     {
         if (!okContinue())
             return l_Undef;
@@ -2112,8 +2112,8 @@ bool CoreSMTSolver::scatterLevel()
     for (int i = 0; ; i++)
     {
         // 2 << i == 2^(i+1)
-        if ((2 << (i-1) <= split_num - splits.size()) &&
-                (2 << i >= split_num - splits.size()))
+        if ((2 << (i-1) <= split_num - static_cast<int>(splits.size())) &&
+                (2 << i >= split_num - static_cast<int>(splits.size())))
         {
             // r-1(2^i) < 0 and we want absolute
             d = -(r-1/(float)(2<<(i-1))) > r-1/(float)(2<<i) ? i+1 : i;
@@ -2127,11 +2127,11 @@ bool CoreSMTSolver::scatterLevel()
 bool CoreSMTSolver::createSplit_scatter(bool last)
 {
     assert(splits.size() == split_assumptions.size());
-    splits.push_c(SplitData(config.smt_split_format_length() == spformat_brief));
-    split_assumptions.push();
-    SplitData& sp = splits.last();
+    splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
+    split_assumptions.emplace_back();
+    SplitData& sp = splits.back();
     vec<Lit> constraints_negated;
-    vec<Lit>& split_assumption = split_assumptions.last();
+    vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
     for (int i = 0; i < decisionLevel(); i++) {
         vec<Lit> tmp;
@@ -2146,12 +2146,11 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
         // space
         constraints_negated.push(~l);
     }
-    for (int i = 0; i < split_assumptions.size()-1; i++)
-    {
+    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
+        const auto & split_assumption = split_assumptions[i];
         vec<Lit> tmp;
-        vec<Lit>& split_assumption = split_assumptions[i];
-        for (int j = 0; j < split_assumption.size(); j++)
-            tmp.push(~split_assumption[j]);
+        for (auto tr : split_assumption)
+            tmp.push(~tr);
         sp.addConstraint(tmp);
     }
 

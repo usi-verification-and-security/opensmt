@@ -314,8 +314,8 @@ void ProofGraph::buildProofGraph( int nVars )
                             else
                             { c2 = last_seen_id; c1 = id__i; }
                             // Look for pair <ant1,ant2>
-                            pair<int, int> ant_pair (c1,c2);
-                            map< pair<int,int>, int >::iterator it = ants_map.find( ant_pair );
+                            std::pair<int, int> ant_pair (c1,c2);
+                            auto it = ants_map.find( ant_pair );
                             bool found = ( it != ants_map.end() );
                             // If pairs not found, add id of the next node to the map
                             if( !found ) ants_map[ ant_pair ] = currId ;
@@ -363,8 +363,8 @@ void ProofGraph::buildProofGraph( int nVars )
                                 else
                                 { c2 = last_seen_id; c1 = id__i; }
                                 // Look for pair <ant1,ant2>
-                                pair<int, int> ant_pair (c1,c2);
-                                map< pair<int,int>, int >::iterator it = ants_map.find( ant_pair );
+                                std::pair<int, int> ant_pair (c1,c2);
+                                map< std::pair<int,int>, int >::iterator it = ants_map.find( ant_pair );
                                 bool found = ( it != ants_map.end() );
                                 // If pairs not found, add id of the next node to the map
                                 if( !found ) ants_map[ ant_pair ] = currId ;

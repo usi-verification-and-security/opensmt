@@ -300,7 +300,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
             if (logic_.isAtom(e_curr))
             {
                 // Complexity of atom is 0
-                complexity_map.insert( pair< PTRef, unsigned long >( e_curr, 0 ) );
+                complexity_map.insert( std::make_pair( e_curr, 0 ) );
 #ifdef PEDANTIC_DEBUG
                 cerr << "; Adding complexity of " << logic.printTerm(e_curr) << " = 0" << endl;
 #endif
@@ -358,7 +358,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
                     // Formula tree representation
                     if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) additional_compl = num_args - 1;
                     else if( logic_.isNot(e_curr) ) { assert(num_args==1); additional_compl = 1; }
-                    complexity_map.insert(pair<PTRef,unsigned long>(e_curr, comp_curr + additional_compl));
+                    complexity_map.insert(std::make_pair(e_curr, comp_curr + additional_compl));
 #ifdef PEDANTIC_DEBUG
                     cerr << "; Complexity of " << logic.printTerm(e_curr) << " = " << complexity_map.find(e_curr)->second << endl;
 #endif
@@ -411,7 +411,7 @@ unsigned long ProofGraph::getComplexityInterpolantIterative(PTRef int_e, bool fl
 		if( logic_.isAtom(curr_enode) )
 		{
 			// Complexity of atom is 0
-			complexity_map.insert( pair< PTRef, unsigned long >( curr_enode, 0 ) );
+			complexity_map.insert( std::make_pair( curr_enode, 0 ) );
 		}
 		// Case boolean connective: and, or not, iff, xor, implies
 		else if( logic_.isBooleanOperator(curr_enode) )
@@ -435,13 +435,13 @@ unsigned long ProofGraph::getComplexityInterpolantIterative(PTRef int_e, bool fl
 			if( flag )
 			{
 				// Complexity of connective is sum of complexities of arguments plus one
-				complexity_map.insert(pair<PTRef,unsigned long>(curr_enode,comp_curr + 1));
+				complexity_map.insert(std::make_pair(curr_enode,comp_curr + 1));
 			}
 			else
 			{
 				// Complexity of connective is sum of complexities of arguments plus number of arguments - 1
 				// E.g. ennary AND counts as eight binary AND
-				complexity_map.insert(pair<PTRef,unsigned long>(curr_enode,comp_curr + num_args -1));
+				complexity_map.insert(std::make_pair(curr_enode,comp_curr + num_args -1));
 			}
 		}
 	}
@@ -473,7 +473,7 @@ void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRe
 		if( logic_.isAtom(curr_enode) )
 		{
 			pred_set_curr.insert(curr_enode);
-			predicate_map.insert(pair< PTRef,set<PTRef> >(curr_enode,pred_set_curr));
+			predicate_map.insert(std::make_pair(curr_enode,pred_set_curr));
 		}
 		// Case boolean connective: and, or not, iff, xor, implies
 		else if( logic_.isBooleanOperator(curr_enode) )
@@ -494,7 +494,7 @@ void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRe
 				for(it = sub_pred_set.begin(); it!=sub_pred_set.end(); it++ )
 					pred_set_curr.insert((*it));
 			}
-			predicate_map.insert(pair< PTRef,set<PTRef> >(curr_enode,pred_set_curr));
+			predicate_map.insert(std::make_pair(curr_enode,pred_set_curr));
 		}
 	}
 	pred_set = predicate_map.find(int_e)->second;

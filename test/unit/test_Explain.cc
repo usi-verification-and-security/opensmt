@@ -9,7 +9,7 @@
 #include <utility>
 
 class UFExplainTest : public ::testing::Test {
-    using PTERef = std::pair<PTRef,ERef>;
+    using PTERef = PTRefERefPair;
     SRef ufsort;
     PTERef makeAndStorePTRef(PTRef tr) { vec<PTERef> v = store.constructTerm(tr); assert(v.size() == 1); return v[0]; }
 
@@ -32,10 +32,10 @@ protected:
 
         SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr, false);
 
-        f_c1_c0 = makeAndStorePTRef(logic.insertTerm(f, {c1.first, c0.first}));
+        f_c1_c0 = makeAndStorePTRef(logic.insertTerm(f, {c1.tr, c0.tr}));
 
-        f_c2_c0 = makeAndStorePTRef(logic.insertTerm(f, {c2.first, c0.first}));
-        f_f_c2_c0_c0 = makeAndStorePTRef(logic.insertTerm(f, {f_c2_c0.first, c0.first}));
+        f_c2_c0 = makeAndStorePTRef(logic.insertTerm(f, {c2.tr, c0.tr}));
+        f_f_c2_c0_c0 = makeAndStorePTRef(logic.insertTerm(f, {f_c2_c0.tr, c0.tr}));
 
     }
     EnodeStore& getStore() { return store; }
@@ -43,21 +43,21 @@ protected:
 
 TEST_F(UFExplainTest, test_UFExplain) {
 
-    PTRef eq1 = logic.mkEq(c2.first, c1.first);
-    PTRef eq3 = logic.mkEq(f_f_c2_c0_c0.first, c0.first);
-    PTRef eq7 = logic.mkEq(f_c1_c0.first, c1.first);
+    PTRef eq1 = logic.mkEq(c2.tr, c1.tr);
+    PTRef eq3 = logic.mkEq(f_f_c2_c0_c0.tr, c0.tr);
+    PTRef eq7 = logic.mkEq(f_c1_c0.tr, c1.tr);
 
     Explainer explainer(store);
-    explainer.storeExplanation(c2.second, c1.second, {eq1, l_True});
-    explainer.storeExplanation(f_f_c2_c0_c0.second, c0.second, {eq3, l_True});
-    explainer.storeExplanation(c1.second, f_c1_c0.second, {eq7, l_True});
-    explainer.storeExplanation(f_c1_c0.second, f_f_c2_c0_c0.second, PtAsgn_Undef);
-    ASSERT_THROW(explainer.explain(c1.second, f_c2_c0.second), OsmtInternalException);
-    explainer.storeExplanation(f_c2_c0.second, f_c1_c0.second, PtAsgn_Undef);
-    ASSERT_NO_THROW(explainer.explain(c1.second, f_c2_c0.second));
-    ASSERT_NO_THROW(explainer.explain(c2.second, c0.second));
-    std::cout << logic.pp(c2.first) << " = " << logic.pp(c0.first) << ": " << std::endl;
-    for (PtAsgn pta : explainer.explain(c2.second, c0.second)) {
+    explainer.storeExplanation(c2.er, c1.er, {eq1, l_True});
+    explainer.storeExplanation(f_f_c2_c0_c0.er, c0.er, {eq3, l_True});
+    explainer.storeExplanation(c1.er, f_c1_c0.er, {eq7, l_True});
+    explainer.storeExplanation(f_c1_c0.er, f_f_c2_c0_c0.er, PtAsgn_Undef);
+    ASSERT_THROW(explainer.explain(c1.er, f_c2_c0.er), OsmtInternalException);
+    explainer.storeExplanation(f_c2_c0.er, f_c1_c0.er, PtAsgn_Undef);
+    ASSERT_NO_THROW(explainer.explain(c1.er, f_c2_c0.er));
+    ASSERT_NO_THROW(explainer.explain(c2.er, c0.er));
+    std::cout << logic.pp(c2.tr) << " = " << logic.pp(c0.tr) << ": " << std::endl;
+    for (PtAsgn pta : explainer.explain(c2.er, c0.er)) {
         std::cout << "  " << logic.pp(pta.tr) << std::endl;
     }
 
