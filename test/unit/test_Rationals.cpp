@@ -229,6 +229,20 @@ TEST(Rationals_test, test_addition)
     }
 }
 
+TEST(Rationals_test, test_multiplicand)
+{
+    {
+        std::vector<FastRational> rs{FastRational(1, 3), FastRational(1, 5), FastRational(1, 6)};
+        FastRational mul = get_multiplicand(rs);
+        ASSERT_EQ(mul, 30);
+    }
+    {
+        std::vector<FastRational> rs{FastRational(1, 3), FastRational(1, 5), FastRational(2, 5)};
+        FastRational mul = get_multiplicand(rs);
+        ASSERT_EQ(mul, 15);
+    }
+}
+
 TEST(Rationals_test, test_subtraction)
 {
     {
