@@ -41,9 +41,7 @@ class vec {
     int sz;
     int cap;
 
-    vec<T>&  operator = (const vec<T>& other) {
-                static_assert(std::is_trivially_copyable<T>::value, "mtl::vec elements need to be trivially copyable");
-                sz = other.sz; cap = other.cap; data = (T*)malloc(data, cap*sizeof(T)); memcpy(data, other.data, sz); return *this; };
+    static_assert(std::is_trivially_copyable<T>::value, "mtl::vec elements need to be trivially copyable");
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
@@ -58,8 +56,11 @@ public:
     vec(const std::initializer_list<T> &iList);
     vec(const std::vector<T>& v) : vec(v.size()) { for (unsigned i = 0; i < v.size(); i++) { operator[](i) = v[i]; } };
     vec(vec&& o)                : data(NULL) , sz(0)   , cap(0)    { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); }
+    // copy constructor if ever needed
+    //vec(const vec<T>& other) : sz(other.sz), cap(other.cap) { data = (T*)malloc(cap*sizeof(T)); memcpy(data, other.data, sz*sizeof(T)); }
    ~vec()                                                          { clear(true); }
     vec<T>& operator = (vec<T>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
+
 
     // Pointer to first element:
     operator T*       (void)           { return data; }
@@ -118,7 +119,6 @@ vec<T>::vec(const std::initializer_list<T> &iList) : data(NULL), sz(0), cap(0) {
 
 template<class T>
 void vec<T>::capacity(int min_cap) {
-    static_assert(std::is_trivially_copyable<T>::value, "mtl::vec elements need to be trivially copyable");
     if (cap >= min_cap) return;
     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
     if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
