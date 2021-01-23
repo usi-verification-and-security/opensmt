@@ -35,6 +35,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   , cl_al		( cl )
 { }
 
+void Proof::newOriginalClause(CRef c) {
+    assert(currentPartition != static_cast<std::size_t>(-1));
+    newLeafClause(c, clause_type::CLA_ORIG);
+    ipartitions_t partition = 0;
+    setbit(partition, currentPartition);
+    clause_class[c] |= partition;
+}
+
 void Proof::newLeafClause(CRef c, clause_type t)
 {
     assert(c != CRef_Undef);

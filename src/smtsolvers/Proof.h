@@ -89,14 +89,20 @@ class Proof
     std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
     ClauseAllocator&            cl_al;
     std::unordered_map<Lit, CRef, LitHash> assumed_literals;
+    std::unordered_map<CRef, ipartitions_t> clause_class;
+    std::size_t currentPartition = 0;
 
 public:
 
     Proof ( ClauseAllocator& cl );
     ~Proof( ) = default;
 
+    void setPartition(std::size_t partition) { currentPartition = partition; }
+
+    ipartitions_t getClauseClassMask(CRef c) const { assert(clause_class.count(c) != 0); return clause_class.at(c); }
+
     // Notifies the proof about a new original clause.
-    void newOriginalClause(CRef c) { newLeafClause(c, clause_type::CLA_ORIG); }
+    void newOriginalClause(CRef c);
 
     // Notifies the proof about a new T-clause.
     void newTheoryClause(CRef c) { newLeafClause(c, clause_type::CLA_THEORY); }

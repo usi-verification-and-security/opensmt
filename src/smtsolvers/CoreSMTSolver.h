@@ -755,6 +755,7 @@ protected:
 public:
 
     void    printTrace() const;
+    void    setPartition(std::size_t partitionIndex);
 
 protected:
     virtual inline void clausesPublish() {};

@@ -70,12 +70,6 @@ PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part
 }
 
 void
-PartitionManager::addClauseClassMask(CRef c, const ipartitions_t& toadd)
-{
-    partitionInfo.addClausePartition(c, toadd);
-}
-
-void
 PartitionManager::invalidatePartitions(const ipartitions_t& toinvalidate) {
     partitionInfo.invalidatePartitions(toinvalidate);
 }

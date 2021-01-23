@@ -42,10 +42,6 @@ public:
 
     ipartitions_t computeAllowedPartitions(PTRef p);
 
-    const ipartitions_t & getClauseClassMask(CRef c) const { return partitionInfo.getClausePartitions(c); }
-
-    void addClauseClassMask(CRef c, const ipartitions_t & toadd);
-
     void invalidatePartitions(const ipartitions_t & toinvalidate);
 
     inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }

@@ -1044,6 +1044,12 @@ void CoreSMTSolver::finalizeProof(CRef finalConflict) {
     proof->endChain(CRef_Undef);
 }
 
+void CoreSMTSolver::setPartition(std::size_t partitionIndex) {
+    if (proof) {
+        proof->setPartition(partitionIndex);
+    }
+}
+
 /*_________________________________________________________________________________________________
   |
   |  analyzeFinal : (p : Lit)  ->  [void]
