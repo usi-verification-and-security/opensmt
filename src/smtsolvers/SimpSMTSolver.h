@@ -63,7 +63,7 @@ class SimpSMTSolver : public CoreSMTSolver
     //
     Var     newVar    (bool polarity = true, bool dvar = true) override;
 
-    bool addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs);
+    bool addOriginalSMTClause(const vec<Lit> & smt_clause);
 public:
 
     bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).

@@ -184,9 +184,8 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
 {
-    inOutCRefs = {CRef_Undef, CRef_Undef};
     assert( config.sat_preprocess_theory == 0 );
 
     // Check that the variables exist in the solver
@@ -213,7 +212,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::p
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
     int nclauses = clauses.size();
-    if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))
+    if (!CoreSMTSolver::addOriginalClause_(smt_clause))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
@@ -622,8 +621,7 @@ bool SimpSMTSolver::eliminateVar(Var v)
     vec<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++) {
         for (int j = 0; j < neg.size(); j++) {
-            opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent, dummy))
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent))
                 return false;
         }
     }
@@ -665,8 +663,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
-        if (!addOriginalSMTClause(subst_clause, dummy))
+        if (!addOriginalSMTClause(subst_clause))
             return ok = false;
     }
 

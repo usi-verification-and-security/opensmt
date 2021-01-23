@@ -430,8 +430,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-    opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
-    bool res = solver.addOriginalSMTClause(c, iorefs);
+    bool res = solver.addOriginalSMTClause(c);
     return res;
 }
 //
