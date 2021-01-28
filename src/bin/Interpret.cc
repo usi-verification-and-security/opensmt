@@ -1198,11 +1198,10 @@ void Interpret::getInterpolants(const ASTNode& n)
         interpolationContext->getSingleInterpolant(itps, partitionings[0]);
     }
 
-    bool many_itps = itps.size() > 1;
     for (int j = 0; j < itps.size(); j++) {
         char * itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
-                         (many_itps ? (j == 0 ? "(" : " ") : ""), itp, (many_itps and j == itps.size() - 1 ? ")" : ""));
+                         (j == 0 ? "(" : " "), itp, (j == itps.size() - 1 ? ")" : ""));
         free(itp);
     }
 }
