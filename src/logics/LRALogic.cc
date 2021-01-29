@@ -27,6 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRALogic.h"
 #include "TreeOps.h"
 
+#include "OsmtApiException.h"
+
 const char* LRALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 /***********************************************************
@@ -131,22 +133,32 @@ LRALogic::LRALogic() :
     sym_store.setInterpreted(sym_Real_ITE);
 }
 
-const SymRef LRALogic::get_sym_Num_TIMES () const {return sym_Real_TIMES;}
-const SymRef LRALogic::get_sym_Num_DIV () const {return sym_Real_DIV;}
-const SymRef LRALogic::get_sym_Num_MINUS () const {return sym_Real_MINUS;}
-const SymRef LRALogic::get_sym_Num_PLUS () const {return sym_Real_PLUS;}
-const SymRef LRALogic::get_sym_Num_NEG () const {return sym_Real_NEG;}
-const SymRef LRALogic::get_sym_Num_LEQ () const {return sym_Real_LEQ;}
-const SymRef LRALogic::get_sym_Num_GEQ () const {return sym_Real_GEQ;}
-const SymRef LRALogic::get_sym_Num_LT () const {return sym_Real_LT;}
-const SymRef LRALogic::get_sym_Num_GT () const {return sym_Real_GT;}
-const SymRef LRALogic::get_sym_Num_EQ () const {return sym_Real_EQ;}
-const SymRef LRALogic::get_sym_Num_ZERO () const {return sym_Real_ZERO;}
-const SymRef LRALogic::get_sym_Num_ONE () const {return sym_Real_ONE;}
-const SymRef LRALogic::get_sym_Num_ITE () const {return sym_Real_ITE;}
-const SRef LRALogic::get_sort_NUM () const {return sort_REAL;}
+PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
+{
+    SimplifyConstDiv simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
+    if (args.size() != 2) {
+        throw OsmtApiException("Division operation requries exactly 2 arguments");
+    }
+    if (this->isNumZero(args[1])) {
+        throw LADivisionByZeroException();
+    }
+    if (not isConstant(args[1])) {
+        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
+    }
+    simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
+    if (isRealDiv(s_new)) {
+        assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
+        args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        return mkNumTimes(args_new);
+    }
+    PTRef tr = mkFun(s_new, args_new);
+    return tr;
+}
 
-PTRef    LRALogic::getTerm_NumZero() const  { return term_Real_ZERO; }
-PTRef      LRALogic::getTerm_NumOne()  const  { return term_Real_ONE; }
-PTRef      LRALogic::getTerm_NumMinusOne()  const  { return term_Real_MINUSONE; }
-bool        LRALogic::hasSortNum(PTRef tr) const  { return hasSortReal(getPterm(tr).symb()); }
+PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
+    if (sym == get_sym_Real_DIV())
+        return mkRealDiv(terms);
+    return LALogic::insertTerm(sym, terms);
+}

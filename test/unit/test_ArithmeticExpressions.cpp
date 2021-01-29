@@ -46,7 +46,7 @@ TEST_F(ArithmeticExpressions_test, test_One_Arg_Multiplication)
     PTRef two = logic.mkConst("2");
     PTRef one = logic.mkConst("1");
     PTRef a = logic.mkNumVar("a");
-    PTRef div = logic.mkNumDiv(a, two);
+    PTRef div = logic.mkRealDiv(a, two);
     vec<PTRef> args;
     args.push(div);
     args.push(one);

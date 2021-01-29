@@ -68,66 +68,60 @@ protected:
 
 public:
     LRALogic();
-    ~LRALogic                   () {
+    ~LRALogic () {
         for (int i = 0; i < reals.size(); i++) delete reals[i];
     }
-    virtual const char*   getName()              const override { return "QF_LRA"; }
+    virtual const char* getName() const override { return "QF_LRA"; }
     virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_LRA; }
-    virtual bool isBuiltinSort  (SRef sr) const override { return sr == sort_REAL || Logic::isBuiltinSort(sr); }
-    virtual bool  isNonnegNumConst (PTRef tr)    const override { return isNumConst(tr) && getNumConst(tr) >= 0; }
-    SRef        getSort_num    ()              const override { return sort_REAL;}
+    bool        isBuiltinFunction(SymRef sr) const override { return isRealDiv(sr) || LALogic::isBuiltinFunction(sr); }
+    SRef        getSort_num() const override { return sort_REAL;}
 
     bool        isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
-    bool        isNumPlus(PTRef tr) const override { return isRealPlus(getPterm(tr).symb()); }
     bool        isRealMinus(SymRef sr) const { return sr == sym_Real_MINUS; }
-    bool        isNumMinus(PTRef tr) const override { return isRealMinus(getPterm(tr).symb()); }
     bool        isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
-    bool        isNumNeg(PTRef tr) const override { return isRealNeg(getPterm(tr).symb()); }
     bool        isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
-    bool        isNumTimes(PTRef tr) const override { return isRealTimes(getPterm(tr).symb()); }
     bool        isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
-    bool        isNumDiv(PTRef tr) const override { return isRealDiv(getPterm(tr).symb());  }
     bool        isRealEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == sort_REAL); }
-    bool        isNumEq(PTRef tr) const override { return isRealEq(getPterm(tr).symb()); }
     bool        isRealLeq(SymRef sr) const { return sr == sym_Real_LEQ; }
-    bool        isNumLeq(PTRef tr) const override { return isRealLeq(getPterm(tr).symb()); }
     bool        isRealLt(SymRef sr) const { return sr == sym_Real_LT; }
-    bool        isNumLt(PTRef tr) const override { return isRealLt(getPterm(tr).symb());  }
     bool        isRealGeq(SymRef sr) const { return sr == sym_Real_GEQ; }
-    bool        isNumGeq(PTRef tr) const override { return isRealGeq(getPterm(tr).symb()); }
     bool        isRealGt(SymRef sr) const { return sr == sym_Real_GT; }
-    bool        isNumGt(PTRef tr) const override { return isRealGt(getPterm(tr).symb()); }
     bool        isRealVar(SymRef sr) const { return isVar(sr) && sym_store[sr].rsort() == sort_REAL; }
-    bool        isNumVar(PTRef tr) const override {return isRealVar(getPterm(tr).symb());}
     bool        isRealZero(SymRef sr) const { return sr == sym_Real_ZERO; }
-    bool        isNumZero(PTRef tr) const override { return tr == term_Real_ZERO; }
     bool        isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
-    bool        isNumOne(PTRef tr) const override { return tr == term_Real_ONE; }
 
     // Real terms are of form c, a, or (* c a) where c is a constant and
     // a is a variable.
 
     bool        hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == sort_REAL; }
-    bool        hasSortNum(PTRef tr) const override;
 
-    PTRef       getTerm_NumZero() const override;
-    PTRef       getTerm_NumOne()  const override;
-    PTRef       getTerm_NumMinusOne()  const override;
+    PTRef       getTerm_NumZero() const override { return term_Real_ZERO; }
+    PTRef       getTerm_NumOne()  const override { return term_Real_ONE; }
+    PTRef       getTerm_NumMinusOne()  const override { return term_Real_MINUSONE; }
 
-    virtual const SymRef get_sym_Num_TIMES () const override;
-    virtual const SymRef get_sym_Num_DIV () const override;
-    virtual const SymRef get_sym_Num_MINUS () const override;
-    virtual const SymRef get_sym_Num_PLUS () const override;
-    virtual const SymRef get_sym_Num_NEG () const override;
-    virtual const SymRef get_sym_Num_LEQ () const override;
-    virtual const SymRef get_sym_Num_GEQ () const override;
-    virtual const SymRef get_sym_Num_LT () const override;
-    virtual const SymRef get_sym_Num_GT () const override;
-    virtual const SymRef get_sym_Num_EQ () const override;
-    virtual const SymRef get_sym_Num_ZERO () const override;
-    virtual const SymRef get_sym_Num_ONE () const override;
-    virtual const SymRef get_sym_Num_ITE () const override;
-    virtual const SRef get_sort_NUM () const override;
+    virtual const SymRef get_sym_Num_TIMES () const override { return sym_Real_TIMES; }
+    virtual const SymRef get_sym_Num_MINUS () const override { return sym_Real_MINUS; }
+    virtual const SymRef get_sym_Num_PLUS () const override { return sym_Real_PLUS; }
+    virtual const SymRef get_sym_Num_NEG () const override { return sym_Real_NEG; }
+    virtual const SymRef get_sym_Num_LEQ () const override { return sym_Real_LEQ; }
+    virtual const SymRef get_sym_Num_GEQ () const override { return sym_Real_GEQ; }
+    virtual const SymRef get_sym_Num_LT () const override { return sym_Real_LT; }
+    virtual const SymRef get_sym_Num_GT () const override { return sym_Real_GT; }
+    virtual const SymRef get_sym_Num_EQ () const override { return sym_Real_EQ; }
+    virtual const SymRef get_sym_Num_ZERO () const override { return sym_Real_ZERO; }
+    virtual const SymRef get_sym_Num_ONE () const override { return sym_Real_ONE; }
+    virtual const SymRef get_sym_Num_ITE () const override { return sym_Real_ITE; }
+    virtual const SRef get_sort_Num () const override { return sort_REAL; }
+
+    const SymRef get_sym_Real_DIV () const { return sym_Real_DIV; }
+
+    PTRef mkNumDiv(vec<PTRef> const& args) override { return mkRealDiv(args); }
+    PTRef mkNumDiv(PTRef dividend, PTRef divisor) override { return mkRealDiv(dividend, divisor); }
+    PTRef mkRealDiv(vec<PTRef> const&);
+    PTRef mkRealDiv(PTRef dividend, PTRef divisor) { return mkRealDiv({dividend, divisor}); }
+
+    PTRef insertTerm(SymRef sym, vec<PTRef> &terms) override;
+
 };
 
 #endif
