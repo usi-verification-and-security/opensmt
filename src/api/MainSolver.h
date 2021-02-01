@@ -133,8 +133,8 @@ class MainSolver
     sstat simplifyFormulas(char** msg);
     sstat solve           ();
 
-    sstat giveToSolver(PTRef root, FrameId push_id) {
-        if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
+    sstat giveToSolver(PTRef root, FrameId push_id, PartIdx partitionIndex) {
+        if (ts.cnfizeAndGiveToSolver(root, push_id, partitionIndex) == l_False) return s_False;
         return s_Undef; }
 
     PTRef rewriteMaxArity(PTRef);

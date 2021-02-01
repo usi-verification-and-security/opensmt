@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
 
-bool Tseitin::cnfize(PTRef term) {
+bool Tseitin::cnfize(PTRef term, PartIdx partitionIndex) {
     bool res = true;
     vec<PTRef> unprocessed_terms {term};
 
@@ -55,15 +55,15 @@ bool Tseitin::cnfize(PTRef term) {
         // by calling findLit
         int sz = logic.getPterm(ptr).size();
         if (logic.isAnd(ptr))
-            res &= cnfizeAnd(ptr);
+            res &= cnfizeAnd(ptr, partitionIndex);
         else if (logic.isOr(ptr))
-            res &= cnfizeOr(ptr);
+            res &= cnfizeOr(ptr, partitionIndex);
         else if (logic.isXor(ptr))
-            res &= cnfizeXor(ptr);
+            res &= cnfizeXor(ptr, partitionIndex);
         else if (logic.isIff(ptr))
-            res &= cnfizeIff(ptr);
+            res &= cnfizeIff(ptr, partitionIndex);
         else if (logic.isImplies(ptr))
-            res &= cnfizeImplies(ptr);
+            res &= cnfizeImplies(ptr, partitionIndex);
         // Ites are handled through the ite manager system and treated here as variables
 //        else if (logic.isIte(ptr))
 //            res &= cnfizeIfthenelse(ptr);
@@ -84,7 +84,7 @@ tseitin_end:
 }
 
 
-bool Tseitin::cnfizeAnd(PTRef and_term)
+bool Tseitin::cnfizeAnd(PTRef and_term, PartIdx partitionIndex)
 {
 //  assert( list );
 //  assert( list->isList( ) );
@@ -107,16 +107,16 @@ bool Tseitin::cnfizeAnd(PTRef and_term)
         PTRef arg = logic.getPterm(and_term)[i];
         little_clause.push( this->getOrCreateLiteralFor(arg) );
         big_clause   .push(~this->getOrCreateLiteralFor(arg));
-        res &= addClause(little_clause);        // Adds a little clause to the solver
+        res &= addClause(little_clause, partitionIndex);        // Adds a little clause to the solver
         little_clause.pop();
     }
-    res &= addClause(big_clause);                    // Adds a big clause to the solver
+    res &= addClause(big_clause, partitionIndex);                    // Adds a big clause to the solver
     return res;
 }
 
 
 
-bool Tseitin::cnfizeOr(PTRef or_term)
+bool Tseitin::cnfizeOr(PTRef or_term, PartIdx partitionIndex)
 {
     //
     // ( a_0 | ... | a_{n-1} )
@@ -136,16 +136,16 @@ bool Tseitin::cnfizeOr(PTRef or_term)
         little_clause.push(~arg);
         big_clause   .push( arg);
 
-        res &= addClause(little_clause);        // Adds a little clause to the solver
+        res &= addClause(little_clause, partitionIndex);        // Adds a little clause to the solver
 
         little_clause.pop();
     }
-    res &= addClause(big_clause);                    // Adds a big clause to the solver
+    res &= addClause(big_clause, partitionIndex);                    // Adds a big clause to the solver
     return res;
 }
 
 
-bool Tseitin::cnfizeXor(PTRef xor_term)
+bool Tseitin::cnfizeXor(PTRef xor_term, PartIdx partitionIndex)
 {
     //
     // ( a_0 xor a_1 )
@@ -169,7 +169,7 @@ bool Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(arg0);
     clause.push(arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     clause.pop();
     clause.pop();
 
@@ -177,7 +177,7 @@ bool Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push(~arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     clause.pop();
     clause.pop();
 
@@ -188,7 +188,7 @@ bool Tseitin::cnfizeXor(PTRef xor_term)
     clause.push(~arg0);
     clause.push( arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.pop();
     clause.pop();
@@ -197,11 +197,11 @@ bool Tseitin::cnfizeXor(PTRef xor_term)
     clause.push( arg0);
     clause.push(~arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     return res;
 }
 
-bool Tseitin::cnfizeIff(PTRef eq_term)
+bool Tseitin::cnfizeIff(PTRef eq_term, PartIdx partitionIndex)
 {
 
     //
@@ -225,7 +225,7 @@ bool Tseitin::cnfizeIff(PTRef eq_term)
     clause.push( arg0);
     clause.push(~arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.pop();
     clause.pop();
@@ -234,7 +234,7 @@ bool Tseitin::cnfizeIff(PTRef eq_term)
     clause.push(~arg0);
     clause.push( arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.pop();
     clause.pop();
@@ -246,7 +246,7 @@ bool Tseitin::cnfizeIff(PTRef eq_term)
     clause.push(arg0);
     clause.push(arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.pop();
     clause.pop();
@@ -255,12 +255,12 @@ bool Tseitin::cnfizeIff(PTRef eq_term)
     clause.push(~arg0);
     clause.push(~arg1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     return res;
 }
 
 
-bool Tseitin::cnfizeIfthenelse(PTRef ite_term)
+bool Tseitin::cnfizeIfthenelse(PTRef ite_term, PartIdx partitionIndex)
 {
     //  (!a | !i | t) & (!a | i | e) & (a | !i | !t) & (a | i | !e)
     //
@@ -286,25 +286,25 @@ bool Tseitin::cnfizeIfthenelse(PTRef ite_term)
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.clear();
 
     clause.push(~v); clause.push(a0); clause.push(a2);
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     clause.clear();
 
     clause.push(v); clause.push(~a0); clause.push(~a1);
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     clause.clear();
 
     clause.push(v); clause.push(a0); clause.push(~a2);
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     return res;
 }
 
 
-bool Tseitin::cnfizeImplies(PTRef impl_term)
+bool Tseitin::cnfizeImplies(PTRef impl_term, PartIdx partitionIndex)
 {
     // ( a_0 => a_1 )
     //
@@ -329,19 +329,19 @@ bool Tseitin::cnfizeImplies(PTRef impl_term)
 
     clause.push(a0);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.pop();
 
     clause.push(~a1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
     clause.clear();
 
     clause.push(~v); clause.push(~a0); clause.push(a1);
 
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
     return res;
 }
 

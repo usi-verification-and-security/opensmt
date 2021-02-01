@@ -10,6 +10,14 @@
 #include <map>
 #include <vector>
 
+struct PartIdx {
+    int id;
+    bool operator== (const PartIdx o) const { return o.id == id; }
+    bool operator!= (const PartIdx o) const { return o.id != id; }
+};
+const struct PartIdx PartIdx_Default = {0};
+const struct PartIdx PartIdx_Undef   = {INT32_MAX};
+
 class FlaPartitionMap {
     std::map<PTRef, unsigned int> top_level_flas;
     std::map<PTRef, unsigned int> other_flas;
@@ -20,7 +28,7 @@ public:
     std::vector<PTRef> get_top_level_flas () const;
     unsigned getNoOfPartitions() const {return get_top_level_flas().size();}
     void transferPartitionMembership(PTRef old, PTRef new_ptref);
-    int getPartitionIndex(PTRef ref) const;
+    PartIdx getPartitionIndex(PTRef ref) const;
 };
 
 

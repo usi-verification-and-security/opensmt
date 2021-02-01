@@ -62,8 +62,8 @@ MainSolver::pop()
             for (int i = 0; i < partitionsToInvalidate.size(); ++i) {
                 PTRef part = partitionsToInvalidate[i];
                 auto index = pmanager.getPartitionIndex(part);
-                assert(index != -1);
-                opensmt::setbit(mask, static_cast<unsigned int>(index));
+                assert(index != PartIdx_Undef);
+                opensmt::setbit(mask, static_cast<unsigned int>(index.id));
             }
             pmanager.invalidatePartitions(mask);
         }
@@ -121,7 +121,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
         unsigned int partition_index = inserted_formulas_count++;
         pmanager.assignTopLevelPartitionIndex(partition_index, root);
-        assert(pmanager.getPartitionIndex(root) != -1);
+        assert(pmanager.getPartitionIndex(root) != PartIdx_Undef);
     }
     else {
         ++inserted_formulas_count;
@@ -156,22 +156,21 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
             for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
-                assert(pmanager.getPartitionIndex(fla) != -1);
+                assert(pmanager.getPartitionIndex(fla) != PartIdx_Undef);
                 // Optimize the dag for cnfization
                 if (logic.isBooleanOperator(fla)) {
                     PTRef old = fla;
                     fla = rewriteMaxArity(fla);
                     pmanager.transferPartitionMembership(old, fla);
                 }
-                assert(pmanager.getPartitionIndex(fla) != -1);
+                assert(pmanager.getPartitionIndex(fla) != PartIdx_Undef);
                 pmanager.propagatePartitionMask(fla);
-                getSMTSolver().setPartition(pmanager.getPartitionIndex(fla));
-                status = giveToSolver(fla, frame.getId());
+                status = giveToSolver(fla, frame.getId(), pmanager.getPartitionIndex(fla));
             }
         } else {
             PTRef root = frame.root;
             if (logic.isFalse(root)) {
-                giveToSolver(getLogic().getTerm_false(), frame.getId());
+                giveToSolver(getLogic().getTerm_false(), frame.getId(), PartIdx_Undef);
                 status = s_False;
                 break;
             }
@@ -180,7 +179,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
                 root = rewriteMaxArity(root);
             }
             root_instance.setRoot(root);
-            status = giveToSolver(root, frame.getId());
+            status = giveToSolver(root, frame.getId(), PartIdx_Undef);
         }
     }
     if (status == s_False) {

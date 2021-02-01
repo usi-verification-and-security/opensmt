@@ -29,7 +29,7 @@ public:
     inline std::vector<PTRef> getTopLevelFormulas() const { return flaPartitionMap.get_top_level_flas(); }
     inline unsigned int getNoOfPartitions() const {return flaPartitionMap.getNoOfPartitions(); }
     inline void transferPartitionMembership(PTRef o, PTRef n) { return flaPartitionMap.transferPartitionMembership(o, n); }
-    inline int getPartitionIndex(PTRef p) const { return flaPartitionMap.getPartitionIndex(p); }
+    inline PartIdx getPartitionIndex(PTRef p) const { return flaPartitionMap.getPartitionIndex(p); }
 
     void invalidatePartitions(ipartitions_t const & p);
 };

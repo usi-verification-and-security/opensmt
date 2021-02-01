@@ -269,7 +269,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     return v;
 }
 
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
+bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, PartIdx partitionIndex)
 {
     assert(decisionLevel() == 0);
     if (!isOK()) { return false; }
@@ -309,7 +309,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
         CRef inputClause = ca.alloc(original, false);
         clauseToInsert = resolvedUnits.empty() ? inputClause :
                 ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
-        proof->newOriginalClause(inputClause);
+        proof->newOriginalClause(inputClause, partitionIndex);
         if (!resolvedUnits.empty()) {
             proof->beginChain( inputClause );
             for(Lit l : resolvedUnits) {
@@ -1033,12 +1033,6 @@ void CoreSMTSolver::finalizeProof(CRef finalConflict) {
         proof->addResolutionStep(unitReason, varToResolve);
     }
     proof->endChain(CRef_Undef);
-}
-
-void CoreSMTSolver::setPartition(std::size_t partitionIndex) {
-    if (proof) {
-        proof->setPartition(partitionIndex);
-    }
 }
 
 /*_________________________________________________________________________________________________
@@ -2165,7 +2159,7 @@ bool CoreSMTSolver::createSplit_scatter(bool last)
 
 bool CoreSMTSolver::excludeAssumptions(vec<Lit>& neg_constrs)
 {
-    addOriginalClause(neg_constrs);
+    addOriginalClause(neg_constrs, PartIdx_Undef);
     simplify();
     return ok;
 }

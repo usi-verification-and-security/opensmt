@@ -248,13 +248,13 @@ protected:
     virtual Var newVar(bool polarity, bool dvar);//    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 public:
     void    addVar(Var v); // Anounce the existence of a variable to the solver
-    bool    addOriginalClause(const vec<Lit> & ps);
+    bool    addOriginalClause(const vec<Lit> & ps, PartIdx partitionIndex);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.
-    bool    addOriginalClause(Lit p, Lit q);                           // Add a binary clause to the solver.
-    bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+    bool    addOriginalClause(Lit p, PartIdx partitionIndex);       // Add a unit clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q, PartIdx partitionIndex);// Add a binary clause to the solver.
+    bool    addOriginalClause(Lit p, Lit q, Lit r, PartIdx partitionIndex);// Add a ternary clause to the solver.
 protected:
-    bool addOriginalClause_(const vec<Lit> & _ps);                                          // Add a clause to the solver
+    bool addOriginalClause_(const vec<Lit> & _ps, PartIdx partitionIndex); // Add a clause to the solver
 public:
     // Solving:
     //
@@ -754,7 +754,6 @@ protected:
 public:
 
     void    printTrace() const;
-    void    setPartition(std::size_t partitionIndex);
 
 protected:
     virtual inline void clausesPublish() {};
@@ -844,35 +843,35 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 
-inline bool     CoreSMTSolver::addOriginalClause(const vec<Lit> & ps)
+inline bool     CoreSMTSolver::addOriginalClause(const vec<Lit> & ps, PartIdx partitionIndex)
 {
-    return addOriginalClause_(ps);
+    return addOriginalClause_(ps, partitionIndex);
 }
 inline bool     CoreSMTSolver::addEmptyClause  ()
 {
     add_tmp.clear();
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_(add_tmp, PartIdx_Default);
 }
-inline bool     CoreSMTSolver::addOriginalClause(Lit p)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, PartIdx partitionIndex)
 {
     add_tmp.clear();
     add_tmp.push(p);
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_(add_tmp, partitionIndex);
 }
-inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, PartIdx partitionIndex)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_(add_tmp, partitionIndex);
 }
-inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, Lit r)
+inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, Lit r, PartIdx partitionIndex)
 {
     add_tmp.clear();
     add_tmp.push(p);
     add_tmp.push(q);
     add_tmp.push(r);
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_(add_tmp, partitionIndex);
 }
 
 

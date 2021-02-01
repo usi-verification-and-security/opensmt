@@ -25,14 +25,14 @@ void FlaPartitionMap::transferPartitionMembership(PTRef old, PTRef new_ptref) {
     }
 }
 
-int FlaPartitionMap::getPartitionIndex(PTRef ref) const {
+PartIdx FlaPartitionMap::getPartitionIndex(PTRef ref) const {
     auto it = top_level_flas.find(ref);
     if (it != top_level_flas.end()) {
-        return static_cast<int>(it->second);
+        return PartIdx{static_cast<int>(it->second)};
     }
     auto other_it = other_flas.find(ref);
     if (other_it != other_flas.end()) {
-        return static_cast<int>(other_it->second);
+        return PartIdx{static_cast<int>(other_it->second)};
     }
-    return -1;
+    return PartIdx_Undef;
 }

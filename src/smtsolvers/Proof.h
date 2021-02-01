@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 #include <iosfwd>
 #include <functional>
+#include "FlaPartitionMap.h"
 
 //=================================================================================================
 
@@ -90,19 +91,16 @@ class Proof
     ClauseAllocator&            cl_al;
     std::unordered_map<Lit, CRef, LitHash> assumed_literals;
     std::unordered_map<CRef, ipartitions_t> clause_class;
-    std::size_t currentPartition = 0;
 
 public:
 
     Proof ( ClauseAllocator& cl );
     ~Proof( ) = default;
 
-    void setPartition(std::size_t partition) { currentPartition = partition; }
-
     ipartitions_t getClauseClassMask(CRef c) const { assert(clause_class.count(c) != 0); return clause_class.at(c); }
 
     // Notifies the proof about a new original clause.
-    void newOriginalClause(CRef c);
+    void newOriginalClause(CRef c, PartIdx partitionIndex);
 
     // Notifies the proof about a new T-clause.
     void newTheoryClause(CRef c) { newLeafClause(c, clause_type::CLA_THEORY); }

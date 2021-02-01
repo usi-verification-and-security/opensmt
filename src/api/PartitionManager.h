@@ -58,7 +58,7 @@ public:
         partitionInfo.transferPartitionMembership(old, new_ptref);
     }
 
-    int getPartitionIndex(PTRef ref) const {
+    PartIdx getPartitionIndex(PTRef ref) const {
         return partitionInfo.getPartitionIndex(ref);
     }
 };
