@@ -55,13 +55,13 @@ private:
     // Cache of already cnfized terms. Note that this is different from Cnfizer cache of already processed top-level flas
     Cache alreadyCnfized;
 
-    bool cnfize             (PTRef);                          // Cnfize the given term
-    bool cnfizeAnd          (PTRef);                          // Cnfize conjunctions
-    bool cnfizeOr           (PTRef);                          // Cnfize disjunctions
-    bool cnfizeIff          (PTRef);                          // Cnfize iffs
-    bool cnfizeXor          (PTRef);                          // Cnfize xors
-    bool cnfizeIfthenelse   (PTRef);                          // Cnfize if then elses
-    bool cnfizeImplies      (PTRef);                          // Cnfize if then elses
+    bool cnfize             (PTRef, PartIdx);                          // Cnfize the given term
+    bool cnfizeAnd          (PTRef, PartIdx);                          // Cnfize conjunctions
+    bool cnfizeOr           (PTRef, PartIdx);                          // Cnfize disjunctions
+    bool cnfizeIff          (PTRef, PartIdx);                          // Cnfize iffs
+    bool cnfizeXor          (PTRef, PartIdx);                          // Cnfize xors
+    bool cnfizeIfthenelse   (PTRef, PartIdx);                          // Cnfize if then elses
+    bool cnfizeImplies      (PTRef, PartIdx);                          // Cnfize if then elses
 //    void copyArgsWithCache(PTRef, vec<PTRef>&, Map<PTRef, PTRef, PTRefHash>&);
 };
 

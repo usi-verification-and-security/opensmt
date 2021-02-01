@@ -53,11 +53,11 @@ void Cnfizer::initialize()
     vec<Lit> c;
     Lit l = this->getOrCreateLiteralFor (logic.getTerm_true());
     c.push (l);
-    addClause(c);
+    addClause(c, PartIdx_Default); // Check what's the "default" partition!
     c.pop();
     l = this->getOrCreateLiteralFor (logic.getTerm_false());
     c.push (~l);
-    addClause(c);
+    addClause(c, PartIdx_Default); // Check what's the "default" partition!
 }
 
 lbool
@@ -132,7 +132,7 @@ void Cnfizer::setFrameTerm(FrameId frame_id)
 //
 // Main Routine. Examine formula and give it to the solver
 //
-lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
+lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id, PartIdx partitionIndex)
 {
     // Get the variable for the incrementality.
     setFrameTerm(frame_id);
@@ -174,7 +174,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cerr << " => Already in CNF" << endl;
 #endif
-            res = giveToSolver (f);
+            res = giveToSolver (f, partitionIndex);
         }
 
         // Check whether it can be rewritten using deMorgan laws
@@ -184,14 +184,14 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
             cout << " => Will be de Morganized" << endl;
 #endif
-            res = deMorganize (f);
+            res = deMorganize (f, partitionIndex);
         }
         else
         {
 #ifdef PEDANTIC_DEBUG
             cout << " => proper cnfization" << endl;
 #endif // PEDANTIC_DEBUG
-            res = cnfizeAndAssert (f); // Perform actual cnfization (implemented in subclasses)
+            res = cnfizeAndAssert (f, partitionIndex); // Perform actual cnfization (implemented in subclasses)
         }
         alreadyAsserted.insert(f, frame_term);
     }
@@ -199,7 +199,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     if (res) {
         vec<PTRef> nestedBoolRoots = getNestedBoolRoots(formula);
         for (int i = 0; i < nestedBoolRoots.size(); ++i) {
-            res &= cnfize(nestedBoolRoots[i]); // cnfize the formula without asserting the top level
+            res &= cnfize(nestedBoolRoots[i], partitionIndex); // cnfize the formula without asserting the top level
         }
         assert(res);
         declareVars(logic.propFormulasAppearingInUF);
@@ -208,7 +208,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     return res == false ? l_False : l_Undef;
 }
 
-bool Cnfizer::cnfizeAndAssert(PTRef formula) {
+bool Cnfizer::cnfizeAndAssert(PTRef formula, PartIdx partitionIndex) {
     assert(formula != PTRef_Undef);
     // Top level formula must not be and anymore
     assert(!logic.isAnd(formula));
@@ -216,9 +216,9 @@ bool Cnfizer::cnfizeAndAssert(PTRef formula) {
     // Add the top level literal as a unit to solver.
     vec<Lit> clause;
     clause.push(this->getOrCreateLiteralFor(formula));
-    res &= addClause(clause);
+    res &= addClause(clause, partitionIndex);
 
-    res &= cnfize(formula);
+    res &= cnfize(formula, partitionIndex);
     return res;
 }
 
@@ -234,7 +234,7 @@ void Cnfizer::declareVars(vec<PTRef>& vars)
 // Apply simple de Morgan laws to the formula
 //
 
-bool Cnfizer::deMorganize ( PTRef formula )
+bool Cnfizer::deMorganize ( PTRef formula, PartIdx partitionIndex )
 {
     assert (!logic.isAnd (formula));
     Pterm &pt = logic.getPterm (formula);
@@ -259,7 +259,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
 #endif
         }
 
-        rval = addClause(clause);
+        rval = addClause(clause, partitionIndex);
     }
 
     return rval;
@@ -408,7 +408,7 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
     return true;
 }
 
-bool Cnfizer::addClause(const vec<Lit> & c_in)
+bool Cnfizer::addClause(const vec<Lit> & c_in, PartIdx partitionIndex)
 {
     vec<Lit> c;
     c_in.copyTo(c);
@@ -430,14 +430,14 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-    bool res = solver.addOriginalSMTClause(c);
+    bool res = solver.addOriginalSMTClause(c, partitionIndex);
     return res;
 }
 //
 // Give the formula to the solver
 //
 
-bool Cnfizer::giveToSolver ( PTRef f )
+bool Cnfizer::giveToSolver ( PTRef f, PartIdx partitionIndex )
 {
     vec<Lit> clause;
 
@@ -447,7 +447,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     if (logic.isLit (f))
     {
         clause.push (this->getOrCreateLiteralFor (f));
-        return addClause(clause);
+        return addClause(clause, partitionIndex);
     }
 
     //
@@ -462,7 +462,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
         for (int i = 0; i < lits.size(); i++)
             clause.push (this->getOrCreateLiteralFor (lits[i]));
 
-        return addClause(clause);
+        return addClause(clause, partitionIndex);
     }
 
     //
@@ -474,7 +474,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     bool result = true;
 
     for (unsigned i = 0; i < conj.size_( ) && result; i++)
-        result = giveToSolver (conj[i]);
+        result = giveToSolver (conj[i], partitionIndex);
     return result;
 }
 

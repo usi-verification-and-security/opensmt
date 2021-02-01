@@ -184,7 +184,7 @@ skip_theory_preproc:
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
+bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, PartIdx partitionIndex)
 {
     assert( config.sat_preprocess_theory == 0 );
 
@@ -212,7 +212,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause)
         cerr << "XXX skipped handling of unary theory literal?" << endl;
     }
     int nclauses = clauses.size();
-    if (!CoreSMTSolver::addOriginalClause_(smt_clause))
+    if (!CoreSMTSolver::addOriginalClause_(smt_clause, partitionIndex))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
@@ -621,7 +621,7 @@ bool SimpSMTSolver::eliminateVar(Var v)
     vec<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++) {
         for (int j = 0; j < neg.size(); j++) {
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent))
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent, PartIdx_Undef))
                 return false;
         }
     }
@@ -663,7 +663,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        if (!addOriginalSMTClause(subst_clause))
+        if (!addOriginalSMTClause(subst_clause, PartIdx_Undef))
             return ok = false;
     }
 

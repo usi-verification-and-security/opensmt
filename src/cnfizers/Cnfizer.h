@@ -74,7 +74,7 @@ public:
 
     virtual ~Cnfizer( ) { }
 
-    lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
+    lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id, PartIdx partitionIndex); // Main routine
 
     lbool  getTermValue(PTRef) const;
 
@@ -86,9 +86,9 @@ public:
 
 protected:
 
-    virtual bool cnfizeAndAssert        ( PTRef );       // Cnfize and assert the top-level.
-    virtual bool cnfize                 ( PTRef ) = 0;   // Actual cnfization. To be implemented in derived classes
-    bool     deMorganize                ( PTRef );       // Apply deMorgan rules whenever feasible
+    virtual bool cnfizeAndAssert        ( PTRef, PartIdx partitionIndex );       // Cnfize and assert the top-level.
+    virtual bool cnfize                 ( PTRef, PartIdx partitionIndex ) = 0;   // Actual cnfization. To be implemented in derived classes
+    bool     deMorganize                ( PTRef, PartIdx partitionIndex );       // Apply deMorgan rules whenever feasible
     void     declareVars                (vec<PTRef>&);   // Declare a set of Boolean atoms to the solver (without asserting them)
 
 public:
@@ -98,10 +98,10 @@ public:
     void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
 protected:
 
-    bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
+    bool     giveToSolver               ( PTRef, PartIdx partitionIndex );        // Gives formula to the SAT solver
 
 
-    bool addClause(const vec<Lit> &);
+    bool addClause(const vec<Lit> &, PartIdx partitionIndex);
 
     void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
     void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts

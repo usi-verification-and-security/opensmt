@@ -1466,7 +1466,7 @@ BitBlaster::bbDistinct(PTRef tr)
 bool
 BitBlaster::addClause(vec<Lit> & c)
 {
-    return solverP.addOriginalClause(c);
+    return solverP.addOriginalClause(c, PartIdx_Undef);
 }
 
 //=============================================================================
