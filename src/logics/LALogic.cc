@@ -553,9 +553,14 @@ PTRef LALogic::mkNumDiv(const vec<PTRef>& args)
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
-    assert(args.size() == 2);
-    if(this->isNumZero(args[1])) {
+    if (args.size() != 2) {
+        throw OsmtApiException("Division operation requries exactly 2 arguments");
+    }
+    if (this->isNumZero(args[1])) {
         throw LADivisionByZeroException();
+    }
+    if (not isConstant(args[1])) {
+        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
     }
     simp.simplify(get_sym_Num_DIV(), args, s_new, args_new);
     if (isNumDiv(s_new)) {
