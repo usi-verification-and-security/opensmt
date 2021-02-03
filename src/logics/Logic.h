@@ -81,6 +81,7 @@ class Logic {
         const vec<PTRef>& getArgs() const { return args; }
     };
   protected:
+    static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
@@ -196,6 +197,7 @@ class Logic {
     static const char*  s_sort_bool;
     static const char*  s_ite_prefix;
     static const char*  s_framev_prefix;
+    static const char*  s_abstract_value_prefix;
 
     Logic();
     virtual ~Logic();
@@ -277,6 +279,8 @@ class Logic {
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
+    PTRef       mkUniqueAbstractValue(SRef);
+
     // Generic constants
     virtual PTRef mkConst     (const char*, const char** msg);
     virtual PTRef mkConst     (SRef, const char*);

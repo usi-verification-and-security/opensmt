@@ -146,3 +146,9 @@ TEST_F(LogicMkTermsTest, testIteration) {
         }
     }
 }
+
+TEST_F(LogicMkTermsTest, testUniqueAbstractValue) {
+    PTRef uniq1 = logic.mkUniqueAbstractValue(logic.getSort_bool());
+    PTRef uniq2 = logic.mkUniqueAbstractValue(logic.getSort_bool());
+    ASSERT_NE(uniq1, uniq2);
+}

@@ -63,6 +63,9 @@ const char* Logic::tk_ite      = "ite";
 const char* Logic::s_sort_bool = "Bool";
 const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
+const char* Logic::s_abstract_value_prefix = "@";
+
+std::size_t Logic::abstractValueCount = 0;
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic() :
@@ -954,6 +957,11 @@ PTRef Logic::mkVar(SRef s, const char* name) {
     assert (ptr != PTRef_Undef);
 
     return ptr;
+}
+
+PTRef Logic::mkUniqueAbstractValue(SRef s) {
+    std::string uniqueName = s_abstract_value_prefix + std::to_string(abstractValueCount++);
+    return mkVar(s, uniqueName.c_str());
 }
 
 PTRef Logic::mkConst(const SRef s, const char* name) {
