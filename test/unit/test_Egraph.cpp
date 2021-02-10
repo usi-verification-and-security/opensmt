@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include "Egraph.h"
+#include "TreeOps.h"
 
 TEST(UseVector_test, testAdd){
     UseVector uv;
@@ -70,9 +71,14 @@ TEST_F(EgraphTest, test_booleans) {
     SymRef uf3 = logic.declareFun("uf3", logic.getSort_bool(), {logic.getSort_bool()}, nullptr);
 
     PTRef uf3_v7 = logic.mkUninterpFun(uf3, {v7});
-    logic.mkUninterpFun(uf3, {v3}); // Intentionally not declared to egraph
+    PTRef uf3_v3 = logic.mkUninterpFun(uf3, {v3}); // Intentionally not declared to egraph
     PTRef eq = logic.mkEq(logic.mkNot(v3), uf3_v7);
-    logic.mkUninterpFun(uf3, {eq}); // Intentionally not declared to egraph
+    PTRef uf3_eq = logic.mkUninterpFun(uf3, {eq}); // Intentionally not declared to egraph
+
+    AppearsInUfVisitor visitor(logic); // to mark booleans as needed for EGraph
+    visitor.visit(uf3_v3);
+    visitor.visit(uf3_eq);
+
     egraph.declareAtom(eq);
     egraph.declareAtom(v3);
     egraph.declareAtom(uf3_v7);

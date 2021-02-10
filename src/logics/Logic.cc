@@ -998,13 +998,6 @@ void Logic::markConstant(SymId id) {
 PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     PTRef tr = mkFun(f, args);
     assert(isUFTerm(tr) || isUP(tr));
-    if (isUFTerm(tr) || isUP(tr)) {
-        for (int i = 0; i < args.size(); i++) {
-            if (hasSortBool(args[i])) {
-                setAppearsInUF(isNot(args[i]) ? getPterm(args[i])[0] : args[i]);
-            }
-        }
-    }
     return tr;
 }
 

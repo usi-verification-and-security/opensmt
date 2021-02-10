@@ -1,4 +1,5 @@
 #include "Theory.h"
+#include "TreeOps.h"
 //
 // Simplify with unit propagation, add the diamond equalities if
 // present.  If partitions cannot mix, do no simplifications but just
@@ -18,6 +19,7 @@ bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, 
         currentFrame.root = flaFromSubstitutionResult(subs_res);
         getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
     }
+    AppearsInUfVisitor(getLogic()).visit(currentFrame.root);
     return true;
 }
 

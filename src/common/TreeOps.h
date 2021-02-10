@@ -33,7 +33,79 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Logic.h"
 
 
-class Logic;
+template<typename TConfig>
+class TermVisitor {
+    Logic & logic;
+    TConfig & cfg;
+public:
+    TermVisitor(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
+
+    void visit(PTRef root) {
+        struct DFSEntry {
+            DFSEntry(PTRef term) : term(term) {}
+            PTRef term;
+            unsigned int nextChild = 0;
+        };
+        // MB: Relies on an invariant that id of a child is lower than id of a parent.
+        auto size = Idx(logic.getPterm(root).getId()) + 1;
+        std::vector<char> done;
+        done.resize(size, 0);
+        std::vector<DFSEntry> toProcess;
+        toProcess.emplace_back(root);
+        while (not toProcess.empty()) {
+            auto & currentEntry = toProcess.back();
+            PTRef currentRef = currentEntry.term;
+            if (not cfg.previsit(currentRef)) {
+                toProcess.pop_back();
+                continue;
+            }
+            assert(not done[Idx(logic.getPterm(currentRef).getId())]);
+            Pterm const & term = logic.getPterm(currentRef);
+            unsigned childrenCount = term.size();
+            if (currentEntry.nextChild < childrenCount) {
+                PTRef nextChild = term[currentEntry.nextChild];
+                ++currentEntry.nextChild;
+                if (not done[Idx(logic.getPterm(nextChild).getId())]) {
+                    toProcess.push_back(DFSEntry(nextChild));
+                }
+                continue;
+            }
+            // If we are here, we have already processed all children
+            assert(done[Idx(term.getId())] == 0);
+            cfg.visit(currentRef);
+            done[Idx(logic.getPterm(currentRef).getId())] = 1;
+            toProcess.pop_back();
+        }
+    }
+};
+
+class DefaultVisitorConfig {
+public:
+    virtual bool previsit(PTRef term) { return true; } // should continue visiting
+    virtual void visit(PTRef term) { } // don't do anything
+};
+
+class AppearsInUFVisitorConfig : public DefaultVisitorConfig {
+    Logic & logic;
+public:
+    AppearsInUFVisitorConfig(Logic & logic): logic(logic) {}
+
+    void visit(PTRef term) override {
+        if (logic.isUF(term)) {
+            for (PTRef child : logic.getPterm(term)) {
+                if (logic.hasSortBool(child)) {
+                    logic.setAppearsInUF(logic.isNot(child) ? logic.getPterm(child)[0] : child);
+                }
+            }
+        }
+    }
+};
+
+class AppearsInUfVisitor : public TermVisitor<AppearsInUFVisitorConfig> {
+    AppearsInUFVisitorConfig cfg;
+public:
+    AppearsInUfVisitor(Logic & logic): TermVisitor<AppearsInUFVisitorConfig>(logic, cfg), cfg(logic) {}
+};
 
 template<class T>
 class Qel {
