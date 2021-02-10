@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
+#include "Substitutor.h"
 
 #include <queue>
 #include <set>
@@ -1474,9 +1475,8 @@ void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & subst
         for (int i = 0; i < keyValPairs.size(); ++i) {
             auto & val = keyValPairs[i]->data;
             if (val.sgn != l_True || notChangedElems[i]) { continue; }
-            PTRef newVal = PTRef_Undef;
             PTRef oldVal = val.tr;
-            this->varsubstitute(oldVal, substs, newVal);
+            PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
             if (oldVal != newVal) {
                 changed = true;
                 val = PtAsgn(newVal, l_True);
@@ -1852,8 +1852,7 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
         PtAsgn subst_target = {subst_target_tr, l_True};
         substs_asgn.insert(args[i], subst_target);
     }
-    PTRef tr_subst;
-    varsubstitute(tr, substs_asgn, tr_subst);
+    PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
     if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
         printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
         return PTRef_Undef;
