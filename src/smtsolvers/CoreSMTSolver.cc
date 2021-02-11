@@ -1841,6 +1841,7 @@ void CoreSMTSolver::declareVarsToTheories()
             }
         }
     }
+    const Logic & logic = theory_handler.getLogic();
     top_level_lits = trail.size();
     for (int i = 0; i < clauses.size(); i++) {
         Clause & c = ca[clauses[i]];
@@ -1848,7 +1849,6 @@ void CoreSMTSolver::declareVarsToTheories()
             Var v = var(c[j]);
             if (!var_seen[v]) {
                 var_seen[v] = true;
-                const Logic & logic = theory_handler.getLogic();
                 assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
                 const PTRef term = theory_handler.varToTerm(v);
                 if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
@@ -1858,7 +1858,7 @@ void CoreSMTSolver::declareVarsToTheories()
         }
     }
     for (Var v = 0; v < var_seen.size(); v++) {
-        if (!var_seen[v]) {
+        if (not var_seen[v] and not logic.appearsInUF(theory_handler.varToTerm(v))) {
             setDecisionVar(v, false);
         }
     }
