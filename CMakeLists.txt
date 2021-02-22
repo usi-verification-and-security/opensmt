@@ -77,6 +77,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/smtsolvers
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
+    ${CMAKE_SOURCE_DIR}/rewriters
     ${CMAKE_SOURCE_DIR}/proof
     ${CMAKE_SOURCE_DIR}/models
     ${CMAKE_SOURCE_DIR}/itehandler
