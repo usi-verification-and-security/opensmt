@@ -1,5 +1,5 @@
 #include "Theory.h"
-
+#include "ArithmeticEqualityRewriter.h"
 //
 // Unit propagate with simplifications and split equalities into
 // inequalities.  If partitions cannot mix, only do the splitting to
@@ -13,7 +13,7 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager,
         for (int i = 0; i < flas.size(); ++i) {
             PTRef & fla = flas[i];
             PTRef old = flas[i];
-            lialogic.simplifyAndSplitEq(old, fla);
+            fla = ArithmeticEqualityRewriter(lialogic).rewrite(old);
             pmanager.transferPartitionMembership(old, fla);
         }
         currentFrame.root = getLogic().mkAnd(flas);
@@ -22,7 +22,7 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager,
         auto subs_res = computeSubstitutions(coll_f);
         PTRef finalFla = flaFromSubstitutionResult(subs_res);
         getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
-        lialogic.simplifyAndSplitEq(finalFla, pfstore[formulas[curr]].root);
+        currentFrame.root = ArithmeticEqualityRewriter(lialogic).rewrite(finalFla);
     }
     return true;
 }

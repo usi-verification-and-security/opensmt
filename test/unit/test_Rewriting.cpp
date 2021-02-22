@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <BoolRewriting.h>
 #include <Logic.h>
+#include <LRALogic.h>
+#include <ArithmeticEqualityRewriter.h>
 
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
@@ -36,6 +38,18 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 //    std::cout << logic.printTerm(res) << std::endl;
     vec<PTRef> args {b,c,d};
     ASSERT_EQ(res, logic.mkAnd(args));
+}
+
+TEST(Rewriting_test, test_RewriteEquality)
+{
+    LRALogic logic;
+    PTRef x = logic.mkNumVar("x");
+    PTRef y = logic.mkNumVar("y");
+    PTRef eq = logic.mkEq(x,y);
+    ArithmeticEqualityRewriter rewriter(logic);
+    PTRef res = rewriter.rewrite(eq);
+    ASSERT_EQ(res, logic.mkAnd(logic.mkNumGeq(x,y), logic.mkNumLeq(x,y)));
+    ASSERT_EQ(res, rewriter.rewrite(res));
 }
 
 

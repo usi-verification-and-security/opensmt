@@ -180,6 +180,8 @@ public:
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
 
+    void markSplitInequality(PTRef ineq) { la_split_inequalities.insert(ineq, true); }
+
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
