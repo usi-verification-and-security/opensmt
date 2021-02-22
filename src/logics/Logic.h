@@ -153,15 +153,7 @@ class Logic {
     PTRef               term_TRUE;
     PTRef               term_FALSE;
 
-    // For depth first search
-    class pi {
-      public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
 
-    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
     virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
     void dumpFunction(ostream &, const TFun&);

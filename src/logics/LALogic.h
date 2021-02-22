@@ -30,7 +30,6 @@ class LALogic: public Logic
 protected:
     vec<opensmt::Number*> numbers;
 
-    bool split_eq;
     static const char*  tk_val_num_default;
     static const char *tk_num_zero;
     static const char *tk_num_one;
@@ -47,7 +46,7 @@ protected:
 
     Map<PTRef,bool,PTRefHash> la_split_inequalities;
 public:
-    LALogic();
+    LALogic() = default;
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef>& terms) override;
@@ -158,9 +157,7 @@ public:
     virtual PTRef sumToNormalizedInequality(PTRef sum);
     virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith,
                                         Map<PTRef, PtAsgn, PTRefHash> & substitutions);
-    virtual void simplifyAndSplitEq(PTRef, PTRef &);
 
-    void visit(PTRef, Map<PTRef, PTRef, PTRefHash> &) override;
     lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
     void termSort(vec<PTRef> &v) const override;
     bool okToPartition(PTRef tr) const override; // Partitioning hints from logic

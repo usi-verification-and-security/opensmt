@@ -172,12 +172,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
 }
-void LALogic::simplifyAndSplitEq(PTRef tr, PTRef& root_out)
-{
-    split_eq = true;
-    simplifyTree(tr, root_out);
-    split_eq = false;
-}
+
 lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
@@ -213,27 +208,6 @@ void LALogic::termSort(vec<PTRef>& v) const
 bool LALogic::okToPartition(PTRef tr) const
 {
     return !la_split_inequalities.has(tr);
-}
-
-void LALogic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
-{
-    if (split_eq && isNumEq(tr)) {
-        Pterm& p = getPterm(tr);
-        PTRef a1 = p[0];
-        PTRef a2 = p[1];
-        vec<PTRef> args;
-        args.push(a1); args.push(a2);
-        PTRef i1 = mkNumLeq(args);
-        PTRef i2 = mkNumGeq(args);
-        args.clear();
-        args.push(i1); args.push(i2);
-        PTRef andr = mkAnd(args);
-        la_split_inequalities.insert(i1, true);
-        la_split_inequalities.insert(i2, true);
-        assert(!tr_map.has(tr));
-        tr_map.insert(tr, andr);
-    }
-    Logic::visit(tr, tr_map);
 }
 
 bool LALogic::isBuiltinFunction(const SymRef sr) const
@@ -875,11 +849,6 @@ const char* LALogic::tk_num_leq   = "<=";
 const char* LALogic::tk_num_gt    = ">";
 const char* LALogic::tk_num_geq   = ">=";
 const char* LALogic::s_sort_num = "Number";
-
-LALogic::LALogic() :
-    Logic()
-        , split_eq(false)
-{}
 
 
 const char*
