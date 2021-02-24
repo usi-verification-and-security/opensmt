@@ -1,0 +1,11 @@
+(set-info :status unsat)
+(set-logic QF_LRA)
+(declare-fun x8 () Real)
+(declare-fun x7 () Real)
+(declare-fun x9 () Real)
+(assert (and
+	(= x7 (ite (= x8 0) x8 0))
+	(not (= x7 0))
+))
+(check-sat)
+(exit)

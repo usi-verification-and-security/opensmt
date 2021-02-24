@@ -13,7 +13,7 @@ class EqualityRewriterConfig : DefaultRewriterConfig {
 public:
     EqualityRewriterConfig(LALogic & logic): logic(logic) {}
 
-    bool previsit(PTRef term) override { return logic.hasSortBool(term); }
+    bool previsit(PTRef term) override { return logic.hasSortBool(term) and not logic.isIte(term); }
 
     PTRef rewrite(PTRef term) override {
         if (logic.isNumEq(term)) {
