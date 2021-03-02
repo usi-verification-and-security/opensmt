@@ -160,7 +160,6 @@ public:
 
     lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
     void termSort(vec<PTRef> &v) const override;
-    bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
     char *printTerm_(PTRef tr, bool ext, bool s) const override;
     char *printTerm(PTRef tr) const override;
     char *printTerm(PTRef tr, bool l, bool s) const override;
@@ -176,8 +175,6 @@ public:
 
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
-
-    void markSplitInequality(PTRef ineq) { la_split_inequalities.insert(ineq, true); }
 
 };
 

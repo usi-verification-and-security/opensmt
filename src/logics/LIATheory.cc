@@ -13,7 +13,9 @@ bool LIATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager,
         for (int i = 0; i < flas.size(); ++i) {
             PTRef & fla = flas[i];
             PTRef old = flas[i];
-            fla = ArithmeticEqualityRewriter(lialogic).rewrite(old);
+            auto arr = ArithmeticEqualityRewriter(lialogic);
+            fla = arr.rewrite(old);
+            notOkToPartition = arr.getAndClearNotOkToPartition();
             pmanager.transferPartitionMembership(old, fla);
         }
         currentFrame.root = getLogic().mkAnd(flas);

@@ -343,7 +343,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         }
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
             respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
-        if (respect_logic_partitioning_hints && !(theory_handler.getLogic().okToPartition(theory_handler.varToTerm(v)))) {
+        if (respect_logic_partitioning_hints && !okToPartition(v)) {
             skipped_vars_due_to_logic ++;
             cout << "Skipping " << v << " since logic says it's not good\n";
             continue; // Skip the vars that the logic considers bad to split on
@@ -472,7 +472,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
            LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    if (!theory_handler.getLogic().okToPartition(theory_handler.varToTerm(var(best)))) { unadvised_splits++; }
+    if (!okToPartition(var(best))) { unadvised_splits++; }
     return laresult::la_ok;
 }
 

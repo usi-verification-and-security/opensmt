@@ -205,10 +205,6 @@ void LALogic::termSort(vec<PTRef>& v) const
 {
     sort(v, LessThan_deepPTRef(this));
 }
-bool LALogic::okToPartition(PTRef tr) const
-{
-    return !la_split_inequalities.has(tr);
-}
 
 bool LALogic::isBuiltinFunction(const SymRef sr) const
 {
