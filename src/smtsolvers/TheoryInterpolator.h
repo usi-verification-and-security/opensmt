@@ -111,7 +111,7 @@ private:
         }
         // Make sure complex terms have correct color assigned
         vec<PTRef> terms;
-        for (auto const entry : termColors) {
+        for (auto const & entry : termColors) {
             PTRef term = entry.first;
             if (entry.second != I_AB and (logic.isUF(term) or logic.isUP(term)) and
                 symbolColors.at(logic.getSymRef(term)) == I_AB) {
