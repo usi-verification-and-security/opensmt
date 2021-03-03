@@ -45,7 +45,6 @@ class UFLRATheory : public Theory
     virtual const LRALogic& getLogic() const override { return lralogic; }
     virtual UFLRATHandler&  getTSolverHandler() override { return uflratshandler; }
     virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
-    virtual bool            okToPartition(PTRef tr) override { return !notOkToPartition->has(tr); }
 };
 
 #endif

@@ -175,7 +175,7 @@ class Theory
     virtual bool            simplify(const vec<PFRef>&, PartitionManager& pmanager, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     SubstitutionResult      computeSubstitutions(PTRef fla);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
-    virtual bool            okToPartition(PTRef)    = 0;
+    virtual bool            okToPartition(PTRef) const { return true; }
     virtual                ~Theory() {};
 };
 
@@ -196,7 +196,7 @@ class LRATheory : public Theory
     virtual const LRALogic&    getLogic() const override { return lralogic; }
     virtual LRATHandler&       getTSolverHandler() override { return lratshandler; }
     virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
-    virtual bool               okToPartition(PTRef tr) override { return !notOkToPartition->has(tr); }
+    virtual bool               okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
 };
 
 class LIATheory : public Theory
@@ -215,7 +215,7 @@ public:
     virtual LIALogic&       getLogic() override { return lialogic; }
     virtual const LIALogic& getLogic() const override { return lialogic; }
     virtual LIATHandler&    getTSolverHandler() override { return liatshandler; }
-    virtual bool            okToPartition(PTRef tr) override { return !notOkToPartition->has(tr); }
+    virtual bool            okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
     virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
 };
 
@@ -235,7 +235,6 @@ class UFTheory : public Theory
     virtual const Logic&      getLogic() const override { return uflogic; }
     virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool okToPartition(PTRef) override { return true; }
     virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 
@@ -256,7 +255,6 @@ class CUFTheory : public Theory
     virtual const BVLogic&     getLogic() const override { return cuflogic; }
     virtual CUFTHandler&       getTSolverHandler() override { return tshandler; }
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool okToPartition(PTRef) override { return true; }
     virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 

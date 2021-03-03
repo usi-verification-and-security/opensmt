@@ -8,10 +8,10 @@
 #include "Rewriter.h"
 
 class EqualityRewriterConfig : DefaultRewriterConfig {
-    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
     LALogic & logic;
+    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
 public:
-    EqualityRewriterConfig(LALogic & logic): logic(logic) { notOkToPartition = std::unique_ptr<Map<PTRef,bool,PTRefHash>>(new Map<PTRef,bool,PTRefHash>()); }
+    EqualityRewriterConfig(LALogic & logic): logic(logic), notOkToPartition(new Map<PTRef,bool,PTRefHash>()) {}
 
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() {
         auto tmp = std::unique_ptr<Map<PTRef,bool,PTRefHash>>(new Map<PTRef,bool,PTRefHash>());
