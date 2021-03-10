@@ -44,7 +44,6 @@ protected:
     static const char *tk_num_gt;
     static const char*  s_sort_num;
 
-    Map<PTRef,bool,PTRefHash> la_split_inequalities;
 public:
     LALogic() = default;
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
