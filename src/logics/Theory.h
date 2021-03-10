@@ -179,46 +179,6 @@ class Theory
     virtual                ~Theory() {};
 };
 
-class LRATheory : public Theory
-{
-  protected:
-    LRALogic&    lralogic;
-    LRATHandler  lratshandler;
-    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
-  public:
-    LRATheory(SMTConfig & c, LRALogic & logic)
-        : Theory(c)
-        , lralogic(logic)
-        , lratshandler(c, lralogic)
-    { }
-    ~LRATheory() {};
-    virtual LRALogic&          getLogic() override { return lralogic; }
-    virtual const LRALogic&    getLogic() const override { return lralogic; }
-    virtual LRATHandler&       getTSolverHandler() override { return lratshandler; }
-    virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
-    virtual bool               okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
-};
-
-class LIATheory : public Theory
-{
-protected:
-    LIALogic &  lialogic;
-    LIATHandler liatshandler;
-    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
-public:
-    LIATheory(SMTConfig & c, LIALogic & logic)
-    : Theory(c)
-    , lialogic(logic)
-    , liatshandler(c, lialogic)
-    { }
-    ~LIATheory() {};
-    virtual LIALogic&       getLogic() override { return lialogic; }
-    virtual const LIALogic& getLogic() const override { return lialogic; }
-    virtual LIATHandler&    getTSolverHandler() override { return liatshandler; }
-    virtual bool            okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
-    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
-};
-
 class UFTheory : public Theory
 {
   private:
@@ -257,7 +217,5 @@ class CUFTheory : public Theory
     virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
-
-
 
 #endif
