@@ -110,9 +110,39 @@ jobs:
                     cat ./ci/run_travis_commands.sh |scl enable devtoolset-7 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
+    build-macos:
+        macos:
+            xcode: 12.4.0
+
+        steps:
+            - run:
+                name: Homebrew
+                command: |
+                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            - run:
+                name: Packages
+                command: |
+                  brew install cmake
+                  brew install gmp
+                  brew install bison
+                  brew install flex
+            - checkout
+            - run:
+                name: Store path
+                command: echo 'export PATH=/usr/local/opt/flex/bin:/usr/local/opt/bison/bin:$PATH' >> $BASH_ENV
+            - run:
+                name: Release build OS X
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+                    FLAGS: -Wall -Werror
+                    INSTALL: ~/osmt-install
+
+
 
 workflows:
     build-test:
         jobs:
             - build-starexec
             - build-recent
+            - build-macos
