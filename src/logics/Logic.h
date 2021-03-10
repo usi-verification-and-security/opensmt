@@ -31,6 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 
 
 class SStore;
