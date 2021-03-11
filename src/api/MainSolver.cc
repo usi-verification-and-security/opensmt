@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LookaheadSplitter.h"
 #include "GhostSMTSolver.h"
 #include "UFLRATheory.h"
+#include "LATheory.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
 #include "IteToSwitch.h"
@@ -448,14 +449,14 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_RDL:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
-            theory = new LRATheory(config, lraLogic);
+            theory = new LATheory<LRALogic,LRATHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
         case Logic_t::QF_IDL:
         {
             LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
-            theory = new LIATheory(config, liaLogic);
+            theory = new LATheory<LIALogic,LIATHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_UFLRA:

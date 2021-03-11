@@ -31,6 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 
 
 class SStore;
@@ -168,7 +171,6 @@ class Logic {
   public:
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
-    virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_val_uf_default;
     static const char*  tk_val_bool_default;

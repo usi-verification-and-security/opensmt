@@ -9,9 +9,14 @@
 
 class EqualityRewriterConfig : DefaultRewriterConfig {
     LALogic & logic;
-
+    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
 public:
-    EqualityRewriterConfig(LALogic & logic): logic(logic) {}
+    EqualityRewriterConfig(LALogic & logic): logic(logic), notOkToPartition(new Map<PTRef,bool,PTRefHash>()) {}
+
+    std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() {
+        auto tmp = std::unique_ptr<Map<PTRef,bool,PTRefHash>>(new Map<PTRef,bool,PTRefHash>());
+        std::swap(tmp, notOkToPartition); return tmp;
+    }
 
     bool previsit(PTRef term) override { return logic.hasSortBool(term) and not logic.isIte(term); }
 
@@ -24,8 +29,8 @@ public:
             args.push(a1); args.push(a2);
             PTRef i1 = logic.mkNumLeq(args);
             PTRef i2 = logic.mkNumGeq(args);
-            logic.markSplitInequality(i1); // MB: this information should not be stored in Logic!
-            logic.markSplitInequality(i2);
+            notOkToPartition->insert(i1, true);
+            notOkToPartition->insert(i2, true);
             args.clear();
             args.push(i1); args.push(i2);
             term = logic.mkAnd(args);
@@ -38,6 +43,8 @@ class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
     EqualityRewriterConfig config;
 public:
     ArithmeticEqualityRewriter(LALogic & logic): Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
+    std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() { return config.getAndClearNotOkToPartition(); }
 };
+
 
 #endif //OPENSMT_ARITHMETICEQUALITYREWRITER_H

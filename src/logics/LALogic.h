@@ -44,7 +44,6 @@ protected:
     static const char *tk_num_gt;
     static const char*  s_sort_num;
 
-    Map<PTRef,bool,PTRefHash> la_split_inequalities;
 public:
     LALogic() = default;
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
@@ -160,7 +159,6 @@ public:
 
     lbool retrieveSubstitutions(const vec<PtAsgn> &facts, Map<PTRef, PtAsgn, PTRefHash> &substs) override;
     void termSort(vec<PTRef> &v) const override;
-    bool okToPartition(PTRef tr) const override; // Partitioning hints from logic
     char *printTerm_(PTRef tr, bool ext, bool s) const override;
     char *printTerm(PTRef tr) const override;
     char *printTerm(PTRef tr, bool l, bool s) const override;
@@ -176,8 +174,6 @@ public:
 
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
-
-    void markSplitInequality(PTRef ineq) { la_split_inequalities.insert(ineq, true); }
 
 };
 
