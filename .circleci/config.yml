@@ -110,10 +110,10 @@ jobs:
                     cat ./ci/run_travis_commands.sh |scl enable devtoolset-7 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
+
     build-macos:
         macos:
             xcode: 12.4.0
-
         steps:
             - run:
                 name: Homebrew
@@ -137,8 +137,6 @@ jobs:
                     CMAKE_BUILD_TYPE: Release
                     FLAGS: -Wall -Werror
                     INSTALL: ~/osmt-install
-
-
 
 workflows:
     build-test:
