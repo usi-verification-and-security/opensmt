@@ -30,13 +30,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 #include "Theory.h"
 #include "Logic.h"
-#include "PartitionManager.h"
 #include "TermMapper.h"
 
 #include <unordered_set>
 
 class SimpSMTSolver;
-class CnfState;
 class THandler;
 struct SMTConfig;
 
@@ -50,7 +48,6 @@ public:
 protected:
     SMTConfig&          config;
     Logic&              logic;
-    PartitionManager&   pmanager;
     TermMapper&         tmap;
     bool                s_empty;
 
@@ -70,7 +67,6 @@ public:
 
     Cnfizer( SMTConfig &    config_
            , Logic&        logic_
-           , PartitionManager& pmanager_
            , TermMapper&    tmap_
            , SimpSMTSolver& solver_
            );
@@ -120,8 +116,6 @@ protected:
     inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
     bool keepPartitionInfo() const { return config.produce_inter(); }
-
-    int currentPartition = -1;
 
     PTRef frame_term;
     vec<PTRef> frame_terms;

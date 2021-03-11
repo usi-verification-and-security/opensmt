@@ -166,6 +166,7 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
                 }
                 assert(pmanager.getPartitionIndex(fla) != -1);
                 pmanager.propagatePartitionMask(fla);
+                getSMTSolver().setPartition(pmanager.getPartitionIndex(fla));
                 status = giveToSolver(fla, frame.getId());
             }
         } else {

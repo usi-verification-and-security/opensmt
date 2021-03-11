@@ -35,14 +35,6 @@ PartitionInfo::addIPartitions(SymRef _s, const ipartitions_t& _p) {
     sym_partitions[_s] |= _p;
 }
 
-const ipartitions_t & PartitionInfo::getClausePartitions(CRef c) const {
-    return clause_class.at(c);
-}
-
-void PartitionInfo::addClausePartition(CRef c, const ipartitions_t & p) {
-//    opensmt::orbit(clause_class[c], clause_class[c], p);
-    clause_class[c] |= p;
-}
 
 void PartitionInfo::invalidatePartitions(const ipartitions_t& toinvalidate) {
     auto negated = ~toinvalidate;

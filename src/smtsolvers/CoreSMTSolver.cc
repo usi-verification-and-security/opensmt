@@ -269,17 +269,9 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     return v;
 }
 
-
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 {
-    opensmt::pair<CRef, CRef> fake;
-    return addOriginalClause_(_ps, fake);
-}
-
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
-{
     assert(decisionLevel() == 0);
-    inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
     vec<Lit> ps;
@@ -307,6 +299,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
     }
     ps.shrink(i - j);
+    CRef clauseToInsert = CRef_Undef;
     if (logsProofForInterpolation) {
         vec<Lit> original;
         ps.copyTo(original);
@@ -314,9 +307,8 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
             original.push(l);
         }
         CRef inputClause = ca.alloc(original, false);
-        CRef outputClause = resolvedUnits.empty() ? inputClause :
+        clauseToInsert = resolvedUnits.empty() ? inputClause :
                 ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
-        inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
             proof->beginChain( inputClause );
@@ -325,7 +317,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
                 assert(reason(v) != CRef_Undef);
                 proof->addResolutionStep(reason(v), v);
             }
-            proof->endChain(outputClause);
+            proof->endChain(clauseToInsert);
         }
     }
     if (ps.size() == 0) {
@@ -334,7 +326,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     if (ps.size() == 1)
     {
         assert(value(ps[0]) == l_Undef);
-        CRef reasonForAssignment = inOutCRefs.second;
+        CRef reasonForAssignment = clauseToInsert;
         assert((logsProofForInterpolation && reasonForAssignment != CRef_Undef) || (!logsProofForInterpolation && reasonForAssignment == CRef_Undef));
         uncheckedEnqueue(ps[0], reasonForAssignment);
         CRef confl = propagate();
@@ -343,8 +335,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     }
     else
     {
-        CRef clauseToAttach = logsProofForInterpolation ? inOutCRefs.second : ca.alloc(ps, false);
-        inOutCRefs.second = clauseToAttach;
+        CRef clauseToAttach = logsProofForInterpolation ? clauseToInsert : ca.alloc(ps, false);
         clauses.push(clauseToAttach);
         attachClause(clauseToAttach);
         // MB: TODO: remove this undo_stack
@@ -1042,6 +1033,12 @@ void CoreSMTSolver::finalizeProof(CRef finalConflict) {
         proof->addResolutionStep(unitReason, varToResolve);
     }
     proof->endChain(CRef_Undef);
+}
+
+void CoreSMTSolver::setPartition(std::size_t partitionIndex) {
+    if (proof) {
+        proof->setPartition(partitionIndex);
+    }
 }
 
 /*_________________________________________________________________________________________________

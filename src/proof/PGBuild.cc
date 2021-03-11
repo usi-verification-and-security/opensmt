@@ -238,7 +238,7 @@ void ProofGraph::buildProofGraph( int nVars )
                     if (_ctype == clause_type::CLA_ORIG) {
                         n->initClause(proof.getClause(clause));
                         n->setClauseRef(clause);
-                        n->setInterpPartitionMask(pmanager.getClauseClassMask(clause));
+                        n->setInterpPartitionMask(proof.getClauseClassMask(clause));
                         //Sort clause literals
                         std::sort(n->getClause().begin(),n->getClause().end());
                         if (n->getClauseSize() >= max_leaf_size) {

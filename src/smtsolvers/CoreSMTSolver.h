@@ -255,7 +255,6 @@ public:
     bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
     bool addOriginalClause_(const vec<Lit> & _ps);                                          // Add a clause to the solver
-    bool addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
 public:
     // Solving:
     //
@@ -755,6 +754,7 @@ protected:
 public:
 
     void    printTrace() const;
+    void    setPartition(std::size_t partitionIndex);
 
 protected:
     virtual inline void clausesPublish() {};

@@ -33,14 +33,12 @@ using namespace std;
 
 Cnfizer::Cnfizer ( SMTConfig       &config_
                    , Logic         &logic_
-                   , PartitionManager &pmanager_
                    , TermMapper    &tmap
                    , SimpSMTSolver &solver_
                  ) :
       solver   (solver_)
     , config   (config_  )
     , logic    (logic_)
-    , pmanager (pmanager_)
     , tmap     (tmap)
     , s_empty  (true)
     , alreadyAsserted(logic.getTerm_true())
@@ -52,7 +50,6 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
 void Cnfizer::initialize()
 {
     // TODO: MB: why is all this initialization necessary?
-    currentPartition = 0;
     vec<Lit> c;
     Lit l = this->getOrCreateLiteralFor (logic.getTerm_true());
     c.push (l);
@@ -61,7 +58,6 @@ void Cnfizer::initialize()
     l = this->getOrCreateLiteralFor (logic.getTerm_false());
     c.push (~l);
     addClause(c);
-    currentPartition = -1;
 }
 
 lbool
@@ -148,11 +144,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 #ifdef PEDANTIC_DEBUG
     cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
 #endif
-
-    if (keepPartitionInfo()) {
-        assert(pmanager.getPartitionIndex(formula) != -1);
-        currentPartition = pmanager.getPartitionIndex(formula);
-    }
     vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
@@ -214,7 +205,6 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         declareVars(logic.propFormulasAppearingInUF);
     }
 
-    currentPartition = -1;
     return res == false ? l_False : l_Undef;
 }
 
@@ -440,17 +430,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     }
 
 #endif
-    opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
-    bool res = solver.addOriginalSMTClause(c, iorefs);
-    if (keepPartitionInfo()) {
-        CRef ref = iorefs.first;
-        if (ref != CRef_Undef) {
-            ipartitions_t parts = 0;
-            assert(currentPartition != -1);
-            setbit(parts, static_cast<unsigned int>(currentPartition));
-            pmanager.addClauseClassMask(ref, parts);
-        }
-    }
+    bool res = solver.addOriginalSMTClause(c);
     return res;
 }
 //
