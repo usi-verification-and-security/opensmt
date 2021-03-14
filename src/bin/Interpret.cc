@@ -1002,6 +1002,8 @@ int Interpret::interpPipe() {
     int buf_sz  = 16;
     char* buf   = (char*) malloc(sizeof(char)*buf_sz);
     int rd_head = 0;
+    int par     = 0;
+    int i       = 0;
 
     bool done  = false;
     buf[0] = '\0';
@@ -1031,8 +1033,7 @@ int Interpret::interpPipe() {
         }
 
         rd_head += bts_rd;
-        int par     = 0;
-        for (int i = 0; i < rd_head; i++) {
+        for (         ; i < rd_head; i++) {
             char c = buf[i];
             if (c == '(') par ++;
             else if (c == ')') {
@@ -1050,7 +1051,7 @@ int Interpret::interpPipe() {
                     buf[rd_head-i-1] = '\0';
                     // update pointers
                     rd_head = rd_head-i-1;
-
+                    i=-1; // loop control will increase this!
                     Smt2newContext context(buf_out);
                     int rval = smt2newparse(&context);
                     if (rval != 0)
