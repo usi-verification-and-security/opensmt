@@ -283,7 +283,17 @@ Logic::protectName(const char* name) const
 {
     char *name_escaped;
     int printed_chars = hasQuotableChars(name) ? asprintf(&name_escaped, "|%s|", name)
-            : asprintf(&name_escaped, "%s", name);
+                                               : asprintf(&name_escaped, "%s", name);
+    (void)printed_chars;
+    return name_escaped;
+}
+
+char*
+Logic::protectName(const std::string& name) const
+{
+    char *name_escaped;
+    int printed_chars = hasQuotableChars(name.c_str()) ? asprintf(&name_escaped, "|%s|", name.c_str())
+                                                       : asprintf(&name_escaped, "%s", name.c_str());
     (void)printed_chars;
     return name_escaped;
 }
@@ -1632,7 +1642,7 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
 void
 Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 {
-    const char* name = tpl_fun.getName();
+    const std::string& name = tpl_fun.getName();
     char *quoted_name = protectName(name);
 
     dump_out << "(define-fun " << quoted_name << " ( ";

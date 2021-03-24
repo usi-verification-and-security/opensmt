@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include "OsmtApiException.h"
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -39,51 +40,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
+public:
     class TFun {
         SRef ret_sort;
         PTRef tr_body;
-        char* name;
+        std::string name;
         vec<PTRef> args;
-      public:
-        TFun(const char* name_, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
-            : ret_sort(ret_sort)
-            , tr_body(tr_body)
+    public:
+        TFun(std::string name, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
+                : ret_sort(ret_sort)
+                , tr_body(tr_body)
+                , name(std::move(name))
         {
-            name = (char*) malloc(strlen(name_)+1);
-            strcpy(name, name_);
             args_.copyTo(args);
         }
-        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
+        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef) {}
         TFun(const TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
-        ~TFun() { free(name); }
-        TFun& operator=(TFun&& other) {
+        TFun& operator= (TFun&& other) noexcept {
             if (&other != this) {
-                free(name);
                 ret_sort = other.ret_sort;
                 tr_body = other.tr_body;
-                name = other.name;
-                other.name = NULL;
-                other.args.copyTo(args);
+                std::swap(args, other.args);
+                std::swap(name, other.name);
             }
             return *this;
         }
         TFun& operator=(const TFun& other) {
             if (&other != this) {
-                free(name);
                 ret_sort = other.ret_sort;
                 tr_body = other.tr_body;
-                name = (char*)malloc(strlen(other.name)+1);
-                strcpy(name, other.name);
+                name = other.name;
                 other.args.copyTo(args);
             }
             return *this;
         }
-        const char* getName() const { return name; }
+
+        std::string getName() const { return name; }
         SRef getRetSort() const { return ret_sort; }
         PTRef getBody() const { return tr_body; }
         const vec<PTRef>& getArgs() const { return args; }
     };
-  protected:
+protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
@@ -98,16 +95,16 @@ class Logic {
 
     class DefinedFunctions {
         std::map<std::string,TFun> defined_functions;
-        vec<char*> defined_functions_names;
+        std::vector<std::string> defined_functions_names;
 
     public:
         bool has(const char* name) const { return defined_functions.find(name) != defined_functions.end(); }
+        bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
 
-        void insert(const char* name, TFun const & templ) {
+        void insert(const std::string& name, TFun const & templ) {
             assert(not has(name));
-            defined_functions_names.push();
-            defined_functions_names.last() = strdup(name);
-            defined_functions[defined_functions_names.last()] = templ;
+            defined_functions_names.emplace_back(name);
+            defined_functions[defined_functions_names.back()] = templ;
         }
 
         TFun & operator[](const char* name) {
@@ -117,13 +114,7 @@ class Logic {
 
         void getKeys(vec<const char*> & keys_out) {
             for (auto k : defined_functions_names) {
-                keys_out.push(strdup(k));
-            }
-        }
-
-        ~DefinedFunctions() {
-            for (char* name : defined_functions_names) {
-                free(name);
+                keys_out.push(strdup(k.c_str()));
             }
         }
     };
@@ -422,6 +413,7 @@ class Logic {
 
     bool       hasQuotableChars(const char* name) const;
     char*      protectName(const char* name) const;
+    char*      protectName(const std::string& name) const;
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }
@@ -445,6 +437,8 @@ class Logic {
 
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
+
+
 
 #endif // LOGIC_H
 
