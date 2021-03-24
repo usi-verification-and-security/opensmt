@@ -699,7 +699,7 @@ void Interpret::getModel() {
 
     auto model = main_solver->getModel();
     std::stringstream ss;
-    ss << "(model\n";
+    ss << "(\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
         SymRef symref = user_declarations[i];
         const Symbol & sym = logic->getSym(symref);
@@ -709,16 +709,62 @@ void Interpret::getModel() {
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
             PTRef val = model->evaluate(term);
-            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << logic->printTerm(val) << ')' << '\n';
+            ss << printDefinitionSmtlib(term, val);
         }
         else {
-            char* s = logic->printSym(symref);
-            notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
-            free(s);
+            // function
+            Logic::TFun templ = model->getDefinition(symref);
+            ss << printDefinitionSmtlib(templ);
         };
     }
     ss << ')';
     std::cout << ss.str() << std::endl;
+}
+
+/**
+ *
+ * @param tr the term to print
+ * @param val its value
+ * @return the term value in an smtlib2 compliant format
+ * Example:
+ * (; U is sort of cardinality 2
+ *   (define-fun a () U
+ *     (as @0 U))
+ *   (define-fun b () U
+ *     (as @1 U))
+ *   (define-fun f ((x U)) U
+ *     (ite (= x (as @1 U)) (as @0 U)
+ *       (as @1 U))
+ *   )
+ * )
+ */
+std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
+    std::stringstream ss;
+    const char *s = logic->getSymName(tr);
+    SRef sortRef = logic->getSym(tr).rsort();
+    ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
+    char* val_string = logic->pp(val);
+    std::string val_s(val_string);
+    free(val_string);
+    ss << "    " << val_s << ")\n";
+    return ss.str();
+}
+
+std::string Interpret::printDefinitionSmtlib(const Logic::TFun & templateFun) const {
+    std::stringstream ss;
+    ss << "  (define-fun " << templateFun.getName() << " (";
+    const vec<PTRef>& args(templateFun.getArgs());
+    for (int i = 0; i < args.size(); i++) {
+        char* tmp = logic->pp(args[i]);
+        const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
+        ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
+        free(tmp);
+    }
+    ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
+    char* tmp = logic->pp(templateFun.getBody());
+    ss << "    " << tmp << "\n";
+    free(tmp);
+    return ss.str();
 }
 
 void Interpret::writeState(const char* filename)
