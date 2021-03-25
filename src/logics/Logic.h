@@ -79,6 +79,7 @@ public:
         SRef getRetSort() const { return ret_sort; }
         PTRef getBody() const { return tr_body; }
         const vec<PTRef>& getArgs() const { return args; }
+        void updateBody(PTRef new_body) { tr_body = new_body; }
     };
 protected:
     static std::size_t abstractValueCount;
@@ -90,7 +91,9 @@ protected:
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
+    Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
+    bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -209,7 +212,7 @@ protected:
     SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
+    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
 
     // Symbols
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
