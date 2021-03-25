@@ -83,6 +83,7 @@ Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
 #endif
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
+      , values             ( nullptr )
 {
     auto rawExplainer = [this](ExplainerType type) -> Explainer * {
         switch(type) {
@@ -214,24 +215,31 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 
 void Egraph::clearModel()
 {
-    values.clear();
-    values_ok = false;
+    values.reset(nullptr);
 }
-
 
 void Egraph::computeModel( )
 {
-    if (values_ok == true)
+    if (values != nullptr)
         return;
 
-    const vec<ERef>& enodes = enode_store.getTermEnodes();
-    for (int i = 0; i < enodes.size(); i++) {
-        if (values.has(enodes[i]))
-            continue;
-        ERef root_r = enode_store[enodes[i]].getRoot();
-        values.insert(enodes[i], root_r);
+    values = std::unique_ptr<Values>(new Values());
+    for (ERef er : enode_store.getTermEnodes()) {
+        ERef root_r = enode_store[er].getRoot();
+        values->addValue(er, root_r);
     }
-    values_ok = true;
+}
+
+PTRef Egraph::getAbstractValueForERef(ERef er) const {
+    ERef val_er = values->getValue(er);
+    PTRef val_tr = enode_store.getPTRef(val_er);
+
+    if (isConstant(val_er)) {
+        return val_tr;
+    }
+    std::stringstream ss;
+    ss << Logic::s_abstract_value_prefix << values->getValueIndex(val_er);
+    return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
 }
 
 void Egraph::fillTheoryVars(ModelBuilder & modelBuilder) const
@@ -1390,7 +1398,7 @@ bool Egraph::assertLit(PtAsgn pta)
 ValPair
 Egraph::getValue(PTRef tr)
 {
-    if (!values_ok) {
+    if (values == nullptr) {
         assert(false);
         return ValPair_Undef;
     }
@@ -1404,7 +1412,7 @@ Egraph::getValue(PTRef tr)
     else {
 
         Enode& e = enode_store[tr];
-        ERef e_root = values[e.getERef()];
+        ERef e_root = values->getValue(e.getERef());
 
         if (e_root == enode_store.getEnode_true())
            written = asprintf(&name, "true");

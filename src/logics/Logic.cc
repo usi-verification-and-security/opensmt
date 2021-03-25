@@ -516,7 +516,7 @@ bool Logic::declare_sort_hook(SRef sr) {
     sortToIte.insert(sr, tr);
 
     std::stringstream ss;
-    ss << Logic::s_abstract_value_prefix << "d" << 0;
+    ss << Logic::s_abstract_value_prefix << "d" << sort_store.numSorts();
     defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
     return true;
 }

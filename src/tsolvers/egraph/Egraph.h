@@ -204,9 +204,19 @@ private:
 
     UFSolverStats tsolver_stats;
 
-    // Stuff for values on UF
-    bool values_ok;
-    Map<ERef, ERef, ERefHash> values;
+    class Values {
+        Map<ERef, ERef, ERefHash> values;
+        Map<ERef, int, ERefHash> valueERefToInt;
+        int valueCounter;
+    public:
+        Values() : valueCounter(0) {}
+        void addValue(ERef t, ERef v) { if (values.has(t)) return; values.insert(t, v); if (not valueERefToInt.has(v)) { valueERefToInt.insert(v, valueCounter++); } }
+        bool hasValue(ERef er) const { return values.has(er); }
+        ERef getValue(ERef er) const { assert(values.has(er)); return values[er]; }
+        int getValueIndex(ERef er) const { assert(valueERefToInt.has(er)); return valueERefToInt[er]; }
+    };
+
+    std::unique_ptr<Values> values;
 
     static const char * s_val_prefix;
     static const char * s_const_prefix;
@@ -279,17 +289,7 @@ public:
     void       fillTheoryVars          (ModelBuilder & modelBuilder) const override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
-    PTRef      getAbstractValueForERef(ERef er) const {
-        ERef val_er = values[er];
-        PTRef val_tr = enode_store.getPTRef(val_er);
-
-        if (isConstant(val_er)) {
-            return val_tr;
-        }
-        std::stringstream ss;
-        ss << Logic::s_abstract_value_prefix << values[er].x;
-        return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
-    };
+    PTRef      getAbstractValueForERef(ERef er) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 
