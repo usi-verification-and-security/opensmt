@@ -60,6 +60,7 @@ The algorithm and data structures are inspired by the following paper:
 #include "Enode.h"
 #include "TreeOps.h"
 #include "Deductions.h"
+#include "ModelBuilder.h"
 
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
@@ -217,6 +218,7 @@ void Egraph::clearModel()
     values_ok = false;
 }
 
+
 void Egraph::computeModel( )
 {
     if (values_ok == true)
@@ -231,6 +233,39 @@ void Egraph::computeModel( )
     }
     values_ok = true;
 }
+
+void Egraph::fillTheoryVars(ModelBuilder & modelBuilder) const
+{
+    for (ERef er : enode_store.getTermEnodes()) {
+        PTRef tr = enode_store.getPTRef(er);
+        if (logic.getPterm(tr).size() > 0) {
+            continue; // A function symbol.  Store the values in fillTheoryFunctions instead
+        }
+
+        PTRef val_tr = getAbstractValueForERef(er);
+        modelBuilder.addVarValue(tr, val_tr);
+    }
+}
+
+void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
+{
+    for (ERef er : enode_store.getTermEnodes()) {
+        PTRef tr = enode_store.getPTRef(er);
+        if (logic.getPterm(tr).size() == 0) {
+            continue; // A variable.  Store values in fillTheoryVars instead
+        }
+        if (logic.isEquality(tr) || logic.isNot(tr)) {
+            continue; // The models of equality and not are implicit.
+        }
+        SymRef sr = logic.getSymRef(tr);
+        vec<ERef> args = enode_store.getArgTermsAsVector(er);
+        vec<PTRef> vals; vals.capacity(args.size());
+        for (ERef child_er: args) {
+            vals.push(getAbstractValueForERef(child_er));
+        }
+        modelBuilder.addToTheoryFunction(sr, std::move(vals), getAbstractValueForERef(er));
+    }
+};
 
 void Egraph::declareAtom(PTRef atom) {
     if (!enode_store.needsEnode(atom)) { return; }

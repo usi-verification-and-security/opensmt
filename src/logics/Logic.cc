@@ -315,7 +315,11 @@ Logic::pp(PTRef tr) const
 
     if (t.size() == 0) {
         std::stringstream ss;
-        ss << name_escaped;
+        if (isKnownToUser(sr)) {
+            ss << name_escaped;
+        } else {
+            ss << "(as " << name_escaped << " " << getSortName(getSortRef(sr)) << ")";
+        }
 #ifdef PARTITION_PRETTYPRINT
         ss << " [" << getIPartitions(tr) << ' ]';
 #endif
@@ -511,6 +515,9 @@ bool Logic::declare_sort_hook(SRef sr) {
     ites.insert(tr, true);
     sortToIte.insert(sr, tr);
 
+    std::stringstream ss;
+    ss << Logic::s_abstract_value_prefix << "d" << 0;
+    defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
     return true;
 }
 
@@ -568,7 +575,10 @@ Logic::getDefaultValue(const PTRef tr) const
 PTRef
 Logic::getDefaultValuePTRef(const SRef sref) const {
     if (sref == sort_BOOL) { return term_TRUE; }
-    throw "default values not implemented yet for uninterpreted sorts\n";
+    else {
+        return defaultValueForSort[sref];
+
+    }
 }
 
 PTRef
@@ -1743,7 +1753,7 @@ SRef        Logic::getSortRef    (const char* name)      const { return sort_sto
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
-const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
+const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
 
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }

@@ -495,6 +495,7 @@ TermMapper&           THandler::getTMap()                { return tmap; }
 
 ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 void    THandler::fillTheoryVars(ModelBuilder &modelBuilder) const { getSolverHandler().fillTheoryVars(modelBuilder); }
+void    THandler::fillTheoryFunctions(ModelBuilder &modelBuilder) const { getSolverHandler().fillTheoryFunctions(modelBuilder); }
 void    THandler::addSubstitutions(ModelBuilder &modelBuilder) const { modelBuilder.processSubstitutions(getSolverHandler().substs); }
 
 bool    THandler::isTheoryTerm       ( Var v )       { return getLogic().isTheoryTerm(varToTerm(v)); }

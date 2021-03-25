@@ -709,14 +709,12 @@ void Interpret::getModel() {
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
             PTRef val = model->evaluate(term);
-            ss << printTermSmtlib(term, val) << '\n';
+            ss << printDefinitionSmtlib(term, val);
         }
         else {
             // function
             Logic::TFun templ = model->getDefinition(symref);
-            char* s = logic->printSym(symref);
-            notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
-            free(s);
+            ss << printDefinitionSmtlib(templ);
         };
     }
     ss << ')';
@@ -740,16 +738,32 @@ void Interpret::getModel() {
  *   )
  * )
  */
-std::string Interpret::printTermSmtlib(PTRef tr, PTRef val) {
+std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
     const char *s = logic->getSymName(tr);
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
-    if (logic->isUF(tr)) {
-        ss << "    (" << logic->printTerm(val) << ' as ' << logic->getSortName(sortRef) << "))\n";
-    } else {
-        ss << "    " << logic->printTerm(val) << ")\n";
+    char* val_string = logic->pp(val);
+    std::string val_s(val_string);
+    free(val_string);
+    ss << "    " << val_s << ")\n";
+    return ss.str();
+}
+
+std::string Interpret::printDefinitionSmtlib(const Logic::TFun & templateFun) const {
+    std::stringstream ss;
+    ss << "  (define-fun " << templateFun.getName() << " (";
+    const vec<PTRef>& args(templateFun.getArgs());
+    for (int i = 0; i < args.size(); i++) {
+        char* tmp = logic->pp(args[i]);
+        const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
+        ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
+        free(tmp);
     }
+    ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
+    char* tmp = logic->pp(templateFun.getBody());
+    ss << "    " << tmp << "\n";
+    free(tmp);
     return ss.str();
 }
 
