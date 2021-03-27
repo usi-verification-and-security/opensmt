@@ -100,7 +100,8 @@ public:
     inline friend bool operator>=(const Real & c, const Delta & a);
 
     // Arithmetic overloadings
-    inline friend Delta operator+=(Delta & a, const Delta & b);
+    Delta& operator+=(const Delta & b);
+    Delta& operator+=(Delta && b);
 
     inline friend Delta operator-=(Delta & a, const Delta & b);
 
@@ -140,10 +141,16 @@ bool Delta::hasDelta() const {
 }
 
 // Arithmetic operators definitions.
-Delta operator+=(Delta & a, const Delta & b) {
-    a.r += b.R();
-    a.d += b.D();
-    return a;
+inline Delta& Delta::operator+=(const Delta & b) {
+    this->r += b.R();
+    this->d += b.D();
+    return *this;
+}
+
+inline Delta& Delta::operator+=(Delta && b) {
+    this->r += std::move(b.r);
+    this->d += std::move(b.d);
+    return *this;
 }
 
 Delta operator-=(Delta & a, const Delta & b) {
