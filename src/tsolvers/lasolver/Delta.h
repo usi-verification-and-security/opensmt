@@ -51,6 +51,7 @@ public:
     inline Delta();                               // Same as Delta(UPPER)
     inline Delta(const Real & v);                // Constructor for Real delta
     inline Delta(const Real & v, const Real & d); // Constructor for Real delta with strict part
+    inline Delta(Real && v, Real && d);          // Constructor for Real delta with strict part
     inline Delta(const Delta & a);               // Copy constructor
     inline ~Delta();                             // Destructor
 
@@ -256,6 +257,8 @@ Delta::Delta(const Real & v) : r{v}, d{0} {}
 // Constructor for Real delta with strict bit
 //
 Delta::Delta(const Real & v_r, const Real & v_d) : r{v_r}, d{v_d} {}
+
+Delta::Delta(Real && v_r, Real && v_d) : r{std::move(v_r)}, d{std::move(v_d)} { }
 
 
 //
