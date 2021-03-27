@@ -6,9 +6,16 @@
 #include <LIALogic.h>
 
 class LIALogicMkTermsTest: public ::testing::Test {
-public:
+protected:
+    virtual void SetUp() {
+        x = logic.mkNumVar("x");
+        y = logic.mkNumVar("y");
+        z = logic.mkNumVar("z");
+    }
     LIALogic logic;
-    LIALogicMkTermsTest(): logic{} {}
+    PTRef x;
+    PTRef y;
+    PTRef z;
 };
 
 TEST_F(LIALogicMkTermsTest, testIsNumTerm) {
@@ -28,9 +35,7 @@ TEST_F(LIALogicMkTermsTest, testIsNumTerm) {
 }
 
 TEST_F(LIALogicMkTermsTest, testDeepLessThan) {
-    PTRef x = logic.mkNumVar("x");
     PTRef a = logic.mkConst(3);
-    PTRef y = logic.mkNumVar("y");
     PTRef b = logic.mkConst(-4);
     PTRef prod2 = logic.mkNumTimes(y, b);
     PTRef prod1 = logic.mkNumTimes(x, a);
@@ -42,7 +47,6 @@ TEST_F(LIALogicMkTermsTest, testDeepLessThan) {
 }
 
 TEST_F(LIALogicMkTermsTest, testDivMod) {
-    PTRef x = logic.mkNumVar("x");
     PTRef two = logic.mkConst(2);
     PTRef div = logic.mkIntDiv(x,two);
     PTRef mod = logic.mkIntMod(x,two);
@@ -51,7 +55,6 @@ TEST_F(LIALogicMkTermsTest, testDivMod) {
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Plus) {
-    PTRef x = logic.mkNumVar("x");
     PTRef two = logic.mkConst(2);
     PTRef mod = logic.mkIntMod(x,two);
     PTRef plus = logic.mkNumPlus(mod, two);
@@ -59,7 +62,6 @@ TEST_F(LIALogicMkTermsTest, testMod_Plus) {
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Times) {
-    PTRef x = logic.mkNumVar("x");
     PTRef two = logic.mkConst(2);
     PTRef three = logic.mkConst(3);
     PTRef mod = logic.mkIntMod(x,two);
@@ -68,7 +70,6 @@ TEST_F(LIALogicMkTermsTest, testMod_Times) {
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Leq) {
-    PTRef x = logic.mkNumVar("x");
     PTRef two = logic.mkConst(2);
     PTRef three = logic.mkConst(3);
     PTRef mod = logic.mkIntMod(x,two);
@@ -111,4 +112,16 @@ TEST_F(LIALogicMkTermsTest, testDiv_Constants_NegNeg) {
     PTRef mod = logic.mkIntMod(mtwo, mthree);
     EXPECT_EQ(div, logic.getTerm_NumOne());
     EXPECT_EQ(mod, logic.getTerm_NumOne());
+}
+
+TEST_F(LIALogicMkTermsTest, test_Inequality_Simplification)
+{
+    PTRef two = logic.mkConst("2");
+    ASSERT_EQ(
+            logic.mkNumLeq(logic.mkNumPlus(x,y), z),
+            logic.mkNumLeq(
+                    logic.mkNumPlus(logic.mkNumTimes(x, two), logic.mkNumTimes(y, two)),
+                    logic.mkNumTimes(z, two)
+            )
+    );
 }
