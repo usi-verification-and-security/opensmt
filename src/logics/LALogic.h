@@ -75,6 +75,7 @@ public:
 
 
     virtual const SymRef get_sym_Num_TIMES () const =0;
+    virtual const SymRef get_sym_Num_DIV () const =0;
     virtual const SymRef get_sym_Num_MINUS () const =0;
     virtual const SymRef get_sym_Num_PLUS () const =0;
     virtual const SymRef get_sym_Num_NEG () const =0;
@@ -96,6 +97,8 @@ public:
     bool isNumNeg(PTRef tr) const { return isNumNeg(getPterm(tr).symb()); }
     bool isNumTimes(SymRef sr) const { return sr == get_sym_Num_TIMES(); }
     bool isNumTimes(PTRef tr) const { return isNumTimes(getPterm(tr).symb()); }
+    bool isNumDiv(SymRef sr) const { return sr == get_sym_Num_DIV(); }
+    bool isNumDiv(PTRef tr) const { return isNumDiv(getPterm(tr).symb()); }
     bool isNumEq(SymRef sr) const { return isEquality(sr) && (sym_store[sr][0] == get_sort_Num());}
     bool isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
     bool isNumLeq(SymRef sr) const { return sr == get_sym_Num_LEQ(); }

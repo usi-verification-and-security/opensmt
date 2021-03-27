@@ -226,9 +226,9 @@ PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
     assert(args.size() == 2);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
-    if (not isConstant(divisor)) {
-        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
-    }
+    if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
+    if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
+
     if (isConstant(dividend)) {
         auto const& dividendValue = getNumConst(dividend);
         auto const& divisorValue = getNumConst(divisor);
@@ -255,6 +255,8 @@ PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
     PTRef dividend = args[0];
     PTRef divisor = args[1];
     if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
+    if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
+
     if (isConstant(dividend)) {
         auto const& dividendValue = getNumConst(dividend);
         auto const& divisorValue = getNumConst(divisor);

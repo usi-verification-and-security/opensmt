@@ -135,9 +135,6 @@ LRALogic::LRALogic() :
 
 PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
 {
-    SimplifyConstDiv simp(*this);
-    vec<PTRef> args_new;
-    SymRef s_new;
     if (args.size() != 2) {
         throw OsmtApiException("Division operation requries exactly 2 arguments");
     }
@@ -147,6 +144,9 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
     if (not isConstant(args[1])) {
         throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
     }
+    SimplifyConstDiv simp(*this);
+    vec<PTRef> args_new;
+    SymRef s_new;
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));

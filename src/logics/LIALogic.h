@@ -78,6 +78,7 @@ public:
     PTRef       getTerm_NumMinusOne() const override { return term_Int_MINUSONE; }
 
     virtual const SymRef get_sym_Num_TIMES () const override { return sym_Int_TIMES; }
+    virtual const SymRef get_sym_Num_DIV () const override { return sym_Int_DIV; }
     virtual const SymRef get_sym_Num_MINUS () const override { return sym_Int_MINUS; }
     virtual const SymRef get_sym_Num_PLUS () const override { return sym_Int_PLUS; }
     virtual const SymRef get_sym_Num_NEG () const override { return sym_Int_NEG; }
