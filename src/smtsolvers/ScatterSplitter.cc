@@ -527,6 +527,7 @@ bool ScatterSplitter::createSplit_scatter(bool last)
     splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
     split_assumptions.emplace_back();
     SplitData& sp = splits.back();
+<<<<<<< HEAD
     if(decisionLevel()>0)
         printf("\n; Outputing an instance:\n; ");
     vec<Lit> constraints_negated;
@@ -537,6 +538,15 @@ bool ScatterSplitter::createSplit_scatter(bool last)
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
         printf("%s%d ", sign(l) ? "-" : "", var(l));
+=======
+    vec<Lit> constraints_negated;
+    vec<Lit>& split_assumption = split_assumptions.back();
+    // Add the literals on the decision levels
+    for (int i = 0; i < decisionLevel(); i++) {
+        vec<Lit> tmp;
+        Lit l = trail[trail_lim[i]];
+        tmp.push(l);
+>>>>>>> eb7baa85 (Refactor CoreSMTSolver to extract Splitter functionality)
         // Add the literal
         sp.addConstraint(tmp);
         // Remember this literal in the split assumptions vector of the
@@ -563,7 +573,10 @@ bool ScatterSplitter::createSplit_scatter(bool last)
     splitConfig.split_start = true;
     splitConfig.split_on    = true;
     splitConfig.split_next = (splitConfig.split_units == spm_time ? cpuTime() + splitConfig.split_midtune : decisions + splitConfig.split_midtune);
+<<<<<<< HEAD
     std::cout<<endl;
+=======
+>>>>>>> eb7baa85 (Refactor CoreSMTSolver to extract Splitter functionality)
     return true;
 }
 

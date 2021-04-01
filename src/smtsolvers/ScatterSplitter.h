@@ -56,6 +56,7 @@ protected:
 //        }
 
     };
+protected:
     virtual inline void clausesUpdate() {};
     bool branchLitRandom() override;
     Var doActivityDecision() override;

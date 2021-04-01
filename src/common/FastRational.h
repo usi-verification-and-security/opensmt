@@ -394,7 +394,7 @@ public:
         return wordPartValid() && num == 1 && den == 1;
     }
 
-    
+
     // Return *this % d.  The return value will have the sign of d
     FastRational operator%(const FastRational& d) {
         assert(isInteger() && d.isInteger());
