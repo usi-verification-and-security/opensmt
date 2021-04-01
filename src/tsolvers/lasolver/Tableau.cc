@@ -255,21 +255,21 @@ bool Tableau::checkConsistency() const {
 void Tableau::normalizeRow(LVRef v) {
     assert(isQuasiBasic(v)); // Do not call this for non quasi rows
     Polynomial & row = getRowPoly(v);
-    std::vector<Polynomial::Term> toEliminate;
+    std::vector<Polynomial::Term const*> toEliminate;
     for (auto const & term : row) {
         if (isQuasiBasic(term.var)) {
             normalizeRow(term.var);
-            toEliminate.push_back(term);
+            toEliminate.push_back(&term);
         }
         if (isBasic(term.var)) {
-            toEliminate.push_back(term);
+            toEliminate.push_back(&term);
         }
     }
     if (!toEliminate.empty()) {
         Polynomial p;
-        for (auto & term : toEliminate) {
-            p.merge(getRowPoly(term.var), term.coeff, [](LVRef) {}, [](LVRef) {});
-            p.addTerm(term.var, -term.coeff);
+        for (auto const* term : toEliminate) {
+            p.merge(getRowPoly(term->var), term->coeff, [](LVRef) {}, [](LVRef) {});
+            p.addTerm(term->var, -term->coeff);
         }
         row.merge(p, 1, [](LVRef) {}, [](LVRef) {});
     }
