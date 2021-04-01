@@ -17,10 +17,6 @@ namespace {
     inline bool contains(const C & container, const E & elem){
         return container.find(elem) != container.end();
     }
-
-    inline bool isOne(const opensmt::Real & r){
-        return r == 1;
-    }
 }
 
 void Tableau::nonbasicVar(LVRef v) {
@@ -131,13 +127,11 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     {
         Polynomial & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.removeVar(nv);
-        Real bvCoeff{1};
-        if (!isOne(coeff)) {
+        if (not coeff.isOneHeuristic()) {
             nvPoly.divideBy(coeff);
-            bvCoeff /= coeff;
         }
         nvPoly.negate();
-        nvPoly.addTerm(bv, bvCoeff);
+        nvPoly.addTerm(bv, coeff.inverse());
     }
 
     // remove row for bv, add row for nv
