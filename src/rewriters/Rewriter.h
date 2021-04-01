@@ -5,8 +5,6 @@
 #ifndef OPENSMT_REWRITER_H
 #define OPENSMT_REWRITER_H
 
-#endif //OPENSMT_REWRITER_H
-
 #include "Logic.h"
 
 template<typename TConfig>
@@ -87,3 +85,5 @@ class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
 public:
     NoOpRewriter(Logic & logic) : Rewriter<DefaultRewriterConfig>(logic, config) {}
 };
+
+#endif //OPENSMT_REWRITER_H

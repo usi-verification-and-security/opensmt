@@ -22,15 +22,6 @@ target_link_libraries(RewritingTest OpenSMT gtest gtest_main)
 
 gtest_add_tests(TARGET RewritingTest)
 
-add_executable(ExpressionsTest)
-target_sources(ExpressionsTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ArithmeticExpressions.cpp"
-    )
-
-target_link_libraries(ExpressionsTest OpenSMT gtest gtest_main)
-
-gtest_add_tests(TARGET ExpressionsTest)
-
 add_executable(TheorySimplificationsTest)
 target_sources(TheorySimplificationsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TheorySimplifications.cc"
@@ -98,19 +89,12 @@ gtest_add_tests(TARGET SubstitutionsTest)
 add_executable(LogicMkTermsTest)
 target_sources(LogicMkTermsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LogicMkTerms.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIALogicMkTerms.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LRALogicMkTerms.cpp"
     )
 
 target_link_libraries(LogicMkTermsTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET LogicMkTermsTest)
-
-add_executable(LIALogicMkTermsTest)
-target_sources(LIALogicMkTermsTest
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIALogicMkTerms.cc"
-        )
-
-target_link_libraries(LIALogicMkTermsTest OpenSMT gtest gtest_main)
-gtest_add_tests(TARGET LIALogicMkTermsTest)
-
 
 add_executable(BoundTest)
 target_sources(BoundTest
