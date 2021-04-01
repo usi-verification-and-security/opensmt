@@ -206,7 +206,6 @@ TEST_F(LRALogicMkTermsTest, test_Inequality_Simplification)
     );
 }
 
-<<<<<<< HEAD:test/unit/test_LRALogicMkTerms.cc
 TEST_F(LRALogicMkTermsTest, testAtom_LRA) {
     PTRef ineq = logic.mkNumLeq(x, logic.getTerm_NumZero());
     EXPECT_TRUE(logic.isAtom(ineq));
@@ -225,6 +224,3 @@ TEST_F(LRALogicMkTermsTest, testAtom_LRA) {
     PTRef product = logic.mkNumTimes(x, logic.mkConst(2));
     EXPECT_FALSE(logic.isAtom(product));
 }
-
-=======
->>>>>>> f92a7955 (Adding basic support for int mod and div operations (#221)):test/unit/test_LRALogicMkTerms.cpp

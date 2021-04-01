@@ -97,7 +97,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
     , forced_split          (lit_Undef)
-
     , ok                    (true)
     , conflict_frame        (0)
     , n_clauses             (0)
@@ -111,19 +110,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_seed           (c.getRandomSeed())
     , progress_estimate     (0)
     , remove_satisfied      (true)
-    , resource_units        (config.sat_resource_units())
-    , resource_limit        (config.sat_resource_limit())
-    , next_resource_limit   (-1)
-    , split_type            (config.sat_split_type())
-    , split_on              (false)
-    , split_start           (config.sat_split_asap())
-    , split_num             (config.sat_split_num())
-    , split_units           (config.sat_split_units())
-    , split_inittune        (config.sat_split_inittune())
-    , split_midtune         (config.sat_split_midtune())
-    , split_next            (split_units == spm_time ? cpuTime() + split_inittune : decisions + split_inittune)
-    , split_preference      (sppref_undef)
-    , unadvised_splits      (0)
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
     , analyze_cnt           (0)
@@ -544,97 +530,31 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     }
 }
 
-//=================================================================================================
-// Major methods:
-
-Lit CoreSMTSolver::pickBranchLit()
-{
-#ifdef STATISTICS
-    opensmt::StopWatch s(branchTimer);
-#endif
-    if (forced_split != lit_Undef) {
-        assert(value(var(forced_split)) == l_Undef);
-        Lit fs = forced_split;
-        forced_split = lit_Undef;
-        return fs;
-    }
-
-    Var next = var_Undef;
-
-    // Random decision:
-    if (((!split_on && drand(random_seed) < random_var_freq) || (split_on && split_preference == sppref_rand)) && !order_heap.empty())
-    {
+Var CoreSMTSolver::doRandomDecision() {
+    Var next var_Undef;
+    if (branchLitRandom()) {
         next = order_heap[irand(random_seed,order_heap.size())];
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++;
     }
+    return var_Undef;
+}
 
-    // Theory suggestion-based decision
-    for( ;; )
-    {
-        Lit sugg = lit_Undef; //= theory_handler->getSuggestion( );
-        // No suggestions
-        if ( sugg == lit_Undef )
+Var CoreSMTSolver::doActivityDecision() {
+    Var next = var_Undef;
+    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+        if (order_heap.empty()) {
+            next = var_Undef;
             break;
-        // Atom already assigned or not to be used as decision
-        if ( value(sugg) != l_Undef || !decision[var(sugg)] )
-            continue;
-        // If here, good decision has been found
-        return sugg;
-    }
-
-    vec<int> discarded;
-
-//    printf("Activity (%d)\n", activity.size());
-//    for (int i = 0; i < activity.size(); i++)
-//        printf("%f ", activity[i]);
-//    printf("\n");
-    // Activity based decision:
-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
-    {
-        if (order_heap.empty())
-        {
-            if (split_preference == sppref_tterm || split_preference == sppref_bterm)
-            {
-                if (discarded.size() > 0)
-                    next = discarded[0];
-                else next = var_Undef;
-            }
-            else
-                next = var_Undef;
-            break;
-
-        }
-        else
-        {
+        } else {
             next = order_heap.removeMin();
-            if (split_on && next != var_Undef)
-            {
-                if (split_preference == sppref_tterm && !theory_handler.isDeclared(next))
-                {
-                    discarded.push(next);
-                    next = var_Undef;
-                }
-                else if (split_preference == sppref_bterm && theory_handler.isDeclared(next))
-                {
-                    discarded.push(next);
-                    next = var_Undef;
-                }
-            }
         }
     }
-    if (split_preference == sppref_tterm || split_preference == sppref_bterm)
-        for (int i = 0; i < discarded.size(); i++)
-           order_heap.insert(discarded[i]);
+    return next;
+}
 
-    if ( next == var_Undef )
-        return lit_Undef;
-
-#if CACHE_POLARITY
-    if ( prev_polarity[ next ] != toInt(l_Undef) )
-        return Lit( next, prev_polarity[ next ] < 0 );
-#endif
-
+Lit CoreSMTSolver::choosePolarity(Var next) {
+    assert(next != var_Undef);
     bool sign = false;
     bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
     if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isDeclared(next)) {
@@ -644,25 +564,48 @@ Lit CoreSMTSolver::pickBranchLit()
             return mkLit(next, sign);
         }
     }
-    switch ( polarity_mode )
-    {
-    case polarity_true:
-        sign = false;
-        break;
-    case polarity_false:
-        sign = true;
-        break;
-    case polarity_user:
-        sign = polarity[next];
-        break;
-    case polarity_rnd:
-        sign = irand(random_seed, 2);
-        break;
-    default:
-        assert(false);
+    switch ( polarity_mode ) {
+        case polarity_true:
+            sign = false;
+            break;
+        case polarity_false:
+            sign = true;
+            break;
+        case polarity_user:
+            sign = polarity[next];
+            break;
+        case polarity_rnd:
+            sign = irand(random_seed, 2);
+            break;
+        default:
+            assert(false);
+    }
+    return mkLit(next, sign);
+}
+
+//=================================================================================================
+// Major methods:
+
+Lit CoreSMTSolver::pickBranchLit()
+{
+    Lit fs = lit_Undef;
+    if ((fs = doForcedSplit()) != lit_Undef ) // A non-convex theory forces a branch
+        return fs;
+
+    Var next = var_Undef;
+
+    // Pick a variable either randomly or based on activity
+    if ((next = doRandomDecision()) == var_Undef) {
+        // Activity based decision
+        next = doActivityDecision();
     }
 
-    return next == var_Undef ? lit_Undef : mkLit(next, sign);
+    if ( next == var_Undef ) // All variables are assigned
+        return lit_Undef;
+
+    // Return the literal with the chosen polarity
+    return choosePolarity(next);
+
 }
 
 /*_________________________________________________________________________________________________
@@ -1452,21 +1395,13 @@ void CoreSMTSolver::popBacktrackPoint()
     assert( isOK( ) );
 }
 
-bool CoreSMTSolver::okContinue()
+bool CoreSMTSolver::okContinue() const
 {
-    // Added line
     if ( opensmt::stop ) return false;
 
     if (conflicts % 1000 == 0) {
         if ( this->stop )
             return false;
-    }
-    if (resource_limit >= 0 && conflicts % 1000 == 0) {
-        if ((resource_units == spm_time && time(NULL) >= next_resource_limit) ||
-            (resource_units == spm_decisions && decisions >= next_resource_limit)) {
-            opensmt::stop = true;
-            return false;
-        }
     }
     return true;
 }
@@ -1486,18 +1421,7 @@ void CoreSMTSolver::learntSizeAdjust() {
     }
 }
 
-void CoreSMTSolver::runPeriodics()
-{
-    if (conflicts % 1000 == 0)
-        clausesPublish();
 
-    if (decisionLevel() == 0) {
-        if (conflicts > conflicts_last_update + 1000) {
-            clausesUpdate();
-            conflicts_last_update = conflicts;
-        }
-    }
-}
 
 /*_________________________________________________________________________________________________
   |
@@ -1515,19 +1439,7 @@ void CoreSMTSolver::runPeriodics()
   |________________________________________________________________________________________________@*/
 lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 {
-    // Time my executionto search_timer
-//    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
-#ifdef VERBOSE_SAT
-    cerr << "Units when starting search:" << endl;
-    for (int i = 2; i < trail.size(); i++)
-    {
-        char* name;
-        theory_handler.getVarName(var(trail[i]), &name);
-        cerr << (sign(trail[i]) ? "not " : "");
-        cerr << name << endl;
-        ::free(name);
-    }
-#endif
+
     if (proof) {
         // Force disable theory propagation, since we don't
         // have at the moment we don't construct the reasons
@@ -1564,12 +1476,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (split_type == spt_none || static_cast<int>(splits.size()) < split_num - 1)
+    while (true)
     {
         if (!okContinue())
             return l_Undef;
-        runPeriodics();
-
 
         CRef confl = propagate();
         if (confl != CRef_Undef)
@@ -1662,15 +1572,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 else {
                     assert( false );
                 }
-
-//          switch( res )
-//          {
-//            case -1: return l_False;        // Top-Level conflict: unsat
-//            case  0: conflictC++; continue; // Theory conflict: time for bcp
-//            case  1: break;                 // Sat and no deductions: go ahead
-//            case  2: continue;              // Sat and deductions: time for bcp
-//            default: assert( false );
-//          }
             }
 
             Lit next = lit_Undef;
@@ -1705,45 +1606,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             if (next == lit_Undef)
             {
                 // Assumptions done and the solver is in consistent state
-                updateSplitState();
-                if (!split_start && split_on && scatterLevel())
-                {
-                    if (!createSplit_scatter(false))   // Rest is unsat
-                    {
-                        opensmt::stop = true;
-                        return l_Undef;
-                    }
-                    else continue;
-                }
-                // Otherwise continue to variable decision.
-
-
                 // New variable decision:
                 decisions++;
                 next = pickBranchLit();
-#ifdef VERBOSE_SAT
-                char* name;
-                if (next != lit_Undef) {
-                    theory_handler.getVarName(var(next), &name);
-                    cerr << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << name << endl;
-                    ::free(name);
-                }
-                else cerr << "branch: " << toInt(next) << (sign(next) ? " not " : " ") << "undef" << endl;
-
-#endif
                 // Complete Call
-                if ( next == lit_Undef )
-                {
-//                    first_model_found = true;
-#ifdef STATISTICS
-                    const double start = cpuTime( );
-#endif
+                if ( next == lit_Undef ) {
                     TPropRes res = checkTheory(true, conflictC);
-#ifdef STATISTICS
-                    tsolvers_time += cpuTime( ) - start;
-#endif
-                    if ( res == TPropRes::Propagate )
-                    {
+
+                    if ( res == TPropRes::Propagate ) {
                         continue;
                     }
                     if ( res == TPropRes::Unsat )
@@ -1770,7 +1640,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         }
     }
     cancelUntil(0);
-    createSplit_scatter(true);
     opensmt::stop = true;
     return l_Undef;
 }
@@ -1877,40 +1746,10 @@ lbool CoreSMTSolver::solve_()
     for (Lit l : this->assumptions) {
         this->addVar_(var(l));
     }
-    this->clausesUpdate();
 
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
-
-    split_type     = config.sat_split_type();
-    if (split_type != spt_none)
-    {
-        split_start    = config.sat_split_asap();
-        split_on       = false;
-        split_num      = config.sat_split_num();
-        split_inittune = config.sat_split_inittune();
-        split_midtune  = config.sat_split_midtune();
-        split_units    = config.sat_split_units();
-        if (split_units == spm_time)
-            split_next = config.sat_split_inittune() + cpuTime();
-        else if (split_units == spm_decisions)
-            split_next = config.sat_split_inittune() + decisions;
-        else split_next = -1;
-
-        split_preference = config.sat_split_preference();
-
-    }
-    resource_units = config.sat_resource_units();
-    resource_limit = config.sat_resource_limit();
-    if (resource_limit >= 0) {
-
-        if (resource_units == spm_time)
-            next_resource_limit = cpuTime() + resource_limit;
-        else if (resource_units == spm_decisions)
-            next_resource_limit = decisions + resource_limit;
-    }
-    else next_resource_limit = -1;
 
     if (config.dump_only()) return l_Undef;
 
@@ -2013,15 +1852,8 @@ void CoreSMTSolver::clearSearch()
 }
 
 lbool CoreSMTSolver::zeroLevelConflictHandler() {
-    if (splits.size() > 0)
-    {
-        opensmt::stop = true;
-        return l_Undef;
-    }
-    else {
-        ok = false;
-        return l_False;
-    }
+    ok = false;
+    return l_False;
 }
 
 
@@ -2110,103 +1942,7 @@ int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
     return nof_conflicts * restart_inc;
 }
 
-bool CoreSMTSolver::scatterLevel()
-{
-    int d;
-    if (!split_on) return false;
-    // Current scattered instance number i = splits.size() + 1
-    float r = 1/(float)(split_num-splits.size());
-    for (int i = 0; ; i++)
-    {
-        // 2 << i == 2^(i+1)
-        if ((2 << (i-1) <= split_num - static_cast<int>(splits.size())) &&
-                (2 << i >= split_num - static_cast<int>(splits.size())))
-        {
-            // r-1(2^i) < 0 and we want absolute
-            d = -(r-1/(float)(2<<(i-1))) > r-1/(float)(2<<i) ? i+1 : i;
-            break;
-        }
-    }
-    return d == decisionLevel()+assumptions.size();
-}
 
-
-bool CoreSMTSolver::createSplit_scatter(bool last)
-{
-    assert(splits.size() == split_assumptions.size());
-    splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
-    split_assumptions.emplace_back();
-    SplitData& sp = splits.back();
-    vec<Lit> constraints_negated;
-    vec<Lit>& split_assumption = split_assumptions.back();
-    // Add the literals on the decision levels
-    for (int i = 0; i < decisionLevel(); i++) {
-        vec<Lit> tmp;
-        Lit l = trail[trail_lim[i]];
-        tmp.push(l);
-        // Add the literal
-        sp.addConstraint(tmp);
-        // Remember this literal in the split assumptions vector of the
-        // SAT solver
-        split_assumption.push(l);
-        // This will be added to the SAT formula to exclude the search
-        // space
-        constraints_negated.push(~l);
-    }
-    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
-        const auto & split_assumption = split_assumptions[i];
-        vec<Lit> tmp;
-        for (auto tr : split_assumption)
-            tmp.push(~tr);
-        sp.addConstraint(tmp);
-    }
-
-    // XXX Skipped learned clauses
-    cancelUntil(0);
-    if (!excludeAssumptions(constraints_negated))
-        return false;
-    simplify();
-    assert(ok);
-    split_start = true;
-    split_on    = true;
-    split_next = (split_units == spm_time ? cpuTime() + split_midtune : decisions + split_midtune);
-    return true;
-}
-
-bool CoreSMTSolver::excludeAssumptions(vec<Lit>& neg_constrs)
-{
-    addOriginalClause(neg_constrs);
-    simplify();
-    return ok;
-}
-
-void CoreSMTSolver::updateSplitState()
-{
-    if (split_start && !split_on)
-    {
-        if ((split_units == spm_time && cpuTime() >= split_next) ||
-                (split_units == spm_decisions && decisions >= split_next))
-        {
-            cancelUntil(0);
-            split_start = false;
-            split_on = true;
-            if (split_units == spm_time) split_next = cpuTime() + split_midtune;
-            if (split_units == spm_decisions) split_next = decisions + split_midtune;
-        }
-    }
-    if (split_start && split_on)
-    {
-        if ((split_units == spm_time && cpuTime() >= split_next) ||
-                (split_units == spm_decisions && decisions >= split_next))
-        {
-            cancelUntil(0);
-            split_start = false;
-            split_on = true;
-            if (split_units == spm_time) split_next = cpuTime() + split_midtune;
-            if (split_units == spm_decisions) split_next = decisions + split_midtune;
-        }
-    }
-}
 
 #ifdef STATISTICS
 void CoreSMTSolver::printStatistics( ostream & os )
