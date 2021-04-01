@@ -605,7 +605,6 @@ Lit CoreSMTSolver::pickBranchLit()
 
     // Return the literal with the chosen polarity
     return choosePolarity(next);
-
 }
 
 /*_________________________________________________________________________________________________
