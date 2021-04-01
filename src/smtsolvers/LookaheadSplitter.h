@@ -6,6 +6,7 @@
 #define OPENSMT_LOOKAHEADSPLITTER_H
 
 #include "LookaheadSMTSolver.h"
+#include "SplitData.h"
 
 static inline int getLog2Ceil(int i)
 {
@@ -34,7 +35,7 @@ protected:
             LANode::print_local();
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
-            dprintf(STDERR_FILENO, "%s\n", sd == nullptr ? "no instance" : "has instance" );
+            dprintf(STDERR_FILENO, "%s\n", sd == nullptr? "no instance" : "has instance" );
         }
         LASplitNode const * getC1() const { return (LASplitNode*) c1.get(); }
         LASplitNode const * getC2() const { return (LASplitNode*) c2.get(); }
