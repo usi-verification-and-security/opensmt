@@ -94,14 +94,16 @@ class FastRational
     inline void setMpqAllocatedAndValid() {this->state |= State::MPQ_ALLOCATED_AND_VALID; }
     inline void setWordPartValid() {this->state |= State::WORD_VALID; }
     inline void setWordPartInvalid() { assert(mpqPartValid()); this->state = State::MPQ_ALLOCATED_AND_VALID; }
+    inline void setOnlyWordPartValid() {
+        setWordPartValid();
+        setMpqPartInvalid();
+    }
 
-    void setMpqPartInvalid() {
+    inline void setMpqPartInvalid() {
         assert(wordPartValid());
-        // TODO: improve
-        if (this->mpqMemoryAllocated()) { state = State::WORD_PLUS_MPQ_INITIALIZED; }
-        else {
-            state = State::WORD_VALID;
-        }
+        // clear the bit representing MPQ_VALID
+        this->state = static_cast<State>(static_cast<state_t>(this->state) & ~(mpqValidMask));
+        assert(not mpqPartValid() and wordPartValid());
     }
 public:
     // Methods for questioning inner state
@@ -385,6 +387,10 @@ public:
         }
     }
 
+    bool isOneHeuristic() const {
+         return wordPartValid() && num == 1 && den == 1;
+    }
+
 
     // Return *this % d.  The return value will have the sign of d
     FastRational operator%(const FastRational& d) {
@@ -439,8 +445,7 @@ inline FastRational& FastRational::operator=(const FastRational& x) {
     if (x.wordPartValid()) {
         num = x.num;
         den = x.den;
-        setWordPartValid();
-        setMpqPartInvalid(); // MB: keeps mpq memory allocated if it already is
+        setOnlyWordPartValid(); // MB: keeps mpq memory allocated if it already is
     }
     else {
         assert(x.mpqPartValid());
@@ -677,7 +682,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
             dst.num = zn;
             dst.den = zd;
         }
-        dst.kill_mpq();
+        dst.setOnlyWordPartValid();
         assert(dst.isWellFormed());
         return;
     }
@@ -745,7 +750,8 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
             dst.num = zn;
             dst.den = zd;
         }
-        dst.kill_mpq();
+        dst.setOnlyWordPartValid();
+        assert(dst.isWellFormed());
         return;
     }
     overflow:
@@ -761,7 +767,7 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
     if ((a.wordPartValid() && a.num==0) || (b.wordPartValid() && b.num==0)) {
         dst.num=0;
         dst.den=1;
-        dst.kill_mpq();
+        dst.setOnlyWordPartValid();
         return;
     }
     if (a.wordPartValid() && a.num==1 && a.den==1) {
@@ -796,7 +802,7 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
         CHECK_UWORD(zd, k3 * k4);
         dst.num = zn;
         dst.den = zd;
-        dst.kill_mpq();
+        dst.setOnlyWordPartValid();
         return;
     }
     overflow:
@@ -821,7 +827,7 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         if (a.num == b.num && a.den == b.den) {
             dst.num = 1;
             dst.den = 1;
-            dst.kill_mpq();
+            dst.setOnlyWordPartValid();
             return;
         }
         uword common1 = gcd(absVal(a.num), absVal(b.num));
@@ -843,9 +849,8 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
 
         dst.num = zn;
         dst.den = zd;
-
-        dst.kill_mpq();
-
+        dst.setOnlyWordPartValid();
+        assert(dst.isWellFormed());
         return;
     }
     overflow:
@@ -894,7 +899,8 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
                 a.num = zn;
                 a.den = zd;
             }
-            a.kill_mpq();
+            a.setOnlyWordPartValid();
+            assert(a.isWellFormed());
             return;
         }
     }
@@ -925,7 +931,8 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
         }
         a.num = zn;
         a.den = zd;
-        a.kill_mpq();
+        a.setOnlyWordPartValid();
+        assert(a.isWellFormed());
         return;
     }
     overflow:
@@ -957,7 +964,8 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
 
         a.num = zn;
         a.den = zd;
-        a.kill_mpq();
+        a.setOnlyWordPartValid();
+        assert(a.isWellFormed());
         return;
     }
     overflow:
@@ -988,7 +996,8 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
 
         a.den = zd;
         a.num = zn;
-        a.kill_mpq();
+        a.setOnlyWordPartValid();
+        assert(a.isWellFormed());
         return;
     }
     overflow:
