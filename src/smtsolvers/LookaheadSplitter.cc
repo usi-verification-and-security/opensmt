@@ -95,8 +95,8 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead()
 bool LookaheadSplitter::createSplitLookahead(LASplitNode *n)
 {
     // Create a split instance and add it to node n.
-    assert(n->sd == NULL);
-    n->sd = new SplitData(config.smt_split_format_length() == spformat_brief);
+    assert(n->sd == nullptr);
+    n->sd = std::unique_ptr<SplitData>(new SplitData(config.smt_split_format_length() == spformat_brief));
     SplitData& sd = *n->sd;
     printf("; Outputing an instance:\n; ");
     Lit p = lit_Undef;

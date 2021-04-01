@@ -472,7 +472,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
            LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    if (!okToPartition(var(best))) { unadvised_splits++; }
     return laresult::la_ok;
 }
 
