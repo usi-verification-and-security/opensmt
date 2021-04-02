@@ -87,6 +87,7 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
     auto myEnd = std::make_move_iterator(poly.end());
     auto otherEnd = other.poly.cend();
     TermCmp cmp;
+    FastRational tmp;
     while(true) {
         if (myIt == myEnd) {
             for (auto it = otherIt; it != otherEnd; ++it) {
@@ -110,13 +111,13 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
         }
         else {
             assert(myIt->var == otherIt->var);
-            auto mergedCoeff = otherIt->coeff * coeff;
-            mergedCoeff += myIt->coeff;
-            if (mergedCoeff.isZero()) {
+            multiplication(tmp, otherIt->coeff, coeff);
+            myIt->coeff += tmp;
+            if (myIt->coeff.isZero()) {
                 informRemoved(myIt->var);
             }
             else {
-                storage.emplace_back(myIt->var, std::move(mergedCoeff));
+                storage.emplace_back(*myIt);
             }
             ++myIt;
             ++otherIt;
