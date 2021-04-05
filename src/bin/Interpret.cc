@@ -762,7 +762,7 @@ std::string Interpret::printDefinitionSmtlib(const Logic::TFun & templateFun) co
     }
     ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
     char* tmp = logic->pp(templateFun.getBody());
-    ss << "    " << tmp << "\n";
+    ss << "    " << tmp << ")\n";
     free(tmp);
     return ss.str();
 }
