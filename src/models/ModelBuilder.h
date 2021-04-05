@@ -14,7 +14,7 @@
 class Logic;
 
 class ModelBuilder {
-
+protected:
     std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
     std::unordered_map<SymRef, Logic::TFun, SymRefHash> definitions;
 
@@ -22,9 +22,11 @@ class ModelBuilder {
 
     int uniqueNum;
 
+    const std::string formalArgDefaultPrefix;
+    std::string getFormalArgBaseNameForSymbol(SymRef sr) const; // Return a string that is not equal to the argument
 public:
 
-    ModelBuilder(Logic & logic) : logic(logic), uniqueNum(0) {}
+    ModelBuilder(Logic & logic) : logic(logic), uniqueNum(0), formalArgDefaultPrefix("x") {}
 
     void addVarValue(PTRef var, PTRef value) {
         auto res = assignment.insert(std::make_pair(var, value));

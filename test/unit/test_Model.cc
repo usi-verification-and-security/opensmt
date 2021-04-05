@@ -137,6 +137,22 @@ TEST_F(UFModelBuilderTest, test_modelBuilderVarAndFunction) {
     EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
 }
 
+TEST_F(UFModelBuilderTest, test_NameCollision) {
+    ModelBuilder mb(logic);
+    char* err;
+    std::string symName("x0");
+    SymRef x1_sym = logic.declareFun(symName.c_str(), S, {S}, &err);
+    mb.addToTheoryFunction(x1_sym, {v0}, v0);
+    auto m = mb.build();
+    auto templateFun = m->getDefinition(x1_sym);
+    std::cout << "testing name collision: the following should be different from `x0`" << std::endl;
+    for (PTRef tr : templateFun.getArgs()) {
+        std::string argName(logic.getSymName(tr));
+        std::cout << argName << std::endl;
+        ASSERT_NE(argName, symName);
+    }
+}
+
 class LAModelTest : public ::testing::Test {
 protected:
     LAModelTest(): logic{} {}

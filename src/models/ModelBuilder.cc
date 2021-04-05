@@ -20,7 +20,6 @@ void ModelBuilder::processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subs
         if (entry->data.sgn == l_True) {
             PTRef mappedTerm = entry->data.tr;
             PTRef val = model->evaluate(mappedTerm);
-//            assert(logic.isConstant(val));
             assignCopy.insert(std::make_pair(entry->key, val));
         }
     }
@@ -31,13 +30,33 @@ std::unique_ptr<Model> ModelBuilder::build() const {
     return std::unique_ptr<Model>(new Model(logic, std::move(assignment), std::move(definitions)));
 }
 
+std::string ModelBuilder::getFormalArgBaseNameForSymbol(SymRef sr) const {
+    const std::string & symName(logic.getSymName(sr));
+
+    // Collision is possible if formalArgDefaultPrefix can be extended to symName by adding at least one character.
+    bool collisionPossible = formalArgDefaultPrefix == symName.substr(0, formalArgDefaultPrefix.size());
+
+    if (collisionPossible) {
+        // Modify the base by changing the first character to a different character.  Collision is then not possible
+        std::string newPrefix(formalArgDefaultPrefix);
+        newPrefix[0] = (symName[0] + 1) % 26 + 'a';
+        assert(newPrefix[0] != symName[0]);
+        return newPrefix;
+    }
+    return formalArgDefaultPrefix;
+}
+
 void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
 {
     if (not hasTheoryFunction(sr)) {
         vec<PTRef> formalArgs; formalArgs.capacity(vals.size());
         std::stringstream ss;
+        std::string symName(logic.getSymName(sr));
+        // Ensure that no formal arg name collides with the function name
+        std::string formalArgPrefix(getFormalArgBaseNameForSymbol(sr));
+
         for (PTRef v : vals) {
-            ss << "x" << uniqueNum++;
+            ss << formalArgPrefix << uniqueNum++;
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
         Logic::TFun templateFun(logic.getSymName(sr), formalArgs, logic.getSortRef(val), logic.getDefaultValuePTRef(val));
