@@ -50,12 +50,12 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
 {
     if (not hasTheoryFunction(sr)) {
         vec<PTRef> formalArgs; formalArgs.capacity(vals.size());
-        std::stringstream ss;
         std::string symName(logic.getSymName(sr));
         // Ensure that no formal arg name collides with the function name
         std::string formalArgPrefix(getFormalArgBaseNameForSymbol(sr));
 
         for (PTRef v : vals) {
+            std::stringstream ss;
             ss << formalArgPrefix << uniqueNum++;
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
