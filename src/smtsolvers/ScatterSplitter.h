@@ -62,8 +62,8 @@ protected:
     Var doActivityDecision() override;
     bool okContinue() const override;
     void runPeriodics();                // Update clauses
-    virtual lbool search(int nof_conflicts, int nof_learnts) override;                  // Search for a given number of conflicts.
-    virtual lbool zeroLevelConflictHandler() override;                                  // Common handling of zero-level conflict as it can happen at multiple places
+    lbool search(int nof_conflicts, int nof_learnts) override;                  // Search for a given number of conflicts.
+    lbool zeroLevelConflictHandler() override;                                  // Common handling of zero-level conflict as it can happen at multiple places
 };
 
 
