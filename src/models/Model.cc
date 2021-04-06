@@ -10,6 +10,7 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
     : varEval(std::move(basicEval))
     , symDef(std::move(symbolDef))
     , logic(logic)
+    , formalArgDefaultPrefix("x")
 {
     assert(std::all_of(symDef.begin(), symDef.end(),
                        [&logic](SymbolDefinition::value_type entry)
@@ -74,12 +75,35 @@ PTRef Model::evaluate(PTRef term) {
     }
 }
 
+std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix) {
+    const std::string & symName(logic.getSymName(sr));
+
+    // Collision is possible if formalArgDefaultPrefix can be extended to symName by adding at least one character.
+    bool collisionPossible = formalArgDefaultPrefix == symName.substr(0, formalArgDefaultPrefix.size());
+
+    if (collisionPossible) {
+        // Modify the base by changing the first character to a different character.  Collision is then not possible
+        std::string newPrefix(formalArgDefaultPrefix);
+        newPrefix[0] = (symName[0] + 1) % 26 + 'a';
+        assert(newPrefix[0] != symName[0]);
+        return newPrefix;
+    }
+    return formalArgDefaultPrefix;
+}
+
 Logic::TFun Model::getDefinition(SymRef sr) const {
     if (symDef.find(sr) != symDef.end()) {
         return symDef.at(sr);
     } else {
-        std::stringstream ss;
-        ss << "Attempt to get definition of an unknown function " << logic.getSymName(sr);
-        throw OsmtApiException(ss.str());
+        std::string symName = logic.getSymName(sr);
+        vec<PTRef> formalArgs; formalArgs.growTo(logic.getSym(sr).nargs());
+        std::string varNameBase = getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix);
+        for (int i = 0; i < (int)logic.getSym(sr).nargs(); i++) {
+            SRef argSort = logic.getSym(sr)[i];
+            std::stringstream ss;
+            ss << varNameBase << i;
+            formalArgs[i] = logic.mkVar(argSort, ss.str().c_str());
+        }
+        return Logic::TFun(symName, formalArgs, logic.getSym(sr).rsort(), logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
     }
 }

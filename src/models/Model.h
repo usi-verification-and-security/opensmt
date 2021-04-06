@@ -23,15 +23,17 @@ public:
     Model(Logic& logic, Evaluation basicEval) : Model(logic, std::move(basicEval), {}) { }
     PTRef evaluate(PTRef term);
     Logic::TFun getDefinition(SymRef) const;
+    static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
 
 private:
     const Evaluation varEval;
     const SymbolDefinition symDef;
 
+
     Evaluation extendedEval;
 
     Logic & logic;
-
+    const std::string formalArgDefaultPrefix;
     // helper methods
     inline bool hasVarVal(PTRef term) {
         assert(logic.isVar(term));
