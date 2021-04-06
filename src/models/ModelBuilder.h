@@ -23,7 +23,6 @@ protected:
     int uniqueNum;
 
     const std::string formalArgDefaultPrefix;
-    std::string getFormalArgBaseNameForSymbol(SymRef sr) const; // Return a string that is not equal to the argument
 public:
 
     ModelBuilder(Logic & logic) : logic(logic), uniqueNum(0), formalArgDefaultPrefix("x") {}
