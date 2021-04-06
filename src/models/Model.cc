@@ -13,19 +13,18 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
     , formalArgDefaultPrefix("x")
 {
     assert(std::all_of(symDef.begin(), symDef.end(),
-                       [&logic](SymbolDefinition::value_type entry)
+                       [&logic](const SymbolDefinition::value_type & entry)
        {
            SymRef sr = entry.first;
            const Logic::TFun & templFun = entry.second;
            if (not logic.isUF(sr)) { return false; }
            const Symbol & s = logic.getSym(sr);
-           if (templFun.getName().compare(logic.getSymName(sr)) != 0) { return false; }
+           if (templFun.getName() != logic.getSymName(sr)) { return false; }
            if (s.nargs() != templFun.getArgs().size_()) { return false; }
            if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
-           for (unsigned int i = 0; i < s.nargs(); i++)
+           for (auto i = 0; i < (int)s.nargs(); i++)
                if (s[i] != logic.getSortRef(templFun.getArgs()[i])) return false;
            return true;
-
        }));
 }
 
@@ -75,6 +74,16 @@ PTRef Model::evaluate(PTRef term) {
     }
 }
 
+/**
+ * Return a valid name that can be extended to a formal argument name by, e.g., appending a number.
+ *
+ * Todo: Name collisions with sorts is possible.
+ *
+ * @param logic
+ * @param sr
+ * @param formalArgDefaultPrefix
+ * @return a string that is guaranteed to be different from sr
+ */
 std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix) {
     const std::string & symName(logic.getSymName(sr));
 
