@@ -262,8 +262,8 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
         if (logic.getPterm(tr).size() == 0) {
             continue; // A variable.  Store values in fillTheoryVars instead
         }
-        if (logic.isEquality(tr) || logic.isNot(tr)) {
-            continue; // The models of equality and not are implicit.
+        if (logic.isEquality(tr) || logic.isDisequality(tr) || logic.isBooleanOperator(tr) || logic.isIte(tr)) {
+            continue; // The models of equality, disequality, Ites and Boolean operators are implicit.
         }
         SymRef sr = logic.getSymRef(tr);
         vec<ERef> args = enode_store.getArgTermsAsVector(er);
