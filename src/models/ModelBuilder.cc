@@ -13,7 +13,7 @@ void ModelBuilder::processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subs
     auto entries = copy.getKeysAndValsPtrs();
     for (auto const * const entry : entries) {
         if (logic.isIte(entry->key)) {
-            // We store only values of reals variables
+            // Ite values are implicit
             continue;
         }
         assert(logic.isVar(entry->key));

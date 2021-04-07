@@ -286,7 +286,7 @@ public:
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     ValPair    getValue                (PTRef tr) override;
     void       computeModel            () override;
-    void       fillTheoryVars          (ModelBuilder & modelBuilder) const override;
+    void       fillTheoryVars          (ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash> & substs) const override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
     PTRef      getAbstractValueForERef(ERef er) const;

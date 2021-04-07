@@ -19,7 +19,7 @@ void TSolverHandler::computeModel()
 void TSolverHandler::fillTheoryVars(ModelBuilder & modelBuilder) const {
     for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != nullptr) {
-            tsolvers[i]->fillTheoryVars(modelBuilder);
+            tsolvers[i]->fillTheoryVars(modelBuilder, substs);
         }
     }
 }
