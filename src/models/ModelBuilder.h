@@ -53,11 +53,6 @@ public:
 
     std::unique_ptr<Model> build() const;
 
-    /*
-     * Incorporates the given substitution map into the model.
-     * PRECONDITIONS: all keys are variables
-     */
-    void processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subst);
 };
 
 

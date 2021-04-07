@@ -709,14 +709,32 @@ ValPair LASolver::getValue(PTRef tr) {
     return ValPair(tr, val.get_str().c_str());
 }
 
-void LASolver::fillTheoryVars(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash> & substs) const {
+void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash> & substs) const {
+    Map<PTRef,bool,PTRefHash> seen_substs;
     for (LVRef lvar : laVarStore) {
         PTRef term = laVarMapper.getVarPTRef(lvar);
-        if (substs.has(term))
-            continue;
+        PtAsgn target;
+        if (substs.peek(term, target)) {
+            seen_substs.insert(term, true);
+            if (target.sgn == l_True) {
+                lvar = laVarMapper.getVarByPTId(logic.getPterm(target.tr).getId());
+            }
+        }
         if (logic.isNumVar(term)) {
             PTRef val = logic.mkConst(concrete_model[getVarId(lvar)]);
             modelBuilder.addVarValue(term, val);
+        }
+    }
+    for (auto pair : substs.getKeysAndVals()) {
+        if (pair.data.sgn == l_False) {
+            continue;
+        }
+        PTRef tr = pair.key;
+        PTRef target = pair.data.tr;
+        if (!seen_substs.has(tr) && logic.isNumVar(target)) {
+            LVRef lvar = laVarMapper.getVarByPTId(logic.getPterm(target).getId());
+            PTRef val = logic.mkConst(concrete_model[getVarId(lvar)]);
+            modelBuilder.addVarValue(tr, val);
         }
     }
 }

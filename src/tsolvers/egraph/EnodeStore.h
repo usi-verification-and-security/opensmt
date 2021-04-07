@@ -78,6 +78,7 @@ public:
 
     bool         has(PTRef tr)         const { return termToERef.has(tr); }
     ERef         getERef(PTRef tr)     const { return termToERef[tr]; }
+    bool         peekERef(PTRef tr, ERef& er)  const { return termToERef.peek(tr, er); }
     PTRef        getPTRef(ERef er)     const { return ERefToTerm[er]; }
 
     vec<PTRefERefPair> constructTerm(PTRef tr);

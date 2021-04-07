@@ -242,41 +242,75 @@ PTRef Egraph::getAbstractValueForERef(ERef er) const {
     return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
 }
 
-void Egraph::fillTheoryVars(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash>& substs) const
+void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash>& substs) const
 {
+    Map<PTRef,bool,PTRefHash> seen_substs;
     for (ERef er : enode_store.getTermEnodes()) {
         PTRef tr = enode_store.getPTRef(er);
-        if (logic.getPterm(tr).size() > 0) {
-            continue; // A function symbol.  Store the values in fillTheoryFunctions instead
-        }
-        if (substs.has(tr)) {
-            continue; // Do not compute values for substituted variables, these are handled in Model
-        }
 
-        PTRef val_tr = getAbstractValueForERef(er);
-        modelBuilder.addVarValue(tr, val_tr);
-    }
-}
-
-void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
-{
-    for (ERef er : enode_store.getTermEnodes()) {
-        PTRef tr = enode_store.getPTRef(er);
-        if (logic.getPterm(tr).size() == 0) {
-            continue; // A variable.  Store values in fillTheoryVars instead
-        }
         if (logic.isEquality(tr) || logic.isDisequality(tr) || logic.isBooleanOperator(tr) || logic.isIte(tr)) {
             continue; // The models of equality, disequality, Ites and Boolean operators are implicit.
         }
-        SymRef sr = logic.getSymRef(tr);
-        vec<ERef> args = enode_store.getArgTermsAsVector(er);
-        vec<PTRef> vals; vals.capacity(args.size());
-        for (ERef child_er: args) {
-            vals.push(getAbstractValueForERef(child_er));
+
+        // If this is a substituted term, process instead the substitution target
+        PtAsgn target;
+        if (substs.peek(tr, target)) {
+            seen_substs.insert(tr, true);
+            if (target.sgn == l_True) {
+                ERef target_er;
+                if (enode_store.peekERef(target.tr, target_er)) {
+                    er = target_er;
+                } else {
+                    throw OsmtInternalException("Substitution target has no enode");
+                }
+            }
         }
-        modelBuilder.addToTheoryFunction(sr, std::move(vals), getAbstractValueForERef(er));
+        if (logic.getPterm(tr).size() == 0) {
+            // A theory variable
+            PTRef val_tr = getAbstractValueForERef(er);
+            modelBuilder.addVarValue(tr, val_tr);
+        } else {
+            addTheoryFunctionEvaluation(modelBuilder, tr, er, substs);
+        }
     }
-};
+    for (auto pair : substs.getKeysAndVals()) {
+        if (pair.data.sgn == l_False) {
+            continue;
+        }
+        PTRef tr = pair.key;
+        PTRef target = pair.data.tr;
+        if (!seen_substs.has(tr)) {
+            if (logic.isEquality(tr) || logic.isDisequality(tr) || logic.isBooleanOperator(tr) || logic.isIte(tr) || logic.isBoolAtom(tr)) {
+                continue; // The models of equality, disequality, Ites and Boolean operators are implicit.
+            }
+            ERef target_er;
+            if (!enode_store.peekERef(target, target_er)) {
+                throw OsmtInternalException("Substitution target has no enode");
+            }
+            if (logic.getPterm(tr).size() == 0) {
+                PTRef val_tr = getAbstractValueForERef(target_er);
+                modelBuilder.addVarValue(tr, val_tr);
+            } else {
+                addTheoryFunctionEvaluation(modelBuilder, tr, target_er, substs);
+            }
+        }
+    }
+}
+
+void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er, const Map<PTRef,PtAsgn,PTRefHash>& substs) const {
+    SymRef sr = logic.getSymRef(tr);
+    vec<ERef> args = enode_store.getArgTermsAsVector(er);
+    vec<PTRef> vals; vals.capacity(args.size());
+    for (ERef child_er: args) {
+        PTRef child_tr = enode_store.getPTRef(child_er);
+        PtAsgn child_target;
+        if (substs.peek(child_tr, child_target) && child_target.sgn == l_True) {
+            child_er = enode_store.getERef(child_target.tr);
+        }
+        vals.push(getAbstractValueForERef(child_er));
+    }
+    modelBuilder.addToTheoryFunction(sr, std::move(vals), getAbstractValueForERef(er));
+}
 
 void Egraph::declareAtom(PTRef atom) {
     if (!enode_store.needsEnode(atom)) { return; }
@@ -349,7 +383,7 @@ bool Egraph::addEquality(PtAsgn pa) {
     assert(pt.size() == 2);
     bool res = true;
     PTRef e = pt[0];
-    for (int i = 1; i < pt.size() && res == true; i++)
+    for (int i = 1; i < pt.size() && res; i++)
         res = assertEq(e, pt[i], pa);
 
     if (res) {

@@ -16,18 +16,10 @@ void TSolverHandler::computeModel()
             tsolvers[i]->computeModel();
 }
 
-void TSolverHandler::fillTheoryVars(ModelBuilder & modelBuilder) const {
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != nullptr) {
-            tsolvers[i]->fillTheoryVars(modelBuilder, substs);
-        }
-    }
-}
-
 void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     for (auto solver : tsolvers) {
         if (solver != nullptr) {
-            solver->fillTheoryFunctions(modelBuilder);
+            solver->fillTheoryFunctions(modelBuilder, substs);
         }
     }
 }

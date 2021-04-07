@@ -4,33 +4,9 @@
 
 #include "ModelBuilder.h"
 
-void ModelBuilder::processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subst) {
-    Map<PTRef,PtAsgn,PTRefHash> copy;
-    subst.copyTo(copy);
-    logic.substitutionsTransitiveClosure(copy);
-    auto assignCopy = this->assignment;
-    auto model = this->build();
-    auto entries = copy.getKeysAndValsPtrs();
-    for (auto const * const entry : entries) {
-        if (logic.isIte(entry->key)) {
-            // Ite values are implicit
-            continue;
-        }
-        assert(logic.isVar(entry->key));
-        if (entry->data.sgn == l_True) {
-            PTRef mappedTerm = entry->data.tr;
-            PTRef val = model->evaluate(mappedTerm);
-            assignCopy.insert(std::make_pair(entry->key, val));
-        }
-    }
-    this->assignment = std::move(assignCopy);
-}
-
 std::unique_ptr<Model> ModelBuilder::build() const {
     return std::unique_ptr<Model>(new Model(logic, assignment, definitions));
 }
-
-
 
 void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
 {

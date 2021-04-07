@@ -247,9 +247,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
 
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
-    thandler.fillTheoryVars(modelBuilder);
     thandler.fillTheoryFunctions(modelBuilder);
-    thandler.addSubstitutions(modelBuilder);
 
     return modelBuilder.build();
 }

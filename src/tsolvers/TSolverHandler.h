@@ -68,14 +68,13 @@ public:
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
-    void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
+    void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { getLogic().substitutionsTransitiveClosure(substs); substs_.moveTo(substs); }
     Map<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }
 
 
     // DEPRECATED
     ValPair getValue          (PTRef tr) const;
 
-    void    fillTheoryVars    (ModelBuilder& modelBuilder) const;
     void    fillTheoryFunctions(ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
