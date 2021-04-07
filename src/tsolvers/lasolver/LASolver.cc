@@ -709,9 +709,11 @@ ValPair LASolver::getValue(PTRef tr) {
     return ValPair(tr, val.get_str().c_str());
 }
 
-void LASolver::fillTheoryVars(ModelBuilder & modelBuilder) const {
+void LASolver::fillTheoryVars(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash> & substs) const {
     for (LVRef lvar : laVarStore) {
         PTRef term = laVarMapper.getVarPTRef(lvar);
+        if (substs.has(term))
+            continue;
         if (logic.isNumVar(term)) {
             PTRef val = logic.mkConst(concrete_model[getVarId(lvar)]);
             modelBuilder.addVarValue(term, val);

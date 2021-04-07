@@ -242,12 +242,15 @@ PTRef Egraph::getAbstractValueForERef(ERef er) const {
     return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
 }
 
-void Egraph::fillTheoryVars(ModelBuilder & modelBuilder) const
+void Egraph::fillTheoryVars(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash>& substs) const
 {
     for (ERef er : enode_store.getTermEnodes()) {
         PTRef tr = enode_store.getPTRef(er);
         if (logic.getPterm(tr).size() > 0) {
             continue; // A function symbol.  Store the values in fillTheoryFunctions instead
+        }
+        if (substs.has(tr)) {
+            continue; // Do not compute values for substituted variables, these are handled in Model
         }
 
         PTRef val_tr = getAbstractValueForERef(er);

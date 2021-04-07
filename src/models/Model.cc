@@ -75,9 +75,11 @@ PTRef Model::evaluate(PTRef term) {
 }
 
 /**
- * Return a valid name that can be extended to a formal argument name by, e.g., appending a number.
+ * Return a name that can be extended to a formal argument name by appending, e.g., a number.
+ * The returned string is guaranteed not to collide with the name of the symbol sr after
+ * appending a non-empty string
  *
- * Todo: Name collisions with sorts is possible.
+ * Name collisions with sorts is possible, but should not be an issue.
  *
  * @param logic
  * @param sr
@@ -104,6 +106,7 @@ Logic::TFun Model::getDefinition(SymRef sr) const {
     if (symDef.find(sr) != symDef.end()) {
         return symDef.at(sr);
     } else {
+        // A query for a function not known to egraph.  We create a default function.
         std::string symName = logic.getSymName(sr);
         vec<PTRef> formalArgs; formalArgs.growTo(logic.getSym(sr).nargs());
         std::string varNameBase = getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix);

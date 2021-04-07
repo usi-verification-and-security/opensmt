@@ -3,9 +3,9 @@ sat
   (define-fun f ((x0 I) (x1 I)) Bool
     true)
   (define-fun f1 ((x0 I) (x1 J)) J
-    (as @d0 J))
+    (as @d3 J))
   (define-fun g ((x0 I) (x1 I) (x2 I)) I
-    (as @d0 I))
+    (as @d2 I))
   (define-fun a () I
-    (as @d0 I))
+    (as @d2 I))
 )
