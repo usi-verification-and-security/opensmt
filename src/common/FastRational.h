@@ -184,16 +184,21 @@ private:
             setMpqMemoryAllocated();
         }
     }
+
+    bool fitsWord() const
+    {
+        assert(not wordPartValid() and mpqPartValid()); // Do not call this method if word part is already valid
+        return mpz_fits_sint_p(mpq_numref(mpq)) and mpz_fits_uint_p(mpq_denref(mpq));
+    }
+
     //
     // Tries to convert the current rational
     // stored in mpq into word/uword
     //
     void try_fit_word()
     {
-        assert( mpqPartValid() );
-        assert(!wordPartValid()); // MB: It does not make sense to call this method if word is valid
-        if ( mpz_fits_sint_p(mpq_numref(mpq))
-             && mpz_fits_uint_p(mpq_denref(mpq))) {
+        assert(not wordPartValid() and mpqPartValid()); // Do not call this method if word part is already valid
+        if (fitsWord()) {
             num = mpz_get_si(mpq_numref(mpq));
             den = mpz_get_ui(mpq_denref(mpq));
             setWordPartValid();
@@ -379,16 +384,15 @@ public:
         return *this;
     }
     inline FastRational inverse() const;
+
     bool isZero() const {
-        if (wordPartValid()) {
-            return num==0;
-        } else {
-            return mpq_sgn(mpq)==0;
-        }
+        assert(wordPartValid() or not fitsWord());
+        return wordPartValid() and num == 0;
     }
 
-    bool isOneHeuristic() const {
-         return wordPartValid() && num == 1 && den == 1;
+    bool isOne() const {
+        assert(wordPartValid() or not fitsWord());
+        return wordPartValid() && num == 1 && den == 1;
     }
 
 

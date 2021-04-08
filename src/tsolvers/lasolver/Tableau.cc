@@ -127,7 +127,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     {
         Polynomial & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.removeVar(nv);
-        if (not coeff.isOneHeuristic()) {
+        if (not coeff.isOne()) {
             nvPoly.divideBy(coeff);
         }
         nvPoly.negate();
