@@ -2,13 +2,15 @@
 // Created by prova on 01.04.21.
 //
 
+#include <LookaheadSplitter.h>
 #include "MainSplitter.h"
 #include "SplitData.h"
 #include "ScatterSplitter.h"
 
 bool MainSplitter::writeSolverSplits_smtlib2(const char* file, char** msg) const
 {
-    std::vector<SplitData>& splits = static_cast<ScatterSplitter&>(ts.solver).splits;
+    std::vector<SplitData>& splits =(config.sat_split_type()==spt_scatter) ? static_cast<ScatterSplitter&>(ts.solver).splits
+            : static_cast<LookaheadSplitter&>(ts.solver).splits;
     int i = 0;
     for (const auto & split : splits) {
         vec<PTRef> conj_vec;
