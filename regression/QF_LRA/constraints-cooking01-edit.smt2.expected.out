@@ -1,2 +1,2 @@
 sat
-((spy_n unknown) (goal unknown) (eggs_after unknown) (eggs_before true) (oil_after unknown) (oil_before true) (lard_after unknown) (lard_before true) (fire_before unknown))
+((spy_n unknown) (goal true) (eggs_after true) (eggs_before true) (oil_after true) (oil_before true) (lard_after true) (lard_before true) (fire_before true))
