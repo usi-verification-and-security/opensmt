@@ -543,7 +543,7 @@ Var CoreSMTSolver::doRandomDecision() {
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++;
     }
-    return var_Undef;
+    return next;
 }
 
 Var CoreSMTSolver::doActivityDecision() {
