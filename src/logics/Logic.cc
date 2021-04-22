@@ -943,25 +943,10 @@ PTRef Logic::mkBoolVar(const char* name)
     return tr;
 }
 
-// A term is literal if its sort is Bool and
-//  (i)   number of arguments is 0
-//  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
-//        create literals?)
-//  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
+// A term is literal if it is an atom or a negation of an atom
 bool Logic::isLit(PTRef tr) const
 {
-    const Pterm& t = getPterm(tr);
-    if (sym_store[t.symb()].rsort() == getSort_bool()) {
-        if (t.size() == 0) return true;
-        if (t.symb() == getSym_not() ) return isLit(t[0]);
-        // At this point all arguments of equivalence have the same sort.  Check only the first
-        if (isEquality(tr) && (sym_store[getPterm(t[0]).symb()].rsort() != getSort_bool())) return true;
-        if (isBooleanOperator(tr)) return false;
-        else return true;
-//        if (isDisequality(tr) && !isDistinct(tr)) return true;
-//        if (isUP(tr)) return true;
-    }
-    return false;
+    return (isNot(tr) and isAtom(getPterm(tr)[0])) or isAtom(tr);
 }
 
 SRef Logic::declareSort(const char* id, char** msg)
@@ -1201,6 +1186,10 @@ bool Logic::isConstant(SymRef sr) const
     return constants[id];
 }
 
+// A term is atom if its sort is Bool and
+//  (i)   it is a variable or constant (number of arguments is 0)
+//  (ii)  it is a non-boolean equality or distinct
+//  (iii) it is a theory atom (here we check only UF atoms, logics should override this method to add their specific checks)
 bool Logic::isAtom(PTRef r) const {
     const Pterm& t = term_store[r];
     if (sym_store[t.symb()].rsort() == getSort_bool()) {
@@ -1208,8 +1197,8 @@ bool Logic::isAtom(PTRef r) const {
         if (t.symb() == getSym_not() ) return false;
         // At this point all arguments of equivalence have the same sort.  Check only the first
         if (isEquality(t.symb()) && (sym_store[term_store[t[0]].symb()].rsort() != getSort_bool())) return true;
+        if (isDisequality(t.symb())) return true;
         if (isUP(r)) return true;
-        if (isDisequality(r)) return true;
     }
     return false;
 }
