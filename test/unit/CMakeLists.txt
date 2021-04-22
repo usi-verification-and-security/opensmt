@@ -90,7 +90,7 @@ add_executable(LogicMkTermsTest)
 target_sources(LogicMkTermsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LogicMkTerms.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIALogicMkTerms.cc"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LRALogicMkTerms.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LRALogicMkTerms.cc"
     )
 
 target_link_libraries(LogicMkTermsTest OpenSMT gtest gtest_main)
