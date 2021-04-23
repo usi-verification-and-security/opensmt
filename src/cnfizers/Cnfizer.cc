@@ -30,6 +30,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <queue>
 
+#ifdef PEDANTIC_DEBUG
+#define TRACE(x) std::cerr << x << std::endl;
+#define TRACE_FLA_VEC(v)    for (unsigned i = 0; i < v.size_(); ++i) \
+                                std::cerr << i << ": " << logic.printTerm(v[i]) << '\n'; \
+                            std::cerr << std::endl;
+#else
+#define TRACE(x)
+#define TRACE_FLA_VEC(v)
+#endif // PEDANTIC_DEBUG
+
 using namespace std;
 
 Cnfizer::Cnfizer ( SMTConfig       &config_
@@ -121,10 +131,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     if (!solver.isOK()) return l_False;
 
     assert ( formula != PTRef_Undef);
-
-#ifdef PEDANTIC_DEBUG
-    cerr << "cnfizerAndGiveToSolver: " << logic.printTerm (formula) << endl;
-#endif
+    TRACE("cnfizerAndGiveToSolver: " << logic.printTerm (formula))
 
     if (keepPartitionInfo()) {
         assert(pmanager.getPartitionIndex(formula) != -1);
@@ -134,14 +141,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     // Retrieve top-level formulae - this is a list constructed from a conjunction
     retrieveTopLevelFormulae (formula, top_level_formulae);
     assert (top_level_formulae.size() != 0);
-#ifdef PEDANTIC_DEBUG
-    cerr << "Top level formulae:" << endl;
-
-    for (unsigned i = 0; i < top_level_formulae.size_(); i++)
-        cerr << "Top level formula " << i << ": " << logic.printTerm (top_level_formulae[i]) << endl;
-
-#endif
-
+    TRACE("Top level formulae:")
+    TRACE_FLA_VEC(top_level_formulae)
     bool res = true;
 
     // For each top-level conjunct
@@ -152,15 +153,11 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         if (alreadyAsserted.contains(f, frame_term)) {
             continue;
         }
-#ifdef PEDANTIC_DEBUG
-        cerr << "Adding clause " << logic.printTerm (f) << endl;
-#endif
+        TRACE("Adding clause " << logic.printTerm (f))
         // Give it to the solver if already in CNF
         if (isClause(f))
         {
-#ifdef PEDANTIC_DEBUG
-            cerr << " => Already in CNF" << endl;
-#endif
+            TRACE(" => Already in CNF")
             res = giveToSolver (f);
         }
 
@@ -168,16 +165,12 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
 
         else if (checkDeMorgan (f) == true)
         {
-#ifdef PEDANTIC_DEBUG
-            cout << " => Will be de Morganized" << endl;
-#endif
+            TRACE(" => Will be de Morganized")
             res = deMorganize (f);
         }
         else
         {
-#ifdef PEDANTIC_DEBUG
-            cout << " => proper cnfization" << endl;
-#endif // PEDANTIC_DEBUG
+            TRACE(" => proper cnfization")
             res = cnfizeAndAssert (f); // Perform actual cnfization (implemented in subclasses)
         }
         alreadyAsserted.insert(f, frame_term);
@@ -242,9 +235,7 @@ bool Cnfizer::deMorganize ( PTRef formula )
         for (int i = 0; i < conjuncts.size(); i++)
         {
             clause.push (~this->getOrCreateLiteralFor (conjuncts[i]));
-#ifdef PEDANTIC_DEBUG
-            cerr << "(not " << logic.printTerm (conjuncts[i]) << ")" << endl;
-#endif
+            TRACE("(not " << logic.printTerm (conjuncts[i]) << ")")
         }
 
         rval = addClause(clause);
