@@ -85,7 +85,6 @@ public:
     void   initialize      ();
     lbool  solve           (vec<FrameId>& en_frames);
 
-    bool  isNPAtom         (PTRef r, PTRef& p)    const; // Check if r is a (negated) atom.  Return true if the corresponding atom is negated.  The purified reference is placed in the second argument.
     bool  solverEmpty      ()                     const { return s_empty; }
 
 protected:
@@ -96,10 +95,10 @@ protected:
     void     declareVars                (vec<PTRef>&);   // Declare a set of Boolean atoms to the solver (without asserting them)
 
 public:
-    bool     checkClause                ( PTRef ); // Check if a formula is a clause
-    bool     checkCnf                   ( PTRef );                            // Check if formula is in CNF
-    bool     checkDeMorgan              ( PTRef );                            // Check if formula can be deMorganized
-    void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );         // Retrieves the list of top-level formulae
+    bool     isClause                   (PTRef);
+    bool     isCnf                      (PTRef);
+    bool     checkDeMorgan              ( PTRef );                      // Check if formula can be deMorganized
+    void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );        // Retrieves the list of top-level formulae
 protected:
 
     bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
@@ -112,7 +111,7 @@ protected:
 
 private:
 
-    bool    checkConj            (PTRef); // Check if a formula is a conjunction
+    bool    isConjunctionOfClauses (PTRef);
     bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
 
 protected:

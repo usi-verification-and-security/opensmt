@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Cnfizer.h"
 #include "SimpSMTSolver.h"
+#include "OsmtInternalException.h"
 
 #include <queue>
 
@@ -92,30 +93,6 @@ Cnfizer::solve(vec<FrameId>& en_frames)
 
 }
 
-// A term is an npatom if it is an atom or it is a negation of an npatom
-bool Cnfizer::isNPAtom (PTRef r, PTRef &p) const
-{
-    bool sign = false;
-
-    while (true)
-    {
-        if (logic.isNot (r))
-        {
-            r = logic.getPterm (r)[0];
-            sign = !sign;
-        }
-        else
-        {
-            if (logic.isAtom (r))
-                p = r;
-            else
-                p = PTRef_Undef;
-
-            return sign;
-        }
-    }
-}
-
 void Cnfizer::setFrameTerm(FrameId frame_id)
 {
     while (static_cast<unsigned int>(frame_terms.size()) <= frame_id.id) {
@@ -171,6 +148,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
     for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++)
     {
         PTRef f = top_level_formulae[i];
+        assert(not logic.isAnd(f)); // Conjunction should have been split when retrieving top-level formulae
         if (alreadyAsserted.contains(f, frame_term)) {
             continue;
         }
@@ -178,7 +156,7 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         cerr << "Adding clause " << logic.printTerm (f) << endl;
 #endif
         // Give it to the solver if already in CNF
-        if (checkCnf (f) == true || checkClause (f) == true)
+        if (isClause(f))
         {
 #ifdef PEDANTIC_DEBUG
             cerr << " => Already in CNF" << endl;
@@ -281,48 +259,35 @@ bool Cnfizer::deMorganize ( PTRef formula )
 // Check whether a formula is in cnf
 //
 
-bool Cnfizer::checkCnf (PTRef formula)
-{
-    bool res = checkConj (formula);
-
-    if (res == false) return checkClause (formula);
-
-    return res;
+bool Cnfizer::isCnf(PTRef e) {
+    return isConjunctionOfClauses(e);
 }
 
 
-//
-// Check if a formula is a conjunction of clauses
-//
 
-bool Cnfizer::checkConj (PTRef e)
-{
-    if (isLiteral(e)) // A Boolean constant
+bool Cnfizer::isConjunctionOfClauses(PTRef e) {
+    if (isClause(e)) { // Single clause counts as a conjunction of clauses
         return true;
-
-    Pterm &and_t = logic.getPterm (e);
-
-
-    if (and_t.symb() != logic.getSym_and())
+    }
+    if (not logic.isAnd(e)) {
         return false;
-
+    }
     vec<PTRef> to_process;
     to_process.push (e);
 
-    while (to_process.size() != 0)
-    {
-
+    while (to_process.size() != 0) {
         e = to_process.last();
         to_process.pop();
 
-        Pterm &and_t = logic.getPterm (e);
+        Pterm const & and_t = logic.getPterm(e);
 
-        for (int i = 0; i < and_t.size(); i++)
-        {
-            if (logic.isAnd (and_t[i]))
-                to_process.push (and_t[i]);
-            else if (!checkClause (and_t[i])) // Slightly awkward to use the same cache...
+        for (int i = 0; i < and_t.size(); i++) {
+            if (logic.isAnd(and_t[i])) {
+                to_process.push(and_t[i]);
+            }
+            else if (not isClause(and_t[i])) {
                 return false;
+            }
         }
 
     }
@@ -334,41 +299,38 @@ bool Cnfizer::checkConj (PTRef e)
 //
 // Check whether a formula is a clause
 //
-
-bool Cnfizer::checkClause (PTRef e)
-{
+bool Cnfizer::isClause(PTRef e) {
     assert (e != PTRef_Undef);
 
-    if (!logic.isOr (e))
+    if (isLiteral(e)) { // Single literals count as clauses
+        return true;
+    }
+
+    if (not logic.isOr(e)) {
         return false;
+    }
 
     vec<PTRef> to_process;
 
     to_process.push (e);
 
-    while (to_process.size() != 0)
-    {
-
+    while (to_process.size() != 0) {
         e = to_process.last();
         to_process.pop();
 
-        Pterm &or_t = logic.getPterm (e);
+        Pterm const & or_t = logic.getPterm (e);
 
-        for (int i = 0; i < or_t.size(); i++)
-        {
-            if (logic.isOr (or_t[i]))
-                to_process.push (or_t[i]);
-            else
-            {
-                PTRef p;
-                isNPAtom (or_t[i], p);
-
-                if (p == PTRef_Undef)
+        for (int i = 0; i < or_t.size(); i++) {
+            if (logic.isOr(or_t[i])) {
+                to_process.push(or_t[i]);
+            }
+            else {
+                if (not isLiteral(or_t[i])) {
                     return false;
+                }
             }
         }
     }
-
     return true;
 }
 
@@ -484,18 +446,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
 
         return addClause(clause);
     }
-
-    //
-    // Conjunction
-    //
-    assert (logic.isAnd (f));
-    vec<PTRef> conj;
-    retrieveTopLevelFormulae ( f, conj );
-    bool result = true;
-
-    for (unsigned i = 0; i < conj.size_( ) && result; i++)
-        result = giveToSolver (conj[i]);
-    return result;
+    throw OsmtInternalException("UNREACHABLE: Unexpected situation in Cnfizer");
 }
 
 //
