@@ -101,7 +101,7 @@ public:
     void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );        // Retrieves the list of top-level formulae
 protected:
 
-    bool     giveToSolver               ( PTRef );                              // Gives formula to the SAT solver
+    bool     assertClause               (PTRef f);                              // Gives formula to the SAT solver
 
 
     bool addClause(const vec<Lit> &);

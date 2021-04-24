@@ -157,8 +157,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         // Give it to the solver if already in CNF
         if (isClause(f))
         {
-            TRACE(" => Already in CNF")
-            res = giveToSolver (f);
+            TRACE(" => Already a clause")
+            res = assertClause(f);
         }
 
         // Check whether it can be rewritten using deMorgan laws
@@ -410,7 +410,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
 // Give the formula to the solver
 //
 
-bool Cnfizer::giveToSolver ( PTRef f )
+bool Cnfizer::assertClause (PTRef f)
 {
     vec<Lit> clause;
 
