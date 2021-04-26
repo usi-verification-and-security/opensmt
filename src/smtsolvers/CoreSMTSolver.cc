@@ -600,11 +600,11 @@ Lit CoreSMTSolver::pickBranchLit()
 
     Var next = var_Undef;
 
-    // Pick a variable either randomly or based on activity
-    if ((next = doRandomDecision()) == var_Undef) {
-        // Activity based decision
+   // Pick a variable either randomly or based on activity
+    next = doRandomDecision();
+    // Activity based decision
+    if (next == var_Undef || value(next) != l_Undef || !decision[next])
         next = doActivityDecision();
-    }
 
     if ( next == var_Undef ) // All variables are assigned
         return lit_Undef;
@@ -1629,6 +1629,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     // Model found:
                     return l_True;
             }
+            
             assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
