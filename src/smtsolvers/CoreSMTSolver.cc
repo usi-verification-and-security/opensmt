@@ -1633,6 +1633,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     return l_True;
             }
 
+
             assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
