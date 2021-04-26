@@ -15,8 +15,24 @@ class Logic;
 
 class ModelBuilder {
 protected:
+    struct ValuationNode {
+        static int counter;
+        int id;
+        std::vector<ValuationNode*> children;
+        PTRef value;
+        PTRef var;
+        ValuationNode() : id(counter++), value{PTRef_Undef} {}
+        bool operator== (const ValuationNode* o) const { return this->id == o->id; }
+    };
+
     std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
-    std::unordered_map<SymRef, Logic::TFun, SymRefHash> definitions;
+    std::unordered_map<SymRef, std::pair<Logic::TFun, ValuationNode>, SymRefHash> definitions;
+
+    struct ValuationNodeHash {
+        std::size_t operator() (const ValuationNode* n) const { return std::hash<int>()(n->id); }
+    };
+
+    PTRef valuationTreeToFunctionBody(const ValuationNode *);
 
     Logic& logic;
 
