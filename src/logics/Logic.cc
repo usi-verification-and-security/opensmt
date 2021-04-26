@@ -943,12 +943,6 @@ PTRef Logic::mkBoolVar(const char* name)
     return tr;
 }
 
-// A term is literal if it is an atom or a negation of an atom
-bool Logic::isLit(PTRef tr) const
-{
-    return (isNot(tr) and isAtom(getPterm(tr)[0])) or isAtom(tr);
-}
-
 SRef Logic::declareSort(const char* id, char** msg)
 {
     if (containsSort(id)) {

@@ -225,22 +225,3 @@ TEST_F(LRALogicMkTermsTest, testAtom_LRA) {
     EXPECT_FALSE(logic.isAtom(product));
 }
 
-TEST_F(LRALogicMkTermsTest, testLiteral_LRA) {
-    PTRef ineq = logic.mkNumLeq(x, logic.getTerm_NumZero());
-    EXPECT_TRUE(logic.isLit(ineq));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(ineq)));
-
-    PTRef strict = logic.mkNumLt(x, logic.getTerm_NumZero());
-    EXPECT_TRUE(logic.isLit(strict));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(strict)));
-
-    PTRef eq = logic.mkEq(x, logic.getTerm_NumZero());
-    EXPECT_TRUE(logic.isLit(eq));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(eq)));
-
-    PTRef sum = logic.mkNumPlus(x,y);
-    EXPECT_FALSE(logic.isLit(sum));
-    PTRef product = logic.mkNumTimes(x, logic.mkConst(2));
-    EXPECT_FALSE(logic.isLit(product));
-}
-

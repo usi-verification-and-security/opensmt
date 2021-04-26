@@ -173,28 +173,6 @@ TEST_F(LogicMkTermsTest, testAtom_Bool) {
     EXPECT_TRUE(logic.isAtom(logic.getTerm_false()));
 }
 
-TEST_F(LogicMkTermsTest, testLiteral_Bool) {
-    PTRef a = logic.mkBoolVar("a");
-    PTRef b = logic.mkBoolVar("b");
-    PTRef c = logic.mkBoolVar("c");
-    EXPECT_TRUE(logic.isLit(a));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(a)));
-
-    EXPECT_FALSE(logic.isLit(logic.mkAnd(a,b)));
-    EXPECT_FALSE(logic.isLit(logic.mkOr(a,b)));
-    EXPECT_FALSE(logic.isLit(logic.mkImpl(a,b)));
-    EXPECT_FALSE(logic.isLit(logic.mkEq(a,b)));
-    EXPECT_FALSE(logic.isLit(logic.mkIte(c,a,b)));
-
-    EXPECT_FALSE(logic.isLit(logic.mkNot(logic.mkAnd(a,b))));
-    EXPECT_FALSE(logic.isLit(logic.mkNot(logic.mkOr(a,b))));
-    EXPECT_FALSE(logic.isLit(logic.mkNot(logic.mkImpl(a,b))));
-    EXPECT_FALSE(logic.isLit(logic.mkNot(logic.mkEq(a,b))));
-    EXPECT_FALSE(logic.isLit(logic.mkNot(logic.mkIte(c,a,b))));
-
-    EXPECT_TRUE(logic.isLit(logic.getTerm_true()));
-    EXPECT_TRUE(logic.isLit(logic.getTerm_false()));
-}
 
 TEST_F(LogicMkTermsTest, testAtom_UF) {
     SRef sref = logic.declareSort("U", nullptr);
@@ -213,23 +191,4 @@ TEST_F(LogicMkTermsTest, testAtom_UF) {
     PTRef pa = logic.mkUninterpFun(predicate, {a});
     EXPECT_TRUE(logic.isAtom(pa));
     EXPECT_FALSE(logic.isAtom(logic.mkNot(pa)));
-}
-
-TEST_F(LogicMkTermsTest, testLiteral_UF) {
-    SRef sref = logic.declareSort("U", nullptr);
-    PTRef a = logic.mkVar(sref, "a");
-    PTRef b = logic.mkVar(sref, "b");
-    PTRef c = logic.mkVar(sref, "c");
-    PTRef eq = logic.mkEq(a,b);
-    PTRef dist = logic.mkDistinct({a,b,c});
-    EXPECT_TRUE(logic.isLit(eq));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(eq)));
-
-    EXPECT_TRUE(logic.isLit(dist));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(dist)));
-
-    SymRef predicate = logic.declareFun("p", logic.getSort_bool(), {sref}, nullptr);
-    PTRef pa = logic.mkUninterpFun(predicate, {a});
-    EXPECT_TRUE(logic.isLit(pa));
-    EXPECT_TRUE(logic.isLit(logic.mkNot(pa)));
 }

@@ -297,7 +297,7 @@ bool Cnfizer::checkCnf (PTRef formula)
 
 bool Cnfizer::checkConj (PTRef e)
 {
-    if (logic.isLit (e)) // A Boolean constant
+    if (isLiteral(e)) // A Boolean constant
         return true;
 
     Pterm &and_t = logic.getPterm (e);
@@ -409,7 +409,7 @@ bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> >
         if (logic.isAnd (e))
             for (int i = 0; i < and_t.size(); i++)
                 to_process.push (and_t[i]);
-        else if (!logic.isLit (e))
+        else if (!isLiteral(e))
             return false;
 
         check_cache.insert (e, true);
@@ -464,7 +464,7 @@ bool Cnfizer::giveToSolver ( PTRef f )
     //
     // A unit clause
     //
-    if (logic.isLit (f))
+    if (isLiteral(f))
     {
         clause.push (this->getOrCreateLiteralFor (f));
         return addClause(clause);
@@ -532,9 +532,9 @@ void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formul
 //
 void Cnfizer::retrieveClause ( PTRef f, vec<PTRef> &clause )
 {
-    assert (logic.isLit (f) || logic.isOr (f));
+    assert (isLiteral(f) || logic.isOr (f));
 
-    if ( logic.isLit (f) )
+    if (isLiteral(f))
         clause.push (f);
     else if ( logic.isOr (f) )
     {
@@ -550,9 +550,9 @@ void Cnfizer::retrieveClause ( PTRef f, vec<PTRef> &clause )
 //
 void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
 {
-    assert (logic.isLit (f) || logic.isAnd (f));
+    assert (isLiteral(f) || logic.isAnd (f));
 
-    if (logic.isLit (f))
+    if (isLiteral(f))
         conjuncts.push (f);
     else
     {
@@ -585,4 +585,8 @@ bool Cnfizer::Cache::contains(PTRef term, PTRef frame_term) {
 void Cnfizer::Cache::insert(PTRef term, PTRef frame_term) {
     assert(!contains(term, frame_term));
     cache.insert(std::make_pair<>(term, frame_term));
+}
+
+bool Cnfizer::isLiteral(PTRef ptr) const {
+    return (logic.isNot(ptr) and logic.isAtom(logic.getPterm(ptr)[0])) or logic.isAtom(ptr);
 }
