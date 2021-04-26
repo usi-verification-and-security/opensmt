@@ -75,7 +75,7 @@ public:
            );
 
 
-    virtual ~Cnfizer( ) { }
+    virtual ~Cnfizer() = default;
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
 

@@ -55,7 +55,7 @@ Cnfizer::Cnfizer ( SMTConfig       &config_
     , tmap     (tmap)
     , s_empty  (true)
     , alreadyAsserted(logic.getTerm_true())
-    , frame_terms({logic.getTerm_true()})
+    , frame_terms({logic.getTerm_true()}) // Frame 0 does not have an enabling var
     , current_frame_term(frame_terms[0])
 { }
 
