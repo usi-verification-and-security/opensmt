@@ -713,7 +713,7 @@ void Interpret::getModel() {
         }
         else {
             // function
-            TemplateFunction templ = model->getDefinition(symref);
+            const TemplateFunction & templ = model->getDefinition(symref);
             ss << printDefinitionSmtlib(templ);
         };
     }

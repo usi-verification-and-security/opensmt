@@ -105,11 +105,8 @@ protected:
                 std::make_pair(a, logic.getTerm_true()),
                 std::make_pair(b, logic.getTerm_false()),
         };
-        Model::SymbolDefinition symDef {
-                std::make_pair(f_sym, TemplateFunction("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
-        };
+        mb.addToTheoryFunction(f_sym, {v0, v0}, v0);
         mb.addVarValues(eval.begin(), eval.end());
-        mb.addFunctionDefinitions(symDef.begin(), symDef.end());
         return mb.build();
     }
 };
@@ -130,7 +127,7 @@ TEST_F(UFModelBuilderTest, test_modelBuilderVarAndFunction) {
     EXPECT_EQ(model->evaluate(x), v0);
     EXPECT_EQ(model->evaluate(y), v0);
     EXPECT_EQ(model->evaluate(z), v1);
-    EXPECT_EQ(model->evaluate(f), v1);
+    EXPECT_EQ(model->evaluate(f), v0);
     EXPECT_EQ(model->evaluate(logic.mkUninterpFun(f_sym, {logic.mkUninterpFun(f_sym, {x, y}), x})), v0);
     EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
     EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
@@ -150,6 +147,13 @@ TEST_F(UFModelBuilderTest, test_NameCollision) {
         std::cout << argName << std::endl;
         ASSERT_NE(argName, symName);
     }
+}
+
+TEST_F(UFModelBuilderTest, test_functionModel) {
+    auto model = getModel();
+    auto templateFun = model->getDefinition(f_sym);
+    std::cout << logic.pp(templateFun.getBody()) << std::endl;
+    ASSERT_TRUE(logic.isIte(templateFun.getBody()));
 }
 
 class LAModelTest : public ::testing::Test {
