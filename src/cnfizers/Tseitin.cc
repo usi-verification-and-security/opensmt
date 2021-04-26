@@ -47,7 +47,7 @@ bool Tseitin::cnfize(PTRef term) {
         //
         // Skip if the node has already been processed before
         //
-        if (alreadyCnfized.contains(ptr, frame_term)){
+        if (alreadyCnfized.contains(ptr, current_frame_term)){
             continue;
         }
 
@@ -77,7 +77,7 @@ bool Tseitin::cnfize(PTRef term) {
             }
         }
 tseitin_end:
-        alreadyCnfized.insert(ptr, frame_term);
+        alreadyCnfized.insert(ptr, current_frame_term);
     }
 
     return res;
