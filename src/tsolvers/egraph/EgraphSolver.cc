@@ -1331,6 +1331,9 @@ bool Egraph::assertLit(PtAsgn pta)
     } else if (isEffectivelyDisequality(pt_r) && sgn == l_True) {
         res = addDisequality(PtAsgn(pt_r, l_True));
     } else if (isEffectivelyDisequality(pt_r) && sgn == l_False) {
+        if (logic.getPterm(pt_r).size() != 2) {
+            throw OsmtInternalException("Internal error: Negated distinct asserted to Egraph");
+        }
         res = addEquality(PtAsgn(pt_r, l_False));
     } else if (isEffectivelyUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
