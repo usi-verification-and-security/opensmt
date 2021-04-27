@@ -36,7 +36,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_set>
 
 class SimpSMTSolver;
-class CnfState;
 class THandler;
 struct SMTConfig;
 
@@ -76,7 +75,7 @@ public:
            );
 
 
-    virtual ~Cnfizer( ) { }
+    virtual ~Cnfizer() = default;
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
 
@@ -123,8 +122,8 @@ protected:
 
     int currentPartition = -1;
 
-    PTRef frame_term;
     vec<PTRef> frame_terms;
+    PTRef current_frame_term;
     void setFrameTerm(FrameId frame_id);
 };
 
