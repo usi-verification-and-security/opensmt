@@ -3,6 +3,7 @@
 //
 
 #include "SplitData.h"
+#include "OsmtInternalException.h"
 
 int SplitData::getLitSize(Lit l)
 {
@@ -17,7 +18,9 @@ int SplitData::getLitSize(Lit l)
 char* SplitData::litToString(const Lit l)
 {
     char* l_str;
-    asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1);
+    if (asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1) == -1) {
+        throw OsmtInternalException("Insufficient space for allocating string");
+    }
     return l_str;
 }
 
@@ -31,12 +34,19 @@ char* SplitData::clauseToString(const C& c)
     {
         char* l_str = litToString(c[i]);
         c_old = c_str;
-        asprintf(&c_str, "%s%s ", c_old, l_str);
+        if (asprintf(&c_str, "%s%s ", c_old, l_str) == -1) {
+            free(l_str);
+            free(c_old);
+            throw OsmtInternalException("Insufficient space for allocating string");
+        }
         free(l_str);
         free(c_old);
     }
     c_old = c_str;
-    asprintf(&c_str, "%s0", c_str);
+    if (asprintf(&c_str, "%s0", c_str) == -1) {
+        free(c_old);
+        throw OsmtInternalException("Insufficient space for allocating string");
+    }
     free(c_old);
     return c_str;
 }
