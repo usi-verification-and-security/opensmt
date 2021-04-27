@@ -4,6 +4,9 @@
 #include <gtest/gtest.h>
 #include <Logic.h>
 
+#include <TreeOps.h>
+
+
 class LogicMkTermsTest: public ::testing::Test {
 public:
     Logic logic;
@@ -191,4 +194,62 @@ TEST_F(LogicMkTermsTest, testAtom_UF) {
     PTRef pa = logic.mkUninterpFun(predicate, {a});
     EXPECT_TRUE(logic.isAtom(pa));
     EXPECT_FALSE(logic.isAtom(logic.mkNot(pa)));
+}
+
+bool contains(vec<PTRef> const& v, PTRef t) {
+    for (PTRef e : v) {
+        if (t == e) {
+            return true;
+        }
+    }
+    return false;
+}
+
+TEST_F(LogicMkTermsTest, testTopLevelConjuncts_flat) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef fla = logic.mkAnd({a,b,c});
+    auto conjuncts = topLevelConjuncts(logic, fla);
+    ASSERT_EQ(conjuncts.size(), 3);
+    for (PTRef p : {a,b,c}) {
+        EXPECT_TRUE(contains(conjuncts, p));
+    }
+}
+
+TEST_F(LogicMkTermsTest, testTopLevelConjuncts_nested) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    PTRef fla = logic.mkAnd(logic.mkAnd(a,b), logic.mkAnd(c,d));
+    auto conjuncts = topLevelConjuncts(logic, fla);
+    ASSERT_EQ(conjuncts.size(), 4);
+    for (PTRef p : {a,b,c,d}) {
+        EXPECT_TRUE(contains(conjuncts, p));
+    }
+}
+
+TEST_F(LogicMkTermsTest, testTopLevelConjuncts_noDuplicates) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef fla = logic.mkAnd(logic.mkAnd(a,b), logic.mkAnd(c,a));
+    auto conjuncts = topLevelConjuncts(logic, fla);
+    ASSERT_EQ(conjuncts.size(), 3);
+    for (PTRef p : {a,b,c}) {
+        EXPECT_TRUE(contains(conjuncts, p));
+    }
+}
+
+TEST_F(LogicMkTermsTest, testTopLevelConjuncts_notConjunction) {
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    auto conjuncts1 = topLevelConjuncts(logic, a);
+    ASSERT_EQ(conjuncts1.size(), 1);
+    EXPECT_EQ(conjuncts1[0], a);
+    PTRef fla = logic.mkOr(a,b);
+    auto conjuncts2 = topLevelConjuncts(logic, fla);
+    ASSERT_EQ(conjuncts2.size(), 1);
+    EXPECT_EQ(conjuncts2[0], fla);
 }

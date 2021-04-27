@@ -97,7 +97,6 @@ public:
     bool     isClause                   (PTRef);
     bool     isCnf                      (PTRef);
     bool     checkDeMorgan              ( PTRef );                      // Check if formula can be deMorganized
-    void     retrieveTopLevelFormulae   ( PTRef, vec<PTRef> & );        // Retrieves the list of top-level formulae
 protected:
 
     bool     assertClause               (PTRef f);                              // Gives formula to the SAT solver

@@ -57,6 +57,7 @@ public:
             PTRef currentRef = currentEntry.term;
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
+                done[Idx(logic.getPterm(currentRef).getId())] = 1;
                 continue;
             }
             assert(not done[Idx(logic.getPterm(currentRef).getId())]);
@@ -106,6 +107,32 @@ class AppearsInUfVisitor : public TermVisitor<AppearsInUFVisitorConfig> {
 public:
     AppearsInUfVisitor(Logic & logic): TermVisitor<AppearsInUFVisitorConfig>(logic, cfg), cfg(logic) {}
 };
+
+class TopLevelConjunctsConfig : public DefaultVisitorConfig {
+    Logic & logic;
+    vec<PTRef> & conjuncts;
+public:
+    TopLevelConjunctsConfig(Logic & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
+
+    bool previsit(PTRef term) override {
+        if (not logic.isAnd(term)) {
+            conjuncts.push(term);
+            return false;
+        }
+        return true;
+    }
+};
+
+inline void topLevelConjuncts(Logic & logic, PTRef fla, vec<PTRef> & res) {
+    TopLevelConjunctsConfig config(logic, res);
+    TermVisitor<TopLevelConjunctsConfig>(logic, config).visit(fla);
+}
+
+inline vec<PTRef> topLevelConjuncts(Logic & logic, PTRef fla) {
+    vec<PTRef> res;
+    topLevelConjuncts(logic, fla, res);
+    return res;
+}
 
 template<class T>
 class Qel {

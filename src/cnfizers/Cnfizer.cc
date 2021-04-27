@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Cnfizer.h"
 #include "SimpSMTSolver.h"
+#include "TreeOps.h"
 #include "OsmtInternalException.h"
 
 #include <queue>
@@ -137,9 +138,8 @@ lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
         assert(pmanager.getPartitionIndex(formula) != -1);
         currentPartition = pmanager.getPartitionIndex(formula);
     }
-    vec<PTRef> top_level_formulae;
     // Retrieve top-level formulae - this is a list constructed from a conjunction
-    retrieveTopLevelFormulae (formula, top_level_formulae);
+    vec<PTRef> top_level_formulae = topLevelConjuncts(logic, formula);
     assert (top_level_formulae.size() != 0);
     TRACE("Top level formulae:")
     TRACE_FLA_VEC(top_level_formulae)
@@ -425,33 +425,6 @@ bool Cnfizer::assertClause (PTRef f)
         return addClause(clause);
     }
     throw OsmtInternalException("UNREACHABLE: Unexpected situation in Cnfizer");
-}
-
-//
-// Retrieve the formulae at the top-level.  Ignore duplicates
-//
-void Cnfizer::retrieveTopLevelFormulae (PTRef root, vec<PTRef> &top_level_formulae)
-{
-    vec<PTRef> to_process;
-
-    Map<PTRef, bool, PTRefHash> seen;
-
-    to_process.push (root);
-
-    while (to_process.size() != 0) {
-        PTRef f = to_process.last();
-        to_process.pop();
-        Pterm &cand_t = logic.getPterm (f);
-
-        if (logic.isAnd (f)) {
-            for (int i = cand_t.size() - 1; i >= 0; i--) {
-                to_process.push(cand_t[i]);
-            }
-        } else if (!seen.has (f)) {
-            top_level_formulae.push (f);
-            seen.insert (f, true);
-        }
-    }
 }
 
 //
