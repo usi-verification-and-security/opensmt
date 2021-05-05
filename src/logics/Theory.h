@@ -160,6 +160,7 @@ class Theory
     PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
     Theory(SMTConfig &c) : config(c) { }
     void setSubstitutions(Map<PTRef,PTRef,PTRefHash>&& substs) { getTSolverHandler().setSubstitutions(std::move(substs)); }
+    void printSubstitutions() { getTSolverHandler().printSubstitutions(); }
     inline bool keepPartitions() const { return config.produce_inter(); }
 
     /* Computes the final formula from substitution result.

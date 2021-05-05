@@ -521,13 +521,6 @@ PTRef THandler::getSubstitution(PTRef tr) const {
     return PTRef_Undef;
 }
 
-void THandler::printSubstitutions() const {
-    auto const & substs = getSolverHandler().substs;
-    for (auto pair : substs.getKeysAndVals()) {
-        std::cout << getLogic().pp(pair.key) << " => " << getLogic().pp(pair.data) << std::endl;
-    }
-}
-
 inline double THandler::drand(double& seed)
 {
     seed *= 1389796;

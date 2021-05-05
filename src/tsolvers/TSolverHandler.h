@@ -70,7 +70,11 @@ public:
 
     void    setSubstitutions(Map<PTRef,PTRef,PTRefHash>&& substs_) { getLogic().substitutionsTransitiveClosure<PTRef>(substs_); std::swap(substs, substs_); }
     Map<PTRef,PTRef,PTRefHash> const & getSubstitutions() const { return substs; }
-
+    void printSubstitutions() const {
+        for (auto pair : substs.getKeysAndVals()) {
+            std::cout << getLogic().pp(pair.key) << " => " << getLogic().pp(pair.data) << std::endl;
+        }
+    }
     // DEPRECATED
     ValPair getValue          (PTRef tr) const;
 
