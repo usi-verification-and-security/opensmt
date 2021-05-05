@@ -17,13 +17,13 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
        {
            SymRef sr = entry.first;
            const Logic::TFun & templFun = entry.second;
-           if (not logic.isUF(sr)) { return false; }
+           if (not logic.isUF(sr)) { std::cout << "Not UF: " << logic.getSymName(sr) << std::endl; return false; }
            const Symbol & s = logic.getSym(sr);
-           if (templFun.getName() != logic.getSymName(sr)) { return false; }
-           if (s.nargs() != templFun.getArgs().size_()) { return false; }
-           if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
+           if (templFun.getName() != logic.getSymName(sr)) { std::cout << "Name doesn't match" << std::endl; return false; }
+           if (s.nargs() != templFun.getArgs().size_()) { std::cout << "Argument number doesn't match" << std::endl; return false; }
+           if (logic.getSortRef(sr) != templFun.getRetSort()) { std::cout << "Return sorts don't match" << std::endl; return false; }
            for (auto i = 0; i < (int)s.nargs(); i++)
-               if (s[i] != logic.getSortRef(templFun.getArgs()[i])) return false;
+               if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { std::cout << "argument sort doesn't match" << std::endl; return false; }
            return true;
        }));
 }
@@ -59,12 +59,12 @@ PTRef Model::evaluate(PTRef term) {
         if (symDef.find(symbol) != symDef.end()) {
             const Logic::TFun & tfun = symDef.at(symbol);
             const vec<PTRef> & tfunArgs = tfun.getArgs();
-            Map<PTRef,PtAsgn,PTRefHash> substMap;
+            Map<PTRef,PTRef,PTRefHash> substMap;
             for (int i = 0; i < nargs.size(); i++) {
-                substMap.insert(tfunArgs[i], {nargs[i], l_True});
+                substMap.insert(tfunArgs[i], nargs[i]);
             }
             PTRef root = tfun.getBody();
-            val = Substitutor(logic, substMap).rewrite(root);
+            val = Substitutor<PTRef>(logic, substMap).rewrite(root).first;
         } else {
             val = logic.insertTerm(symbol, nargs);
         }
