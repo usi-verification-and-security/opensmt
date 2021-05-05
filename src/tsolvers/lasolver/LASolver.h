@@ -177,7 +177,7 @@ protected:
         return out;
     }
     ValPair getValue(PTRef tr) override;  // Computes the model and changes state.
-    void fillTheoryFunctions(ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash>&) const override;
+    void fillTheoryFunctions(ModelBuilder & modelBuilder, const Map<PTRef,PTRef,PTRefHash>&) const override;
 
     inline int     verbose                       ( ) const { return config.verbosity(); }
 
