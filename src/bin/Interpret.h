@@ -32,8 +32,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymRef.h"
 #include "Logic.h"
 #include "LogicFactory.h"
-#include "MainSolver.h"
-
+//#include "MainSolver.h"
+#include "MainSplitter.h"
 #include <unordered_map>
 
 
@@ -105,7 +105,7 @@ class Interpret {
     SMTConfig &     config;
     std::unique_ptr<Logic> logic;
     std::unique_ptr<MainSolver> main_solver;
-
+    std::unique_ptr<MainSplitter> main_splitter;
     bool            f_exit;
 
     // Named terms for getting variable values
@@ -161,7 +161,7 @@ class Interpret {
         : config     (c)
         , f_exit     (false)
         { }
-
+//Interpret(SMTConfig& c, std::unique_ptr<MainSplitter> mainSplitter) : Interpret(c), main_solver(mainSplitter) {}
     ~Interpret();
 
     int interpFile(FILE* in);

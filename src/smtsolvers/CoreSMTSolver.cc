@@ -1226,6 +1226,7 @@ void CoreSMTSolver::reduceDB()
             learnts[j++] = learnts[i];
     }
     learnts.shrink(i - j);
+    n_reducedLearntClauses = i - j;
     checkGarbage();
     if (logsProofForInterpolation()) {
         // Remove unused leaves
