@@ -16,7 +16,7 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
                        [&logic](const SymbolDefinition::value_type & entry)
        {
            SymRef sr = entry.first;
-           const Logic::TFun & templFun = entry.second;
+           const TemplateFunction & templFun = entry.second;
            if (not logic.isUF(sr)) { std::cout << "Not UF: " << logic.getSymName(sr) << std::endl; return false; }
            const Symbol & s = logic.getSym(sr);
            if (templFun.getName() != logic.getSymName(sr)) { std::cout << "Name doesn't match" << std::endl; return false; }
@@ -57,7 +57,7 @@ PTRef Model::evaluate(PTRef term) {
         SymRef symbol = logic.getPterm(term).symb();
         PTRef val;
         if (symDef.find(symbol) != symDef.end()) {
-            const Logic::TFun & tfun = symDef.at(symbol);
+            const TemplateFunction & tfun = symDef.at(symbol);
             const vec<PTRef> & tfunArgs = tfun.getArgs();
             Map<PTRef,PTRef,PTRefHash> substMap;
             for (int i = 0; i < nargs.size(); i++) {
@@ -102,7 +102,7 @@ std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr,
     return formalArgDefaultPrefix;
 }
 
-Logic::TFun Model::getDefinition(SymRef sr) const {
+TemplateFunction Model::getDefinition(SymRef sr) const {
     if (symDef.find(sr) != symDef.end()) {
         return symDef.at(sr);
     } else {
@@ -116,6 +116,6 @@ Logic::TFun Model::getDefinition(SymRef sr) const {
             ss << varNameBase << i;
             formalArgs[i] = logic.mkVar(argSort, ss.str().c_str());
         }
-        return Logic::TFun(symName, formalArgs, logic.getSym(sr).rsort(), logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
+        return TemplateFunction(symName, formalArgs, logic.getSym(sr).rsort(), logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
     }
 }

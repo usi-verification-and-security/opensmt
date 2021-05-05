@@ -1004,8 +1004,7 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
 {
     if (defined_functions.has(fname))
         return false; // already there
-    TFun tpl_fun(fname, args, rsort, tr);
-    defined_functions.insert(tpl_fun.getName(), tpl_fun);
+    defined_functions.insert(fname, TemplateFunction(fname, args, rsort, tr));
     return true;
 }
 
@@ -1637,7 +1636,7 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
 }
 
 void
-Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
+Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
     char *quoted_name = protectName(name);
@@ -1660,7 +1659,7 @@ Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 PTRef
 Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash>& subst)
 {
-    const TFun& tpl_fun = defined_functions[fname];
+    const TemplateFunction& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
     const vec<PTRef>& args = tpl_fun.getArgs();
     Map<PTRef,PtAsgn,PTRefHash> substs_asgn;

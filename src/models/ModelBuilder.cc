@@ -5,12 +5,36 @@
 #include "ModelBuilder.h"
 #include <unordered_set>
 
-std::unique_ptr<Model> ModelBuilder::build() const {
-    return std::unique_ptr<Model>(new Model(logic, assignment, definitions));
+int ModelBuilder::ValuationNode::counter = 0;
+
+std::unique_ptr<Model> ModelBuilder::build() {
+    std::unordered_map<SymRef,TemplateFunction,SymRefHash> builtDefinitions;
+    for (auto & symbolSigVal : definitions) {
+        const ValuationNode * valuationNode = symbolSigVal.second.second;
+        SRef sr = logic.getSortRef(symbolSigVal.first);
+        PTRef body = valuationTreeToFunctionBody(valuationNode, sr);
+        // todo: how to free the valuationNode?
+        TemplateFunction templateFun(std::move(symbolSigVal.second.first), body);
+        builtDefinitions[symbolSigVal.first] = std::move(templateFun);
+    }
+    return std::unique_ptr<Model>(new Model(logic, assignment, builtDefinitions));
 }
 
 void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
 {
+    if (logic.getSortRef(sr) != logic.getSortRef(val)) {
+        throw OsmtApiException("Incompatible sort for symbol valuation");
+    }
+    Symbol & sym = logic.getSym(sr);
+    if (sym.nargs() != vals.size_()) {
+        throw OsmtApiException("Incorrect valuation for symbol: argument and valuation size do not match");
+    }
+    for (int i = 0; i < vals.size(); i++) {
+        if (sym[i] != logic.getSortRef(vals[i])) {
+            throw OsmtApiException("Incorrect valuation for symbol: sort mismatch");
+        }
+    }
+
     if (not hasTheoryFunction(sr)) {
         vec<PTRef> formalArgs; formalArgs.capacity(vals.size());
         std::string symName(logic.getSymName(sr));
@@ -22,18 +46,21 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
             ss << formalArgPrefix << uniqueNum++;
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
-        Logic::TFun templateFun(logic.getSymName(sr), formalArgs, logic.getSortRef(val), logic.getDefaultValuePTRef(val));
-        definitions.insert(std::move(std::make_pair(sr, std::move(std::make_pair(ValuationNode(), templateFun)))));
+        FunctionSignature templateSig(logic.getSymName(sr), std::move(formalArgs), logic.getSortRef(sr));
+        definitions.insert({sr,opensmt::pair<FunctionSignature,ValuationNode*>{std::move(templateSig), nullptr}});
     }
-    Logic::TFun & templateFun = definitions.at(sr);
-    const vec<PTRef> & formalArgs = templateFun.getArgs();
-    vec<PTRef> and_args; and_args.capacity(vals.size());
+    auto & signatureAndValuation = definitions.at(sr);
+    FunctionSignature & templateSignature = signatureAndValuation.first;
+    const vec<PTRef> & formalArgs = templateSignature.getArgs();
+    vec<opensmt::pair<PTRef,PTRef>> valuation; valuation.capacity(vals.size());
     for (int i = 0; i < vals.size(); i++) {
-        and_args.push(logic.mkEq(formalArgs[i], vals[i]));
+        valuation.push({formalArgs[i], vals[i]});
     }
-    PTRef cond = logic.mkAnd(and_args);
-    PTRef old_body = templateFun.getBody();
-    templateFun.updateBody(logic.mkIte(cond, val, old_body));
+    assert(logic.getSortRef(val) == logic.getSortRef(sr));
+    signatureAndValuation.second = addToValuationTree(valuation, val, signatureAndValuation.second);
+}
+    }
+    return root;
 }
 
 PTRef ModelBuilder::valuationTreeToFunctionBody(const ValuationNode *root) {

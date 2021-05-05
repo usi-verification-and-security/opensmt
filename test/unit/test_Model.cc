@@ -12,6 +12,68 @@
 #include <ModelBuilder.h>
 
 
+class FunctionSignatureTest : public ::testing::Test {
+protected:
+    Logic logic;
+    SRef s;
+    PTRef a1;
+    PTRef a2;
+    char *msg;
+public:
+    FunctionSignatureTest()
+            : s(logic.declareSort("S", &msg))
+            , a1(logic.mkVar(s, "a1"))
+            , a2(logic.mkVar(s, "a2"))
+    {}
+};
+
+TEST_F(FunctionSignatureTest, test_functionSignature) {
+    FunctionSignature fs("f", {a1, a2}, s);
+    EXPECT_EQ(fs.getName(), "f");
+    EXPECT_EQ(fs.getRetSort(), s);
+    const auto & args = fs.getArgs();
+    EXPECT_EQ(args[0], a1);
+    EXPECT_EQ(args[1], a2);
+}
+
+TEST_F(FunctionSignatureTest, test_functionTemplate) {
+    TemplateFunction templateFunction("f", {a1, a2}, s, a1);
+    EXPECT_EQ(templateFunction.getName(), "f");
+    EXPECT_EQ(templateFunction.getRetSort(), s);
+    EXPECT_EQ(templateFunction.getBody(), a1);
+    const auto & args = templateFunction.getArgs();
+    EXPECT_EQ(args[0], a1);
+    EXPECT_EQ(args[1], a2);
+    templateFunction.updateBody(a2);
+    EXPECT_EQ(templateFunction.getBody(), a2);
+
+    TemplateFunction tf2(FunctionSignature("g", {a1, a2}, s), a2);
+    EXPECT_EQ(tf2.getName(), "g");
+    EXPECT_EQ(tf2.getRetSort(), s);
+    EXPECT_EQ(tf2.getBody(), a2);
+    const auto & args2 = tf2.getArgs();
+    EXPECT_EQ(args2[0], a1);
+    EXPECT_EQ(args2[1], a2);
+    tf2.updateBody(a1);
+    EXPECT_EQ(tf2.getBody(), a1);
+
+    tf2 = std::move(templateFunction);
+    EXPECT_EQ(tf2.getName(), "f");
+    EXPECT_EQ(tf2.getRetSort(), s);
+    EXPECT_EQ(tf2.getBody(), a2);
+    const auto & args3 = tf2.getArgs();
+    EXPECT_EQ(args3[0], a1);
+    EXPECT_EQ(args3[1], a2);
+
+    TemplateFunction tf3(tf2);
+    EXPECT_EQ(tf3.getName(), tf2.getName());
+    EXPECT_EQ(tf3.getRetSort(), tf2.getRetSort());
+    EXPECT_EQ(tf3.getBody(), tf2.getBody());
+    EXPECT_EQ(tf3.getArgs()[0], tf2.getArgs()[0]);
+    EXPECT_EQ(tf3.getArgs()[1], tf2.getArgs()[1]);
+}
+
+
 class UFModelTest : public ::testing::Test {
 protected:
     UFModelTest(): logic{} {}
@@ -56,7 +118,7 @@ protected:
                 std::make_pair(b, logic.getTerm_false()),
         };
         Model::SymbolDefinition symDef {
-            std::make_pair(f_sym, Logic::TFun("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
+            std::make_pair(f_sym, TemplateFunction("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
         };
         return std::unique_ptr<Model>(new Model(logic, eval, symDef));
     }
@@ -106,11 +168,8 @@ protected:
                 std::make_pair(a, logic.getTerm_true()),
                 std::make_pair(b, logic.getTerm_false()),
         };
-        Model::SymbolDefinition symDef {
-                std::make_pair(f_sym, Logic::TFun("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
-        };
+        mb.addToTheoryFunction(f_sym, {v0, v0}, v0);
         mb.addVarValues(eval.begin(), eval.end());
-        mb.addFunctionDefinitions(symDef.begin(), symDef.end());
         return mb.build();
     }
 };
@@ -131,7 +190,7 @@ TEST_F(UFModelBuilderTest, test_modelBuilderVarAndFunction) {
     EXPECT_EQ(model->evaluate(x), v0);
     EXPECT_EQ(model->evaluate(y), v0);
     EXPECT_EQ(model->evaluate(z), v1);
-    EXPECT_EQ(model->evaluate(f), v1);
+    EXPECT_EQ(model->evaluate(f), v0);
     EXPECT_EQ(model->evaluate(logic.mkUninterpFun(f_sym, {logic.mkUninterpFun(f_sym, {x, y}), x})), v0);
     EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
     EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
@@ -151,6 +210,13 @@ TEST_F(UFModelBuilderTest, test_NameCollision) {
         std::cout << argName << std::endl;
         ASSERT_NE(argName, symName);
     }
+}
+
+TEST_F(UFModelBuilderTest, test_functionModel) {
+    auto model = getModel();
+    auto templateFun = model->getDefinition(f_sym);
+    std::cout << logic.pp(templateFun.getBody()) << std::endl;
+    ASSERT_TRUE(logic.isIte(templateFun.getBody()));
 }
 
 class LAModelTest : public ::testing::Test {

@@ -713,7 +713,7 @@ void Interpret::getModel() {
         }
         else {
             // function
-            Logic::TFun templ = model->getDefinition(symref);
+            const TemplateFunction & templ = model->getDefinition(symref);
             ss << printDefinitionSmtlib(templ);
         };
     }
@@ -750,7 +750,7 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     return ss.str();
 }
 
-std::string Interpret::printDefinitionSmtlib(const Logic::TFun & templateFun) const {
+std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFun) const {
     std::stringstream ss;
     ss << "  (define-fun " << templateFun.getName() << " (";
     const vec<PTRef>& args(templateFun.getArgs());

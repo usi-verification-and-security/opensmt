@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CgTypes.h"
 #include "LogicFactory.h"
 #include "OsmtApiException.h"
+#include "FunctionTools.h"
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -41,46 +42,7 @@ class SStore;
 
 class Logic {
 public:
-    class TFun {
-        SRef ret_sort;
-        PTRef tr_body;
-        std::string name;
-        vec<PTRef> args;
-    public:
-        TFun(std::string name, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
-                : ret_sort(ret_sort)
-                , tr_body(tr_body)
-                , name(std::move(name))
-        {
-            args_.copyTo(args);
-        }
-        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef) {}
-        TFun(const TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
-        TFun& operator= (TFun&& other) noexcept {
-            if (&other != this) {
-                ret_sort = other.ret_sort;
-                tr_body = other.tr_body;
-                std::swap(args, other.args);
-                std::swap(name, other.name);
-            }
-            return *this;
-        }
-        TFun& operator=(const TFun& other) {
-            if (&other != this) {
-                ret_sort = other.ret_sort;
-                tr_body = other.tr_body;
-                name = other.name;
-                other.args.copyTo(args);
-            }
-            return *this;
-        }
 
-        std::string getName() const { return name; }
-        SRef getRetSort() const { return ret_sort; }
-        PTRef getBody() const { return tr_body; }
-        const vec<PTRef>& getArgs() const { return args; }
-        void updateBody(PTRef new_body) { tr_body = new_body; }
-    };
 protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
@@ -97,20 +59,20 @@ protected:
     int distinctClassCount;
 
     class DefinedFunctions {
-        std::map<std::string,TFun> defined_functions;
+        std::map<std::string,TemplateFunction> defined_functions;
         std::vector<std::string> defined_functions_names;
 
     public:
         bool has(const char* name) const { return defined_functions.find(name) != defined_functions.end(); }
         bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
 
-        void insert(const std::string& name, TFun const & templ) {
+        void insert(const std::string& name, TemplateFunction && templ) {
             assert(not has(name));
             defined_functions_names.emplace_back(name);
-            defined_functions[defined_functions_names.back()] = templ;
+            defined_functions[defined_functions_names.back()] = std::move(templ);
         }
 
-        TFun & operator[](const char* name) {
+        TemplateFunction & operator[](const char* name) {
             assert(has(name));
             return defined_functions[name];
         }
@@ -153,7 +115,7 @@ protected:
 
     virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
-    void dumpFunction(ostream &, const TFun&);
+    void dumpFunction(ostream &, const TemplateFunction&);
 
   private:
     enum class UFAppearanceStatus {

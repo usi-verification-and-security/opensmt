@@ -17,12 +17,12 @@ class Model {
 
 public:
     using Evaluation = std::unordered_map<PTRef, PTRef, PTRefHash>;
-    using SymbolDefinition = std::unordered_map<SymRef, Logic::TFun, SymRefHash>;
+    using SymbolDefinition = std::unordered_map<SymRef, TemplateFunction, SymRefHash>;
 
     Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef);
     Model(Logic& logic, Evaluation basicEval) : Model(logic, std::move(basicEval), {}) { }
     PTRef evaluate(PTRef term);
-    Logic::TFun getDefinition(SymRef) const;
+    TemplateFunction getDefinition(SymRef) const;
     static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
 
 private:
