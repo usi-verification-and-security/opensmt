@@ -272,7 +272,7 @@ public:
 
     Logic& getLogic() override { return logic; }
 
-    void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er, const Map<PTRef,PtAsgn,PTRefHash>& subst) const;
+    void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er, const Map<PTRef,PTRef,PTRefHash>& subst) const;
 public:
 
   //===========================================================================
@@ -287,9 +287,9 @@ public:
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     ValPair    getValue                (PTRef tr) override;
     void       computeModel            () override;
-    void       fillTheoryFunctions     (ModelBuilder & modelBuilder, const Map<PTRef,PtAsgn,PTRefHash> & substs) const override;
+    void       fillTheoryFunctions     (ModelBuilder & modelBuilder, const Map<PTRef,PTRef,PTRefHash> & substs) const override;
     void       clearModel              ();
-    PTRef      getAbstractValueForERef(ERef er) const;
+    PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 
