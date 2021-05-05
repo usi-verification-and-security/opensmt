@@ -171,7 +171,11 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
     PTRef fla = logic.mkAnd(a, logic.mkNot(b));
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(b, PtAsgn{logic.getTerm_true(), l_True});
-    PTRef res = Substitutor(logic, subst).rewrite(fla);
+    PTRef res = Substitutor<PtAsgn>(logic, subst).rewrite(fla).first;
+    EXPECT_EQ(res, logic.getTerm_false());
+    Map<PTRef,PTRef,PTRefHash> subst2;
+    subst2.insert(b, logic.getTerm_true());
+    res = Substitutor<PTRef>(logic, subst2).rewrite(fla).first;
     EXPECT_EQ(res, logic.getTerm_false());
 }
 
@@ -179,7 +183,11 @@ TEST_F(ApplySubstitutionTest, test_VarVarSub) {
     PTRef fla = logic.mkEq(x, z);
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(x, PtAsgn{y, l_True});
-    PTRef res = Substitutor(logic, subst).rewrite(fla);
+    PTRef res = Substitutor<PtAsgn>(logic, subst).rewrite(fla).first;
+    EXPECT_EQ(res, logic.mkEq(y,z));
+    Map<PTRef,PTRef,PTRefHash> subst2;
+    subst2.insert(x, y);
+    res = Substitutor<PTRef>(logic, subst2).rewrite(fla).first;
     EXPECT_EQ(res, logic.mkEq(y,z));
 }
 
@@ -190,8 +198,13 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(x, PtAsgn{fy, l_True});
     subst.insert(y, PtAsgn{fz, l_True});
-    PTRef res = Substitutor(logic, subst).rewrite(fla);
+    PTRef res = Substitutor<PtAsgn>(logic, subst).rewrite(fla).first;
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
+    EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
+    Map<PTRef,PTRef,PTRefHash> subst2;
+    subst2.insert(x, fy);
+    subst2.insert(y, fz);
+    res = Substitutor<PTRef>(logic, subst2).rewrite(fla).first;
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
 }
 
@@ -210,5 +223,13 @@ TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     ASSERT_EQ(substitutions.getSize(), 3);
     ASSERT_EQ(substitutions[a].sgn, l_True);
     ASSERT_EQ(substitutions[a].tr, d);
+
+    Map<PTRef, PTRef, PTRefHash> substitutions2;
+    substitutions2.insert(a, logic.mkAnd(b,c));
+    substitutions2.insert(b, c);
+    substitutions2.insert(c, d);
+    logic.substitutionsTransitiveClosure(substitutions2);
+    ASSERT_EQ(substitutions2.getSize(), 3);
+    ASSERT_EQ(substitutions2[a], d);
 }
 

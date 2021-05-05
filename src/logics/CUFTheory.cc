@@ -21,7 +21,7 @@ bool CUFTheory::simplify(const vec<PFRef>& formulas, PartitionManager& pmanager,
         coll_f = getLogic().mkAnd(coll_f, trans);
         auto subs_res = computeSubstitutions(coll_f);
         currentFrame.root = flaFromSubstitutionResult(subs_res);
-        getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
+        getTSolverHandler().setSubstitutions(std::move(subs_res.usedSubstitution));
     }
     return true;
 }

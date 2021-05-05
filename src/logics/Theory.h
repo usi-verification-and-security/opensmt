@@ -151,7 +151,7 @@ class Theory
 {
   protected:
     struct SubstitutionResult {
-        Map<PTRef,PtAsgn,PTRefHash> usedSubstitution;
+        Map<PTRef,PTRef,PTRefHash> usedSubstitution;
         PTRef result;
     };
 
@@ -159,7 +159,7 @@ class Theory
     SMTConfig &         config;
     PTRef getCollateFunction(const vec<PFRef> & formulas, int curr);
     Theory(SMTConfig &c) : config(c) { }
-    void setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs);// { getTSolverHandler().setSubstitutions(substs); }
+    void setSubstitutions(Map<PTRef,PTRef,PTRefHash>&& substs) { getTSolverHandler().setSubstitutions(std::move(substs)); }
     inline bool keepPartitions() const { return config.produce_inter(); }
 
     /* Computes the final formula from substitution result.

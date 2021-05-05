@@ -512,12 +512,20 @@ bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().ass
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
 PTRef THandler::getSubstitution(PTRef tr) const {
-    auto const & subst = getSolverHandler().substs;
-    if (subst.has(tr)){
-        PtAsgn subs = subst[tr];
-        return subs.sgn == l_True ? subs.tr : PTRef_Undef;
+    auto const & substs = getSolverHandler().substs;
+    PTRef target;
+    if (substs.peek(tr, target)) {
+        assert(not substs.has(target)); // Must be closed
+        return target;
     }
     return PTRef_Undef;
+}
+
+void THandler::printSubstitutions() const {
+    auto const & substs = getSolverHandler().substs;
+    for (auto pair : substs.getKeysAndVals()) {
+        std::cout << getLogic().pp(pair.key) << " => " << getLogic().pp(pair.data) << std::endl;
+    }
 }
 
 inline double THandler::drand(double& seed)

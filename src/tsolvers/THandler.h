@@ -52,6 +52,7 @@ public:
 
     Theory& getTheory();// { return theory; }
     Logic&  getLogic() ;// { return theory.getLogic(); }
+    const Logic& getLogic() const { return theory.getLogic(); }
 
     TSolverHandler&       getSolverHandler() ;//      { return theory.getTSolverHandler(); }
     const TSolverHandler& getSolverHandler() const;// { return theory.getTSolverHandler(); }
@@ -70,7 +71,7 @@ public:
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
     void fillTheoryFunctions  (ModelBuilder & modelBuilder) const;
-
+    void printSubstitutions() const;
     bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable

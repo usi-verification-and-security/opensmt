@@ -53,9 +53,9 @@ TEST(Rewriting_test, test_RewriteEquality)
     PTRef y = logic.mkNumVar("y");
     PTRef eq = logic.mkEq(x,y);
     ArithmeticEqualityRewriter rewriter(logic);
-    PTRef res = rewriter.rewrite(eq);
+    PTRef res = rewriter.rewrite(eq).first;
     ASSERT_EQ(res, logic.mkAnd(logic.mkNumGeq(x,y), logic.mkNumLeq(x,y)));
-    ASSERT_EQ(res, rewriter.rewrite(res));
+    ASSERT_EQ(res, rewriter.rewrite(res).first);
 }
 
 TEST(Rewriting_test, test_RewriteDivMod) {

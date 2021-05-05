@@ -1275,7 +1275,9 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
                         return l_False;
                     }
                 }
-            } else substs.insert(tr, PtAsgn(term, l_True));
+            } else {
+                substs.insert(tr, PtAsgn(term, l_True));
+            }
         }
     }
     SubstLoopBreaker slb(*this);
@@ -1283,20 +1285,22 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
     return l_Undef;
 }
 
-void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs) {
+
+template<typename TAsgn>
+void Logic::substitutionsTransitiveClosure(Map<PTRef, TAsgn, PTRefHash> & substs) {
     bool changed = true;
     auto keyValPairs = substs.getKeysAndValsPtrs(); // We can use direct pointers, since no elements are inserted or deleted in the loop
     std::vector<char> notChangedElems(keyValPairs.size(), 0); // True if not changed in last iteration, initially False
     while (changed) {
         changed = false;
         for (int i = 0; i < keyValPairs.size(); ++i) {
-            auto & val = keyValPairs[i]->data;
-            if (val.sgn != l_True || notChangedElems[i]) { continue; }
-            PTRef oldVal = val.tr;
-            PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
+            PTRef & val = getPTRefFromAsgn<TAsgn>(keyValPairs[i]->data);
+            if (notChangedElems[i]) { continue; }
+            PTRef oldVal = val;
+            PTRef newVal = Substitutor<TAsgn>(*this, substs).rewrite(oldVal).first;
             if (oldVal != newVal) {
                 changed = true;
-                val = PtAsgn(newVal, l_True);
+                val = newVal;
             }
             else {
                 notChangedElems[i] = 1;
@@ -1304,6 +1308,9 @@ void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & subst
         }
     }
 }
+
+template void Logic::substitutionsTransitiveClosure<PtAsgn>(Map<PTRef,PtAsgn,PTRefHash> &);
+template void Logic::substitutionsTransitiveClosure<PTRef>(Map<PTRef,PTRef,PTRefHash> &);
 
 //
 // TODO: Also this should most likely be dependent on the theory being
@@ -1327,21 +1334,21 @@ void Logic::getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts)
 
         Pterm const & t = getPterm(pta.tr);
 
-        if (isAnd(pta.tr) and pta.sgn == l_True)
-            for (int i = 0; i < t.size(); i++) {
+        if (isAnd(pta.tr) and pta.sgn == l_True) {
+            for (PTRef l : t) {
                 PTRef c;
                 lbool c_sign;
-                purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c,  c_sign));
+                purify(l, c, c_sign);
+                queue.push(PtAsgn(c, c_sign));
             }
-        else if (isOr(pta.tr) and (pta.sgn == l_False))
-            for (int i = 0; i < t.size(); i++) {
+        } else if (isOr(pta.tr) and (pta.sgn == l_False)) {
+            for (PTRef l : t) {
                 PTRef c;
                 lbool c_sign;
-                purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c, c_sign^true));
+                purify(l, c, c_sign);
+                queue.push(PtAsgn(c, c_sign ^ true));
             }
-        else {
+        } else {
             lbool prev_val = facts.has(pta.tr) ? facts[pta.tr] : l_Undef;
             if (prev_val != l_Undef && prev_val != pta.sgn)
                 return; // conflict
@@ -1351,15 +1358,12 @@ void Logic::getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts)
             assert(prev_val == l_Undef);
             if (isEquality(pta.tr) and pta.sgn == l_True) {
                 facts.insert(pta.tr, pta.sgn);
-            }
-            else if (isUP(pta.tr) and pta.sgn == l_True) {
+            } else if (isUP(pta.tr) and pta.sgn == l_True) {
                 facts.insert(pta.tr, pta.sgn);
-            }
-            else if (isXor(pta.tr) and pta.sgn == l_True) {
+            } else if (isXor(pta.tr) and pta.sgn == l_True) {
                 Pterm const & xorTerm = getPterm(pta.tr);
                 facts.insert(mkEq(xorTerm[0], mkNot(xorTerm[1])), l_True);
-            }
-            else {
+            } else {
                 PTRef c;
                 lbool c_sign;
                 purify(pta.tr, c, c_sign);
@@ -1669,7 +1673,7 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
         PtAsgn subst_target = {subst_target_tr, l_True};
         substs_asgn.insert(args[i], subst_target);
     }
-    PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
+    PTRef tr_subst = Substitutor<PtAsgn>(*this, substs_asgn).rewrite(tr).first;
     if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
         printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
         return PTRef_Undef;

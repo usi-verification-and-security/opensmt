@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <string>
 
-class DivModConfig : public DefaultRewriterConfig {
+class DivModConfig : public DefaultRewriterConfig<PTRef> {
     LIALogic & logic;
 
     struct DivModPair {
@@ -83,17 +83,17 @@ public:
     }
 };
 
-class DivModRewriter : Rewriter<DivModConfig> {
+class DivModRewriter : Rewriter<DivModConfig,PTRef> {
     LIALogic & logic;
     DivModConfig config;
 public:
-    DivModRewriter(LIALogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
+    DivModRewriter(LIALogic & logic) : Rewriter<DivModConfig,PTRef>(logic, config), logic(logic), config(logic) {}
 
     PTRef rewrite(PTRef term) {
         if (term == PTRef_Undef or not logic.hasSortBool(term)) {
             throw OsmtApiException("Div/Mod rewriting should only be called on formulas, not terms!");
         }
-        PTRef rewritten = Rewriter<DivModConfig>::rewrite(term);
+        PTRef rewritten = Rewriter<DivModConfig,PTRef>::rewrite(term).first;
         vec<PTRef> args;
         args.push(rewritten);
         config.getDefinitions(args);

@@ -7,14 +7,14 @@
 
 #include "Logic.h"
 
-template<typename TConfig>
+template<typename TConfig, typename TAsgn>
 class Rewriter {
     Logic & logic;
     TConfig & cfg;
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
-    PTRef rewrite(PTRef root) {
+    opensmt::pair<PTRef,Map<PTRef,TAsgn,PTRefHash>> rewrite(PTRef root) {
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;
@@ -24,7 +24,7 @@ public:
         auto size = Idx(logic.getPterm(root).getId()) + 1;
         std::vector<char> done;
         done.resize(size, 0);
-        std::unordered_map<PTRef, PTRef, PTRefHash> substitutions;
+        Map<PTRef, TAsgn, PTRefHash> substitutions;
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
@@ -47,43 +47,46 @@ public:
             }
             // If we are here, we have already processed all children
             assert(done[Idx(term.getId())] == 0);
-            vec<PTRef> newArgs(childrenCount);
+            vec<PTRef> newArgs(static_cast<int>(childrenCount));
             bool needsChange = false;
-            for (unsigned i = 0; i < childrenCount; ++i) {
-                auto it = substitutions.find(term[i]);
-                bool childChanged = it != substitutions.end();
+            for (auto i = 0; i < newArgs.size(); ++i) {
+                TAsgn it;
+                bool childChanged = substitutions.peek(term[i], it);
                 needsChange |= childChanged;
-                newArgs[i] = childChanged ? it->second : term[i];
+                newArgs[i] = childChanged ? cfg.getAsgnTerm(it) : term[i];
             }
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), newArgs) : currentRef;
             if (needsChange) {
-                substitutions.insert({currentRef, newTerm});
+                substitutions.insert(currentRef, TAsgn(newTerm));
             }
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
             PTRef rewritten = cfg.rewrite(newTerm);
             if (rewritten != newTerm) {
-                substitutions[currentRef] = rewritten;
+                substitutions.insert(currentRef, TAsgn(rewritten));
             }
             done[Idx(logic.getPterm(currentRef).getId())] = 1;
             toProcess.pop_back();
         }
 
-        auto it = substitutions.find(root);
-        PTRef res = it == substitutions.end() ? root : it->second;
-        return res;
+        TAsgn it;
+        PTRef res = substitutions.peek(root, it) ? cfg.getAsgnTerm(it) : root;
+        return {res, std::move(substitutions)};
     }
 };
 
+template<typename TAsgn>
 class DefaultRewriterConfig {
 public:
+    static bool isEnabled(TAsgn);
+    static PTRef getAsgnTerm(TAsgn a);
     virtual bool previsit(PTRef term) { return true; } // should continue visiting
     virtual PTRef rewrite(PTRef term) { return term; } // don't do anything
 };
 
-class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
-    DefaultRewriterConfig config;
+class NoOpRewriter : Rewriter<DefaultRewriterConfig<PTRef>,PTRef> {
+    DefaultRewriterConfig<PTRef> config;
 public:
-    NoOpRewriter(Logic & logic) : Rewriter<DefaultRewriterConfig>(logic, config) {}
+    NoOpRewriter(Logic & logic) : Rewriter<DefaultRewriterConfig<PTRef>,PTRef>(logic, config) {}
 };
 
 #endif //OPENSMT_REWRITER_H

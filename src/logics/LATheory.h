@@ -42,7 +42,7 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         vec<PTRef> & flas = currentFrame.formulas;
         for (PTRef & fla : flas) {
             PTRef old = fla;
-            fla = rewriter.rewrite(old);
+            fla = rewriter.rewrite(old).first;
             pmanager.transferPartitionMembership(old, fla);
         }
         currentFrame.root = getLogic().mkAnd(flas);
@@ -50,8 +50,8 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         PTRef coll_f = getCollateFunction(formulas, curr);
         auto subs_res = computeSubstitutions(coll_f);
         PTRef finalFla = flaFromSubstitutionResult(subs_res);
-        getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
-        currentFrame.root = rewriter.rewrite(finalFla);
+        setSubstitutions(std::move(subs_res.usedSubstitution));
+        currentFrame.root = rewriter.rewrite(finalFla).first;
     }
     notOkToPartition = rewriter.getAndClearNotOkToPartition();
     return true;

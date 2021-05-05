@@ -9,29 +9,30 @@
 
 #include "Rewriter.h"
 
-class SubstitutionConfig : public DefaultRewriterConfig {
+template <typename TAsgn>
+class SubstitutionConfig : public DefaultRewriterConfig<TAsgn> {
+private:
+    using SubMap = Map<PTRef, TAsgn, PTRefHash>;
+    SubMap const & subMap;
+
 public:
-    using SubMap = Map<PTRef, PtAsgn, PTRefHash>;
 
-    SubstitutionConfig(Logic &, SubMap const & subMap): subMap(subMap) {}
-
+    SubstitutionConfig<TAsgn>(Logic &, SubMap const & subMap): subMap(subMap) {}
     PTRef rewrite(PTRef term) override {
         PTRef result = term;
-        if (subMap.has(term) && subMap[term].sgn == l_True) {
-            result = subMap[term].tr;
+        if (subMap.has(term) && DefaultRewriterConfig<TAsgn>::isEnabled(subMap[term])) {
+            result = DefaultRewriterConfig<TAsgn>::getAsgnTerm(subMap[term]);
         }
         return result;
     }
-private:
-    SubMap const & subMap;
-
 };
 
-class Substitutor : public Rewriter<SubstitutionConfig> {
-    SubstitutionConfig config;
+template<typename TAsgn>
+class Substitutor : public Rewriter<SubstitutionConfig<TAsgn>,TAsgn> {
+    SubstitutionConfig<TAsgn> config;
 
 public:
-    Substitutor(Logic &logic, Map<PTRef, PtAsgn, PTRefHash> const &substs) :
-            Rewriter<SubstitutionConfig>(logic, config),
+    Substitutor(Logic &logic, Map<PTRef, TAsgn, PTRefHash> const &substs) :
+            Rewriter<SubstitutionConfig<TAsgn>,TAsgn>(logic, config),
             config(logic, substs) {}
 };

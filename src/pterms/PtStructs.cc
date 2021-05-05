@@ -35,3 +35,8 @@ const ValPair& ValPair::operator= (const ValPair& other) {
 }
 bool ValPair::operator== (const ValPair& other) const { return tr == other.tr && val == other.val; }
 bool ValPair::operator!= (const ValPair& other) const { return tr != other.tr || val != other.val; }
+
+template<>
+PTRef & getPTRefFromAsgn<PtAsgn>(PtAsgn & asgn) { return asgn.tr; }
+template<>
+PTRef & getPTRefFromAsgn<PTRef>(PTRef & asgn) { return asgn; }

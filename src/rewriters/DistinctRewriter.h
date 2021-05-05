@@ -9,7 +9,7 @@
 
 #include <unordered_set>
 
-class DistinctRewriteConfig : public DefaultRewriterConfig {
+class DistinctRewriteConfig : public DefaultRewriterConfig<PTRef> {
 protected:
     Logic & logic;
 public:
@@ -59,25 +59,25 @@ private:
      TopLevelDistincts topLevelDistincts;
 };
 
-class DistinctRewriter : public Rewriter<DistinctRewriteConfig> {
+class DistinctRewriter : public Rewriter<DistinctRewriteConfig,PTRef> {
     DistinctRewriteConfig config;
 public:
-    DistinctRewriter(Logic & logic): Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
+    DistinctRewriter(Logic & logic): Rewriter<DistinctRewriteConfig,PTRef>(logic, config), config(logic) {}
 };
 
-class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig> {
+class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig,PTRef> {
     KeepTopLevelDistinctRewriteConfig config;
 public:
     using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
     KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts):
-        Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
+        Rewriter<KeepTopLevelDistinctRewriteConfig,PTRef>(logic, config),
         config(logic, std::move(topLevelDistincts))
         {}
 };
 
 
 inline PTRef rewriteDistincts(Logic & logic, PTRef fla) {
-    return DistinctRewriter(logic).rewrite(fla);
+    return DistinctRewriter(logic).rewrite(fla).first;
 }
 
 PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla);
