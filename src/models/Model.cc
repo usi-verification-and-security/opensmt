@@ -47,7 +47,6 @@ PTRef Model::evaluate(PTRef term) {
     }
     else {
         // complex term not seen before, compute and store the value
-
         int size = logic.getPterm(term).size();
         vec<PTRef> nargs;
         for (int i = 0; i < size; ++i) {
