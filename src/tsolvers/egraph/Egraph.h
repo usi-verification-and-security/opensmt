@@ -289,7 +289,7 @@ public:
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder, const MapWithKeys<PTRef,PTRef,PTRefHash> & substs) const override;
     void       clearModel              ();
-    PTRef      getAbstractValueForERef(ERef er) const;
+    PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 

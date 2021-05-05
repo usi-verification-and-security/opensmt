@@ -230,7 +230,19 @@ void Egraph::computeModel( )
     }
 }
 
-PTRef Egraph::getAbstractValueForERef(ERef er) const {
+/**
+ * Get the abstract value (name of an element of the universe) corresponding to er.
+ * If er is ERef_Undef, use the default element for the sort sr
+ * @param er
+ * @param sr the sort of er (used if er is ERef_Undef)
+ * @return
+ */
+PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
+
+    if (er == ERef_Undef) {
+        return logic.getDefaultValuePTRef(sr);
+    }
+
     ERef val_er = values->getValue(er);
     PTRef val_tr = enode_store.getPTRef(val_er);
 
@@ -248,42 +260,51 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
     for (ERef er : enode_store.getTermEnodes()) {
         PTRef tr = enode_store.getPTRef(er);
 
-        if (logic.isEquality(tr) || logic.isDisequality(tr) || logic.isBooleanOperator(tr) || logic.isIte(tr)) {
-            continue; // The models of equality, disequality, Ites and Boolean operators are implicit.
+
+        if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
+            continue; // The Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
         }
 
         // If this is a substituted term, process instead the substitution target
-        PTRef target;
-        if (substs.peek(tr, target)) {
+        PTRef target_tr{PTRef_Undef};
+        ERef target_er{ERef_Undef};
+        if (substs.peek(tr, target_tr)) {
             seen_substs.insert(tr, true);
-            ERef target_er;
-            if (enode_store.peekERef(target, target_er)) {
+            enode_store.peekERef(target_tr, target_er);
+            if (target_er == ERef_Undef) {
+                // Substitution removed target_tr from input instance, it was never introduced to the SAT solver, and
+                // therefore also theory solver is not aware of it.
+                // The original term is guaranteed to be in the solver and is authoritative in this case.
                 er = target_er;
-            } else {
-                throw OsmtInternalException("Substitution target has no enode");
             }
+        } else {
+            assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
+            assert(enode_store.peekERef(tr, target_er));
+            assert(target_er == er);
+            target_er = er;
         }
-        if (logic.getPterm(tr).size() == 0) {
-            // A theory variable
-            PTRef val_tr = getAbstractValueForERef(er);
+        if (logic.isVarOrIte(tr)) {
+            // Original is a theory variable
+            PTRef val_tr = getAbstractValueForERef(target_er, logic.getSortRef(tr));
             modelBuilder.addVarValue(tr, val_tr);
         } else {
-            addTheoryFunctionEvaluation(modelBuilder, tr, er, substs);
+            addTheoryFunctionEvaluation(modelBuilder, tr, target_er, substs);
         }
     }
+
     for (auto key : substs.getKeys()) {
         PTRef tr = key;
         PTRef target = substs[key];
         if (!seen_substs.has(tr)) {
-            if (logic.isEquality(tr) || logic.isDisequality(tr) || logic.isBooleanOperator(tr) || logic.isIte(tr) || logic.isBoolAtom(tr)) {
-                continue; // The models of equality, disequality, Ites and Boolean operators are implicit.
+            if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
+                continue; // Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
             }
-            ERef target_er;
-            if (!enode_store.peekERef(target, target_er)) {
-                throw OsmtInternalException("Substitution target has no enode");
-            }
-            if (logic.getPterm(tr).size() == 0) {
-                PTRef val_tr = getAbstractValueForERef(target_er);
+            ERef target_er{ERef_Undef};
+            enode_store.peekERef(target, target_er);
+
+            if (logic.isVarOrIte(tr)) {
+                // Original is a theory variable
+                PTRef val_tr = getAbstractValueForERef(target_er, logic.getSortRef(tr));
                 modelBuilder.addVarValue(tr, val_tr);
             } else {
                 addTheoryFunctionEvaluation(modelBuilder, tr, target_er, substs);
@@ -292,19 +313,34 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
     }
 }
 
-void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er, const MapWithKeys<PTRef,PTRef,PTRefHash>& substs) const {
-    SymRef sr = logic.getSymRef(tr);
-    vec<ERef> args = enode_store.getArgTermsAsVector(er);
+/**
+ * Add an evaluation for the function symbol of orig_tr using the value of target_er
+ * @param modelBuilder The model builder
+ * @param orig_tr the original pterm reference (with arity > 0)
+ * @param target_er the target enode reference
+ * @param substs the substitutions (used for obtaining values for the arguments of orig_tr
+ */
+void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er, const MapWithKeys<PTRef,PTRef,PTRefHash>& substs) const {
+    ERef orig_er = enode_store.getERef(orig_tr);
+    vec<ERef> args = enode_store.getArgTermsAsVector(orig_er);
+    assert(args.size() > 0);
     vec<PTRef> vals; vals.capacity(args.size());
     for (ERef child_er: args) {
         PTRef child_tr = enode_store.getPTRef(child_er);
-        PTRef child_target;
+        PTRef child_target{PTRef_Undef};
         if (substs.peek(child_tr, child_target)) {
-            child_er = enode_store.getERef(child_target);
+            ERef child_target_er{ERef_Undef};
+            enode_store.peekERef(child_target, child_target_er);
+            if (child_target_er == ERef_Undef) {
+                vals.push(getAbstractValueForERef(child_er, logic.getSortRef(child_tr)));
+            } else {
+                vals.push(getAbstractValueForERef(child_target_er, logic.getSortRef(child_tr)));
+            }
+        } else {
+            vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
         }
-        vals.push(getAbstractValueForERef(child_er));
     }
-    modelBuilder.addToTheoryFunction(sr, std::move(vals), getAbstractValueForERef(er));
+    modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), std::move(vals), getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
 }
 
 void Egraph::declareAtom(PTRef atom) {
@@ -1108,10 +1144,9 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     for (;;) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
-
         PTRef v_tr = getEnode(v).getTerm();
         if (logic.isNot(v_tr)) {
-            // This is a negation of a propositional formula, and needs not be propagated
+            // Negation of a boolean valued term.  Propagation handled in the positive case already
             v = getEnode(v).getNext();
             if ( v == vstart )
                 break;
@@ -1121,15 +1156,15 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
-            cerr << "Deducing ";
-            cerr << (deduced_polarity == l_False ? "not " : "");
-            cerr << logic.printTerm(enode_store[v].getTerm());
-            cerr << " since ";
-            cerr << logic.printTerm(enode_store[x].getTerm());
-            cerr << " and ";
-            cerr << logic.printTerm(enode_store[y].getTerm());
-            cerr << " are now equal";
-            cerr << endl;
+            cout << "Deducing ";
+            cout << (deduced_polarity == l_False ? "not " : "");
+            cout << logic.printTerm(enode_store[v].getTerm());
+            cout << " since ";
+            cout << logic.printTerm(enode_store[x].getTerm());
+            cout << " and ";
+            cout << logic.printTerm(enode_store[y].getTerm());
+            cout << " are now equal";
+            cout << endl;
 #endif
 #ifdef STATISTICS
             tsolver_stats.deductions_done ++;
