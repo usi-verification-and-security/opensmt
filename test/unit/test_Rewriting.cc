@@ -10,6 +10,9 @@
 #include <ArithmeticEqualityRewriter.h>
 #include <DivModRewriter.h>
 #include <MainSolver.h>
+#include <DistinctRewriter.h>
+
+#include <algorithm>
 
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
@@ -71,6 +74,54 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     ASSERT_EQ(res, s_True);
     auto model = solver.getModel();
     ASSERT_EQ(model->evaluate(x), logic.mkConst(4));
+}
+
+
+class RewriteDistinctTest : public ::testing::Test {
+protected:
+    RewriteDistinctTest() : logic{} {}
+
+    virtual void SetUp() {
+        ufsort = logic.declareSort("U", nullptr);
+        x = logic.mkVar(ufsort, "x");
+        y = logic.mkVar(ufsort, "y");
+        z = logic.mkVar(ufsort, "z");
+        b = logic.mkBoolVar("b");
+    }
+
+    Logic logic;
+    SRef ufsort;
+    PTRef x, y, z;
+    PTRef b;
+};
+
+TEST_F(RewriteDistinctTest, test_RewriteDistinct_TopLevel) {
+    PTRef dist = logic.mkDistinct({x, y, z});
+    PTRef fla = logic.mkAnd(b, dist); // dist is top-level distinct
+    EXPECT_NE(::rewriteDistincts(logic, fla), fla); // fla should be rewritten
+    EXPECT_EQ(::rewriteDistinctsKeepTopLevel(logic, fla), fla); // fla should be kept the same
+}
+
+TEST_F(RewriteDistinctTest, test_RewriteDistinct_Negated) {
+    PTRef dist = logic.mkDistinct({x, y, z});
+    PTRef fla = logic.mkNot(dist); // dist is not top-level distinct
+    PTRef rewritten1 = ::rewriteDistincts(logic, fla);
+    EXPECT_NE(rewritten1, fla); // fla should be rewritten
+    PTRef rewritten2 = ::rewriteDistinctsKeepTopLevel(logic, fla);
+    EXPECT_NE(rewritten2, fla); // fla should be rewritten
+    EXPECT_EQ(rewritten1, rewritten2);
+    ASSERT_TRUE(logic.isNot(rewritten1));
+    PTRef conj = logic.getPterm(rewritten1)[0];
+    ASSERT_TRUE(logic.isAnd(conj));
+    vec<PTRef> disequalities {
+        logic.mkNot(logic.mkEq(x,y)),
+        logic.mkNot(logic.mkEq(z,x)),
+        logic.mkNot(logic.mkEq(z,y))
+    };
+    Pterm const & conjTerm = logic.getPterm(conj);
+    for (PTRef arg : conjTerm) {
+        EXPECT_TRUE(std::find(disequalities.begin(), disequalities.end(), arg) != disequalities.end());
+    }
 }
 
 
