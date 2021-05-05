@@ -157,6 +157,7 @@ public:
 
     char* printEnode(ERef);
 
+    vec<ERef> getArgTermsAsVector(ERef) const;
 //    friend class Egraph;
 };
 

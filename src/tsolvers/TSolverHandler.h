@@ -76,6 +76,7 @@ public:
     ValPair getValue          (PTRef tr) const;
 
     void    fillTheoryVars    (ModelBuilder& modelBuilder) const;
+    void    fillTheoryFunctions(ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
     void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers

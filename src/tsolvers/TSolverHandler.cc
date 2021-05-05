@@ -24,6 +24,14 @@ void TSolverHandler::fillTheoryVars(ModelBuilder & modelBuilder) const {
     }
 }
 
+void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
+    for (auto solver : tsolvers) {
+        if (solver != nullptr) {
+            solver->fillTheoryFunctions(modelBuilder);
+        }
+    }
+}
+
 bool TSolverHandler::assertLit(PtAsgn asgn)
 {
     bool res = true;

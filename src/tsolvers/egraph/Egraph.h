@@ -276,7 +276,20 @@ public:
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     ValPair    getValue                (PTRef tr) override;
     void       computeModel            () override;
+    void       fillTheoryVars          (ModelBuilder & modelBuilder) const override;
+    void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
+    PTRef      getAbstractValueForERef(ERef er) const {
+        ERef val_er = values[er];
+        PTRef val_tr = enode_store.getPTRef(val_er);
+
+        if (isConstant(val_er)) {
+            return val_tr;
+        }
+        std::stringstream ss;
+        ss << Logic::s_abstract_value_prefix << values[er].x;
+        return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
+    };
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 

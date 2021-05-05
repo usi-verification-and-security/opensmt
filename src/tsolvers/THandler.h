@@ -70,6 +70,7 @@ public:
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
     void fillTheoryVars       (ModelBuilder & modelBuilder) const;
+    void fillTheoryFunctions  (ModelBuilder & modelBuilder) const;
     void addSubstitutions     (ModelBuilder & modelBuilder) const;
 
     bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
