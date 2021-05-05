@@ -1985,8 +1985,9 @@ lbool CoreSMTSolver::solve_()
     {
         // Extend & copy model:
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++)
+        for (int i = 0; i < nVars(); i++) {
             model[i] = value(i);
+        }
     }
     else
     {
@@ -2243,9 +2244,42 @@ void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
     Logic& logic = theory_handler.getLogic();
     for (Var v = 0; v < model.size(); ++v) {
         PTRef atom = theory_handler.varToTerm(v);
-        if (logic.isBoolAtom(atom) && model[v] != l_Undef) {
-            PTRef val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+        PTRef target_tr = theory_handler.getSubstitution(atom);
+
+        if (target_tr == PTRef_Undef) {
+            PTRef val;
+            if (model[v] != l_Undef) {
+                val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+            } else {
+                val = logic.getDefaultValuePTRef(logic.getSort_bool());
+            }
             modelBuilder.addVarValue(atom, val);
+            continue;
         }
+
+        assert(target_tr != PTRef_Undef);
+        // Inspect target value
+
+        PTRef val;
+        Var target_var = v;
+        target_var = theory_handler.ptrefToVar(target_tr);
+        lbool target_sign = logic.isNot(target_tr) ? l_False : l_True;
+        if (target_var != var_Undef) {
+            if (model[target_var] != l_Undef) {
+                // Target var exists in solver.  Use the value
+                if (target_sign == l_True) {
+                    val = model[target_var] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+                } else {
+                    val = model[target_var] == l_True ? logic.getTerm_false() : logic.getTerm_true();
+                }
+            } else {
+                // Target var exists in solver but is unsigned.  Use default value
+                val = logic.getDefaultValuePTRef(logic.getSort_bool());
+            }
+        } else {
+            // Substitution does not exist in the solver.  Use the original value
+            val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+        }
+        modelBuilder.addVarValue(atom, val);
     }
 }
