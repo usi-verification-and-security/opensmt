@@ -14,14 +14,18 @@
 class Logic;
 
 class ModelBuilder {
-
+protected:
     std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
+    std::unordered_map<SymRef, TemplateFunction, SymRefHash> definitions;
 
     Logic& logic;
 
+    int uniqueNum;
+
+    const std::string formalArgDefaultPrefix;
 public:
 
-    ModelBuilder(Logic & logic) : logic(logic) {}
+    ModelBuilder(Logic & logic) : logic(logic), uniqueNum(0), formalArgDefaultPrefix("x") {}
 
     void addVarValue(PTRef var, PTRef value) {
         auto res = assignment.insert(std::make_pair(var, value));
@@ -33,15 +37,21 @@ public:
         assignment.insert(begin, end);
     }
 
-    std::unique_ptr<Model> build() const {
-        return std::unique_ptr<Model>(new Model(logic, std::move(assignment)));
+    void addFunctionDefinition(SymRef sym, TemplateFunction templateFunction) {
+        auto res = definitions.insert(std::make_pair(sym, templateFunction));
+        assert(res.second); (void)res;
+    }
+    bool hasTheoryFunction(SymRef sr) const { return definitions.find(sr) != definitions.end();}
+    bool hasTheoryFunction(PTRef tr) const { return hasTheoryFunction(logic.getSymRef(tr)); }
+
+    void addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val);
+
+    template<typename TIt>
+    void addFunctionDefinitions(TIt begin, TIt end) {
+        definitions.insert(begin, end);
     }
 
-    /*
-     * Incorporates the given substitution map into the model.
-     * PRECONDITIONS: all keys are variables
-     */
-    void processSubstitutions(MapWithKeys<PTRef,PtAsgn,PTRefHash> const & subst);
+    std::unique_ptr<Model> build() const;
 };
 
 

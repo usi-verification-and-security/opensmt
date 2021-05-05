@@ -56,6 +56,7 @@ public:
 
     Theory& getTheory();// { return theory; }
     Logic&  getLogic() ;// { return theory.getLogic(); }
+    const Logic& getLogic() const { return theory.getLogic(); }
 
     TSolverHandler&       getSolverHandler() ;//      { return theory.getTSolverHandler(); }
     const TSolverHandler& getSolverHandler() const;// { return theory.getTSolverHandler(); }
@@ -73,9 +74,8 @@ public:
     // DEPRECATED
     ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
-    void fillTheoryVars       (ModelBuilder & modelBuilder) const;
-    void addSubstitutions     (ModelBuilder & modelBuilder) const;
-
+    void fillTheoryFunctions  (ModelBuilder & modelBuilder) const;
+    void printSubstitutions() const;
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
     Lit     PTRefToLit         ( PTRef tr);// { return tmap.getLit(tr); }

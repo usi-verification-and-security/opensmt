@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CgTypes.h"
 #include "LogicFactory.h"
 #include "MapWithKeys.h"
+#include "OsmtApiException.h"
 #include "FunctionTools.h"
 #include <cassert>
 #include <cstring>
@@ -51,7 +52,9 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
+    Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
+    bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -169,7 +172,7 @@ class Logic {
     SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
+    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
 
     // Symbols
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
@@ -360,10 +363,10 @@ class Logic {
     // Top-level equalities based substitutions
     void getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
     virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs);
-    void substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs);
 
-
-
+public:
+    template <typename TAsgn>
+    void substitutionsTransitiveClosure(MapWithKeys<PTRef, TAsgn, PTRefHash> & substs);
 
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 
@@ -396,6 +399,8 @@ class Logic {
 
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
+
+
 
 #endif // LOGIC_H
 
