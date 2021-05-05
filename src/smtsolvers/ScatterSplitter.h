@@ -10,6 +10,7 @@
 #include "SplitConfig.h"
 
 class ScatterSplitter : public SimpSMTSolver {
+    //friend class MainSplitter;
 public:
     std::vector<SplitData> splits;
     ScatterSplitter(SMTConfig & c, THandler & t);

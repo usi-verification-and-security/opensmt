@@ -389,6 +389,8 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
         solver = new LookaheadSplitter(config, thandler);
     else if (config.use_ghost_vars())
         solver = new GhostSMTSolver(config, thandler);
+    else if (config.sat_split_type() == spt_scatter)
+        solver = new ScatterSplitter(config, thandler);
     else
         solver = new ScatterSplitter(config, thandler);
     return std::unique_ptr<SimpSMTSolver>(solver);
