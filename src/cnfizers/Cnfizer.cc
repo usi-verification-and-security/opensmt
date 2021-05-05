@@ -370,18 +370,6 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
         c.push(l);
     }
 
-#ifdef PEDANTIC_DEBUG
-    cerr << "== clause start" << endl;
-
-    for (int i = 0; i < c.size(); i++)
-    {
-        cerr << "(" << c[i].x << "," << var (c[i]) << ") * " << (sign (c[i]) ? "not " : "")
-             << logic.printTerm (tmap.varToPTRef (var (c[i])))
-             << " ";
-        cerr << endl;
-    }
-
-#endif
     opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     bool res = solver.addOriginalSMTClause(c, iorefs);
     if (keepPartitionInfo()) {
