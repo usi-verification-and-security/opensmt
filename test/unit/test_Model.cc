@@ -10,6 +10,69 @@
 
 #include <memory>
 
+
+
+class UFModelTest : public ::testing::Test {
+protected:
+    UFModelTest(): logic{} {}
+    virtual void SetUp() {
+        char* err;
+        S = logic.declareSort("U", &err);
+        x = logic.mkVar(S, "x");
+        y = logic.mkVar(S, "y");
+        z = logic.mkVar(S, "z");
+        f_sym = logic.declareFun("f", S, {S, S}, &err);
+        f = logic.mkUninterpFun(f_sym, {x, y});
+
+        v0 = logic.mkConst(S, "@0");
+        v1 = logic.mkConst(S, "@1");
+
+        a = logic.mkBoolVar("a");
+        b = logic.mkBoolVar("b");
+    }
+    SMTConfig config;
+    Logic logic;
+
+    SRef S;
+
+    PTRef x;
+    PTRef y;
+    PTRef z;
+    PTRef f;
+    PTRef a;
+    PTRef b;
+
+    PTRef v0;
+    PTRef v1;
+
+    SymRef f_sym;
+
+    std::unique_ptr<Model> getModel() {
+        Model::Evaluation eval {
+                std::make_pair(x, v0),
+                std::make_pair(y, v0),
+                std::make_pair(z, v1),
+                std::make_pair(a, logic.getTerm_true()),
+                std::make_pair(b, logic.getTerm_false()),
+        };
+        Model::SymbolDefinition symDef {
+            std::make_pair(f_sym, Logic::TFun("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
+        };
+        return std::unique_ptr<Model>(new Model(logic, eval, symDef));
+    }
+};
+
+TEST_F(UFModelTest, test_inputVarValues) {
+    auto model = getModel();
+    EXPECT_EQ(model->evaluate(x), v0);
+    EXPECT_EQ(model->evaluate(y), v0);
+    EXPECT_EQ(model->evaluate(z), v1);
+    EXPECT_EQ(model->evaluate(f), v1);
+    EXPECT_EQ(model->evaluate(logic.mkUninterpFun(f_sym, {logic.mkUninterpFun(f_sym, {x, y}), x})), v0);
+    EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
+    EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
+}
+
 class LAModelTest : public ::testing::Test {
 protected:
     LAModelTest(): logic{} {}
