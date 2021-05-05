@@ -6,6 +6,7 @@
 #define OPENSMT_LATHEORY_H
 #include "Theory.h"
 #include "ArithmeticEqualityRewriter.h"
+#include "DistinctRewriter.h"
 
 template<typename LinAlgLogic, typename LinAlgTHandler>
 class LATheory : public Theory
@@ -37,12 +38,13 @@ template<typename LinAlgLogic, typename LinAlgTSHandler>
 bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas, PartitionManager& pmanager, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
-    ArithmeticEqualityRewriter rewriter(lalogic);
+    ArithmeticEqualityRewriter equalityRewriter(lalogic);
     if (this->keepPartitions()) {
         vec<PTRef> & flas = currentFrame.formulas;
         for (PTRef & fla : flas) {
             PTRef old = fla;
-            fla = rewriter.rewrite(old);
+            fla = rewriteDistincts(getLogic(), fla);
+            fla = equalityRewriter.rewrite(fla);
             pmanager.transferPartitionMembership(old, fla);
         }
         currentFrame.root = getLogic().mkAnd(flas);
@@ -51,9 +53,10 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         auto subs_res = computeSubstitutions(coll_f);
         PTRef finalFla = flaFromSubstitutionResult(subs_res);
         getTSolverHandler().setSubstitutions(subs_res.usedSubstitution);
-        currentFrame.root = rewriter.rewrite(finalFla);
+        finalFla = rewriteDistincts(getLogic(), finalFla);
+        currentFrame.root = equalityRewriter.rewrite(finalFla);
     }
-    notOkToPartition = rewriter.getAndClearNotOkToPartition();
+    notOkToPartition = equalityRewriter.getAndClearNotOkToPartition();
     return true;
 }
 
