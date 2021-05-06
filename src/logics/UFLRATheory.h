@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Theory.h"
 #include "UFLRATHandler.h"
+#include "LRALogic.h"
 
 class UFLRATheory : public Theory
 {

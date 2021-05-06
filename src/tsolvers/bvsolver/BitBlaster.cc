@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BVStore.h"
 #include "Global.h"
 #include "MainSolver.h"
+#include "Real.h"
 
 using opensmt::Real;
 

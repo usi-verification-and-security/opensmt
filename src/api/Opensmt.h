@@ -4,6 +4,8 @@
 #include "SMTConfig.h"
 #include "MainSolver.h"
 #include "Logic.h"
+#include "LRALogic.h"
+#include "LIALogic.h"
 
 #include <memory>
 
