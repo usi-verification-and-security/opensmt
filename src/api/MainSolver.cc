@@ -460,13 +460,13 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_RDL:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
-            theory = new RDLTheory(config, lraLogic);
+            theory = new LATheory<LRALogic, RDLTHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_IDL:
         {
             LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
-            theory = new IDLTheory(config, liaLogic);
+            theory = new LATheory<LIALogic, IDLTHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_UFLRA:

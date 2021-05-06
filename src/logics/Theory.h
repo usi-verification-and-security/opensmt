@@ -220,41 +220,4 @@ class CUFTheory : public Theory
     virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 
-class IDLTheory : public Theory
-{
-protected:
-    LIALogic&    lialogic;
-    IDLTHandler idlthandler;
-public:
-    IDLTheory(SMTConfig & c, LIALogic & logic)
-            : Theory(c)
-            , lialogic(logic)
-            , idlthandler(c, lialogic)
-    { }
-    ~IDLTheory() = default;
-    virtual LIALogic & getLogic() { return lialogic; }
-    virtual LIALogic const & getLogic() const { return lialogic; }
-    virtual IDLTHandler& getTSolverHandler() { return idlthandler; }
-    virtual bool simplify(const vec<PFRef>&, PartitionManager&, int); // Theory specific simplifications
-};
-
-class RDLTheory : public Theory
-{
-protected:
-    LRALogic & lralogic;
-    RDLTHandler rdlthandler;
-public:
-    RDLTheory(SMTConfig &c, LRALogic & logic)
-            : Theory(c)
-            , lralogic(logic)
-            , rdlthandler(c, lralogic)
-    { }
-    ~RDLTheory() = default;
-    virtual LRALogic & getLogic() { return lralogic; }
-    virtual LRALogic const & getLogic() const { return lralogic; }
-    virtual RDLTHandler &getTSolverHandler() { return rdlthandler; }
-    virtual bool simplify(const vec<PFRef>&,PartitionManager&, int);
-};
-
-
 #endif
