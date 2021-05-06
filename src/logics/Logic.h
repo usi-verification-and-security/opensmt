@@ -31,6 +31,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
 
 
 class SStore;
@@ -51,9 +54,9 @@ class Logic {
             args_.copyTo(args);
         }
         TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
-        TFun(TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
+        TFun(const TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
         ~TFun() { free(name); }
-        TFun& operator=(TFun& other) {
+        TFun& operator=(TFun&& other) {
             if (&other != this) {
                 free(name);
                 ret_sort = other.ret_sort;
@@ -81,6 +84,7 @@ class Logic {
         const vec<PTRef>& getArgs() const { return args; }
     };
   protected:
+    static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
@@ -93,17 +97,17 @@ class Logic {
     int distinctClassCount;
 
     class DefinedFunctions {
-        Map<const char*,TFun,StringHash,Equal<const char*> > defined_functions;
+        std::map<std::string,TFun> defined_functions;
         vec<char*> defined_functions_names;
 
     public:
-        bool has(const char* name) const { return defined_functions.has(name); }
+        bool has(const char* name) const { return defined_functions.find(name) != defined_functions.end(); }
 
         void insert(const char* name, TFun const & templ) {
             assert(not has(name));
             defined_functions_names.push();
             defined_functions_names.last() = strdup(name);
-            defined_functions.insert(defined_functions_names.last(), templ);
+            defined_functions[defined_functions_names.last()] = templ;
         }
 
         TFun & operator[](const char* name) {
@@ -112,7 +116,9 @@ class Logic {
         }
 
         void getKeys(vec<const char*> & keys_out) {
-            defined_functions.getKeys(keys_out);
+            for (auto k : defined_functions_names) {
+                keys_out.push(strdup(k));
+            }
         }
 
         ~DefinedFunctions() {
@@ -150,15 +156,7 @@ class Logic {
     PTRef               term_TRUE;
     PTRef               term_FALSE;
 
-    // For depth first search
-    class pi {
-      public:
-        PTRef x;
-        bool done;
-        pi(PTRef x_) : x(x_), done(false) {}
-    };
 
-    virtual void visit(PTRef, Map<PTRef, PTRef, PTRefHash>&);
     virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
     void dumpFunction(ostream &, const TFun&);
@@ -173,7 +171,6 @@ class Logic {
   public:
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
-    virtual bool okToPartition(PTRef) const { return true; } // Does the logic think this is a good var to partition on (while parallelizing)
     bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_val_uf_default;
     static const char*  tk_val_bool_default;
@@ -194,6 +191,7 @@ class Logic {
     static const char*  s_sort_bool;
     static const char*  s_ite_prefix;
     static const char*  s_framev_prefix;
+    static const char*  s_abstract_value_prefix;
 
     Logic();
     virtual ~Logic();
@@ -275,6 +273,8 @@ class Logic {
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
+    PTRef       mkUniqueAbstractValue(SRef);
+
     // Generic constants
     virtual PTRef mkConst     (const char*, const char** msg);
     virtual PTRef mkConst     (SRef, const char*);
@@ -379,8 +379,6 @@ class Logic {
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const;// { return isIff(getPterm(tr).symb()); }
 
-    bool        isLit(PTRef tr) const;
-
 
     bool        hasSortBool(PTRef tr) const;// { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
     bool        hasSortBool(SymRef sr) const;// { return sym_store[sr].rsort() == sort_BOOL; }
@@ -410,7 +408,6 @@ class Logic {
 
     // Top-level equalities based substitutions
     void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);
-    bool varsubstitute(PTRef  root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new);  // Do the substitution.  Return true if at least one substitution was done, and false otherwise.
     virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
     void substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs);
 

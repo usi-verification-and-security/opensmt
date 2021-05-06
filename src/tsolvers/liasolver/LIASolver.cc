@@ -1,5 +1,6 @@
 #include "LIASolver.h"
-#include "LASolver.h"
+
+#include "LIAInterpolator.h"
 
 
 
@@ -66,10 +67,10 @@ TRes LIASolver::checkIntegersAndSplit() {
             }
 
             // We might have this blocked already, and then the solver should essentially return "I don't know, please go ahead".
-            if (cuts[getVarId(x)].has(c)) {
+            if (cuts[getVarId(x)].find(c) != cuts[getVarId(x)].end()) {
                 continue;
             }
-            cuts[getVarId(x)].insert(c, true);
+            cuts[getVarId(x)][c] = true;
 
             // Check if integer splitting is possible for the current variable
             if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
@@ -120,19 +121,27 @@ LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
     status = INIT;
 }
 
-LIASolver::~LIASolver( )
-{
-
-}
-
-LIALogic&  LIASolver::getLogic()  { return logic; }
-
 void LIASolver::markVarAsInt(LVRef v) {
     if (!int_vars_map.has(v)) {
         int_vars_map.insert(v, true);
         int_vars.push(v);
     }
+    while (static_cast<unsigned>(cuts.size()) <= getVarId(v)) {
+        cuts.emplace_back(0);
+    }
+}
 
-    while(static_cast<unsigned>(cuts.size()) <= getVarId(v))
-        cuts.push();
+PTRef LIASolver::getInterpolant(std::map<PTRef, icolor_t> const& labels) {
+    assert(status == UNSAT);
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
+    auto algorithm = config.getLRAInterpolationAlgorithm();
+    if (algorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
+    else if (algorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
+    else if (algorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor())); }
+    else if (algorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
+    else if (algorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
+    else { // SHOULD NOT HAPPEN!
+        assert(false);
+        return interpolator.getFarkasInterpolant();
+    }
 }

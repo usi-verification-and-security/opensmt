@@ -1,6 +1,7 @@
 #include "LIATHandler.h"
 #include "TreeOps.h"
 #include <liasolver/LIASolver.h>
+#include "OsmtInternalException.h"
 
 LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l)
         : TSolverHandler(c)
@@ -24,7 +25,10 @@ const Logic &LIATHandler::getLogic() const
     return logic;
 }
 
-PTRef LIATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &)
+PTRef LIATHandler::getInterpolant(ipartitions_t const &, map<PTRef, icolor_t> * labels, PartitionManager &)
 {
-    throw std::logic_error{"Interpolation currently not supported in LIA"};
+    if (labels == nullptr) {
+        throw OsmtInternalException("LIA interpolation requires partitioning map, but no map was provided");
+    }
+    return liasolver->getInterpolant(*labels);
 }

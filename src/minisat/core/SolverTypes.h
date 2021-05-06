@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <assert.h>
 
-#include "IntTypes.h"
+#include "osmtinttypes.h"
 #include "Alg.h"
 #include "Vec.h"
 #include "Map.h"
@@ -272,15 +272,15 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
 template<class Idx, class Vec, class Deleted>
 class OccLists
 {
-    vec<Vec>  occs;
-    vec<char> dirty;
-    vec<Idx>  dirties;
-    Deleted   deleted;
+    std::vector<Vec>  occs;
+    vec<char>         dirty;
+    vec<Idx>          dirties;
+    Deleted           deleted;
 
  public:
     OccLists(const Deleted& d) : deleted(d) {}
 
-    void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
+    void  init      (const Idx& idx){ occs.resize(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
     Vec&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
@@ -293,8 +293,8 @@ class OccLists
         }
     }
 
-    void  clear(bool free = true){
-        occs   .clear(free);
+    void  clear(bool free = true) {
+        occs   .clear();
         dirty  .clear(free);
         dirties.clear(free);
     }

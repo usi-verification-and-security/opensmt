@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <Logic.h>
+#include <Substitutor.h>
 
 class GetFactsTest : public ::testing::Test {
 protected:
@@ -170,8 +171,7 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
     PTRef fla = logic.mkAnd(a, logic.mkNot(b));
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(b, PtAsgn{logic.getTerm_true(), l_True});
-    PTRef res = PTRef_Undef;
-    logic.varsubstitute(fla, subst, res);
+    PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.getTerm_false());
 }
 
@@ -179,8 +179,7 @@ TEST_F(ApplySubstitutionTest, test_VarVarSub) {
     PTRef fla = logic.mkEq(x, z);
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(x, PtAsgn{y, l_True});
-    PTRef res = PTRef_Undef;
-    logic.varsubstitute(fla, subst, res);
+    PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(y,z));
 }
 
@@ -191,8 +190,7 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
     Map<PTRef, PtAsgn, PTRefHash> subst;
     subst.insert(x, PtAsgn{fy, l_True});
     subst.insert(y, PtAsgn{fz, l_True});
-    PTRef res = PTRef_Undef;
-    logic.varsubstitute(fla, subst, res);
+    PTRef res = Substitutor(logic, subst).rewrite(fla);
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
 }

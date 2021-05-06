@@ -6,10 +6,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #include "FastRational.h"
 #include <sstream>
-#include <Sort.h>
+#include <algorithm>
 
-//mpz_init(FastRational::one);
-//mpz_set_si(FastRational::one, 1);
 FastRational::FastRational( const char * s, const int base )
 {
     mpq_init(mpq);
@@ -42,10 +40,9 @@ void FastRational::reset()
 
 void FastRational::print(std::ostream & out) const
 {
-//  const bool sign = num < 0;
     const bool sign = this->sign() < 0;
     if (wordPartValid()) {
-        word abs_num = (sign?-num:num);
+        uword abs_num = absVal(num);
         if (den == 1) {
             out << (sign?"(- ":"") << abs_num << (sign?")":"");
         } else {
@@ -177,19 +174,22 @@ FastRational divexact(FastRational const & n, FastRational const & d) {
 }
 
 // Given as input the sequence Reals, return the smallest number m such that for each r in Reals, r*m is an integer
-FastRational get_multiplicand(const vec<FastRational>& reals)
+FastRational get_multiplicand(const std::vector<FastRational>& reals)
 {
-    vec<FastRational> dens;
-    for (int i = 0; i < reals.size(); i++)
-        if (!reals[i].isInteger())
-            dens.push_c(reals[i].get_den());
+    std::vector<FastRational> dens;
+    for (const auto & r : reals) {
+        if (!r.isInteger()) {
+            dens.push_back(r.get_den());
+        }
+    }
 
     // Iterate until dens is not empty
     FastRational mult = 1; // Collect here the number I need to multiply the polynomial to get rid of all denominators
     while (dens.size() > 0) {
         // Unique denominators
-        sort(dens);
-        uniq(dens);
+        std::sort(dens.begin(), dens.end());
+        auto last = std::unique(dens.begin(), dens.end());
+        dens.erase(last, dens.end());
 #ifdef PRINTALOT
         char *buf = (char*) malloc(1);
         buf[0] = '\0';
@@ -213,13 +213,12 @@ FastRational get_multiplicand(const vec<FastRational>& reals)
             int k = 0;
             FastRational m = lcm(dens[dens.size()-1], dens[dens.size()-2]);
             mult *= m;
-            int orig_sz = dens.size();
-            for (int j = 0; j < dens.size()-2; j++) {
+            for (size_t j = 0; j < dens.size()-2; j++) {
                 FastRational n = (m/dens[j]).get_den();
                 if (n != 1)
                     dens[k++] = n;
             }
-            dens.shrink(orig_sz-k);
+            dens.resize(k);
         }
     }
 #ifdef PRINTALOT

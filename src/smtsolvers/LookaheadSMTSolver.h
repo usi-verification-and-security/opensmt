@@ -102,6 +102,7 @@ protected:
     laresult expandTree(LANode *n, LANode *c1, LANode *c2);                             // Do lookahead.  On success write the new children to c1 and c2
     void deallocTree(LANode *n);                                                        // Dealloc the tree rooted at n
     std::unique_ptr<LookaheadScore> score;
+    bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
     Var newVar(bool sign, bool dvar) override;

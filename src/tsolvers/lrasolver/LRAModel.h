@@ -19,14 +19,14 @@
 class LRAModel
 {
 protected:
-    vec<vec<LABoundRef> > int_lbounds;
-    vec<vec<LABoundRef> > int_ubounds;
+    std::vector<vec<LABoundRef> > int_lbounds;
+    std::vector<vec<LABoundRef> > int_ubounds;
 
     vec<int> bound_limits;
     vec<LABoundRef> bound_trace;
 
-    vec<Delta>  current_assignment;
-    vec<Delta>  last_consistent_assignment;
+    std::vector<Delta>  current_assignment;
+    std::vector<Delta>  last_consistent_assignment;
     nat_set     changed_vars_set;
     vec<LVRef>  changed_vars_vec;
 

@@ -26,7 +26,7 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
             lialogic.mkImpl(lialogic.mkNot(a), lialogic.mkEq(x, lialogic.getTerm_NumOne()))
             );
     PTRef fla = lialogic.mkAnd(conj, eq);
-    // x = 2y  AND (a => y=1) AND (~a => y=1)
+    // x = 2y  AND (a => x=1) AND (~a => x=1)
     char* msg;
     mainSolver.insertFormula(fla, &msg);
     auto res = mainSolver.check();

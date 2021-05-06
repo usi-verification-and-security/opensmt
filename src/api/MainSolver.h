@@ -206,14 +206,14 @@ class MainSolver
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;
     bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
-    void  addToConj(vec<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
+    void  addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
 
     // DEPRECATED. use the new Model structure
     ValPair getValue       (PTRef tr) const;
-    void    getValues      (const vec<PTRef>&, vec<ValPair>&) const;
+    void    getValues      (const vec<PTRef>&, std::vector<ValPair>&) const;
 
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();

@@ -212,7 +212,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
     return property_holds;
 }
 
-void ProofGraph::produceConfigMatrixInterpolants (const vec< vec<int> > &configs, vec<PTRef> &interpolants)
+void ProofGraph::produceConfigMatrixInterpolants (const std::vector< vec<int> > &configs, vec<PTRef> &interpolants)
 {
     if ( verbose() ) cerr << "; General interpolation via configuration matrix " << endl;
 
@@ -320,15 +320,15 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
     return property_holds;
 }
 
-bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const vec<ipartitions_t> &A_masks){
+bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const std::vector<ipartitions_t> &A_masks){
     bool propertySatisfied = true;
     // check that masks are subset of each other
 #ifndef NDEBUG
-    for(int i = 0; i < A_masks.size()-1; ++i) {
+    for (int i = 0; i < static_cast<int>(A_masks.size()-1); ++i) {
         assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
     }
 #endif // NDEBUG
-    for(int i = 0; i < A_masks.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(A_masks.size()); ++i) {
         produceSingleInterpolant(interpolants, A_masks[i]);
 //        if(verbose() > 1){
 //            std::cerr << "; Interpolant for mask: " << A_masks[i] << " is: "
@@ -538,13 +538,22 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 std::map<PTRef, icolor_t> ptref2label;
                 std::vector<Lit>& cl = n->getClause();
 
-                for(std::size_t j = 0; j < cl.size(); ++j)
-                {
+                for (std::size_t j = 0; j < cl.size(); ++j) {
                     ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
                 }
 
                 partial_interp = thandler->getInterpolant (A_mask, &ptref2label, pmanager);
                 clearTSolver();
+            }
+            else if (n->getType() == clause_type::CLA_SPLIT) {
+                auto const & clause = n->getClause();
+                assert(clause.size() == 2); // only binary splits at the moment
+                auto color = getVarColor(n, var(clause[0]));
+                assert(color == getVarColor(n, var(clause[1]))); // same theory variables in the atoms of the split => same color
+                assert(color == I_A || color == I_B || color == I_AB);
+                // If split on A-local (B-local) term, then return False (True). This is the same as in purely propoositional case.
+                // If split on AB-shared term, we can choose if we treat it as A-clause (resulting in False) or B-clause (resulting in True). We arbitrarily choose A now.
+                partial_interp = color == I_A ? logic_.getTerm_false() : (color == I_B ? logic_.getTerm_true() : logic_.getTerm_false());
             }
             else {
                 assert(n->getType() == clause_type::CLA_ASSUMPTION);
@@ -639,15 +648,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     {
         cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << endl;
     }
-}
-
-void ProofGraph::produceMultipleInterpolants ( const vec< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants ) {
-    std::vector<ipartitions_t> v;
-    v.reserve(configs.size());
-    for (int i = 0; i < configs.size(); ++i) {
-        v.push_back(configs[i]);
-    }
-    produceMultipleInterpolants(v, sequence_of_interpolants);
 }
 
 void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )

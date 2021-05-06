@@ -17,10 +17,6 @@ namespace {
     inline bool contains(const C & container, const E & elem){
         return container.find(elem) != container.end();
     }
-
-    inline bool isOne(const opensmt::Real & r){
-        return r == 1;
-    }
 }
 
 void Tableau::nonbasicVar(LVRef v) {
@@ -131,13 +127,11 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     {
         Polynomial & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.removeVar(nv);
-        Real bvCoeff{1};
-        if (!isOne(coeff)) {
+        if (not coeff.isOne()) {
             nvPoly.divideBy(coeff);
-            bvCoeff /= coeff;
         }
         nvPoly.negate();
-        nvPoly.addTerm(bv, bvCoeff);
+        nvPoly.addTerm(bv, coeff.inverse());
     }
 
     // remove row for bv, add row for nv
@@ -261,21 +255,21 @@ bool Tableau::checkConsistency() const {
 void Tableau::normalizeRow(LVRef v) {
     assert(isQuasiBasic(v)); // Do not call this for non quasi rows
     Polynomial & row = getRowPoly(v);
-    std::vector<Polynomial::Term> toEliminate;
+    std::vector<Polynomial::Term const*> toEliminate;
     for (auto const & term : row) {
         if (isQuasiBasic(term.var)) {
             normalizeRow(term.var);
-            toEliminate.push_back(term);
+            toEliminate.push_back(&term);
         }
         if (isBasic(term.var)) {
-            toEliminate.push_back(term);
+            toEliminate.push_back(&term);
         }
     }
     if (!toEliminate.empty()) {
         Polynomial p;
-        for (auto & term : toEliminate) {
-            p.merge(getRowPoly(term.var), term.coeff, [](LVRef) {}, [](LVRef) {});
-            p.addTerm(term.var, -term.coeff);
+        for (auto const* term : toEliminate) {
+            p.merge(getRowPoly(term->var), term->coeff, [](LVRef) {}, [](LVRef) {});
+            p.addTerm(term->var, -term->coeff);
         }
         row.merge(p, 1, [](LVRef) {}, [](LVRef) {});
     }

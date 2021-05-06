@@ -54,7 +54,7 @@ GhostSMTSolver::attachClause(CRef in_clause)
         Lit l = c[i];
         if (theory_handler.isTheoryTerm(var(l))) {
             int idx = toInt(l);
-            assert(idx < thLitToClauses.size());
+            assert(idx < static_cast<int>(thLitToClauses.size()));
             thLitToClauses[idx].push(in_clause);
         }
     }
@@ -76,8 +76,8 @@ GhostSMTSolver::newVar(bool polarity, bool dvar)
 {
     Var v = SimpSMTSolver::newVar(polarity, dvar);
     int idx = toInt(mkLit(v, true)); // true polarity has higher index
-    while (thLitToClauses.size() <= idx)
-        thLitToClauses.push();
+    while (static_cast<int>(thLitToClauses.size()) <= idx)
+        thLitToClauses.emplace_back();
     return v;
 }
 
@@ -188,11 +188,9 @@ GhostSMTSolver::pickBranchLit() {
 }
 
 void GhostSMTSolver::relocAll() {
-    for (int i = 0; i < thLitToClauses.size(); i++) {
-        vec<CRef> &appearances = thLitToClauses[i];
-        for (int j = 0; j < appearances.size(); j++) {
-            CRef cr = appearances[j];
-            appearances[j] = ca[cr].relocation();
+    for (const auto & appearances : thLitToClauses) {
+        for (CRef cr : appearances) {
+            cr = ca[cr].relocation();
         }
     }
 }

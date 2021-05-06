@@ -281,16 +281,16 @@ void Egraph::declareTerm(PTRef tr) {
     }
 
     for (auto PTRefERefPair : PTRefERefPairVec) {
-        updateParentsVector(PTRefERefPair.first);
+        updateParentsVector(PTRefERefPair.tr);
     }
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
         assert(PTRefERefPairVec.size() == 2);
         for (auto PTRefERefPair : PTRefERefPairVec) {
-            boolTermToERef.insert(PTRefERefPair.first, PTRefERefPair.second);
+            boolTermToERef.insert(PTRefERefPair.tr, PTRefERefPair.er);
         }
-        assert(PTRefERefPairVec[0].first == logic.mkNot(PTRefERefPairVec[1].first));
-        assertNEq(PTRefERefPairVec[0].second, PTRefERefPairVec[1].second, Expl(Expl::Type::pol, PtAsgn_Undef, PTRefERefPairVec[0].first));
+        assert(PTRefERefPairVec[0].tr == logic.mkNot(PTRefERefPairVec[1].tr));
+        assertNEq(PTRefERefPairVec[0].er, PTRefERefPairVec[1].er, Expl(Expl::Type::pol, PtAsgn_Undef, PTRefERefPairVec[0].tr));
     }
 
     if (logic.hasSortBool(tr)) {
@@ -1331,6 +1331,9 @@ bool Egraph::assertLit(PtAsgn pta)
     } else if (isEffectivelyDisequality(pt_r) && sgn == l_True) {
         res = addDisequality(PtAsgn(pt_r, l_True));
     } else if (isEffectivelyDisequality(pt_r) && sgn == l_False) {
+        if (logic.getPterm(pt_r).size() != 2) {
+            throw OsmtInternalException("Internal error: Negated distinct asserted to Egraph");
+        }
         res = addEquality(PtAsgn(pt_r, l_False));
     } else if (isEffectivelyUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false

@@ -108,8 +108,8 @@ CoreSMTSolver::handleSat()
             attachClause(cr);
             clauses.push(cr);
             if (this->logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new class; TODO: what type it should be?
-                proof->newOriginalClause(cr);
+                // MB: the proof needs to know about the new clause
+                proof->newSplitClause(cr);
             }
             forced_split = ~l1;
             return TPropRes::Decide;
@@ -137,8 +137,8 @@ CoreSMTSolver::handleSat()
             attachClause(cr);
             clauses.push(cr);
             if (logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new class; TODO: what type it should be?
-                proof->newOriginalClause(cr);
+                // MB: the proof needs to know about the new clause
+                proof->newSplitClause(cr);
             }
             uncheckedEnqueue(l_i, cr);
             return TPropRes::Propagate;

@@ -13,6 +13,7 @@ $<TARGET_OBJECTS:simplifiers>
 $<TARGET_OBJECTS:models>
 $<TARGET_OBJECTS:itehandler>
 $<TARGET_OBJECTS:proof>
+$<TARGET_OBJECTS:rewriters>
 )
 
 add_library(api OBJECT "")

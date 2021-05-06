@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
+#include "Substitutor.h"
 
 #include <queue>
 #include <set>
@@ -63,6 +64,9 @@ const char* Logic::tk_ite      = "ite";
 const char* Logic::s_sort_bool = "Bool";
 const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
+const char* Logic::s_abstract_value_prefix = "@";
+
+std::size_t Logic::abstractValueCount = 0;
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic() :
@@ -500,86 +504,6 @@ bool Logic::declare_sort_hook(SRef sr) {
     return true;
 }
 
-void Logic::visit(PTRef tr, Map<PTRef,PTRef,PTRefHash>& tr_map)
-{
-    Pterm& p = getPterm(tr);
-    vec<PTRef> newargs(p.size());
-
-    bool changed = false;
-    for (int i = 0; i < p.size(); ++i) {
-        PTRef tr = p[i];
-        if (tr_map.has(tr)) {
-            changed |= (tr_map[tr] != tr);
-            newargs[i] = tr_map[tr];
-        }
-        else
-            newargs[i] = tr;
-    }
-    if (!changed) {return;}
-    PTRef trp = insertTerm(p.symb(), newargs);
-    if (trp != tr) {
-        if (tr_map.has(tr))
-            assert(tr_map[tr] == trp);
-        else
-            tr_map.insert(tr, trp);
-    }
-}
-
-
-
-void Logic::simplifyTree(PTRef tr, PTRef& root_out)
-{
-    vec<pi> queue;
-    std::vector<bool> processed;
-    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    auto size = Idx(this->getPterm(tr).getId()) + 1;
-    processed.resize(size, false);
-    Map<PTRef,PTRef,PTRefHash> tr_map;
-    queue.push(pi(tr));
-    while (queue.size() != 0) {
-        // First find a node with all children processed.
-        pi current = queue.last();
-        const Pterm & t = this->getPterm(current.x);
-        auto id = Idx(t.getId());
-        if (processed[id]) {
-            queue.pop();
-            continue;
-        }
-        bool unprocessed_children = false;
-        if (current.done == false) {
-#ifdef SIMPLIFY_DEBUG
-            std::cerr << "looking at term num " << current.x << std::endl;
-#endif
-            for (int j = 0; j < t.size(); j++) {
-                PTRef cr = t[j];
-                if (isIte(cr)) {
-                    continue; // Treated as variables in this respect
-                }
-                if (!processed[Idx(this->getPterm(cr).getId())]) {
-                    unprocessed_children = true;
-                    queue.push(pi(cr));
-#ifdef SIMPLIFY_DEBUG
-                    cerr << "pushing child " << cr.x << endl;
-#endif
-                }
-            }
-            current.done = true;
-            if (unprocessed_children) continue;
-        }
-        assert(!unprocessed_children);
-#ifdef SIMPLIFY_DEBUG
-        std::cerr << "Found a node " << current.x << std::endl;
-        std::cerr << "Before simplification it looks like " << this->printTerm(current) << std::endl;
-#endif
-        processed[id] = true;
-        visit(current.x, tr_map);
-    }
-    if (tr_map.has(tr))
-        root_out = tr_map[tr];
-    else
-        root_out = tr;
-}
-
 // The vec argument might be sorted!
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
@@ -885,7 +809,7 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     else {
         if (distinctClassCount < maxDistinctClasses) {
             PTRef res = term_store.newTerm(diseq_sym, args);
-            term_store.addToCplxMap(key, res);
+            term_store.addToCplxMap(std::move(key), res);
             distinctClassCount++;
             return res;
         }
@@ -956,6 +880,11 @@ PTRef Logic::mkVar(SRef s, const char* name) {
     return ptr;
 }
 
+PTRef Logic::mkUniqueAbstractValue(SRef s) {
+    std::string uniqueName = s_abstract_value_prefix + std::to_string(abstractValueCount++);
+    return mkVar(s, uniqueName.c_str());
+}
+
 PTRef Logic::mkConst(const SRef s, const char* name) {
     assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
@@ -989,13 +918,6 @@ void Logic::markConstant(SymId id) {
 PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     PTRef tr = mkFun(f, args);
     assert(isUFTerm(tr) || isUP(tr));
-    if (isUFTerm(tr) || isUP(tr)) {
-        for (int i = 0; i < args.size(); i++) {
-            if (hasSortBool(args[i])) {
-                setAppearsInUF(isNot(args[i]) ? getPterm(args[i])[0] : args[i]);
-            }
-        }
-    }
     return tr;
 }
 
@@ -1019,27 +941,6 @@ PTRef Logic::mkBoolVar(const char* name)
     vec<PTRef> tmp2;
     PTRef tr = mkFun(sr, tmp2);
     return tr;
-}
-
-// A term is literal if its sort is Bool and
-//  (i)   number of arguments is 0
-//  (ii)  its symbol is sym_NOT and argument is a literal (nested nots
-//        create literals?)
-//  (iii) it is an atom stating an equivalence of non-boolean terms (terms must be purified at this point)
-bool Logic::isLit(PTRef tr) const
-{
-    const Pterm& t = getPterm(tr);
-    if (sym_store[t.symb()].rsort() == getSort_bool()) {
-        if (t.size() == 0) return true;
-        if (t.symb() == getSym_not() ) return isLit(t[0]);
-        // At this point all arguments of equivalence have the same sort.  Check only the first
-        if (isEquality(tr) && (sym_store[getPterm(t[0]).symb()].rsort() != getSort_bool())) return true;
-        if (isBooleanOperator(tr)) return false;
-        else return true;
-//        if (isDisequality(tr) && !isDistinct(tr)) return true;
-//        if (isUP(tr)) return true;
-    }
-    return false;
 }
 
 SRef Logic::declareSort(const char* id, char** msg)
@@ -1151,7 +1052,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
             res = term_store.getFromCplxMap(k);
         else {
             res = term_store.newTerm(sym, k.args);
-            term_store.addToCplxMap(k, res);
+            term_store.addToCplxMap(std::move(k), res);
         }
     }
     else {
@@ -1169,7 +1070,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         }
         else {
             res = term_store.newTerm(sym, terms);
-            term_store.addToBoolMap(k, res); //bool_map.insert(k, res);
+            term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
             cerr << "new: " << ts << endl;
@@ -1279,6 +1180,10 @@ bool Logic::isConstant(SymRef sr) const
     return constants[id];
 }
 
+// A term is atom if its sort is Bool and
+//  (i)   it is a variable or constant (number of arguments is 0)
+//  (ii)  it is a non-boolean equality or distinct
+//  (iii) it is a theory atom (here we check only UF atoms, logics should override this method to add their specific checks)
 bool Logic::isAtom(PTRef r) const {
     const Pterm& t = term_store[r];
     if (sym_store[t.symb()].rsort() == getSort_bool()) {
@@ -1286,109 +1191,10 @@ bool Logic::isAtom(PTRef r) const {
         if (t.symb() == getSym_not() ) return false;
         // At this point all arguments of equivalence have the same sort.  Check only the first
         if (isEquality(t.symb()) && (sym_store[term_store[t[0]].symb()].rsort() != getSort_bool())) return true;
+        if (isDisequality(t.symb())) return true;
         if (isUP(r)) return true;
-        if (isDisequality(r)) return true;
     }
     return false;
-}
-
-//
-// Compute the generalized substitution based on substs, and return in
-// tr_new the corresponding term dag.
-// Preconditions:
-//  - all substitutions in substs must be on variables
-//
-bool Logic::varsubstitute(PTRef root, const Map<PTRef, PtAsgn, PTRefHash> & substs, PTRef & tr_new)
-{
-    if (substs.elems() == 0) {
-        tr_new = root;
-        return false;
-    }
-    Map<PTRef,PTRef,PTRefHash> gen_sub;
-    std::vector<char> processed;
-    processed.resize(Idx(getPterm(root).getId()) + 1, 0);
-    vec<PTRef> queue;
-    int n_substs = 0;
-
-    queue.push(root);
-    while (queue.size() != 0) {
-        PTRef tr = queue.last();
-#ifdef SIMPLIFY_DEBUG
-        cerr << "processing " << printTerm(tr) << endl;
-#endif
-        Pterm const & t = getPterm(tr);
-        auto index = Idx(t.getId());
-        if (processed[index] == 1) {
-            // Already processed
-            queue.pop();
-            continue;
-        }
-        bool unprocessed_children = false;
-        for (int i = 0; i < t.size(); i++) {
-            auto childIndex = Idx(getPterm(t[i]).getId());
-            if (processed[childIndex] == 0) {
-                queue.push(t[i]);
-                unprocessed_children = true;
-            }
-        }
-        if (unprocessed_children) continue;
-        queue.pop();
-        PTRef result = PTRef_Undef;
-        if (isVar(tr) || isConstant(tr)) {
-            // The base case
-            if (substs.has(tr) && substs[tr].sgn == l_True)
-                result = substs[tr].tr;
-            else
-                result = tr;
-            assert(!isConstant(tr) || result == tr);
-            assert(result != PTRef_Undef);
-        } else {
-            // The "inductive" case
-            if (substs.has(tr) && substs[tr].sgn == l_True) {
-#ifdef SIMPLIFY_DEBUG
-                printf("Immediate substitution found: %s -> %s\n", printTerm(tr), printTerm(substs[tr].tr));
-#endif
-                result = substs[tr].tr;
-            }
-            else {
-                vec<PTRef> args_mapped;
-                args_mapped.capacity(t.size());
-#ifdef SIMPLIFY_DEBUG
-                printf("Arg substitution found for %s:\n", printTerm(tr));
-#endif
-                bool changed = false;
-                for (int i = 0; i < t.size(); i++) {
-                    PTRef sub = PTRef_Undef;
-                    bool hasSub = gen_sub.peek(t[i], sub);
-                    changed |= hasSub;
-                    args_mapped.push(hasSub ? sub : t[i]);
-#ifdef SIMPLIFY_DEBUG
-                    printf("  %s -> %s\n", printTerm(t[i]), printTerm(gen_sub[t[i]]));
-#endif
-                    if (hasSub and appearsInUF(t[i]) and isUF(tr)) {
-                        unsetAppearsInUF(t[i]);
-                    }
-                }
-                result = changed ? insertTerm(t.symb(), args_mapped) : tr;
-#ifdef SIMPLIFY_DEBUG
-                printf("  -> %s\n", printTerm(result));
-#endif
-            }
-            assert(result != PTRef_Undef);
-        }
-        assert(result != PTRef_Undef);
-        processed[index] = 1;
-
-        if (result != tr) {
-            gen_sub.insert(tr, result);
-            n_substs++;
-#ifdef SIMPLIFY_DEBUG
-            cerr << "Will substitute " << printTerm(tr) << " with " << printTerm(result) << endl;
-#endif
-        }
-    }
-    tr_new = gen_sub.has(root) ? gen_sub[root] : root;
-    return n_substs > 0;
 }
 
 //
@@ -1466,9 +1272,8 @@ void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & subst
         for (int i = 0; i < keyValPairs.size(); ++i) {
             auto & val = keyValPairs[i]->data;
             if (val.sgn != l_True || notChangedElems[i]) { continue; }
-            PTRef newVal = PTRef_Undef;
             PTRef oldVal = val.tr;
-            this->varsubstitute(oldVal, substs, newVal);
+            PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
             if (oldVal != newVal) {
                 changed = true;
                 val = PtAsgn(newVal, l_True);
@@ -1844,8 +1649,7 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
         PtAsgn subst_target = {subst_target_tr, l_True};
         substs_asgn.insert(args[i], subst_target);
     }
-    PTRef tr_subst;
-    varsubstitute(tr, substs_asgn, tr_subst);
+    PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
     if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
         printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
         return PTRef_Undef;

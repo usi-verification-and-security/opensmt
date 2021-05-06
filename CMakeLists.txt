@@ -50,6 +50,7 @@ option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
 option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
+option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
 
 find_package(GMP REQUIRED)
 
@@ -70,12 +71,14 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
     ${CMAKE_SOURCE_DIR}/tsolvers/stpsolver
     ${CMAKE_SOURCE_DIR}/tsolvers/lrasolver
+    ${CMAKE_SOURCE_DIR}/tsolvers/liasolver
     ${CMAKE_SOURCE_DIR}/cnfizers
     ${CMAKE_SOURCE_DIR}/pterms
     ${CMAKE_SOURCE_DIR}/logics
     ${CMAKE_SOURCE_DIR}/smtsolvers
     ${CMAKE_SOURCE_DIR}/parsers/smt2new
     ${CMAKE_SOURCE_DIR}/simplifiers
+    ${CMAKE_SOURCE_DIR}/rewriters
     ${CMAKE_SOURCE_DIR}/proof
     ${CMAKE_SOURCE_DIR}/models
     ${CMAKE_SOURCE_DIR}/itehandler
@@ -134,6 +137,10 @@ if (EXPLICIT_CONGRUENCE_EXPLANATIONS)
   add_definitions(-DEXPLICIT_CONGRUENCE_EXPLANATIONS)
 endif()
 
+if (MATRIX_DEBUG)
+    add_definitions(-DENABLE_MATRIX_TRACE)
+endif()
+
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
 ################# TESTING #############################################
@@ -149,6 +156,17 @@ if(PACKAGE_TESTS)
         add_subdirectory(${PROJECT_SOURCE_DIR}/test)
     endif(CMAKE_VERSION VERSION_LESS 3.11)
 endif()
+#########################################################################
+################# BENCHMARKING ##########################################
+option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
+if (PACKAGE_BENCHMARKS)
+    if(CMAKE_VERSION VERSION_LESS 3.11)
+        MESSAGE(WARNING "Minimum CMAKE version for building benchmarking is 3.11")
+    else()
+        add_subdirectory(${PROJECT_SOURCE_DIR}/benchmark)
+    endif()
+endif()
+
 #########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
 

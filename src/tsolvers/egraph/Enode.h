@@ -336,7 +336,7 @@ class ELAllocator : public RegionAllocator<uint32_t>
     }
 public:
     vec<ELRef> elists;
-    vec<vec<ERef> > referenced_by;
+    std::vector<vec<ERef> > referenced_by;
     ELAllocator() : free_ctr(0) {}
     ELAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), free_ctr(0) {}
 
@@ -349,10 +349,10 @@ public:
         RegionAllocator<uint32_t>::moveTo(to);
         elists.copyTo(to.elists);
         to.referenced_by.clear();
-        for (int i = 0; i < referenced_by.size(); i++) {
-            to.referenced_by.push();
-            for (int j = 0; j < referenced_by[i].size(); j++)
-                to.referenced_by.last().push(referenced_by[i][j]);
+        for (const auto & referencers : referenced_by) {
+            to.referenced_by.emplace_back();
+            for (auto referencer : referencers)
+                to.referenced_by.back().push(referencer);
         }
     }
     ELRef alloc(ERef e, const Expl& r, ERef owner) {
@@ -366,10 +366,10 @@ public:
         for (int i = 0; i < elists.size(); i++)
             assert(elists[i] != elid);
 #endif
-        assert(referenced_by.size() == elists.size());
+        assert(static_cast<int>(referenced_by.size()) == elists.size());
         elists.push(elid);
-        referenced_by.push();
-        referenced_by.last().push(owner);
+        referenced_by.emplace_back();
+        referenced_by.back().push(owner);
         
         return elid;
     }
@@ -405,7 +405,7 @@ public:
         if (el.reloced()) { elr = el.relocation(); return; }
 
         elr = to.alloc(el);
-        to.referenced_by.push();
+        to.referenced_by.emplace_back();
         assert(static_cast<unsigned int>(to.referenced_by.size()) == to[elr].getId()+1);
 
         // copy referers from old allocator to new
@@ -413,7 +413,7 @@ public:
         for (int i = 0; i < referers.size(); i++) {
             ERef er = referers[i];
             if (er != ERef_Undef)
-                to.referenced_by.last().push(er);
+                to.referenced_by.back().push(er);
         }
         el.relocate(elr);
     }

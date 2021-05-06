@@ -297,7 +297,7 @@ public:
     bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
     bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
 
-    bool producePathInterpolants            ( vec<PTRef>& interpolants, const vec<ipartitions_t>& A_mask);
+    bool producePathInterpolants            ( vec<PTRef>& interpolants, const std::vector<ipartitions_t>& A_mask);
     bool producePathInterpolants            ( vec< PTRef > & );
     bool verifyPathInterpolantsFromLeaves   ( vec< PTRef > & );
     bool produceSimultaneousAbstraction     ( vec< PTRef > & );
@@ -306,11 +306,10 @@ public:
     bool verifyStateTransitionInterpolants  ( vec< PTRef > & );
     bool produceGenSimultaneousAbstraction  ( vec< PTRef > & );
     bool verifyGenSimultaneousAbstraction   ( vec< PTRef > & );
-    void produceConfigMatrixInterpolants    ( const vec<vec<int> > &,vec<PTRef> &);
+    void produceConfigMatrixInterpolants    ( const std::vector<vec<int> > &,vec<PTRef> &);
     bool produceTreeInterpolants            ( opensmt::InterpolationTree*, vec<PTRef> &);
     bool verifyTreeInterpolantsFromLeaves   ( opensmt::InterpolationTree*, vec<PTRef> &);
 
-    void produceMultipleInterpolants        ( const vec< ipartitions_t >&, vec<PTRef> &);
     void produceMultipleInterpolants        ( const std::vector< ipartitions_t >&, vec<PTRef> &);
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);

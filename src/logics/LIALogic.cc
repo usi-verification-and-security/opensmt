@@ -2,6 +2,7 @@
 #include "PtStore.h"
 #include "LIALogic.h"
 #include "TreeOps.h"
+#include "OsmtApiException.h"
 
 const char* LIALogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
@@ -15,7 +16,9 @@ const char* LIALogic::tk_int_neg   = "-";
 const char* LIALogic::tk_int_minus = "-";
 const char* LIALogic::tk_int_plus  = "+";
 const char* LIALogic::tk_int_times = "*";
-const char* LIALogic::tk_int_div   = "/";
+const char* LIALogic::tk_int_div   = "div";
+const char* LIALogic::tk_int_mod   = "mod";
+const char* LIALogic::tk_int_abs   = "abs";
 const char* LIALogic::tk_int_lt    = "<";
 const char* LIALogic::tk_int_leq   = "<=";
 const char* LIALogic::tk_int_gt    = ">";
@@ -32,6 +35,8 @@ LIALogic::LIALogic() :
         , sym_Int_PLUS(SymRef_Undef)
         , sym_Int_TIMES(SymRef_Undef)
         , sym_Int_DIV(SymRef_Undef)
+        , sym_Int_MOD(SymRef_Undef)
+        , sym_Int_ABS(SymRef_Undef)
         , sym_Int_EQ(SymRef_Undef)
         , sym_Int_LEQ(SymRef_Undef)
         , sym_Int_LT(SymRef_Undef)
@@ -64,6 +69,8 @@ LIALogic::LIALogic() :
     // Negation
     sym_Int_NEG = declareFun(tk_int_neg, sort_INTEGER, params, msg, true);
     sym_store.setInterpreted(sym_Int_NEG);
+    sym_Int_ABS = declareFun(tk_int_abs, sort_INTEGER, params, msg, true);
+    sym_store.setInterpreted(sym_Int_ABS);
     params.push(sort_INTEGER);
     sym_Int_MINUS = declareFun(tk_int_neg, sort_INTEGER, params, msg, true);
     sym_store[sym_Int_MINUS].setLeftAssoc();
@@ -82,6 +89,9 @@ LIALogic::LIALogic() :
     sym_store[sym_Int_DIV].setNoScoping();
     sym_store[sym_Int_DIV].setLeftAssoc();
     sym_store.setInterpreted(sym_Int_DIV);
+    sym_Int_MOD   = declareFun(tk_int_mod, sort_INTEGER, params, msg, true);
+    sym_store[sym_Int_MOD].setNoScoping();
+    sym_store.setInterpreted(sym_Int_MOD);
     sym_Int_LEQ  = declareFun(tk_int_leq, sort_BOOL, params, msg, true);
     sym_store[sym_Int_LEQ].setNoScoping();
     sym_store[sym_Int_LEQ].setChainable();
@@ -108,61 +118,6 @@ LIALogic::LIALogic() :
     sym_store.setInterpreted(sym_Int_ITE);
 }
 
-bool LIALogic::isBuiltinSort(SRef sr) const  { return sr == sort_INTEGER || Logic::isBuiltinSort(sr); }
-bool  LIALogic::isNonnegNumConst(PTRef tr) const  { return isNumConst(tr) && getNumConst(tr) >= 0; }
-
-//SRef   declareSort_Integer(char** msg);
-SRef   LIALogic::getSort_num()  const  {return sort_INTEGER;}
-
-
-bool        LIALogic::isIntPlus(SymRef sr)  const { return sr == sym_Int_PLUS; }
-bool        LIALogic::isNumPlus(PTRef tr)   const  { return isIntPlus(getPterm(tr).symb()); }
-bool        LIALogic::isIntMinus(SymRef sr) const { return sr == sym_Int_MINUS; }
-bool        LIALogic::isNumMinus(PTRef tr)  const  { return isIntMinus(getPterm(tr).symb()); }
-bool        LIALogic::isIntNeg(SymRef sr)   const { return sr == sym_Int_NEG; }
-bool        LIALogic::isNumNeg(PTRef tr)    const  { return isIntNeg(getPterm(tr).symb()); }
-bool        LIALogic::isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
-bool        LIALogic::isNumTimes(PTRef tr)  const  { return isIntTimes(getPterm(tr).symb()); }
-bool        LIALogic::isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
-bool        LIALogic::isNumDiv(PTRef tr)    const  { return isIntDiv(getPterm(tr).symb()); }
-bool        LIALogic::isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
-bool        LIALogic::isNumEq(PTRef tr)     const  { return isIntEq(getPterm(tr).symb()); }
-bool        LIALogic::isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
-bool        LIALogic::isNumLeq(PTRef tr)    const  { return isIntLeq(getPterm(tr).symb()); }
-bool        LIALogic::isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
-bool        LIALogic::isNumLt(PTRef tr)     const  { return isIntLt(getPterm(tr).symb()); }
-bool        LIALogic::isIntGeq(SymRef sr)   const { return sr == sym_Int_GEQ; }
-bool        LIALogic::isNumGeq(PTRef tr)    const  { return isIntGeq(getPterm(tr).symb()); }
-bool        LIALogic::isIntGt(SymRef sr)    const { return sr == sym_Int_GT; }
-bool        LIALogic::isNumGt(PTRef tr)     const  { return isIntGt(getPterm(tr).symb()); }
-bool        LIALogic::isIntVar(SymRef sr)   const { return isVar(sr) && sym_store[sr].rsort() == sort_INTEGER; }
-bool        LIALogic::isIntVarOrIte(SymRef sr) const { return isIntVar(sr) || (isIte(sr) && sym_store[sr].rsort() == sort_INTEGER); }
-bool        LIALogic::isNumVar(PTRef tr)    const  { return isIntVar(getPterm(tr).symb());}
-bool        LIALogic::isIntZero(SymRef sr)  const { return sr == sym_Int_ZERO; }
-bool        LIALogic::isNumZero(PTRef tr)   const  { return tr == term_Int_ZERO; }
-bool        LIALogic::isIntOne(SymRef sr)   const { return sr == sym_Int_ONE; }
-bool        LIALogic::isNumOne(PTRef tr)    const  { return tr == term_Int_ONE; }
-bool        LIALogic::hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == sort_INTEGER; }
-bool        LIALogic::hasSortNum(PTRef tr) const  { return hasSortInt(getPterm(tr).symb()); }
-PTRef       LIALogic::getTerm_NumZero() const  { return term_Int_ZERO; }
-PTRef      LIALogic::getTerm_NumOne()  const  { return term_Int_ONE; }
-PTRef      LIALogic::getTerm_NumMinusOne()  const  { return term_Int_MINUSONE; }
-
-
-const SymRef LIALogic::get_sym_Num_TIMES () const {return sym_Int_TIMES;}
-const  SymRef LIALogic::get_sym_Num_DIV () const {return sym_Int_DIV;}
-const  SymRef LIALogic::get_sym_Num_MINUS () const {return sym_Int_MINUS;}
-const SymRef LIALogic::get_sym_Num_PLUS () const {return sym_Int_PLUS;}
-const SymRef LIALogic::get_sym_Num_NEG () const {return sym_Int_NEG;}
-const SymRef LIALogic::get_sym_Num_LEQ () const {return sym_Int_LEQ;}
-const SymRef LIALogic::get_sym_Num_GEQ () const {return sym_Int_GEQ;}
-const SymRef LIALogic::get_sym_Num_LT () const {return sym_Int_LT;}
-const SymRef LIALogic::get_sym_Num_GT () const {return sym_Int_GT;}
-const SymRef LIALogic::get_sym_Num_EQ () const {return sym_Int_EQ;}
-const SymRef LIALogic::get_sym_Num_ZERO () const {return sym_Int_ZERO;}
-const SymRef LIALogic::get_sym_Num_ONE () const {return sym_Int_ONE;}
-const SymRef LIALogic::get_sym_Num_ITE () const {return sym_Int_ITE;}
-const SRef LIALogic::get_sort_NUM () const {return sort_INTEGER;}
 
 PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
     vec<PTRef> varFactors;
@@ -186,7 +141,7 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
         PTRef var;
         PTRef coeff;
         splitTermToVarAndConst(factor, var, coeff);
-        assert(isNumVarOrIte(var) and isNumConst(coeff));
+        assert(LALogic::isNumVarLike(var) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
     }
@@ -248,4 +203,70 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
     constantValue.negate();
     constantValue = constantValue.ceil();
     return mkFun(get_sym_Num_LEQ(), {mkConst(constantValue), normalizedSum});
+}
+
+PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
+    if (sym == get_sym_Int_MOD())
+        return mkIntMod(terms);
+    if (sym == get_sym_Int_DIV())
+        return mkIntDiv(terms);
+    return LALogic::insertTerm(sym, terms);
+}
+
+PTRef LIALogic::mkIntDiv(vec<PTRef> const & args) {
+    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for DIV operator"); }
+    return _mkIntDiv(args);
+}
+
+PTRef LIALogic::mkIntDiv(PTRef dividend, PTRef divisor) {
+    return _mkIntDiv({dividend, divisor});
+}
+
+PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
+    assert(args.size() == 2);
+    PTRef dividend = args[0];
+    PTRef divisor = args[1];
+    if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
+    if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
+
+    if (isConstant(dividend)) {
+        auto const& dividendValue = getNumConst(dividend);
+        auto const& divisorValue = getNumConst(divisor);
+        assert(dividendValue.isInteger() and divisorValue.isInteger());
+        // evaluate immediately the operation on two constants
+        auto realDiv = dividendValue / divisorValue;
+        auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
+        return mkConst(intDiv);
+    }
+    return insertTermHash(sym_Int_DIV, args);
+}
+
+PTRef LIALogic::mkIntMod(vec<PTRef> const & args) {
+    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for MOD operator"); }
+    return _mkIntMod(args);
+}
+
+PTRef LIALogic::mkIntMod(PTRef dividend, PTRef divisor) {
+    return _mkIntMod({dividend, divisor});
+}
+
+PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
+    assert(args.size() == 2);
+    PTRef dividend = args[0];
+    PTRef divisor = args[1];
+    if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
+    if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
+
+    if (isConstant(dividend)) {
+        auto const& dividendValue = getNumConst(dividend);
+        auto const& divisorValue = getNumConst(divisor);
+        assert(dividendValue.isInteger() and divisorValue.isInteger());
+        // evaluate immediately the operation on two constants
+        auto realDiv = dividendValue / divisorValue;
+        auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
+        auto intMod = dividendValue - intDiv * divisorValue;
+        assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
+        return mkConst(intMod);
+    }
+    return insertTermHash(sym_Int_MOD, args);
 }

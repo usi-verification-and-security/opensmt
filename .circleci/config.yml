@@ -1,0 +1,146 @@
+version: 2.1
+jobs:
+    build-recent:
+        docker:
+          - image: cimg/base:stable
+            auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+            environment:
+                CMAKE_BUILD_TYPE: Release
+                FLAGS: -Wall -Werror
+                INSTALL: ~/osmt-install
+                USE_READLINE: OFF
+
+        steps:
+            - checkout
+            - run:
+                name: apt-get update
+                command: sudo apt-get update
+            - run:
+                name: install dependencies
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0
+            - run:
+                name: Create the build directory
+                command: mkdir build
+            - run:
+                name: Release build gcc
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+            - run:
+                name: Debug build gcc
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Debug
+            - run:
+                name: Clean build directory
+                command: |
+                    rm -rf build
+                    mkdir build
+            - run:
+                name: Install clang
+                command: |
+                    sudo apt-get install clang
+                    sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
+            - run:
+                name: Release build llvm
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+            - run:
+                name: Debug build llvm
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Debug
+                    FLAGS: -Wall -Werror -Werror=sign-compare -Wunused-lambda-capture -fsanitize=signed-integer-overflow
+
+    # To set up the centos-7 environment:
+    #  - yum install centos-release-scl devtoolset-7 gmp-devel libedit-devel
+    #  - scl enable devtoolset-7 bash
+    #  - curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
+    #  - tar zxf cmake-3.12.3.tar.gz
+    #  - cd cmake-3.12.3
+    #  - ./bootstrap --prefix=/usr/local
+    #  - gmake -j4
+    #  - make install
+    #  - yum install gmp-devel
+    #  - yum install libedit-devel
+    #  - make -j4
+    build-starexec:
+        docker:
+            - image: centos:7
+              auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+              environment:
+                CMAKE_BUILD_TYPE: Release
+                FLAGS: -Wall -Werror
+                INSTALL: ~/osmt-install
+                USE_READLINE: OFF
+
+        steps:
+            - run:
+                name: Install the environment
+                command: |
+                    yum -y install centos-release-scl
+                    yum -y install devtoolset-7
+                    yum -y install gmp-devel
+                    yum -y install libedit-devel
+                    yum -y install bison
+                    yum -y install flex
+                    yum -y install git
+            - run:
+                name: Fetch cmake-3.12.3
+                command: |
+                    cd
+                    curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
+                    tar zxf cmake-3.12.3.tar.gz
+            - run:
+                name: Compile cmake-3.12.3 under devtoolset-7
+                command: |
+                    echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-7 bash
+            - checkout
+            - run:
+                name: Create the build directory
+                command: mkdir build
+            - run:
+                name: Release build gcc under devtoolset-7
+                command: |
+                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-7 bash
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+
+    build-macos:
+        macos:
+            xcode: 12.4.0
+        steps:
+            - run:
+                name: Homebrew
+                command: |
+                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            - run:
+                name: Packages
+                command: |
+                  brew install cmake
+                  brew install gmp
+                  brew install bison
+                  brew install flex
+            - checkout
+            - run:
+                name: Store path
+                command: echo 'export PATH=/usr/local/opt/flex/bin:/usr/local/opt/bison/bin:$PATH' >> $BASH_ENV
+            - run:
+                name: Release build OS X
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+                    FLAGS: -Wall -Werror
+                    INSTALL: ~/osmt-install
+
+workflows:
+    build-test:
+        jobs:
+            - build-starexec
+            - build-recent
+            - build-macos

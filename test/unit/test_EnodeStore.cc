@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <Logic.h>
 #include <EnodeStore.h>
+#include <TreeOps.h>
 
 class EnodeStoreTest : public ::testing::Test {
 protected:
@@ -17,6 +18,7 @@ TEST_F(EnodeStoreTest, testUP) {
     PTRef B = logic.mkBoolVar("B");
     PTRef conj = logic.mkAnd({A, B});
     PTRef P_A = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {A});
+    AppearsInUfVisitor(logic).visit(P_A);
     EnodeStore enodeStore(logic);
     for (auto tr : {B, conj}) {
         // No enode needed: B is a boolean atom not appearing in UF, and conj is a boolean operator not appearing in UF
@@ -41,6 +43,7 @@ TEST_F(EnodeStoreTest, testUPWithInternalConjIncr) {
     ASSERT_FALSE(enodeStore.needsEnode(conj));
 
     PTRef P_conj = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {conj});
+    AppearsInUfVisitor(logic).visit(P_conj);
     // Enode needed: P is a UP
     ASSERT_TRUE(enodeStore.needsEnode(P_conj));
     // Enode needed: conj appears in a UP
@@ -51,6 +54,7 @@ TEST_F(EnodeStoreTest, testUPWithInternalConjIncr) {
     }
 
     PTRef Q_A = logic.mkUninterpFun(logic.declareFun("Q", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {A});
+    AppearsInUfVisitor(logic).visit(Q_A);
     for (auto tr : {A, conj, Q_A}) {
         // Enode needed: A appears in the UP Q, conj still appears in P, Q_A is a UP
         ASSERT_TRUE(enodeStore.needsEnode(tr));
@@ -70,7 +74,7 @@ TEST_F(EnodeStoreTest, testUFEquality) {
         ASSERT_FALSE(enodeStore.needsEnode(tr));
     }
     PTRef f = logic.mkUninterpFun(logic.declareFun("f", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {eq});
-
+    AppearsInUfVisitor(logic).visit(f);
     for (auto tr : {f, eq}) {
         // Enodes needed: f is a UP and eq appears in f
         ASSERT_TRUE(enodeStore.needsEnode(tr));
@@ -90,6 +94,7 @@ TEST_F(EnodeStoreTest, testUFMixed) {
     SRef ufsort = logic.declareSort("U", nullptr);
     PTRef a = logic.mkUninterpFun(logic.declareFun("a", ufsort, {}, nullptr), {});
     PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}, nullptr), {x, a});
+    AppearsInUfVisitor(logic).visit(mixed);
     // Enode needed: a is a UF, mixed is a UP, and x appears in mixed
     ASSERT_TRUE(enodeStore.needsEnode(a));
     ASSERT_TRUE(enodeStore.needsEnode(mixed));

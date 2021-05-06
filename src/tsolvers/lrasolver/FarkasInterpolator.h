@@ -12,7 +12,6 @@
 #include <TheoryInterpolator.h>
 
 class LALogic;
-class PartitionManager;
 
 struct DecomposedStatistics {
     unsigned int decompositionOpportunities = 0;
@@ -42,16 +41,28 @@ struct DecomposedStatistics {
 
 class FarkasInterpolator {
 public:
-    FarkasInterpolator(LALogic & logic, vec<PtAsgn> const & explanations, std::vector<opensmt::Real> const & coeffs,
-                       std::map<PTRef, icolor_t> & labels) : FarkasInterpolator(logic, explanations, coeffs, &labels,
-                                                                                nullptr) {}
-
-    FarkasInterpolator(LALogic & logic, vec<PtAsgn> const & explanations, std::vector<opensmt::Real> const & coeffs,
-                       std::map<PTRef, icolor_t> * labels, std::unique_ptr<TermColorInfo> colorInfo)
+    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+                       std::map<PTRef, icolor_t> labels)
         : logic(logic),
-          explanations(explanations),
-          explanation_coeffs(coeffs),
-          labels(labels),
+          explanations(std::move(explanations)),
+          explanation_coeffs(std::move(coeffs)),
+          labels(std::move(labels))
+    {}
+
+    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+                       std::map<PTRef, icolor_t> labels, std::unique_ptr<TermColorInfo> colorInfo)
+        : logic(logic),
+          explanations(std::move(explanations)),
+          explanation_coeffs(std::move(coeffs)),
+          labels(std::move(labels)),
+          termColorInfo(std::move(colorInfo))
+    {}
+
+    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+                       std::unique_ptr<TermColorInfo> colorInfo)
+        : logic(logic),
+          explanations(std::move(explanations)),
+          explanation_coeffs(std::move(coeffs)),
           termColorInfo(std::move(colorInfo))
     {}
 
@@ -79,8 +90,8 @@ private:
 
     icolor_t getColorFor(PTRef term) const {
         // use labels
-        if(labels != nullptr && labels->find(term) != labels->end()){
-            return labels->at(term);
+        if (labels.find(term) != labels.end()){
+            return labels.at(term);
         }
         // otherwise use global partitioning information
         return getGlobalColorFor(term);
@@ -94,9 +105,9 @@ private:
 
 private:
     LALogic & logic;
-    const vec<PtAsgn> & explanations;
-    const std::vector<opensmt::Real> & explanation_coeffs;
-    std::map<PTRef, icolor_t> * labels;
+    const vec<PtAsgn> explanations;
+    const std::vector<opensmt::Real> explanation_coeffs;
+    const std::map<PTRef, icolor_t> labels;
     std::unique_ptr<TermColorInfo> termColorInfo;
 };
 

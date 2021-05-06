@@ -35,21 +35,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   , cl_al		( cl )
 { }
 
-
-void Proof::newOriginalClause(CRef c)
-{
-  assert(c != CRef_Undef);
-  assert(!hasOpenChain());
-  assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
-  clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_ORIG});
-}
-
-void Proof::newTheoryClause(CRef c)
+void Proof::newLeafClause(CRef c, clause_type t)
 {
     assert(c != CRef_Undef);
     assert(!hasOpenChain());
     assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
-    clause_to_proof_der.emplace(c, ProofDer{clause_type::CLA_THEORY});
+    clause_to_proof_der.emplace(c, ProofDer{t});
 }
 
 

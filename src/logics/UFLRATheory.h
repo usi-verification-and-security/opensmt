@@ -34,16 +34,17 @@ class UFLRATheory : public Theory
   private:
     LRALogic &    lralogic;
     UFLRATHandler uflratshandler;
+    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
   public:
     UFLRATheory(SMTConfig& c, LRALogic & logic)
         : Theory(c)
         , lralogic(logic)
         , uflratshandler(c, lralogic)
     { }
-    virtual LRALogic&       getLogic() { return lralogic; }
-    virtual const LRALogic& getLogic() const { return lralogic; }
-    virtual UFLRATHandler&  getTSolverHandler() { return uflratshandler; }
-    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int);
+    virtual LRALogic&       getLogic() override { return lralogic; }
+    virtual const LRALogic& getLogic() const override { return lralogic; }
+    virtual UFLRATHandler&  getTSolverHandler() override { return uflratshandler; }
+    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
 };
 
 #endif

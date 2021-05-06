@@ -899,8 +899,8 @@ void ProofGraph::proofPostStructuralHashing()
 	clauseid_t id;
 	ProofNode* n=NULL;
 	// Map to associate node to its antecedents
-	map< pair<clauseid_t,clauseid_t>, clauseid_t >* ants_map_ = new map< pair<clauseid_t,clauseid_t>, clauseid_t >;
-	map< pair<clauseid_t,clauseid_t>, clauseid_t >& ants_map = *ants_map_;
+	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >* ants_map_ = new map< std::pair<clauseid_t,clauseid_t>, clauseid_t >;
+	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >& ants_map = *ants_map_;
 
 	// NOTE Topological visit and node replacement on the fly
 	// Guarantees that both replacing and replaced node subproofs have been visited
@@ -933,8 +933,8 @@ void ProofGraph::proofPostStructuralHashing()
 					else
 					{ c2 = n->getAnt1()->getId(); c1 = n->getAnt2()->getId(); }
 					// Look for pair <ant1,ant2>
-					pair<clauseid_t, clauseid_t> ant_pair (c1,c2);
-					map< pair<clauseid_t,clauseid_t>, clauseid_t >::iterator it = ants_map.find( ant_pair );
+					std::pair<clauseid_t, clauseid_t> ant_pair (c1,c2);
+					map< std::pair<clauseid_t,clauseid_t>, clauseid_t >::iterator it = ants_map.find( ant_pair );
 					found = ( it != ants_map.end() );
 					// If pairs not found, add node to the map
 					if( !found ) ants_map[ ant_pair ] = id ;

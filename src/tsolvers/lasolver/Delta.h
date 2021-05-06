@@ -51,6 +51,7 @@ public:
     inline Delta();                               // Same as Delta(UPPER)
     inline Delta(const Real & v);                // Constructor for Real delta
     inline Delta(const Real & v, const Real & d); // Constructor for Real delta with strict part
+    inline Delta(Real && v, Real && d);          // Constructor for Real delta with strict part
     inline Delta(const Delta & a);               // Copy constructor
     inline ~Delta();                             // Destructor
 
@@ -99,9 +100,11 @@ public:
     inline friend bool operator>=(const Real & c, const Delta & a);
 
     // Arithmetic overloadings
-    inline friend Delta operator+=(Delta & a, const Delta & b);
+    Delta& operator+=(Delta const & b);
+    Delta& operator+=(Delta && b);
 
-    inline friend Delta operator-=(Delta & a, const Delta & b);
+    Delta& operator-=(Delta const & b);
+    Delta& operator-=(Delta && b);
 
     inline friend Delta operator-(const Delta & a, const Delta & b);
 
@@ -139,16 +142,28 @@ bool Delta::hasDelta() const {
 }
 
 // Arithmetic operators definitions.
-Delta operator+=(Delta & a, const Delta & b) {
-    a.r += b.R();
-    a.d += b.D();
-    return a;
+inline Delta& Delta::operator+=(const Delta & b) {
+    this->r += b.R();
+    this->d += b.D();
+    return *this;
 }
 
-Delta operator-=(Delta & a, const Delta & b) {
-    a.r -= b.R();
-    a.d -= b.D();
-    return a;
+inline Delta& Delta::operator+=(Delta && b) {
+    this->r += std::move(b.r);
+    this->d += std::move(b.d);
+    return *this;
+}
+
+inline Delta& Delta::operator-=(Delta const & b) {
+    this->r -= b.R();
+    this->d -= b.D();
+    return *this;
+}
+
+inline Delta& Delta::operator-=(Delta && b) {
+    this->r -= std::move(b.R());
+    this->d -= std::move(b.D());
+    return *this;
 }
 
 Delta operator-(const Delta & a, const Delta & b) {
@@ -256,6 +271,8 @@ Delta::Delta(const Real & v) : r{v}, d{0} {}
 // Constructor for Real delta with strict bit
 //
 Delta::Delta(const Real & v_r, const Real & v_d) : r{v_r}, d{v_d} {}
+
+Delta::Delta(Real && v_r, Real && v_d) : r{std::move(v_r)}, d{std::move(v_d)} { }
 
 
 //

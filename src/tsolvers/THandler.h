@@ -126,8 +126,8 @@ protected:
 
 // Debug
 public:
-    const char* printAsrtClause(vec<Lit>& r);
-    const char* printAsrtClause(Clause *c);
+    char* printAsrtClause(vec<Lit>& r);
+    char* printAsrtClause(Clause *c);
     bool checkTrailConsistency(vec<Lit>& trail);
 protected:
 #ifdef PEDANTIC_DEBUG

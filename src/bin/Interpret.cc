@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <assert.h>
 #include <stdarg.h>
-#include <string.h>
+#include <string>
 #include <sstream>
 #include <ctime>
 #include <cstdlib>
@@ -343,14 +343,38 @@ void Interpret::interp(ASTNode& n) {
         }
         case t_push:
         {
-            push();
-            notify_success();
+            std::string str((**(n.children->begin())).getValue());
+            try {
+                int num = std::stoi(str);
+                if (num < 0) {
+                    notify_formatted(true, "Incorrect push command, value is negative.");
+                    break;
+                }
+                bool success = true;
+                while (num-- and success) { success = push(); }
+                if (success) { notify_success(); }
+            }
+            catch(std::out_of_range const & ex) {
+                notify_formatted(true, "Incorrect push command, the value is out of range.");
+            }
             break;
         }
         case t_pop:
         {
-            pop();
-            notify_success();
+            std::string str((**(n.children->begin())).getValue());
+            try {
+                int num = std::stoi(str);
+                if (num < 0) {
+                    notify_formatted(true, "Incorrect pop command, value is negative.");
+                    break;
+                }
+                bool success = true;
+                while (num-- and success) { success = pop(); }
+                if (success) { notify_success(); }
+            }
+            catch(std::out_of_range const & ex) {
+                notify_formatted(true, "Incorrect pop command, the value is out of range.");
+            }
             break;
         }
         case t_exit:
@@ -649,13 +673,13 @@ bool Interpret::getAssignment() {
 void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
     Logic& logic = main_solver->getLogic();
-    vec<ValPair> values;
+    std::vector<ValPair> values;
     for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            values.push(main_solver->getValue(tr));
+            values.emplace_back(main_solver->getValue(tr));
             char* pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str);
             free(pt_str);
@@ -663,9 +687,9 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
-    for (int i = 0; i < values.size(); i++) {
-        char* name = logic.printTerm(values[i].tr);
-        printf("(%s %s)", name, values[i].val);
+    for (const ValPair & valPair : values) {
+        char* name = logic.printTerm(valPair.tr);
+        printf("(%s %s)", name, valPair.val);
         free(name);
     }
     printf(")\n");
@@ -932,7 +956,7 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
         cout << "\")" << endl;
 //    else
 //        cout << ")" << endl;
-        cout << endl;
+    cout << endl;
 }
 
 void Interpret::notify_success() {
@@ -978,11 +1002,19 @@ int Interpret::interpPipe() {
     int buf_sz  = 16;
     char* buf   = (char*) malloc(sizeof(char)*buf_sz);
     int rd_head = 0;
+    int par     = 0;
+    int i       = 0;
+
+    bool inComment = false;
+    bool inString = false;
+    bool inQuotedSymbol = false;
 
     bool done  = false;
     buf[0] = '\0';
     while (!done) {
+        assert(i >= 0 and i <= rd_head);
         assert(buf[rd_head] == '\0');
+        assert(rd_head < buf_sz);
         if (rd_head == buf_sz - 1) {
             buf_sz *= 2;
             buf = (char*) realloc(buf, sizeof(char)*buf_sz);
@@ -992,25 +1024,51 @@ int Interpret::interpPipe() {
         int bts_rd = read(STDIN_FILENO, &buf[rd_head], rd_chunk);
         if (bts_rd == 0) {
             // Read EOF
-            done = true;
-            continue;
+            break;
         }
         if (bts_rd < 0) {
-            done = true;
-
             // obtain the error string
             char const * err_str = strerror(errno);
-
             // format the error
             notify_formatted(true, err_str);
-            continue;
+            break;
         }
 
         rd_head += bts_rd;
-        int par     = 0;
-        for (int i = 0; i < rd_head; i++) {
+        buf[rd_head] = '\0';
+
+        for (; i < rd_head; i++) {
+
             char c = buf[i];
-            if (c == '(') par ++;
+
+            if (inComment || (not inQuotedSymbol and not inString and c == ';')) {
+                inComment = (c != '\n');
+            }
+            if (inComment) {
+                continue;
+            }
+            assert(not inComment);
+            if (inQuotedSymbol) {
+                inQuotedSymbol = (c != '|');
+            } else if (not inString and c == '|') {
+                inQuotedSymbol = true;
+            }
+            if (inQuotedSymbol) {
+                continue;
+            }
+            assert (not inComment and not inQuotedSymbol);
+            if (inString) {
+                inString = (c != '\"');
+            } else if (c == '\"') {
+                inString = true;
+            }
+            if (inString) {
+                continue;
+            }
+
+            if (c == '(') {
+                par ++;
+            }
             else if (c == ')') {
                 par --;
                 if (par == 0) {
@@ -1020,13 +1078,16 @@ int Interpret::interpPipe() {
                     for (int j = 0; j <= i; j++)
                         buf_out[j] = buf[j];
                     buf_out[i+1] = '\0';
-                    // copy remaining part buf
+
+                    // copy the part after a top-level balanced parenthesis to the start of buf
                     for (int j = i+1; j < rd_head; j++)
                         buf[j-i-1] = buf[j];
                     buf[rd_head-i-1] = '\0';
-                    // update pointers
+
+                    // update the end position of buf to reflect the removal of the string to be parsed
                     rd_head = rd_head-i-1;
 
+                    i = -1; // will be incremented to 0 by the loop condition.
                     Smt2newContext context(buf_out);
                     int rval = smt2newparse(&context);
                     if (rval != 0)
@@ -1128,7 +1189,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         opensmt_error("Cannot interpolate");
 
     assert(grouping.size() >= 2);
-    vec<ipartitions_t> partitionings;
+    std::vector<ipartitions_t> partitionings;
     ipartitions_t p = 0;
     // We assume that together the groupings cover all query, so we ignore the last argument, since that should contain all that was missing at that point
     for (int i = 0; i < grouping.size() - 1; i++)
@@ -1159,7 +1220,11 @@ void Interpret::getInterpolants(const ASTNode& n)
                 return;
             }
         }
-        partitionings.push_c(p);
+        partitionings.emplace_back(p);
+    }
+    if (main_solver->getStatus() != s_False) {
+        notify_formatted(true, "Cannot interpolate, solver is not in UNSAT state!");
+        return;
     }
     auto interpolationContext = main_solver->getInterpolationContext();
 //        cerr << "Computing interpolant with mask " << p << endl;
@@ -1172,7 +1237,8 @@ void Interpret::getInterpolants(const ASTNode& n)
 
     for (int j = 0; j < itps.size(); j++) {
         char * itp = logic->pp(itps[j]);
-        notify_formatted(false, "%s", itp);
+        notify_formatted(false, "%s%s%s",
+                         (j == 0 ? "(" : " "), itp, (j == itps.size() - 1 ? ")" : ""));
         free(itp);
     }
 }

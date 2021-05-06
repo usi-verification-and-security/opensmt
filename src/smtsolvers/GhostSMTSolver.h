@@ -9,7 +9,7 @@
 class GhostSMTSolver : public SimpSMTSolver
 {
 private:
-    vec<vec<CRef>> thLitToClauses;
+    std::vector<vec<CRef>> thLitToClauses;
     vec<Var> ghostTrail;
     vec<int> ghostTrailLim;
     Var pickBranchVar();

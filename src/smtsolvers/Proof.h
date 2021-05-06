@@ -44,9 +44,9 @@ class THandler;
  * - learnt   -> clause learnt by the SAT solver, result of a derivation chain
  * - derived  -> denotes intermediate clauses in resolution chains; needed only for ProofGraph (consider removing it)
  */
-enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED, CLA_ASSUMPTION };
+enum class clause_type: char { CLA_ORIG, CLA_LEARNT, CLA_THEORY, CLA_DERIVED, CLA_ASSUMPTION, CLA_SPLIT };
 inline bool isLeafClauseType(clause_type ct) {
-    return ct == clause_type::CLA_ORIG || ct == clause_type::CLA_THEORY || ct == clause_type::CLA_ASSUMPTION;
+    return ct == clause_type::CLA_ORIG || ct == clause_type::CLA_THEORY || ct == clause_type::CLA_ASSUMPTION || ct == clause_type::CLA_SPLIT;
 }
 
 std::ostream &operator<<(std::ostream &os, clause_type enumTmp);
@@ -96,19 +96,21 @@ public:
     ~Proof( ) = default;
 
     // Notifies the proof about a new original clause.
-    void newOriginalClause ( CRef);
+    void newOriginalClause(CRef c) { newLeafClause(c, clause_type::CLA_ORIG); }
 
     // Notifies the proof about a new T-clause.
-    void newTheoryClause ( CRef);
+    void newTheoryClause(CRef c) { newLeafClause(c, clause_type::CLA_THEORY); }
+
+    void newSplitClause(CRef c) { newLeafClause(c, clause_type::CLA_SPLIT); }
 
     // Notifies the proof that a new resolution chain, starting from the passed clause, is being processed.
-    void beginChain ( CRef );
+    void beginChain(CRef);
 
     // Notifies the proof that the current resolution chain has ended with the passed clause.
-    void endChain   ( CRef );
+    void endChain(CRef);
 
     // Notifies the proof to register a resolution step in current chain.
-    void addResolutionStep( CRef, Var );
+    void addResolutionStep(CRef, Var);
 
     inline bool hasOpenChain() const { return begun; }
 
@@ -150,8 +152,8 @@ public:
         return it->second;
     }
 
-    bool deleted    ( CRef );                             // Remove clauses if possible
-    inline Clause& getClause       ( CRef cr ) const { return cl_al[cr]; } // Get clause from reference
+    bool deleted(CRef);                             // Remove clauses if possible
+    inline Clause& getClause(CRef cr) const { return cl_al[cr]; } // Get clause from reference
 
     void print( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
 
@@ -164,11 +166,12 @@ public:
         return res;
     }
 
-    std::unordered_map< CRef, ProofDer> const & getProof( ) const { return clause_to_proof_der; }
+    std::unordered_map< CRef, ProofDer> const & getProof() const { return clause_to_proof_der; }
 
 private:
     // Helper methods
     void cleanAssumedLiteral(Lit l);
+    void newLeafClause(CRef, clause_type t);
 };
 
 //=================================================================================================

@@ -4,8 +4,10 @@
 #include "LIALogic.h"
 #include "LASolver.h"
 #include "lasolver/LARefs.h"
+#include <unordered_map>
+#include <vector>
 
-
+#include <map>
 
 class LIASolverStats: public LASolverStats
 {
@@ -51,18 +53,19 @@ public:
 
     LIASolver(SMTConfig & c, LIALogic & l);
 
-    ~LIASolver( );                                      // Destructor ;-)
+    ~LIASolver() = default;
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
-    LIALogic&  getLogic() override;// { return logic; }
-    TRes check    ( bool complete) override; // Checks the satisfiability of current constraints //PS. add the implementation to LIASolver.C
+    LIALogic& getLogic() override { return logic; }
+    TRes check(bool complete) override;
     void getNewSplits(vec<PTRef>& splits) override;
+
+    PTRef getInterpolant(std::map<PTRef, icolor_t> const&);
 
 protected:
 
     void notifyVar(LVRef v) override;
-    void initSolver( );                                     // Initializes the solver
 
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
@@ -75,7 +78,7 @@ protected:
 
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
-    vec<Map<opensmt::Real, bool, FastRationalHash> > cuts;
+    std::vector<std::unordered_map<opensmt::Real, bool, FastRationalHash> > cuts;
 
 };
 

@@ -1,4 +1,5 @@
 #include "Theory.h"
+#include "Substitutor.h"
 //#include "MainSolver.h"
 //#include "logics/Logic.h"
 
@@ -60,8 +61,8 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         getLogic().substitutionsTransitiveClosure(newsubsts);
         if (res != l_Undef)
             root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
-        PTRef new_root;
-        bool cont = getLogic().varsubstitute(root, newsubsts, new_root);
+        PTRef new_root = Substitutor(getLogic(), newsubsts).rewrite(root);
+        bool cont = new_root != root;
         // remember the substitutions
         vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> newsubsts_vec;
         newsubsts.getKeysAndVals(newsubsts_vec);

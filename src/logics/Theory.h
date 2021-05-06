@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef THEORY_H
 #define THEORY_H
 
+#include <memory>
+
 #include "Logic.h"
 #include "LRALogic.h"
 #include "LIALogic.h"
@@ -175,43 +177,8 @@ class Theory
     virtual bool            simplify(const vec<PFRef>&, PartitionManager& pmanager, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     SubstitutionResult      computeSubstitutions(PTRef fla);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
-    virtual                ~Theory()                           {};
-};
-
-class LRATheory : public Theory
-{
-  protected:
-    LRALogic&    lralogic;
-    LRATHandler  lratshandler;
-  public:
-    LRATheory(SMTConfig & c, LRALogic & logic)
-        : Theory(c)
-        , lralogic(logic)
-        , lratshandler(c, lralogic)
-    { }
-    ~LRATheory() {};
-    virtual LRALogic&          getLogic() override { return lralogic; }
-    virtual const LRALogic&    getLogic() const override { return lralogic; }
-    virtual LRATHandler&       getTSolverHandler() override { return lratshandler; }
-    virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
-};
-
-class LIATheory : public Theory
-{
-protected:
-    LIALogic &  lialogic;
-    LIATHandler liatshandler;
-public:
-    LIATheory(SMTConfig & c, LIALogic & logic)
-    : Theory(c)
-    , lialogic(logic)
-    , liatshandler(c, lialogic)
-    { }
-    ~LIATheory() {};
-    virtual LIALogic&       getLogic() override { return lialogic; }
-    virtual const LIALogic& getLogic() const override { return lialogic; }
-    virtual LIATHandler&    getTSolverHandler() override { return liatshandler; }
-    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
+    virtual bool            okToPartition(PTRef) const { return true; }
+    virtual                ~Theory() {};
 };
 
 class UFTheory : public Theory
