@@ -38,6 +38,12 @@ public:
 
     bool operator<=(SafeInt other) const { return val <= other.val; }
 
+    SafeInt operator-(SafeInt other) const {
+        SafeInt res = *this;
+        res -= other;
+        return res;
+    }
+
     SafeInt operator-() const { return SafeInt(-val); }
 };
 

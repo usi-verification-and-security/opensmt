@@ -30,8 +30,7 @@ public:
 
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
 
-    // FIXME: should be negated
-    T getValue(VertexRef v) const { return valMap.at(v.x); } // valid assignment is actually the inverse of distance
+    T getValue(VertexRef v) const { return Converter<T>::getValue(0) - valMap.at(v.x); } // valid assignment is actually the inverse of distance
 };
 
 #include "STPModel_implementations.hpp"
