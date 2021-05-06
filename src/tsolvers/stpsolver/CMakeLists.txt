@@ -13,7 +13,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPMapper_implementations.hpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPGraphManager_implementations.hpp"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPModel_implementations.hpp"
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPEdgeGraph.cpp"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/STPEdgeGraph.cc"
 
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/IDLSolver.h"
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/RDLSolver.h"

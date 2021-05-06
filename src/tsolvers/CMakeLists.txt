@@ -33,7 +33,7 @@ include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)
 
-install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h IDLTHandler.h TSolver.h THandler.h
+install(FILES Deductions.h UFTHandler.h CUFTHandler.h LRATHandler.h LIATHandler.h IDLTHandler.h RDLTHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
