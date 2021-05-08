@@ -66,7 +66,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/symbols
     ${CMAKE_SOURCE_DIR}/options
     ${CMAKE_SOURCE_DIR}/api
-    ${CMAKE_SOURCE_DIR}/bin
     ${CMAKE_SOURCE_DIR}/tsolvers
     ${CMAKE_SOURCE_DIR}/tsolvers/egraph
     ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
