@@ -532,7 +532,7 @@ bool ScatterSplitter::createSplit_scatter(bool last)
     vec<Lit> constraints_negated;
     vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
-    for (int i = 0; i < decisionLevel(); i++) {
+    for (int i = assumptions.size(); i < decisionLevel(); i++) {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
