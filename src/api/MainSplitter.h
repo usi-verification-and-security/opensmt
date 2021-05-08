@@ -9,9 +9,9 @@
 #include "ScatterSplitter.h"
 
 class MainSplitter : public MainSolver {
-protected:
-    std::unique_ptr<ScatterSplitter> scatter_Splitter;
+
 public:
+    std::shared_ptr<ScatterSplitter> scatter_Splitter;
     MainSplitter(Logic& logic, SMTConfig& config, std::string name) : MainSolver(logic, config, std::move(name)) {}
     bool writeSolverSplits_smtlib2(const char* file, char** msg) const;
 };
