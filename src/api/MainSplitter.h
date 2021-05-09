@@ -11,8 +11,17 @@
 class MainSplitter : public MainSolver {
 
 public:
+
     std::shared_ptr<ScatterSplitter> scatter_Splitter;
-    MainSplitter(Logic& logic, SMTConfig& config, std::string name) : MainSolver(logic, config, std::move(name)) {}
+    THandler                        thandler;
+    TermMapper                      term_mapper;
+    MainSplitter(Logic& logic, SMTConfig& config, std::string name)
+        :
+        term_mapper(logic),
+        thandler(getTheory(), term_mapper),
+        scatter_Splitter(),
+        //scatter_Splitter(config, thandler),
+        MainSolver(logic, config, std::move(name)) {}
     bool writeSolverSplits_smtlib2(const char* file, char** msg) const;
 };
 
