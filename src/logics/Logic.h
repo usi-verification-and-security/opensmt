@@ -41,8 +41,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
-public:
-
 protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
