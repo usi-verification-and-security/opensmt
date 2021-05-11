@@ -68,7 +68,7 @@ public:
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
-    void    setSubstitutions(MapWithKeys<PTRef,PTRef,PTRefHash>&& substs_) { getLogic().substitutionsTransitiveClosure<PTRef>(substs_); substs = std::move(substs_); }
+    void    setSubstitutions(MapWithKeys<PTRef,PTRef,PTRefHash>&& substs_) { substs = std::move(substs_); }
     MapWithKeys<PTRef,PTRef,PTRefHash> const & getSubstitutions() const { return substs; }
     void printSubstitutions() const {
         for (auto key : substs.getKeys()) {
