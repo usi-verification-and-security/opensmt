@@ -462,3 +462,23 @@ TEST(Rationals_test, test_addNegated)
     }
 }
 
+TEST(Rationals_test, testWordRepresentation_Negate) {
+    FastRational a(INT_MIN); // a fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+    a.negate(); // a now does not fit into word representation
+    ASSERT_FALSE(a.wordPartValid());
+    a.negate(); // a now again fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+}
+
+TEST(Rationals_test, testWordRepresentation_Inverse) {
+    uword val = INT_MAX;
+    ++val;
+    FastRational a(1, val); // a fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+    a = a.inverse(); // a now does not fit into word representation
+    ASSERT_FALSE(a.wordPartValid());
+    a = a.inverse(); // a now again fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+}
+

@@ -494,6 +494,7 @@ inline void FastRational::negate() {
         // MB: for the special case num == WORD_MIN && wordPartValid
         setWordPartInvalid();
     }
+    assert(isWellFormed());
 }
 
 inline int FastRational::compare(const FastRational& b) const {
@@ -606,6 +607,7 @@ template<uword> uword gcd(uword a, uword b);
 
 inline bool FastRational::isWellFormed() const
 {
+    assert(wordPartValid() or not fitsWord());
     return (  wordPartValid() || mpqPartValid() )
            && ( !wordPartValid() || (den != 0 && gcd(absVal(num), den)==1) )
            && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 )
@@ -1039,6 +1041,7 @@ inline FastRational FastRational::inverse() const {
     dest.ensure_mpq_memory_allocated();
     mpq_inv(dest.mpq, mpq);
     dest.state = State::MPQ_ALLOCATED_AND_VALID;
+    assert(dest.isWellFormed());
     return dest;
 }
 
