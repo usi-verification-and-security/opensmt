@@ -493,6 +493,7 @@ inline void FastRational::negate() {
         mpq_neg(mpq, mpq);
         // MB: for the special case num == WORD_MIN && wordPartValid
         setWordPartInvalid();
+        try_fit_word();
     }
     assert(isWellFormed());
 }
@@ -1041,6 +1042,7 @@ inline FastRational FastRational::inverse() const {
     dest.ensure_mpq_memory_allocated();
     mpq_inv(dest.mpq, mpq);
     dest.state = State::MPQ_ALLOCATED_AND_VALID;
+    dest.try_fit_word();
     assert(dest.isWellFormed());
     return dest;
 }
