@@ -7,6 +7,7 @@
 
 #include "Rewriter.h"
 
+
 class EqualityRewriterConfig : public DefaultRewriterConfig<PTRef> {
     LALogic & logic;
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
