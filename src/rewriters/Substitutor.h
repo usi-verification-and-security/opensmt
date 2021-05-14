@@ -27,6 +27,24 @@ public:
     }
 };
 
+template <typename TAsgn>
+class IteSubstitutionConfig : public IteRewriterConfig<TAsgn> {
+private:
+    using SubMap = MapWithKeys<PTRef, TAsgn, PTRefHash>;
+    SubMap const & subMap;
+
+public:
+
+    IteSubstitutionConfig<TAsgn>(Logic &, SubMap const & subMap): subMap(subMap) {}
+    PTRef rewrite(PTRef term) override {
+        PTRef result = term;
+        if (subMap.has(term) && DefaultRewriterConfig<TAsgn>::isEnabled(subMap[term])) {
+            result = DefaultRewriterConfig<TAsgn>::getAsgnTerm(subMap[term]);
+        }
+        return result;
+    }
+};
+
 template<typename TAsgn>
 class Substitutor : public Rewriter<SubstitutionConfig<TAsgn>,TAsgn> {
     SubstitutionConfig<TAsgn> config;
@@ -34,5 +52,15 @@ class Substitutor : public Rewriter<SubstitutionConfig<TAsgn>,TAsgn> {
 public:
     Substitutor(Logic &logic, MapWithKeys<PTRef, TAsgn, PTRefHash> const &substs) :
             Rewriter<SubstitutionConfig<TAsgn>,TAsgn>(logic, config),
+            config(logic, substs) {}
+};
+
+template<typename TAsgn>
+class IteSubstitutor : public Rewriter<IteSubstitutionConfig<TAsgn>,TAsgn> {
+    IteSubstitutionConfig<TAsgn> config;
+
+public:
+    IteSubstitutor(Logic &logic, MapWithKeys<PTRef, TAsgn, PTRefHash> const &substs) :
+            Rewriter<IteSubstitutionConfig<TAsgn>,TAsgn>(logic, config),
             config(logic, substs) {}
 };

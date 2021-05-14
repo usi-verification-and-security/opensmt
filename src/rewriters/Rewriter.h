@@ -30,13 +30,18 @@ public:
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
+            auto currentId = Idx(logic.getPterm(currentRef).getId());
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
+                done[currentId] = 1;
                 continue;
             }
-            assert(not done[Idx(logic.getPterm(currentRef).getId())]);
+            assert(not done[currentId]);
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
+            if (cfg.treatIteAsVar() and logic.isIte(term.symb())) {
+                childrenCount = 0;
+            }
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
@@ -46,8 +51,7 @@ public:
                 continue;
             }
             // If we are here, we have already processed all children
-            assert(done[Idx(term.getId())] == 0);
-            vec<PTRef> newArgs(static_cast<int>(childrenCount));
+            vec<PTRef> newArgs(childrenCount);
             bool needsChange = false;
             for (auto i = 0; i < newArgs.size(); ++i) {
                 TAsgn it;
@@ -64,7 +68,7 @@ public:
             if (rewritten != newTerm) {
                 substitutions.insert(currentRef, TAsgn(rewritten));
             }
-            done[Idx(logic.getPterm(currentRef).getId())] = 1;
+            done[currentId] = 1;
             toProcess.pop_back();
         }
 
@@ -81,6 +85,13 @@ public:
     static PTRef getAsgnTerm(TAsgn a);
     virtual bool previsit(PTRef term) { return true; } // should continue visiting
     virtual PTRef rewrite(PTRef term) { return term; } // don't do anything
+    virtual bool treatIteAsVar() const { return true; }
+};
+
+template <typename TAsgn>
+class IteRewriterConfig : public DefaultRewriterConfig<TAsgn> {
+public:
+    virtual bool treatIteAsVar() const override { return false; }
 };
 
 class NoOpRewriter : Rewriter<DefaultRewriterConfig<PTRef>,PTRef> {
