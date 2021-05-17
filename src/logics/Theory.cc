@@ -57,6 +57,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         MapWithKeys<PTRef,PtAsgn,PTRefHash> newsubsts;
         lbool res = getLogic().retrieveSubstitutions(current_units_vec, newsubsts);
         getLogic().substitutionsTransitiveClosure<PtAsgn>(newsubsts);
+
         if (res != l_Undef)
             root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
 
@@ -72,6 +73,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
                 allsubsts.insert(key, target.tr);
             }
         }
+        getLogic().substitutionsTransitiveClosure(allsubsts);
 
         bool cont = new_root != root;
         root = new_root;
