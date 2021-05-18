@@ -5,6 +5,8 @@
 #include <Logic.h>
 #include <LRALogic.h>
 #include <IteToSwitch.h>
+#include <IteHandler.h>
+#include <TreeOps.h>
 
 class LogicIteTest: public ::testing::Test {
 public:
@@ -214,4 +216,65 @@ TEST_F(IteManagerTest, testBoolean) {
     PTRef tr = iteToSwitch.conjoin(logic.getTerm_true());
     std::cout << logic.pp(tr) << std::endl << std::endl;
     std::cout << logic.pp(ite2) << std::endl;
+}
+
+TEST_F(LogicIteTest, test_IteHandlerNestedIte) {
+    //  (ite b (ite c a (not a)) d)
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    PTRef inner = logic.mkIte(c, a, logic.mkNot(a));
+    PTRef outer = logic.mkIte(b, inner, d);
+    IteHandler handler(logic);
+    PTRef res = handler.rewrite(outer);
+    std::cout << logic.pp(res) << std::endl;
+    // only 1 variable should be introduced for the single top-level ITE
+    auto atoms = getAtoms(res, logic);
+    ASSERT_EQ(atoms.size(), 5); // 4 original + 1 auxiliary variable
+}
+
+TEST_F(LogicIteTest, test_IteHandlerNestedAndTopLevelAtTheSameTime) {
+    //  (and (ite b (ite c a (not a)) d) (or d (ite c a (not a)))
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    PTRef inner = logic.mkIte(c, a, logic.mkNot(a));
+    PTRef outer = logic.mkIte(b, inner, d);
+    PTRef part2 = logic.mkOr(d, inner);
+    PTRef fla = logic.mkAnd(outer, part2);
+    IteHandler handler(logic);
+    PTRef res = handler.rewrite(fla);
+    std::cout << logic.pp(res) << std::endl;
+    // 2 variables should be introduced since the ITE that is nested in the first part is top-level in the second part of the formula
+    auto atoms = getAtoms(res, logic);
+    ASSERT_EQ(atoms.size(), 6); // 4 original + 2 auxiliary variables
+}
+
+TEST_F(LogicIteTest, test_IteHandler_RewriteTwiceSame) {
+    //  (ite b (ite c a (not a)) d)
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    PTRef inner = logic.mkIte(c, a, logic.mkNot(a));
+    PTRef fla = logic.mkIte(b, inner, d);
+
+    PTRef res1 = IteHandler(logic).rewrite(fla);
+    PTRef res2 = IteHandler(logic).rewrite(fla);
+    ASSERT_EQ(res1, res2);
+}
+
+TEST_F(LogicIteTest, test_IteHandler_RewriteTwiceDifferent) {
+    //  (ite b (ite c a (not a)) d)
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef d = logic.mkBoolVar("d");
+    PTRef inner = logic.mkIte(c, a, logic.mkNot(a));
+    PTRef fla = logic.mkIte(b, inner, d);
+    PTRef res1 = IteHandler(logic, 0).rewrite(fla);
+    PTRef res2 = IteHandler(logic, 1).rewrite(fla);
+    ASSERT_NE(res1, res2);
 }

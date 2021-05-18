@@ -56,7 +56,7 @@ template<class K, class D, class H, class E = Equal<K> >
 class Map {
  public:
     struct Pair { K key; D data; };
-    int getSize() { return size; }
+
  private:
     H          hash;
     E          equals;
@@ -233,6 +233,7 @@ class Map {
         table = NULL;
     }
 
+    int  getSize() const { return size; }
     int  elems() const { return size; }
     int  bucket_count() const { return cap; }
 

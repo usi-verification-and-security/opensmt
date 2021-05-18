@@ -7,7 +7,6 @@
 
 #include "Logic.h"
 
-
 namespace ite {
     class timer {
         time_t start;
@@ -147,8 +146,6 @@ class IteToSwitch {
 protected:
     using type = ite::type;
     Logic &logic;
-    Map<PTRef,PTRef,PTRefHash> ite_vars;
-    vec<PTRef> flat_top_level_switches;
     ite::Dag iteDag;
     vec<PTRef> switches;
     PTRef makeSwitch(PTRef root);
@@ -157,7 +154,7 @@ protected:
 
 public:
     explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) { constructSwitches(); }
-    PTRef conjoin(PTRef root) { return logic.mkAnd(root, logic.mkAnd(switches)); };
+    PTRef conjoin(PTRef root);
 
     static void printDagToFile(const std::string &fname, const ite::Dag&);
     void printDagToFile(const std::string &fname) const { printDagToFile(fname, iteDag); };

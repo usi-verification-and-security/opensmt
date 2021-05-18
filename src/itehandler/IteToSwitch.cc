@@ -281,3 +281,7 @@ PTRef IteToSwitch::makeSwitch(PTRef root) {
     }
     return logic.mkAnd(cases);
 }
+
+PTRef IteToSwitch::conjoin(PTRef root) {
+    return switches.size() == 0 ? root : logic.mkAnd(root, logic.mkAnd(switches));
+};

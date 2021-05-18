@@ -11,7 +11,7 @@ class MapWithKeys {
     Map<K,D,H,E> map;
     vec<K> keys;
 public:
-    int getSize() { return map.getSize(); }
+    int getSize() const { return map.getSize(); }
     MapWithKeys () {}
     MapWithKeys (const H& h, const E& e) : map(h, e) {}
     MapWithKeys (MapWithKeys&& o) noexcept : map(std::move(o.map)), keys(std::move(o.keys)) { }
