@@ -63,10 +63,10 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
             root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
         auto newRootAndSubsts(Substitutor<PtAsgn>(getLogic(), newsubsts).rewrite(root));
         PTRef new_root = newRootAndSubsts.first;
-        auto usedSubstitutions(std::move(newRootAndSubsts.second));
+//        auto usedSubstitutions(std::move(newRootAndSubsts.second));
 
         // remember the substitutions for models
-        auto els(usedSubstitutions.getKeysAndVals());
+        auto els(newsubsts.getKeysAndVals());
         for (auto el : els) {
             if (!allsubsts.has(el.key) && el.data.sgn == l_True) {
                 allsubsts.insert(el.key, el.data.tr);
