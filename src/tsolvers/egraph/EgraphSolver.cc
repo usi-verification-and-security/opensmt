@@ -292,9 +292,8 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
         }
     }
 
-    for (auto key : substs.getKeys()) {
-        PTRef tr = key;
-        PTRef target = substs[key];
+    for (auto tr : substs.getKeys()) {
+        PTRef target = substs[tr];
         if (!seen_substs.has(tr)) {
             if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
                 continue; // Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
