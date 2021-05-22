@@ -63,7 +63,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         PTRef new_root = Substitutor(getLogic(), newsubsts).rewrite(root);
         bool cont = new_root != root;
         // remember the substitutions
-        auto & newsubsts_vec(newsubsts.getKeys());
+        const auto & newsubsts_vec = newsubsts.getKeys();
         for (PTRef key : newsubsts_vec) {
             const auto target = newsubsts[key];
             if (!allsubsts.has(key) && target.sgn == l_True) {
