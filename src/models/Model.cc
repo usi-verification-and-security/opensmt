@@ -19,11 +19,11 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
            const TemplateFunction & templFun = entry.second;
            if (not logic.isUF(sr)) { return false; }
            const Symbol & s = logic.getSym(sr);
-           if (templFun.getName() != logic.getSymName(sr)) { std::cout << "Name doesn't match" << std::endl; return false; }
-           if (s.nargs() != templFun.getArgs().size_()) { std::cout << "Argument number doesn't match" << std::endl; return false; }
-           if (logic.getSortRef(sr) != templFun.getRetSort()) { std::cout << "Return sorts don't match" << std::endl; return false; }
+           if (templFun.getName() != logic.getSymName(sr)) { return false; }
+           if (s.nargs() != templFun.getArgs().size_()) { return false; }
+           if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
            for (auto i = 0; i < (int)s.nargs(); i++)
-               if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { std::cout << "argument sort doesn't match" << std::endl; return false; }
+               if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { return false; }
            return true;
        }));
 }

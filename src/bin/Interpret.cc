@@ -744,9 +744,8 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
     char* val_string = logic->pp(val);
-    std::string val_s(val_string);
+    ss << "    " << val_string << ")\n";
     free(val_string);
-    ss << "    " << val_s << ")\n";
     return ss.str();
 }
 
