@@ -216,6 +216,7 @@ class Map {
 
     // PRECONDITION: the key must exist in the map.
     void remove(const K& k) {
+        assert(has(k));
         assert(table != NULL);
         vec<Pair>& ps = table[index(k)];
         int j = 0;
@@ -343,7 +344,7 @@ public:
     }
 
     // PRECONDITION: the key must *NOT* exist in the map.
-    void insert (const K& k, const vec<D>& d) { if (checkCap(size+1)) rehash(); _insert(k, d); size++; }
+    void insert (const K& k, const vec<D>& d) { assert(not has(k)); if (checkCap(size+1)) rehash(); _insert(k, d); size++; }
     bool peek   (const K& k, vec<D>& d) const {
         if (size == 0) return false;
         const std::vector<Pair>& ps = table[index(k)];
