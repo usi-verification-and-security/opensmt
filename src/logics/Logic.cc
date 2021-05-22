@@ -1200,7 +1200,7 @@ bool Logic::isAtom(PTRef r) const {
 //
 // The substitutions for the term riddance from osmt1
 //
-lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
 {
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
@@ -1263,14 +1263,14 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PT
     return l_Undef;
 }
 
-void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs) {
+void Logic::substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs) {
     bool changed = true;
-    auto keyValPairs = substs.getKeysAndValsPtrs(); // We can use direct pointers, since no elements are inserted or deleted in the loop
-    std::vector<char> notChangedElems(keyValPairs.size(), 0); // True if not changed in last iteration, initially False
+    auto & keys(substs.getKeys()); // We can use direct pointers, since no elements are inserted or deleted in the loop
+    std::vector<char> notChangedElems(substs.getSize(), 0); // True if not changed in last iteration, initially False
     while (changed) {
         changed = false;
-        for (int i = 0; i < keyValPairs.size(); ++i) {
-            auto & val = keyValPairs[i]->data;
+        for (int i = 0; i < keys.size(); ++i) {
+            auto & val = substs[keys[i]];
             if (val.sgn != l_True || notChangedElems[i]) { continue; }
             PTRef oldVal = val.tr;
             PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
@@ -1290,7 +1290,7 @@ void Logic::substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & subst
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-void Logic::getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts)
+void Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1639,7 +1639,7 @@ Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash
     const TFun& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
     const vec<PTRef>& args = tpl_fun.getArgs();
-    Map<PTRef,PtAsgn,PTRefHash> substs_asgn;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs_asgn;
     for (int i = 0; i < args.size(); i++) {
         if (!subst.has(args[i]))
             return PTRef_Undef;

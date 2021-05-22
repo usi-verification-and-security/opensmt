@@ -29,15 +29,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class CUFLogic: public Logic
 {
   protected:
-    Map<PTRef,bool,PTRefHash> comm_eqs;         // a+b <-> b+a
-    Map<PTRef,bool,PTRefHash> diseq_eqs;        // a>b -> a != b
-    Map<PTRef,bool,PTRefHash> diseq_split;      // a != b -> (a>b) || (a<b)
-    Map<PTRef,bool,PTRefHash> mod_ineqs;        // b > 0 -> 0 <= a % b < b, b < 0 -> b < a % b <= 0
-    Map<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
-    Map<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
+    MapWithKeys<PTRef,bool,PTRefHash> comm_eqs;         // a+b <-> b+a
+    MapWithKeys<PTRef,bool,PTRefHash> diseq_eqs;        // a>b -> a != b
+    MapWithKeys<PTRef,bool,PTRefHash> diseq_split;      // a != b -> (a>b) || (a<b)
+    MapWithKeys<PTRef,bool,PTRefHash> mod_ineqs;        // b > 0 -> 0 <= a % b < b, b < 0 -> b < a % b <= 0
+    MapWithKeys<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
+    MapWithKeys<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
 
   public:
-    void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
+    const vec<PTRef> & getCommEqs() const { return comm_eqs.getKeys(); }
 
   protected:
     SymRef              sym_CUF_ZERO;   // 0

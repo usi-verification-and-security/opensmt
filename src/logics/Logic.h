@@ -31,6 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include "MapWithKeys.h"
+
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -407,9 +409,10 @@ class Logic {
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
     // Top-level equalities based substitutions
-    void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);
-    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
-    void substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs);
+    void getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
+    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs);
+    void substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs);
+
 
 
 

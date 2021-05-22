@@ -41,7 +41,7 @@ public:
      * Incorporates the given substitution map into the model.
      * PRECONDITIONS: all keys are variables
      */
-    void processSubstitutions(Map<PTRef,PtAsgn,PTRefHash> const & subst);
+    void processSubstitutions(MapWithKeys<PTRef,PtAsgn,PTRefHash> const & subst);
 };
 
 

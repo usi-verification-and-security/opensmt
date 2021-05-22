@@ -109,7 +109,7 @@ class Interpret {
     bool            f_exit;
 
     // Named terms for getting variable values
-    Map<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
+    MapWithKeys<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<char*>      term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
                                             // partition to it name.

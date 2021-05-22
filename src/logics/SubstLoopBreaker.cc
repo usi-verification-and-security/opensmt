@@ -133,18 +133,13 @@ std::vector<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
 }
 
 
-vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const Map<PTRef,PtAsgn,PTRefHash>& substs)
+vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
 {
     Map<PTRef, SNRef, PTRefHash> PTRefToSNRef;
     vec<PTRef> PTRefs;
 
-    auto substKeysAndVals = substs.getKeysAndValsPtrs();
-
-    for (int i = 0; i < substKeysAndVals.size(); i++) {
-        // Init the seen table
-        PTRef name = substKeysAndVals[i]->key;
-        PtAsgn subst = substKeysAndVals[i]->data;
-
+    for (PTRef name : substs.getKeys()) {
+        PtAsgn subst = substs[name];
 
         // Allocate the nodes and create the mapping for each enabled substitution
         if (subst.sgn == l_True) {
@@ -210,17 +205,17 @@ std::vector<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     return loops;
 }
 
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(Map<PTRef,PtAsgn,PTRefHash>&& substs)
+MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
 {
-    auto keysAndValsPtrs = substs.getKeysAndValsPtrs();
-    for (int i = 0; i < keysAndValsPtrs.size(); i++) {
-        auto pair = keysAndValsPtrs[i];
-        if (pair->data.sgn != l_True)
+    for (PTRef key : substs.getKeys()) {
+        PtAsgn & data(substs[key]);
+        if (data.sgn != l_True) {
             continue;
+        }
 
-        SNRef subst_node = sna.getSNRefBySource(pair->key);
+        SNRef subst_node = sna.getSNRefBySource(key);
         if (!sna[subst_node].hasChildren())
-            pair->data.sgn = l_False;
+            data.sgn = l_False;
     }
     return std::move(substs); // Since susbsts is a template, we need the move constructor here
 }
@@ -228,11 +223,11 @@ Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(Map<
 //
 // Identify and break any substitution loops
 //
-Map<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (Map<PTRef,PtAsgn,PTRefHash>&& substs)
+MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
 {
     assert(seen.elems() == 0);
 
-    if (substs.getSize() == 0) return Map<PTRef,PtAsgn,PTRefHash>();
+    if (substs.getSize() == 0) return MapWithKeys<PTRef,PtAsgn,PTRefHash>();
 
     vec<SNRef> startNodes = constructSubstitutionGraph(substs);
 

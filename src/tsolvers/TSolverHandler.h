@@ -48,7 +48,7 @@ protected:
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
 
     TSolverHandler(SMTConfig & c)
         : config(c)
@@ -68,8 +68,9 @@ public:
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
-    void    setSubstitutions(Map<PTRef,PtAsgn,PTRefHash>& substs_) { substs_.moveTo(substs); }
-    Map<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }
+    void    setSubstitutions(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs_) { std::swap(substs_, substs); }
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> const & getSubstitutions() const { return substs; }
+
 
 
     // DEPRECATED

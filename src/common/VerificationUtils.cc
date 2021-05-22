@@ -96,13 +96,12 @@ bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bparti
 }
 
 bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) {
-    Map<PTRef, bool, PTRefHash> vars_p1;
+    MapWithKeys<PTRef, bool, PTRefHash> vars_p1;
     getVars(p1, logic, vars_p1);
-    Map<PTRef, bool, PTRefHash> vars_p2;
+    MapWithKeys<PTRef, bool, PTRefHash> vars_p2;
     getVars(p2, logic, vars_p2);
-    auto entries = vars_p1.getKeysAndVals();
-    for (auto const & entry : entries) {
-        if (entry.data and (not vars_p2.has(entry.key))) {
+    for (PTRef key : vars_p1.getKeys()) {
+        if (vars_p1[key] and (not vars_p2.has(key))) {
             return false;
         }
     }

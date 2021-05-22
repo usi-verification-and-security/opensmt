@@ -575,24 +575,12 @@ const int CUFLogic::getCUFNUMConst(PTRef tr) const
 
 PTRef CUFLogic::conjoinExtras(PTRef root)
 {
-    vec<PTRef> comm_eqs;
-    vec<PTRef> diseq_eqs;
-    vec<PTRef> diseq_split;
-    vec<PTRef> mod_ineqs;
-    vec<PTRef> inc_diseqs;
-    vec<PTRef> compl_diseqs;
-    getCommEqs(comm_eqs);
-    getCommEqs(diseq_eqs);
-    getCommEqs(diseq_split);
-    getCommEqs(mod_ineqs);
-    getCommEqs(inc_diseqs);
-    getCommEqs(compl_diseqs);
     PTRef root_out = root;
-    root_out = mkAnd(root_out, mkAnd(comm_eqs));
-    root_out = mkAnd(root_out, mkAnd(diseq_eqs));
-    root_out = mkAnd(root_out, mkAnd(diseq_split));
-    root_out = mkAnd(root_out, mkAnd(mod_ineqs));
-    root_out = mkAnd(root_out, mkAnd(inc_diseqs));
-    root_out = mkAnd(root_out, mkAnd(compl_diseqs));
+    root_out = mkAnd(root_out, mkAnd(comm_eqs.getKeys()));
+    root_out = mkAnd(root_out, mkAnd(diseq_eqs.getKeys()));
+    root_out = mkAnd(root_out, mkAnd(diseq_split.getKeys()));
+    root_out = mkAnd(root_out, mkAnd(mod_ineqs.getKeys()));
+    root_out = mkAnd(root_out, mkAnd(inc_diseqs.getKeys()));
+    root_out = mkAnd(root_out, mkAnd(compl_diseqs.getKeys()));
     return root_out;
 }

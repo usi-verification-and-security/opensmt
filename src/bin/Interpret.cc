@@ -1173,10 +1173,10 @@ void Interpret::getInterpolants(const ASTNode& n)
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
-    auto namedTermsPtrs = nameToTerm.getKeysAndValsPtrs();
-    for (auto* namedTermPair : namedTermsPtrs) {
-        letRecords.addBinding(namedTermPair->key, namedTermPair->data);
+    for (auto key : nameToTerm.getKeys()) {
+        letRecords.addBinding(key, nameToTerm[key]);
     }
+
     for (auto e : exps) {
         ASTNode& c = *e;
         PTRef tr = parseTerm(c, letRecords);

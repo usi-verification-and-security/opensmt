@@ -112,7 +112,7 @@ namespace ite {
         Map<PTRef,ite::NodeRef,PTRefHash> nodes;
         Map<PTRef,bool,PTRefHash> itePTRefs;
         vec<ite::NodeRef> nodeRefs;
-        Map<PTRef,bool,PTRefHash> top_level_ites;
+        MapWithKeys<PTRef,bool,PTRefHash> top_level_ites;
         std::set<NodeRef> leaves;
         NodeRef newNode(PTRef tr);
         NodeRef newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node);
@@ -134,7 +134,7 @@ namespace ite {
         void addItePTRef(PTRef tr) { itePTRefs.insert(tr, true); }
         bool isTopLevelIte(PTRef tr) const { return top_level_ites.has(tr) and top_level_ites[tr]; }
         void addTopLevelIte(PTRef tr) { top_level_ites.insert(tr, true); }
-        vec<PTRef> getTopLevelItes() const { vec<PTRef> keys; top_level_ites.getKeys(keys); return keys; }
+        const vec<PTRef> & getTopLevelItes() const { return top_level_ites.getKeys(); }
         Dag getReachableSubGraph(const Logic& logic, PTRef root);
         void annotateWithParentInfo(PTRef root);
         vec<ite::CondValPair> getCondValPairs(Logic& logic) const;
