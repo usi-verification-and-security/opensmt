@@ -208,7 +208,7 @@ std::vector<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
 MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
 {
     for (PTRef key : substs.getKeys()) {
-        PtAsgn & data(substs[key]);
+        PtAsgn & data = substs[key];
         if (data.sgn != l_True) {
             continue;
         }
