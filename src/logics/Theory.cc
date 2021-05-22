@@ -65,9 +65,9 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         // remember the substitutions
         auto & newsubsts_vec(newsubsts.getKeys());
         for (PTRef key : newsubsts_vec) {
-            const auto & el(newsubsts[key]);
-            if (!allsubsts.has(key) && el.sgn == l_True) {
-                allsubsts.insert(key, el);
+            const auto target = newsubsts[key];
+            if (!allsubsts.has(key) && target.sgn == l_True) {
+                allsubsts.insert(key, target);
             }
         }
         root = new_root;
@@ -86,7 +86,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
     }
 #endif
     result.result = root;
-    std::swap(allsubsts, result.usedSubstitution);
+    result.usedSubstitution = std::move(allsubsts);
     return result;
 }
 
@@ -105,7 +105,7 @@ Theory::printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const
 PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
     Logic & logic = getLogic();
     vec<PTRef> args;
-    auto & entries = sr.usedSubstitution.getKeys();
+    const auto & entries = sr.usedSubstitution.getKeys();
     for (auto entry : entries) {
         auto target = sr.usedSubstitution[entry];
         assert(target.sgn == l_True);
@@ -116,4 +116,3 @@ PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
     args.push(sr.result);
     return logic.mkAnd(args);
 }
-
