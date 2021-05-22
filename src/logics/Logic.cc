@@ -1265,7 +1265,7 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,P
 
 void Logic::substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs) {
     bool changed = true;
-    auto & keys(substs.getKeys()); // We can use direct pointers, since no elements are inserted or deleted in the loop
+    const auto & keys = substs.getKeys(); // We can use direct pointers, since no elements are inserted or deleted in the loop
     std::vector<char> notChangedElems(substs.getSize(), 0); // True if not changed in last iteration, initially False
     while (changed) {
         changed = false;
