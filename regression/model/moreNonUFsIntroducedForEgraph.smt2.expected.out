@@ -7,13 +7,13 @@ sat
   (define-fun x43 () Bool
     true)
   (define-fun x72 () Bool
-    true)
+    false)
   (define-fun x558 () Bool
     true)
   (define-fun x177 () Bool
     true)
   (define-fun x390 () x314
-    (as @6 x314))
+    (as @24 x314))
   (define-fun x494 () x87
     (as @2 x87))
   (define-fun x173 () x87
@@ -25,9 +25,9 @@ sat
   (define-fun x270 () Bool
     true)
   (define-fun x167 () Bool
-    false)
+    true)
   (define-fun x122 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x521 () Bool
     true)
   (define-fun x142 () x87
@@ -37,13 +37,13 @@ sat
   (define-fun x335 () Bool
     true)
   (define-fun x103 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x269 () Bool
     true)
   (define-fun x145 () Bool
     false)
   (define-fun x266 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x117 () Bool
     true)
   (define-fun x547 () Bool
@@ -51,7 +51,7 @@ sat
   (define-fun x402 () x87
     (as @2 x87))
   (define-fun x511 () Bool
-    false)
+    true)
   (define-fun x101 () Bool
     true)
   (define-fun x4 () Bool
@@ -69,7 +69,7 @@ sat
   (define-fun x51 () Bool
     false)
   (define-fun x485 () Bool
-    false)
+    true)
   (define-fun x354 () x87
     (as @2 x87))
   (define-fun x576 () x87
@@ -87,7 +87,7 @@ sat
   (define-fun x119 () Bool
     false)
   (define-fun x172 () x91
-    (as @11 x91))
+    (as @25 x91))
   (define-fun x121 () x91
     (as @d6 x91))
   (define-fun x277 () Bool
@@ -95,9 +95,9 @@ sat
   (define-fun x171 () Bool
     true)
   (define-fun x284 () Bool
-    false)
+    true)
   (define-fun x227 () x87
-    (as @2 x87))
+    (as @12 x87))
   (define-fun x589 () Bool
     true)
   (define-fun x254 () Bool
@@ -107,29 +107,29 @@ sat
   (define-fun x169 () x87
     (as @2 x87))
   (define-fun x107 () Bool
-    false)
-  (define-fun x412 () Bool
     true)
+  (define-fun x412 () Bool
+    false)
   (define-fun x379 () Bool
     true)
   (define-fun x366 () Bool
     false)
   (define-fun x242 () Bool
-    false)
+    true)
   (define-fun x90 () Bool
-    false)
+    true)
   (define-fun x74 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x344 () Bool
     false)
   (define-fun x523 () Bool
     false)
   (define-fun x445 () Bool
-    false)
+    true)
   (define-fun x491 () Bool
     false)
   (define-fun x23 () Bool
-    false)
+    true)
   (define-fun x438 () Bool
     true)
   (define-fun x519 () x87
@@ -137,19 +137,19 @@ sat
   (define-fun x609 () x87
     (as @2 x87))
   (define-fun x225 () Bool
-    true)
+    false)
   (define-fun x162 () Bool
     true)
   (define-fun x318 () Bool
-    false)
+    true)
   (define-fun x592 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x97 () x87
     (as @2 x87))
   (define-fun x475 () Bool
     true)
   (define-fun x461 () Bool
-    true)
+    false)
   (define-fun x608 () Bool
     true)
   (define-fun x410 () x87
@@ -179,7 +179,7 @@ sat
   (define-fun x245 () Bool
     false)
   (define-fun x376 () Bool
-    false)
+    true)
   (define-fun x346 () Bool
     false)
   (define-fun x503 () x87
@@ -190,8 +190,8 @@ sat
     true)
   (define-fun x33 () Bool
     false)
-  (define-fun x32 ((r6 Bool) (r7 x314)) x91
-    (ite r6 (ite (= (as @6 x314) r7) (as @5 x91) (as @d6 x91)) (ite (not r6) (ite (= (as @6 x314) r7) (as @11 x91) (as @d6 x91)) (as @d6 x91))))
+  (define-fun x32 ((r7 Bool) (r8 x314)) x91
+    (ite r7 (ite (= (as @24 x314) r8) (as @4 x91) (as @d6 x91)) (ite (not r7) (ite (= (as @24 x314) r8) (as @25 x91) (as @d6 x91)) (as @d6 x91))))
   (define-fun x602 () Bool
     true)
   (define-fun x70 () Bool
@@ -213,23 +213,23 @@ sat
   (define-fun x317 () Bool
     true)
   (define-fun x423 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x136 () x91
-    (as @12 x91))
+    (as @6 x91))
   (define-fun x450 () Bool
     true)
   (define-fun x197 () x623
-    (as @7 x623))
+    (as @28 x623))
   (define-fun x405 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x406 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x19 () x87
     (as @2 x87))
   (define-fun x244 () Bool
     true)
   (define-fun x474 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x159 () x87
     (as @2 x87))
   (define-fun x65 () x87
@@ -237,7 +237,7 @@ sat
   (define-fun x63 () x87
     (as @d3 x87))
   (define-fun x614 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x260 () Bool
     true)
   (define-fun x223 () Bool
@@ -245,17 +245,17 @@ sat
   (define-fun x230 () Bool
     true)
   (define-fun x470 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x100 () x87
     (as @d3 x87))
   (define-fun x582 () Bool
     false)
   (define-fun x293 () Bool
-    false)
+    true)
   (define-fun x456 () Bool
     true)
   (define-fun x285 () Bool
-    false)
+    true)
   (define-fun x25 () Bool
     false)
   (define-fun x279 () Bool
@@ -267,7 +267,7 @@ sat
   (define-fun x331 () Bool
     true)
   (define-fun x214 () Bool
-    false)
+    true)
   (define-fun x66 () x87
     (as @2 x87))
   (define-fun x322 () Bool
@@ -277,7 +277,7 @@ sat
   (define-fun x436 () Bool
     true)
   (define-fun x123 ((r16 x87)) Bool
-    (ite (= (as @2 x87) r16) false true))
+    (ite (= (as @10 x87) r16) true (ite (= (as @12 x87) r16) true (ite (= (as @2 x87) r16) false (ite (= (as @11 x87) r16) true (ite (= (as @9 x87) r16) false true))))))
   (define-fun x447 () Bool
     true)
   (define-fun x301 () Bool
@@ -290,14 +290,14 @@ sat
     false)
   (define-fun x448 () Bool
     false)
-  (define-fun x536 ((r9 x91)) x87
-    (ite (= (as @3 x91) r9) (as @2 x87) (ite (= r9 (as @10 x91)) (as @2 x87) (as @d3 x87))))
+  (define-fun x536 ((r14 x91)) x87
+    (ite (= (as @27 x91) r14) (as @2 x87) (ite (= (as @26 x91) r14) (as @9 x87) (as @d3 x87))))
   (define-fun x257 () Bool
-    false)
+    true)
   (define-fun x88 () x87
     (as @2 x87))
   (define-fun x349 ((r0 Bool) (r1 Bool) (r2 Bool) (r3 Bool)) x87
-    (ite (not r0) (ite (not r1) (ite (not r2) (ite (not r3) (as @2 x87) (as @d3 x87)) (as @d3 x87)) (as @d3 x87)) (as @d3 x87)))
+    (ite r0 (ite (not r1) (ite (not r2) (ite r3 (as @3 x87) (as @d3 x87)) (as @d3 x87)) (ite r1 (ite (not r2) (ite r3 (as @3 x87) (as @d3 x87)) (ite r2 (ite r3 (as @2 x87) (as @d3 x87)) (as @d3 x87))) (as @d3 x87))) (as @d3 x87)))
   (define-fun x383 () Bool
     true)
   (define-fun x426 () x87
@@ -307,13 +307,13 @@ sat
   (define-fun x319 () x87
     (as @2 x87))
   (define-fun x512 () Bool
-    false)
+    true)
   (define-fun x625 () Bool
     true)
   (define-fun x544 () Bool
     false)
   (define-fun x92 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x141 () Bool
     true)
   (define-fun x587 () Bool
@@ -323,7 +323,7 @@ sat
   (define-fun x60 () Bool
     true)
   (define-fun x408 () x87
-    (as @2 x87))
+    (as @11 x87))
   (define-fun x509 () x87
     (as @d3 x87))
   (define-fun x452 () Bool
@@ -331,23 +331,23 @@ sat
   (define-fun x590 () Bool
     true)
   (define-fun x508 () Bool
-    false)
+    true)
   (define-fun x481 () Bool
     true)
   (define-fun x358 () Bool
     true)
   (define-fun x289 () Bool
-    false)
+    true)
   (define-fun x154 () Bool
     true)
   (define-fun x320 () Bool
     true)
   (define-fun x524 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x281 () Bool
     false)
   (define-fun x21 () x623
-    (as @7 x623))
+    (as @16 x623))
   (define-fun x583 () Bool
     true)
   (define-fun x517 () x87
@@ -369,7 +369,7 @@ sat
   (define-fun x472 () Bool
     true)
   (define-fun x394 () x623
-    (as @16 x623))
+    (as @14 x623))
   (define-fun x231 () x87
     (as @d3 x87))
   (define-fun x378 () x87
@@ -378,20 +378,20 @@ sat
     false)
   (define-fun x392 () Bool
     false)
-  (define-fun x343 ((r18 x87)) Bool
-    (ite (= (as @2 x87) r18) false true))
+  (define-fun x343 ((r20 x87)) Bool
+    (ite (= (as @2 x87) r20) true (ite (= (as @11 x87) r20) true (ite (= (as @9 x87) r20) false true))))
   (define-fun x132 () Bool
     true)
   (define-fun x71 () Bool
-    true)
-  (define-fun x16 ((r13 x91) (r14 x91)) x91
-    (ite (= (as @4 x91) r13) (ite (= (as @5 x91) r14) (as @10 x91) (as @d6 x91)) (as @d6 x91)))
+    false)
+  (define-fun x16 ((r12 x91) (r13 x91)) x91
+    (ite (= (as @5 x91) r12) (ite (= (as @4 x91) r13) (as @27 x91) (as @d6 x91)) (as @d6 x91)))
   (define-fun x566 () Bool
     true)
   (define-fun x460 () Bool
     false)
   (define-fun x604 () x87
-    (as @9 x87))
+    (as @11 x87))
   (define-fun x174 () Bool
     true)
   (define-fun x380 () x87
@@ -401,33 +401,33 @@ sat
   (define-fun x191 () x87
     (as @d3 x87))
   (define-fun x140 () Bool
-    true)
+    false)
   (define-fun x573 () Bool
     false)
   (define-fun x77 () Bool
-    false)
+    true)
   (define-fun x311 () x91
     (as @d6 x91))
   (define-fun x243 () Bool
     true)
   (define-fun x520 () Bool
-    false)
+    true)
   (define-fun x246 () Bool
-    false)
+    true)
   (define-fun x295 () x434
-    (as @8 x434))
+    (as @20 x434))
   (define-fun x571 () Bool
     true)
   (define-fun x104 () Bool
-    false)
+    true)
   (define-fun x549 () x87
     (as @2 x87))
   (define-fun x294 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x155 () x623
-    (as @24 x623))
+    (as @29 x623))
   (define-fun x217 () Bool
-    true)
+    false)
   (define-fun x554 () Bool
     false)
   (define-fun x275 () Bool
@@ -435,15 +435,15 @@ sat
   (define-fun x151 () Bool
     true)
   (define-fun x624 () x623
-    (as @7 x623))
+    (as @16 x623))
   (define-fun x345 () Bool
     true)
   (define-fun x352 () x87
     (as @d3 x87))
   (define-fun x82 () Bool
-    false)
+    true)
   (define-fun x163 () Bool
-    false)
+    true)
   (define-fun x58 () Bool
     true)
   (define-fun x120 () Bool
@@ -451,17 +451,17 @@ sat
   (define-fun x112 () x87
     (as @d3 x87))
   (define-fun x348 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x102 () Bool
     true)
   (define-fun x626 () Bool
-    false)
+    true)
   (define-fun x106 () Bool
     true)
   (define-fun x371 () Bool
     false)
   (define-fun x14 () Bool
-    false)
+    true)
   (define-fun x52 () Bool
     false)
   (define-fun x338 () x87
@@ -473,7 +473,7 @@ sat
   (define-fun x543 () Bool
     true)
   (define-fun x555 () Bool
-    false)
+    true)
   (define-fun x425 () Bool
     true)
   (define-fun x363 () x87
@@ -485,21 +485,21 @@ sat
   (define-fun x57 () Bool
     true)
   (define-fun x552 () Bool
-    false)
+    true)
   (define-fun x234 () x87
     (as @d3 x87))
   (define-fun x530 () Bool
     true)
   (define-fun x476 () Bool
-    true)
+    false)
   (define-fun x482 () Bool
     false)
   (define-fun x137 () Bool
     false)
   (define-fun x567 () x623
-    (as @15 x623))
+    (as @13 x623))
   (define-fun x118 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x432 () Bool
     false)
   (define-fun x347 () Bool
@@ -509,7 +509,7 @@ sat
   (define-fun x353 () Bool
     false)
   (define-fun x572 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x595 () x87
     (as @2 x87))
   (define-fun x621 () Bool
@@ -521,7 +521,7 @@ sat
   (define-fun x149 () Bool
     false)
   (define-fun x357 () Bool
-    false)
+    true)
   (define-fun x41 () Bool
     true)
   (define-fun x36 () Bool
@@ -533,23 +533,23 @@ sat
   (define-fun x492 () x87
     (as @d3 x87))
   (define-fun x464 () Bool
-    false)
+    true)
   (define-fun x259 () Bool
     true)
   (define-fun x45 () Bool
     true)
   (define-fun x414 () Bool
-    true)
+    false)
   (define-fun x557 () x87
     (as @d3 x87))
   (define-fun x6 () Bool
     false)
   (define-fun x610 () Bool
-    false)
+    true)
   (define-fun x330 () Bool
     true)
   (define-fun x308 () Bool
-    false)
+    true)
   (define-fun x94 () x87
     (as @d3 x87))
   (define-fun x598 () Bool
@@ -565,7 +565,7 @@ sat
   (define-fun x630 () x87
     (as @d3 x87))
   (define-fun x373 () x91
-    (as @3 x91))
+    (as @26 x91))
   (define-fun x158 () Bool
     true)
   (define-fun x375 () x87
@@ -583,17 +583,17 @@ sat
   (define-fun x130 () x91
     (as @d6 x91))
   (define-fun x471 () x91
-    (as @4 x91))
+    (as @5 x91))
   (define-fun x184 () Bool
     true)
   (define-fun x591 () Bool
-    false)
-  (define-fun x593 () x87
-    (as @2 x87))
-  (define-fun x467 () Bool
-    false)
-  (define-fun x274 () Bool
     true)
+  (define-fun x593 () x87
+    (as @3 x87))
+  (define-fun x467 () Bool
+    true)
+  (define-fun x274 () Bool
+    false)
   (define-fun x204 () x87
     (as @d3 x87))
   (define-fun x562 () Bool
@@ -605,7 +605,7 @@ sat
   (define-fun x579 () Bool
     true)
   (define-fun x168 () Bool
-    true)
+    false)
   (define-fun x307 () Bool
     true)
   (define-fun x215 () Bool
@@ -621,7 +621,7 @@ sat
   (define-fun x585 () Bool
     true)
   (define-fun x165 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x328 () x87
     (as @d3 x87))
   (define-fun x401 () x87
@@ -631,11 +631,11 @@ sat
   (define-fun x526 () Bool
     true)
   (define-fun x134 () Bool
-    true)
+    false)
   (define-fun x407 () x87
     (as @d3 x87))
   (define-fun x486 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x313 () Bool
     true)
   (define-fun x164 () Bool
@@ -657,29 +657,29 @@ sat
   (define-fun x527 () Bool
     false)
   (define-fun x324 () Bool
-    false)
+    true)
   (define-fun x247 () x91
-    (as @5 x91))
+    (as @4 x91))
   (define-fun x302 () Bool
     true)
   (define-fun x305 () x623
-    (as @17 x623))
+    (as @15 x623))
   (define-fun x200 () Bool
     false)
   (define-fun x262 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x38 () x87
     (as @d3 x87))
   (define-fun x249 () Bool
     true)
   (define-fun x127 () x91
-    (as @5 x91))
+    (as @4 x91))
   (define-fun x213 () Bool
     true)
   (define-fun x212 () Bool
     false)
   (define-fun x483 () Bool
-    false)
+    true)
   (define-fun x315 ((r19 x623)) Bool
     true)
   (define-fun x85 () Bool
@@ -688,16 +688,16 @@ sat
     true)
   (define-fun x135 () Bool
     true)
-  (define-fun x304 ((r20 x623)) Bool
+  (define-fun x304 ((r18 x623)) Bool
     true)
   (define-fun x278 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x316 () Bool
-    false)
+    true)
   (define-fun x578 () x87
     (as @2 x87))
-  (define-fun x116 ((r10 x87) (r11 x434)) x91
-    (ite (= (as @2 x87) r10) (ite (= (as @8 x434) r11) (as @4 x91) (as @d6 x91)) (as @d6 x91)))
+  (define-fun x116 ((r5 x87) (r6 x434)) x91
+    (ite (= (as @2 x87) r5) (ite (= (as @20 x434) r6) (as @5 x91) (as @d6 x91)) (as @d6 x91)))
   (define-fun x574 () Bool
     true)
   (define-fun x157 () x87
@@ -707,7 +707,7 @@ sat
   (define-fun x539 () Bool
     true)
   (define-fun x506 () Bool
-    false)
+    true)
   (define-fun x291 () x87
     (as @d3 x87))
   (define-fun x96 () Bool
@@ -721,13 +721,13 @@ sat
   (define-fun x258 () x87
     (as @2 x87))
   (define-fun x569 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x449 () Bool
     true)
   (define-fun x64 () x87
     (as @2 x87))
   (define-fun x446 () Bool
-    false)
+    true)
   (define-fun x455 () Bool
     true)
   (define-fun x356 () x87
@@ -737,9 +737,9 @@ sat
   (define-fun x387 () Bool
     false)
   (define-fun x384 () x91
-    (as @4 x91))
+    (as @5 x91))
   (define-fun x276 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x12 () Bool
     true)
   (define-fun x437 () Bool
@@ -747,17 +747,17 @@ sat
   (define-fun x431 () Bool
     false)
   (define-fun x442 () Bool
-    false)
+    true)
   (define-fun x522 () Bool
     false)
   (define-fun x84 () Bool
     true)
   (define-fun x584 () Bool
-    false)
-  (define-fun x532 () Bool
-    false)
-  (define-fun x300 () Bool
     true)
+  (define-fun x532 () Bool
+    true)
+  (define-fun x300 () Bool
+    false)
   (define-fun x26 () Bool
     true)
   (define-fun x68 () Bool
@@ -771,11 +771,11 @@ sat
   (define-fun x55 () Bool
     true)
   (define-fun x233 () Bool
-    false)
+    true)
   (define-fun x42 () x91
     (as @d6 x91))
   (define-fun x468 () Bool
-    true)
+    false)
   (define-fun x333 () Bool
     true)
   (define-fun x9 () Bool
@@ -789,7 +789,7 @@ sat
   (define-fun x581 () Bool
     true)
   (define-fun x459 () Bool
-    false)
+    true)
   (define-fun x500 () Bool
     true)
   (define-fun x615 () Bool
@@ -799,41 +799,41 @@ sat
   (define-fun x428 () Bool
     true)
   (define-fun x273 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x568 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x34 () Bool
-    false)
+    true)
   (define-fun x144 () Bool
     true)
   (define-fun x510 () x91
-    (as @4 x91))
+    (as @5 x91))
   (define-fun x156 () x87
     (as @2 x87))
   (define-fun x613 () x87
-    (as @9 x87))
+    (as @11 x87))
   (define-fun x496 () x87
     (as @2 x87))
   (define-fun x499 () x87
     (as @d3 x87))
   (define-fun x126 () Bool
-    false)
+    true)
   (define-fun x393 () Bool
     true)
   (define-fun x599 () Bool
     true)
   (define-fun x237 () x623
-    (as @18 x623))
+    (as @17 x623))
   (define-fun x603 () Bool
     true)
   (define-fun x229 () Bool
     true)
   (define-fun x62 () Bool
-    false)
+    true)
   (define-fun x359 () Bool
-    false)
+    true)
   (define-fun x29 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x176 () x623
     (as @d2 x623))
   (define-fun x478 () Bool
@@ -841,9 +841,9 @@ sat
   (define-fun x601 () Bool
     false)
   (define-fun x27 () Bool
-    false)
+    true)
   (define-fun x473 () Bool
-    false)
+    true)
   (define-fun x441 () Bool
     true)
   (define-fun x575 () Bool
@@ -853,21 +853,21 @@ sat
   (define-fun x139 () Bool
     true)
   (define-fun x28 () Bool
-    false)
+    true)
   (define-fun x148 () Bool
     true)
   (define-fun x109 () x87
     (as @d3 x87))
   (define-fun x143 () Bool
     false)
-  (define-fun x600 ((r15 x87)) Bool
-    (ite (= (as @2 x87) r15) false true))
+  (define-fun x600 ((r17 x87)) Bool
+    true)
   (define-fun x138 () x91
     (as @d6 x91))
   (define-fun x216 () x87
     (as @21 x87))
   (define-fun x443 () Bool
-    false)
+    true)
   (define-fun x556 () Bool
     true)
   (define-fun x404 () Bool
@@ -875,17 +875,17 @@ sat
   (define-fun x629 () Bool
     true)
   (define-fun x321 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x518 () Bool
     true)
   (define-fun x336 () Bool
-    false)
+    true)
   (define-fun x24 () Bool
     true)
   (define-fun x364 () Bool
-    false)
+    true)
   (define-fun x341 () Bool
-    false)
+    true)
   (define-fun x192 () Bool
     false)
   (define-fun x498 () Bool
@@ -895,7 +895,7 @@ sat
   (define-fun x430 () Bool
     true)
   (define-fun x444 () Bool
-    true)
+    false)
   (define-fun x535 () Bool
     true)
   (define-fun x161 () Bool
@@ -905,7 +905,7 @@ sat
   (define-fun x400 () Bool
     true)
   (define-fun x413 () Bool
-    false)
+    true)
   (define-fun x210 () Bool
     true)
   (define-fun x86 () Bool
@@ -947,7 +947,7 @@ sat
   (define-fun x619 () Bool
     true)
   (define-fun x565 () x91
-    (as @3 x91))
+    (as @26 x91))
   (define-fun x479 () Bool
     true)
   (define-fun x395 () x87
@@ -955,11 +955,11 @@ sat
   (define-fun x296 () Bool
     true)
   (define-fun x17 () Bool
-    false)
+    true)
   (define-fun x398 () x87
     (as @2 x87))
   (define-fun x181 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x502 () Bool
     true)
   (define-fun x490 () Bool
@@ -970,8 +970,8 @@ sat
     false)
   (define-fun x339 () Bool
     true)
-  (define-fun x76 ((r17 x87)) Bool
-    (ite (= (as @2 x87) r17) false true))
+  (define-fun x76 ((r9 x87)) Bool
+    (ite (= (as @11 x87) r9) true (ite (= (as @12 x87) r9) true (ite (= (as @10 x87) r9) false (ite (= (as @2 x87) r9) false true)))))
   (define-fun x133 () Bool
     true)
   (define-fun x202 () Bool
@@ -981,7 +981,7 @@ sat
   (define-fun x56 () x87
     (as @2 x87))
   (define-fun x235 () Bool
-    false)
+    true)
   (define-fun x564 () Bool
     true)
   (define-fun x538 () Bool
@@ -999,23 +999,23 @@ sat
   (define-fun x150 () x87
     (as @d3 x87))
   (define-fun x439 () Bool
-    true)
+    false)
   (define-fun x196 () Bool
     false)
   (define-fun x299 () Bool
-    false)
+    true)
   (define-fun x1 () Bool
     true)
   (define-fun x466 () Bool
     true)
   (define-fun x531 () Bool
-    true)
+    false)
   (define-fun x620 () Bool
     false)
   (define-fun x403 () Bool
-    true)
-  (define-fun x487 () Bool
     false)
+  (define-fun x487 () Bool
+    true)
   (define-fun x303 () Bool
     false)
   (define-fun x129 () x87
@@ -1025,13 +1025,13 @@ sat
   (define-fun x53 () x87
     (as @2 x87))
   (define-fun x533 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x11 () Bool
     true)
   (define-fun x67 () Bool
     false)
   (define-fun x312 () x91
-    (as @3 x91))
+    (as @26 x91))
   (define-fun x10 () Bool
     true)
   (define-fun x207 () Bool
@@ -1039,7 +1039,7 @@ sat
   (define-fun x183 () Bool
     true)
   (define-fun x440 () x91
-    (as @4 x91))
+    (as @5 x91))
   (define-fun x5 () x87
     (as @d3 x87))
   (define-fun x350 () Bool
@@ -1051,13 +1051,13 @@ sat
   (define-fun x222 () Bool
     true)
   (define-fun x537 () x623
-    (as @7 x623))
+    (as @13 x623))
   (define-fun x628 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x484 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x389 () Bool
-    false)
+    true)
   (define-fun x469 () Bool
     false)
   (define-fun x205 () Bool
@@ -1065,7 +1065,7 @@ sat
   (define-fun x497 () Bool
     true)
   (define-fun x323 () Bool
-    false)
+    true)
   (define-fun x39 () Bool
     false)
   (define-fun x188 () Bool
@@ -1073,11 +1073,11 @@ sat
   (define-fun x504 () Bool
     true)
   (define-fun x298 () Bool
-    false)
-  (define-fun x111 ((r4 x91) (r5 x91)) x91
-    (ite (= (as @4 x91) r4) (ite (= (as @5 x91) r5) (as @3 x91) (as @d6 x91)) (as @d6 x91)))
+    true)
+  (define-fun x111 ((r10 x91) (r11 x91)) x91
+    (ite (= (as @5 x91) r10) (ite (= (as @4 x91) r11) (as @26 x91) (as @d6 x91)) (as @d6 x91)))
   (define-fun x454 () Bool
-    false)
+    true)
   (define-fun x98 () Bool
     true)
   (define-fun x334 () x87
@@ -1085,31 +1085,31 @@ sat
   (define-fun x152 () x87
     (as @2 x87))
   (define-fun x20 () x87
-    (as @2 x87))
+    (as @12 x87))
   (define-fun x283 () Bool
     true)
   (define-fun x187 () Bool
     true)
-  (define-fun x290 ((r12 x91)) x623
-    (ite (= (as @3 x91) r12) (as @7 x623) (as @d2 x623)))
+  (define-fun x290 ((r15 x91)) x623
+    (ite (= (as @26 x91) r15) (as @28 x623) (as @d2 x623)))
   (define-fun x391 () Bool
     true)
   (define-fun x8 () Bool
-    false)
+    true)
   (define-fun x15 () Bool
-    false)
+    true)
   (define-fun x540 () Bool
     false)
   (define-fun x368 () Bool
     true)
   (define-fun x264 () Bool
-    false)
+    true)
   (define-fun x124 () Bool
     true)
-  (define-fun x548 ((r8 x87)) x623
-    (ite (= (as @2 x87) r8) (as @7 x623) (as @d2 x623)))
+  (define-fun x548 ((r4 x87)) x623
+    (ite (= (as @2 x87) r4) (as @13 x623) (as @d2 x623)))
   (define-fun x170 () Bool
-    false)
+    true)
   (define-fun x306 () x87
     (as @d3 x87))
   (define-fun x251 () Bool
@@ -1121,19 +1121,19 @@ sat
   (define-fun x147 () Bool
     true)
   (define-fun x282 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x612 () Bool
     false)
   (define-fun x420 () x91
-    (as @10 x91))
+    (as @27 x91))
   (define-fun x248 () Bool
     true)
   (define-fun x594 () Bool
     true)
   (define-fun x224 () Bool
-    false)
-  (define-fun x89 () Bool
     true)
+  (define-fun x89 () Bool
+    false)
   (define-fun x255 () Bool
     false)
   (define-fun x381 () Bool
@@ -1143,11 +1143,11 @@ sat
   (define-fun x563 () Bool
     true)
   (define-fun x433 () Bool
-    false)
+    true)
   (define-fun x570 () Bool
     true)
   (define-fun x46 () x87
-    (as @2 x87))
+    (as @10 x87))
   (define-fun x529 () Bool
     true)
   (define-fun x337 () Bool
@@ -1159,9 +1159,9 @@ sat
   (define-fun x586 () Bool
     true)
   (define-fun x415 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x419 () Bool
-    true)
+    false)
   (define-fun x617 () Bool
     true)
   (define-fun x93 () x87
@@ -1169,17 +1169,17 @@ sat
   (define-fun x397 () Bool
     true)
   (define-fun x175 () Bool
-    false)
-  (define-fun x195 () Bool
     true)
+  (define-fun x195 () Bool
+    false)
   (define-fun x501 () Bool
     true)
   (define-fun x342 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x309 () Bool
     true)
   (define-fun x382 () Bool
-    false)
+    true)
   (define-fun x263 () Bool
     false)
   (define-fun x265 () Bool
@@ -1191,11 +1191,11 @@ sat
   (define-fun x79 () Bool
     true)
   (define-fun x551 () x87
-    (as @2 x87))
+    (as @3 x87))
   (define-fun x236 () Bool
     false)
   (define-fun x110 () Bool
-    true)
+    false)
   (define-fun x369 () Bool
     false)
   (define-fun x128 () Bool
@@ -1211,7 +1211,7 @@ sat
   (define-fun x580 () x87
     (as @2 x87))
   (define-fun x361 () Bool
-    false)
+    true)
   (define-fun x365 () Bool
     true)
   (define-fun x458 () Bool
@@ -1219,7 +1219,7 @@ sat
   (define-fun x131 () Bool
     true)
   (define-fun x209 () x91
-    (as @4 x91))
+    (as @5 x91))
   (define-fun x13 () Bool
     true)
   (define-fun x280 () x87
@@ -1227,17 +1227,17 @@ sat
   (define-fun x198 () x91
     (as @d6 x91))
   (define-fun x61 () Bool
-    true)
-  (define-fun x332 () Bool
     false)
+  (define-fun x332 () Bool
+    true)
   (define-fun x453 () x87
     (as @2 x87))
   (define-fun x561 () Bool
     true)
   (define-fun x75 () x87
-    (as @2 x87))
+    (as @9 x87))
   (define-fun x606 () Bool
-    false)
+    true)
   (define-fun x465 () Bool
     false)
   (define-fun x340 () x87

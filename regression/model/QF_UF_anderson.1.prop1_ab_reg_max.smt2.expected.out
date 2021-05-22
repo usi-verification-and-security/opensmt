@@ -1,9 +1,9 @@
 sat
 (
   (define-fun Add_32_32_32 ((x0 utt$32) (x1 utt$32)) utt$32
-    (ite (= (as @4 utt$32) x0) (ite (= (as @4 utt$32) x1) (as @5 utt$32) (as @d3 utt$32)) (as @d3 utt$32)))
+    (ite (= (as @2 utt$32) x0) (ite (= (as @2 utt$32) x1) (as @8 utt$32) (as @d3 utt$32)) (as @d3 utt$32)))
   (define-fun GrEq_1_32_32 ((x2 utt$32) (x3 utt$32)) Bool
-    (ite (= (as @6 utt$32) x2) (ite (= (as @5 utt$32) x3) false true) true))
+    (ite (= (as @3 utt$32) x2) (ite (= (as @8 utt$32) x3) false true) true))
   (define-fun y$1 () Bool
     true)
   (define-fun y$11 () Bool
@@ -73,33 +73,33 @@ sat
   (define-fun y$id24_op () Bool
     true)
   (define-fun y$n0s32 () utt$32
-    (as @4 utt$32))
+    (as @2 utt$32))
   (define-fun y$n0s8 () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
   (define-fun y$n1s32 () utt$32
-    (as @6 utt$32))
+    (as @3 utt$32))
   (define-fun y$n1s8 () utt$8
-    (as @10 utt$8))
+    (as @9 utt$8))
   (define-fun y$n2s32 () utt$32
-    (as @7 utt$32))
+    (as @4 utt$32))
   (define-fun y$prop () Bool
     false)
   (define-fun y$v3_19_op () utt$32
-    (as @4 utt$32))
+    (as @2 utt$32))
   (define-fun y$v3_20_op () utt$32
-    (as @4 utt$32))
+    (as @2 utt$32))
   (define-fun y$v3_21_op () utt$32
-    (as @5 utt$32))
+    (as @8 utt$32))
   (define-fun y$v3_22_op () Bool
     false)
   (define-fun y$v_Slot_0 () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
   (define-fun y$v_Slot_1 () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
   (define-fun y$v_my_place_P_0 () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
   (define-fun y$v_my_place_P_1 () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
   (define-fun y$v_next () utt$8
-    (as @2 utt$8))
+    (as @7 utt$8))
 )
