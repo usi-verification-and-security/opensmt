@@ -37,12 +37,12 @@ TEST(SubstitutionBreaker, test_Simple) {
 
 
     PTRef a = logic.mkVar(logic.getSort_bool(), "a");
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
     substs.insert(a, {logic.getTerm_true(), l_True});
 
     SubstLoopBreaker slb(logic);
 
-    Map<PTRef,PtAsgn,PTRefHash> subst_map = slb(std::move(substs));
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst_map = slb(std::move(substs));
     ASSERT_TRUE(subst_map.has(a));
 }
 
@@ -59,7 +59,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
     SymRef fun = logic.declareFun("f", U, {U}, &tmp, false);
     PTRef f = logic.mkUninterpFun(fun, {a});
 
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
     substs.insert(a, {f, l_True});
     substs.insert(b, {a, l_True});
     substs.insert(c, {b, l_True});
@@ -100,7 +100,7 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     PTRef h_b1_a2 = logic.mkUninterpFun(symb_h, {b1, a2});
 
 
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
 
     substs.insert(a1, {f_b1, l_True});
     substs.insert(b1, {h_c1_c2, l_True});
@@ -134,7 +134,7 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     PTRef op_e0_e0 = logic.mkUninterpFun(symb_op, {e0, e0});
     PTRef op_e4_e1 = logic.mkUninterpFun(symb_op, {e4, e1});
 
-    Map<PTRef,PtAsgn,PTRefHash> substs;
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
 
     substs.insert(e0, {op_e2_e1, l_True});
     substs.insert(e4, {op_e2_e2, l_True});
@@ -142,7 +142,7 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     substs.insert(e2, {op_e4_e1, l_True});
 
     SubstLoopBreaker slb(logic);
-    Map<PTRef,PtAsgn,PTRefHash> new_substs = slb(std::move(substs));
+    auto new_substs = slb(std::move(substs));
 
     SubstLoopBreaker slb2(logic);
     vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs));

@@ -195,7 +195,7 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
 // Get variables starting from the root
 //
 inline void
-getVars(PTRef tr, Logic& logic, Map<PTRef,bool,PTRefHash>& vars)
+getVars(PTRef tr, Logic& logic, MapWithKeys<PTRef,bool,PTRefHash>& vars)
 {
     Map<PTRef,bool,PTRefHash> seen;
 
@@ -224,7 +224,6 @@ getVars(PTRef tr, Logic& logic, Map<PTRef,bool,PTRefHash>& vars)
             vars.insert(tr, true);
         seen.insert(tr, true);
     }
-    return;
 }
 
 inline std::vector<PTRef>

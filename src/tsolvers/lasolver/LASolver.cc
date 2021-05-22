@@ -482,7 +482,7 @@ void LASolver::initSolver()
         for  (int i = 0; i < rows.size(); i++)
             cout << rows[i] << '\n';
 #endif
-        auto known_PTRefs = getInformed();
+        const auto & known_PTRefs = getInformed();
         for(PTRef leq_tr : known_PTRefs) {
             Pterm const & leq_t = logic.getPterm(leq_tr);
 

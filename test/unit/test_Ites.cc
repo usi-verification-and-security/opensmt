@@ -22,7 +22,7 @@ class IteManagerTest: public ::testing::Test {
 public:
     class IteToSwitchInternal: public IteToSwitch  {
     public:
-        vec<PTRef> getTopLevelItes() const { return iteDag.getTopLevelItes(); }
+        const vec<PTRef> & getTopLevelItes() const { return iteDag.getTopLevelItes(); }
         IteToSwitchInternal(Logic &l, PTRef tr) : IteToSwitch(l, tr) {}
     };
     LRALogic logic;
@@ -183,7 +183,7 @@ TEST_F(IteManagerTest, test_IteChain) {
     PTRef ite2 = logic.mkIte(cond2, ite1, c1);
     PTRef eq = logic.mkEq(x, ite2);
     IteToSwitchInternal iteManager(logic, eq);
-    vec<PTRef> ites = iteManager.getTopLevelItes();
+    const vec<PTRef> & ites = iteManager.getTopLevelItes();
     ASSERT_TRUE(contains(ites, ite2));
     ASSERT_FALSE(contains(ites, ite1));
 

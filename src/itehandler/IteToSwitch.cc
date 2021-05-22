@@ -263,7 +263,7 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
 }
 
 void IteToSwitch::constructSwitches() {
-    vec<PTRef> ites = iteDag.getTopLevelItes();
+    const vec<PTRef> & ites = iteDag.getTopLevelItes();
 
     for (auto tl_ite : ites) {
         PTRef switch_tr = makeSwitch(tl_ite);
