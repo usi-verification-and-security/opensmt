@@ -43,7 +43,7 @@ class Substitutor : public Rewriter<SubstitutionConfig> {
     SubstitutionConfig config;
 
 public:
-    Substitutor(Logic &logic, MapWithKeys<PTRef, PtAsgn, PTRefHash> const &substs) :
+    Substitutor(Logic &logic, SubstitutionConfig::SubMap const &substs) :
             Rewriter<SubstitutionConfig>(logic, config),
             config(logic, substs) {}
 };
