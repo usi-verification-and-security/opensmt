@@ -371,6 +371,9 @@ bool Egraph::addDisequality(PtAsgn pa) {
 
 bool Egraph::addTrue(PTRef term) {
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
+    if (res and boolTermToERef.has(logic.mkNot(term))) {
+        res = assertEq(logic.mkNot(term), logic.getTerm_false(), PtAsgn(term, l_True));
+    }
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.unsat_calls++;
@@ -386,9 +389,9 @@ bool Egraph::addTrue(PTRef term) {
 
 bool Egraph::addFalse(PTRef term) {
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
-
-
-
+    if (res and boolTermToERef.has(logic.mkNot(term))) {
+        res = assertEq(logic.mkNot(term), logic.getTerm_true(), PtAsgn(term, l_False));
+    }
 #ifdef STATISTICS
     if (res == false)
         tsolver_stats.unsat_calls++;
@@ -1337,10 +1340,10 @@ bool Egraph::assertLit(PtAsgn pta)
         res = addEquality(PtAsgn(pt_r, l_False));
     } else if (isEffectivelyUP(pt_r) && sgn == l_True) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addTrue(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_false(), PtAsgn(pt_r, l_True));
+        res = addTrue(pt_r);
     } else if (isEffectivelyUP(pt_r) && sgn == l_False) {
         // MB: Short circuit evaluation is important, the second call should NOT happen if the first returns false
-        res = addFalse(pt_r) && assertEq(boolTermToERef[logic.mkNot(pt_r)], enode_store.getEnode_true(), PtAsgn(pt_r, l_False));
+        res = addFalse(pt_r);
     } else {
         assert(false);
     }
