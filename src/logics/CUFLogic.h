@@ -36,10 +36,6 @@ class CUFLogic: public Logic
     MapWithKeys<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
     MapWithKeys<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
 
-  public:
-    const vec<PTRef> & getCommEqs() const { return comm_eqs.getKeys(); }
-
-  protected:
     SymRef              sym_CUF_ZERO;   // 0
     SymRef              sym_CUF_ONE;    // 1
     SymRef              sym_CUF_NEG;    // -
