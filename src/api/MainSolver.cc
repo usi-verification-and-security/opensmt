@@ -304,50 +304,6 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
     return true;
 }
 
-bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
-{
-    std::vector<SplitData>& splits = ts.solver.splits;
-    int i = 0;
-    for (const auto & split : splits) {
-        vec<PTRef> conj_vec;
-        std::vector<vec<PtAsgn> > constraints;
-        split.constraintsToPTRefs(constraints, thandler);
-        addToConj(constraints, conj_vec);
-
-        std::vector<vec<PtAsgn> > learnts;
-        split.learntsToPTRefs(learnts, thandler);
-        addToConj(learnts, conj_vec);
-
-        if (config.smt_split_format_length() == spformat_full)
-            conj_vec.push(root_instance.getRoot());
-
-        PTRef problem = logic.mkAnd(conj_vec);
-
-        char* name;
-        int written = asprintf(&name, "%s-%02d.smt2", file, i ++);
-        assert(written >= 0);
-        (void)written;
-        std::ofstream file;
-        file.open(name);
-        if (file.is_open()) {
-            logic.dumpHeaderToFile(file);
-            logic.dumpFormulaToFile(file, problem);
-
-            if (config.smt_split_format_length() == spformat_full)
-                logic.dumpChecksatToFile(file);
-
-            file.close();
-        }
-        else {
-            written = asprintf(msg, "Failed to open file %s\n", name);
-            assert(written >= 0);
-            free(name);
-            return false;
-        }
-        free(name);
-    }
-    return true;
-}
 
 void MainSolver::printFramesAsQuery() const
 {

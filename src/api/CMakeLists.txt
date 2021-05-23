@@ -20,11 +20,13 @@ add_library(api OBJECT "")
 
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
@@ -97,6 +99,7 @@ install(FILES
     Opensmt.h
     smt2tokens.h
     MainSolver.h
+    MainSplitter.h
     PartitionManager.h
     DESTINATION
     ${INSTALL_HEADERS_DIR}

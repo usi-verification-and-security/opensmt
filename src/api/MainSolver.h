@@ -68,7 +68,7 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver
 {
-  private:
+  protected:
 
     class PushFramesWrapper {
     private:
@@ -205,7 +205,6 @@ class MainSolver
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;
-    bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
     void  addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
@@ -219,8 +218,6 @@ class MainSolver
     std::unique_ptr<Model> getModel();
 
     void stop() { ts.solver.stop = true; }
-
-    bool readFormulaFromFile(const char *file);
 
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();

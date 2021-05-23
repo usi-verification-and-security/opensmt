@@ -6,6 +6,7 @@
 #define OPENSMT_LOOKAHEADSPLITTER_H
 
 #include "LookaheadSMTSolver.h"
+#include "SplitData.h"
 
 class LookaheadSplitter : public LookaheadSMTSolver {
 protected:
@@ -14,25 +15,25 @@ protected:
     {
     public:
         // The children
-        SplitData* sd;
-        LASplitNode() : sd(nullptr) {}
-        ~LASplitNode() override { delete sd; }
+        std::unique_ptr<SplitData> sd;
+        ~LASplitNode() override = default;
         void print_local() override {
             LANode::print_local();
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
-            dprintf(STDERR_FILENO, "%s\n", sd == nullptr ? "no instance" : "has instance" );
+            dprintf(STDERR_FILENO, "%s\n", sd == nullptr? "no instance" : "has instance" );
         }
         LASplitNode* getC1() { return (LASplitNode*) c1; }
         LASplitNode* getC2() { return (LASplitNode*) c2; }
     };
     void copySplits(LASplitNode *root);
 
-    public:
-    LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
-    bool     createSplitLookahead(LASplitNode*);
+public:
+    std::vector<SplitData> splits;
 
+    LookaheadSplitter(SMTConfig &c, THandler &thandler) : LookaheadSMTSolver(c, thandler) {}
 
+    bool createSplitLookahead(LASplitNode *);
 };
 
 
