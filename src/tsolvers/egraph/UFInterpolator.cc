@@ -88,12 +88,16 @@ void CGraph::addCEdge(PTRef s, PTRef t, PTRef r) {
     // Retrieve corresponding nodes
     CNode * cs = cnodes_store[s];
     CNode * ct = cnodes_store[t];
-    // Create edge
-    CEdge * edge = new CEdge(cs, ct, r);
+    addCEdge(cs, ct, r);
+
+}
+
+void CGraph::addCEdge(CNode * from, CNode * to, PTRef reason) {
+    CEdge * edge = new CEdge(from, to, reason);
     // Storing edge in cs and ct
-    assert (cs->next == nullptr);
-    cs->next = edge;
-    ct->prev.insert(edge);
+    assert (from->next == nullptr);
+    from->next = edge;
+    to->prev.insert(edge);
     cedges.push_back(edge);
 }
 
@@ -239,7 +243,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                         }
                             // If argument of x is incompatible with n
                         else {
-                            //cerr << "; Edges from X to N" << endl;
+                            //std::cerr << "; Edges from X to N" << std::endl;
                             std::vector<CEdge *> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
                             (void) xnl;
@@ -254,74 +258,24 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                             }
                         }
                         assert (abcommon != PTRef_Undef);
-                        //cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << endl;
+                        //std::cerr << "; Node " << logic.printTerm(abcommon) << " is AB" << std::endl;
                         assert (cgraph.getNode(abcommon)->color == I_AB);
                         new_args.push(abcommon);
                     }
                 }
 
                 PTRef nn = logic.mkUninterpFun(logic.getPterm(x->e).symb(), new_args);
-                assert (nn != x->e);
-                assert (nn != n->e);
-                // Adds corresponding node
-                CNode * cnn = nullptr;
-                CNode * cnn_next = nullptr;
-                PTRef cnn_next_reason = PTRef_Undef;
-                if (cgraph.hasNode(nn)) {
-                    cnn = cgraph.getNode(nn);
-                    if (cnn->next != nullptr) {
-                        cnn_next = cnn->next->target;
-                        cnn_next_reason = cnn->next->reason;
-                        cgraph.removeCEdge(cnn->next);
-                    }
-                    cnn->next = nullptr;
+                if (nn == x->e) {
+                    x->color = I_AB;
+                } else if (nn == n->e) {
+                    n->color = I_AB;
                 } else {
-                    cgraph.addCNode(nn);
-                    cnn = cgraph.getNode(nn);
-                }
-                // Remember this
-                assert (x->next->target == n);
-                cnn->color = I_AB;
-
-                // Situation x --> n | then make x --> nn
-                cgraph.removeCEdge(x->next);
-                x->next = nullptr;
-                cgraph.addCEdge(x->e, nn, PTRef_Undef);
-                assert(x->next != nullptr); // the added edge is x->next
-                assert(x->next->target == cnn);
-                // Choose a color
-                assert (x->color == I_A || x->color == I_B || x->color == I_AB);
-                x->next->color = x->color == I_AB ? resolveABColor() : x->color;
-
-                cgraph.addCEdge(nn, n->e, PTRef_Undef);
-                cnn->next->color = n->color;
-                x = cnn;
-                if (cnn_next != nullptr) {
-                    // MB: It looks like it is possible that there has already been an edge n -> cnn
-                    // In that case a self-loop edge would be added here and that causes trouble later
-                    // We need to prevent that
-                    if (cnn_next == n) {
-                        cnn->next->reason = cnn_next_reason;
-                    } else {
-                        cgraph.addCEdge(n->e, cnn_next->e, cnn_next_reason);
-                    }
+                    splitEdge(x->next, nn);
+                    x = x->next->target;
                 }
             }
             // Now all the children are colored, we can decide how to color this
-            if (x->color == n->color) {
-                assert (x->color);
-                // Choose correct color
-                x->next->color = x->color == I_AB ? resolveABColor() : x->color;
-            }
-                // Different colors: choose intersection
-            else {
-                // It is not possible that are incompatible
-                assert (x->color != I_A || n->color != I_B);
-                assert (x->color != I_B || n->color != I_A);
-                x->next->color = static_cast< icolor_t > ( x->color & n->color );
-                assert (x->next->color == I_A
-                        || x->next->color == I_B);
-            }
+            colorCongruenceEdge(x->next);
         }
             // Color basic edge with proper color
         else {
@@ -331,7 +285,6 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                 throw std::logic_error("Error in coloring information");
             }
         }
-
         // This edge has been colored
         colored_edges.insert(x->next);
         assert (x->next->color == I_A || x->next->color == I_B);
@@ -342,16 +295,32 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
     return true;
 }
 
+void UFInterpolator::colorCongruenceEdge(CEdge * edge) {
+    assert(edge);
+    CNode * from = edge->source;
+    CNode * to = edge->target;
+    if (from->color == to->color) {
+        assert (from->color);
+        edge->color = from->color == I_AB ? resolveABColor() : from->color;
+    } else { // Different colors: choose intersection
+        // It is not possible that the colors are incompatible
+        assert (from->color != I_A or to->color != I_B);
+        assert (from->color != I_B or to->color != I_A);
+        edge->color = static_cast<icolor_t>(from->color & to->color);
+        assert (edge->color == I_A or edge->color == I_B);
+    }
+}
+
 //
 // Here mask is a bit-mask of the form 1..10..0
 // which indicates the current splitting for the
 // formula into A and B.
 //
 PTRef
-UFInterpolator::getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> * labels, PartitionManager &) {
+UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) {
     assert(labels);
     if (labels) {
-        colorInfo.reset(new LocalTermColorInfo(*labels, logic));
+        colorInfo.reset(new GlobalTermColorInfo(pmanager, mask));
         litColors = *labels;
     } else {
         throw OsmtInternalException("Error in UFInterpolator::getInterpolant! No labels passed");
@@ -1263,4 +1232,51 @@ bool UFInterpolator::checkColors() {
         }
     }
     return true;
+}
+
+void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
+    assert(edge);
+    CNode * from = edge->source;
+    CNode * to = edge->target;
+    assert (from->next->target == to);
+    // Adds corresponding node
+    CNode * intermediate = nullptr;
+    CNode * intermediate_next = nullptr;
+    PTRef intermediate_next_reason = PTRef_Undef;
+    if (cgraph.hasNode(intermediateTerm)) {
+        intermediate = cgraph.getNode(intermediateTerm);
+        if (intermediate->next != nullptr) {
+            intermediate_next = intermediate->next->target;
+            intermediate_next_reason = intermediate->next->reason;
+            cgraph.removeCEdge(intermediate->next);
+        }
+        intermediate->next = nullptr;
+    } else {
+        cgraph.addCNode(intermediateTerm);
+        intermediate = cgraph.getNode(intermediateTerm);
+    }
+    intermediate->color = I_AB;
+    // We have the intermediate node in hand, now we need to remove edge "from -> to" and
+    // add edges "from -> intermediate"; "intermediate -> to"
+    cgraph.removeCEdge(edge);
+    from->next = nullptr;
+    cgraph.addCEdge(from, intermediate, PTRef_Undef);
+    assert(from->next != nullptr); // the added edge is from->next
+    assert(from->next->target == intermediate);
+    // Choose a color; we know that intermediate is AB, so we color edge based on from
+    assert (from->color == I_A || from->color == I_B || from->color == I_AB);
+    from->next->color = from->color == I_AB ? resolveABColor() : from->color;
+
+    cgraph.addCEdge(intermediate, to, PTRef_Undef);
+//    intermediate->next->color = to->color;
+    if (intermediate_next != nullptr) {
+        // MB: It looks like it is possible that there has already been an edge n -> cnn
+        // In that case a self-loop edge would be added here and that causes trouble later
+        // We need to prevent that
+        if (intermediate_next == to) {
+            intermediate->next->reason = intermediate_next_reason;
+        } else {
+            cgraph.addCEdge(to, intermediate_next, intermediate_next_reason);
+        }
+    }
 }
