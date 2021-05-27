@@ -7,6 +7,10 @@
 #include <MainSolver.h>
 #include "VerificationUtils.h"
 
+bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask, SMTConfig & config, Logic & logic) {
+    return VerificationUtils(config, logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
+}
+
 class UFInterpolationTest : public ::testing::Test {
 protected:
     UFInterpolationTest(): logic{} {}
@@ -40,9 +44,8 @@ protected:
     SymRef f, g, p;
 
     bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask) {
-        return VerificationUtils(config, logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
+        return ::verifyInterpolant(itp, pManager, Amask, config, logic);
     }
-
 };
 
 TEST_F(UFInterpolationTest, test_SimpleTransitivity){
@@ -385,6 +388,65 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+}
+
+TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
+    /*
+     * B = {z1=g(a1,b1}, g(a2,b2)=z2
+     * A = {P(g(x,y)), x=a1, y=b1, x=a2, y=b2}
+     * not(z1=z2) in A
+     */
+
+    // Note: this requires a set-up in specific order, different from the set-up we have in UFInterpolationTest
+    Logic logic;
+    SRef ufsort = logic.declareSort("U", nullptr);
+    SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort}, nullptr);
+    SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr);
+    logic.declareFun("x", ufsort, {}, nullptr);
+    logic.declareFun("y", ufsort, {}, nullptr);
+    logic.declareFun("r1", ufsort, {}, nullptr);
+    logic.declareFun("r2", ufsort, {}, nullptr);
+    logic.declareFun("a1", ufsort, {}, nullptr);
+    logic.declareFun("a2", ufsort, {}, nullptr);
+    logic.declareFun("b1", ufsort, {}, nullptr);
+    logic.declareFun("b2", ufsort, {}, nullptr);
+    PTRef r1 = logic.mkVar(ufsort, "r1");
+    PTRef a1 = logic.mkVar(ufsort, "a1");
+    PTRef b1 = logic.mkVar(ufsort, "b1");
+    PTRef f_a1_b1 = logic.mkUninterpFun(f, {a1,b1});
+    PTRef r2 = logic.mkVar(ufsort, "r2");
+    PTRef a2 = logic.mkVar(ufsort, "a2");
+    PTRef b2 = logic.mkVar(ufsort, "b2");
+    PTRef f_a2_b2 = logic.mkUninterpFun(f, {a2,b2});
+    PTRef x = logic.mkVar(ufsort, "x");
+    PTRef y = logic.mkVar(ufsort, "y");
+    PTRef f_x_y = logic.mkUninterpFun(f, {x,y});
+    PTRef P_f = logic.mkUninterpFun(P, {f_x_y});
+    PTRef eqB1 = logic.mkEq(r1, f_a1_b1);
+    PTRef eqB2 = logic.mkEq(r2,f_a2_b2);
+    PTRef A = logic.mkAnd({
+        P_f,
+        logic.mkEq(a1, x),
+        logic.mkEq(b1, y),
+        logic.mkEq(a2, x),
+        logic.mkEq(b2, y),
+        logic.mkNot(logic.mkEq(r1, r2))
+    });
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(logic.mkAnd(eqB1, eqB2));
+    solver.insertFormula(A);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 1);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+//    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    EXPECT_TRUE(::verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask, config, logic));
 }
 
 
