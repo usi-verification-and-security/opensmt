@@ -94,6 +94,7 @@ public:
 
     void  addCNode (PTRef e);
     void  addCEdge (PTRef, PTRef, PTRef);
+    void  addCEdge (CNode *, CNode *, PTRef);
 
     void removeCEdge(CEdge *);
 
@@ -141,6 +142,9 @@ private:
     icolor_t colorNode(CNode * c);
     bool colorEdges(CNode * c1, CNode * c2);
     bool colorEdgesFrom(CNode * x);
+    void colorCongruenceEdge(CEdge * edge);
+
+    void splitEdge(CEdge * edge, PTRef intermediateTerm);
 
     size_t getSortedEdges(CNode *, CNode *, vector<CEdge *> &);
 
