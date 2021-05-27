@@ -25,35 +25,35 @@ private:
 protected:
     virtual lbool solve_() override;
     virtual inline void clausesPublish() {
-        std::vector<Var> enabled_assumptions;
-
-        for (int i = 0; i < assumptions.size(); i++) {
-            if (sign(assumptions[i]))
-                enabled_assumptions.push_back(var(assumptions[i]));
-        }
-        int n_NotPublishedLearntClauses = learnts.size() - n_PublishedLearntClauses + n_reducedLearntClauses;
-        for (int i = learnts.size()-1 , j=0; j < n_NotPublishedLearntClauses ; i--,j++) {
-            CRef cr = learnts[i];
-            Clause &c = ca[cr];
-
-            bool intersected= false;
-            for (int j = 0; j < c.size(); j++) {
-                Lit &l = c[j];
-                uint8_t k;
-                for (k = 0; k < enabled_assumptions.size(); k++) {
-                    if (var(l) == enabled_assumptions[k]) {
-                        intersected= true;
-                        break;
-                    }
-                }
-                if (intersected)
-                    break;
-            }
-            if(!intersected) {
-                toPublish_LearntClauses.push_back(c);
-            }
-            n_PublishedLearntClauses++;
-        }
+//        std::vector<Var> enabled_assumptions;
+//
+//        for (int i = 0; i < assumptions.size(); i++) {
+//            if (sign(assumptions[i]))
+//                enabled_assumptions.push_back(var(assumptions[i]));
+//        }
+//        int n_NotPublishedLearntClauses = learnts.size() - n_PublishedLearntClauses + n_reducedLearntClauses;
+//        for (int i = learnts.size()-1 , j=0; j < n_NotPublishedLearntClauses ; i--,j++) {
+//            CRef cr = learnts[i];
+//            Clause &c = ca[cr];
+//
+//            bool intersected= false;
+//            for (int j = 0; j < c.size(); j++) {
+//                Lit &l = c[j];
+//                uint8_t k;
+//                for (k = 0; k < enabled_assumptions.size(); k++) {
+//                    if (var(l) == enabled_assumptions[k]) {
+//                        intersected= true;
+//                        break;
+//                    }
+//                }
+//                if (intersected)
+//                    break;
+//            }
+//            if(!intersected) {
+//                toPublish_LearntClauses.push_back(c);
+//            }
+//            n_PublishedLearntClauses++;
+//        }
 
     };
     virtual inline void clausesUpdate() {};

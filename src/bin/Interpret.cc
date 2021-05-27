@@ -41,6 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSplitter.h"
 #include "LogicFactory.h"
 
+
 #ifdef ITP_DEBUG
 #include "TreeOps.h"
 #endif // ITP_DEBUG
@@ -147,7 +148,9 @@ void Interpret::exit() {
 
 using opensmt::Logic_t;
 using opensmt::getLogicFromString;
+void Interpret::new_solver() {
 
+}
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);
     const smt2token cmd = n.getToken();
@@ -165,11 +168,7 @@ void Interpret::interp(ASTNode& n) {
                     break;
                 }
                 initializeLogic(logic_type);
-                if (config.sat_split_type() == spt_scatter) {
-                    main_solver.reset(new MainSplitter(*logic, config, std::string(logic_name) + " splitter"));
-                } else {
-                    main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
-                }
+                main_solver.reset(new MainSplitter(*logic, config, std::string(logic_name) + " splitter"));
                 main_solver->initialize();
                 notify_success();
                 }
@@ -615,7 +614,7 @@ bool Interpret::checkSat() {
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
         else if (o_split != spt_none) {
-            writeSplits_smtlib2(name);
+            //writeSplits_smtlib2(name);
         }
         free(name);
     }

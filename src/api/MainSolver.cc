@@ -113,7 +113,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     if (logic.getSortRef(root) != logic.getSort_bool())
     {
         int chars_written = asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                 Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
+                                     Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
         (void)chars_written;
         return s_Error;
     }
@@ -381,7 +381,7 @@ sstat MainSolver::solve()
     return status;
 }
 
-std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
+SimpSMTSolver* MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
     SimpSMTSolver* solver = nullptr;
     if (config.sat_pure_lookahead())
         solver = new LookaheadSMTSolver(config, thandler);
@@ -389,12 +389,9 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
         solver = new LookaheadSplitter(config, thandler);
     else if (config.use_ghost_vars())
         solver = new GhostSMTSolver(config, thandler);
-    else if (config.sat_split_type() == spt_scatter)
-        solver = new ScatterSplitter(config, thandler);
     else
-        solver = new SimpSMTSolver(config, thandler);
-
-    return std::unique_ptr<SimpSMTSolver>(solver);
+        solver = new ScatterSplitter(config, thandler);
+    return solver;
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {

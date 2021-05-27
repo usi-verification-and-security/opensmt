@@ -11,8 +11,8 @@ namespace opensmt
 }
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t)
-    : SimpSMTSolver         (c, t)
-    , splitConfig           (config)
+        : SimpSMTSolver         (c, t)
+        , splitConfig           (config)
 {}
 
 bool ScatterSplitter::branchLitRandom() {

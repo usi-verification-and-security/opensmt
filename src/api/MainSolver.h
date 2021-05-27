@@ -69,7 +69,6 @@ const sstat s_Error = toSstat( 2);
 class MainSolver
 {
   protected:
-
     class PushFramesWrapper {
     private:
         vec<PFRef> frames;
@@ -100,7 +99,7 @@ class MainSolver
     std::unique_ptr<Theory>         theory;
     TermMapper                      term_mapper;
     THandler                        thandler;
-    std::unique_ptr<SimpSMTSolver>  smt_solver;
+    SimpSMTSolver*  smt_solver;
     Logic&                          logic;
     PartitionManager                pmanager;
     SMTConfig&                      config;
@@ -150,12 +149,13 @@ class MainSolver
         }
     }
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
+    static SimpSMTSolver* createInnerSolver(SMTConfig& config, THandler& thandler);
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
   public:
     sstat solve           ();
+
     MainSolver(Logic& logic, SMTConfig& conf, std::string name)
             :
             theory(createTheory(logic, conf)),
@@ -179,10 +179,8 @@ class MainSolver
         last.push(logic.getTerm_true());
     }
 
-
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
-    SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
     THandler &getTHandler() { return thandler; }
     Logic    &getLogic()    { return logic; }

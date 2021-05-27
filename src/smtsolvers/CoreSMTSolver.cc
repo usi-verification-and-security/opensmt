@@ -65,66 +65,66 @@ namespace opensmt
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-    : config           (c)
-    , theory_handler   (t)
-    , verbosity        (c.verbosity())
-    , init             (false)
-    , stop             (false)
-    // Parameters: (formerly in 'SearchParams')
-    , var_decay        (c.sat_var_decay())
-    , clause_decay     (c.sat_clause_decay())
-    , random_var_freq  (c.sat_random_var_freq())
-    , luby_restart     (c.sat_luby_restart())
-    , ccmin_mode       (c.sat_ccmin_mode())
-    , phase_saving     (c.sat_pcontains())
-    , rnd_pol          (c.sat_rnd_pol())
-    , rnd_init_act     (c.sat_rnd_init_act())
-    , garbage_frac     (c.sat_garbage_frac())
-    , restart_first    (c.sat_restart_first())
-    , restart_inc      (c.sat_restart_inc())
-    , learntsize_factor((double)1/(double)3)
-    , learntsize_inc   ( 1.1 )
-      // More parameters:
-      //
-    , expensive_ccmin  ( true )
-    , learntsize_adjust_start_confl (0)
-      // Statistics: (formerly in 'SolverStats')
-      //
-    , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
-    , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-      // ADDED FOR MINIMIZATION
-    , learnts_size(0) , all_learnts(0)
-    , learnt_theory_conflicts(0)
-    , top_level_lits        (0)
-    , forced_split          (lit_Undef)
-    , ok                    (true)
-    , conflict_frame        (0)
-    , n_clauses             (0)
-    , cla_inc               (1)
-    , var_inc               (1)
-    , watches               (WatcherDeleted(ca))
-    , qhead                 (0)
-    , simpDB_assigns        (-1)
-    , simpDB_props          (0)
-    , order_heap            (VarOrderLt(activity))
-    , random_seed           (c.getRandomSeed())
-    , progress_estimate     (0)
-    , remove_satisfied      (true)
+        : config           (c)
+        , theory_handler   (t)
+        , verbosity        (c.verbosity())
+        , init             (false)
+        , stop             (false)
+        // Parameters: (formerly in 'SearchParams')
+        , var_decay        (c.sat_var_decay())
+        , clause_decay     (c.sat_clause_decay())
+        , random_var_freq  (c.sat_random_var_freq())
+        , luby_restart     (c.sat_luby_restart())
+        , ccmin_mode       (c.sat_ccmin_mode())
+        , phase_saving     (c.sat_pcontains())
+        , rnd_pol          (c.sat_rnd_pol())
+        , rnd_init_act     (c.sat_rnd_init_act())
+        , garbage_frac     (c.sat_garbage_frac())
+        , restart_first    (c.sat_restart_first())
+        , restart_inc      (c.sat_restart_inc())
+        , learntsize_factor((double)1/(double)3)
+        , learntsize_inc   ( 1.1 )
+        // More parameters:
+        //
+        , expensive_ccmin  ( true )
+        , learntsize_adjust_start_confl (0)
+        // Statistics: (formerly in 'SolverStats')
+        //
+        , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
+        , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+        // ADDED FOR MINIMIZATION
+        , learnts_size(0) , all_learnts(0)
+        , learnt_theory_conflicts(0)
+        , top_level_lits        (0)
+        , forced_split          (lit_Undef)
+        , ok                    (true)
+        , conflict_frame        (0)
+        , n_clauses             (0)
+        , cla_inc               (1)
+        , var_inc               (1)
+        , watches               (WatcherDeleted(ca))
+        , qhead                 (0)
+        , simpDB_assigns        (-1)
+        , simpDB_props          (0)
+        , order_heap            (VarOrderLt(activity))
+        , random_seed           (c.getRandomSeed())
+        , progress_estimate     (0)
+        , remove_satisfied      (true)
 #ifdef PEDANTIC_DEBUG
-    , max_dl_debug          (0)
+        , max_dl_debug          (0)
     , analyze_cnt           (0)
 #endif
-    , conflict_budget       (-1)
-    , propagation_budget    (-1)
-    , asynch_interrupt      (false)
-    , learnt_t_lemmata      (0)
-    , perm_learnt_t_lemmata (0)
-    , luby_i                (0)
-    , luby_k                (1)
-    , cuvti                 (false)
-    , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
+        , conflict_budget       (-1)
+        , propagation_budget    (-1)
+        , asynch_interrupt      (false)
+        , learnt_t_lemmata      (0)
+        , perm_learnt_t_lemmata (0)
+        , luby_i                (0)
+        , luby_k                (1)
+        , cuvti                 (false)
+        , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
 #ifdef STATISTICS
-    , preproc_time          (0)
+, preproc_time          (0)
     , elim_tvars            (0)
 #endif
 { }
@@ -148,24 +148,24 @@ CoreSMTSolver::initialize( )
     //
     switch ( config.sat_polarity_mode )
     {
-    case 0:
-        polarity_mode = polarity_true;
-        break;
-    case 1:
-        polarity_mode = polarity_false;
-        break;
-    case 2:
-        polarity_mode = polarity_rnd;
-        break;
-    case 3:
-        polarity_mode = polarity_user;
-        break; // Polarity is set in
-    case 4:
-        polarity_mode = polarity_user;
-        break; // THandler.C for
-    case 5:
-        polarity_mode = polarity_user;
-        break; // Boolean atoms
+        case 0:
+            polarity_mode = polarity_true;
+            break;
+        case 1:
+            polarity_mode = polarity_false;
+            break;
+        case 2:
+            polarity_mode = polarity_rnd;
+            break;
+        case 3:
+            polarity_mode = polarity_user;
+            break; // Polarity is set in
+        case 4:
+            polarity_mode = polarity_user;
+            break; // THandler.C for
+        case 5:
+            polarity_mode = polarity_user;
+            break; // Boolean atoms
     }
 
     if (config.produce_inter() && !proof) {
@@ -301,7 +301,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original, false);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+                            ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -594,7 +594,7 @@ Lit CoreSMTSolver::pickBranchLit()
 
     Var next = var_Undef;
 
-   // Pick a variable either randomly or based on activity
+    // Pick a variable either randomly or based on activity
     next = doRandomDecision();
     // Activity based decision
     if (next == var_Undef || value(next) != l_Undef || !decision[next])
@@ -931,7 +931,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             if (cr == CRef_Fake)
             {
                 for (int j = top; j < analyze_toclear.size(); j++)
-                seen[var(analyze_toclear[j])] = 0;
+                    seen[var(analyze_toclear[j])] = 0;
                 analyze_toclear.shrink(analyze_toclear.size() - top);
 
                 return false;
@@ -1179,7 +1179,7 @@ CRef CoreSMTSolver::propagate()
                 uncheckedEnqueue(first, cr);
             }
 
-NextClause:
+            NextClause:
             ;
         }
         ws.shrink(i - j);
@@ -1632,7 +1632,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     // Model found:
                     return l_True;
             }
-            
+
             assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
             assert(value(next) == l_Undef);
@@ -1798,11 +1798,11 @@ lbool CoreSMTSolver::solve_()
         // restarts
         if (conflicts == 0 || conflicts >= next_printout)
         {
-          if ( config.verbosity() > 0 ) {
-              reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
-                      cpuTime(), memUsed() / 1048576.0);
-              fflush(stderr);
-          }
+            if ( config.verbosity() > 0 ) {
+                reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
+                        cpuTime(), memUsed() / 1048576.0);
+                fflush(stderr);
+            }
         }
 
         if (config.sat_use_luby_restart)
@@ -1848,7 +1848,7 @@ void CoreSMTSolver::clearSearch()
 {
     cancelUntil(0);
 //    if (first_model_found || splits.size() > 1) {
-        theory_handler.backtrack(-1);
+    theory_handler.backtrack(-1);
 //    }
 }
 

@@ -105,7 +105,7 @@ class   Interpret {
     SMTConfig &     config;
     std::unique_ptr<Logic> logic;
     std::unique_ptr<MainSolver> main_solver;
-    std::unique_ptr<MainSplitter> main_splitter;
+    std::unique_ptr<SimpSMTSolver>  smt_solver;
     bool            f_exit;
 
     // Named terms for getting variable values
@@ -157,13 +157,13 @@ class   Interpret {
 
   public:
 
-
-    Interpret(SMTConfig& c, MainSplitter *_m)
+    virtual void new_solver();
+    Interpret(SMTConfig& c)
             : config     (c)
-            , main_splitter(_m)
             , f_exit     (false){ }
 
-    Interpret(SMTConfig& c) : Interpret(c, nullptr) { }
+    //Interpret(SMTConfig& c) : Interpret(c, nullptr, nullptr) { }
+    //Interpret(SMTConfig& c, std::unique_ptr<MainSplitter> mainSplitter) : Interpret(c), main_solver(mainSplitter) {}
     ~Interpret();
 
     int interpFile(FILE* in);
