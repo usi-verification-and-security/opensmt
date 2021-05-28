@@ -15,7 +15,7 @@ public:
     MainSplitter(Logic& logic, SMTConfig& config, std::string name)
             :
             MainSolver(logic, config, std::move(name)){}
-    bool writeSolverSplits_smtlib2(const char* file, char** msg);
+    bool writeSolverSplits_smtlib2(const char* file, char** msg) const;
 };
 
 

@@ -7,9 +7,8 @@
 #include "SplitData.h"
 #include "ScatterSplitter.h"
 
-bool MainSplitter::writeSolverSplits_smtlib2(const char* file, char** msg)
+bool MainSplitter::writeSolverSplits_smtlib2(const char* file, char** msg) const
 {
-    //std::vector<SplitData>& scattersplits= scatter_Splitter->splits;
     std::vector<SplitData>& splits =(config.sat_split_type()==spt_scatter) ? static_cast<ScatterSplitter&>(ts.solver).splits
                                                                            : static_cast<LookaheadSplitter&>(ts.solver).splits;
     if(config.sat_split_type() == spt_scatter)

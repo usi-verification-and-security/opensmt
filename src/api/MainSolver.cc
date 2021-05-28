@@ -381,7 +381,7 @@ sstat MainSolver::solve()
     return status;
 }
 
-SimpSMTSolver* MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
+std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
     SimpSMTSolver* solver = nullptr;
     if (config.sat_pure_lookahead())
         solver = new LookaheadSMTSolver(config, thandler);
@@ -391,7 +391,7 @@ SimpSMTSolver* MainSolver::createInnerSolver(SMTConfig & config, THandler & than
         solver = new GhostSMTSolver(config, thandler);
     else
         solver = new ScatterSplitter(config, thandler);
-    return solver;
+    return std::unique_ptr<SimpSMTSolver>(solver);
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {

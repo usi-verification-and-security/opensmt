@@ -99,7 +99,7 @@ class MainSolver
     std::unique_ptr<Theory>         theory;
     TermMapper                      term_mapper;
     THandler                        thandler;
-    SimpSMTSolver*  smt_solver;
+    std::unique_ptr<SimpSMTSolver>  smt_solver;
     Logic&                          logic;
     PartitionManager                pmanager;
     SMTConfig&                      config;
@@ -149,7 +149,7 @@ class MainSolver
         }
     }
 
-    static SimpSMTSolver* createInnerSolver(SMTConfig& config, THandler& thandler);
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
