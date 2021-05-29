@@ -83,7 +83,7 @@ namespace ite {
     };
 
 
-    enum class type {
+    enum class type : char {
         white, gray, black
     };
 
