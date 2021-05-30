@@ -610,12 +610,12 @@ Lit CoreSMTSolver::pickBranchLit()
             next = order_heap.removeMin();
             if (split_on && next != var_Undef)
             {
-                if (split_preference == sppref_tterm && !theory_handler.isTheoryTerm(next))
+                if (split_preference == sppref_tterm && !theory_handler.isDeclared(next))
                 {
                     discarded.push(next);
                     next = var_Undef;
                 }
-                else if (split_preference == sppref_bterm && theory_handler.isTheoryTerm(next))
+                else if (split_preference == sppref_bterm && theory_handler.isDeclared(next))
                 {
                     discarded.push(next);
                     next = var_Undef;
@@ -637,7 +637,7 @@ Lit CoreSMTSolver::pickBranchLit()
 
     bool sign = false;
     bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
-    if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isTheoryTerm(next)) {
+    if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isDeclared(next)) {
         lbool suggestion = this->theory_handler.getSolverHandler().getPolaritySuggestion(this->theory_handler.varToTerm(next));
         if (suggestion != l_Undef) {
             sign = (suggestion != l_True);
@@ -1836,7 +1836,7 @@ void CoreSMTSolver::declareVarsToTheories()
             var_seen[v] = true;
             const Logic & logic = theory_handler.getLogic();
             const PTRef term = theory_handler.varToTerm(v);
-            if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+            if (logic.isTheoryTerm(term)) {
                 theory_handler.declareAtom(term);
             }
         }
@@ -1851,15 +1851,21 @@ void CoreSMTSolver::declareVarsToTheories()
                 var_seen[v] = true;
                 assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
                 const PTRef term = theory_handler.varToTerm(v);
-                if (logic.isTheoryTerm(term) || logic.isEquality(term)) {
+                if (logic.isTheoryTerm(term)) {
                     theory_handler.declareAtom(term);
                 }
             }
         }
     }
     for (Var v = 0; v < var_seen.size(); v++) {
-        if (not var_seen[v] and not logic.appearsInUF(theory_handler.varToTerm(v))) {
-            setDecisionVar(v, false);
+        if (not var_seen[v]) {
+            PTRef atom = theory_handler.varToTerm(v);
+            bool appearsInUf = logic.appearsInUF(atom);
+            if (appearsInUf) {
+                theory_handler.declareAtom(atom);
+            } else {
+                setDecisionVar(v, false);
+            }
         }
     }
 }

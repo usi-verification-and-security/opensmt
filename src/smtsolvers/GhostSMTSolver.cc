@@ -7,7 +7,7 @@
 
 bool GhostSMTSolver::isGhost(Lit l)
 {
-    if (!theory_handler.isTheoryTerm(var(l))) return false;
+    if (!theory_handler.isDeclared(var(l))) return false;
     vec<CRef> &appearances = thLitToClauses[toInt(l)];
     int i;
     for (i = 0; i < appearances.size(); i++) {
@@ -52,7 +52,7 @@ GhostSMTSolver::attachClause(CRef in_clause)
 
     for (unsigned i = 0; i < c.size(); i++) {
         Lit l = c[i];
-        if (theory_handler.isTheoryTerm(var(l))) {
+        if (theory_handler.isDeclared(var(l))) {
             int idx = toInt(l);
             assert(idx < static_cast<int>(thLitToClauses.size()));
             thLitToClauses[idx].push(in_clause);
@@ -117,7 +117,7 @@ GhostSMTSolver::pickBranchPolarity(Var next) {
     bool sign = false;
     bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
 
-    if (use_theory_suggested_polarity && theory_handler.isTheoryTerm(next)) {
+    if (use_theory_suggested_polarity && theory_handler.isDeclared(next)) {
         lbool suggestion = this->theory_handler.getSolverHandler().getPolaritySuggestion(this->theory_handler.varToTerm(next));
         if (suggestion != l_Undef) {
             sign = (suggestion != l_True);

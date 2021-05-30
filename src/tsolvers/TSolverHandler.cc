@@ -42,13 +42,6 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
     return res;
 }
 
-void TSolverHandler::declareAtoms(PTRef tr) {
-    auto atoms = getAtoms(tr, getLogic());
-    for (const PTRef atom : atoms) {
-        declareAtom(atom);
-    }
-}
-
 
 // Clear the vars of the solvers
 void TSolverHandler::clearSolver()

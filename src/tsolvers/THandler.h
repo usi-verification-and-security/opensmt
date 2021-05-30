@@ -38,6 +38,8 @@ class THandler
 private:
     Theory &          theory;
     TermMapper &      tmap;                     // Mappings between TRefs and Lits
+    vec<bool>         declared;                 // Cache for quick check if given SAT variable has been declared to theory solvers
+
 public:
 
     THandler(Theory & tsh, TermMapper & termMapper)
@@ -48,7 +50,9 @@ public:
 
     ~THandler() = default;
 
-    void clear();// { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+    void clear();  // Clear the solvers from their states
+
+    bool isDeclared (Var v) { return v < declared.size() and declared[v]; } // Has v been declared to the theory solvers?
 
     Theory& getTheory();// { return theory; }
     Logic&  getLogic() ;// { return theory.getLogic(); }
@@ -72,7 +76,6 @@ public:
     void fillTheoryVars       (ModelBuilder & modelBuilder) const;
     void addSubstitutions     (ModelBuilder & modelBuilder) const;
 
-    bool    isTheoryTerm       ( Var v ) ;//{ return getLogic().isTheoryTerm(varToTerm(v)); }
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
     Lit     PTRefToLit         ( PTRef tr);// { return tmap.getLit(tr); }
@@ -86,8 +89,7 @@ public:
     void    clearModel        ();// { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
     bool    assertLits        (const vec<Lit> &);             // Give to the TSolvers the newly added literals on the trail
     bool    assertLit         (PtAsgn pta);// { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-    void    declareAtoms      (PTRef tr) { getSolverHandler().declareAtoms(tr); }
-    void    declareAtom       (PTRef tr) { getSolverHandler().declareAtom(tr); }
+    void    declareAtom       (PTRef tr);
     void    informNewSplit    (PTRef tr); // Splitting variable data structure updates (e.g., recompute bounds list)
     TRes    check             (bool);       // Check trail in the theories
     void    backtrack         (int);        // Remove literals that are not anymore on the trail

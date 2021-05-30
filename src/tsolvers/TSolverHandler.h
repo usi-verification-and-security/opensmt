@@ -79,7 +79,6 @@ public:
     void    fillTheoryVars    (ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
-    void    declareAtoms      (PTRef);                 // Declare atoms to theory solvers
     void    informNewSplit(PTRef);                     // Recompute split datastructures
     void    declareAtom(PTRef tr);                     // Declare atom to the appropriate solver
 //    virtual SolverId getId() const { return my_id; }

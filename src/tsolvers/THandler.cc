@@ -43,7 +43,8 @@ void THandler::backtrack(int lev)
         // It was var_True or var_False
         if (e == getLogic().getTerm_true() || e == getLogic().getTerm_false()) continue;
 
-        if (!getLogic().isTheoryTerm(e)) continue;
+        assert(isDeclared(var(PTRefToLit(e))) == getLogic().isTheoryTerm(e));
+        if (not isDeclared(var(PTRefToLit(e)))) continue;
         ++backTrackPointsCounter;
     }
     for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
@@ -74,7 +75,8 @@ bool THandler::assertLits(const vec<Lit> & trail)
 
         PTRef pt_r = tmap.varToPTRef(v);
         stack.push( pt_r );
-        if (!getLogic().isTheoryTerm(pt_r)) continue;
+        assert(isDeclared(v) == getLogic().isTheoryTerm(pt_r));
+        if (not isDeclared(v)) continue;
         assert(getLogic().isTheoryTerm(pt_r));
 
 
@@ -484,7 +486,7 @@ std::string THandler::printAssertion(Lit assertion) {
 //}
 #endif
 
-void THandler::clear() { getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+void THandler::clear() { declared.clear(); getSolverHandler().clearSolver(); }  // Clear the solvers from their states
 
 Theory& THandler::getTheory() { return theory; }
 Logic&  THandler::getLogic()  { return theory.getLogic(); }
@@ -497,7 +499,6 @@ ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler()
 void    THandler::fillTheoryVars(ModelBuilder &modelBuilder) const { getSolverHandler().fillTheoryVars(modelBuilder); }
 void    THandler::addSubstitutions(ModelBuilder &modelBuilder) const { modelBuilder.processSubstitutions(getSolverHandler().substs); }
 
-bool    THandler::isTheoryTerm       ( Var v )       { return getLogic().isTheoryTerm(varToTerm(v)); }
 PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
 Pterm&  THandler::varToPterm         ( Var v)        { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
@@ -511,6 +512,13 @@ void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ } 
 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
 void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
+
+void THandler::declareAtom(PTRef tr) {
+    Var v = ptrefToVar(tr);
+    declared.growTo(v + 1, false);
+    declared[v] = true;
+    getSolverHandler().declareAtom(tr);
+}
 
 PTRef THandler::getSubstitution(PTRef tr) const {
     auto const & subst = getSolverHandler().substs;
