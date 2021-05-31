@@ -147,7 +147,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         removeRowFromColumn(bv, var);
         addRowToColumn(nv, var);
     }
-    std::vector<Polynomial::Term> storage;
+
     // for all (active) rows containing nv, substitute
     for (auto rowVar : getColumn(bv)) {
         if(rowVar == nv || isQuasiBasic(rowVar)) {
@@ -170,7 +170,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
                        assert(contains(getColumn(removedVar), rowVar));
                        removeRowFromColumn(rowVar, removedVar);
                    }
-                   , storage
+                   , tmp_storage
         );
     }
     assert(!cols[nv.x]);
@@ -268,10 +268,10 @@ void Tableau::normalizeRow(LVRef v) {
     if (!toEliminate.empty()) {
         Polynomial p;
         for (auto const* term : toEliminate) {
-            p.merge(getRowPoly(term->var), term->coeff, [](LVRef) {}, [](LVRef) {});
+            p.merge(getRowPoly(term->var), term->coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
             p.addTerm(term->var, -term->coeff);
         }
-        row.merge(p, 1, [](LVRef) {}, [](LVRef) {});
+        row.merge(p, 1, [](LVRef) {}, [](LVRef) {}, tmp_storage);
     }
 }
 
