@@ -710,7 +710,6 @@ ValPair LASolver::getValue(PTRef tr) {
 }
 
 void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<PTRef,PTRef,PTRefHash> & substs) const {
-    Map<PTRef,bool,PTRefHash> seen_substs;
     for (LVRef lvar : laVarStore) {
         PTRef term = laVarMapper.getVarPTRef(lvar);
         if (logic.isNumVar(term)) {
