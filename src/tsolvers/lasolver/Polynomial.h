@@ -81,7 +81,10 @@ public:
 template<typename ADD, typename REM>
 void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD informAdded,
                   REM informRemoved, std::vector<Term>& storage) {
-    storage.reserve(this->poly.size() + other.poly.size());
+    if (storage.size() < this->poly.size() + other.poly.size()) {
+        storage.resize(this->poly.size() + other.poly.size(), Term(LVRef_Undef, 0));
+    }
+    std::size_t storageIndex = 0;
     auto myIt = std::make_move_iterator(poly.begin());
     auto otherIt = other.poly.cbegin();
     auto myEnd = std::make_move_iterator(poly.end());
@@ -91,21 +94,27 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
     while(true) {
         if (myIt == myEnd) {
             for (auto it = otherIt; it != otherEnd; ++it) {
-                storage.emplace_back(it->var, it->coeff * coeff);
+                storage[storageIndex].var = it->var;
+                multiplication(storage[storageIndex].coeff, it->coeff, coeff);
+                ++storageIndex;
                 informAdded(it->var);
             }
             break;
         }
         if (otherIt == otherEnd) {
-            storage.insert(storage.end(), myIt, myEnd);
+            std::move(myIt, myEnd, storage.begin() + storageIndex);
+            storageIndex += myEnd - myIt;
             break;
         }
         if (cmp(*myIt, *otherIt)) {
-            storage.emplace_back(*myIt);
+            storage[storageIndex] = *myIt;
+            ++storageIndex;
             ++myIt;
         }
         else if (cmp(*otherIt, *myIt)) {
-            storage.emplace_back(otherIt->var, otherIt->coeff * coeff);
+            storage[storageIndex].var = otherIt->var;
+            multiplication(storage[storageIndex].coeff, otherIt->coeff, coeff);
+            ++storageIndex;
             informAdded(otherIt->var);
             ++otherIt;
         }
@@ -117,14 +126,14 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
                 informRemoved(myIt->var);
             }
             else {
-                storage.emplace_back(*myIt);
+                storage[storageIndex] = *myIt;
+                ++storageIndex;
             }
             ++myIt;
             ++otherIt;
         }
     }
-    std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.end())).swap(poly);
-    storage.clear();
+    std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.begin() + storageIndex)).swap(poly);
 }
 
 #endif //OPENSMT_POLYNOMIAL_H
