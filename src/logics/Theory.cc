@@ -58,12 +58,6 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         lbool res = getLogic().retrieveSubstitutions(current_units_vec, newsubsts);
         getLogic().substitutionsTransitiveClosure<PtAsgn>(newsubsts);
 
-        if (res != l_Undef)
-            root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
-
-        auto newRootAndSubsts = Substitutor<PtAsgn>(getLogic(), newsubsts).rewrite(root);
-        PTRef new_root = newRootAndSubsts.first;
-//        auto usedSubstitutions(std::move(newRootAndSubsts.second));
 
         // remember the substitutions for models
         for (PTRef key : newsubsts.getKeys()) {
@@ -72,12 +66,17 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
                 allsubsts.insert(key, target.tr);
             }
         }
-        getLogic().substitutionsTransitiveClosure(allsubsts);
+
+        if (res != l_Undef)
+            root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
+
+        PTRef new_root = Substitutor<PtAsgn>(getLogic(), newsubsts).rewrite(root).first;
 
         bool cont = new_root != root;
         root = new_root;
         if (!cont) break;
     }
+    getLogic().substitutionsTransitiveClosure(allsubsts);
 #ifdef SIMPLIFY_DEBUG
     cerr << "Number of substitutions: " << allsubsts.elems() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
