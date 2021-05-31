@@ -111,12 +111,4 @@ public:
 
 static class ValPair ValPair_Undef(PTRef_Undef, nullptr);
 
-// Helpers for getting PTRef from a PtAsgn / PTRef.
-template<typename TAsgn>
-PTRef & getPTRefFromAsgn(TAsgn & asgn);
-template<>
-PTRef & getPTRefFromAsgn<PtAsgn>(PtAsgn & asgn);
-template<>
-PTRef & getPTRefFromAsgn<PTRef>(PTRef & asgn);
-
 #endif //OPENSMT_PTHELPERSTRUCTS_H

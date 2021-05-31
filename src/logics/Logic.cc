@@ -1283,8 +1283,8 @@ void Logic::substitutionsTransitiveClosure(MapWithKeys<PTRef, TAsgn, PTRefHash> 
         changed = false;
         for (int i = 0; i < keys.size(); ++i) {
             if (notChangedElems[i]) { continue; }
-            if (!isEnabledAsgn<TAsgn>(substs[keys[i]])) { continue; }
-            PTRef & val = getPTRefFromAsgn<TAsgn>(substs[keys[i]]);
+            if (!DefaultRewriterConfig<TAsgn>::isEnabled(substs[keys[i]])) { continue; }
+            PTRef & val = DefaultRewriterConfig<TAsgn>::getAsgnTermRef(substs[keys[i]]);
             PTRef oldVal = val;
             PTRef newVal = Substitutor<TAsgn>(*this, substs).rewrite(oldVal).first;
             if (oldVal != newVal) {
