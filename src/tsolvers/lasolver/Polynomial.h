@@ -133,7 +133,17 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
             ++otherIt;
         }
     }
-    std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.begin() + storageIndex)).swap(poly);
+    auto polySize = poly.size();
+    if (storageIndex > polySize) {
+        std::move(storage.begin(), storage.begin() + polySize, poly.begin());
+        poly.insert(poly.end(), std::make_move_iterator(storage.begin() + polySize), std::make_move_iterator(storage.begin() + storageIndex));
+    }
+    else if (/*storageIndex <= poly.size() and */ polySize <= 2 * storageIndex) {
+        std::move(storage.begin(), storage.begin() + storageIndex, poly.begin());
+        poly.erase(poly.begin() + storageIndex, poly.end());
+    } else {
+        std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.begin() + storageIndex)).swap(poly);
+    }
 }
 
 #endif //OPENSMT_POLYNOMIAL_H
