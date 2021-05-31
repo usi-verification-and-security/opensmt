@@ -260,7 +260,6 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
     for (ERef er : enode_store.getTermEnodes()) {
         PTRef tr = enode_store.getPTRef(er);
 
-
         if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
             continue; // The Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
         }
@@ -278,9 +277,8 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
                 er = target_er;
             }
         } else {
+            // Check that enode_store's PTRef -> ERef conversion is consistent
             assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
-            assert(enode_store.peekERef(tr, target_er));
-            assert(target_er == er);
             target_er = er;
         }
         if (logic.isVarOrIte(tr)) {
