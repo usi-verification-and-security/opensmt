@@ -156,3 +156,11 @@ target_sources(EnodeStoreTest
 target_link_libraries(EnodeStoreTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET EnodeStoreTest)
 
+add_executable(FunctionTemplateTest)
+target_sources(FunctionTemplateTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_FunctionTemplate.cc"
+        )
+
+target_link_libraries(FunctionTemplateTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET FunctionTemplateTest)
+

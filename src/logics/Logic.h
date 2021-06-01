@@ -41,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
-protected:
+  protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
@@ -55,7 +55,7 @@ protected:
     int distinctClassCount;
 
     class DefinedFunctions {
-        std::map<std::string,TemplateFunction> defined_functions;
+        std::unordered_map<std::string,TemplateFunction> defined_functions;
         std::vector<std::string> defined_functions_names;
 
     public:
@@ -245,7 +245,7 @@ protected:
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
-    PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
+    PTRef instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef, PTRefHash>&);
 
 
 

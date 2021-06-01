@@ -1633,7 +1633,7 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash>& subst)
+Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef,PTRefHash>& subst)
 {
     const TemplateFunction& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
