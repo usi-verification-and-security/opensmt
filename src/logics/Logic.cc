@@ -1646,7 +1646,7 @@ Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef,PTR
                     "No value provided for function " + tpl_fun.getName() + " argument " + argName);
         }
         if (getSortRef(subst[args[i]]) != getSortRef(args[i])) {
-            throw OsmtApiException("Substitution source and target and sort mismatch" );
+            throw OsmtApiException("Substitution source and target sort mismatch" );
         }
         substs_asgn.insert(args[i], PtAsgn{subst[args[i]], l_True});
     }

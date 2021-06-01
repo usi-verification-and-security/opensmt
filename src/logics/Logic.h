@@ -59,8 +59,7 @@ class Logic {
         std::vector<std::string> defined_functions_names;
 
     public:
-        bool has(const char* name) const { return defined_functions.find(name) != defined_functions.end(); }
-        bool has(const std::string& name) const { return has(name.c_str()); }
+        bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
 
         void insert(const std::string& name, TemplateFunction && templ) {
             assert(not has(name));
