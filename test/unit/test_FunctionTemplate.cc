@@ -70,6 +70,13 @@ TEST_F(TemplateTest, test_functionTemplate) {
     EXPECT_EQ(tf3.getBody(), tf2.getBody());
     EXPECT_EQ(tf3.getArgs()[0], tf2.getArgs()[0]);
     EXPECT_EQ(tf3.getArgs()[1], tf2.getArgs()[1]);
+
+    TemplateFunction tf4(std::move(tf2));
+    EXPECT_EQ(tf3.getName(), tf4.getName());
+    EXPECT_EQ(tf3.getRetSort(), tf4.getRetSort());
+    EXPECT_EQ(tf3.getBody(), tf4.getBody());
+    EXPECT_EQ(tf3.getArgs()[0], tf4.getArgs()[0]);
+    EXPECT_EQ(tf3.getArgs()[1], tf4.getArgs()[1]);
 }
 
 TEST_F(TemplateTest, test_template) {

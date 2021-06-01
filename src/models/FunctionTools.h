@@ -42,13 +42,8 @@ public:
         signature.name = other.getName();
         other.getArgs().copyTo(signature.args);
     }
-    TemplateFunction& operator= (TemplateFunction&& other) noexcept {
-        if (&other != this) {
-            std::swap(other.signature, signature);
-            tr_body = other.tr_body;
-        }
-        return *this;
-    }
+    TemplateFunction(TemplateFunction && other) = default;
+    TemplateFunction& operator= (TemplateFunction &&) = default;
 
     std::string getName() const { return signature.getName(); }
     SRef getRetSort() const { return signature.getRetSort(); }
