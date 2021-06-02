@@ -984,8 +984,7 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
 {
     if (defined_functions.has(fname))
         return false; // already there
-    TFun tpl_fun(fname, args, rsort, tr);
-    defined_functions.insert(tpl_fun.getName(), tpl_fun);
+    defined_functions.insert(fname, TemplateFunction(fname, args, rsort, tr));
     return true;
 }
 
@@ -1613,9 +1612,9 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
 }
 
 void
-Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
+Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
-    const char* name = tpl_fun.getName();
+    const std::string& name = tpl_fun.getName();
     char *quoted_name = protectName(name);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
@@ -1634,27 +1633,26 @@ Logic::dumpFunction(ostream& dump_out, const TFun& tpl_fun)
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef,PTRefHash>& subst)
+Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef,PTRefHash>& subst)
 {
-    const TFun& tpl_fun = defined_functions[fname];
+    const TemplateFunction& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
     const vec<PTRef>& args = tpl_fun.getArgs();
     MapWithKeys<PTRef,PtAsgn,PTRefHash> substs_asgn;
     for (int i = 0; i < args.size(); i++) {
-        if (!subst.has(args[i]))
-            return PTRef_Undef;
-        PTRef subst_target_tr = subst[args[i]];
-        if (getSortRef(subst_target_tr) != getSortRef(args[i]))
-            return PTRef_Undef;
-        PtAsgn subst_target = {subst_target_tr, l_True};
-        substs_asgn.insert(args[i], subst_target);
+        if (!subst.has(args[i])) {
+            std::string argName = pp(args[i]);
+            throw OsmtApiException(
+                    "No value provided for function " + tpl_fun.getName() + " argument " + argName);
+        }
+        if (getSortRef(subst[args[i]]) != getSortRef(args[i])) {
+            throw OsmtApiException("Substitution source and target sort mismatch" );
+        }
+        substs_asgn.insert(args[i], PtAsgn{subst[args[i]], l_True});
     }
     PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
-    if (getSortRef(tr_subst) != tpl_fun.getRetSort()) {
-        printf("Error: the function return sort changed in instantiation from %s to %s\n", getSortName(tpl_fun.getRetSort()), getSortName(getSortRef(tr_subst)));
-        return PTRef_Undef;
-    }
 
+    assert (getSortRef(tr_subst) == tpl_fun.getRetSort());
     return tr_subst;
 }
 
