@@ -480,6 +480,7 @@ inline FastRational FastRational::operator-() const {
         mpq_init(x.mpq);
         mpq_neg(x.mpq, mpq);
         x.state = State::MPQ_ALLOCATED_AND_VALID;
+        x.try_fit_word(); // MB: If current value is 2^31, it does not fit word representation, but it's negation -2^31 does.
         return x;
     }
 }
