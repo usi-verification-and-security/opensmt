@@ -61,7 +61,7 @@ namespace ite {
         }
     public:
         void clear() override { n_nodes = 0; RegionAllocator::clear(); }
-        NodeAllocator() : n_nodes(0) {}
+        NodeAllocator() : RegionAllocator<uint32_t>(1024), n_nodes(0) {}
         unsigned getNumNodes() const { return n_nodes; }
 
         NodeRef alloc(PTRef term, PTRef cond, NodeRef trueChild, NodeRef falseChild) {
