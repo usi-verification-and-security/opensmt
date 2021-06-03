@@ -1,7 +1,6 @@
 /*
 Fast rationals
 David Monniaux, VERIMAG 2008-2009
-
 Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #ifndef FAST_RATIONALS_H

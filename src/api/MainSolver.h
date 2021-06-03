@@ -131,7 +131,7 @@ class MainSolver
 
     // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
     sstat simplifyFormulas(char** msg);
-    sstat solve           ();
+
 
     sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
@@ -155,23 +155,23 @@ class MainSolver
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
   public:
-
+    sstat solve           ();
     MainSolver(Logic& logic, SMTConfig& conf, std::string name)
-        :
-        theory(createTheory(logic, conf)),
-        term_mapper(logic),
-        thandler(getTheory(), term_mapper),
-        smt_solver(createInnerSolver(conf, thandler)),
-        logic(thandler.getLogic()),
-        pmanager(logic),
-        config(conf),
-        pfstore(getTheory().pfstore),
-        ts( config, logic, pmanager, term_mapper, *smt_solver ),
-        solver_name {std::move(name)},
-        check_called(0),
-        status(s_Undef),
-        binary_init(false),
-        root_instance(logic.getTerm_true())
+            :
+            theory(createTheory(logic, conf)),
+            term_mapper(logic),
+            thandler(getTheory(), term_mapper),
+            smt_solver(createInnerSolver(conf, thandler)),
+            logic(thandler.getLogic()),
+            pmanager(logic),
+            config(conf),
+            pfstore(getTheory().pfstore),
+            ts( config, logic, pmanager, term_mapper, *smt_solver ),
+            solver_name {std::move(name)},
+            check_called(0),
+            status(s_Undef),
+            binary_init(false),
+            root_instance(logic.getTerm_true())
     {
         conf.setUsedForInitiliazation();
         frames.push(pfstore.alloc());
@@ -201,7 +201,7 @@ class MainSolver
     sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
 
     void  printFramesAsQuery() const;
-    sstat getStatus       () const { return status; }
+        sstat getStatus       () const { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;

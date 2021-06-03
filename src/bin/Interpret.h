@@ -100,7 +100,7 @@ public:
     }
 };
 
-class Interpret {
+class   Interpret {
   protected:
     SMTConfig &     config;
     std::unique_ptr<Logic> logic;
@@ -157,11 +157,13 @@ class Interpret {
 
   public:
 
-    Interpret(SMTConfig& c)
-        : config     (c)
-        , f_exit     (false)
-        { }
-//Interpret(SMTConfig& c, std::unique_ptr<MainSplitter> mainSplitter) : Interpret(c), main_solver(mainSplitter) {}
+
+    Interpret(SMTConfig& c, MainSplitter *_m)
+            : config     (c)
+            , main_splitter(_m)
+            , f_exit     (false){ }
+
+    Interpret(SMTConfig& c) : Interpret(c, nullptr) { }
     ~Interpret();
 
     int interpFile(FILE* in);

@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <Vec.h>
 #include <Sort.h>
-
 using Real = opensmt::Real;
-
 TEST(Rationals_test, test_division_int32min)
 {
     // INT32_MIN
@@ -19,20 +17,17 @@ TEST(Rationals_test, test_division_int32min)
     nom /= den;
     ASSERT_GT(nom, 0);
 }
-
 TEST(Rationals_test, test_abs_val_int32min)
 {
     int32_t x = -2147483648;
     ASSERT_EQ(absVal(x), 2147483648);
 }
-
 TEST(Rationals_test, test_normalized)
 {
     FastRational toNormalize(2,4);
     EXPECT_EQ(toNormalize.get_num(), 1);
     EXPECT_EQ(toNormalize.get_den(), 2);
 }
-
 TEST(Rationals_test, test_hash_function)
 {
     vec<uint32_t> hashes;
@@ -52,7 +47,6 @@ TEST(Rationals_test, test_hash_function)
         free(str);
         hashes.push(r.getHashValue());
     }
-
     for (int i = 0; i < 10; i++) {
         char num_str[21];
         for (int j = 0; j < 20; j++) {
@@ -71,14 +65,12 @@ TEST(Rationals_test, test_hash_function)
         free(str);
         hashes.push(r.getHashValue());
     }
-
     for (int k = 0; k < 10; k++) {
         char den_str[21];
         for (int j = 0; j < 19; j++) {
             den_str[j] = 48+(random() % 10);
         }
         den_str[20] = 0;
-
         for (int i = 0; i < 10; i++) {
             den_str[19] = 48 + i;
             char *str;
@@ -96,7 +88,6 @@ TEST(Rationals_test, test_hash_function)
         prev = hashes[i];
     }
 }
-
 TEST(Rationals_test, test_doubleRepresentation) {
     int val = 100000;
     Real r{val};
@@ -106,14 +97,12 @@ TEST(Rationals_test, test_doubleRepresentation) {
     Real res = r * val;
     EXPECT_TRUE(res < 0);
 }
-
 TEST(Rationals_test, test_negate_int32min) {
     // INT32_MIN
     Real r {"-2147483648"};
     r.negate();
     EXPECT_TRUE(r > 0);
 }
-
 TEST(Rationals_test, test_negate_minus_int32min) {
     // - INT32_MIN = 2^31
     Real r {"2147483648"};
@@ -123,14 +112,6 @@ TEST(Rationals_test, test_negate_minus_int32min) {
     r.negate();
     EXPECT_TRUE(r.isWellFormed());
 }
-
-TEST(Rationals_test, test_additionAssign) {
-    Real a {"2147483640"};
-    Real b {"10"};
-    additionAssign(a,b);
-    EXPECT_EQ(a, Real{"2147483650"} );
-}
-
 TEST(Rationals_test, test_overwrite)
 {
     Real r(INT32_MAX);
@@ -141,14 +122,12 @@ TEST(Rationals_test, test_overwrite)
     r *= 10;
     r = q;
 }
-
 TEST(Rationals_test, test_uword)
 {
     uint32_t x = 2589903246;
     FastRational f(x);
     ASSERT_TRUE(f.mpqPartValid());
 }
-
 TEST(Rationals_test, test_modulo)
 {
     FastRational a(-37033300);
@@ -156,7 +135,6 @@ TEST(Rationals_test, test_modulo)
     FastRational mod = a % b;
     ASSERT_EQ(mod, 0);
 }
-
 TEST(Rationals_test, test_creation)
 {
     {
@@ -174,7 +152,6 @@ TEST(Rationals_test, test_creation)
         ASSERT_EQ(a, 1);
     }
 }
-
 TEST(Rationals_test, test_addition)
 {
     {
@@ -184,7 +161,6 @@ TEST(Rationals_test, test_addition)
         ASSERT_EQ(a + b, FastRational(1, 3));
         ASSERT_EQ(-a + b, FastRational(-1, 3));
     }
-
     {
         // a.num == 0
         FastRational a(0);
@@ -192,14 +168,12 @@ TEST(Rationals_test, test_addition)
         ASSERT_EQ(a + b, FastRational(1, 3));
         ASSERT_EQ(a + (-b), FastRational(-1, 3));
     }
-
     {
         // a == -b
         FastRational a(1,3);
         FastRational b(-1,3);
         ASSERT_EQ(a+b, 0);
     }
-
     {
         // b.den == 1
         // result fits in word
@@ -238,7 +212,6 @@ TEST(Rationals_test, test_addition)
         ASSERT_FALSE(sum.wordPartValid());
     }
 }
-
 TEST(Rationals_test, test_multiplicand)
 {
     {
@@ -252,7 +225,6 @@ TEST(Rationals_test, test_multiplicand)
         ASSERT_EQ(mul, 15);
     }
 }
-
 TEST(Rationals_test, test_subtraction)
 {
     {
@@ -286,7 +258,6 @@ TEST(Rationals_test, test_subtraction)
         FastRational a(INT_MIN, UINT_MAX);
         FastRational b(INT_MAX);
         FastRational c = a - b;
-
     }
     {
         FastRational a("-2147483645/4294967294");
@@ -307,7 +278,6 @@ TEST(Rationals_test, test_subtraction)
         ASSERT_TRUE(c.mpqPartValid());
     }
 }
-
 TEST(Rationals_test, test_division)
 {
     {
@@ -325,7 +295,6 @@ TEST(Rationals_test, test_division)
         ASSERT_FALSE(a.mpqMemoryAllocated());
     }
 }
-
 TEST(Rationals_test, test_operatorAssign)
 {
     {
@@ -380,7 +349,6 @@ TEST(Rationals_test, test_operatorAssign)
         ASSERT_FALSE(b.mpqMemoryAllocated());
     }
 }
-
 TEST(Rationals_test, test_CHECK_WORD)
 {
     word a(INT_MAX);
@@ -391,7 +359,6 @@ TEST(Rationals_test, test_CHECK_WORD)
     overflow:
     std::cout << "Overflow" << std::endl;
 }
-
 TEST(Rationals_test, test_sub_lword_underflow_min)
 {
     lword res;
@@ -403,7 +370,6 @@ TEST(Rationals_test, test_sub_lword_underflow_min)
     overflow:
     ASSERT_TRUE(true);
 }
-
 TEST(Rationals_test, test_sub_lword_nounderflow)
 {
     lword res;
@@ -415,7 +381,6 @@ TEST(Rationals_test, test_sub_lword_nounderflow)
     overflow:
     ASSERT_TRUE(false);
 }
-
 TEST(Rationals_test, test_sub_lword_nooverflow)
 {
     lword res;
@@ -427,7 +392,6 @@ TEST(Rationals_test, test_sub_lword_nooverflow)
     overflow:
     ASSERT_TRUE(false);
 }
-
 TEST(Rationals_test, test_sub_lword_overflow)
 {
     lword res;
@@ -439,7 +403,6 @@ TEST(Rationals_test, test_sub_lword_overflow)
     overflow:
     ASSERT_TRUE(true);
 }
-
 TEST(Rationals_test, test_ceil)
 {
     word a(INT_MIN);
@@ -447,7 +410,6 @@ TEST(Rationals_test, test_ceil)
     FastRational f(a, b);
     f.ceil();
 }
-
 TEST(Rationals_test, test_mod)
 {
     FastRational a(INT_MAX);
@@ -455,7 +417,6 @@ TEST(Rationals_test, test_mod)
     FastRational res = a % b;
     ASSERT_EQ(res, (INT_MIN+1));
 }
-
 TEST(Rationals_test, test_addNegated)
 {
     {
@@ -491,4 +452,3 @@ TEST(Rationals_test, testWordRepresentation_Inverse) {
     a = a.inverse(); // a now again fits into word representation
     ASSERT_TRUE(a.wordPartValid());
 }
-

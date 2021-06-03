@@ -12,16 +12,17 @@ class MainSplitter : public MainSolver {
 
 public:
 
-    std::shared_ptr<ScatterSplitter> scatter_Splitter;
-    THandler                        thandler;
-    TermMapper                      term_mapper;
+    std::unique_ptr<ScatterSplitter> scatter_Splitter;
+
+    virtual void new_solver()
+    {
+        this->scatter_Splitter= std::unique_ptr<ScatterSplitter>(new ScatterSplitter(config, thandler));
+    };
+
     MainSplitter(Logic& logic, SMTConfig& config, std::string name)
-        :
-        term_mapper(logic),
-        thandler(getTheory(), term_mapper),
-        scatter_Splitter(),
-        //scatter_Splitter(config, thandler),
-        MainSolver(logic, config, std::move(name)) {}
+            :
+    //scatter_Splitter(createInnerSolver(config, thandler)),
+            MainSolver(logic, config, std::move(name)) {}
     bool writeSolverSplits_smtlib2(const char* file, char** msg) const;
 };
 
