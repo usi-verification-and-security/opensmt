@@ -211,7 +211,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
-            const bool &coeff_is_pos = isPositive(coeff);
+            const bool coeff_is_pos = isPositive(coeff);
             if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y))
                 || (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost

@@ -133,15 +133,29 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
             ++otherIt;
         }
     }
+    // At this point the right elements are in `storage`, from beginning to the `storageIndex`.
+    // We need to get these elements to `this->poly`. Note that we never change the `storage` container, we just move out
+    // the appropriate elements.
+    // However, we observed that we need to shrink `poly` if its size is much smaller than the capacity.
+    // The reason is that keeping large free capacity around for many rows blows up the memory
+    // (worse case quadratic in the size of the tableau).
     auto polySize = poly.size();
     if (storageIndex > polySize) {
+        // In this case we have more elements to move than the current size of the `poly` container.
+        // We move the elements that fit the current `poly` size and then we insert the rest of the elements.
         std::move(storage.begin(), storage.begin() + polySize, poly.begin());
         poly.insert(poly.end(), std::make_move_iterator(storage.begin() + polySize), std::make_move_iterator(storage.begin() + storageIndex));
     }
     else if (/*storageIndex <= poly.size() and */ polySize <= 2 * storageIndex) {
+        // In this case we have less elements that need to move than what we currently already have in `poly`, but not too litle.
+        // We just move the appropriate elements and destroy the excess elements of `poly`.
+        // Since we are removing too many elements, we avoid shrinking which would require re-allocation.
         std::move(storage.begin(), storage.begin() + storageIndex, poly.begin());
         poly.erase(poly.begin() + storageIndex, poly.end());
-    } else {
+    } else { // poly.size() > 2 * storageIndex
+        // This case is similar to case 2, but we have much less elements in the result than currently in `poly`.
+        // To avoid too large free capacity in `poly`, we shrink its capacity to exactly the number of elements.
+        // It is basically `poly.shrink_to_fit()`, except that `shrink_to_fit` is non-binding.
         std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.begin() + storageIndex)).swap(poly);
     }
 }
