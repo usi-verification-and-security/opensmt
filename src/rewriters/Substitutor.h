@@ -11,7 +11,7 @@
 
 class SubstitutionConfig : public DefaultRewriterConfig {
 public:
-    using SubMap = Map<PTRef, PtAsgn, PTRefHash>;
+    using SubMap = MapWithKeys<PTRef, PtAsgn, PTRefHash>;
 
     SubstitutionConfig(Logic & logic, SubMap const & subMap): logic(logic), subMap(subMap) {}
 
@@ -43,7 +43,7 @@ class Substitutor : public Rewriter<SubstitutionConfig> {
     SubstitutionConfig config;
 
 public:
-    Substitutor(Logic &logic, Map<PTRef, PtAsgn, PTRefHash> const &substs) :
+    Substitutor(Logic &logic, SubstitutionConfig::SubMap const &substs) :
             Rewriter<SubstitutionConfig>(logic, config),
             config(logic, substs) {}
 };

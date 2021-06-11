@@ -7,7 +7,6 @@
 
 #include "Logic.h"
 
-
 namespace ite {
     class timer {
         time_t start;
@@ -84,7 +83,7 @@ namespace ite {
     };
 
 
-    enum class type {
+    enum class type : char {
         white, gray, black
     };
 
@@ -112,7 +111,7 @@ namespace ite {
         Map<PTRef,ite::NodeRef,PTRefHash> nodes;
         Map<PTRef,bool,PTRefHash> itePTRefs;
         vec<ite::NodeRef> nodeRefs;
-        Map<PTRef,bool,PTRefHash> top_level_ites;
+        MapWithKeys<PTRef,bool,PTRefHash> top_level_ites;
         std::set<NodeRef> leaves;
         NodeRef newNode(PTRef tr);
         NodeRef newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node);
@@ -134,7 +133,7 @@ namespace ite {
         void addItePTRef(PTRef tr) { itePTRefs.insert(tr, true); }
         bool isTopLevelIte(PTRef tr) const { return top_level_ites.has(tr) and top_level_ites[tr]; }
         void addTopLevelIte(PTRef tr) { top_level_ites.insert(tr, true); }
-        vec<PTRef> getTopLevelItes() const { vec<PTRef> keys; top_level_ites.getKeys(keys); return keys; }
+        const vec<PTRef> & getTopLevelItes() const { return top_level_ites.getKeys(); }
         Dag getReachableSubGraph(const Logic& logic, PTRef root);
         void annotateWithParentInfo(PTRef root);
         vec<ite::CondValPair> getCondValPairs(Logic& logic) const;
@@ -147,8 +146,6 @@ class IteToSwitch {
 protected:
     using type = ite::type;
     Logic &logic;
-    Map<PTRef,PTRef,PTRefHash> ite_vars;
-    vec<PTRef> flat_top_level_switches;
     ite::Dag iteDag;
     vec<PTRef> switches;
     PTRef makeSwitch(PTRef root);
@@ -157,7 +154,7 @@ protected:
 
 public:
     explicit IteToSwitch(Logic& l, PTRef root) : logic(l), iteDag(constructIteDag(root, l)) { constructSwitches(); }
-    PTRef conjoin(PTRef root) { return logic.mkAnd(root, logic.mkAnd(switches)); };
+    PTRef conjoin(PTRef root);
 
     static void printDagToFile(const std::string &fname, const ite::Dag&);
     void printDagToFile(const std::string &fname) const { printDagToFile(fname, iteDag); };

@@ -480,6 +480,7 @@ inline FastRational FastRational::operator-() const {
         mpq_init(x.mpq);
         mpq_neg(x.mpq, mpq);
         x.state = State::MPQ_ALLOCATED_AND_VALID;
+        x.try_fit_word(); // MB: If current value is 2^31, it does not fit word representation, but it's negation -2^31 does.
         return x;
     }
 }
@@ -493,7 +494,9 @@ inline void FastRational::negate() {
         mpq_neg(mpq, mpq);
         // MB: for the special case num == WORD_MIN && wordPartValid
         setWordPartInvalid();
+        try_fit_word();
     }
+    assert(isWellFormed());
 }
 
 inline int FastRational::compare(const FastRational& b) const {
@@ -606,6 +609,7 @@ template<uword> uword gcd(uword a, uword b);
 
 inline bool FastRational::isWellFormed() const
 {
+    assert(wordPartValid() or not fitsWord());
     return (  wordPartValid() || mpqPartValid() )
            && ( !wordPartValid() || (den != 0 && gcd(absVal(num), den)==1) )
            && ( !mpqPartValid()  || mpz_sgn(mpq_denref(mpq))!=0 )
@@ -1039,6 +1043,8 @@ inline FastRational FastRational::inverse() const {
     dest.ensure_mpq_memory_allocated();
     mpq_inv(dest.mpq, mpq);
     dest.state = State::MPQ_ALLOCATED_AND_VALID;
+    dest.try_fit_word();
+    assert(dest.isWellFormed());
     return dest;
 }
 

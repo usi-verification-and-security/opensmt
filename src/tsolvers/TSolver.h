@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SolverTypes.h"
 #include "TResult.h"
+#include "MapWithKeys.h"
 
 // forward declaration
 class TheoryInterpolator;
@@ -205,7 +206,7 @@ public:
 protected:
     bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
-    vec<PTRef>                  getInformed() { vec<PTRef> res; informed_PTRefs.getKeys(res); return res; }
+    const vec<PTRef> &          getInformed() { return informed_PTRefs.getKeys(); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
     string                      name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
@@ -213,7 +214,7 @@ protected:
 
     vec<bool>     known_preds; // List of known PTRefs with boolean return value (that can be asserted)
 private:
-    Map<PTRef,bool,PTRefHash>   informed_PTRefs;
+    MapWithKeys<PTRef,bool,PTRefHash>   informed_PTRefs;
 };
 
 #endif

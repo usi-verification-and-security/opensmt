@@ -1,3 +1,3 @@
-add_library(itehandler OBJECT IteToSwitch.cc IteToSwitchMisc.cc)
-install(FILES IteToSwitch.h DESTINATION ${INSTALL_HEADERS_DIR})
+add_library(itehandler OBJECT IteToSwitch.cc IteToSwitchMisc.cc IteHandler.cc)
+install(FILES IteToSwitch.h IteHandler.h DESTINATION ${INSTALL_HEADERS_DIR})
 

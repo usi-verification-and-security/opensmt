@@ -189,7 +189,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
         // For the Bland rule
         auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the breaking of the bound
-        for (auto term : tableau.getRowPoly(basicVar)) {
+        for (auto const & term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
@@ -206,12 +206,12 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     else if (isModelOutOfUpperBound(basicVar)) {
         auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
-        for (auto term : tableau.getRowPoly(basicVar)) {
+        for (auto const & term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
             auto const &coeff = term.coeff;
-            const bool &coeff_is_pos = isPositive(coeff);
+            const bool coeff_is_pos = isPositive(coeff);
             if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y))
                 || (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
@@ -302,7 +302,7 @@ void Simplex::changeValueBy(LVRef var, const Delta & diff) {
 
 void Simplex::updateValues(const LVRef bv, const LVRef nv){
     assert(isModelOutOfBounds(bv));
-    auto bvNewVal = (isModelOutOfLowerBound(bv)) ? model->Lb(bv) : model->Ub(bv);
+    auto const & bvNewVal = (isModelOutOfLowerBound(bv)) ? model->Lb(bv) : model->Ub(bv);
     const auto & coeff = tableau.getCoeff(bv, nv);
     // nvDiff represents how much we need to change nv, so that bv gets to the right value
     auto nvDiff = (bvNewVal - model->read(bv)) / coeff;

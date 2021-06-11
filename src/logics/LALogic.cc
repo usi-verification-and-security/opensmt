@@ -98,7 +98,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
         return v;
     }
 }
-lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTRef, PtAsgn, PTRefHash> & substitutions)
+lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, MapWithKeys<PTRef, PtAsgn, PTRefHash> & substitutions)
 {
     std::vector<std::unique_ptr<LAExpression>> equalities;
     LALogic& logic = *this;
@@ -129,7 +129,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Map<PTR
     return l_Undef;
 }
 
-lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, Map<PTRef,PtAsgn,PTRefHash>& substs)
+lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
 {
     lbool res = Logic::retrieveSubstitutions(facts, substs);
     if (res != l_Undef) return res;

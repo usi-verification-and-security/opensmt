@@ -44,8 +44,9 @@ void ProofGraph::initTSolver() {
         const auto & clause = this->getNode(id)->getClause();
         for (auto const & lit : clause) {
             Var v = var(lit);
-            assert(thandler->isTheoryTerm(v));
-            thandler->declareAtom(this->varToPTRef(v));
+            PTRef atom = this->varToPTRef(v);
+            assert(logic_.isTheoryTerm(atom));
+            thandler->declareAtom(atom);
         }
     }
 }

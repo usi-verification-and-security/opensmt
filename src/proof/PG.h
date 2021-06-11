@@ -348,7 +348,7 @@ public:
     // Inverts the normal order Hashing + RecyclePivots
     bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
     inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
-    int             simplifyInterpolant                     ( ) const { return config.simplify_interpolant; }
+    int             simplifyInterpolant () const { return config.getSimplifyInterpolant(); }
     //
     // Build et al.
     //

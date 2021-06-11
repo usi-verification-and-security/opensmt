@@ -34,14 +34,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LATheory.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
-#include "IteToSwitch.h"
-#include "LIALogic.h"
-#include "LRALogic.h"
-#include "IDLogic.h"
+#include "IteHandler.h"
 #include "RDLogic.h"
-#include "LIATHandler.h"
-#include "IDLTHandler.h"
+#include "IDLogic.h"
 #include "RDLTHandler.h"
+#include "IDLTHandler.h"
+#include "LIATHandler.h"
 
 #include <thread>
 #include <random>
@@ -120,9 +118,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     }
 
     root = logic.conjoinExtras(root);
-
-    IteToSwitch switches(logic, root);
-    root = switches.conjoin(root);
+    root = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(root);
 
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,

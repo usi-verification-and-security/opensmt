@@ -31,6 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
+#include "MapWithKeys.h"
+#include "FunctionTools.h"
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -39,50 +41,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
-    class TFun {
-        SRef ret_sort;
-        PTRef tr_body;
-        char* name;
-        vec<PTRef> args;
-      public:
-        TFun(const char* name_, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
-            : ret_sort(ret_sort)
-            , tr_body(tr_body)
-        {
-            name = (char*) malloc(strlen(name_)+1);
-            strcpy(name, name_);
-            args_.copyTo(args);
-        }
-        TFun() : ret_sort(SRef_Undef), tr_body(PTRef_Undef), name(NULL) {}
-        TFun(const TFun& other) : ret_sort(other.ret_sort), tr_body(other.tr_body), name(other.name) { other.args.copyTo(args); }
-        ~TFun() { free(name); }
-        TFun& operator=(TFun&& other) {
-            if (&other != this) {
-                free(name);
-                ret_sort = other.ret_sort;
-                tr_body = other.tr_body;
-                name = other.name;
-                other.name = NULL;
-                other.args.copyTo(args);
-            }
-            return *this;
-        }
-        TFun& operator=(const TFun& other) {
-            if (&other != this) {
-                free(name);
-                ret_sort = other.ret_sort;
-                tr_body = other.tr_body;
-                name = (char*)malloc(strlen(other.name)+1);
-                strcpy(name, other.name);
-                other.args.copyTo(args);
-            }
-            return *this;
-        }
-        const char* getName() const { return name; }
-        SRef getRetSort() const { return ret_sort; }
-        PTRef getBody() const { return tr_body; }
-        const vec<PTRef>& getArgs() const { return args; }
-    };
   protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
@@ -97,33 +55,26 @@ class Logic {
     int distinctClassCount;
 
     class DefinedFunctions {
-        std::map<std::string,TFun> defined_functions;
-        vec<char*> defined_functions_names;
+        std::unordered_map<std::string,TemplateFunction> defined_functions;
+        std::vector<std::string> defined_functions_names;
 
     public:
-        bool has(const char* name) const { return defined_functions.find(name) != defined_functions.end(); }
+        bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
 
-        void insert(const char* name, TFun const & templ) {
+        void insert(const std::string& name, TemplateFunction && templ) {
             assert(not has(name));
-            defined_functions_names.push();
-            defined_functions_names.last() = strdup(name);
-            defined_functions[defined_functions_names.last()] = templ;
+            defined_functions_names.emplace_back(name);
+            defined_functions[name] = std::move(templ);
         }
 
-        TFun & operator[](const char* name) {
+        TemplateFunction & operator[](const char* name) {
             assert(has(name));
             return defined_functions[name];
         }
 
         void getKeys(vec<const char*> & keys_out) {
             for (auto k : defined_functions_names) {
-                keys_out.push(strdup(k));
-            }
-        }
-
-        ~DefinedFunctions() {
-            for (char* name : defined_functions_names) {
-                free(name);
+                keys_out.push(strdup(k.c_str()));
             }
         }
     };
@@ -159,7 +110,7 @@ class Logic {
 
     virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
 
-    void dumpFunction(ostream &, const TFun&);
+    void dumpFunction(ostream &, const TemplateFunction&);
 
   private:
     enum class UFAppearanceStatus {
@@ -293,7 +244,7 @@ class Logic {
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
-    PTRef instantiateFunctionTemplate(const char* fname, Map<PTRef, PTRef, PTRefHash>&);
+    PTRef instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef, PTRefHash>&);
 
 
 
@@ -407,9 +358,10 @@ class Logic {
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
     // Top-level equalities based substitutions
-    void getNewFacts(PTRef root, Map<PTRef, lbool, PTRefHash> & facts);
-    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, Map<PTRef,PtAsgn,PTRefHash>& substs);
-    void substitutionsTransitiveClosure(Map<PTRef, PtAsgn, PTRefHash> & substs);
+    void getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
+    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs);
+    void substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs);
+
 
 
 
@@ -420,6 +372,7 @@ class Logic {
 
     bool       hasQuotableChars(const char* name) const;
     char*      protectName(const char* name) const;
+    char*      protectName(const std::string& name) const { return protectName(name.c_str()); };
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }

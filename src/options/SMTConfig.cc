@@ -487,6 +487,7 @@ const char* SMTConfig::o_restart_inc   = ":restart-inc";
 const char* SMTConfig::o_produce_proofs = ":produce-proofs";
 const char* SMTConfig::o_produce_inter = ":produce-interpolants";
 const char* SMTConfig::o_certify_inter = ":certify-interpolants";
+const char* SMTConfig::o_simplify_inter = ":simplify-interpolants";
 const char* SMTConfig::o_interpolant_cnf = ":cnf-interpolants";
 const char* SMTConfig::o_proof_struct_hash       = ":proof-struct-hash";
 const char* SMTConfig::o_proof_struct_hash_build = ":proof-struct-hash-build";
@@ -606,7 +607,6 @@ SMTConfig::initializeConfig( )
   proof_remove_mixed            = 0;
 //  proof_certify_inter           = 0;
   proof_random_seed	        = 0;
-  simplify_interpolant           = 0;
   sat_theory_polarity_suggestion = 1;
   cuf_bitwidth                   = 32;
 }

@@ -114,6 +114,16 @@ TEST(Rationals_test, test_negate_int32min) {
     EXPECT_TRUE(r > 0);
 }
 
+TEST(Rationals_test, test_negate_minus_int32min) {
+    // - INT32_MIN = 2^31
+    Real r {"2147483648"};
+    Real neg = -r;
+    EXPECT_TRUE(neg.isWellFormed());
+    EXPECT_TRUE(neg < 0);
+    r.negate();
+    EXPECT_TRUE(r.isWellFormed());
+}
+
 TEST(Rationals_test, test_additionAssign) {
     Real a {"2147483640"};
     Real b {"10"};
@@ -460,5 +470,25 @@ TEST(Rationals_test, test_addNegated)
         FastRational res = a + b;
         ASSERT_EQ(res, -1);
     }
+}
+
+TEST(Rationals_test, testWordRepresentation_Negate) {
+    FastRational a(INT_MIN); // a fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+    a.negate(); // a now does not fit into word representation
+    ASSERT_FALSE(a.wordPartValid());
+    a.negate(); // a now again fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+}
+
+TEST(Rationals_test, testWordRepresentation_Inverse) {
+    uword val = INT_MAX;
+    ++val;
+    FastRational a(1, val); // a fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
+    a = a.inverse(); // a now does not fit into word representation
+    ASSERT_FALSE(a.wordPartValid());
+    a = a.inverse(); // a now again fits into word representation
+    ASSERT_TRUE(a.wordPartValid());
 }
 

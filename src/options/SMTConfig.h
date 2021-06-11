@@ -251,6 +251,7 @@ public:
   static const char* o_produce_proofs;
   static const char* o_produce_inter;
   static const char* o_certify_inter;
+  static const char* o_simplify_inter;
   static const char* o_interpolant_cnf;
   static const char* o_proof_struct_hash;
   static const char* o_proof_num_graph_traversals;
@@ -568,6 +569,9 @@ public:
   bool produce_inter() const
     { return optionTable.has(o_produce_inter) ?
         optionTable[o_produce_inter]->getValue().numval > 0 : false; }
+  int simplify_inter() const
+    { return optionTable.has(o_simplify_inter) ?
+             optionTable[o_simplify_inter]->getValue().numval : 0; }
   int proof_struct_hash() const
     { return optionTable.has(o_proof_struct_hash) ?
         optionTable[o_proof_struct_hash]->getValue().numval : 1; }
@@ -891,14 +895,19 @@ public:
   int          lra_integer_solver;           // Flag to require integer solution for LA problem
   int          lra_check_on_assert;          // Probability (0 to 100) to run check when assert is called
 
-  // interpolant parameters
-  int           simplify_interpolant;
-
     static char* server_host;
     static uint16_t server_port;
     static char* database_host;
     static uint16_t database_port;
 
+    void setSimplifyInterpolant(int val) {
+        const char* msg;
+        setOption(o_simplify_inter, SMTOption(val), msg);
+    }
+
+    int getSimplifyInterpolant() const {
+        return simplify_inter();
+    }
 
 private:
 

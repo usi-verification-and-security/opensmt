@@ -101,6 +101,9 @@ private:
         NONE, BASIC, NONBASIC, QUASIBASIC
     };
     std::vector<VarType> varTypes;
+
+    std::vector<Polynomial::Term> tmp_storage;
+
     void ensureTableauReadyFor(LVRef v);
 
     void addRow(LVRef v, std::unique_ptr<Polynomial> p);
