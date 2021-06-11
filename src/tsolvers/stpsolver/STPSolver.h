@@ -60,7 +60,7 @@ public:
 
     TRes check(bool b) override;
 
-    ValPair getValue(PTRef pt) override;
+    void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
 
     void computeModel() override;
 

@@ -16,6 +16,10 @@ struct VertexRef {
     inline bool operator!=(VertexRef other) const { return x != other.x; }
 };
 
+struct VertexRefHash {
+    uint32_t operator() (const VertexRef& v) const { return v.x; }
+};
+
 struct EdgeRef {
     uint32_t x;
 

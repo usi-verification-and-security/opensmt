@@ -12,11 +12,17 @@ STPMapper<T>::STPMapper(const LALogic &l, const STPStore<T> &s)
 template<class T>
 void STPMapper<T>::setVert(PTRef var, VertexRef vert) {
     assert(var != PTRef_Undef);
+    assert(logic.isVar(var));
     uint32_t idx = Idx(logic.getPterm(var).getId());
     if (varToVertRef.size() <= idx)
         varToVertRef.resize(idx + 1, VertRef_Undef);
 
     varToVertRef[idx] = vert;
+
+    if (vertRefToVar.size() <= vert.x) {
+        vertRefToVar.resize(vert.x + 1, PTRef_Undef);
+    }
+    vertRefToVar[vert.x] = var;
 }
 
 // adds an EdgeRef to the 'edgesOf' lists of its vertices
@@ -61,6 +67,12 @@ PtAsgn STPMapper<T>::getAssignment(EdgeRef edge) const {
     return edgeRefToAsgn[edge.x];
 }
 
+// returns the PTRef corresponding to a VertRef
+template<class T>
+PTRef STPMapper<T>::getPTRef(VertexRef vertex) const {
+    return vertRefToVar.size() <= vertex.x ? PTRef_Undef : vertRefToVar[vertex.x];
+}
+
 // returns the VertexRef corresponding to a PTRef, if it exists
 template<class T>
 VertexRef STPMapper<T>::getVertRef(PTRef var) const {
@@ -100,6 +112,7 @@ PTRef STPMapper<T>::getPTRef(EdgeRef edge) const {
 template<class T>
 void STPMapper<T>::clear() {
     edgesContainingVert.clear();
+    vertRefToVar.clear();
     varToVertRef.clear();
     leqToEdgeRef.clear();
     edgeRefToLeq.clear();

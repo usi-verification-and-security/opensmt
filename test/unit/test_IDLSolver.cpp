@@ -55,7 +55,7 @@ TEST_F(IDLSolverTest, test_SimpleTest){
     solver.assertLit(PtAsgn(ineq3, l_True));
     res = solver.check(true);
     ASSERT_EQ(res, TRes::UNSAT);
-    vec<PtAsgn> v{};
+    //vec<PtAsgn> v{};
     //solver.getConflict(true, v);
     //ASSERT_TRUE(v[0] == PtAsgn(ineq1, l_True) && v[1] == PtAsgn(ineq2, l_True)
     //             || v[0] == PtAsgn(ineq2, l_True) && v[1] == PtAsgn(ineq1, l_True));
@@ -83,19 +83,22 @@ TEST_F(IDLSolverTest, test_SimpleTest){
     ASSERT_EQ(res, TRes::SAT);
 /**/
     solver.computeModel();
-    auto valX = solver.getValue(x);
-    auto valY = solver.getValue(y);
-    auto valZ = solver.getValue(z);
-    ASSERT_NE(valX, ValPair_Undef);
-    ASSERT_NE(valY, ValPair_Undef);
-    ASSERT_NE(valZ, ValPair_Undef);
+    ModelBuilder builder(logic);
+    solver.fillTheoryFunctions(builder);
+    auto model = builder.build();
+    auto valX = model->evaluate(x);
+    auto valY = model->evaluate(y);
+    auto valZ = model->evaluate(z);
+    ASSERT_NE(valX, PTRef_Undef);
+    ASSERT_NE(valY, PTRef_Undef);
+    ASSERT_NE(valZ, PTRef_Undef);
 
     ptrdiff_t numX, numY, numZ;
-    std::stringstream ss(valX.val);
+    std::stringstream ss(logic.pp(valX));
     ss >> numX;
-    std::stringstream ss2(valY.val);
+    std::stringstream ss2(logic.pp(valY));
     ss2 >> numY;
-    std::stringstream ss3(valZ.val);
+    std::stringstream ss3(logic.pp(valZ));
     ss3 >> numZ;
 
 

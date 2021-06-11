@@ -31,6 +31,10 @@ public:
     bool hasValue(VertexRef v) const { return valMap.count(v.x); }
 
     T getValue(VertexRef v) const { return Converter<T>::getValue(0) - valMap.at(v.x); } // valid assignment is actually the inverse of distance
+
+    std::unordered_map<VertexRef, T, VertexRefHash> getAllValues() const;
+
+    EdgeGraph const & getGraph() const { return graph; }
 };
 
 #include "STPModel_implementations.hpp"

@@ -201,18 +201,6 @@ void STPSolver<T>::popBacktrackPoints(unsigned int i) {
 }
 
 template<class T>
-ValPair STPSolver<T>::getValue(PTRef pt) {
-    // In the current model, get the value (represented as string) of the term "pt".
-    VertexRef v = mapper.getVertRef(pt);
-    // we can assume no assertions happen between 'computeModel' and 'getValue', so an existing model must be valid
-    if (v == VertRef_Undef || model == nullptr || !model->hasValue(v))
-        return ValPair_Undef;
-
-    T value = model->getValue(v);
-    return ValPair(pt, Converter<T>::show(value).c_str());
-}
-
-template<class T>
 void STPSolver<T>::computeModel() {
     // a model of an unsatisfiable assignment can't be created
     if (inv_asgn != PtAsgn_Undef) {
