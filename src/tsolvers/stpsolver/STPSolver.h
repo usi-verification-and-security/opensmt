@@ -60,6 +60,8 @@ public:
 
     TRes check(bool b) override;
 
+    void fillTheoryFunctions(ModelBuilder &modelBuilder, const MapWithKeys<PTRef, PTRef, PTRefHash> &substs) const override;
+
     ValPair getValue(PTRef pt) override;
 
     void computeModel() override;

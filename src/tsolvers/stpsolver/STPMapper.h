@@ -14,6 +14,7 @@ private:
 
     const STPStore<T> &store;
 
+    std::vector<PTRef> vertRefToVar;                        // maps VertRefs to variables' PTRefs
     std::vector<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
     std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
     std::vector<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
@@ -34,6 +35,8 @@ public:
     void removeAssignment(EdgeRef edge);
 
     PtAsgn getAssignment(EdgeRef edge) const;
+
+    PTRef getPTRef(VertexRef var) const;
 
     VertexRef getVertRef(PTRef var) const;
 

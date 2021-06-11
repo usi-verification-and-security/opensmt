@@ -79,4 +79,14 @@ void STPModel<T>::createModel() {
     shiftZero();
 }
 
+template<class T>
+std::unordered_map<VertexRef, T, VertexRefHash> STPModel<T>::getAllValues() const {
+    std::unordered_map<VertexRef, T, VertexRefHash> values;
+    for (auto const & entry : valMap) {
+        VertexRef vref{entry.first};
+        values.insert({vref, this->getValue(vref)});
+    }
+    return values;
+}
+
 #endif //OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP

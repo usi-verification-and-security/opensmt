@@ -32,4 +32,9 @@ std::string Converter<Delta>::show(const Delta &val) {
     return val.printValue();
 }
 
+template<>
+void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder, MapWithKeys<PTRef, PTRef, PTRefHash> const &) const {
+    throw std::logic_error("Not implemented yet!");
+}
+
 #endif //OPENSMT_RDLSOLVER_H
