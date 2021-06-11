@@ -6,9 +6,155 @@
 #include <LRALogic.h>
 #include <SMTConfig.h>
 #include <Model.h>
+#include <ModelBuilder.h>
 #include <Opensmt.h>
 
 #include <memory>
+
+class UFModelTest : public ::testing::Test {
+protected:
+    UFModelTest(): logic{} {}
+    virtual void SetUp() {
+        char* err;
+        S = logic.declareSort("U", &err);
+        x = logic.mkVar(S, "x");
+        y = logic.mkVar(S, "y");
+        z = logic.mkVar(S, "z");
+        f_sym = logic.declareFun("f", S, {S, S}, &err);
+        f = logic.mkUninterpFun(f_sym, {x, y});
+
+        v0 = logic.mkConst(S, "@0");
+        v1 = logic.mkConst(S, "@1");
+
+        a = logic.mkBoolVar("a");
+        b = logic.mkBoolVar("b");
+    }
+    SMTConfig config;
+    Logic logic;
+
+    SRef S;
+
+    PTRef x;
+    PTRef y;
+    PTRef z;
+    PTRef f;
+    PTRef a;
+    PTRef b;
+
+    PTRef v0;
+    PTRef v1;
+
+    SymRef f_sym;
+
+    std::unique_ptr<Model> getModel() {
+        Model::Evaluation eval {
+                std::make_pair(x, v0),
+                std::make_pair(y, v0),
+                std::make_pair(z, v1),
+                std::make_pair(a, logic.getTerm_true()),
+                std::make_pair(b, logic.getTerm_false()),
+        };
+        Model::SymbolDefinition symDef {
+            std::make_pair(f_sym, TemplateFunction("f", {x, y}, S, logic.mkIte(logic.mkEq(x, v1), v0, v1)))
+        };
+        return std::unique_ptr<Model>(new Model(logic, eval, symDef));
+    }
+};
+
+class UFModelBuilderTest : public ::testing::Test {
+protected:
+    UFModelBuilderTest(): logic{} {}
+    virtual void SetUp() {
+        char* err;
+        S = logic.declareSort("U", &err);
+        x = logic.mkVar(S, "x");
+        y = logic.mkVar(S, "y");
+        z = logic.mkVar(S, "z");
+        f_sym = logic.declareFun("f", S, {S, S}, &err);
+        f = logic.mkUninterpFun(f_sym, {x, y});
+
+        v0 = logic.mkConst(S, "@0");
+        v1 = logic.mkConst(S, "@1");
+
+        a = logic.mkBoolVar("a");
+        b = logic.mkBoolVar("b");
+    }
+    SMTConfig config;
+    Logic logic;
+
+    SRef S;
+
+    PTRef x;
+    PTRef y;
+    PTRef z;
+    PTRef f;
+    PTRef a;
+    PTRef b;
+
+    PTRef v0;
+    PTRef v1;
+
+    SymRef f_sym;
+
+    std::unique_ptr<Model> getModel() {
+        ModelBuilder mb(logic);
+        Model::Evaluation eval {
+                std::make_pair(x, v0),
+                std::make_pair(y, v0),
+                std::make_pair(z, v1),
+                std::make_pair(a, logic.getTerm_true()),
+                std::make_pair(b, logic.getTerm_false()),
+        };
+        mb.addToTheoryFunction(f_sym, {v0, v0}, v0);
+        mb.addVarValues(eval.begin(), eval.end());
+        return mb.build();
+    }
+};
+
+TEST_F(UFModelTest, test_varAndFunctionEvaluation) {
+    auto model = getModel();
+    EXPECT_EQ(model->evaluate(x), v0);
+    EXPECT_EQ(model->evaluate(y), v0);
+    EXPECT_EQ(model->evaluate(z), v1);
+    EXPECT_EQ(model->evaluate(f), v1);
+    EXPECT_EQ(model->evaluate(logic.mkUninterpFun(f_sym, {logic.mkUninterpFun(f_sym, {x, y}), x})), v0);
+    EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
+    EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
+}
+
+TEST_F(UFModelBuilderTest, test_modelBuilderVarAndFunction) {
+    auto model = getModel();
+    EXPECT_EQ(model->evaluate(x), v0);
+    EXPECT_EQ(model->evaluate(y), v0);
+    EXPECT_EQ(model->evaluate(z), v1);
+    EXPECT_EQ(model->evaluate(f), v0);
+    EXPECT_EQ(model->evaluate(logic.mkUninterpFun(f_sym, {logic.mkUninterpFun(f_sym, {x, y}), x})), v0);
+    EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
+    EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
+}
+
+TEST_F(UFModelBuilderTest, test_NameCollision) {
+    ModelBuilder mb(logic);
+    char* err;
+    std::string symName("x0");
+    SymRef x1_sym = logic.declareFun(symName.c_str(), S, {S}, &err);
+    mb.addToTheoryFunction(x1_sym, {v0}, v0);
+    auto m = mb.build();
+    auto templateFun = m->getDefinition(x1_sym);
+    std::cout << "testing name collision: the following should be different from `x0`" << std::endl;
+    for (PTRef tr : templateFun.getArgs()) {
+        std::string argName(logic.getSymName(tr));
+        std::cout << argName << std::endl;
+        ASSERT_NE(argName, symName);
+    }
+}
+
+TEST_F(UFModelBuilderTest, test_functionModel) {
+    auto model = getModel();
+    auto templateFun = model->getDefinition(f_sym);
+    std::cout << logic.pp(templateFun.getBody()) << std::endl;
+    ASSERT_TRUE(logic.isIte(templateFun.getBody()));
+}
 
 class LAModelTest : public ::testing::Test {
 protected:

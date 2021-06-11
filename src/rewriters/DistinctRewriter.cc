@@ -13,5 +13,5 @@ PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla) {
             topLevelDistincts.insert(conj);
         }
     }
-    return KeepTopLevelDistinctRewriter(logic, std::move(topLevelDistincts)).rewrite(fla);
+    return KeepTopLevelDistinctRewriter(logic, std::move(topLevelDistincts)).rewrite(fla).first;
 }

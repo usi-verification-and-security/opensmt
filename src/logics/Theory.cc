@@ -31,7 +31,6 @@ PTRef Theory::getCollateFunction(const vec<PFRef> & formulas, int curr)
     return getLogic().mkAnd(coll_f_args);
 }
 
-
 Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
 {
     SubstitutionResult result;
@@ -39,7 +38,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
     PTRef root = fla;
     // l_True : exists and is valid
     // l_False : exists but has been disabled to break symmetries
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> allsubsts;
+    MapWithKeys<PTRef,PTRef,PTRefHash> allsubsts;
     // This computes the new unit clauses to curr_frame.units until closure
     while (true) {
         // update the current simplification formula
@@ -57,22 +56,27 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
 
         MapWithKeys<PTRef,PtAsgn,PTRefHash> newsubsts;
         lbool res = getLogic().retrieveSubstitutions(current_units_vec, newsubsts);
-        getLogic().substitutionsTransitiveClosure(newsubsts);
-        if (res != l_Undef)
-            root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
-        PTRef new_root = Substitutor(getLogic(), newsubsts).rewrite(root);
-        bool cont = new_root != root;
-        // remember the substitutions
-        const auto & newsubsts_vec = newsubsts.getKeys();
-        for (PTRef key : newsubsts_vec) {
+        getLogic().substitutionsTransitiveClosure<PtAsgn>(newsubsts);
+
+
+        // remember the substitutions for models
+        for (PTRef key : newsubsts.getKeys()) {
             const auto target = newsubsts[key];
             if (!allsubsts.has(key) && target.sgn == l_True) {
-                allsubsts.insert(key, target);
+                allsubsts.insert(key, target.tr);
             }
         }
+
+        if (res != l_Undef)
+            root = (res == l_True ? getLogic().getTerm_true() : getLogic().getTerm_false());
+
+        PTRef new_root = Substitutor<PtAsgn>(getLogic(), newsubsts).rewrite(root).first;
+
+        bool cont = new_root != root;
         root = new_root;
         if (!cont) break;
     }
+    getLogic().substitutionsTransitiveClosure(allsubsts);
 #ifdef SIMPLIFY_DEBUG
     cerr << "Number of substitutions: " << allsubsts.elems() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;
@@ -108,10 +112,7 @@ PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
     const auto & entries = sr.usedSubstitution.getKeys();
     for (auto entry : entries) {
         auto target = sr.usedSubstitution[entry];
-        assert(target.sgn == l_True);
-        if (target.sgn == l_True) {
-            args.push(logic.mkEq(entry, target.tr));
-        }
+        args.push(logic.mkEq(entry, target));
     }
     args.push(sr.result);
     return logic.mkAnd(args);

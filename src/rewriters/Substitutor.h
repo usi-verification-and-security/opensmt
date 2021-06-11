@@ -9,41 +9,58 @@
 
 #include "Rewriter.h"
 
-class SubstitutionConfig : public DefaultRewriterConfig {
+template <typename TAsgn>
+class SubstitutionConfig : public DefaultRewriterConfig<TAsgn> {
+private:
+    using SubMap = MapWithKeys<PTRef, TAsgn, PTRefHash>;
+    SubMap const & subMap;
+
 public:
-    using SubMap = MapWithKeys<PTRef, PtAsgn, PTRefHash>;
 
-    SubstitutionConfig(Logic & logic, SubMap const & subMap): logic(logic), subMap(subMap) {}
-
+    SubstitutionConfig<TAsgn>(Logic &, SubMap const & subMap): subMap(subMap) {}
     PTRef rewrite(PTRef term) override {
         PTRef result = term;
-        if (logic.isVar(term) || logic.isConstant(term)) {
-            if (subMap.has(term) && subMap[term].sgn == l_True)
-                result = subMap[term].tr;
-            else
-                result = term;
-            assert(not logic.isConstant(term) || result == term);
-            assert(result != PTRef_Undef);
-        } else {
-            // The "inductive" case
-            if (subMap.has(term) && subMap[term].sgn == l_True) {
-                result = subMap[term].tr;
-            } else { // Nothing to do here
-            }
+        if (subMap.has(term) && DefaultRewriterConfig<TAsgn>::isEnabled(subMap[term])) {
+            result = DefaultRewriterConfig<TAsgn>::getAsgnTerm(subMap[term]);
         }
         return result;
     }
-private:
-    Logic & logic;
-    SubMap const & subMap;
-
 };
 
-class Substitutor : public Rewriter<SubstitutionConfig> {
-    SubstitutionConfig config;
+template <typename TAsgn>
+class IteSubstitutionConfig : public IteRewriterConfig<TAsgn> {
+private:
+    using SubMap = MapWithKeys<PTRef, TAsgn, PTRefHash>;
+    SubMap const & subMap;
 
 public:
-    Substitutor(Logic &logic, SubstitutionConfig::SubMap const &substs) :
-            Rewriter<SubstitutionConfig>(logic, config),
+
+    IteSubstitutionConfig<TAsgn>(Logic &, SubMap const & subMap): subMap(subMap) {}
+    PTRef rewrite(PTRef term) override {
+        PTRef result = term;
+        if (subMap.has(term) && DefaultRewriterConfig<TAsgn>::isEnabled(subMap[term])) {
+            result = DefaultRewriterConfig<TAsgn>::getAsgnTerm(subMap[term]);
+        }
+        return result;
+    }
+};
+
+template<typename TAsgn>
+class Substitutor : public Rewriter<SubstitutionConfig<TAsgn>,TAsgn> {
+    SubstitutionConfig<TAsgn> config;
+
+public:
+    Substitutor(Logic &logic, MapWithKeys<PTRef, TAsgn, PTRefHash> const &substs) :
+            Rewriter<SubstitutionConfig<TAsgn>,TAsgn>(logic, config),
+            config(logic, substs) {}
+};
+
+template<typename TAsgn>
+class IteSubstitutor : public Rewriter<IteSubstitutionConfig<TAsgn>,TAsgn> {
+    IteSubstitutionConfig<TAsgn> config;
+
+public:
+    IteSubstitutor(Logic &logic, MapWithKeys<PTRef, TAsgn, PTRefHash> const &substs) :
+            Rewriter<IteSubstitutionConfig<TAsgn>,TAsgn>(logic, config),
             config(logic, substs) {}
 };

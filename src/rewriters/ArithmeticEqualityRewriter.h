@@ -7,7 +7,8 @@
 
 #include "Rewriter.h"
 
-class EqualityRewriterConfig : DefaultRewriterConfig {
+
+class EqualityRewriterConfig : public DefaultRewriterConfig<PTRef> {
     LALogic & logic;
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
 public:
@@ -39,10 +40,10 @@ public:
     }
 };
 
-class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
+class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig,PTRef> {
     EqualityRewriterConfig config;
 public:
-    ArithmeticEqualityRewriter(LALogic & logic): Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
+    ArithmeticEqualityRewriter(LALogic & logic): Rewriter<EqualityRewriterConfig,PTRef>(logic, config), config(logic) {}
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() { return config.getAndClearNotOkToPartition(); }
 };
 

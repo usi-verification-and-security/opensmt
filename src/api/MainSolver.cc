@@ -247,11 +247,9 @@ void MainSolver::getValues(const vec<PTRef>& trs, std::vector<ValPair>& vals) co
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
-
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
-    thandler.fillTheoryVars(modelBuilder);
-    thandler.addSubstitutions(modelBuilder);
+    thandler.fillTheoryFunctions(modelBuilder);
 
     return modelBuilder.build();
 }

@@ -16,10 +16,10 @@ void TSolverHandler::computeModel()
             tsolvers[i]->computeModel();
 }
 
-void TSolverHandler::fillTheoryVars(ModelBuilder & modelBuilder) const {
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != nullptr) {
-            tsolvers[i]->fillTheoryVars(modelBuilder);
+void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
+    for (auto solver : tsolvers) {
+        if (solver != nullptr) {
+            solver->fillTheoryFunctions(modelBuilder, substs);
         }
     }
 }
@@ -75,9 +75,8 @@ ValPair TSolverHandler::getValue(PTRef tr) const
     for (int i = 0; i < tsolvers.size(); i++) {
         if (tsolvers[i] != nullptr) {
             PTRef tr_subst = tr;
-            if (substs.has(tr) && (substs[tr].sgn == l_True)) {
-                tr_subst = substs[tr].tr;
-            }
+            PTRef tmp{PTRef_Undef};
+            tr_subst = substs.peek(tr, tmp) ? tmp : tr_subst;
             ValPair vp = tsolvers[i]->getValue(tr_subst);
             if (vp != ValPair_Undef) {
                 vp.tr = tr;

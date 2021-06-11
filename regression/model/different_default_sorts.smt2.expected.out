@@ -1,0 +1,11 @@
+sat
+(
+  (define-fun x2 () x1
+    (as @2 x1))
+  (define-fun x6 ((r0 x4)) x1
+    (ite (= (as @3 x4) r0) (as @2 x1) (as @d3 x1)))
+  (define-fun x3 ((r1 x1)) x4
+    (ite (= (as @2 x1) r1) (as @3 x4) (as @d2 x4)))
+  (define-fun x5 () x4
+    (as @3 x4))
+)

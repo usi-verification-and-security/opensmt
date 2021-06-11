@@ -36,6 +36,7 @@ public:
     lbool sgn;
     PtAsgn(PTRef tr_, lbool sgn_) : tr(tr_), sgn(sgn_) {}
     PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
+    explicit PtAsgn(PTRef tr) : tr(tr), sgn(l_True) {}
     bool operator== (const PtAsgn& other) const;// { return tr == other.tr && sgn == other.sgn; }
     bool operator!= (const PtAsgn& other) const ;//{ return !(*this == other); }
     bool operator< (const PtAsgn& other) const;// { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
@@ -108,6 +109,6 @@ public:
     bool operator!= (const ValPair& other) const;// { return tr != other.tr || val != other.val; }
 };
 
-static class ValPair ValPair_Undef(PTRef_Undef, NULL);
+static class ValPair ValPair_Undef(PTRef_Undef, nullptr);
 
 #endif //OPENSMT_PTHELPERSTRUCTS_H
