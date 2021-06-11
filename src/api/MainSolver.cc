@@ -353,7 +353,11 @@ sstat MainSolver::check()
         printFramesAsQuery();
 
     if (rval == s_Undef) {
-        rval = solve();
+        try {
+            rval = solve();
+        } catch (std::overflow_error const& error) {
+            rval = s_Error;
+        }
         if (rval == s_False) {
             assert(not smt_solver->isOK());
             rememberUnsatFrame(smt_solver->getConflictFrame());
