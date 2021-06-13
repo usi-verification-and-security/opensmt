@@ -141,6 +141,21 @@ jobs:
 workflows:
     build-test:
         jobs:
-            - build-starexec
-            - build-recent
-            - build-macos
+          - build-starexec:
+              filters:
+                branches:
+                  only:
+                    -  master
+                    - /smtcomp.*/
+          - build-recent:
+              filters:
+                branches:
+                  only:
+                    -  master
+                    - /smtcomp.*/
+          - build-macos:
+              filters:
+                branches:
+                  only:
+                    -  master
+
