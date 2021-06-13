@@ -9,12 +9,6 @@
 #include "ScatterSplitter.h"
 
 class MainSplitter : public MainSolver {
-<<<<<<< HEAD
-
-=======
-protected:
-    std::unique_ptr<ScatterSplitter> scatter_Splitter;
->>>>>>> 7396edfb (Initializing scatter splitter)
 public:
 
     MainSplitter(Logic& logic, SMTConfig& config, std::string name)
