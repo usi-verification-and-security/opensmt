@@ -160,10 +160,9 @@ class   Interpret {
     virtual void new_solver();
     Interpret(SMTConfig& c)
             : config     (c)
+            , main_solver(nullptr)
             , f_exit     (false){ }
 
-    //Interpret(SMTConfig& c) : Interpret(c, nullptr, nullptr) { }
-    //Interpret(SMTConfig& c, std::unique_ptr<MainSplitter> mainSplitter) : Interpret(c), main_solver(mainSplitter) {}
     ~Interpret();
 
     int interpFile(FILE* in);
@@ -182,6 +181,8 @@ class   Interpret {
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
+    MainSolver& getMainSolver() { return *main_solver; }
+    Logic& getLogic()   {return *logic;}
 };
 
 #endif
