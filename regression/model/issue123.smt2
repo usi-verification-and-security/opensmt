@@ -1,5 +1,5 @@
-(set-option :produce-model 1)
 (set-logic QF_UF)
+(set-option :produce-models true)
 (declare-fun b () Bool)
 (declare-fun c () Bool)
 (assert (= b c ))

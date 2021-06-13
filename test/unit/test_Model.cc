@@ -274,6 +274,15 @@ protected:
 
 };
 
+TEST_F(ModelIntegrationTest, testNoModelProduction) {
+    auto osmt = getLRAOsmt();
+    auto & mainSolver = osmt->getMainSolver();
+    const auto & logic = osmt->getLRALogic();
+    mainSolver.check();
+    EXPECT_ANY_THROW(mainSolver.getModel());
+    EXPECT_ANY_THROW(mainSolver.getValue(logic.getTerm_true()));
+}
+
 TEST_F(ModelIntegrationTest, testSingleAssert) {
     auto osmt = getLRAOsmt();
     LRALogic& logic = osmt->getLRALogic();
@@ -281,6 +290,7 @@ TEST_F(ModelIntegrationTest, testSingleAssert) {
     PTRef y = logic.mkNumVar("y");
     PTRef fla = logic.mkNumLt(x, y);
     MainSolver& mainSolver = osmt->getMainSolver();
+    osmt->getConfig().setProduceModels();
     mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
     ASSERT_EQ(res, s_True);
@@ -294,6 +304,7 @@ TEST_F(ModelIntegrationTest, testSubstitutions) {
     PTRef x = logic.mkBoolVar("x");
     PTRef y = logic.mkBoolVar("y");
     PTRef fla = logic.mkEq(x, logic.mkNot(y));
+    osmt->getConfig().setProduceModels();
     MainSolver& mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
@@ -311,6 +322,7 @@ TEST_F(ModelIntegrationTest, testTrivialBooleanSubstitutionNegation) {
     Logic& logic = osmt->getLogic();
     PTRef x = logic.mkBoolVar("x");
     PTRef fla = logic.mkNot(x);
+    osmt->getConfig().setProduceModels();
     MainSolver& mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
     sstat res = mainSolver.check();
@@ -327,6 +339,7 @@ TEST_F(ModelIntegrationTest, testIteWithSubstitution) {
     PTRef y = logic.mkNumVar("y");
     PTRef ite = logic.mkIte(logic.mkBoolVar("c"), x, logic.mkNumPlus(x, logic.getTerm_NumOne()));
     PTRef fla = logic.mkEq(y, ite);
+    osmt->getConfig().setProduceModels();
     MainSolver & mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
     auto res = mainSolver.check();
@@ -345,6 +358,7 @@ TEST_F(ModelIntegrationTest, testIteWithSubstitution_SubtermsHaveValue) {
     PTRef ite = logic.mkIte(c, x, logic.mkNumPlus(x, one));
     PTRef eq = logic.mkEq(y, ite);
     PTRef fla = logic.mkAnd({eq, logic.mkNumLeq(one, y), logic.mkNumLeq(x, logic.getTerm_NumZero())});
+    osmt->getConfig().setProduceModels();
     MainSolver & mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
     auto res = mainSolver.check();

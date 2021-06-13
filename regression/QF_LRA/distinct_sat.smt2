@@ -1,4 +1,5 @@
 (set-logic QF_LRA)
+(set-option :produce-models true)
 (set-info :status sat)
 (declare-fun a () Real)
 (declare-fun b () Real)

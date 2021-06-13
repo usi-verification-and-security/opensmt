@@ -1,4 +1,5 @@
 (set-logic QF_LRA)
+(set-option :produce-models true)
 (declare-fun v1 () Real)
 (declare-fun v2 () Real)
 (declare-fun v3 () Real)

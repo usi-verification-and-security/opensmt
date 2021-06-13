@@ -210,6 +210,9 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
 
 ValPair MainSolver::getValue(PTRef tr) const
 {
+    if (config.produce_models() != 1) {
+        throw OsmtApiException("Solver not in model producing mode");
+    }
     if (logic.hasSortBool(tr)) {
         lbool val = ts.getTermValue(tr);
         if (val != l_Undef) {
@@ -247,6 +250,9 @@ void MainSolver::getValues(const vec<PTRef>& trs, std::vector<ValPair>& vals) co
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
+    if (config.produce_models() != 1) {
+        throw OsmtApiException("Solver not in model producing mode");
+    }
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
     thandler.fillTheoryFunctions(modelBuilder);

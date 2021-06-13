@@ -68,6 +68,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     PTRef rewritten = DivModRewriter(logic).rewrite(fla);
 //    std::cout << logic.printTerm(rewritten) << std::endl;
     SMTConfig config;
+    config.setProduceModels();
     MainSolver solver(logic, config, "test");
     solver.insertFormula(rewritten);
     auto res = solver.check();

@@ -495,7 +495,7 @@ public:
   int produce_models() const {
       return optionTable.has(o_produce_models) ?
               optionTable[o_produce_models]->getValue().numval :
-              1; }
+              0; }
   int          produceStats() const
      { return optionTable.has(o_produce_stats) ?
         optionTable[o_produce_stats]->getValue().numval == 1: false; }

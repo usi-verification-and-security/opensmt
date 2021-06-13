@@ -1,4 +1,5 @@
 (set-logic QF_LRA)
+(set-option :produce-models true)
 (declare-fun x () Real)
 (declare-fun y () Real)
 (assert (>= x 2))

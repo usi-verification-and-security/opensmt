@@ -1,4 +1,5 @@
 (set-logic QF_LRA)
+(set-option :produce-models true)
 (set-info :source |
 TLP-GP automated DTP to SMT-LIB encoding for planning
 by F.Maris and P.Regnier, IRIT - Universite Paul Sabatier, Toulouse

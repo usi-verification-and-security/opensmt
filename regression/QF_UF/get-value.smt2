@@ -1,4 +1,5 @@
 (set-logic QF_UF)
+(set-option :produce-models true)
 (declare-sort U 0)
 (declare-fun f () U)
 (declare-fun g () U)

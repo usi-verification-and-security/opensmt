@@ -1,4 +1,5 @@
 (set-logic QF_LIA)
+(set-option :produce-models true)
 (set-info :status sat)
 (declare-fun a () Int)
 (declare-fun b () Int)
