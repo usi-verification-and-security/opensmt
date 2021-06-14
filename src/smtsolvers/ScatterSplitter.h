@@ -21,7 +21,7 @@ private:
     bool     createSplit_scatter(bool last);                                           // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
     std::vector<Clause> toPublish_LearntClauses;
-    int      n_PublishedLearntClauses;
+//    int      n_PublishedLearntClauses;
 protected:
     virtual lbool solve_() override;
     virtual inline void clausesPublish() {
