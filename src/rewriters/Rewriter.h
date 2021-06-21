@@ -39,9 +39,6 @@ public:
             assert(not done[currentId]);
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
-            if (cfg.treatIteAsVar() and logic.isIte(term.symb())) {
-                childrenCount = 0;
-            }
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
