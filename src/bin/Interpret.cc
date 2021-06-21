@@ -740,7 +740,7 @@ void Interpret::getModel() {
  */
 std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
-    const char *s = logic->getSymName(tr);
+    const char *s = logic->protectName(logic->getSymName(tr));
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
     char* val_string = logic->pp(val);

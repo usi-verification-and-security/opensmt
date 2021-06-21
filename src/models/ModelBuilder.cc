@@ -43,7 +43,7 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
             ss << formalArgPrefix << uniqueNum++;
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
-        FunctionSignature templateSig(logic.getSymName(sr), std::move(formalArgs), logic.getSortRef(sr));
+        FunctionSignature templateSig(logic.protectName(logic.getSymName(sr)), std::move(formalArgs), logic.getSortRef(sr));
         definitions.insert({sr,opensmt::pair<FunctionSignature,ValuationNode*>{std::move(templateSig), nullptr}});
     }
     auto & signatureAndValuation = definitions.at(sr);
