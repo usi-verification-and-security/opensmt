@@ -91,7 +91,7 @@ class SStore
     const char* getName     (SRef sr) const { return ssa[sa[sr].getNameRef()].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
-
+    int     numSorts() const { return sorts.size(); }
     void dumpSortsToFile(ostream&);
 };
 

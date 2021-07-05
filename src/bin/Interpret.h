@@ -136,6 +136,8 @@ class Interpret {
     bool                        checkSat();
     void                        getValue(const std::vector<ASTNode*>* term);
     void                        getModel();
+    std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
+    std::string                 printDefinitionSmtlib(const TemplateFunction &templateFun) const;
     bool                        push();
     bool                        pop();
 

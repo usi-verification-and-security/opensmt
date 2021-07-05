@@ -8,31 +8,32 @@
 #include <unordered_map>
 #include <algorithm>
 
+#include <cassert>
+
 #ifndef OPENSMT_MODEL_H
 #define OPENSMT_MODEL_H
-
 
 class Model {
 
 public:
     using Evaluation = std::unordered_map<PTRef, PTRef, PTRefHash>;
+    using SymbolDefinition = std::unordered_map<SymRef, TemplateFunction, SymRefHash>;
 
-
-    Model(Logic& logic, Evaluation basicEval) : varEval(std::move(basicEval)), logic(logic) {
-        assert(std::all_of(varEval.begin(), varEval.end(),
-                [&logic](Evaluation::value_type entry) { return logic.isVar(entry.first) && logic.isConstant(entry.second); }
-                ));
-    }
-
+    Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef);
+    Model(Logic& logic, Evaluation basicEval) : Model(logic, std::move(basicEval), {}) { }
     PTRef evaluate(PTRef term);
+    TemplateFunction getDefinition(SymRef) const;
+    static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
 
 private:
     const Evaluation varEval;
+    const SymbolDefinition symDef;
+
 
     Evaluation extendedEval;
 
     Logic & logic;
-
+    const std::string formalArgDefaultPrefix;
     // helper methods
     inline bool hasVarVal(PTRef term) {
         assert(logic.isVar(term));
@@ -57,9 +58,6 @@ private:
         auto res = extendedEval.insert(std::make_pair(term, val));
         assert(res.second); (void)res;
     }
-
-
-
 };
 
 

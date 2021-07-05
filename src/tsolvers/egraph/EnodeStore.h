@@ -78,6 +78,13 @@ public:
 
     bool         has(PTRef tr)         const { return termToERef.has(tr); }
     ERef         getERef(PTRef tr)     const { return termToERef[tr]; }
+    /**
+     * Place into er the enode ref of tr if it exists in the store.  Otherwise do not change er.
+     * @param tr the pterm ref to look for
+     * @param er will contain the enode ref corresponding to tr, or be unchanged
+     * @return true if tr is in the store, false if not.
+     */
+    bool         peekERef(PTRef tr, ERef& er)  const { return termToERef.peek(tr, er); }
     PTRef        getPTRef(ERef er)     const { return ERefToTerm[er]; }
 
     vec<PTRefERefPair> constructTerm(PTRef tr);
@@ -157,6 +164,7 @@ public:
 
     char* printEnode(ERef);
 
+    vec<ERef> getArgTermsAsVector(ERef) const;
 //    friend class Egraph;
 };
 
