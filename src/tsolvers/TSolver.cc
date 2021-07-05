@@ -27,7 +27,7 @@ void TSolver::popBacktrackPoint()
     deductions_next = deductions_last.last();
     deductions_last.pop();
     // Restore deductions
-    size_t new_deductions_size = deductions_lim.last( );
+    size_t new_deductions_size = deductions_lim.last();
     deductions_lim.pop();
     while (th_deductions.size_() > new_deductions_size) {
         PtAsgn_reason asgn = th_deductions.last();
