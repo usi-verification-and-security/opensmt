@@ -400,245 +400,222 @@ double ProofGraph::recyclePivotsIter()
 	return (endTime-initTime);
 }
 
-void ProofGraph::recycleUnits()
-{
-	if ( verbose() > 1 ) { cerr << "# " << "Recycle units begin" << endl; }
-	if ( verbose() > 1 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used before recycling: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
+void ProofGraph::recycleUnits() {
+    assert(mpz_cmp_ui(visited_1, 0) == 0 and mpz_cmp_ui(visited_2, 0) == 0);
+    if (verbose() > 1) { cerr << "# " << "Recycle units begin" << endl; }
+    if (verbose() > 1) {
+        uint64_t mem_used = memUsed();
+        reportf("# Memory used before recycling: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
+    }
 
-	double initTime = cpuTime();
-	bool some_transf_done = true;
-	long curr_num_loops=0;
+    double initTime = cpuTime();
+    bool some_transf_done = true;
+    long curr_num_loops = 0;
 
-	RuleContext ra1,ra2;
-	ProofNode* n;
-	bool choose_ant1;
+    std::set<clauseid_t> units_collected;
+    std::deque<clauseid_t> q;
+    // Main external loop
+    while (some_transf_done) {
+        // Enqueue leaves first
+        q.assign(leaves_ids.begin(), leaves_ids.end());
+        some_transf_done = false;
+        do {
+            clauseid_t id = q.front();
+            assert(id < getGraphSize());
+            q.pop_front();
+            ProofNode *n = getNode(id);
+            //Node not visited yet
+            if (n and not isSetVisited1(id)) {
+                // Wait if one antecedent is not visited yet;
+                // the node will be enqueued anyway by that antecedent
+                if (n->getAnt1() != nullptr and not isSetVisited1(n->getAnt1()->getId())) {/* skip */}
+                else if (n->getAnt2() != nullptr and not isSetVisited1(n->getAnt2()->getId())) {/* skip */}
+                else { // both antecedents visited, mark node as visited
+                    setVisited1(id);
+                    // Enqueue resolvents
+                    for (clauseid_t rid : n->getResolvents()) {
+                        if (getNode(rid)) { q.push_back(rid); }
+                    }
+                    // Non leaf node
+                    if (n->getAnt1() or n->getAnt2()) {
+                        assert(n->getAnt1());
+                        assert(n->getAnt2());
+                        assert((n->getAnt1()->getAnt1() and n->getAnt1()->getAnt2()) or
+                               (n->getAnt1()->getAnt1() == nullptr and n->getAnt1()->getAnt2() == nullptr));
+                        assert((n->getAnt2()->getAnt1() and n->getAnt2()->getAnt2()) or
+                               (n->getAnt2()->getAnt1() == nullptr and n->getAnt2()->getAnt2() == nullptr));
 
-	set<clauseid_t> units_collected;
-	std::deque<clauseid_t>q;
-	clauseid_t id;
-	// Main external loop
-	while(some_transf_done)
-	{
-		// Enqueue leaves first
-		q.assign(leaves_ids.begin(),leaves_ids.end());
-		some_transf_done=false;
-		do
-		{
-			id=q.front(); assert(id<getGraphSize());
-			q.pop_front(); n=getNode(id);
-			//Node not visited yet
-			if(n!=NULL && !isSetVisited1(id))
-			{
-				// Wait if one antecedent is not visited yet;
-				// the node will be enqueued anyway by that antecedent
-				if(n->getAnt1()!=NULL && !isSetVisited1(n->getAnt1()->getId())){}
-				else if(n->getAnt2()!=NULL && !isSetVisited1(n->getAnt2()->getId())){}
-				// Mark node as visited if both antecedents visited
-				else
-				{
-					setVisited1(id);
-					// Enqueue resolvents
-					for(set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ )
-						if(getNode(*it) != NULL) q.push_back(*it);
-					// Non leaf node
-					if(!(n->getAnt1()==NULL && n->getAnt2()==NULL))
-					{
-						assert(n->getAnt1()); assert (n->getAnt2());
-						assert((n->getAnt1()->getAnt1()!=NULL && n->getAnt1()->getAnt2()!=NULL) || (n->getAnt1()->getAnt1()==NULL && n->getAnt1()->getAnt2()==NULL));
-						assert((n->getAnt2()->getAnt1()!=NULL && n->getAnt2()->getAnt2()!=NULL) || (n->getAnt2()->getAnt1()==NULL && n->getAnt2()->getAnt2()==NULL));
+                        //Look for pivot in antecedents
+                        bool piv_in_ant1 = false;
+                        bool piv_in_ant2 = false;
 
-						//Look for pivot in antecedents
-						bool piv_in_ant1=false, piv_in_ant2=false;
+                        short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
+                        if (f1 != -1) { piv_in_ant1 = true; }
+                        short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
+                        if (f2 != -1) { piv_in_ant2 = true; }
+                        assert(not(f1 == 1 and f2 == 1) and not(f1 == 0 and f2 == 0));
 
-						short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
-						if( f1 != -1 ) piv_in_ant1 = true;
-						short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
-						if( f2 != -1 ) piv_in_ant2 = true;
-						assert( !(f1==1 && f2==1) && !(f1==0 && f2==0) );
+                        //Easy case: pivot still in both antecedents
+                        //Sufficient to propagate modifications via merge
+                        if (piv_in_ant1 and piv_in_ant2) {
+                            if (isSetVisited2(n->getAnt1()->getId()) or isSetVisited2(n->getAnt2()->getId())) {
+                                mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(),
+                                             n->getPivot());
+                                setVisited2(id);
+                            }
+                            // Check whether an antecedent is a unit clause
+                            // If so, v is replaced by the other antecedent
+                            // and the literal gets propagated down
+                            if (n->getAnt1()->getClauseSize() == 1 or n->getAnt2()->getClauseSize() == 1) {
+                                some_transf_done = true;
+                                bool choose_ant1 = n->getAnt2()->getClauseSize() == 1;
 
-						//Easy case: pivot still in both antecedents
-						//Sufficient to propagate modifications via merge
-						if(piv_in_ant1 && piv_in_ant2)
-						{
-							if(isSetVisited2(n->getAnt1()->getId()) || isSetVisited2(n->getAnt2()->getId()) )
-							{
-								mergeClauses(n->getAnt1()->getClause(),n->getAnt2()->getClause(),n->getClause(),n->getPivot());
-								setVisited2(id);
-							}
+                                ProofNode *replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
+                                ProofNode *other = choose_ant1 ? n->getAnt2() : n->getAnt1();
+                                // Keep track of the unit clause detached
+                                units_collected.insert(other->getId());
 
-							// Check whether an antecedent is a unit clause
-							// If so, v is replaced by the other antecedent
-							// and the literal gets propagated down
-							if(n->getAnt1()->getClauseSize() == 1 || n->getAnt2()->getClauseSize() == 1)
-							{
-								some_transf_done = true;
-								bool choose_ant1;
-								if(n->getAnt2()->getClauseSize() == 1) choose_ant1 = true;
-								else choose_ant1 = false;
+                                replacing->remRes(id);
+                                other->remRes(id);
 
-								ProofNode* replacing = (choose_ant1? n->getAnt1(): n->getAnt2());
-								ProofNode* other = (choose_ant1? n->getAnt2(): n->getAnt1());
-								// Keep track of the unit clause detached
-								units_collected.insert(other->getId());
+                                auto const &resolvents = n->getResolvents();
+                                setVisited2(replacing->getId());
+                                for (clauseid_t clauseid : resolvents) {
+                                    assert(clauseid < getGraphSize());
+                                    ProofNode *res = getNode(clauseid);
+                                    assert(res);
+                                    if (res->getAnt1() == n) { res->setAnt1(replacing); }
+                                    else if (res->getAnt2() == n) { res->setAnt2(replacing); }
+                                    else opensmt_error_();
+                                    assert(res->getAnt1() != res->getAnt2());
+                                    replacing->addRes(clauseid);
+                                }
+                                //We might have reached old sink
+                                //Substitute old sink with new
+                                if (isRoot(n)) {
+                                    setRoot(replacing->getId());
+                                    assert(n->getNumResolvents() == 0);
+                                    assert(replacing->getNumResolvents() == 0);
+                                }
+                                removeNode(id);
+                            }
+                        }
+                            //Second case: pivot not in ant1 or not in ant2
+                            //Remove resolution step, remove n, ant without pivots gains n resolvents
+                        else {
+                            assert(not piv_in_ant1 or not piv_in_ant2);
+                            //Pivot not in ant1 and not in ant2
+                            bool choose_ant1 = false;
+                            if (not piv_in_ant1 and not piv_in_ant2) {
+                                // Choose one of the two antecedents heuristically
+                                choose_ant1 = chooseReplacingAntecedent(n);
+                            } else { // Choose the one not containing the pivot
+                                choose_ant1 = not piv_in_ant1 and piv_in_ant2;
+                            }
 
-								replacing->remRes(id);
-								other->remRes(id);
+                            ProofNode *replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
+                            ProofNode *other = choose_ant1 ? n->getAnt2() : n->getAnt1();
 
-								set<clauseid_t>& resolvents = n->getResolvents();
-								setVisited2(replacing->getId());
+                            replacing->remRes(id);
+                            other->remRes(id);
 
-								for(set<clauseid_t>::iterator it = resolvents.begin(); it!=resolvents.end(); it++)
-								{
-									assert((*it)<getGraphSize());
-									ProofNode* res = getNode((*it));
-									assert(res);
-									if(res->getAnt1() == n) res->setAnt1( replacing );
-									else if (res->getAnt2() == n) res->setAnt2( replacing );
-									else opensmt_error_();
-									replacing->addRes((*it));
-								}
-								//We might have reached old sink
-								//Substitute old sink with new
-								if(isRoot(n))
-								{
-									setRoot( replacing->getId() );
-									assert( n->getNumResolvents()==0 );
-									assert( replacing->getNumResolvents()==0 );
-								}
-								removeNode(id);
-							}
-						}
-						//Second case: pivot not in ant1 or not in ant2
-						//Remove resolution step, remove n, ant without pivots gains n resolvents
-						else if(!piv_in_ant1 ||  !piv_in_ant2)
-						{
-							//Pivot not in ant1 and not in ant2
-							if(!piv_in_ant1 && !piv_in_ant2)
-							{
-								// Choose one of the two antecedents heuristically
-								choose_ant1 = chooseReplacingAntecedent(n);
-							}
-							//Pivot not in ant1
-							else if(!piv_in_ant1 && piv_in_ant2) choose_ant1=true;
-							//Pivot not in ant2
-							else if(piv_in_ant1 && !piv_in_ant2) choose_ant1=false;
-							else opensmt_error_();
+                            auto const &resolvents = n->getResolvents();
+                            setVisited2(replacing->getId());
 
-							ProofNode* replacing = (choose_ant1? n->getAnt1(): n->getAnt2());
-							ProofNode* other = (choose_ant1? n->getAnt2(): n->getAnt1());
+                            for (clauseid_t clauseid : resolvents) {
+                                assert(clauseid < getGraphSize());
+                                ProofNode *res = getNode(clauseid);
+                                assert(res);
+                                if (res->getAnt1() == n) { res->setAnt1(replacing); }
+                                else if (res->getAnt2() == n) { res->setAnt2(replacing); }
+                                else opensmt_error_();
+                                assert(res->getAnt1() != res->getAnt2());
+                                replacing->addRes(clauseid);
+                            }
+                            //We might have reached old sink
+                            //Substitute old sink with new
+                            if (isRoot(n)) {
+                                setRoot(replacing->getId());
+                                assert(n->getNumResolvents() == 0);
+                                assert(replacing->getNumResolvents() == 0);
+                            }
+                            removeNode(n->getId());
+                            if (other->getNumResolvents() == 0) { removeTree(other->getId()); }
+                        }
+                    }
+                }
+            }
+        } while (not q.empty());
+        // Visit vector
+        resetVisited1();
+        // To do only necessary merges, track modified nodes
+        resetVisited2();
+        // End loop
+        curr_num_loops++;
+    }
 
-							replacing->remRes(id);
-							other->remRes(id);
+    //printClause(getRoot());
+    // Readd each unit clause to restore the proof
+    for (clauseid_t clauseid : units_collected) {
+        ProofNode *unit = getNode(clauseid);
+        ProofNode *oldroot = getRoot();
+        // NOTE is it possible to have multiple unit clauses containing the same literal?
+        // If so, which one should be readded?
+        if (oldroot->getClauseSize() == 0) {
+            //cerr << "Clause not useful: "; printClause(unit);
+        } else {
+            assert(oldroot->hasOccurrenceBin(var(unit->getClause()[0])) != -1);
+            //printClause(unit);
+            ProofNode *newroot = new ProofNode(logic_);
+            newroot->initClause();
+            if (produceInterpolants()) { newroot->initIData(); }
+            newroot->setAnt1(oldroot);
+            newroot->setAnt2(unit);
+            newroot->setType(clause_type::CLA_DERIVED);
+            newroot->setPivot(var((unit->getClause())[0]));
+            newroot->setId(graph.size());
+            graph.push_back(newroot);
+            unit->addRes(newroot->getId());
+            oldroot->addRes(newroot->getId());
+            //newroot given by resolution of root and unit over v pivot
+            mergeClauses(oldroot->getClause(), unit->getClause(), newroot->getClause(), newroot->getPivot());
+            setRoot(newroot->getId());
+        }
+    }
+    assert(getRoot()->getClauseSize() == 0);
 
-							set<clauseid_t>& resolvents = n->getResolvents();
-							setVisited2(replacing->getId());
+    if (proofCheck()) {
+        unsigned rem = cleanProofGraph();
+        if (rem > 0) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+        assert(rem == 0);
+        checkProof(true);
+    }
+    double endTime = cpuTime();
 
-							for(set<clauseid_t>::iterator it = resolvents.begin(); it!=resolvents.end(); it++)
-							{
-								assert((*it)<getGraphSize());
-								ProofNode* res = getNode((*it));
-								assert(res);
-								if(res->getAnt1() == n) res->setAnt1( replacing );
-								else if (res->getAnt2() == n) res->setAnt2( replacing );
-								else opensmt_error_();
-								replacing->addRes((*it));
-							}
-							//We might have reached old sink
-							//Substitute old sink with new
-							if(isRoot(n))
-							{
-								setRoot( replacing->getId() );
-								assert( n->getNumResolvents()==0 );
-								assert( replacing->getNumResolvents()==0 );
-							}
-							removeNode(n->getId());
-							if( other->getNumResolvents() == 0 ) removeTree( other->getId() );
-						}
-					}
-				}
-			}
-		}
-		while(!q.empty());
-		// Visit vector
-		resetVisited1();
-		// To do only necessary merges, track modified nodes
-		resetVisited2();
+    if (verbose() > 1) {
+        uint64_t mem_used = memUsed();
+        reportf("# Memory used after recycling: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
+    }
 
-		// End loop
-		curr_num_loops++;
-	}
+    ////////////////////////////////////////////////////////////////////
+    if (verbose() > 0) {
+        unsigned new_n_nodes = 0;
+        unsigned new_n_edges = 0;
+        for (unsigned i = 0; i < getGraphSize(); i++) {
+            ProofNode *pn = getNode(i);
+            if (pn) {
+                new_n_nodes++;
+                new_n_edges += pn->getNumResolvents();
+            }
+        }
 
-	//printClause(getRoot());
-	// Readd each unit clause to restore the proof
-	for(set<clauseid_t>::iterator it = units_collected.begin(); it != units_collected.end(); it++)
-	{
-		ProofNode* unit = getNode(*it);
-		ProofNode* oldroot = getRoot();
-		// NOTE is it possible to have multiple unit clauses containing the same literal?
-		// If so, which one should be readded?
-		if(oldroot->getClauseSize() == 0)
-		{
-			//cerr << "Clause not useful: "; printClause(unit);
-		}
-		else
-		{
-			//printClause(unit);
-			ProofNode* newroot=new ProofNode(logic_);
-			newroot->initClause();
-			if(produceInterpolants()) newroot->initIData();
-			newroot->setAnt1(oldroot);
-			newroot->setAnt2(unit);
-			newroot->setType(clause_type::CLA_DERIVED);
-			newroot->setPivot(var((unit->getClause())[0]));
-			newroot->setId(graph.size());
-			graph.push_back(newroot);
-			unit->addRes(newroot->getId());
-			oldroot->addRes(newroot->getId());
-			//newroot given by resolution of root and unit over v pivot
-			mergeClauses(oldroot->getClause(),unit->getClause(),newroot->getClause(),newroot->getPivot());
-			// Update root
-			setRoot(newroot->getId());
-		}
-	}
-	assert(getRoot()->getClauseSize()==0);
-
-	if( proofCheck() )
-	{
-		unsigned rem = cleanProofGraph( );
-		if(rem > 0 ) cerr << "# Cleaned " << rem << " residual nodes" << endl;
-		assert( rem == 0 );
-		checkProof( true );
-	}
-	double endTime = cpuTime();
-
-	if ( verbose() > 1 )
-	{
-		uint64_t mem_used = memUsed();
-		reportf( "# Memory used after recycling: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}
-
-	////////////////////////////////////////////////////////////////////
-	if( verbose() > 0 )
-	{
-		unsigned new_n_nodes=0;
-		unsigned new_n_edges=0;
-		for(unsigned i = 0; i < getGraphSize(); i++)
-		{
-			ProofNode* pn = getNode(i);
-			if(pn != NULL){ new_n_nodes++; new_n_edges += pn->getNumResolvents(); }
-		}
-
-		cerr << "# LU\t";
-		cerr << "Nodes: " << new_n_nodes << "(-" << 100*((double)(num_nodes - new_n_nodes)/num_nodes) << "%)\t";
-		cerr << "Edges: " << new_n_edges << "(-" << 100*((double)(num_edges - new_n_edges)/num_edges) << "%)\t";
-		cerr << "Traversals: " << curr_num_loops << "\t";
-		cerr << "Time: " << (endTime-initTime) << " s" << endl;
-	}
-	//////////////////////////////////////////////////////////////////
+        cerr << "# LU\t";
+        cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes) << "%)\t";
+        cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges) << "%)\t";
+        cerr << "Traversals: " << curr_num_loops << "\t";
+        cerr << "Time: " << (endTime - initTime) << " s" << endl;
+    }
+    //////////////////////////////////////////////////////////////////
 }
 
 
