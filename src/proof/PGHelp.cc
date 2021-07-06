@@ -198,70 +198,88 @@ void ProofGraph::topolSortingBotUp(vector<clauseid_t>& DFS)
 }
 
 // Linear merge for resolution
-bool ProofGraph::mergeClauses(vector<Lit>& A, vector<Lit>& B, vector<Lit>& resolv, Var pivot)
+bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const & B, std::vector<Lit>& resolv, Var pivot)
 {
-    size_t i, j;
-    i = 0;
-    j = 0;
-    const size_t Asize= A.size();
-    const size_t Bsize= B.size();
-    size_t ressize=0;
-    if(resolv.size() < Asize + Bsize - 2)
-    {
-        resolv.reserve(Asize + Bsize - 2);
+    const std::size_t Asize = A.size();
+    const std::size_t Bsize = B.size();
+    std::size_t ressize = 0;
+    if (resolv.size() < Asize + Bsize - 2) {
         resolv.resize(Asize + Bsize - 2);
     }
     assert(resolv.size() >= Asize + Bsize - 2);
 
+    std::size_t i = 0;
+    std::size_t j = 0;
     //Insert first element
-    if(var(A[i])==pivot) i++;
-    if(var(B[j])==pivot) j++;
-    if(i < Asize && j < Bsize) {
-        if (A[i]<=B[j]) {
-            if(var(A[i])!=pivot){ resolv[ressize]=A[i]; ressize++; }
+    if (var(A[i]) == pivot) { i++; }
+    if (var(B[j]) == pivot) { j++; }
+    if (i < Asize and j < Bsize) {
+        if (A[i] <= B[j]) {
+            if (var(A[i]) != pivot) {
+                resolv[ressize] = A[i];
+                ressize++;
+            }
             i++;
-        }
-        else {
-            if(var(B[j])!=pivot){ resolv[ressize]=B[j]; ressize++; }
+        } else {
+            if (var(B[j]) != pivot) {
+                resolv[ressize] = B[j];
+                ressize++;
+            }
             j++;
         }
-    }
-    else if (i < Asize) {
-        if(var(A[i])!=pivot){ resolv[ressize]=A[i]; ressize++; }
+    } else if (i < Asize) {
+        if (var(A[i]) != pivot) {
+            resolv[ressize] = A[i];
+            ressize++;
+        }
         i++;
-    }
-    else if (j< Bsize) {
-        if(var(B[j])!=pivot){ resolv[ressize]=B[j]; ressize++; }
+    } else if (j < Bsize) {
+        if (var(B[j]) != pivot) {
+            resolv[ressize] = B[j];
+            ressize++;
+        }
         j++;
     }
 
     //Insert further elements avoiding repetitions
-    while (i < Asize && j < Bsize) {
-        if (A[i]<=B[j]) {
-            if(var(A[i])!=pivot && A[i] != resolv[ressize-1]){ resolv[ressize]=A[i]; ressize++; }
+    while (i < Asize and j < Bsize) {
+        if (A[i] <= B[j]) {
+            if (var(A[i]) != pivot && A[i] != resolv[ressize - 1]) {
+                resolv[ressize] = A[i];
+                ressize++;
+            }
             i++;
         } else {
-            if(var(B[j])!=pivot && B[j] != resolv[ressize-1]){ resolv[ressize]=B[j]; ressize++; }
+            if (var(B[j]) != pivot && B[j] != resolv[ressize - 1]) {
+                resolv[ressize] = B[j];
+                ressize++;
+            }
             j++;
         }
     }
-    if (i < Asize)
-    {
-        for (size_t p = i; p < Asize; p++)
-            if(var(A[p])!=pivot && A[p]!=resolv[ressize-1]){ resolv[ressize]=A[p]; ressize++; }
+    if (i < Asize) {
+        for (size_t p = i; p < Asize; p++) {
+            if (var(A[p]) != pivot && A[p] != resolv[ressize - 1]) {
+                resolv[ressize] = A[p];
+                ressize++;
+            }
+        }
+    } else if (j < Bsize) {
+        for (size_t p = j; p < Bsize; p++) {
+            if (var(B[p]) != pivot && B[p] != resolv[ressize - 1]) {
+                resolv[ressize] = B[p];
+                ressize++;
+            }
+        }
     }
-    else if(j < Bsize)
-    {
-        for (size_t p = j; p < Bsize; p++)
-            if(var(B[p])!=pivot && B[p]!=resolv[ressize-1]){ resolv[ressize]=B[p]; ressize++; }
+    if (resolv.size() < ressize) {
+        printClause(cerr, A);
+        cerr << endl;
+        printClause(cerr, B);
+        cerr << endl;
     }
-    if( resolv.size() < ressize )
-    {
-        printClause( cerr, A ); cerr << endl;
-        printClause( cerr, B ); cerr << endl;
-    }
-    assert( resolv.size() >= ressize );
-    resolv.resize( ressize );
+    assert(resolv.size() >= ressize);
+    resolv.resize(ressize);
     return true;
 }
 
