@@ -531,6 +531,8 @@ private:
     void liftVarsToLeaves(std::vector<Var> const & vars);
     void replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> const & vars);
 
+    void recyclePivotsIter_RecyclePhase();
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
