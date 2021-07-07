@@ -218,7 +218,6 @@ struct ProofNode
     // Test methods
     //
     inline bool                  isLeaf(){ assert((ant1==NULL && ant2==NULL) || (ant1!=NULL && ant2!=NULL)); return (ant1==NULL);}
-    inline bool                  hasBeenReplaced(){ return(ant1!=NULL && ant2==NULL); }
     // 0 if positive, 1 if negative, -1 if not found
     short                         hasOccurrenceBin( Var );
     // true if positive occurrence pivot is in first antecedent
@@ -380,6 +379,8 @@ public:
     void              setVisited2               ( clauseid_t id ) { mpz_setbit(visited_2, id); }
     void              resetVisited1             ( )               { mpz_set_ui(visited_1,0); }
     void              resetVisited2             ( )               { mpz_set_ui(visited_2,0); }
+    bool              isResetVisited1           ( )               { return mpz_cmp_ui(visited_1, 0) == 0; }
+    bool              isResetVisited2           ( )               { return mpz_cmp_ui(visited_2, 0) == 0; }
 
     unsigned          getMaxIdVar           ( ) { return max_id_variable; }
     void              getGraphInfo          ( );
