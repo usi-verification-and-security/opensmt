@@ -197,12 +197,20 @@ void ProofGraph::topolSortingBotUp(vector<clauseid_t>& DFS)
     delete visited_count_;
 }
 
-// Linear merge for resolution
+/*
+ * Given two clauses A and B, and a pivot variable, computes the resolvent clause after resolution.
+ *
+ * PRECONDITION: Literals in the input clauses must be sorted and the clauses must contain the pivot variable.
+ * POSTCONDITION: Literals in the resolvent clause are sorted and the clause does not contain the pivot.
+ */
 bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const & B, std::vector<Lit>& resolv, Var pivot)
 {
+    assert(std::is_sorted(A.begin(), A.end()));
+    assert(std::is_sorted(B.begin(), B.end()));
+    assert(std::find_if(A.begin(), A.end(), [pivot](Lit l) { return var(l) == pivot; }) != A.end());
+    assert(std::find_if(B.begin(), B.end(), [pivot](Lit l) { return var(l) == pivot; }) != B.end());
     const std::size_t Asize = A.size();
     const std::size_t Bsize = B.size();
-    std::size_t ressize = 0;
     if (resolv.size() < Asize + Bsize - 2) {
         resolv.resize(Asize + Bsize - 2);
     }
@@ -210,76 +218,45 @@ bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const
 
     std::size_t i = 0;
     std::size_t j = 0;
-    //Insert first element
-    if (var(A[i]) == pivot) { i++; }
-    if (var(B[j]) == pivot) { j++; }
-    if (i < Asize and j < Bsize) {
-        if (A[i] <= B[j]) {
-            if (var(A[i]) != pivot) {
-                resolv[ressize] = A[i];
-                ressize++;
-            }
-            i++;
-        } else {
-            if (var(B[j]) != pivot) {
-                resolv[ressize] = B[j];
-                ressize++;
-            }
-            j++;
-        }
-    } else if (i < Asize) {
-        if (var(A[i]) != pivot) {
-            resolv[ressize] = A[i];
-            ressize++;
-        }
-        i++;
-    } else if (j < Bsize) {
-        if (var(B[j]) != pivot) {
-            resolv[ressize] = B[j];
-            ressize++;
-        }
-        j++;
-    }
+    std::size_t res = 0;
 
-    //Insert further elements avoiding repetitions
     while (i < Asize and j < Bsize) {
         if (A[i] <= B[j]) {
-            if (var(A[i]) != pivot && A[i] != resolv[ressize - 1]) {
-                resolv[ressize] = A[i];
-                ressize++;
+            if (A[i] == B[j]) { ++j; }
+            if (var(A[i]) != pivot) {
+                assert(res == 0 or resolv[res - 1] != A[i]); // no duplicates
+                resolv[res++] = A[i];
             }
-            i++;
+            ++i;
         } else {
-            if (var(B[j]) != pivot && B[j] != resolv[ressize - 1]) {
-                resolv[ressize] = B[j];
-                ressize++;
+            assert(B[j] < A[i]);
+            if (var(B[j]) != pivot) {
+                assert(res == 0 or resolv[res - 1] != B[j]); // no duplicates
+                resolv[res++] = B[j];
             }
-            j++;
+            ++j;
         }
     }
-    if (i < Asize) {
-        for (size_t p = i; p < Asize; p++) {
-            if (var(A[p]) != pivot && A[p] != resolv[ressize - 1]) {
-                resolv[ressize] = A[p];
-                ressize++;
-            }
+
+    while (i < Asize) {
+        if (var(A[i]) != pivot) {
+            assert(res == 0 or resolv[res - 1] != A[i]); // no duplicates
+            resolv[res++] = A[i];
         }
-    } else if (j < Bsize) {
-        for (size_t p = j; p < Bsize; p++) {
-            if (var(B[p]) != pivot && B[p] != resolv[ressize - 1]) {
-                resolv[ressize] = B[p];
-                ressize++;
-            }
+        ++i;
+    }
+
+    while (j < Bsize) {
+        if (var(B[j]) != pivot) {
+            assert(res == 0 or resolv[res - 1] != B[j]); // no duplicates
+            resolv[res++] = B[j];
         }
+        ++j;
     }
-    if (resolv.size() < ressize) {
-        printClause(cerr, A);
-        cerr << endl;
-        printClause(cerr, B);
-        cerr << endl;
-    }
-    assert(resolv.size() >= ressize);
-    resolv.resize(ressize);
+    assert(resolv.size() >= res);
+    resolv.resize(res);
+    assert(std::is_sorted(resolv.begin(), resolv.end()));
+    assert(std::find_if(resolv.begin(), resolv.end(), [pivot](Lit l) { return var(l) == pivot; }) == resolv.end());
     return true;
 }
 

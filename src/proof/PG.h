@@ -390,7 +390,7 @@ public:
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
     inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
-    bool              mergeClauses          (std::vector<Lit> const &, std::vector<Lit> const &, std::vector<Lit>&, Var);
+    static bool       mergeClauses          (std::vector<Lit> const &, std::vector<Lit> const &, std::vector<Lit>&, Var);
     inline bool       isRoot                ( ProofNode* n ) { assert(n); return( n->getId() == root ); }
     inline ProofNode* getRoot               ( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
     inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
