@@ -19,7 +19,7 @@ jobs:
                 command: sudo apt-get update
             - run:
                 name: install dependencies
-                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 pip3 cython
             - run:
                 name: Create the build directory
                 command: mkdir build
@@ -90,6 +90,8 @@ jobs:
                     yum -y install bison
                     yum -y install flex
                     yum -y install git
+                    yum -y install pip3
+                    yum -y install cython
             - run:
                 name: Fetch cmake-3.12.3
                 command: |
