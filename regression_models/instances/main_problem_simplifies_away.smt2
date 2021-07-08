@@ -1,4 +1,3 @@
-(set-option :produce-models true)
 (set-logic QF_UF)
 
 (set-info :status sat)
@@ -14,5 +13,4 @@
 (assert (not b))
 
 (check-sat)
-(get-model)
 (exit)
