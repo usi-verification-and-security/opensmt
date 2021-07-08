@@ -11,6 +11,8 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LRALogic.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIALogic.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LIALogic.h"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/IDLogic.h"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/RDLogic.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Logic.cc"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Logic.h"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/LATheory.h"
@@ -25,7 +27,7 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SubstLoopBreaker.cc"
 )
 
-install(FILES LogicFactory.h Theory.h Logic.h LALogic.h LRALogic.h LIALogic.h CUFLogic.h BVLogic.h
+install(FILES LogicFactory.h Theory.h Logic.h LALogic.h LRALogic.h LIALogic.h RDLogic.h IDLogic.h CUFLogic.h BVLogic.h
  DESTINATION ${INSTALL_HEADERS_DIR})
 
 

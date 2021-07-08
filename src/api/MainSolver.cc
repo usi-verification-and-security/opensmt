@@ -35,7 +35,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
 #include "IteHandler.h"
-
+#include "RDLogic.h"
+#include "IDLogic.h"
+#include "RDLTHandler.h"
+#include "IDLTHandler.h"
+#include "LIATHandler.h"
 
 #include <thread>
 #include <random>
@@ -445,17 +449,27 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_LRA:
-        case Logic_t::QF_RDL:
         {
             LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
             theory = new LATheory<LRALogic,LRATHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
-        case Logic_t::QF_IDL:
         {
             LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
             theory = new LATheory<LIALogic,LIATHandler>(config, liaLogic);
+            break;
+        }
+        case Logic_t::QF_RDL:
+        {
+            RDLogic & lraLogic = dynamic_cast<RDLogic &>(logic);
+            theory = new LATheory<RDLogic, RDLTHandler>(config, lraLogic);
+            break;
+        }
+        case Logic_t::QF_IDL:
+        {
+            IDLogic & liaLogic = dynamic_cast<IDLogic &>(logic);
+            theory = new LATheory<IDLogic, IDLTHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_UFLRA:

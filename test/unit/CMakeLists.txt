@@ -77,6 +77,13 @@ target_link_libraries(LIACutTest OpenSMT gtest gtest_main)
 
 gtest_add_tests(TARGET LIACutTest)
 
+add_executable(STPSolverTest)
+target_sources(STPSolverTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_IDLSolver.cpp"
+    )
+target_link_libraries(STPSolverTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET STPSolverTest)
+
 add_executable(SubstitutionsTest)
 target_sources(SubstitutionsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cpp"

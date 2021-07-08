@@ -6,6 +6,8 @@
 
 #include "LRALogic.h"
 #include "LIALogic.h"
+#include "IDLogic.h"
+#include "RDLogic.h"
 #include "BVLogic.h"
 #include "OsmtApiException.h"
 
@@ -35,15 +37,23 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
     Logic * l = nullptr;
     switch (logicType) {
         case Logic_t::QF_RDL:
+        case Logic_t::QF_UFRDL:
+        {
+            l = new RDLogic();
+            break;
+        }
         case Logic_t::QF_LRA:
         case Logic_t::QF_UFLRA:
-        case Logic_t::QF_UFRDL:
         {
             l = new LRALogic();
             break;
         }
         case Logic_t::QF_IDL:
         case Logic_t::QF_UFIDL:
+        {
+            l = new IDLogic();
+            break;
+        }
         case Logic_t::QF_LIA:
         case Logic_t::QF_UFLIA:
         {
