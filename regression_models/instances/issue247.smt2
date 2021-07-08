@@ -16,4 +16,3 @@
 (assert b4)
 (assert (distinct v2 v3))
 (check-sat)
-(get-model)

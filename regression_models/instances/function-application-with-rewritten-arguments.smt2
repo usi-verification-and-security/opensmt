@@ -16,4 +16,3 @@
 (assert b)
 
 (check-sat)
-(get-model)
