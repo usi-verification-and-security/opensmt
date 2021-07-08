@@ -208,96 +208,74 @@ double ProofGraph::recyclePivotsIter() {
                 assert((n->getAnt2()->getAnt1() and n->getAnt2()->getAnt2())
                        or (not n->getAnt2()->getAnt1() and not n->getAnt2()->getAnt2()));
 
-                // NOTE not clear how this might happen
-                if (n->getAnt1() == n->getAnt2()) {
-                    ProofNode * replacing = n->getAnt1();
+                //Look for pivot in antecedents
+                bool piv_in_ant1 = false, piv_in_ant2 = false;
+                short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
+                if (f1 != -1) { piv_in_ant1 = true; }
+                short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
+                if (f2 != -1) { piv_in_ant2 = true; }
+                assert(not(f1 == 1 and f2 == 1) and not(f1 == 0 and f2 == 0));
+
+                if (piv_in_ant1 and piv_in_ant2) {
+                    //Easy case: pivot still in both antecedents
+                    //Sufficient to propagate modifications via merge
+                    mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
+                    for (clauseid_t clauseid : n->getResolvents()) {
+                        if (getNode(clauseid)) { q.push_back(clauseid); }
+                    }
+                    // NOTE extra check
+                    if (proofCheck() > 1) checkClause(n->getId());
+                } else {
+                    assert(not piv_in_ant1 or not piv_in_ant2);
+                    //Second case: pivot not in ant1 or not in ant2
+                    //Remove resolution step, remove n, ant without pivots gains n resolvents
+                    bool choose_ant1 = false;
+                    //Pivot not in ant1 and not in ant2
+                    if (not piv_in_ant1 and not piv_in_ant2) {
+                        // Choose one of the two antecedents heuristically
+                        choose_ant1 = chooseReplacingAntecedent(n);
+                    } else {
+                        choose_ant1 = not piv_in_ant1 and piv_in_ant2;
+                    }
+
+                    ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
+                    ProofNode * other = choose_ant1 ? n->getAnt2() : n->getAnt1();
+
+                    bool identicalParents = replacing == other; // MB: This is possible, test_recyclePivots_IdenticalParents is an example.
+
+                    replacing->remRes(id);
+                    if (not identicalParents) {
+                        other->remRes(id);
+                    }
+
                     auto const & resolvents = n->getResolvents();
-                    for (clauseid_t clauseid : resolvents) {
-                        assert(clauseid < getGraphSize());
-                        ProofNode * res = getNode(clauseid);
+                    for (clauseid_t resId : resolvents) {
+                        assert(resId < getGraphSize());
+                        ProofNode * res = getNode(resId);
                         assert(res);
                         if (res->getAnt1() == n) { res->setAnt1(replacing); }
                         else if (res->getAnt2() == n) { res->setAnt2(replacing); }
                         else opensmt_error_();
-                        replacing->addRes(clauseid);
-                        assert(not isSetVisited2(clauseid));
+                        replacing->addRes(resId);
+                        assert(not isSetVisited2(resId));
                         // Enqueue resolvent
-                        q.push_back(clauseid);
+                        q.push_back(resId);
                     }
-                    replacing->remRes(n->getId());
-                    assert(replacing->getNumResolvents() > 0);
 
-                    // We cannot have reached sink
-                    if (isRoot(n)) opensmt_error("trying to replace the root");
+                    //We might have reached old sink
+                    //Case legal only if we have produced another empty clause
+                    //Substitute old sink with new
+                    if (isRoot(n)) {
+                        assert(not identicalParents);
+                        assert(replacing->getClauseSize() == 0);
+                        setRoot(replacing->getId());
+                        assert(n->getNumResolvents() == 0);
+                        assert(replacing->getNumResolvents() == 0);
+                    }
                     removeNode(n->getId());
-                    if (replacing->getNumResolvents() == 0) { removeTree(replacing->getId()); }
+                    if (not identicalParents and other->getNumResolvents() == 0) { removeTree(other->getId()); }
                     // NOTE extra check
                     if (proofCheck() > 1) checkClause(replacing->getId());
-                } else {
-                    //Look for pivot in antecedents
-                    bool piv_in_ant1 = false, piv_in_ant2 = false;
-                    short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
-                    if (f1 != -1) { piv_in_ant1 = true; }
-                    short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
-                    if (f2 != -1) { piv_in_ant2 = true; }
-                    assert(not(f1 == 1 and f2 == 1) and not(f1 == 0 and f2 == 0));
-
-                    if (piv_in_ant1 and piv_in_ant2) {
-                        //Easy case: pivot still in both antecedents
-                        //Sufficient to propagate modifications via merge
-                        mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
-                        for (clauseid_t clauseid : n->getResolvents()) {
-                            if (getNode(clauseid)) { q.push_back(clauseid); }
-                        }
-                        // NOTE extra check
-                        if (proofCheck() > 1) checkClause(n->getId());
-                    } else {
-                        assert(not piv_in_ant1 or not piv_in_ant2);
-                        //Second case: pivot not in ant1 or not in ant2
-                        //Remove resolution step, remove n, ant without pivots gains n resolvents
-                        bool choose_ant1 = false;
-                        //Pivot not in ant1 and not in ant2
-                        if (not piv_in_ant1 and not piv_in_ant2) {
-                            // Choose one of the two antecedents heuristically
-                            choose_ant1 = chooseReplacingAntecedent(n);
-                        } else {
-                            choose_ant1 = not piv_in_ant1 and piv_in_ant2;
-                        }
-
-                        ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
-                        ProofNode * other = choose_ant1 ? n->getAnt2() : n->getAnt1();
-
-                        replacing->remRes(id);
-                        other->remRes(id);
-
-                        auto const & resolvents = n->getResolvents();
-                        for (clauseid_t clauseid : resolvents) {
-                            assert(clauseid < getGraphSize());
-                            ProofNode * res = getNode(clauseid);
-                            assert(res);
-                            if (res->getAnt1() == n) { res->setAnt1(replacing); }
-                            else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                            else opensmt_error_();
-                            replacing->addRes(clauseid);
-                            assert(not isSetVisited2(clauseid));
-                            // Enqueue resolvent
-                            q.push_back(clauseid);
-                        }
-
-                        //We might have reached old sink
-                        //Case legal only if we have produced another empty clause
-                        //Substitute old sink with new
-                        if (isRoot(n)) {
-                            assert(replacing->getClauseSize() == 0);
-                            setRoot(replacing->getId());
-                            assert(n->getNumResolvents() == 0);
-                            assert(replacing->getNumResolvents() == 0);
-                        }
-                        removeNode(n->getId());
-                        if (other->getNumResolvents() == 0) { removeTree(other->getId()); }
-                        // NOTE extra check
-                        if (proofCheck() > 1) checkClause(replacing->getId());
-                    }
                 }
             }
         } else {
