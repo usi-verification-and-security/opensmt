@@ -90,26 +90,51 @@ TEST(ProofTest, test_mergeClauses_PivotAfterFirstEnd) {
 }
 
 // Reduction algorithms
-TEST(ProofTest, test_recyclePivots) {
-    SMTConfig config;
+
+class ReductionTest : public ::testing::Test {
+protected:
+    ReductionTest(): logic{}, config{}, theory{config, logic}, partitionManager{logic}, termMapper{logic}, ca{}, proof{ca} {}
+    virtual void SetUp() {
+        a_term = logic.mkBoolVar("a");
+        b_term = logic.mkBoolVar("b");
+        c_term = logic.mkBoolVar("c");
+        d_term = logic.mkBoolVar("d");
+        e_term = logic.mkBoolVar("e");
+
+        a = termMapper.getOrCreateLit(a_term);
+        b = termMapper.getOrCreateLit(b_term);
+        c = termMapper.getOrCreateLit(c_term);
+        d = termMapper.getOrCreateLit(d_term);
+        e = termMapper.getOrCreateLit(e_term);
+
+        partitionManager.addIPartitions(a_term, 1);
+        partitionManager.addIPartitions(b_term, 1);
+        partitionManager.addIPartitions(c_term, 1);
+        partitionManager.addIPartitions(d_term, 1);
+        partitionManager.addIPartitions(e_term, 1);
+
+    }
     Logic logic;
-    UFTheory theory(config, logic);
-    // Terms
-    PTRef a_term = logic.mkBoolVar("a");
-    PTRef b_term = logic.mkBoolVar("b");
-    PTRef c_term = logic.mkBoolVar("c");
-    PTRef d_term = logic.mkBoolVar("d");
-    PartitionManager partitionManager(logic);
-    partitionManager.addIPartitions(a_term, 1);
-    partitionManager.addIPartitions(b_term, 1);
-    partitionManager.addIPartitions(c_term, 1);
-    partitionManager.addIPartitions(d_term, 1);
-    TermMapper termMapper(logic);
-    Lit a = termMapper.getOrCreateLit(a_term);
-    Lit b = termMapper.getOrCreateLit(b_term);
-    Lit c = termMapper.getOrCreateLit(c_term);
-    Lit d = termMapper.getOrCreateLit(d_term);
+    SMTConfig config;
+    UFTheory theory;
+    PartitionManager partitionManager;
+    TermMapper termMapper;
     ClauseAllocator ca;
+    Proof proof;
+
+    PTRef a_term;
+    PTRef b_term;
+    PTRef c_term;
+    PTRef d_term;
+    PTRef e_term;
+
+    Lit a;
+    Lit b;
+    Lit c;
+    Lit d;
+    Lit e;
+};
+TEST_F(ReductionTest, test_recyclePivots) {
     CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
     CRef nb_c = ca.alloc(vec<Lit>{~b,c}, false);
     CRef nb_nc = ca.alloc(vec<Lit>{~b,~c}, false);
@@ -122,7 +147,6 @@ TEST(ProofTest, test_recyclePivots) {
     for (CRef cr : clauses) {
         partitionManager.addClauseClassMask(cr, 1);
     }
-    Proof proof(ca);
     for (CRef cr : clauses) {
         proof.newOriginalClause(cr);
     }
@@ -160,29 +184,7 @@ TEST(ProofTest, test_recyclePivots) {
     EXPECT_TRUE(true);
 }
 
-TEST(ProofTest, test_recyclePivots_IdenticalAntecedents) {
-    SMTConfig config;
-    Logic logic;
-    UFTheory theory(config, logic);
-    // Terms
-    PTRef a_term = logic.mkBoolVar("a");
-    PTRef b_term = logic.mkBoolVar("b");
-    PTRef c_term = logic.mkBoolVar("c");
-    PTRef d_term = logic.mkBoolVar("d");
-    PTRef e_term = logic.mkBoolVar("e");
-    PartitionManager partitionManager(logic);
-    partitionManager.addIPartitions(a_term, 1);
-    partitionManager.addIPartitions(b_term, 1);
-    partitionManager.addIPartitions(c_term, 1);
-    partitionManager.addIPartitions(d_term, 1);
-    partitionManager.addIPartitions(e_term, 1);
-    TermMapper termMapper(logic);
-    Lit a = termMapper.getOrCreateLit(a_term);
-    Lit b = termMapper.getOrCreateLit(b_term);
-    Lit c = termMapper.getOrCreateLit(c_term);
-    Lit d = termMapper.getOrCreateLit(d_term);
-    Lit e = termMapper.getOrCreateLit(e_term);
-    ClauseAllocator ca;
+TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents) {
     CRef a_d = ca.alloc(vec<Lit>{a,d}, false);
     CRef b_nd = ca.alloc(vec<Lit>{b,~d}, false);
     CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
@@ -196,7 +198,6 @@ TEST(ProofTest, test_recyclePivots_IdenticalAntecedents) {
     for (CRef cr : clauses) {
         partitionManager.addClauseClassMask(cr, 1);
     }
-    Proof proof(ca);
     for (CRef cr : clauses) {
         proof.newOriginalClause(cr);
     }
@@ -243,29 +244,7 @@ TEST(ProofTest, test_recyclePivots_IdenticalAntecedents) {
     EXPECT_TRUE(true);
 }
 
-TEST(ProofTest, test_proofTransformAndRestructure) {
-    SMTConfig config;
-    Logic logic;
-    UFTheory theory(config, logic);
-    // Terms
-    PTRef a_term = logic.mkBoolVar("a");
-    PTRef b_term = logic.mkBoolVar("b");
-    PTRef c_term = logic.mkBoolVar("c");
-    PTRef d_term = logic.mkBoolVar("d");
-    PTRef e_term = logic.mkBoolVar("e");
-    PartitionManager partitionManager(logic);
-    partitionManager.addIPartitions(a_term, 1);
-    partitionManager.addIPartitions(b_term, 1);
-    partitionManager.addIPartitions(c_term, 1);
-    partitionManager.addIPartitions(d_term, 1);
-    partitionManager.addIPartitions(e_term, 1);
-    TermMapper termMapper(logic);
-    Lit a = termMapper.getOrCreateLit(a_term);
-    Lit b = termMapper.getOrCreateLit(b_term);
-    Lit c = termMapper.getOrCreateLit(c_term);
-    Lit d = termMapper.getOrCreateLit(d_term);
-    Lit e = termMapper.getOrCreateLit(e_term);
-    ClauseAllocator ca;
+TEST_F(ReductionTest, test_proofTransformAndRestructure) {
     CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
     CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
     CRef na_nb_d = ca.alloc(vec<Lit>{~a,~b,d}, false);
@@ -277,7 +256,6 @@ TEST(ProofTest, test_proofTransformAndRestructure) {
     for (CRef cr : clauses) {
         partitionManager.addClauseClassMask(cr, 1);
     }
-    Proof proof(ca);
     for (CRef cr : clauses) {
         proof.newOriginalClause(cr);
     }
@@ -327,29 +305,7 @@ TEST(ProofTest, test_proofTransformAndRestructure) {
  *  However, the situation is not problematic and such node should just be replaced with its single parent.
  *
  */
-TEST(ProofTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
-    SMTConfig config;
-    Logic logic;
-    UFTheory theory(config, logic);
-    // Terms
-    PTRef a_term = logic.mkBoolVar("a");
-    PTRef b_term = logic.mkBoolVar("b");
-    PTRef c_term = logic.mkBoolVar("c");
-    PTRef d_term = logic.mkBoolVar("d");
-    PTRef e_term = logic.mkBoolVar("e");
-    PartitionManager partitionManager(logic);
-    partitionManager.addIPartitions(a_term, 1);
-    partitionManager.addIPartitions(b_term, 1);
-    partitionManager.addIPartitions(c_term, 1);
-    partitionManager.addIPartitions(d_term, 1);
-    partitionManager.addIPartitions(e_term, 1);
-    TermMapper termMapper(logic);
-    Lit a = termMapper.getOrCreateLit(a_term);
-    Lit b = termMapper.getOrCreateLit(b_term);
-    Lit c = termMapper.getOrCreateLit(c_term);
-    Lit d = termMapper.getOrCreateLit(d_term);
-    Lit e = termMapper.getOrCreateLit(e_term);
-    ClauseAllocator ca;
+TEST_F(ReductionTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
     CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
     CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
     CRef na_nb_d = ca.alloc(vec<Lit>{~a,~b,d}, false);
@@ -362,7 +318,6 @@ TEST(ProofTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
     for (CRef cr : clauses) {
         partitionManager.addClauseClassMask(cr, 1);
     }
-    Proof proof(ca);
     for (CRef cr : clauses) {
         proof.newOriginalClause(cr);
     }
