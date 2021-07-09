@@ -592,11 +592,6 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                     assert((n->getAnt2()->getAnt1() != nullptr && n->getAnt2()->getAnt2() != nullptr)
                            || (n->getAnt2()->getAnt1() == nullptr && n->getAnt2()->getAnt2() == nullptr));
 
-                    // NOTE not clear how this might happen
-                    assert(n->getAnt1() != n->getAnt2());
-                    if (n->getAnt1() == n->getAnt2()) {
-                        opensmt_error("Bad proof structure!");
-                    }
                     //Look for pivot in antecedents
                     short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
                     bool piv_in_ant1 = (f1 != -1);
@@ -677,8 +672,12 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
                         ProofNode * other = choose_ant1 ? n->getAnt2() : n->getAnt1();
 
+                        bool identicalParents = replacing == other; // MB: This is possible, test_proofTransformAndRestructure_IdenticalAntecedents is an example.
+
                         replacing->remRes(id);
-                        other->remRes(id);
+                        if (not identicalParents) {
+                            other->remRes(id);
+                        }
 
                         set<clauseid_t> & resolvents = n->getResolvents();
                         setVisited2(replacing->getId());
@@ -700,13 +699,14 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         //Case legal only if we have produced another empty clause
                         //Substitute old sink with new
                         if (isRoot(n)) {
+                            assert(not identicalParents);
                             assert(replacing->getClauseSize() == 0);
                             setRoot(replacing->getId());
                             assert(n->getNumResolvents() == 0);
                             assert(replacing->getNumResolvents() == 0);
                         }
                         removeNode(n->getId());
-                        if (other->getNumResolvents() == 0) { removeTree(other->getId()); }
+                        if (not identicalParents and other->getNumResolvents() == 0) { removeTree(other->getId()); }
                         // NOTE extra check
                         if (proofCheck() > 1) { checkClause(replacing->getId()); }
                     }
