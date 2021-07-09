@@ -555,68 +555,64 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
     }
 
     double init_time = cpuTime();
-    assert(!(max_num_loops > 0 && left_time > 0));
+    assert(not (max_num_loops > 0 and left_time > 0));
     //Flag to check if in a loop at least a transformation has been applied
     bool some_transf_done;
     long curr_num_loops = 0;
-    RuleContext ra1, ra2;
     std::deque<clauseid_t> q;
-    clauseid_t id;
     // Main external loop
     do {
+        assert(isResetVisited1() and isResetVisited2());
         // Enqueue leaves first
         q.assign(leaves_ids.begin(), leaves_ids.end());
         some_transf_done = false;
         do {
-            id = q.front();
+            clauseid_t id = q.front();
             assert(id < getGraphSize());
             q.pop_front();
             ProofNode * n = getNode(id);
             //Node not visited yet
-            if (n != nullptr && !isSetVisited1(id)) {
+            if (n and not isSetVisited1(id)) {
                 // Wait if one antecedent is not visited yet;
                 // the node will be enqueued anyway by that antecedent
-                if ((n->getAnt1() != nullptr && !isSetVisited1(n->getAnt1()->getId()))
-                    || (n->getAnt2() != nullptr && !isSetVisited1(n->getAnt2()->getId()))) {
+                if ((n->getAnt1() and not isSetVisited1(n->getAnt1()->getId()))
+                    or (n->getAnt2() and not isSetVisited1(n->getAnt2()->getId()))) {
                     continue;
                 }
                 // ELSE, both antecedents ready, process the node
                 // Mark node as visited
                 setVisited1(id);
                 // Non leaf node
-                if ((n->getAnt1() != nullptr || n->getAnt2() != nullptr)) {
+                if ((n->getAnt1() or n->getAnt2())) {
                     assert(n->getAnt1());
-                    assert (n->getAnt2());
-                    assert((n->getAnt1()->getAnt1() != nullptr && n->getAnt1()->getAnt2() != nullptr)
-                           || (n->getAnt1()->getAnt1() == nullptr && n->getAnt1()->getAnt2() == nullptr));
-                    assert((n->getAnt2()->getAnt1() != nullptr && n->getAnt2()->getAnt2() != nullptr)
-                           || (n->getAnt2()->getAnt1() == nullptr && n->getAnt2()->getAnt2() == nullptr));
+                    assert(n->getAnt2());
+                    assert((n->getAnt1()->getAnt1() and n->getAnt1()->getAnt2())
+                           or (n->getAnt1()->getAnt1() == nullptr and n->getAnt1()->getAnt2() == nullptr));
+                    assert((n->getAnt2()->getAnt1() and n->getAnt2()->getAnt2())
+                           or (n->getAnt2()->getAnt1() == nullptr && n->getAnt2()->getAnt2() == nullptr));
 
                     //Look for pivot in antecedents
                     short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
                     bool piv_in_ant1 = (f1 != -1);
                     short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
                     bool piv_in_ant2 = (f2 != -1);
-                    assert(!(f1 == 1 && f2 == 1) && !(f1 == 0 && f2 == 0));
-                    //Easy case: pivot still in both antecedents
-                    //Sufficient to propagate modifications via merge
-                    if (piv_in_ant1 && piv_in_ant2) {
-                        for (clauseid_t clauseid : n->getResolvents()) {
-                            if (getNode(clauseid) != nullptr) {
-                                //assert(!isSetVisited1(clauseid));
-                                q.push_back(clauseid);
-                            }
+                    assert(not(f1 == 1 and f2 == 1) and not(f1 == 0 and f2 == 0));
+                    if (piv_in_ant1 and piv_in_ant2) {
+                        //Easy case: pivot still in both antecedents
+                        //Sufficient to propagate modifications via merge
+                        for (clauseid_t resolvent : n->getResolvents()) {
+                            if (getNode(resolvent)) { q.push_back(resolvent); }
                         }
 
-                        if (isSetVisited2(n->getAnt1()->getId()) || isSetVisited2(n->getAnt2()->getId())) {
-                            mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(),
-                                         n->getPivot());
+                        if (isSetVisited2(n->getAnt1()->getId()) or isSetVisited2(n->getAnt2()->getId())) {
+                            mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
                             setVisited2(id);
                         }
                         // NOTE extra check
                         if (proofCheck() > 1) { checkClause(n->getId()); }
 
                         if (do_transf) {
+                            RuleContext ra1, ra2;
                             //Look for rules applicability
                             getRuleContext(n->getAnt1()->getId(), n->getId(), ra1);
                             getRuleContext(n->getAnt2()->getId(), n->getId(), ra2);
@@ -625,21 +621,21 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
 
                             rul_type app_rule = rNO;
                             if (chosen != ApplicationResult::NO_APPLICATION) {
-                                clauseid_t A1_new_id = 0;
-                                clauseid_t dupl_id = 0;
+
                                 assert(chosen == ApplicationResult::APPLY_FIRST || chosen == ApplicationResult::APPLY_SECOND);
                                 RuleContext & chosen_ra = chosen == ApplicationResult::APPLY_FIRST ? ra1 : ra2;
                                 app_rule = chosen_ra.getType();
+                                clauseid_t dupl_id = 0;
                                 if (getNode(chosen_ra.getW())->getNumResolvents() > 1 && isSwapRule(app_rule)) {
                                     dupl_id = dupliNode(chosen_ra);
                                 }
-                                A1_new_id = ruleApply(chosen_ra);
+                                clauseid_t A1_new_id = ruleApply(chosen_ra);
                                 some_transf_done = true;
                                 // if(dupl_id != 0 && A1_new_id != 0) cerr << "A1 double on " << dupl_id << " " << A1_new_id << endl;
 
                                 // NOTE see ProofGraphRules B3
                                 // Mark v as modified
-                                if (app_rule == rB1 || app_rule == rB2 || app_rule == rB2prime) { setVisited2(id); }
+                                if (app_rule == rB1 or app_rule == rB2 or app_rule == rB2prime) { setVisited2(id); }
                                 // Remember that in B3 v2 replaces v
                                 if (app_rule == rB3) {
                                     setVisited2(chosen_ra.getV2());
@@ -660,18 +656,17 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         }
                     } else {
                         //Second case: pivot not in ant1 or not in ant2
-                        assert(!piv_in_ant1 || !piv_in_ant2);
+                        assert(not piv_in_ant1 or not piv_in_ant2);
                         //Remove resolution step, remove n, ant without pivots gains n resolvents
                         bool choose_ant1 = false;
-                        if (!piv_in_ant1 && !piv_in_ant2) {
+                        if (not piv_in_ant1 and not piv_in_ant2) {
                             // Choose one of the two antecedents heuristically
                             choose_ant1 = chooseReplacingAntecedent(n);
                         } else {
-                            choose_ant1 = !piv_in_ant1;
+                            choose_ant1 = not piv_in_ant1;
                         }
                         ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
                         ProofNode * other = choose_ant1 ? n->getAnt2() : n->getAnt1();
-
                         bool identicalParents = replacing == other; // MB: This is possible, test_proofTransformAndRestructure_IdenticalAntecedents is an example.
 
                         replacing->remRes(id);
@@ -679,19 +674,18 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                             other->remRes(id);
                         }
 
-                        set<clauseid_t> & resolvents = n->getResolvents();
+                        auto const & resolvents = n->getResolvents();
                         setVisited2(replacing->getId());
 
                         for (clauseid_t resolvent : resolvents) {
                             assert(resolvent < getGraphSize());
                             ProofNode * res = getNode(resolvent);
                             assert(res);
-                            assert(res->getAnt1() == n || res->getAnt2() == n);
+                            assert(res->getAnt1() == n or res->getAnt2() == n);
                             if (res->getAnt1() == n) { res->setAnt1(replacing); }
                             else if (res->getAnt2() == n) { res->setAnt2(replacing); }
                             else {opensmt_error("Error in the structure of the proof"); }
                             replacing->addRes(resolvent);
-                            // Enqueue resolvent
                             q.push_back(resolvent);
                         }
 
@@ -715,7 +709,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         if (getNode(resolvent) != nullptr) { q.push_back(resolvent); }
                 }
             }
-        } while (!q.empty());
+        } while (not q.empty());
         // Visit vector
         resetVisited1();
         // To do only necessary merges, track modified nodes
@@ -730,13 +724,12 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
             if (rem > 0) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
             checkProof(true);
         }
-    }
+    } while ((max_num_loops == -1 ? true : curr_num_loops < max_num_loops) and
+             (left_time == -1 ? true : (cpuTime() - init_time) <= left_time) and
+             (left_time != -1 or max_num_loops != -1 or some_transf_done));
     //Continue until
     // - max number of loops reached or timeout (in case of reduction)
     // - some transformation is done (in case of pivot reordering)
-    while ((max_num_loops == -1 ? true : curr_num_loops < max_num_loops) &&
-           (left_time == -1 ? true : (cpuTime() - init_time) <= left_time) &&
-           (left_time != -1 || max_num_loops != -1 || some_transf_done));
 
     if (proofCheck()) {
         unsigned rem = cleanProofGraph();
@@ -758,7 +751,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
         unsigned new_n_edges = 0;
         for (unsigned i = 0; i < getGraphSize(); i++) {
             ProofNode * pn = getNode(i);
-            if (pn != nullptr) {
+            if (pn) {
                 new_n_nodes++;
                 new_n_edges += pn->getNumResolvents();
             }
@@ -768,16 +761,14 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
         if (num_nodes >= static_cast<int>(new_n_nodes)) {
             std::cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes)
                       << "%)\t";
-        }
-        else {
+        } else {
             std::cerr << "Nodes: " << new_n_nodes << "(+" << 100 * ((double) (new_n_nodes - num_nodes) / num_nodes)
                       << "%)\t";
         }
         if (num_edges >= static_cast<int>(new_n_edges)) {
             std::cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges)
                       << "%)\t";
-        }
-        else {
+        } else {
             std::cerr << "Edges: " << new_n_edges << "(+" << 100 * ((double) (new_n_edges - num_edges) / num_edges)
                       << "%)\t";
         }
