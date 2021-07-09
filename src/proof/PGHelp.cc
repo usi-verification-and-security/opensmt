@@ -220,37 +220,35 @@ bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const
     std::size_t j = 0;
     std::size_t res = 0;
 
+    auto addIfNotPivot = [&resolv, &res, pivot](Lit l) {
+        if (var(l) != pivot) {
+            assert(res == 0 or resolv[res - 1] != l);
+            resolv[res++] = l;
+        }
+    };
+
     while (i < Asize and j < Bsize) {
-        if (A[i] <= B[j]) {
-            if (A[i] == B[j]) { ++j; }
-            if (var(A[i]) != pivot) {
-                assert(res == 0 or resolv[res - 1] != A[i]); // no duplicates
-                resolv[res++] = A[i];
-            }
+        if (A[i] == B[j]) {
+            addIfNotPivot(A[i]);
+            ++i;
+            ++j;
+        } else if (A[i] < B[j]) {
+            addIfNotPivot(A[i]);
             ++i;
         } else {
             assert(B[j] < A[i]);
-            if (var(B[j]) != pivot) {
-                assert(res == 0 or resolv[res - 1] != B[j]); // no duplicates
-                resolv[res++] = B[j];
-            }
+            addIfNotPivot(B[j]);
             ++j;
         }
     }
 
     while (i < Asize) {
-        if (var(A[i]) != pivot) {
-            assert(res == 0 or resolv[res - 1] != A[i]); // no duplicates
-            resolv[res++] = A[i];
-        }
+        addIfNotPivot(A[i]);
         ++i;
     }
 
     while (j < Bsize) {
-        if (var(B[j]) != pivot) {
-            assert(res == 0 or resolv[res - 1] != B[j]); // no duplicates
-            resolv[res++] = B[j];
-        }
+        addIfNotPivot(B[j]);
         ++j;
     }
     assert(resolv.size() >= res);
