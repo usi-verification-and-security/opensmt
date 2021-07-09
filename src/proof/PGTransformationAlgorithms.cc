@@ -242,7 +242,7 @@ double ProofGraph::recyclePivotsIter() {
                     ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
                     ProofNode * other = choose_ant1 ? n->getAnt2() : n->getAnt1();
 
-                    bool identicalParents = replacing == other; // MB: This is possible, test_recyclePivots_IdenticalParents is an example.
+                    bool identicalParents = replacing == other; // MB: This is possible, test_recyclePivots_IdenticalAntecedents is an example.
 
                     replacing->remRes(id);
                     if (not identicalParents) {

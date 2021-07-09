@@ -160,7 +160,7 @@ TEST(ProofTest, test_recyclePivots) {
     EXPECT_TRUE(true);
 }
 
-TEST(ProofTest, test_recyclePivots_IdenticalParents) {
+TEST(ProofTest, test_recyclePivots_IdenticalAntecedents) {
     SMTConfig config;
     Logic logic;
     UFTheory theory(config, logic);
@@ -236,6 +236,165 @@ TEST(ProofTest, test_recyclePivots_IdenticalParents) {
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
     pg.recyclePivotsIter();
+    pg.checkProof(true);
+//    std::cout << "\n\n\n";
+//    pg.printProofAsDotty(std::cout);
+    pg.emptyProofGraph();
+    EXPECT_TRUE(true);
+}
+
+TEST(ProofTest, test_proofTransformAndRestructure) {
+    SMTConfig config;
+    Logic logic;
+    UFTheory theory(config, logic);
+    // Terms
+    PTRef a_term = logic.mkBoolVar("a");
+    PTRef b_term = logic.mkBoolVar("b");
+    PTRef c_term = logic.mkBoolVar("c");
+    PTRef d_term = logic.mkBoolVar("d");
+    PTRef e_term = logic.mkBoolVar("e");
+    PartitionManager partitionManager(logic);
+    partitionManager.addIPartitions(a_term, 1);
+    partitionManager.addIPartitions(b_term, 1);
+    partitionManager.addIPartitions(c_term, 1);
+    partitionManager.addIPartitions(d_term, 1);
+    partitionManager.addIPartitions(e_term, 1);
+    TermMapper termMapper(logic);
+    Lit a = termMapper.getOrCreateLit(a_term);
+    Lit b = termMapper.getOrCreateLit(b_term);
+    Lit c = termMapper.getOrCreateLit(c_term);
+    Lit d = termMapper.getOrCreateLit(d_term);
+    Lit e = termMapper.getOrCreateLit(e_term);
+    ClauseAllocator ca;
+    CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
+    CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
+    CRef na_nb_d = ca.alloc(vec<Lit>{~a,~b,d}, false);
+    CRef a_e = ca.alloc(vec<Lit>{a,e}, false);
+    CRef d_ne = ca.alloc(vec<Lit>{d,~e}, false);
+    CRef nc_d = ca.alloc(vec<Lit>{~c,d}, false);
+    CRef nd = ca.alloc(vec<Lit>{~d}, false);
+    vec<CRef> clauses = {a_b, na_c, na_nb_d, a_e, d_ne, nc_d, nd};
+    for (CRef cr : clauses) {
+        partitionManager.addClauseClassMask(cr, 1);
+    }
+    Proof proof(ca);
+    for (CRef cr : clauses) {
+        proof.newOriginalClause(cr);
+    }
+    // Learnt clauses
+    CRef a_d = ca.alloc(vec<Lit>{a,d}, true);
+
+    proof.beginChain(a_e);
+    proof.addResolutionStep(d_ne, var(e));
+    proof.endChain(a_d);
+
+    // bot
+    proof.beginChain(a_b);
+    proof.addResolutionStep(na_c, var(a));
+    proof.addResolutionStep(na_nb_d,var(b));
+    proof.addResolutionStep(a_d, var(a));
+    proof.addResolutionStep(nc_d, var(c));
+    proof.addResolutionStep(nd, var(d));
+    proof.endChain(CRef_Undef);
+
+    int nVars = 5;
+    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    pg.fillProofGraph();
+    pg.checkProof(true);
+//    pg.printProofAsDotty(std::cout);
+    pg.proofTransformAndRestructure(-1,1,true, [&pg](RuleContext & ra1, RuleContext & ra2) {
+        return pg.handleRuleApplicationForReduction(ra1, ra2);
+    });
+    pg.checkProof(true);
+//    std::cout << "\n\n\n";
+//    pg.printProofAsDotty(std::cout);
+    pg.emptyProofGraph();
+    EXPECT_TRUE(true);
+}
+
+
+/*
+ * This proof shows a situation where a node can end up with identical antecedents in the algorithm
+ * ProofGraph::proofTransformAndRestructure with ProofGraph::handleRuleApplicationForReduction
+ * as the rule selection method.
+ *
+ * The smallest example of that (shown in this test) is a diamond-like subproof
+ *  ~ab        a v C        ~a~b
+ *       b v C        ~b v C
+ *              C
+ *  If the literal 'a' in "a v C" turns out to be unnecessary (because of redundancies above it) then
+ *  the algorithm runs into the situation when two antecedents of a node is the same node.
+ *  However, the situation is not problematic and such node should just be replaced with its single parent.
+ *
+ */
+TEST(ProofTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
+    SMTConfig config;
+    Logic logic;
+    UFTheory theory(config, logic);
+    // Terms
+    PTRef a_term = logic.mkBoolVar("a");
+    PTRef b_term = logic.mkBoolVar("b");
+    PTRef c_term = logic.mkBoolVar("c");
+    PTRef d_term = logic.mkBoolVar("d");
+    PTRef e_term = logic.mkBoolVar("e");
+    PartitionManager partitionManager(logic);
+    partitionManager.addIPartitions(a_term, 1);
+    partitionManager.addIPartitions(b_term, 1);
+    partitionManager.addIPartitions(c_term, 1);
+    partitionManager.addIPartitions(d_term, 1);
+    partitionManager.addIPartitions(e_term, 1);
+    TermMapper termMapper(logic);
+    Lit a = termMapper.getOrCreateLit(a_term);
+    Lit b = termMapper.getOrCreateLit(b_term);
+    Lit c = termMapper.getOrCreateLit(c_term);
+    Lit d = termMapper.getOrCreateLit(d_term);
+    Lit e = termMapper.getOrCreateLit(e_term);
+    ClauseAllocator ca;
+    CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
+    CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
+    CRef na_nb_d = ca.alloc(vec<Lit>{~a,~b,d}, false);
+    CRef nd_e = ca.alloc(vec<Lit>{~d,e}, false);
+    CRef nd_ne = ca.alloc(vec<Lit>{~d,~e}, false);
+    CRef nc = ca.alloc(vec<Lit>{~c}, false);
+    CRef aa = ca.alloc(vec<Lit>{a}, false);
+
+    vec<CRef> clauses = {a_b, na_c, na_nb_d, nd_e, nd_ne, nc, aa};
+    for (CRef cr : clauses) {
+        partitionManager.addClauseClassMask(cr, 1);
+    }
+    Proof proof(ca);
+    for (CRef cr : clauses) {
+        proof.newOriginalClause(cr);
+    }
+
+    // learnt clauses
+    CRef na_c_d = ca.alloc(vec<Lit>{~a,c,d}, true);
+    proof.beginChain(a_b);
+    proof.addResolutionStep(na_c, var(a));
+    proof.addResolutionStep(na_nb_d,var(b));
+    proof.endChain(na_c_d);
+
+    CRef na_c_e = ca.alloc(vec<Lit>{~a,c,e}, true);
+    proof.beginChain(nd_e);
+    proof.addResolutionStep(na_c_d, var(d));
+    proof.endChain(na_c_e);
+
+    // bot
+    proof.beginChain(nd_ne);
+    proof.addResolutionStep(na_c_d, var(d));
+    proof.addResolutionStep(na_c_e, var(e));
+    proof.addResolutionStep(aa, var(a));
+    proof.addResolutionStep(nc, var(c));
+    proof.endChain(CRef_Undef);
+
+    int nVars = 5;
+    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    pg.fillProofGraph();
+    pg.checkProof(true);
+//    pg.printProofAsDotty(std::cout);
+    pg.proofTransformAndRestructure(-1,1,true, [&pg](RuleContext & ra1, RuleContext & ra2) {
+        return pg.handleRuleApplicationForReduction(ra1, ra2);
+    });
     pg.checkProof(true);
 //    std::cout << "\n\n\n";
 //    pg.printProofAsDotty(std::cout);
