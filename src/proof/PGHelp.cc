@@ -228,11 +228,8 @@ bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const
     };
 
     while (i < Asize and j < Bsize) {
-        if (A[i] == B[j]) {
-            addIfNotPivot(A[i]);
-            ++i;
-            ++j;
-        } else if (A[i] < B[j]) {
+        if (A[i] <= B[j]) {
+            if (A[i] == B[j]) { ++j; }
             addIfNotPivot(A[i]);
             ++i;
         } else {
