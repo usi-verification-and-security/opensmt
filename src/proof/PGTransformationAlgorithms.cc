@@ -40,7 +40,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
     mpz_init(incr_safe_lit_set_2);
 
     const size_t size = getGraphSize();
-    mpz_t * safe_lit_set = new mpz_t[size];
+    auto * safe_lit_set = new mpz_t[size];
 
     // Allocate root bitset
     mpz_init(safe_lit_set[getRoot()->getId()]);
@@ -51,8 +51,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
 
     assert(isResetVisited1());
     // To initialize pivots set to the set of the first resolvent
-    for (std::size_t i = 0; i < DFSvec.size(); ++i) {
-        clauseid_t id = DFSvec[i];
+    for (clauseid_t id : DFSvec) {
         ProofNode * n = getNode(id);
         assert(n);
 
