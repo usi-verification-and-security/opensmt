@@ -75,20 +75,20 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
 
             assert(n->getAnt1());
             assert(n->getAnt2());
-            // 0 if no replacement, 1 if replacement by ant1, 2 if by ant2
-            short replace = 0;
+            enum class Replace : char {NO, ANT1, ANT2};
+            Replace replace = Replace::NO;
             // Check whether pivot present in all subgraph paths
             if (mpz_tstbit(safe_lit_set[id], pos_piv)) {
-                replace = ant1_has_pos_occ_piv ? 1 : 2;
+                replace = ant1_has_pos_occ_piv ? Replace::ANT1 : Replace::ANT2;
             } else if (mpz_tstbit(safe_lit_set[id], neg_piv)) {
-                replace = ant1_has_pos_occ_piv ? 2 : 1;
+                replace = ant1_has_pos_occ_piv ? Replace::ANT2 : Replace::ANT1;
             }
             // A node marked to be replaced is left with the replacing
             // antecedent at ant1 and with ant2 set to NULL
-            if (replace == 1) {
+            if (replace == Replace::ANT1) {
                 n->getAnt2()->remRes(id);
                 n->setAnt2(nullptr);
-            } else if (replace == 2) {
+            } else if (replace == Replace::ANT2) {
                 n->getAnt1()->remRes(id);
                 n->setAnt1(n->getAnt2());
                 n->setAnt2(nullptr);
@@ -106,7 +106,8 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
                     mpz_and(safe_lit_set[id], safe_lit_set[id], other);
             };
             switch (replace) {
-                case 0: {
+                case Replace::NO:
+                {
                     // Set pivot bit for propagation
                     mpz_set(incr_safe_lit_set_1, safe_lit_set[id]);
                     mpz_set(incr_safe_lit_set_2, safe_lit_set[id]);
@@ -118,10 +119,10 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
                     updateSet(id2, incr_safe_lit_set_2);
                     break;
                 }
-                case 1:
+                case Replace::ANT1:
                     updateSet(id1, safe_lit_set[id]);
                     break;
-                case 2:
+                case Replace::ANT2:
                     updateSet(id2, safe_lit_set[id]);
                     break;
                 default:
