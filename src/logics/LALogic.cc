@@ -98,7 +98,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
         return v;
     }
 }
-opensmt::pair<lbool, Logic::SubstMap> LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap && substitutions)
+lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & substitutions)
 {
     std::vector<std::unique_ptr<LAExpression>> equalities;
     LALogic& logic = *this;
@@ -126,7 +126,7 @@ opensmt::pair<lbool, Logic::SubstMap> LALogic::arithmeticElimination(const vec<P
         }
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
-    return {l_Undef, std::move(substitutions)};
+    return l_Undef;
 }
 
 opensmt::pair<lbool,Logic::SubstMap> LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts)
@@ -140,7 +140,8 @@ opensmt::pair<lbool,Logic::SubstMap> LALogic::retrieveSubstitutions(const vec<Pt
         if (isNumEq(tr) && sgn == l_True)
             top_level_arith.push(tr);
     }
-    return arithmeticElimination(top_level_arith, std::move(resAndSubsts.second));
+    lbool res = arithmeticElimination(top_level_arith, resAndSubsts.second);
+    return {res, std::move(resAndSubsts.second)};
 }
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {

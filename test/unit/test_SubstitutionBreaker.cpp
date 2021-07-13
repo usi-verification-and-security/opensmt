@@ -42,7 +42,7 @@ TEST(SubstitutionBreaker, test_Simple) {
 
     SubstLoopBreaker slb(logic);
 
-    MapWithKeys<PTRef,PTRef,PTRefHash> subst_map = slb(std::move(substs));
+    Logic::SubstMap subst_map = slb(std::move(substs));
     ASSERT_TRUE(subst_map.has(a));
 }
 

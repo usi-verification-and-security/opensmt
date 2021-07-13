@@ -19,11 +19,8 @@ public:
 
     SubstitutionConfig(Logic &, SubMap const & subMap): subMap(subMap) {}
     PTRef rewrite(PTRef term) override {
-        PTRef result = term;
-        if (subMap.has(term)) {
-            result = subMap[term];
-        }
-        return result;
+        PTRef result;
+        return subMap.peek(term, result) ? result : term;
     }
 private:
     Logic & logic;

@@ -17,8 +17,7 @@ void ModelBuilder::processSubstitutions(Logic::SubstMap const & subst) {
         }
         assert(logic.isVar(key));
         PTRef target = copy[key];
-        PTRef mappedTerm = target;
-        PTRef val = model->evaluate(mappedTerm);
+        PTRef val = model->evaluate(target);
         assert(logic.isConstant(val));
         assignCopy.insert(std::make_pair(key, val));
     }

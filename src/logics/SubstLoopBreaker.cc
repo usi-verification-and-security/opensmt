@@ -215,9 +215,7 @@ Logic::SubstMap SubstLoopBreaker::constructLooplessSubstitution(MapWithKeys<PTRe
         }
 
         SNRef subst_node = sna.getSNRefBySource(key);
-        if (!sna[subst_node].hasChildren()) {
-            data.sgn = l_False;
-        } else {
+        if (sna[subst_node].hasChildren()) {
             substPTRefs.insert(key, data.tr);
         }
     }

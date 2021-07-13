@@ -165,11 +165,11 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef fla = logic.mkAnd(a, logic.mkNot(b));
-    MapWithKeys<PTRef, PTRef, PTRefHash> subst;
+    Logic::SubstMap subst;
     subst.insert(b, logic.getTerm_true());
     PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.getTerm_false());
-    MapWithKeys<PTRef,PTRef,PTRefHash> subst2;
+    Logic::SubstMap subst2;
     subst2.insert(b, logic.getTerm_true());
     res = Substitutor(logic, subst2).rewrite(fla);
     EXPECT_EQ(res, logic.getTerm_false());
@@ -177,11 +177,11 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
 
 TEST_F(ApplySubstitutionTest, test_VarVarSub) {
     PTRef fla = logic.mkEq(x, z);
-    MapWithKeys<PTRef, PTRef, PTRefHash> subst;
+    Logic::SubstMap subst;
     subst.insert(x, y);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(y,z));
-    MapWithKeys<PTRef,PTRef,PTRefHash> subst2;
+    Logic::SubstMap subst2;
     subst2.insert(x, y);
     res = Substitutor(logic, subst2).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(y,z));
@@ -191,13 +191,13 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
     PTRef fy = logic.mkUninterpFun(f, {y});
     PTRef fz = logic.mkUninterpFun(f, {z});
     PTRef fla = logic.mkEq(x, logic.mkUninterpFun(f, {fz}));
-    MapWithKeys<PTRef, PTRef, PTRefHash> subst;
+    Logic::SubstMap subst;
     subst.insert(x, fy);
     subst.insert(y, fz);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
-    MapWithKeys<PTRef,PTRef,PTRefHash> subst2;
+    Logic::SubstMap subst2;
     subst2.insert(x, fy);
     subst2.insert(y, fz);
     res = Substitutor(logic, subst2).rewrite(fla);
@@ -207,7 +207,7 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
 //========================== TEST for transitive closure of substitutions ===========================================================
 TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     Logic logic;
-    MapWithKeys<PTRef, PTRef, PTRefHash> substitutions;
+    Logic::SubstMap substitutions;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -219,7 +219,7 @@ TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     ASSERT_EQ(substitutions.getSize(), 3);
     ASSERT_EQ(substitutions[a], d);
 
-    MapWithKeys<PTRef, PTRef, PTRefHash> substitutions2;
+    Logic::SubstMap substitutions2;
     substitutions2.insert(a, logic.mkAnd(b,c));
     substitutions2.insert(b, c);
     substitutions2.insert(c, d);

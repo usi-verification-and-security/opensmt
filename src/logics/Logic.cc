@@ -511,7 +511,7 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
         if (defined_functions.has(s)) {
             // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
             const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
-            Map<PTRef,PTRef,PTRefHash> subst_map;
+            SubstMap subst_map;
             if (args.size() != tpl_args.size()) {
                 int written = asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
                 assert(written >= 0); (void)written;
@@ -1632,12 +1632,11 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef,PTRef,PTRefHash>& subst)
+Logic::instantiateFunctionTemplate(const char* fname, const SubstMap& subst)
 {
     const TemplateFunction& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
     const vec<PTRef>& args = tpl_fun.getArgs();
-    SubstMap substs_asgn;
     for (int i = 0; i < args.size(); i++) {
         if (!subst.has(args[i])) {
             std::string argName = pp(args[i]);
@@ -1647,10 +1646,9 @@ Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef,PTRef,PTRe
         if (getSortRef(subst[args[i]]) != getSortRef(args[i])) {
             throw OsmtApiException("Substitution source and target sort mismatch" );
         }
-        substs_asgn.insert(args[i], subst[args[i]]);
     }
 
-    PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
+    PTRef tr_subst = Substitutor(*this, subst).rewrite(tr);
     assert (getSortRef(tr_subst) == tpl_fun.getRetSort());
     return tr_subst;
 }

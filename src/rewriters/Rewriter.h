@@ -50,11 +50,11 @@ public:
             // If we are here, we have already processed all children
             vec<PTRef> newArgs(childrenCount);
             bool needsChange = false;
-            for (auto i = 0; i < newArgs.size(); ++i) {
-                PTRef it;
-                bool childChanged = substitutions.peek(term[i], it);
+            for (unsigned i = 0; i < childrenCount; ++i) {
+                PTRef target;
+                bool childChanged = substitutions.peek(term[i], target);
                 needsChange |= childChanged;
-                newArgs[i] = childChanged ? it : term[i];
+                newArgs[i] = childChanged ? target : term[i];
             }
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), newArgs) : currentRef;
             if (needsChange) {
@@ -69,8 +69,8 @@ public:
             toProcess.pop_back();
         }
 
-        PTRef it;
-        PTRef res = substitutions.peek(root, it) ? it : root;
+        PTRef target;
+        PTRef res = substitutions.peek(root, target) ? target : root;
         return res;
     }
 };

@@ -82,12 +82,12 @@ TEST_F(TemplateTest, test_functionTemplate) {
 TEST_F(TemplateTest, test_template) {
     FunctionSignature fs("f", {a1, a2}, s);
     logic.defineFun("f", {a1, a2}, logic.getSort_bool(), logic.mkEq(a1, a2));
-    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate("f", Map<PTRef,PTRef,PTRefHash>()));
-    Map<PTRef,PTRef,PTRefHash> subst;
+    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate("f", MapWithKeys<PTRef,PTRef,PTRefHash>()));
+    MapWithKeys<PTRef,PTRef,PTRefHash> subst;
     subst.insert(a1, a1);
     subst.insert(a2, logic.getTerm_true());
     ASSERT_ANY_THROW(logic.instantiateFunctionTemplate("f", subst));
-    Map<PTRef,PTRef,PTRefHash> subst2;
+    MapWithKeys<PTRef,PTRef,PTRefHash> subst2;
 
     subst2.insert(a1, b1);
     subst2.insert(a2, b2);

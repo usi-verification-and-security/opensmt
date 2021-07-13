@@ -246,7 +246,7 @@ class Logic {
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
-    PTRef instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef, PTRefHash>&);
+    PTRef instantiateFunctionTemplate(const char* fname, const SubstMap&);
 
 
 
