@@ -20,6 +20,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 #include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
+#include "OsmtInternalException.h"
 
 #include <unordered_set>
 
@@ -189,7 +190,7 @@ double ProofGraph::recyclePivotsIter() {
                     assert(n == res->getAnt1() or n == res->getAnt2());
                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                    else opensmt_error_();
+                    else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                     assert(res->getAnt1() != res->getAnt2());
                     replacing->addRes(resId);
                     assert(not isSetVisited2(resId));
@@ -255,7 +256,7 @@ double ProofGraph::recyclePivotsIter() {
                         assert(res);
                         if (res->getAnt1() == n) { res->setAnt1(replacing); }
                         else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                        else opensmt_error_();
+                        else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                         replacing->addRes(resId);
                         assert(not isSetVisited2(resId));
                         // Enqueue resolvent
