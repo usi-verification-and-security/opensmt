@@ -160,7 +160,7 @@ double ProofGraph::recyclePivotsIter() {
             mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 
-    auto hasBeenReplaced = [](ProofNode * node) { return node->getAnt1() != nullptr and node->getAnt2() == nullptr; };
+    auto hasBeenReplaced = [](ProofNode * node) { return node->getAnt1() and not node->getAnt2(); };
     // Restructuring, from leaves to root
     assert(isResetVisited2());
     std::deque<clauseid_t> q;
@@ -170,14 +170,14 @@ double ProofGraph::recyclePivotsIter() {
         assert(id < getGraphSize());
         ProofNode * n = getNode(id);
         q.pop_front();
-        if (n == nullptr or isSetVisited2(id)) { continue; }
+        if (not n or isSetVisited2(id)) { continue; }
         if (n->getAnt1() and not isSetVisited2(n->getAnt1()->getId())) { continue; }
         if (n->getAnt2() and not isSetVisited2(n->getAnt2()->getId())) { continue; }
         // Mark node as visited if both antecedents visited
         setVisited2(id);
         //Non leaf node
         if (n->getAnt1() or n->getAnt2()) {
-            assert(not(n->getAnt1() == nullptr and n->getAnt2() != nullptr));
+            assert(n->getAnt1() or not n->getAnt2());
             // If replaced assign children to replacing node and remove
             if (hasBeenReplaced(n)) {
                 ProofNode * replacing = n->getAnt1();
@@ -192,7 +192,7 @@ double ProofGraph::recyclePivotsIter() {
                     else opensmt_error_();
                     assert(res->getAnt1() != res->getAnt2());
                     replacing->addRes(resId);
-                    assert(!isSetVisited2(resId));
+                    assert(not isSetVisited2(resId));
                     q.push_back(resId);
                 }
                 replacing->remRes(id);
@@ -204,9 +204,9 @@ double ProofGraph::recyclePivotsIter() {
             } else { // node stays
                 assert(n->getAnt1() and n->getAnt2());
                 assert((n->getAnt1()->getAnt1() and n->getAnt1()->getAnt2())
-                       or (n->getAnt1()->getAnt1() == nullptr and n->getAnt1()->getAnt2() == nullptr));
+                       or (not n->getAnt1()->getAnt1() and not n->getAnt1()->getAnt2()));
                 assert((n->getAnt2()->getAnt1() and n->getAnt2()->getAnt2())
-                       or (n->getAnt2()->getAnt1() == nullptr and n->getAnt2()->getAnt2() == nullptr));
+                       or (not n->getAnt2()->getAnt1() and not n->getAnt2()->getAnt2()));
 
                 // NOTE not clear how this might happen
                 if (n->getAnt1() == n->getAnt2()) {
@@ -279,7 +279,7 @@ double ProofGraph::recyclePivotsIter() {
                             else if (res->getAnt2() == n) { res->setAnt2(replacing); }
                             else opensmt_error_();
                             replacing->addRes(clauseid);
-                            assert(!isSetVisited2(clauseid));
+                            assert(not isSetVisited2(clauseid));
                             // Enqueue resolvent
                             q.push_back(clauseid);
                         }
