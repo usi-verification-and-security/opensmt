@@ -287,9 +287,10 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     std::vector<Lit> resolvedUnits;
-    Lit p;
+    Lit p = lit_Undef;
+    Lit ru = lit_Undef;
     int i, j;
-    for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+    for (i = j = 0; i < ps.size(); i++)
     {
         if (value(ps[i]) == l_True || ps[i] == ~p)
         {
@@ -301,8 +302,9 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
 
             ps[j++] = p = ps[i];
         }
-        else if (logsProofForInterpolation && value(ps[i]) == l_False)
+        else if (logsProofForInterpolation && value(ps[i]) == l_False && ps[i] != ru)
         {
+            ru = ps[i];
             resolvedUnits.push_back(ps[i]);
         }
     }
