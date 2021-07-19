@@ -236,7 +236,7 @@ double ProofGraph::recyclePivotsIter() {
                         // Choose one of the two antecedents heuristically
                         choose_ant1 = chooseReplacingAntecedent(n);
                     } else {
-                        choose_ant1 = not piv_in_ant1 and piv_in_ant2;
+                        choose_ant1 = not piv_in_ant1;
                     }
 
                     ProofNode * replacing = choose_ant1 ? n->getAnt1() : n->getAnt2();
