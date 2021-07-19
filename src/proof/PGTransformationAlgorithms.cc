@@ -566,7 +566,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
         // Enqueue leaves first
         q.assign(leaves_ids.begin(), leaves_ids.end());
         some_transf_done = false;
-        do {
+        while (not q.empty()) {
             clauseid_t id = q.front();
             assert(id < getGraphSize());
             q.pop_front();
@@ -587,9 +587,9 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                     assert(n->getAnt1());
                     assert(n->getAnt2());
                     assert((n->getAnt1()->getAnt1() and n->getAnt1()->getAnt2())
-                           or (n->getAnt1()->getAnt1() == nullptr and n->getAnt1()->getAnt2() == nullptr));
+                           or (not n->getAnt1()->getAnt1() and not n->getAnt1()->getAnt2()));
                     assert((n->getAnt2()->getAnt1() and n->getAnt2()->getAnt2())
-                           or (n->getAnt2()->getAnt1() == nullptr && n->getAnt2()->getAnt2() == nullptr));
+                           or (not n->getAnt2()->getAnt1() and not n->getAnt2()->getAnt2()));
 
                     //Look for pivot in antecedents
                     short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
@@ -684,7 +684,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                             assert(res->getAnt1() == n or res->getAnt2() == n);
                             if (res->getAnt1() == n) { res->setAnt1(replacing); }
                             else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                            else {opensmt_error("Error in the structure of the proof"); }
+                            else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                             replacing->addRes(resolvent);
                             q.push_back(resolvent);
                         }
@@ -709,7 +709,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         if (getNode(resolvent) != nullptr) { q.push_back(resolvent); }
                 }
             }
-        } while (not q.empty());
+        }
         // Visit vector
         resetVisited1();
         // To do only necessary merges, track modified nodes
