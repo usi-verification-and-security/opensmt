@@ -95,8 +95,7 @@ TEST_F(RetrieveSubstitutionTest, test_VarVarSubstituition) {
     facts.push(PtAsgn{eq, l_True});
     auto subst = logic.retrieveSubstitutions(facts);
     ASSERT_TRUE(subst.second.has(x));
-    PtAsgn ay = PtAsgn{y, l_True};
-    EXPECT_EQ(subst.second[x], ay.tr);
+    EXPECT_EQ(subst.second[x], y);
 }
 
 TEST_F(RetrieveSubstitutionTest, test_AtomSubstituition) {
@@ -105,8 +104,7 @@ TEST_F(RetrieveSubstitutionTest, test_AtomSubstituition) {
     facts.push(PtAsgn{a, l_True});
     auto subst = logic.retrieveSubstitutions(facts);
     ASSERT_TRUE(subst.second.has(a));
-    PtAsgn ay = PtAsgn{logic.getTerm_true(), l_True};
-    EXPECT_EQ(subst.second[a], ay.tr);
+    EXPECT_EQ(subst.second[a], logic.getTerm_true());
 }
 
 TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
@@ -116,8 +114,7 @@ TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
     facts.push(PtAsgn{eq, l_True});
     auto subst = logic.retrieveSubstitutions(facts);
     ASSERT_TRUE(subst.second.has(fx));
-    PtAsgn ac = PtAsgn{c, l_True};
-    EXPECT_EQ(subst.second[fx], ac.tr);
+    EXPECT_EQ(subst.second[fx], c);
 }
 
 TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
@@ -131,10 +128,8 @@ TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
     auto subst = logic.retrieveSubstitutions(facts);
     ASSERT_TRUE(subst.second.has(z));
     ASSERT_TRUE(subst.second.has(y));
-    PtAsgn afx = PtAsgn{fx, l_True};
-    PtAsgn afy = PtAsgn{fy, l_True};
-    EXPECT_EQ(subst.second[z], afy.tr);
-    EXPECT_EQ(subst.second[y], afx.tr);
+    EXPECT_EQ(subst.second[z], fy);
+    EXPECT_EQ(subst.second[y], fx);
 }
 
 //========================== TEST for applying sustituitions ===========================================================
@@ -169,10 +164,6 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
     subst.insert(b, logic.getTerm_true());
     PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.getTerm_false());
-    Logic::SubstMap subst2;
-    subst2.insert(b, logic.getTerm_true());
-    res = Substitutor(logic, subst2).rewrite(fla);
-    EXPECT_EQ(res, logic.getTerm_false());
 }
 
 TEST_F(ApplySubstitutionTest, test_VarVarSub) {
@@ -180,10 +171,6 @@ TEST_F(ApplySubstitutionTest, test_VarVarSub) {
     Logic::SubstMap subst;
     subst.insert(x, y);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
-    EXPECT_EQ(res, logic.mkEq(y,z));
-    Logic::SubstMap subst2;
-    subst2.insert(x, y);
-    res = Substitutor(logic, subst2).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(y,z));
 }
 
@@ -196,11 +183,6 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
     subst.insert(y, fz);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
-    EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
-    Logic::SubstMap subst2;
-    subst2.insert(x, fy);
-    subst2.insert(y, fz);
-    res = Substitutor(logic, subst2).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
 }
 
@@ -218,13 +200,5 @@ TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     logic.substitutionsTransitiveClosure(substitutions);
     ASSERT_EQ(substitutions.getSize(), 3);
     ASSERT_EQ(substitutions[a], d);
-
-    Logic::SubstMap substitutions2;
-    substitutions2.insert(a, logic.mkAnd(b,c));
-    substitutions2.insert(b, c);
-    substitutions2.insert(c, d);
-    logic.substitutionsTransitiveClosure(substitutions2);
-    ASSERT_EQ(substitutions2.getSize(), 3);
-    ASSERT_EQ(substitutions2[a], d);
 }
 
