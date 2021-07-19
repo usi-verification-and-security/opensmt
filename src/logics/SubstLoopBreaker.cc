@@ -205,8 +205,9 @@ std::vector<vec<SNRef>> SubstLoopBreaker::findLoops(vec<SNRef>& startNodes) {
     return loops;
 }
 
-MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitution(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
+Logic::SubstMap SubstLoopBreaker::constructLooplessSubstitution(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
 {
+    Logic::SubstMap substPTRefs;
     for (PTRef key : substs.getKeys()) {
         PtAsgn & data = substs[key];
         if (data.sgn != l_True) {
@@ -214,20 +215,23 @@ MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::constructLooplessSubstitut
         }
 
         SNRef subst_node = sna.getSNRefBySource(key);
-        if (!sna[subst_node].hasChildren())
+        if (!sna[subst_node].hasChildren()) {
             data.sgn = l_False;
+        } else {
+            substPTRefs.insert(key, data.tr);
+        }
     }
-    return std::move(substs); // Since susbsts is a template, we need the move constructor here
+    return substPTRefs;
 }
 
 //
 // Identify and break any substitution loops
 //
-MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
+Logic::SubstMap SubstLoopBreaker::operator() (MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs)
 {
     assert(seen.elems() == 0);
 
-    if (substs.getSize() == 0) return MapWithKeys<PTRef,PtAsgn,PTRefHash>();
+    if (substs.getSize() == 0) return {};
 
     vec<SNRef> startNodes = constructSubstitutionGraph(substs);
 
@@ -235,7 +239,7 @@ MapWithKeys<PTRef,PtAsgn,PTRefHash> SubstLoopBreaker::operator() (MapWithKeys<PT
         std::vector<vec<SNRef>> loops = findLoops(startNodes);
 
         // Terminate if no loops found
-        if (loops.size() == 0)
+        if (loops.empty())
             break;
 
 //        printGraphAndLoops(startNodes, loops);

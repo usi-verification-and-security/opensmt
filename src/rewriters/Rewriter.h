@@ -24,19 +24,24 @@ public:
         auto size = Idx(logic.getPterm(root).getId()) + 1;
         std::vector<char> done;
         done.resize(size, 0);
-        std::unordered_map<PTRef, PTRef, PTRefHash> substitutions;
+        Map<PTRef, PTRef, PTRefHash> substitutions;
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
+            auto currentId = Idx(logic.getPterm(currentRef).getId());
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
+                done[currentId] = 1;
                 continue;
             }
-            assert(not done[Idx(logic.getPterm(currentRef).getId())]);
+            assert(not done[currentId]);
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
+            if (cfg.treatIteAsVar() and logic.isIte(term.symb())) {
+                childrenCount = 0;
+            }
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
@@ -46,30 +51,29 @@ public:
                 continue;
             }
             // If we are here, we have already processed all children
-            assert(done[Idx(term.getId())] == 0);
             vec<PTRef> newArgs(childrenCount);
             bool needsChange = false;
-            for (unsigned i = 0; i < childrenCount; ++i) {
-                auto it = substitutions.find(term[i]);
-                bool childChanged = it != substitutions.end();
+            for (auto i = 0; i < newArgs.size(); ++i) {
+                PTRef it;
+                bool childChanged = substitutions.peek(term[i], it);
                 needsChange |= childChanged;
-                newArgs[i] = childChanged ? it->second : term[i];
+                newArgs[i] = childChanged ? it : term[i];
             }
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), newArgs) : currentRef;
             if (needsChange) {
-                substitutions.insert({currentRef, newTerm});
+                substitutions.insert(currentRef, newTerm);
             }
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
             PTRef rewritten = cfg.rewrite(newTerm);
             if (rewritten != newTerm) {
-                substitutions[currentRef] = rewritten;
+                substitutions.insert(currentRef, rewritten);
             }
-            done[Idx(logic.getPterm(currentRef).getId())] = 1;
+            done[currentId] = 1;
             toProcess.pop_back();
         }
 
-        auto it = substitutions.find(root);
-        PTRef res = it == substitutions.end() ? root : it->second;
+        PTRef it;
+        PTRef res = substitutions.peek(root, it) ? it : root;
         return res;
     }
 };

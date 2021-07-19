@@ -157,10 +157,10 @@ public:
     virtual PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     virtual PTRef sumToNormalizedInequality(PTRef sum);
-    virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith,
-                                        MapWithKeys<PTRef, PtAsgn, PTRefHash> & substitutions);
+    virtual opensmt::pair<lbool,SubstMap> arithmeticElimination(const vec<PTRef> & top_level_arith,
+                                        SubstMap && substitutions);
 
-    lbool retrieveSubstitutions(const vec<PtAsgn> &facts, MapWithKeys<PTRef, PtAsgn, PTRefHash> &substs) override;
+    opensmt::pair<lbool,SubstMap> retrieveSubstitutions(const vec<PtAsgn> &facts) override;
     void termSort(vec<PTRef> &v) const override;
     char *printTerm_(PTRef tr, bool ext, bool s) const override;
     char *printTerm(PTRef tr) const override;

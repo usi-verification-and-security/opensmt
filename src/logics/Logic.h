@@ -41,6 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
+  public:
+    using SubstMap = MapWithKeys<PTRef,PTRef,PTRefHash>;
   protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
@@ -358,12 +360,11 @@ class Logic {
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
     // Top-level equalities based substitutions
-    void getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
-    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs);
-    void substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs);
+    bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
+    virtual opensmt::pair<lbool,SubstMap> retrieveSubstitutions(const vec<PtAsgn>& units);
 
-
-
+public:
+    void substitutionsTransitiveClosure(SubstMap & substs);
 
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 

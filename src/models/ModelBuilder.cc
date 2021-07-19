@@ -4,8 +4,8 @@
 
 #include "ModelBuilder.h"
 
-void ModelBuilder::processSubstitutions(MapWithKeys<PTRef,PtAsgn,PTRefHash> const & subst) {
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> copy;
+void ModelBuilder::processSubstitutions(Logic::SubstMap const & subst) {
+    Logic::SubstMap copy;
     subst.copyTo(copy);
     logic.substitutionsTransitiveClosure(copy);
     auto assignCopy = this->assignment;
@@ -16,13 +16,11 @@ void ModelBuilder::processSubstitutions(MapWithKeys<PTRef,PtAsgn,PTRefHash> cons
             continue;
         }
         assert(logic.isVar(key));
-        PtAsgn target = copy[key];
-        if (target.sgn == l_True) {
-            PTRef mappedTerm = target.tr;
-            PTRef val = model->evaluate(mappedTerm);
-            assert(logic.isConstant(val));
-            assignCopy.insert(std::make_pair(key, val));
-        }
+        PTRef target = copy[key];
+        PTRef mappedTerm = target;
+        PTRef val = model->evaluate(mappedTerm);
+        assert(logic.isConstant(val));
+        assignCopy.insert(std::make_pair(key, val));
     }
     this->assignment = std::move(assignCopy);
 }

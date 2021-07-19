@@ -11,25 +11,17 @@
 
 class SubstitutionConfig : public DefaultRewriterConfig {
 public:
-    using SubMap = MapWithKeys<PTRef, PtAsgn, PTRefHash>;
+    using SubMap = Logic::SubstMap;
+private:
+    SubMap const & subMap;
 
-    SubstitutionConfig(Logic & logic, SubMap const & subMap): logic(logic), subMap(subMap) {}
+public:
 
+    SubstitutionConfig(Logic &, SubMap const & subMap): subMap(subMap) {}
     PTRef rewrite(PTRef term) override {
         PTRef result = term;
-        if (logic.isVar(term) || logic.isConstant(term)) {
-            if (subMap.has(term) && subMap[term].sgn == l_True)
-                result = subMap[term].tr;
-            else
-                result = term;
-            assert(not logic.isConstant(term) || result == term);
-            assert(result != PTRef_Undef);
-        } else {
-            // The "inductive" case
-            if (subMap.has(term) && subMap[term].sgn == l_True) {
-                result = subMap[term].tr;
-            } else { // Nothing to do here
-            }
+        if (subMap.has(term)) {
+            result = subMap[term];
         }
         return result;
     }

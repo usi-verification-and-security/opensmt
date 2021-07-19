@@ -108,6 +108,6 @@ public:
     bool operator!= (const ValPair& other) const;// { return tr != other.tr || val != other.val; }
 };
 
-static class ValPair ValPair_Undef(PTRef_Undef, NULL);
+static class ValPair ValPair_Undef(PTRef_Undef, nullptr);
 
 #endif //OPENSMT_PTHELPERSTRUCTS_H

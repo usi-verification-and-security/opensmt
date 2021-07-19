@@ -98,7 +98,7 @@ PTRef LALogic::normalizeMul(PTRef mul)
         return v;
     }
 }
-lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, MapWithKeys<PTRef, PtAsgn, PTRefHash> & substitutions)
+opensmt::pair<lbool, Logic::SubstMap> LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap && substitutions)
 {
     std::vector<std::unique_ptr<LAExpression>> equalities;
     LALogic& logic = *this;
@@ -122,17 +122,17 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, MapWith
             // Already has substitution for this var, let the main substitution code deal with this situation
             continue;
         } else {
-            substitutions.insert(var, PtAsgn(sub.second, l_True));
+            substitutions.insert(var, sub.second);
         }
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
-    return l_Undef;
+    return {l_Undef, std::move(substitutions)};
 }
 
-lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
+opensmt::pair<lbool,Logic::SubstMap> LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts)
 {
-    lbool res = Logic::retrieveSubstitutions(facts, substs);
-    if (res != l_Undef) return res;
+    auto resAndSubsts = Logic::retrieveSubstitutions(facts);
+    if (resAndSubsts.first != l_Undef) return resAndSubsts;
     vec<PTRef> top_level_arith;
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
@@ -140,7 +140,7 @@ lbool LALogic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef
         if (isNumEq(tr) && sgn == l_True)
             top_level_arith.push(tr);
     }
-    return arithmeticElimination(top_level_arith, substs);
+    return arithmeticElimination(top_level_arith, std::move(resAndSubsts.second));
 }
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
