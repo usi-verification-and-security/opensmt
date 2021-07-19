@@ -82,6 +82,11 @@ public:
     virtual bool treatIteAsVar() const { return true; }
 };
 
+class IteRewriterConfig : public DefaultRewriterConfig {
+public:
+    virtual bool treatIteAsVar() const override { return false; }
+};
+
 class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
     DefaultRewriterConfig config;
 public:
