@@ -79,6 +79,7 @@ class DefaultRewriterConfig {
 public:
     virtual bool previsit(PTRef term) { return true; } // should continue visiting
     virtual PTRef rewrite(PTRef term) { return term; } // don't do anything
+    virtual bool treatIteAsVar() const { return true; }
 };
 
 class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
