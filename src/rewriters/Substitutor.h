@@ -22,10 +22,6 @@ public:
         PTRef result;
         return subMap.peek(term, result) ? result : term;
     }
-private:
-    Logic & logic;
-    SubMap const & subMap;
-
 };
 
 class Substitutor : public Rewriter<SubstitutionConfig> {
