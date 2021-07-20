@@ -19,14 +19,16 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "OsmtInternalException.h"
+
 
 // Check if a rule can be applied and if so, determine its context
 // v3 and v are given in input
 // ra is modified to contain the 5 nodes context
 // Return false if w has not antecedents (that is, v1 and v2 don't exist)
-bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra)
+RuleContext ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv)
 {
-    ra.reset();
+    RuleContext ra;
     ProofNode* v3=getNode(idv3);
     ProofNode* v=getNode(idv);
 
@@ -41,7 +43,7 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
     // Determine w, i.e. second antecedent v
     ProofNode* w=(v3==v->getAnt1()) ? v->getAnt2() : v->getAnt1();
     // If w has no antecedents, no rule can be applied
-    if(w->isLeaf()) return false;
+    if(w->isLeaf()) return ra;
 
     // Resolution pivots
     Var t0=w->getPivot();
@@ -148,7 +150,7 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
             ra.type=rA2u;
         else
             ra.type=rA2;
-        return true;
+        return ra;
     }
     else if(t1_in_C2 && !t0_in_C3)
     {
@@ -156,23 +158,20 @@ bool ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv, RuleContext& ra
             ra.type=rA1B;
         else
             ra.type=rA1;
-        return true;	}
+        return ra;	}
     else if(t1_in_C2 && t0_in_C3)
-    {	ra.type=rB1; return true;	}
+    {	ra.type=rB1; return ra;	}
     else if(!t1_in_C2 && t0_in_C3 && sign_t0_C3==sign_t0_v1)
     {
         if(graph[ra.cv]->getClauseSize()==1)
             ra.type=rB2;
         else
             ra.type=rB2prime;
-        return true;
+        return ra;
     }
     else if(!t1_in_C2 && t0_in_C3 && sign_t0_C3!=sign_t0_v1)
-    {	ra.type=rB3; return true;	}
-    else
-        //Rules are exhaustive!
-    {	opensmt_error("Unknown reduction rule context");	}
-    return false;
+    {	ra.type=rB3; return ra;	}
+    throw OsmtInternalException("Unknown reduction rule context");
 }
 
 //Given a 5 nodes context, applies the corresponding rule

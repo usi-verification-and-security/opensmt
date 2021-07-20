@@ -473,7 +473,7 @@ public:
     double          recyclePivotsIter();
     void            recycleUnits();
 
-    bool            getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
+    RuleContext     getRuleContext				 (clauseid_t, clauseid_t);
     // In case of A1 rule, return id of node added
     clauseid_t      ruleApply               (RuleContext&);
     clauseid_t      applyRuleA1             (RuleContext&);

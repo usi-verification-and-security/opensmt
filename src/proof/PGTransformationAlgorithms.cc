@@ -612,10 +612,8 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                         if (proofCheck() > 1) { checkClause(n->getId()); }
 
                         if (do_transf) {
-                            RuleContext ra1, ra2;
-                            //Look for rules applicability
-                            getRuleContext(n->getAnt1()->getId(), n->getId(), ra1);
-                            getRuleContext(n->getAnt2()->getId(), n->getId(), ra2);
+                            RuleContext ra1 = getRuleContext(n->getAnt1()->getId(), n->getId());
+                            RuleContext ra2 = getRuleContext(n->getAnt2()->getId(), n->getId());
 
                             auto chosen = handleRules(ra1, ra2);
 
