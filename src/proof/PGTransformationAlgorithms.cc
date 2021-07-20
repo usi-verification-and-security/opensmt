@@ -557,11 +557,17 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
     double init_time = cpuTime();
     assert(not (max_num_loops > 0 and left_time > 0));
     //Flag to check if in a loop at least a transformation has been applied
-    bool some_transf_done;
+    bool some_transf_done = true;
     long curr_num_loops = 0;
     std::deque<clauseid_t> q;
     // Main external loop
-    do {
+    // Continue until
+    // - max number of loops reached or timeout (in case of reduction)
+    // - some transformation is done (in case of pivot reordering)
+    while ((max_num_loops == -1 ? true : curr_num_loops < max_num_loops) and
+           (left_time == -1 ? true : (cpuTime() - init_time) <= left_time) and
+           (left_time != -1 or max_num_loops != -1 or some_transf_done))
+    {
         assert(isResetVisited1() and isResetVisited2());
         // Enqueue leaves first
         q.assign(leaves_ids.begin(), leaves_ids.end());
@@ -722,12 +728,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
             if (rem > 0) std::cerr << "; Cleaned " << rem << " residual nodes" << std::endl;
             checkProof(true);
         }
-    } while ((max_num_loops == -1 ? true : curr_num_loops < max_num_loops) and
-             (left_time == -1 ? true : (cpuTime() - init_time) <= left_time) and
-             (left_time != -1 or max_num_loops != -1 or some_transf_done));
-    //Continue until
-    // - max number of loops reached or timeout (in case of reduction)
-    // - some transformation is done (in case of pivot reordering)
+    }
 
     if (proofCheck()) {
         unsigned rem = cleanProofGraph();
