@@ -1,0 +1,18 @@
+(set-logic QF_UF)
+(declare-sort u 0)
+(declare-fun f (u u) u)
+(declare-fun b () Bool)
+(declare-fun v6 () u)
+(declare-fun v5 () u)
+(declare-fun v4 () u)
+(declare-fun v3 () u)
+(declare-fun v1 () u)
+(declare-fun v2 () u)
+
+(assert (= v3 (f v5 v1)))
+(assert (= v2 (f v3 v3)))
+(assert (= v3 v6))
+(assert (= b (and (= v5 v4) (= v5 v1))))
+(assert b)
+
+(check-sat)

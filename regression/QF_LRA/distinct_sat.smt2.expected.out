@@ -1,6 +1,9 @@
 sat
-(model
-(define-fun a () Real 1)
-(define-fun b () Real 2)
-(define-fun c () Real 0)
+(
+  (define-fun a () Real
+    1)
+  (define-fun b () Real
+    2)
+  (define-fun c () Real
+    0)
 )
