@@ -19,7 +19,7 @@ jobs:
                 command: sudo apt-get update
             - run:
                 name: install dependencies
-                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 pip3 cython
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 python3-pip cython
             - run:
                 name: Create the build directory
                 command: mkdir build
