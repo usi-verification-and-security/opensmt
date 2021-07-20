@@ -521,12 +521,9 @@ void THandler::declareAtom(PTRef tr) {
 }
 
 PTRef THandler::getSubstitution(PTRef tr) const {
-    auto const & subst = getSolverHandler().substs;
-    if (subst.has(tr)){
-        PtAsgn subs = subst[tr];
-        return subs.sgn == l_True ? subs.tr : PTRef_Undef;
-    }
-    return PTRef_Undef;
+    auto const & substs = getSolverHandler().substs;
+    PTRef target;
+    return substs.peek(tr, target) ? target : PTRef_Undef;
 }
 
 inline double THandler::drand(double& seed)
