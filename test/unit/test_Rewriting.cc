@@ -11,6 +11,7 @@
 #include <DivModRewriter.h>
 #include <MainSolver.h>
 #include <DistinctRewriter.h>
+#include <Substitutor.h>
 
 #include <algorithm>
 
@@ -44,6 +45,19 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 //    std::cout << logic.printTerm(res) << std::endl;
     vec<PTRef> args {b,c,d};
     ASSERT_EQ(res, logic.mkAnd(args));
+}
+
+TEST(Rewritin_test, test_DoubleSubstitution) {
+    Logic logic;
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef t = logic.getTerm_true();
+    Logic::SubstMap map;
+    map.insert(a, t);
+    map.insert(b, a);
+    PTRef ab = logic.mkAnd(a,b);
+    PTRef res = Substitutor(logic, map).rewrite(ab);
+    std::cout << logic.pp(res) << std::endl;
 }
 
 TEST(Rewriting_test, test_RewriteEquality)
