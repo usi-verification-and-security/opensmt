@@ -153,6 +153,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
         if (keepPartitionsSeparate) {
             vec<PTRef> const & flas = frame.formulas;
+            if (flas.size() == 0 or std::all_of(flas.begin(), flas.end(), [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
+                pmanager.assignTopLevelPartitionIndex(0, logic.getTerm_true());
+                status = giveToSolver(logic.getTerm_true(), frame.getId());
+                continue;
+            }
             for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
