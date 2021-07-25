@@ -570,7 +570,7 @@ void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
             deduce(bound_prop_ref);
         }
     } else if (bound.getType() == bound_u) {
-        for (int it = bound.getIdx().x + 1; it < boundStore.getBoundListSize(v) - 1; it = it + 1) {
+        for (int it = bound.getIdx().x + 1; it < boundStore.getBounds(v).size() - 1; it = it + 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);
             LABound & bound_prop = boundStore[bound_prop_ref];
             if (bound_prop.getType() != bound_u)

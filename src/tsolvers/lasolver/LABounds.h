@@ -19,12 +19,12 @@
 class LABound
 {
     char type;    // Upper / lower
-    int bidx;     // The index in variable's bound list
+    unsigned bidx;     // The index in variable's bound list
     int id;       // The unique id of the bound
     LVRef var;
     Delta delta;
 public:
-    struct BLIdx { int x; };
+    struct BLIdx { unsigned x; };
     LABound(BoundT type, LVRef var, const Delta& delta, int id);
     inline void setIdx(BLIdx i)  { bidx = i.x; }
     inline BLIdx getIdx() const { return {bidx}; }
@@ -59,27 +59,6 @@ public:
     }
 };
 
-class LABoundList
-{
-    friend class LABoundListAllocator;
-    friend class LABoundStore; // Needed so that I can sort the bounds in the list
-    LVRef          v; // Do we need this?
-    struct {
-        unsigned reloc   : 1;
-        unsigned sz      : 31;
-    };
-    LABoundListRef reloc_target;
-    LABoundRef     bounds[0];
-public:
-    inline bool           reloced   ()                 const ;
-    inline LABoundListRef relocation()                 const ;
-    inline void           relocate  (LABoundListRef r)   ;
-    inline unsigned       size      ()                 const ;
-           LABoundRef     operator[](int i)            const;
-    inline LVRef          getVar    ()                 const ;
-    inline LABoundList              (LVRef v, const vec<LABoundRef>& bs);
-};
-
 class bound_lessthan {
     LABoundAllocator& ba;
 public:
@@ -87,28 +66,6 @@ public:
     inline bool operator() (LABoundRef r1, LABoundRef r2) const;
 };
 
-class LABoundListAllocator : public RegionAllocator<uint32_t>
-{
-    unsigned n_boundlists;
-    static int boundlistWord32Size(int size);
-public:
-    LABoundListAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_boundlists(0) {}
-    LABoundListAllocator() : n_boundlists(0) {}
-
-    void moveTo(LABoundListAllocator& to);
-
-    LABoundListRef alloc(const LVRef v, const vec<LABoundRef>& bs);
-    LABoundListRef alloc(LABoundList& from);
-    inline LABoundList&       operator[](LABoundListRef r)   ;
-    inline const LABoundList& operator[](LABoundListRef r) const;
-    inline LABoundList*       lea(LABoundListRef r)        ;
-    inline const LABoundList* lea(LABoundListRef r) const  ;
-    inline LABoundListRef     ael(const LABoundList* t)    ;
-
-    void free(LABoundListRef tid);
-    void reloc(LABoundListRef& tr, LABoundListAllocator& to);
-    void clear() override { RegionAllocator<uint32_t>::clear(); n_boundlists = 0; }
-};
 
 class LABoundRefPair {
 public:
@@ -127,25 +84,25 @@ public:
 private:
     vec<BoundInfo> in_bounds;
     LABoundAllocator ba{1024};
-    LABoundListAllocator bla{1024};
-    vec<LABoundListRef> var_bound_lists;
-    LAVarStore &lvstore;
+    LAVarStore & lvstore;
+    std::vector<vec<LABoundRef>> bounds;
 public:
     LABoundStore(LAVarStore &lvstore) : lvstore(lvstore) {}
-    void buildBounds();
     void clear();
-    void updateBound(BoundInfo bi); // Update a single bound.
-//    inline LABoundRef getLowerBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].lbound()]; }
-//    inline LABoundRef getUpperBound(const LVRef v) const { return bla[lva[v].getBounds()][lva[v].ubound()]; }
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
     inline const LABound& operator[] (LABoundRef br) const { return ba[br]; }
+
+    void buildBounds();
+    void updateBound(BoundInfo bi);
+    vec<LABoundRef> const & getBounds(LVRef v) const { return bounds.at(getVarId(v)); }
+    vec<LABoundRef> & getBounds(LVRef v) { return bounds.at(getVarId(v)); }
+    LABoundRef getBoundByIdx(LVRef v, int it) const;
+    bool isUnbounded(LVRef v) const;
+
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br
     char* printBounds(LVRef v) const; // Print all bounds of v
-    LABoundListRef getBounds(LVRef v) const;
-    LABoundRef getBoundByIdx(LVRef v, int it) const;
-    int getBoundListSize(LVRef v) ;
-    bool isUnbounded(LVRef v) const;
+
 
     // Allocates lower and upper bound for LA var with the given values
     BoundInfo allocBoundPair(LVRef v, BoundValuePair boundPair) {
