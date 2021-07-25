@@ -1,0 +1,8 @@
+(set-info :status unsat)
+(set-logic QF_UFLRA)
+(declare-fun x () Real)
+(declare-fun f (Real) Real)
+(assert (>= x 0))
+(assert (= x (f x)))
+(assert (distinct (f (f x)) (f x)))
+(check-sat)
