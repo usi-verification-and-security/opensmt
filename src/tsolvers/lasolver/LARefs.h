@@ -4,16 +4,6 @@
 #include <ostream>
 #include <cassert>
 
-struct LABoundListRef
-{
-    uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const LABoundListRef& a1, const LABoundListRef& a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (const LABoundListRef& a1, const LABoundListRef& a2) { return a1.x != a2.x; }
-};
-
-const struct LABoundListRef LABoundListRef_Undef = {INT32_MAX};
-
 struct BoundT {
     char t;
     bool operator== (const BoundT& o) const { return o.t == t; }
