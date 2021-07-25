@@ -80,10 +80,10 @@ bool LABoundStore::isUnbounded(LVRef v) const { return getBounds(v).size() == 0;
 
 void LABoundStore::clear() {
     this->ba.clear();
-    this->in_bounds.clear();
+    this->bounds.clear();
 }
 
-void LABoundStore::updateBound(BoundInfo bi) {
+void LABoundStore::addBound(BoundInfo bi) {
     auto & varBounds = getBounds(bi.v);
     for (LABoundRef bound : {bi.ub, bi.lb}) {
         unsigned idx = varBounds.size();
@@ -91,52 +91,11 @@ void LABoundStore::updateBound(BoundInfo bi) {
         bound_lessthan lessthan(ba);
         for (; idx > 0; --idx) {
             if (lessthan(varBounds[idx - 1], varBounds[idx])) {
-                ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
                 break;
             }
             std::swap(varBounds[idx - 1], varBounds[idx]);
             ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
         }
-    }
-}
-
-void LABoundStore::buildBounds()
-{
-    VecMap<LVRef, BoundInfo, LVRefHash> bounds_map;
-
-    for (int i = 0; i < in_bounds.size(); i++) {
-        LVRef v = in_bounds[i].v;
-        if (!bounds_map.has(v)) {
-            bounds_map.insert(v, vec<BoundInfo>());
-        }
-        bounds_map[v].push(in_bounds[i]);
-    }
-    vec<LVRef> keys;
-    bounds_map.getKeys(keys);
-    for (LVRef v : keys) {
-        vec<LABoundRef> refs;
-        vec<BoundInfo> const & boundInfos = bounds_map[v];
-        for (BoundInfo const & info : boundInfos) {
-            refs.push(info.ub);
-            refs.push(info.lb);
-        }
-
-        sort<LABoundRef,bound_lessthan>(refs, refs.size(), bound_lessthan(ba));
-        for (unsigned j = 0; j < refs.size_(); ++j) {
-            ba[refs[j]].setIdx(LABound::BLIdx{j});
-        }
-
-        while (bounds.size() <= getVarId(v)) {
-            bounds.emplace_back();
-        }
-        refs.moveTo(bounds.at(getVarId(v)));
-    }
-
-    // make sure all variables are recorded in the bound lists, even if they have no bounds
-    for (LVRef ref : lvstore) {
-        auto id = getVarId(ref);
-        while (bounds.size() <= id) {
-            bounds.emplace_back();
-        }
+        ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
     }
 }

@@ -66,8 +66,6 @@ public:
     Simplex(LABoundStore&bs) : model(new LRAModel(bs)), boundStore(bs) {}
     ~Simplex();
 
-    void initModel() { model->init(); }
-
     void clear() { model->clear(); candidates.clear(); tableau.clear(); boundsActivated.clear(); }
     Explanation checkSimplex();
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
@@ -122,6 +120,7 @@ private:
         while (getVarId(v) >= boundsActivated.size()) {
             boundsActivated.push_back(0);
         }
+        model->addVar(v);
     }
 
     void processBufferOfActivatedBounds();

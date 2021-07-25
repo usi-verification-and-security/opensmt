@@ -38,7 +38,6 @@ protected:
 
 public:
     LRAModel(LABoundStore & bs) : bs(bs), n_vars_with_model(0) { bound_limits.push(0); }
-    void init();
     int addVar(LVRef v); // Adds a variable.  Returns the total number of variables
     inline int   nVars() { return n_vars_with_model; }
 

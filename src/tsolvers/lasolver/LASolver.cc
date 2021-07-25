@@ -50,6 +50,8 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     }
     LABoundRefToLeqAsgn[br_pos_idx] = PtAsgn(leq_tr, l_True);
     LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
+
+    boundStore.addBound(bi);
     return bi;
 }
 
@@ -63,8 +65,7 @@ void LASolver::updateBound(PTRef tr)
         return;
     }
 
-    LABoundStore::BoundInfo bi = addBound(tr);
-    boundStore.updateBound(bi);
+    addBound(tr);
 }
 
 bool LASolver::isValid(PTRef tr)
@@ -94,7 +95,7 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
         , simplex(boundStore)
 {
     dec_limit.push(0);
-    status = INIT;
+    status = SAT;
 }
 
 
@@ -110,7 +111,7 @@ void LASolver::pushDecision(PtAsgn asgn)
 
 void LASolver::clearSolver()
 {
-    status = INIT;
+    status = SAT;
     simplex.clear();
     decision_trace.clear();
     int_decisions.clear();
@@ -142,9 +143,6 @@ bool LASolver::check_simplex(bool complete) {
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
-    if (status == INIT) {
-        initSolver();
-    }
     storeExplanation(simplex.checkSimplex());
 
     if (explanation.size() == 0)
@@ -159,49 +157,6 @@ bool LASolver::check_simplex(bool complete) {
 //    if (getStatus())
 //        model.printModelState();
     return getStatus();
-}
-
-//
-// The model system
-//
-/*
-bool LASolver::isModelOutOfBounds(LVRef v) const {
-    return simplex.isModelOutOfBounds(v);
-}
-
-bool LASolver::isModelOutOfUpperBound(LVRef v) const
-{
-    return simplex.isModelOutOfBounds(v);
-}
-
-bool LASolver::isModelOutOfLowerBound(LVRef v) const
-{
-    return ( model.read(v) < model.Lb(v) );
-}
-
-
-const Delta LASolver::overBound(LVRef v) const
-{
-    assert( isModelOutOfBounds(v) );
-    if (isModelOutOfUpperBound(v))
-    {
-        return ( Delta(model.read(v) - model.Ub(v)) );
-    }
-    else if ( isModelOutOfLowerBound(v) )
-    {
-        return ( Delta(model.Lb(v) - model.read(v)) );
-    }
-    assert (false);
-    printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
-    exit(1);
-}
-*/
-
-void LASolver::setBound(PTRef leq_tr)
-{
-//    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
-
-    addBound(leq_tr);
 }
 
 opensmt::Number LASolver::getNum(PTRef r) {
@@ -308,28 +263,30 @@ void LASolver::declareAtom(PTRef leq_tr)
 {
     if (!logic.isNumLeq(leq_tr)) { return; }
 
-    if (isInformed(leq_tr)) { return; }
+    if (isInformed(leq_tr)) { assert(isKnown(leq_tr)); return; }
 
     setInformed(leq_tr);
 
-    if (status != INIT)
-    {
-        // Treat the PTRef as it is pushed on-the-fly
-        //    status = INCREMENT;
-        assert( status == SAT );
-    }
+    assert(status == SAT);
     // DEBUG check
     isProperLeq(leq_tr);
 
     setKnown(leq_tr);
+
+    // Terms are of form c <= t where
+    //  - c is a constant and
+    //  - t is either a variable or a sum
+    // leq_t[0] is const and leq_t[1] is term
+    PTRef term = logic.getPterm(leq_tr)[1];
+    // Ensure that all variables exists, build the polynomial, and update the occurrences.
+    LVRef v = exprToLVar(term);
+    laVarMapper.addLeqVar(leq_tr, v);
+    // Assumes that the LRA variable has been already declared
+    addBound(leq_tr);
 }
 
 void LASolver::informNewSplit(PTRef tr)
 {
-    PTRef term = logic.getPterm(tr)[1];
-    LVRef v = exprToLVar(term);
-    laVarMapper.addLeqVar(tr, v);
-    updateBound(tr);
 }
 
 //
@@ -358,10 +315,6 @@ bool LASolver::assertLit(PtAsgn asgn)
         tsolver_stats.unsat_calls ++;
         return false;
     }
-    // check if we stop reading constraints
-    if( status == INIT  )
-        initSolver( );
-
 
     if (hasPolarity(asgn.tr) && getPolarity(asgn.tr) == asgn.sgn) {
         // already known, no new information
@@ -470,46 +423,6 @@ void LASolver::popBacktrackPoints(unsigned int count) {
     setStatus(SAT);
 }
 
-void LASolver::initSolver()
-{
-    if (status == INIT)
-    {
-#ifdef GAUSSIAN_DEBUG
-        cout << "Columns:" << '\n';
-        for (int i = 0; i < columns.size(); i++)
-            cout << columns[i] << '\n';
-        cout << "Rows:" << '\n';
-        for  (int i = 0; i < rows.size(); i++)
-            cout << rows[i] << '\n';
-#endif
-        const auto & known_PTRefs = getInformed();
-        for(PTRef leq_tr : known_PTRefs) {
-            Pterm const & leq_t = logic.getPterm(leq_tr);
-
-            // Terms are of form c <= t where
-            //  - c is a constant and
-            //  - t is either a variable or a sum
-            // leq_t[0] is const and leq_t[1] is term
-            PTRef term = leq_t[1];
-
-            // Ensure that all variables exists, build the polynomial, and update the occurrences.
-            LVRef v = exprToLVar(term);
-
-            laVarMapper.addLeqVar(leq_tr, v);
-
-            // Assumes that the LRA variable has been already declared
-            setBound(leq_tr);
-        }
-        boundStore.buildBounds(); // Bounds are needed for gaussian elimination
-
-        simplex.initModel();
-
-        status = SAT;
-    }
-    else
-    opensmt_error( "Solver can not be initialized in the state different from INIT" );
-}
-
 //
 // Returns boolean value correspondent to the current solver status
 //
@@ -535,7 +448,6 @@ inline bool LASolver::getStatus( )
 //            cerr << "LA Solver status is unknown" << endl;
             status = SAT;
             return true;
-        case INIT:
         case ERROR:
         default:
         opensmt_error( "Status is undef!" );

@@ -118,7 +118,7 @@ LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
         , logic(l)
 
 {
-    status = INIT;
+    status = SAT;
 }
 
 void LIASolver::markVarAsInt(LVRef v) {

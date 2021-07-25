@@ -5,14 +5,6 @@
 #include "LRAModel.h"
 #include "LRALogic.h"
 
-void LRAModel::init()
-{
-    LAVarStore const & varStore = bs.getVarStore();
-    for (LVRef ref : varStore) {
-        addVar(ref);
-    }
-}
-
 int
 LRAModel::addVar(LVRef v)
 {

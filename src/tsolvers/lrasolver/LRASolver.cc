@@ -42,7 +42,7 @@ LRASolver::LRASolver(SMTConfig & c, LRALogic & l)
     : LASolver(descr_lra_solver, c, l)
     , logic(l)
 {
-    status = INIT;
+    status = SAT;
 }
 
 

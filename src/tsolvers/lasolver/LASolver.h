@@ -81,12 +81,11 @@ protected:
     // Possible internal states of the solver
     typedef enum
     {
-        INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR
+        SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR
     } LASolverStatus;
 
     //opensmt::Real delta; // The size of one delta.  Set through computeModel()
     LASolverStats tsolver_stats;
-    void setBound(PTRef leq);
     bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
 
 protected:
@@ -146,7 +145,6 @@ protected:
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     inline bool getStatus( );                               // Read the status of the solver in lbool
     bool setStatus( LASolverStatus );               // Sets and return status of the solver
-    void initSolver( );                                     // Initializes the solver
 
     void computeConcreteModel(LVRef v, const opensmt::Real& d);
     void computeModel() override;

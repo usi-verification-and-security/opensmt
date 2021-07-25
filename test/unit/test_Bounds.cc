@@ -18,14 +18,15 @@ TEST_F(BoundTest, test_LABounds) {
             vars.push(vs.getNewVar());
             for (int j = 0; j < 10; j++) {
                 if (j % 2 == 0) {
-                    bs.allocBoundPair(vars[i], { Delta(j), Delta(j, 1) });
+                    auto boundInfo = bs.allocBoundPair(vars[i], { Delta(j), Delta(j, 1) });
+                    bs.addBound(boundInfo);
                 }
                 else {
-                    bs.allocBoundPair(vars[i], { Delta(j, -1), Delta(j) });
+                    auto boundInfo = bs.allocBoundPair(vars[i], { Delta(j, -1), Delta(j) });
+                    bs.addBound(boundInfo);
                 }
             }
         }
-        bs.buildBounds();
         bs.clear();
     }
 }

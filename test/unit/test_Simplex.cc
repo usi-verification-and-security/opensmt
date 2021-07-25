@@ -43,16 +43,16 @@ TEST(Simplex_test, test_ops_in_Simplex)
     //LABoundStore::BoundInfo y_minus_x_nostrict_m1 = bs.allocBoundPair(y_minus_x, -1, false);  // y - x + 1 <= 0
     //LABoundStore::BoundInfo y_minus_x_strict_1    = bs.allocBoundPair(y_minus_x, 1, true);    // y - x - 1 <  0
 
-
-    bs.buildBounds();
+    auto bounds = {x_strict_0, y_strict_0, x_strict_1, x_nostrict_1, y_strict_1, y_nostrict_1, y_minus_x_nostrict_0, y_minus_x_nostrict_1};
+    for (auto const & boundInfo : bounds) {
+        bs.addBound(boundInfo);
+    }
 
     Simplex s(bs);
 
     s.newNonbasicVar(x);
     s.newNonbasicVar(y);
     s.newRow(y_minus_x, std::move(p_y_minus_x));
-
-    s.initModel();
 
     Simplex::Explanation ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 0);
@@ -107,7 +107,6 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
 TEST(Simplex_test, test_Assignment)
 {
-    SMTConfig c;
     LAVarStore vs;
 
     LVRef x = vs.getNewVar();
@@ -125,7 +124,9 @@ TEST(Simplex_test, test_Assignment)
     LABoundStore::BoundInfo y_minus_x_strict_0    = bs.allocBoundPair(y_minus_x, { Delta(0, -1), Delta(0) });    // y - x < 0 and y - x >= 0
     LABoundStore::BoundInfo y_minus_x_nostrict_0  = bs.allocBoundPair(y_minus_x, { Delta(0), Delta(0,1) });   // y - x <= 0 and y - x > 0
 
-    bs.buildBounds();
+    for (auto const & boundInfo : {x_nostrict_1, y_strict_0, x_strict_m5, y_minus_x_strict_0, y_minus_x_nostrict_0}) {
+        bs.addBound(boundInfo);
+    }
 
     Simplex s(bs);
 
@@ -136,7 +137,6 @@ TEST(Simplex_test, test_Assignment)
     p_y_plus_x->addTerm(y, 1);
     s.newRow(y_minus_x, std::move(p_y_plus_x));
 
-    s.initModel();
     s.assertBoundOnVar(x_nostrict_1.v, x_nostrict_1.ub);
     s.assertBoundOnVar(x_strict_m5.v, x_strict_m5.lb);
     s.assertBoundOnVar(y_strict_0.v, y_strict_0.ub);

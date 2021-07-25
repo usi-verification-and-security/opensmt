@@ -11,9 +11,7 @@
 TEST(LIACutSolver_test, test_computeEqualityBasis)
 {
 
-    SMTConfig c;
     LAVarStore vs;
-
 
     //our system
     //y >= x + 0.5
@@ -50,18 +48,15 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
     //LABoundStore::BoundInfo two_x_minus_two_y_nostrict_m1 = bs.allocBoundPair(two_x_minus_two_y, -1, false);    // 2x - 2y + 1 <= 0
     //LABoundStore::BoundInfo minus_y_minus_ten_x_nostrict_m20  = bs.allocBoundPair(minus_y_minus_ten_x, -20, false);   // -y - 10x + 20 <= 0
 
-    bs.buildBounds();
+    Simplex s(bs);
 
-    //Simplex s(c, m, bs);
-    auto s = std::unique_ptr<Simplex>(new Simplex(bs));
+    s.newNonbasicVar(x);
+    s.newNonbasicVar(y);
+    s.newRow(y_minus_x, std::move(p_y_minus_x));
+    s.newRow(two_x_minus_two_y, std::move(p_two_x_minus_two_y));
+    s.newRow(minus_y_minus_ten_x, std::move(p_minus_y_minus_ten_x));
 
-    s->newNonbasicVar(x);
-    s->newNonbasicVar(y);
-    s->newRow(y_minus_x, std::move(p_y_minus_x));
-    s->newRow(two_x_minus_two_y, std::move(p_two_x_minus_two_y));
-    s->newRow(minus_y_minus_ten_x, std::move(p_minus_y_minus_ten_x));
-
-    Simplex::Explanation explanation = s->checkSimplex();
+    Simplex::Explanation explanation = s.checkSimplex();
     ASSERT_EQ(explanation.size(), 0); //this property has to be failed as the system is UNSAT then explanation size has to be >0
 
 }

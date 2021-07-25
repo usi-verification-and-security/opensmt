@@ -82,7 +82,6 @@ public:
     struct BoundInfo { LVRef v; LABoundRef ub; LABoundRef lb; };
     struct BoundValuePair {Delta upper; Delta lower; };
 private:
-    vec<BoundInfo> in_bounds;
     LABoundAllocator ba{1024};
     LAVarStore & lvstore;
     std::vector<vec<LABoundRef>> bounds;
@@ -92,8 +91,7 @@ public:
     inline LABound& operator[] (LABoundRef br) { return ba[br]; }
     inline const LABound& operator[] (LABoundRef br) const { return ba[br]; }
 
-    void buildBounds();
-    void updateBound(BoundInfo bi);
+    void addBound(BoundInfo bi);
     vec<LABoundRef> const & getBounds(LVRef v) const { return bounds.at(getVarId(v)); }
     vec<LABoundRef> & getBounds(LVRef v) { return bounds.at(getVarId(v)); }
     LABoundRef getBoundByIdx(LVRef v, int it) const;
@@ -106,10 +104,13 @@ public:
 
     // Allocates lower and upper bound for LA var with the given values
     BoundInfo allocBoundPair(LVRef v, BoundValuePair boundPair) {
+        //ensure we have bounds ready for this var
+        while (bounds.size() <= getVarId(v)) {
+            bounds.emplace_back();
+        }
         LABoundRef ub = ba.alloc(bound_u, v, std::move(boundPair.upper));
         LABoundRef lb = ba.alloc(bound_l, v, std::move(boundPair.lower));
-        in_bounds.push(BoundInfo{v, ub, lb});
-        return in_bounds.last();
+        return BoundInfo{v, ub, lb};
     }
 
     LAVarStore const& getVarStore() const { return lvstore; }
