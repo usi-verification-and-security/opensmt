@@ -197,7 +197,6 @@ public:
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }
     virtual void declareAtom(PTRef tr) = 0;
-    virtual void  informNewSplit(PTRef) { };
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
     bool         isKnown(PTRef tr);

@@ -102,7 +102,6 @@ public:
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
-    void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     bool  check_simplex      (bool);
     bool  assertLit          ( PtAsgn ) override;                // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point

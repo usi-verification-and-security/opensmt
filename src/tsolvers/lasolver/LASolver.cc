@@ -285,10 +285,6 @@ void LASolver::declareAtom(PTRef leq_tr)
     addBound(leq_tr);
 }
 
-void LASolver::informNewSplit(PTRef tr)
-{
-}
-
 //
 // Push the constraint into the solver and increase the level
 //

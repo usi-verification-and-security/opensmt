@@ -141,7 +141,6 @@ void THandler::getNewSplits(vec<Lit> &splits) {
         Lit l = tmap.getOrCreateLit(arg);
         assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
         declareAtom(arg);
-        informNewSplit(arg);
         splits.push(l);
     }
 }
@@ -511,7 +510,6 @@ void    THandler::computeModel      () { getSolverHandler().computeModel(); } //
 void    THandler::clearModel        () { /*getSolverHandler().clearModel();*/ }   // Clear the model if necessary
 
 bool    THandler::assertLit         (PtAsgn pta) { return getSolverHandler().assertLit(pta); } // Push the assignment to all theory solvers
-void    THandler::informNewSplit    (PTRef tr) { getSolverHandler().informNewSplit(tr);  } // The splitting variable might need data structure changes in the solver (e.g. LIA needs to re-build bounds)
 
 void THandler::declareAtom(PTRef tr) {
     Var v = ptrefToVar(tr);
