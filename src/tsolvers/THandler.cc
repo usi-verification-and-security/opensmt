@@ -118,7 +118,7 @@ TRes THandler::check(bool complete) {
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
 }
 
-void THandler::getNewSplits(vec<Lit> &splits) {
+std::vector<vec<Lit>> THandler::getNewSplits() {
     vec<PTRef> split_terms;
     for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
         if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
@@ -128,10 +128,12 @@ void THandler::getNewSplits(vec<Lit> &splits) {
     }
 
     if ( split_terms.size() == 0 ) {
-        return;
+        return {};
     }
-
+    std::vector<vec<Lit>> splits;
     assert(split_terms.size() == 1);
+    splits.emplace_back();
+    vec<Lit> & splitClause = splits.back();
     PTRef tr = split_terms[0];
     split_terms.pop();
     Logic & logic = getLogic();
@@ -141,8 +143,9 @@ void THandler::getNewSplits(vec<Lit> &splits) {
         Lit l = tmap.getOrCreateLit(arg);
         assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
         declareAtom(arg);
-        splits.push(l);
+        splitClause.push(l);
     }
+    return splits;
 }
 
 //

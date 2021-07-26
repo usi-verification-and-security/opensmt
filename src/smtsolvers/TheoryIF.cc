@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <TSolver.h>
 #include "CoreSMTSolver.h"
 #include "Proof.h"
+#include "OsmtInternalException.h"
 
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
@@ -75,26 +76,14 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
     }
 }
 
-TPropRes
-CoreSMTSolver::handleSat()
-{
-    // Increments skip step for sat calls
-    skip_step *= config.sat_skip_step_factor;
-
-    vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
-    theory_handler.getNewSplits(new_splits);
-
-    if (new_splits.size() > 0) {
-
-        assert(new_splits.size() == 2); // For now we handle the binary case only.
-
-        //printf(" -> Adding the new split\n");
-
-        vec<LitLev> deds;
-        deduceTheory(deds); // To remove possible theory deductions
-
-        Lit l1 = new_splits[0];
-        Lit l2 = new_splits[1];
+TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
+    assert(splitClauses.size() == 1);
+    vec<LitLev> deds;
+    deduceTheory(deds); // To remove possible theory deductions
+    for (auto & splitClause : splitClauses) {
+        assert(splitClause.size() == 2); // For now we handle the binary case only.
+        Lit l1 = splitClause[0];
+        Lit l2 = splitClause[1];
         // MB: ensure the SAT solver knows about the variables and that they are active
         addVar_(var(l1));
         addVar_(var(l2));
@@ -104,7 +93,7 @@ CoreSMTSolver::handleSat()
         if (value(l1) == l_Undef && value(l2) == l_Undef) {
             // MB: allocate, attach and remember the clause - treated as original
             // MB: TODO: why not theory clause?
-            CRef cr = ca.alloc(new_splits, false);
+            CRef cr = ca.alloc(splitClause, false);
             attachClause(cr);
             clauses.push(cr);
             if (this->logsProofForInterpolation()) {
@@ -113,8 +102,7 @@ CoreSMTSolver::handleSat()
             }
             forced_split = ~l1;
             return TPropRes::Decide;
-        }
-        else {
+        } else {
             Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
             Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
 
@@ -129,11 +117,11 @@ CoreSMTSolver::handleSat()
                 }
             }
             // MB: we are going to propagate, make sure the implied literal is the first one
-            if (l_i != new_splits[0]) {
-                new_splits[0] = l_i;
-                new_splits[1] = l_f;
+            if (l_i != splitClause[0]) {
+                splitClause[0] = l_i;
+                splitClause[1] = l_f;
             }
-            CRef cr = ca.alloc(new_splits, false);
+            CRef cr = ca.alloc(splitClause, false);
             attachClause(cr);
             clauses.push(cr);
             if (logsProofForInterpolation()) {
@@ -143,6 +131,20 @@ CoreSMTSolver::handleSat()
             uncheckedEnqueue(l_i, cr);
             return TPropRes::Propagate;
         }
+    }
+    assert(false);
+    throw OsmtInternalException("Unreachable!");
+}
+
+TPropRes
+CoreSMTSolver::handleSat()
+{
+    // Increments skip step for sat calls
+    skip_step *= config.sat_skip_step_factor;
+
+    auto newSplits = theory_handler.getNewSplits();
+    if (newSplits.size() > 0) {
+        return handleNewSplitClauses(newSplits);
     }
     if (config.theory_propagation) {
         vec<LitLev> deds;
