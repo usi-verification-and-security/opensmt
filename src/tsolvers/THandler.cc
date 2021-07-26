@@ -119,15 +119,8 @@ TRes THandler::check(bool complete) {
 }
 
 std::vector<vec<Lit>> THandler::getNewSplits() {
-    vec<PTRef> split_terms;
-    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
-            getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
-            break;
-        }
-    }
-
-    if ( split_terms.size() == 0 ) {
+    auto split_terms = getSolverHandler().getNewSplits();
+    if (split_terms.size() == 0) {
         return {};
     }
     std::vector<vec<Lit>> splits;

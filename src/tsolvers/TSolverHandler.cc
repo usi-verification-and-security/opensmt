@@ -93,6 +93,17 @@ TRes TSolverHandler::check(bool complete)
     return res_final;
 }
 
+vec<PTRef> TSolverHandler::getNewSplits() const {
+    vec<PTRef> split_terms;
+    for (int i = 0; i < tsolvers.size(); i++) {
+        if (tsolvers[i] != nullptr && tsolvers[i]->hasNewSplits()) {
+            tsolvers[i]->getNewSplits(split_terms);
+            break;
+        }
+    }
+    return split_terms;
+}
+
 // MB: This is currently needed to replace a common array of deduced elements with solver ID
 TSolver* TSolverHandler::getReasoningSolverFor(PTRef ptref) const {
     assert(getLogic().isTheoryTerm(ptref));
