@@ -7,6 +7,7 @@
 #include "Theory.h"
 #include "ArithmeticEqualityRewriter.h"
 #include "DistinctRewriter.h"
+#include "DivModRewriter.h"
 
 template<typename LinAlgLogic, typename LinAlgTHandler>
 class LATheory : public Theory
@@ -29,6 +30,18 @@ public:
     virtual bool               okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
 };
 
+namespace {
+
+template<typename TLogic>
+PTRef rewriteDivMod(TLogic &, PTRef fla) { return fla; }
+
+template<>
+PTRef rewriteDivMod<LIALogic>(LIALogic & logic, PTRef fla) {
+    return DivModRewriter(logic).rewrite(fla);
+}
+
+}
+
 //
 // Unit propagate with simplifications and split equalities into
 // inequalities.  If partitions cannot mix, only do the splitting to
@@ -44,6 +57,7 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         for (PTRef & fla : flas) {
             PTRef old = fla;
             fla = rewriteDistincts(getLogic(), fla);
+            fla = rewriteDivMod<LinAlgLogic>(lalogic, fla);
             fla = equalityRewriter.rewrite(fla);
             pmanager.transferPartitionMembership(old, fla);
         }
@@ -53,6 +67,7 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         auto subs_res = computeSubstitutions(coll_f);
         PTRef finalFla = flaFromSubstitutionResult(subs_res);
         finalFla = rewriteDistincts(getLogic(), finalFla);
+        finalFla = rewriteDivMod<LinAlgLogic>(lalogic, finalFla);
         currentFrame.root = equalityRewriter.rewrite(finalFla);
     }
     notOkToPartition = equalityRewriter.getAndClearNotOkToPartition();
