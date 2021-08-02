@@ -279,8 +279,8 @@ double ProofGraph::recyclePivotsIter() {
                     if (proofCheck() > 1) checkClause(replacing->getId());
                 }
             }
-        } else {
-            assert(n->getType() == clause_type::CLA_ORIG or n->getType() == clause_type::CLA_THEORY);
+        } else { // Leaf node
+            assert(isLeafClauseType(n->getType()));
             assert(n->getNumResolvents() > 0);
             for (clauseid_t clauseid : n->getResolvents()) {
                 if (getNode(clauseid)) { q.push_back(clauseid); }

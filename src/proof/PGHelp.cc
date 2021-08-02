@@ -71,7 +71,7 @@ void ProofGraph::getGraphInfo()
             }
             else
             {
-                assert(n->getType()==clause_type::CLA_ORIG || n->getType() == clause_type::CLA_THEORY);
+                assert(isLeafClauseType(n->getType()));
                 num_leaves++;
             }
 
