@@ -368,9 +368,6 @@ class Logic {
 
     void substitutionsTransitiveClosure(SubstMap & substs);
 
-public:
-
-
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
@@ -402,7 +399,5 @@ public:
 
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
-
-
 
 #endif // LOGIC_H

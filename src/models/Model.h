@@ -29,7 +29,6 @@ private:
     const Evaluation varEval;
     const SymbolDefinition symDef;
 
-
     Evaluation extendedEval;
 
     Logic & logic;

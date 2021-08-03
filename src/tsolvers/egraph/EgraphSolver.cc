@@ -1153,15 +1153,15 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef VERBOSE_EUF
-            cout << "Deducing ";
-            cout << (deduced_polarity == l_False ? "not " : "");
-            cout << logic.printTerm(enode_store[v].getTerm());
-            cout << " since ";
-            cout << logic.printTerm(enode_store[x].getTerm());
-            cout << " and ";
-            cout << logic.printTerm(enode_store[y].getTerm());
-            cout << " are now equal";
-            cout << endl;
+            cerr << "Deducing ";
+            cerr << (deduced_polarity == l_False ? "not " : "");
+            cerr << logic.printTerm(enode_store[v].getTerm());
+            cerr << " since ";
+            cerr << logic.printTerm(enode_store[x].getTerm());
+            cerr << " and ";
+            cerr << logic.printTerm(enode_store[y].getTerm());
+            cerr << " are now equal";
+            cerr << endl;
 #endif
 #ifdef STATISTICS
             tsolver_stats.deductions_done ++;
