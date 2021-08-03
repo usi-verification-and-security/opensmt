@@ -93,8 +93,9 @@ jobs:
                     yum -y install bison
                     yum -y install flex
                     yum -y install git
-                    yum -y install pip3
-                    yum -y install cython
+                    yum -y install rh-python38
+                    pip3 install wheel
+                    yum -y install Cython
             - run:
                 name: Fetch cmake-3.12.3
                 command: |
@@ -106,6 +107,9 @@ jobs:
                 command: |
                     echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-7 bash
             - checkout
+            - run:
+                name: Set up model validation environment
+                command: echo 'bash ./regression_models/bin/setup-env.sh' |scl enable devtoolset-7 bash
             - run:
                 name: Create the build directory
                 command: mkdir build
