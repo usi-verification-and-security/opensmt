@@ -1,9 +1,1 @@
 sat
-(
-  (define-fun a () Int
-    1)
-  (define-fun b () Int
-    2)
-  (define-fun c () Int
-    0)
-)

@@ -1,5 +1,5 @@
+(set-option :print-success false)
 (set-logic QF_LIA)
-(set-info :status sat)
 (declare-fun a () Int)
 (declare-fun b () Int)
 (declare-fun c () Int)
