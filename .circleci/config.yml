@@ -95,7 +95,9 @@ jobs:
                     yum -y install git
                     yum -y install rh-python38
                     yum -y install python3-pip
+                    yum -y install zlib-devel
                     pip3 install wheel
+                    echo "pip3 install pyinstaller" |scl enable devtoolset-7 bash
                     yum -y install Cython
             - run:
                 name: Fetch cmake-3.12.3
