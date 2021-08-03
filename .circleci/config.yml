@@ -94,6 +94,7 @@ jobs:
                     yum -y install flex
                     yum -y install git
                     yum -y install rh-python38
+                    yum -y install python3-pip
                     pip3 install wheel
                     yum -y install Cython
             - run:
