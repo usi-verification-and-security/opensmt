@@ -33,7 +33,7 @@ private:
 
     Logic & logic;
     const std::string formalArgDefaultPrefix;
-    // helper methods
+
     inline bool hasVarVal(PTRef term) {
         assert(logic.isVar(term));
         return varEval.find(term) != varEval.end();
