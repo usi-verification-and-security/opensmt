@@ -72,6 +72,11 @@ if [ -z ${preserve} ]; then
     preserve=${DEFAULTPRESERVE}
 fi
 
+[ -x ${scrambler} ] || \
+    (echo "Scrambler not found or not executable: ${scrambler}"; exit 1)
+
+[ -x ${checker} ] || \
+    (echo "Checker not found or not executable: ${checker}"; exit 1)
 
 tmpin=${TMPDIR}/file.smt2
 tmpout=${TMPDIR}/file.out

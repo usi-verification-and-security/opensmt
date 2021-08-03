@@ -21,6 +21,9 @@ jobs:
                 name: install dependencies
                 command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 python3-pip cython
             - run:
+                name: install model validation environment
+                command: ./regression_models/bin/setup-env.sh
+            - run:
                 name: Create the build directory
                 command: mkdir build
             - run:
