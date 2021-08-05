@@ -87,7 +87,7 @@ public:
     bool hasTheoryFunction(SymRef sr) const { return definitions.find(sr) != definitions.end();}
     bool hasTheoryFunction(PTRef tr) const { return hasTheoryFunction(logic.getSymRef(tr)); }
 
-    void addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val);
+    void addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef val);
 
     template<typename TIt>
     void addFunctionDefinitions(TIt begin, TIt end) {

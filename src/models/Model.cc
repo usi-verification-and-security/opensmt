@@ -4,7 +4,21 @@
 
 #include "Model.h"
 #include "Substitutor.h"
-#include <cstring>
+
+bool Model::isCorrect(const SymbolDefinition & defs) const {
+    for (const auto & entry : defs) {
+        SymRef sr = entry.first;
+        const TemplateFunction &templFun = entry.second;
+        if (not logic.isUF(sr)) { return false; }
+        const Symbol &s = logic.getSym(sr);
+        if (templFun.getName() != logic.getSymName(sr)) { return false; }
+        if (s.nargs() != templFun.getArgs().size_()) { return false; }
+        if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
+        for (auto i = 0; i < (int) s.nargs(); i++)
+            if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { return false; }
+    }
+    return true;
+}
 
 Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
     : varEval(std::move(basicEval))
@@ -12,20 +26,7 @@ Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
     , logic(logic)
     , formalArgDefaultPrefix("x")
 {
-    assert(std::all_of(symDef.begin(), symDef.end(),
-                       [&logic](const SymbolDefinition::value_type & entry)
-       {
-           SymRef sr = entry.first;
-           const TemplateFunction & templFun = entry.second;
-           if (not logic.isUF(sr)) { return false; }
-           const Symbol & s = logic.getSym(sr);
-           if (templFun.getName() != logic.getSymName(sr)) { return false; }
-           if (s.nargs() != templFun.getArgs().size_()) { return false; }
-           if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
-           for (auto i = 0; i < (int)s.nargs(); i++)
-               if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { return false; }
-           return true;
-       }));
+    assert(isCorrect(symbolDef));
 }
 
 PTRef Model::evaluate(PTRef term) {

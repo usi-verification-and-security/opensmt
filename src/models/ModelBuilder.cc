@@ -17,12 +17,12 @@ std::unique_ptr<Model> ModelBuilder::build() {
     return std::unique_ptr<Model>(new Model(logic, assignment, builtDefinitions));
 }
 
-void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
+void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef val)
 {
     if (logic.getSortRef(sr) != logic.getSortRef(val)) {
         throw OsmtApiException("Incompatible sort for symbol valuation");
     }
-    Symbol & sym = logic.getSym(sr);
+    const Symbol & sym = logic.getSym(sr);
     if (sym.nargs() != vals.size_()) {
         throw OsmtApiException("Incorrect valuation for symbol: argument and valuation size do not match");
     }
@@ -34,7 +34,6 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
 
     if (not hasTheoryFunction(sr)) {
         vec<PTRef> formalArgs; formalArgs.capacity(vals.size());
-        std::string symName(logic.getSymName(sr));
         // Ensure that no formal arg name collides with the function name
         std::string formalArgPrefix(Model::getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix));
 
@@ -47,8 +46,7 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> vals, PTRef val)
         definitions.insert({sr,opensmt::pair<FunctionSignature,ValuationNode*>{std::move(templateSig), nullptr}});
     }
     auto & signatureAndValuation = definitions.at(sr);
-    FunctionSignature & templateSignature = signatureAndValuation.first;
-    const vec<PTRef> & formalArgs = templateSignature.getArgs();
+    const vec<PTRef> & formalArgs = signatureAndValuation.first.getArgs();
     vec<opensmt::pair<PTRef,PTRef>> valuation; valuation.capacity(vals.size());
     for (int i = 0; i < vals.size(); i++) {
         valuation.push({formalArgs[i], vals[i]});
@@ -67,8 +65,7 @@ ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(const vec<opensmt
     ValuationNode * current = root;
 
     for (int i = 0; i < valuation.size(); i++) {
-        auto & varVal = valuation[i];
-        PTRef val = varVal.second; // The value of my parent's var
+        PTRef val = valuation[i].second; // The value of my parent's var
 
         assert(current != nullptr);
 
@@ -80,9 +77,7 @@ ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(const vec<opensmt
                 break;
             }
         }
-        if (foundChild) {
-            continue;
-        } else {
+        if (not foundChild) {
             // No child found with this value.  Need to create a new child.  If this will be a leaf
             // (i.e., it is the last value in a valuation) the var will by convention be set to the
             // value of this valuation

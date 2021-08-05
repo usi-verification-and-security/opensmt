@@ -26,6 +26,7 @@ public:
     static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
 
 private:
+    bool isCorrect(const SymbolDefinition & defs) const;
     const Evaluation varEval;
     const SymbolDefinition symDef;
 

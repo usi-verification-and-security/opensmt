@@ -322,7 +322,7 @@ void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig
     vec<ERef> args = enode_store.getArgTermsAsVector(orig_er);
     assert(args.size() > 0);
     vec<PTRef> vals; vals.capacity(args.size());
-    for (ERef child_er: args) {
+    for (ERef child_er : args) {
         PTRef child_tr = enode_store.getPTRef(child_er);
         PTRef child_target{PTRef_Undef};
         if (substs.peek(child_tr, child_target)) {
