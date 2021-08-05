@@ -254,7 +254,7 @@ PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
     return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
 }
 
-void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<PTRef,PTRef,PTRefHash>& substs) const
+void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
 {
     Map<PTRef,bool,PTRefHash> seen_substs;
     for (ERef er : enode_store.getTermEnodes()) {
@@ -264,48 +264,15 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
             continue; // The Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
         }
 
-        // If this is a substituted term, process instead the substitution target
-        PTRef target_tr{PTRef_Undef};
-        ERef target_er{ERef_Undef};
-        if (substs.peek(tr, target_tr)) {
-            seen_substs.insert(tr, true);
-            enode_store.peekERef(target_tr, target_er);
-            if (target_er == ERef_Undef) {
-                // Substitution removed target_tr from input instance, it was never introduced to the SAT solver, and
-                // therefore also theory solver is not aware of it.
-                // The original term is guaranteed to be in the solver and is authoritative in this case.
-                er = target_er;
-            }
-        } else {
-            // Check that enode_store's PTRef -> ERef conversion is consistent
-            assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
-            target_er = er;
-        }
+        // Check that enode_store's PTRef -> ERef conversion is consistent
+        assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
+
         if (logic.isVarOrIte(tr)) {
             // Original is a theory variable
-            PTRef val_tr = getAbstractValueForERef(target_er, logic.getSortRef(tr));
+            PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
             modelBuilder.addVarValue(tr, val_tr);
         } else {
-            addTheoryFunctionEvaluation(modelBuilder, tr, target_er, substs);
-        }
-    }
-
-    for (auto tr : substs.getKeys()) {
-        PTRef target = substs[tr];
-        if (!seen_substs.has(tr)) {
-            if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
-                continue; // Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
-            }
-            ERef target_er{ERef_Undef};
-            enode_store.peekERef(target, target_er);
-
-            if (logic.isVarOrIte(tr)) {
-                // Original is a theory variable
-                PTRef val_tr = getAbstractValueForERef(target_er, logic.getSortRef(tr));
-                modelBuilder.addVarValue(tr, val_tr);
-            } else {
-                addTheoryFunctionEvaluation(modelBuilder, tr, target_er, substs);
-            }
+            addTheoryFunctionEvaluation(modelBuilder, tr, er);
         }
     }
 }
@@ -317,25 +284,14 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<
  * @param target_er the target enode reference
  * @param substs the substitutions (used for obtaining values for the arguments of orig_tr
  */
-void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er, const MapWithKeys<PTRef,PTRef,PTRefHash>& substs) const {
+void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er) const {
     ERef orig_er = enode_store.getERef(orig_tr);
     vec<ERef> args = enode_store.getArgTermsAsVector(orig_er);
     assert(args.size() > 0);
     vec<PTRef> vals; vals.capacity(args.size());
     for (ERef child_er : args) {
         PTRef child_tr = enode_store.getPTRef(child_er);
-        PTRef child_target{PTRef_Undef};
-        if (substs.peek(child_tr, child_target)) {
-            ERef child_target_er{ERef_Undef};
-            enode_store.peekERef(child_target, child_target_er);
-            if (child_target_er == ERef_Undef) {
-                vals.push(getAbstractValueForERef(child_er, logic.getSortRef(child_tr)));
-            } else {
-                vals.push(getAbstractValueForERef(child_target_er, logic.getSortRef(child_tr)));
-            }
-        } else {
-            vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
-        }
+        vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
     }
     modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), std::move(vals), getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
 }

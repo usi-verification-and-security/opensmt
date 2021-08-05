@@ -64,7 +64,7 @@ PTRef Model::evaluate(PTRef term) {
                 substMap.insert(tfunArgs[i], nargs[i]);
             }
             PTRef root = tfun.getBody();
-            val = IteSubstitutor(logic, substMap).rewrite(root);
+            val = Substitutor(logic, substMap).rewrite(root);
         } else {
             val = logic.insertTerm(symbol, nargs);
         }

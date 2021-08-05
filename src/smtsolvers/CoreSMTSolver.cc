@@ -2251,42 +2251,23 @@ std::ostream& operator <<(std::ostream& out, Lit l) {
 void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
     Logic& logic = theory_handler.getLogic();
     for (Var v = 0; v < model.size(); ++v) {
+        assert(v != var_Undef);
         PTRef atom = theory_handler.varToTerm(v);
-        PTRef target_tr = theory_handler.getSubstitution(atom);
-
-        if (target_tr == PTRef_Undef) {
-            PTRef val;
-            if (model[v] != l_Undef) {
+        PTRef val;
+        assert(atom != PTRef_Undef);
+        // Inspect target value
+        assert(not logic.isNot(atom));
+        lbool sign = logic.isNot(atom) ? l_False : l_True;
+        if (model[v] != l_Undef) {
+            // var exists in solver.  Use the value
+            if (sign == l_True) {
                 val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
             } else {
-                val = logic.getDefaultValuePTRef(logic.getSort_bool());
-            }
-            modelBuilder.addVarValue(atom, val);
-            continue;
-        }
-
-        assert(target_tr != PTRef_Undef);
-        // Inspect target value
-
-        PTRef val;
-        Var target_var = v;
-        target_var = theory_handler.ptrefToVar(target_tr);
-        lbool target_sign = logic.isNot(target_tr) ? l_False : l_True;
-        if (target_var != var_Undef) {
-            if (model[target_var] != l_Undef) {
-                // Target var exists in solver.  Use the value
-                if (target_sign == l_True) {
-                    val = model[target_var] == l_True ? logic.getTerm_true() : logic.getTerm_false();
-                } else {
-                    val = model[target_var] == l_True ? logic.getTerm_false() : logic.getTerm_true();
-                }
-            } else {
-                // Target var exists in solver but is unsigned.  Use default value
-                val = logic.getDefaultValuePTRef(logic.getSort_bool());
+                val = model[v] == l_True ? logic.getTerm_false() : logic.getTerm_true();
             }
         } else {
-            // Substitution does not exist in the solver.  Use the original value
-            val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+            // Target var exists in solver but is unassigned.  Use default value
+            val = logic.getDefaultValuePTRef(logic.getSort_bool());
         }
         modelBuilder.addVarValue(atom, val);
     }

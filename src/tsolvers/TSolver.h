@@ -187,7 +187,7 @@ public:
     inline string               getName             ( ) { return name; }         // The name of the solver
     // DEPRECATED
     virtual ValPair             getValue            (PTRef) = 0;
-    virtual void fillTheoryFunctions(ModelBuilder & modelBuilder, const MapWithKeys<PTRef,PTRef,PTRefHash> & substs) const { throw std::logic_error{"Model computation not supported for the used theory yet!"}; }
+    virtual void fillTheoryFunctions(ModelBuilder & modelBuilder) const { throw std::logic_error{"Model computation not supported for the used theory yet!"}; }
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
     virtual bool hasNewSplits();                          // Are there new splits?
