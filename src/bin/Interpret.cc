@@ -752,7 +752,7 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
 std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFun) const {
     std::stringstream ss;
     ss << "  (define-fun " << templateFun.getName() << " (";
-    const vec<PTRef>& args(templateFun.getArgs());
+    const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         char* tmp = logic->pp(args[i]);
         const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
@@ -1302,6 +1302,5 @@ int Interpret::get_assertion_index(PTRef ref) {
 void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
-
 
 
