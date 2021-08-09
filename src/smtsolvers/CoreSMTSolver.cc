@@ -2255,18 +2255,11 @@ void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
         PTRef atom = theory_handler.varToTerm(v);
         PTRef val;
         assert(atom != PTRef_Undef);
-        // Inspect target value
         assert(not logic.isNot(atom));
-        lbool sign = logic.isNot(atom) ? l_False : l_True;
         if (model[v] != l_Undef) {
-            // var exists in solver.  Use the value
-            if (sign == l_True) {
-                val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
-            } else {
-                val = model[v] == l_True ? logic.getTerm_false() : logic.getTerm_true();
-            }
+            val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
         } else {
-            // Target var exists in solver but is unassigned.  Use default value
+            // var is unassigned: use the default value
             val = logic.getDefaultValuePTRef(logic.getSort_bool());
         }
         modelBuilder.addVarValue(atom, val);
