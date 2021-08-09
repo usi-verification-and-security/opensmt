@@ -1,0 +1,8 @@
+(set-logic QF_LIA)
+(set-info :status unsat)
+(declare-fun x () Int)
+(declare-fun b () Bool)
+(assert (or b (= x 5)))
+(assert (or (not b) (= x 5)))
+(assert (= 1 (div x 2)))
+(check-sat)

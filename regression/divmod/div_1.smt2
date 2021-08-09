@@ -1,0 +1,5 @@
+(set-logic QF_LIA)
+(set-info :status sat)
+(declare-fun x () Int)
+(assert (= 0 (div x 2)))
+(check-sat)
