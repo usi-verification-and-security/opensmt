@@ -80,7 +80,6 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         root = new_root;
         if (!cont) break;
     }
-    getLogic().substitutionsTransitiveClosure(allsubsts);
 #ifdef SIMPLIFY_DEBUG
     cerr << "Number of substitutions: " << allsubsts.elems() << endl;
     vec<Map<PTRef,PtAsgn,PTRefHash>::Pair> subst_vec;

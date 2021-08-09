@@ -285,7 +285,6 @@ public:
     lbool      getPolaritySuggestion   (PTRef);                     // Return a suggested polarity for a given literal
     void       getConflict             (bool, vec<PtAsgn>&) override;// Get explanation
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
-    ValPair    getValue                (PTRef tr) override;
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();

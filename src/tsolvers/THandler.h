@@ -69,13 +69,8 @@ public:
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
-    PTRef   getSubstitution     (PTRef tr) const;         // Returns the substituted term, or PTRef_Undef if this term was not substituted
-
-    // DEPRECATED
-    ValPair getValue          (PTRef tr) const ;//{ return getSolverHandler().getValue(tr); };
 
     void fillTheoryFunctions  (ModelBuilder & modelBuilder) const;
-    void printSubstitutions() const;
     PTRef   varToTerm          ( Var v ) const;//{ return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
     Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
     Lit     PTRefToLit         ( PTRef tr);// { return tmap.getLit(tr); }

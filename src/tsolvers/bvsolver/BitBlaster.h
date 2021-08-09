@@ -54,7 +54,6 @@ public:
     void popBacktrackPoint   ( );
 
     void    computeModel     ( );
-    ValPair getValue         (PTRef);
 
     // Public Theory refinement stuff
     lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
@@ -172,7 +171,7 @@ private:
     vec<PTRef>                      variables;                     // Variables
     map< int, Var >                 cnf_var;                       // BB variable to cnf var
     bool                            has_model;                     // Is the model computed
-    std::unordered_map<PTRef,ValPair,PTRefHash>    model;          // Model is stored here
+    std::unordered_map<PTRef,PTRef,PTRefHash>    model;          // Model is stored here
 
     int                             bitwidth;
 };

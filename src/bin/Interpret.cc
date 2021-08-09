@@ -672,14 +672,15 @@ bool Interpret::getAssignment() {
 
 void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
+    auto model = main_solver->getModel();
     Logic& logic = main_solver->getLogic();
-    std::vector<ValPair> values;
+    std::vector<opensmt::pair<PTRef,PTRef>> values;
     for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            values.emplace_back(main_solver->getValue(tr));
+            values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
             char* pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str);
             free(pt_str);
@@ -687,10 +688,12 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
-    for (const ValPair & valPair : values) {
-        char* name = logic.printTerm(valPair.tr);
-        printf("(%s %s)", name, valPair.val);
+    for (auto const & valPair : values) {
+        char* name = logic.printTerm(valPair.first);
+        char* value = logic.printTerm(valPair.second);
+        printf("(%s %s)", name, value);
         free(name);
+        free(value);
     }
     printf(")\n");
 }

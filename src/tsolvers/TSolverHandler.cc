@@ -70,24 +70,6 @@ void TSolverHandler::informNewSplit(PTRef tr)
     }
 }
 
-ValPair TSolverHandler::getValue(PTRef tr) const
-{
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != nullptr) {
-            PTRef tmp{PTRef_Undef};
-            PTRef tr_subst = substs.peek(tr, tmp) ? tmp : tr;
-            ValPair vp = tsolvers[i]->getValue(tr_subst);
-            if (vp != ValPair_Undef) {
-                vp.tr = tr;
-                return vp;
-            }
-        }
-    }
-    return { tr, nullptr }; // Value is unspecified in the model
-}
-
-
-
 TRes TSolverHandler::check(bool complete)
 {
     TRes res_final = TRes::SAT;

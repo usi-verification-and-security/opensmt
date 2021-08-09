@@ -24,6 +24,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#include "ModelBuilder.h"
 #include "BitBlaster.h"
 #include "BVStore.h"
 #include "Global.h"
@@ -2116,37 +2117,30 @@ PTRef BitBlaster::simplify( PTRef formula )
 void BitBlaster::computeModel( )
 {
     model.clear();
-    for (unsigned i = 0; i < variables.size_(); i++)
-    {
+    ModelBuilder localModelBuilder(logic);
+    solverP.fillBooleanVars(localModelBuilder);
+    auto localModel = localModelBuilder.build();
+    for (unsigned i = 0; i < variables.size_(); i++) {
         PTRef e = variables[ i ];
         Real value = 0;
         Real coeff = 1;
         // Retrieve bitblasted vector
         BVRef blast = bs[e];
-        for (int j = 0; j < bs[blast].size(); j++)
-        {
+        for (int j = 0; j < bs[blast].size(); j++) {
             PTRef b = bs[blast][j];
-            auto valPair = mainSolver.getValue(b);
-            char* val = valPair.val;
-            assert(strcmp(val,Logic::tk_true) == 0 || strcmp(val, Logic::tk_false) == 0);
-            Real bit = strcmp(val,Logic::tk_true) == 0 ? 1 : 0;
+            auto val = localModel->evaluate(b);
+            logic.getTerm_true();
+            assert(val == logic.getTerm_true() || val == logic.getTerm_false() );
+            Real bit = val == logic.getTerm_true() ? 1 : 0;
             if (bs[blast].is_signed() && (j = bs[blast].size()-1))
                 value = value - coeff * bit; // The last one is negative
             else
                 value = value + coeff * bit;
             coeff = Real( 2 ) * coeff;
         }
-        ValPair v(e, value.get_str().c_str());
-
-        model[e] = v;
+        model[e] = logic.mkBVNumVar(value.get_str().c_str());
     }
     has_model = true;
-}
-
-ValPair BitBlaster::getValue(PTRef tr)
-{
-    assert(has_model);
-    return model[tr];
 }
 
 lbool

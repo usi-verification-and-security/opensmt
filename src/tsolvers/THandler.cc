@@ -495,7 +495,6 @@ TSolverHandler&       THandler::getSolverHandler()       { return theory.getTSol
 const TSolverHandler& THandler::getSolverHandler() const { return theory.getTSolverHandler(); }
 TermMapper&           THandler::getTMap()                { return tmap; }
 
-ValPair THandler::getValue          (PTRef tr) const { return getSolverHandler().getValue(tr); };
 void    THandler::fillTheoryFunctions(ModelBuilder &modelBuilder) const { getSolverHandler().fillTheoryFunctions(modelBuilder); }
 
 PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v); }  // Return the term ref corresponding to a variable
@@ -517,14 +516,6 @@ void THandler::declareAtom(PTRef tr) {
     declared.growTo(v + 1, false);
     declared[v] = true;
     getSolverHandler().declareAtom(tr);
-}
-
-PTRef THandler::getSubstitution(PTRef tr) const {
-    auto const & substs = getSolverHandler().substs;
-    PTRef target;
-    PTRef res = substs.peek(tr, target) ? target : PTRef_Undef;
-    assert (res == PTRef_Undef or not substs.has(res));
-    return res;
 }
 
 inline double THandler::drand(double& seed)

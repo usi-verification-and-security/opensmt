@@ -42,7 +42,6 @@ public:
     TRes            check              ( bool )   override;
     void            computeModel       ( )        override;
     virtual lbool   declareTerm        ( PTRef );
-    virtual ValPair getValue           ( PTRef )  override;
 private:
 
     vec<PtAsgn> stack;
