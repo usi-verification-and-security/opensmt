@@ -14,7 +14,7 @@ DEFAULTPRESERVE=false
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
-usage="Usage: $0 [-h] [-o <osmt2-binary>] [-s <scrambler>] [-c <checker>] [ -d <output-directory> ] [-p <true|false] <file>"
+usage="Usage: $0 [-h] [-o <osmt2-binary>] [-s <scrambler>] [-c <checker>] [ -d <output-directory> ] [-p <true|false>] <file>"
 
 while [ $# -gt 0 ]; do
     case $1 in
