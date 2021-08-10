@@ -5,5 +5,4 @@
 (declare-fun c () Int)
 (assert (distinct a b c))
 (check-sat)
-(get-model)
 (exit)

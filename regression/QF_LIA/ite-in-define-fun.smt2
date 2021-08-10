@@ -1,0 +1,5 @@
+(set-logic QF_LIA)
+(set-info :status unsat)
+(define-fun m ((x Int) (y Int)) Int (ite (< x y) y x))
+(assert (= 0 (m 0 1)))
+(check-sat)

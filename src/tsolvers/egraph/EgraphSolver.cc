@@ -60,6 +60,7 @@ The algorithm and data structures are inspired by the following paper:
 #include "Enode.h"
 #include "TreeOps.h"
 #include "Deductions.h"
+#include "ModelBuilder.h"
 
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
@@ -82,6 +83,7 @@ Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
 #endif
       , ERef_Nil           ( enode_store.get_Nil() )
       , fa_garbage_frac    ( 0.5 )
+      , values             ( nullptr )
 {
     auto rawExplainer = [this](ExplainerType type) -> Explainer * {
         switch(type) {
@@ -213,23 +215,85 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 
 void Egraph::clearModel()
 {
-    values.clear();
-    values_ok = false;
+    values.reset(nullptr);
 }
 
 void Egraph::computeModel( )
 {
-    if (values_ok == true)
+    if (values != nullptr)
         return;
 
-    const vec<ERef>& enodes = enode_store.getTermEnodes();
-    for (int i = 0; i < enodes.size(); i++) {
-        if (values.has(enodes[i]))
-            continue;
-        ERef root_r = enode_store[enodes[i]].getRoot();
-        values.insert(enodes[i], root_r);
+    values = std::unique_ptr<Values>(new Values());
+    for (ERef er : enode_store.getTermEnodes()) {
+        ERef root_r = enode_store[er].getRoot();
+        values->addValue(er, root_r);
     }
-    values_ok = true;
+}
+
+/**
+ * Get the abstract value (name of an element of the universe) corresponding to er.
+ * If er is ERef_Undef, use the default element for the sort sr
+ * @param er
+ * @param sr the sort of er (used if er is ERef_Undef)
+ * @return
+ */
+PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
+
+    if (er == ERef_Undef) {
+        return logic.getDefaultValuePTRef(sr);
+    }
+
+    ERef val_er = values->getValue(er);
+    PTRef val_tr = enode_store.getPTRef(val_er);
+
+    if (isConstant(val_er)) {
+        return val_tr;
+    }
+    std::stringstream ss;
+    ss << Logic::s_abstract_value_prefix << values->getValueIndex(val_er);
+    return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
+}
+
+void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
+{
+    Map<PTRef,bool,PTRefHash> seen_substs;
+    for (ERef er : enode_store.getTermEnodes()) {
+        PTRef tr = enode_store.getPTRef(er);
+
+        if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
+            continue; // The Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
+        }
+
+        // Check that enode_store's PTRef -> ERef conversion is consistent
+        assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
+
+        if (logic.isVarOrIte(tr)) {
+            // Original is a theory variable
+            PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
+            modelBuilder.addVarValue(tr, val_tr);
+        } else {
+            addTheoryFunctionEvaluation(modelBuilder, tr, er);
+        }
+    }
+}
+
+/**
+ * Add an evaluation for the function symbol of orig_tr using the value of target_er
+ * @param modelBuilder The model builder
+ * @param orig_tr the original pterm reference (with arity > 0)
+ * @param target_er the target enode reference
+ * @param substs the substitutions (used for obtaining values for the arguments of orig_tr
+ */
+void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er) const {
+    ERef orig_er = enode_store.getERef(orig_tr);
+    vec<ERef> args = enode_store.getArgTermsAsVector(orig_er);
+    assert(args.size() > 0);
+    vec<PTRef> vals; vals.capacity(args.size());
+    for (ERef child_er : args) {
+        PTRef child_tr = enode_store.getPTRef(child_er);
+        vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
+    }
+    modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), std::move(vals), getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
 }
 
 void Egraph::declareAtom(PTRef atom) {
@@ -303,7 +367,7 @@ bool Egraph::addEquality(PtAsgn pa) {
     assert(pt.size() == 2);
     bool res = true;
     PTRef e = pt[0];
-    for (int i = 1; i < pt.size() && res == true; i++)
+    for (int i = 1; i < pt.size() && res; i++)
         res = assertEq(e, pt[i], pa);
 
     if (res) {
@@ -1033,10 +1097,9 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
     for (;;) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
-
         PTRef v_tr = getEnode(v).getTerm();
         if (logic.isNot(v_tr)) {
-            // This is a negation of a propositional formula, and needs not be propagated
+            // Negation of a boolean valued term.  Propagation handled in the positive case already
             v = getEnode(v).getNext();
             if ( v == vstart )
                 break;
@@ -1350,46 +1413,6 @@ bool Egraph::assertLit(PtAsgn pta)
 
     !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
     return res;
-}
-
-
-// The value method
-
-ValPair
-Egraph::getValue(PTRef tr)
-{
-    if (!values_ok) {
-        assert(false);
-        return ValPair_Undef;
-    }
-    char* name;
-    int written = -1;
-    if (!enode_store.has(tr)) {
-        // This variable was never pushed to Egraph so its value is not
-        // bound by anything.
-        written = asprintf(&name, "%s%d", s_any_prefix, Idx(logic.getPterm(tr).getId()));
-    }
-    else {
-
-        Enode& e = enode_store[tr];
-        ERef e_root = values[e.getERef()];
-
-        if (e_root == enode_store.getEnode_true())
-           written = asprintf(&name, "true");
-        else if (e_root == enode_store.getEnode_false())
-            written = asprintf(&name, "false");
-        else if (isConstant(e_root)) {
-            char* const_name = logic.printTerm(enode_store[e_root].getTerm());
-            written = asprintf(&name, "%s%s", s_const_prefix, const_name);
-            free(const_name);
-        }
-        else
-            written = asprintf(&name, "%s%d", s_val_prefix, enode_store[e_root].getId());
-    }
-    assert(written >= 0); (void)written;
-    ValPair vp(tr, name);
-    free(name);
-    return vp;
 }
 
 //=================================================================================================

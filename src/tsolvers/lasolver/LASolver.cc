@@ -674,42 +674,7 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
     return val;
 }
 
-// We may assume that the term is of one of the following forms,
-// where x is a real variables and p_i are products of a real variable and a real constant
-//
-// (1a) (* x -1)
-// (1b) (* -1 x)
-// (2) x + p_1 + ... + p_n
-// (3a) (* x -1) + p_1 + ... + p_n
-// (3b) (* -1 x) + p_1 + ... + p_n
-//
-ValPair LASolver::getValue(PTRef tr) {
-    if (!logic.hasSortNum(tr)) return ValPair_Undef;
-    opensmt::Real val(0);
-    if (!laVarMapper.hasVar(tr)) {
-        // This is a linear expression.
-        if (logic.isNumPlus(tr)) {
-            const Pterm &t = logic.getPterm(tr);
-            for (int i = 0; i < t.size(); i++) {
-                val += evaluateTerm(t[i]);
-            }
-        }
-        else {
-            assert(logic.isNumConst(tr) || logic.isNumVar(tr) || (logic.isNumTimes(tr) && logic.getPterm(tr).size() == 2));
-            val = evaluateTerm(tr);
-        }
-    }
-    else {
-        val = concrete_model[getVarId(getVarForTerm(tr))];
-        // MB: We have to ba cautious since both positive and negative version of a term are mapped to the same LVar!
-        // Hence if the term is negative we need to negate the value, since the value correspond to the positive term.
-        if (logic.isNegated(tr)) { val.negate(); }
-    }
-
-    return ValPair(tr, val.get_str().c_str());
-}
-
-void LASolver::fillTheoryVars(ModelBuilder & modelBuilder) const {
+void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     for (LVRef lvar : laVarStore) {
         PTRef term = laVarMapper.getVarPTRef(lvar);
         if (logic.isNumVar(term)) {

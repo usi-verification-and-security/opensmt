@@ -70,23 +70,31 @@ main(int argc, char** argv)
 
     if (r == s_True) {
         printf("sat\n");
-        ValPair v1 = mainSolver.getValue(x1);
-        char* name = logic.printTerm(x1);
-        printf("%s: %s\n", name, v1.val);
+        auto m = mainSolver.getModel();
+        PTRef v1 = m->evaluate(x1);
+        char* name = logic.pp(x1);
+        char* value = logic.pp(v1);
+        printf("%s: %s\n", name, value);
         free(name);
-        ValPair v2 = mainSolver.getValue(x2);
-        name = logic.printTerm(x2);
-        printf("%s: %s\n", name, v2.val);
+        free(value);
+        PTRef v2 = m->evaluate(x2);
+        name = logic.pp(x2);
+        value = logic.pp(v2);
+        printf("%s: %s\n", name, value);
         free(name);
-        ValPair v3 = mainSolver.getValue(x3);
-        name = logic.printTerm(x3);
-        printf("%s: %s\n", name, v3.val);
+        free(value);
+        PTRef v3 = m->evaluate(x3);
+        name = logic.pp(x3);
+        value = logic.pp(v3);
+        printf("%s: %s\n", name, value);
         free(name);
-        ValPair v4 = mainSolver.getValue(x4);
+        free(value);
+        PTRef v4 = m->evaluate(x4);
         name = logic.printTerm(x4);
-        printf("%s: %s\n", name, v4.val);
+        value = logic.printTerm(v4);
+        printf("%s: %s\n", name, value);
         free(name);
-
+        free(value);
     }
     else if (r == s_False)
     {
@@ -106,7 +114,8 @@ main(int argc, char** argv)
 	    part.push_back(0);
     	// It can be converted to OpenSMT's representation via
 	    ipartitions_t mask = 0;
-    	for(int i = 0; i < part.size(); ++i)
+
+        for(int i = 0; i < part.size(); ++i)
 	    	setbit(mask, part[i] + 1);
 
         vector<PTRef> itps;

@@ -204,9 +204,19 @@ private:
 
     UFSolverStats tsolver_stats;
 
-    // Stuff for values on UF
-    bool values_ok;
-    Map<ERef, ERef, ERefHash> values;
+    class Values {
+        Map<ERef, ERef, ERefHash> values;
+        Map<ERef, int, ERefHash> valueERefToInt;
+        int valueCounter;
+    public:
+        Values() : valueCounter(0) {}
+        void addValue(ERef t, ERef v) { if (values.has(t)) return; values.insert(t, v); if (not valueERefToInt.has(v)) { valueERefToInt.insert(v, valueCounter++); } }
+        bool hasValue(ERef er) const { return values.has(er); }
+        ERef getValue(ERef er) const { assert(values.has(er)); return values[er]; }
+        int getValueIndex(ERef er) const { assert(valueERefToInt.has(er)); return valueERefToInt[er]; }
+    };
+
+    std::unique_ptr<Values> values;
 
     static const char * s_val_prefix;
     static const char * s_const_prefix;
@@ -262,6 +272,7 @@ public:
 
     Logic& getLogic() override { return logic; }
 
+    void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er) const;
 public:
 
   //===========================================================================
@@ -274,9 +285,10 @@ public:
     lbool      getPolaritySuggestion   (PTRef);                     // Return a suggested polarity for a given literal
     void       getConflict             (bool, vec<PtAsgn>&) override;// Get explanation
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
-    ValPair    getValue                (PTRef tr) override;
     void       computeModel            () override;
+    void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
+    PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 

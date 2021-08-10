@@ -107,11 +107,13 @@ main(int argc, char** argv)
     if (r == s_True) {
         printf("sat\n");
         bbb.computeModel();
-        ValPair v = bbb.getValue(d);
+        PTRef v = bbb.getValue(d);
+        char * val = logic.pp(v);
         char* bin;
-        opensmt::wordToBinary(atoi(v.val), bin, bw);
-        printf("%s (%s)\n", v.val, bin);
-
+        opensmt::wordToBinary(atoi(val), bin, bw);
+        printf("%s (%s)\n", val, bin);
+        free(val);
+        free(bin);
     }
     else if (r == s_False)
         printf("unsat\n");

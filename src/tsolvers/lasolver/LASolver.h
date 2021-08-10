@@ -176,8 +176,7 @@ protected:
         solver->print( out );
         return out;
     }
-    ValPair getValue(PTRef tr) override;  // Computes the model and changes state.
-    void fillTheoryVars(ModelBuilder & modelBuilder) const override;
+    void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
 
     inline int     verbose                       ( ) const { return config.verbosity(); }
 

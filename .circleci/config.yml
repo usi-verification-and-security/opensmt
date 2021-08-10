@@ -19,7 +19,10 @@ jobs:
                 command: sudo apt-get update
             - run:
                 name: install dependencies
-                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 python3-pip cython
+            - run:
+                name: install model validation environment
+                command: ./regression_models/bin/setup-env.sh
             - run:
                 name: Create the build directory
                 command: mkdir build
@@ -90,6 +93,12 @@ jobs:
                     yum -y install bison
                     yum -y install flex
                     yum -y install git
+                    yum -y install rh-python38
+                    yum -y install python3-pip
+                    yum -y install zlib-devel
+                    pip3 install wheel
+                    echo "pip3 install pyinstaller" |scl enable devtoolset-7 bash
+                    yum -y install Cython
             - run:
                 name: Fetch cmake-3.12.3
                 command: |
@@ -101,6 +110,9 @@ jobs:
                 command: |
                     echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-7 bash
             - checkout
+            - run:
+                name: Set up model validation environment
+                command: echo 'bash ./regression_models/bin/setup-env.sh' |scl enable devtoolset-7 bash
             - run:
                 name: Create the build directory
                 command: mkdir build
