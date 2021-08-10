@@ -54,6 +54,7 @@ public:
     void popBacktrackPoint   ( );
 
     void    computeModel     ( );
+    PTRef   getValue         (PTRef tr) const { if (has_model) { return model.at(tr); } else { return PTRef_Undef; }}
 
     // Public Theory refinement stuff
     lbool notifyEqualities   (); // Check all refined equalities, add explicit new terms for them
