@@ -2129,7 +2129,6 @@ void BitBlaster::computeModel( )
         for (int j = 0; j < bs[blast].size(); j++) {
             PTRef b = bs[blast][j];
             auto val = localModel->evaluate(b);
-            logic.getTerm_true();
             assert(val == logic.getTerm_true() || val == logic.getTerm_false() );
             Real bit = val == logic.getTerm_true() ? 1 : 0;
             if (bs[blast].is_signed() && (j = bs[blast].size()-1))
