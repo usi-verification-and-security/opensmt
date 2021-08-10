@@ -157,6 +157,11 @@ sstat MainSolver::simplifyFormulas(char** err_msg)
 
         if (keepPartitionsSeparate) {
             vec<PTRef> const & flas = frame.formulas;
+            if (flas.size() == 0 or std::all_of(flas.begin(), flas.end(), [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
+                pmanager.assignTopLevelPartitionIndex(0, logic.getTerm_true());
+                status = giveToSolver(logic.getTerm_true(), frame.getId());
+                continue;
+            }
             for (int j = 0; j < flas.size() && status != s_False; ++j) {
                 PTRef fla = flas[j];
                 if (fla == logic.getTerm_true()) { continue; }
@@ -208,50 +213,11 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
     return ::rewriteMaxArityClassic(logic, root);
 }
 
-ValPair MainSolver::getValue(PTRef tr) const
-{
-    if (logic.hasSortBool(tr)) {
-        lbool val = ts.getTermValue(tr);
-        if (val != l_Undef) {
-            return ValPair(tr, val == l_True ? Logic::tk_true : Logic::tk_false);
-        }
-        // Try if it was not substituted away
-        PTRef subs = thandler.getSubstitution(tr);
-        if (subs != PTRef_Undef) {
-            auto res = getValue(subs);
-            // MB: getValue returns pair where first element is the queried PTRef;
-            //     In case of substitutions, we need to replace it with the original query
-            res.tr = tr;
-            return res;
-        }
-        // Term not seen in the formula, any value can be returned since it cannot have any effect on satisfiability
-        return ValPair(tr, Logic::tk_true);
-
-    } else {
-        ValPair vp = thandler.getValue(tr);
-        if (vp.val == nullptr) {
-            vp.val = strdup(logic.getDefaultValue(tr));
-        }
-        return vp;
-    }
-}
-
-void MainSolver::getValues(const vec<PTRef>& trs, std::vector<ValPair>& vals) const
-{
-    vals.clear();
-    for (int i = 0; i < trs.size(); i++)
-    {
-        PTRef tr = trs[i];
-        vals.emplace_back(getValue(tr));
-    }
-}
-
 std::unique_ptr<Model> MainSolver::getModel() {
 
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
-    thandler.fillTheoryVars(modelBuilder);
-    thandler.addSubstitutions(modelBuilder);
+    thandler.fillTheoryFunctions(modelBuilder);
 
     return modelBuilder.build();
 }

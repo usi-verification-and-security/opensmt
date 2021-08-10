@@ -171,3 +171,11 @@ target_sources(FunctionTemplateTest
 target_link_libraries(FunctionTemplateTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET FunctionTemplateTest)
 
+add_executable(ProofTest)
+target_sources(ProofTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Proof.cc"
+        )
+
+target_link_libraries(ProofTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET ProofTest)
+

@@ -93,22 +93,18 @@ TEST_F(RetrieveSubstitutionTest, test_VarVarSubstituition) {
     PTRef eq = logic.mkEq(x,y);
     vec<PtAsgn> facts;
     facts.push(PtAsgn{eq, l_True});
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst;
-    logic.retrieveSubstitutions(facts, subst);
-    ASSERT_TRUE(subst.has(x));
-    PtAsgn ay = PtAsgn{y, l_True};
-    EXPECT_EQ(subst[x], ay);
+    auto subst = logic.retrieveSubstitutions(facts);
+    ASSERT_TRUE(subst.second.has(x));
+    EXPECT_EQ(subst.second[x], y);
 }
 
 TEST_F(RetrieveSubstitutionTest, test_AtomSubstituition) {
     PTRef a = logic.mkBoolVar("a");
     vec<PtAsgn> facts;
     facts.push(PtAsgn{a, l_True});
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst;
-    logic.retrieveSubstitutions(facts, subst);
-    ASSERT_TRUE(subst.has(a));
-    PtAsgn ay = PtAsgn{logic.getTerm_true(), l_True};
-    EXPECT_EQ(subst[a], ay);
+    auto subst = logic.retrieveSubstitutions(facts);
+    ASSERT_TRUE(subst.second.has(a));
+    EXPECT_EQ(subst.second[a], logic.getTerm_true());
 }
 
 TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
@@ -116,11 +112,9 @@ TEST_F(RetrieveSubstitutionTest, test_ConstantSubstituition) {
     PTRef eq = logic.mkEq(fx, c);
     vec<PtAsgn> facts;
     facts.push(PtAsgn{eq, l_True});
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst;
-    logic.retrieveSubstitutions(facts, subst);
-    ASSERT_TRUE(subst.has(fx));
-    PtAsgn ac = PtAsgn{c, l_True};
-    EXPECT_EQ(subst[fx], ac);
+    auto subst = logic.retrieveSubstitutions(facts);
+    ASSERT_TRUE(subst.second.has(fx));
+    EXPECT_EQ(subst.second[fx], c);
 }
 
 TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
@@ -131,14 +125,11 @@ TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
     vec<PtAsgn> facts;
     facts.push(PtAsgn{eq, l_True});
     facts.push(PtAsgn{eq2, l_True});
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst;
-    logic.retrieveSubstitutions(facts, subst);
-    ASSERT_TRUE(subst.has(z));
-    ASSERT_TRUE(subst.has(y));
-    PtAsgn afx = PtAsgn{fx, l_True};
-    PtAsgn afy = PtAsgn{fy, l_True};
-    EXPECT_EQ(subst[z], afy);
-    EXPECT_EQ(subst[y], afx);
+    auto subst = logic.retrieveSubstitutions(facts);
+    ASSERT_TRUE(subst.second.has(z));
+    ASSERT_TRUE(subst.second.has(y));
+    EXPECT_EQ(subst.second[z], fy);
+    EXPECT_EQ(subst.second[y], fx);
 }
 
 //========================== TEST for applying sustituitions ===========================================================
@@ -169,16 +160,16 @@ TEST_F(ApplySubstitutionTest, test_BoolAtomSub) {
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef fla = logic.mkAnd(a, logic.mkNot(b));
-    MapWithKeys<PTRef, PtAsgn, PTRefHash> subst;
-    subst.insert(b, PtAsgn{logic.getTerm_true(), l_True});
+    Logic::SubstMap subst;
+    subst.insert(b, logic.getTerm_true());
     PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.getTerm_false());
 }
 
 TEST_F(ApplySubstitutionTest, test_VarVarSub) {
     PTRef fla = logic.mkEq(x, z);
-    MapWithKeys<PTRef, PtAsgn, PTRefHash> subst;
-    subst.insert(x, PtAsgn{y, l_True});
+    Logic::SubstMap subst;
+    subst.insert(x, y);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
     EXPECT_EQ(res, logic.mkEq(y,z));
 }
@@ -187,9 +178,9 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
     PTRef fy = logic.mkUninterpFun(f, {y});
     PTRef fz = logic.mkUninterpFun(f, {z});
     PTRef fla = logic.mkEq(x, logic.mkUninterpFun(f, {fz}));
-    MapWithKeys<PTRef, PtAsgn, PTRefHash> subst;
-    subst.insert(x, PtAsgn{fy, l_True});
-    subst.insert(y, PtAsgn{fz, l_True});
+    Logic::SubstMap subst;
+    subst.insert(x, fy);
+    subst.insert(y, fz);
     PTRef res = Substitutor(logic, subst).rewrite(fla);
 //    EXPECT_EQ(res, logic.getTerm_true()); // MB: This requires something like fixed-point substitution
     EXPECT_EQ(res, logic.mkEq(fy, logic.mkUninterpFun(f, {fz})));
@@ -198,17 +189,16 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
 //========================== TEST for transitive closure of substitutions ===========================================================
 TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     Logic logic;
-    MapWithKeys<PTRef, PtAsgn, PTRefHash> substitutions;
+    Logic::SubstMap substitutions;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
     PTRef d = logic.mkBoolVar("d");
-    substitutions.insert(a, PtAsgn(logic.mkAnd(b,c), l_True));
-    substitutions.insert(b, PtAsgn(c, l_True));
-    substitutions.insert(c, PtAsgn(d, l_True));
+    substitutions.insert(a, logic.mkAnd(b,c));
+    substitutions.insert(b, c);
+    substitutions.insert(c, d);
     logic.substitutionsTransitiveClosure(substitutions);
     ASSERT_EQ(substitutions.getSize(), 3);
-    ASSERT_EQ(substitutions[a].sgn, l_True);
-    ASSERT_EQ(substitutions[a].tr, d);
+    ASSERT_EQ(substitutions[a], d);
 }
 

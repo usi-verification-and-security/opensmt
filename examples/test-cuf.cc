@@ -55,11 +55,12 @@ main(int argc, char** argv)
     if (r == s_True) {
         printf("sat\n");
         bbb.computeModel();
-        ValPair v = bbb.getValue(a_bv);
-        printf("%s\n", v.val);
-        ValPair u = mainSolver.getValue(a);
-        printf("%s\n", u.val);
-
+        char * val = logic.pp(bbb.getValue(a_bv));
+        printf("%s\n", val);
+        free(val);
+        val = logic.pp(bbb.getValue(a));
+        printf("%s\n", val);
+        free(val);
     }
     else if (r == s_False)
         printf("unsat\n");

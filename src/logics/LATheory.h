@@ -52,7 +52,6 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         PTRef coll_f = getCollateFunction(formulas, curr);
         auto subs_res = computeSubstitutions(coll_f);
         PTRef finalFla = flaFromSubstitutionResult(subs_res);
-        getTSolverHandler().setSubstitutions(std::move(subs_res.usedSubstitution));
         finalFla = rewriteDistincts(getLogic(), finalFla);
         currentFrame.root = equalityRewriter.rewrite(finalFla);
     }

@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CgTypes.h"
 #include "LogicFactory.h"
 #include "MapWithKeys.h"
+#include "OsmtApiException.h"
 #include "FunctionTools.h"
 #include <cassert>
 #include <cstring>
@@ -41,6 +42,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class SStore;
 
 class Logic {
+  public:
+    using SubstMap = MapWithKeys<PTRef,PTRef,PTRefHash>;
   protected:
     static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
@@ -51,7 +54,9 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
+    Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
+    bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -169,7 +174,7 @@ class Logic {
     SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)  ;//              { return sort_store.getName(s); }
+    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
 
     // Symbols
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
@@ -244,7 +249,7 @@ class Logic {
     void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
-    PTRef instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef, PTRefHash>&);
+    PTRef instantiateFunctionTemplate(const char* fname, const SubstMap&);
 
 
 
@@ -358,12 +363,10 @@ class Logic {
     virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
 
     // Top-level equalities based substitutions
-    void getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
-    virtual lbool retrieveSubstitutions(const vec<PtAsgn>& units, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs);
-    void substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs);
+    bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
+    virtual opensmt::pair<lbool,SubstMap> retrieveSubstitutions(const vec<PtAsgn>& units);
 
-
-
+    void substitutionsTransitiveClosure(SubstMap & substs);
 
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 

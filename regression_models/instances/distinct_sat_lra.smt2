@@ -1,0 +1,8 @@
+(set-option :print-success false)
+(set-logic QF_LRA)
+(declare-fun a () Real)
+(declare-fun b () Real)
+(declare-fun c () Real)
+(assert (distinct a b c))
+(check-sat)
+(exit)

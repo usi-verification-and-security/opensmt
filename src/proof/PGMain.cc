@@ -35,6 +35,8 @@ void ProofGraph::printProofGraph( )
 
 void ProofGraph::transfProofForReduction( )
 {
+	// Initialize C-random number generator with fixed seed to ensure reproducibility
+	srand(config.getRandomSeed());
 	// Fill proof
 	fillProofGraph();
 

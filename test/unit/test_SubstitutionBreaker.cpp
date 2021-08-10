@@ -42,7 +42,7 @@ TEST(SubstitutionBreaker, test_Simple) {
 
     SubstLoopBreaker slb(logic);
 
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> subst_map = slb(std::move(substs));
+    Logic::SubstMap subst_map = slb(std::move(substs));
     ASSERT_TRUE(subst_map.has(a));
 }
 
@@ -145,7 +145,11 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     auto new_substs = slb(std::move(substs));
 
     SubstLoopBreaker slb2(logic);
-    vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs));
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> new_substs2;
+    for (auto key : new_substs.getKeys()) {
+        new_substs2.insert(key, {new_substs[key], l_True});
+    }
+    vec<SNRef> startNodes = slb2.constructSubstitutionGraph(std::move(new_substs2));
 
     std::cerr << slb2.printGraphAndLoops(startNodes, {}) << std::endl;
     auto loops = slb2.findLoops(startNodes);

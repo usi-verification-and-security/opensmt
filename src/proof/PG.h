@@ -218,7 +218,6 @@ struct ProofNode
     // Test methods
     //
     inline bool                  isLeaf(){ assert((ant1==NULL && ant2==NULL) || (ant1!=NULL && ant2!=NULL)); return (ant1==NULL);}
-    inline bool                  hasBeenReplaced(){ return(ant1!=NULL && ant2==NULL); }
     // 0 if positive, 1 if negative, -1 if not found
     short                         hasOccurrenceBin( Var );
     // true if positive occurrence pivot is in first antecedent
@@ -380,6 +379,8 @@ public:
     void              setVisited2               ( clauseid_t id ) { mpz_setbit(visited_2, id); }
     void              resetVisited1             ( )               { mpz_set_ui(visited_1,0); }
     void              resetVisited2             ( )               { mpz_set_ui(visited_2,0); }
+    bool              isResetVisited1           ( )               { return mpz_cmp_ui(visited_1, 0) == 0; }
+    bool              isResetVisited2           ( )               { return mpz_cmp_ui(visited_2, 0) == 0; }
 
     unsigned          getMaxIdVar           ( ) { return max_id_variable; }
     void              getGraphInfo          ( );
@@ -390,7 +391,7 @@ public:
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, ostream & );
     inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
-    bool              mergeClauses          (vector<Lit>&, vector<Lit>&, vector<Lit>&, Var);
+    static bool       mergeClauses          (std::vector<Lit> const &, std::vector<Lit> const &, std::vector<Lit>&, Var);
     inline bool       isRoot                ( ProofNode* n ) { assert(n); return( n->getId() == root ); }
     inline ProofNode* getRoot               ( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
     inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
@@ -472,7 +473,7 @@ public:
     double          recyclePivotsIter();
     void            recycleUnits();
 
-    bool            getRuleContext				 (clauseid_t, clauseid_t, RuleContext&);
+    RuleContext     getRuleContext				 (clauseid_t, clauseid_t);
     // In case of A1 rule, return id of node added
     clauseid_t      ruleApply               (RuleContext&);
     clauseid_t      applyRuleA1             (RuleContext&);
@@ -530,6 +531,8 @@ private:
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
     void liftVarsToLeaves(std::vector<Var> const & vars);
     void replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> const & vars);
+
+    void recyclePivotsIter_RecyclePhase();
 
     //NOTE added for experimentation
     Var 				  pred_to_push;

@@ -5,5 +5,4 @@
 (declare-fun c () Real)
 (assert (distinct a b c))
 (check-sat)
-(get-model)
 (exit)

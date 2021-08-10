@@ -1,0 +1,8 @@
+(set-option :print-success false)
+(set-logic QF_LIA)
+(declare-fun a () Int)
+(declare-fun b () Int)
+(declare-fun c () Int)
+(assert (distinct a b c))
+(check-sat)
+(exit)

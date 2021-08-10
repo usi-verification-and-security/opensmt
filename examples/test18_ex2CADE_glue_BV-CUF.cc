@@ -17,9 +17,13 @@ assert(d == d_p);                           //assert ((d != d_p ) = 1)
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
 
-void printValue(ValPair vp, Logic& l)
+void printValue(PTRef tr, std::unique_ptr<Model> & m, const Logic & l)
 {
-    std::cout << l.printTerm(vp.tr) << " "  << vp.val << "\n";
+    char* name = l.pp(tr);
+    char* value = l.pp(m->evaluate(tr));
+    std::cout << name << " "  << value << "\n";
+    free(name);
+    free(value);
 }
 
 int main(int argc, char** argv)
@@ -160,12 +164,13 @@ int main(int argc, char** argv)
 
     if (r == s_True) {
         printf("sat\n");
-        printValue(mainSolver.getValue(a), logic);
-        printValue(mainSolver.getValue(b), logic);
-        printValue(mainSolver.getValue(c1), logic);
-        printValue(mainSolver.getValue(c2), logic);
-        printValue(mainSolver.getValue(d), logic);
-        printValue(mainSolver.getValue(d_p), logic);
+        auto m = mainSolver.getModel();
+        printValue(a, m, logic);
+        printValue(b, m, logic);
+        printValue(c1, m, logic);
+        printValue(c2, m, logic);
+        printValue(d, m, logic);
+        printValue(d_p, m, logic);
     }
     else if (r == s_False)
         printf("unsat\n");

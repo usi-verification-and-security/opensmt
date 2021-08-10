@@ -283,7 +283,7 @@ Logic::protectName(const char* name) const
 {
     char *name_escaped;
     int printed_chars = hasQuotableChars(name) ? asprintf(&name_escaped, "|%s|", name)
-            : asprintf(&name_escaped, "%s", name);
+                                               : asprintf(&name_escaped, "%s", name);
     (void)printed_chars;
     return name_escaped;
 }
@@ -305,7 +305,11 @@ Logic::pp(PTRef tr) const
 
     if (t.size() == 0) {
         std::stringstream ss;
-        ss << name_escaped;
+        if (isKnownToUser(sr)) {
+            ss << name_escaped;
+        } else {
+            ss << "(as " << name_escaped << " " << getSortName(getSortRef(sr)) << ")";
+        }
 #ifdef PARTITION_PRETTYPRINT
         ss << " [" << getIPartitions(tr) << ' ]';
 #endif
@@ -501,6 +505,9 @@ bool Logic::declare_sort_hook(SRef sr) {
     ites.insert(tr, true);
     sortToIte.insert(sr, tr);
 
+    std::stringstream ss;
+    ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
+    defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
     return true;
 }
 
@@ -511,7 +518,7 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
         if (defined_functions.has(s)) {
             // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
             const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
-            Map<PTRef,PTRef,PTRefHash> subst_map;
+            SubstMap subst_map;
             if (args.size() != tpl_args.size()) {
                 int written = asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
                 assert(written >= 0); (void)written;
@@ -558,7 +565,10 @@ Logic::getDefaultValue(const PTRef tr) const
 PTRef
 Logic::getDefaultValuePTRef(const SRef sref) const {
     if (sref == sort_BOOL) { return term_TRUE; }
-    throw "default values not implemented yet for uninterpreted sorts\n";
+    else {
+        return defaultValueForSort[sref];
+
+    }
 }
 
 PTRef
@@ -1199,8 +1209,9 @@ bool Logic::isAtom(PTRef r) const {
 //
 // The substitutions for the term riddance from osmt1
 //
-lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
+opensmt::pair<lbool,Logic::SubstMap> Logic::retrieveSubstitutions(const vec<PtAsgn>& facts)
 {
+    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;
         lbool sgn = facts[i].sgn;
@@ -1251,31 +1262,32 @@ lbool Logic::retrieveSubstitutions(const vec<PtAsgn>& facts, MapWithKeys<PTRef,P
             if (substs.has(tr)) {
                 if (substs[tr].tr==getTerm_true() || substs[tr].tr==getTerm_false()) {
                     if (term != substs[tr].tr) {
-                        return l_False;
+                        return {l_False, SubstMap()};
                     }
                 }
-            } else substs.insert(tr, PtAsgn(term, l_True));
+            } else {
+                substs.insert(tr, PtAsgn(term, l_True));
+            }
         }
     }
     SubstLoopBreaker slb(*this);
-    substs = slb(std::move(substs));
-    return l_Undef;
+    return {l_Undef, slb(std::move(substs))};
 }
 
-void Logic::substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash> & substs) {
+void Logic::substitutionsTransitiveClosure(SubstMap & substs) {
     bool changed = true;
     const auto & keys = substs.getKeys(); // We can use direct pointers, since no elements are inserted or deleted in the loop
     std::vector<char> notChangedElems(substs.getSize(), 0); // True if not changed in last iteration, initially False
     while (changed) {
         changed = false;
         for (int i = 0; i < keys.size(); ++i) {
-            auto & val = substs[keys[i]];
-            if (val.sgn != l_True || notChangedElems[i]) { continue; }
-            PTRef oldVal = val.tr;
+            if (notChangedElems[i]) { continue; }
+            PTRef & val = substs[keys[i]];
+            PTRef oldVal = val;
             PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
             if (oldVal != newVal) {
                 changed = true;
-                val = PtAsgn(newVal, l_True);
+                val = newVal;
             }
             else {
                 notChangedElems[i] = 1;
@@ -1289,7 +1301,7 @@ void Logic::substitutionsTransitiveClosure(MapWithKeys<PTRef, PtAsgn, PTRefHash>
 // used.  Depending on the theory a fact should either be added on the
 // top level or left out to reduce e.g. simplex matrix size.
 //
-void Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts)
+bool Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts)
 {
     Map<PtAsgn,bool,PtAsgnHash> isdup;
     vec<PtAsgn> queue;
@@ -1306,39 +1318,36 @@ void Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
 
         Pterm const & t = getPterm(pta.tr);
 
-        if (isAnd(pta.tr) and pta.sgn == l_True)
-            for (int i = 0; i < t.size(); i++) {
+        if (isAnd(pta.tr) and pta.sgn == l_True) {
+            for (PTRef l : t) {
                 PTRef c;
                 lbool c_sign;
-                purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c,  c_sign));
+                purify(l, c, c_sign);
+                queue.push(PtAsgn(c, c_sign));
             }
-        else if (isOr(pta.tr) and (pta.sgn == l_False))
-            for (int i = 0; i < t.size(); i++) {
+        } else if (isOr(pta.tr) and (pta.sgn == l_False)) {
+            for (PTRef l : t) {
                 PTRef c;
                 lbool c_sign;
-                purify(t[i], c, c_sign);
-                queue.push(PtAsgn(c, c_sign^true));
+                purify(l, c, c_sign);
+                queue.push(PtAsgn(c, c_sign ^ true));
             }
-        else {
+        } else {
             lbool prev_val = facts.has(pta.tr) ? facts[pta.tr] : l_Undef;
             if (prev_val != l_Undef && prev_val != pta.sgn)
-                return; // conflict
+                return false; // conflict
             else if (prev_val == pta.sgn)
                 continue; // Already seen
 
             assert(prev_val == l_Undef);
             if (isEquality(pta.tr) and pta.sgn == l_True) {
                 facts.insert(pta.tr, pta.sgn);
-            }
-            else if (isUP(pta.tr) and pta.sgn == l_True) {
+            } else if (isUP(pta.tr) and pta.sgn == l_True) {
                 facts.insert(pta.tr, pta.sgn);
-            }
-            else if (isXor(pta.tr) and pta.sgn == l_True) {
+            } else if (isXor(pta.tr) and pta.sgn == l_True) {
                 Pterm const & xorTerm = getPterm(pta.tr);
                 facts.insert(mkEq(xorTerm[0], mkNot(xorTerm[1])), l_True);
-            }
-            else {
+            } else {
                 PTRef c;
                 lbool c_sign;
                 purify(pta.tr, c, c_sign);
@@ -1348,7 +1357,7 @@ void Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
             }
         }
     }
-
+    return true;
 #ifdef SIMPLIFY_DEBUG
     cerr << "True facts" << endl;
     vec<Map<PTRef,lbool,PTRefHash>::Pair> facts_dbg;
@@ -1633,12 +1642,11 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 }
 
 PTRef
-Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef,PTRefHash>& subst)
+Logic::instantiateFunctionTemplate(const char* fname, const SubstMap& subst)
 {
     const TemplateFunction& tpl_fun = defined_functions[fname];
     PTRef tr = tpl_fun.getBody();
     const vec<PTRef>& args = tpl_fun.getArgs();
-    MapWithKeys<PTRef,PtAsgn,PTRefHash> substs_asgn;
     for (int i = 0; i < args.size(); i++) {
         if (!subst.has(args[i])) {
             std::string argName = pp(args[i]);
@@ -1648,10 +1656,9 @@ Logic::instantiateFunctionTemplate(const char* fname, const Map<PTRef, PTRef,PTR
         if (getSortRef(subst[args[i]]) != getSortRef(args[i])) {
             throw OsmtApiException("Substitution source and target sort mismatch" );
         }
-        substs_asgn.insert(args[i], PtAsgn{subst[args[i]], l_True});
     }
-    PTRef tr_subst = Substitutor(*this, substs_asgn).rewrite(tr);
 
+    PTRef tr_subst = Substitutor(*this, subst).rewrite(tr);
     assert (getSortRef(tr_subst) == tpl_fun.getRetSort());
     return tr_subst;
 }
@@ -1714,7 +1721,7 @@ SRef        Logic::getSortRef    (const char* name)      const { return sort_sto
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
-const char* Logic::getSortName   (const SRef s)                { return sort_store.getName(s); }
+const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
 
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }

@@ -672,14 +672,15 @@ bool Interpret::getAssignment() {
 
 void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
+    auto model = main_solver->getModel();
     Logic& logic = main_solver->getLogic();
-    std::vector<ValPair> values;
+    std::vector<opensmt::pair<PTRef,PTRef>> values;
     for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
         const ASTNode& term = **term_it;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            values.emplace_back(main_solver->getValue(tr));
+            values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
             char* pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str);
             free(pt_str);
@@ -687,10 +688,12 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
-    for (const ValPair & valPair : values) {
-        char* name = logic.printTerm(valPair.tr);
-        printf("(%s %s)", name, valPair.val);
+    for (auto const & valPair : values) {
+        char* name = logic.printTerm(valPair.first);
+        char* value = logic.printTerm(valPair.second);
+        printf("(%s %s)", name, value);
         free(name);
+        free(value);
     }
     printf(")\n");
 }
@@ -699,7 +702,7 @@ void Interpret::getModel() {
 
     auto model = main_solver->getModel();
     std::stringstream ss;
-    ss << "(model\n";
+    ss << "(\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
         SymRef symref = user_declarations[i];
         const Symbol & sym = logic->getSym(symref);
@@ -709,16 +712,61 @@ void Interpret::getModel() {
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
             PTRef val = model->evaluate(term);
-            ss << "(define-fun " << s  << " () " << logic->getSortName(symSort) << ' ' << logic->printTerm(val) << ')' << '\n';
+            ss << printDefinitionSmtlib(term, val);
         }
         else {
-            char* s = logic->printSym(symref);
-            notify_formatted(true, "Non-constant encountered during a model query: %s. This is not supported yet, ignoring...",  s);
-            free(s);
+            // function
+            const TemplateFunction & templ = model->getDefinition(symref);
+            ss << printDefinitionSmtlib(templ);
         };
     }
     ss << ')';
     std::cout << ss.str() << std::endl;
+}
+
+/**
+ *
+ * @param tr the term to print
+ * @param val its value
+ * @return the term value in an smtlib2 compliant format
+ * Example:
+ * (; U is sort of cardinality 2
+ *   (define-fun a () U
+ *     (as @0 U))
+ *   (define-fun b () U
+ *     (as @1 U))
+ *   (define-fun f ((x U)) U
+ *     (ite (= x (as @1 U)) (as @0 U)
+ *       (as @1 U))
+ *   )
+ * )
+ */
+std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
+    std::stringstream ss;
+    const char *s = logic->protectName(logic->getSymName(tr));
+    SRef sortRef = logic->getSym(tr).rsort();
+    ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
+    char* val_string = logic->pp(val);
+    ss << "    " << val_string << ")\n";
+    free(val_string);
+    return ss.str();
+}
+
+std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFun) const {
+    std::stringstream ss;
+    ss << "  (define-fun " << templateFun.getName() << " (";
+    const vec<PTRef>& args = templateFun.getArgs();
+    for (int i = 0; i < args.size(); i++) {
+        char* tmp = logic->pp(args[i]);
+        const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
+        ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
+        free(tmp);
+    }
+    ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
+    char* tmp = logic->pp(templateFun.getBody());
+    ss << "    " << tmp << ")\n";
+    free(tmp);
+    return ss.str();
 }
 
 void Interpret::writeState(const char* filename)
@@ -1257,6 +1305,5 @@ int Interpret::get_assertion_index(PTRef ref) {
 void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
-
 
 

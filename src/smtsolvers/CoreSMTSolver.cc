@@ -287,9 +287,10 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     std::vector<Lit> resolvedUnits;
-    Lit p;
+    Lit p = lit_Undef;
+    Lit ru = lit_Undef;
     int i, j;
-    for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+    for (i = j = 0; i < ps.size(); i++)
     {
         if (value(ps[i]) == l_True || ps[i] == ~p)
         {
@@ -301,8 +302,9 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
 
             ps[j++] = p = ps[i];
         }
-        else if (logsProofForInterpolation && value(ps[i]) == l_False)
+        else if (logsProofForInterpolation && value(ps[i]) == l_False && ps[i] != ru)
         {
+            ru = ps[i];
             resolvedUnits.push_back(ps[i]);
         }
     }
@@ -1991,8 +1993,9 @@ lbool CoreSMTSolver::solve_()
     {
         // Extend & copy model:
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++)
+        for (int i = 0; i < nVars(); i++) {
             model[i] = value(i);
+        }
     }
     else
     {
@@ -2248,10 +2251,17 @@ std::ostream& operator <<(std::ostream& out, Lit l) {
 void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
     Logic& logic = theory_handler.getLogic();
     for (Var v = 0; v < model.size(); ++v) {
+        assert(v != var_Undef);
         PTRef atom = theory_handler.varToTerm(v);
-        if (logic.isBoolAtom(atom) && model[v] != l_Undef) {
-            PTRef val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
-            modelBuilder.addVarValue(atom, val);
+        PTRef val;
+        assert(atom != PTRef_Undef);
+        assert(not logic.isNot(atom));
+        if (model[v] != l_Undef) {
+            val = model[v] == l_True ? logic.getTerm_true() : logic.getTerm_false();
+        } else {
+            // var is unassigned: use the default value
+            val = logic.getDefaultValuePTRef(logic.getSort_bool());
         }
+        modelBuilder.addVarValue(atom, val);
     }
 }
