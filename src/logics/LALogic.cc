@@ -117,7 +117,7 @@ lbool LALogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMa
         }
         auto sub = equality->getSubst();
         PTRef var = sub.first;
-        assert(var != PTRef_Undef && isNumVarOrIte(var) && sub.second != PTRef_Undef);
+        assert(var != PTRef_Undef and isNumVarLike(var) and sub.second != PTRef_Undef);
         if (substitutions.has(var)) {
             // Already has substitution for this var, let the main substitution code deal with this situation
             continue;

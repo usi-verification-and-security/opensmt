@@ -90,7 +90,7 @@ void LAExpression::initialize( PTRef e, bool do_canonize )
             // Otherwise it is a variable, Ite, UF or constant
             //
 
-            assert(logic.isNumVarOrIte(t) || logic.isConstant(t) || logic.isUF(t));
+            assert(logic.isNumVarLike(t) || logic.isConstant(t) || logic.isUF(t));
             if ( logic.isConstant(t) ) {
                 const opensmt::Real tval = logic.getNumConst(t);
                 polynome[ PTRef_Undef ] += tval * c;
