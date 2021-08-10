@@ -28,8 +28,8 @@ struct EdgeRef {
     inline bool operator!=(EdgeRef other) const { return x != other.x; }
 };
 
-static VertexRef VertRef_Undef = VertexRef{INT32_MAX};
-static EdgeRef EdgeRef_Undef = EdgeRef{INT32_MAX};
+static VertexRef VertRef_Undef = VertexRef{UINT32_MAX};
+static EdgeRef EdgeRef_Undef = EdgeRef{UINT32_MAX};
 
 template<class T>
 struct Edge {

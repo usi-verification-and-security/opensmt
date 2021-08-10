@@ -7,7 +7,6 @@
 // implementations of template functions #included below class definition
 
 // holds the mapping from vertices to their values
-// FIXME: Incomplete for now. Will be fixed with new model interface
 template<class T>
 class STPModel {
 private:

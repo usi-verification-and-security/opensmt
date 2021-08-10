@@ -184,7 +184,7 @@ template<class T>
 void STPSolver<T>::popBacktrackPoints(unsigned int i) {
     // This method is called after unsatisfiable state is detected
     // The solver should remove all constraints that were pushed to the solver in the last "i" backtrackpoints
-    if (!i) return;
+    if (i == 0) return;
     assert(backtrack_points.size_() >= i);
     if (inv_bpoint > backtrack_points.size_() - i) {  // if we returned back to a consistent state, we reset inv_bpoint
         inv_bpoint = 0;
