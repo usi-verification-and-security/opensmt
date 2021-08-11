@@ -358,7 +358,7 @@ void Interpret::interp(ASTNode& n) {
                 notify_formatted(true, "Unknown command encountered!");
             }
         }
-    } catch (OsmtApiException e) {
+    } catch (OsmtApiException const &e) {
         notify_formatted(true, e.what());
     }
 }
