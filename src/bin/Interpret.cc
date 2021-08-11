@@ -150,243 +150,216 @@ using opensmt::getLogicFromString;
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);
     const smt2token cmd = n.getToken();
-    switch (cmd.x) {
-        case t_setlogic:
-        {
-            ASTNode &logic_n = **(n.children->begin());
-            const char* logic_name = logic_n.getValue();
-            if (isInitialized()) {
-                notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName());
-            } else {
-                auto logic_type = getLogicFromString(logic_name);
-                if (logic_type == Logic_t::UNDEF) {
-                    notify_formatted(true, "unknown logic %s", logic_name);
-                    break;
+    try {
+        switch (cmd.x) {
+            case t_setlogic: {
+                ASTNode &logic_n = **(n.children->begin());
+                const char *logic_name = logic_n.getValue();
+                if (isInitialized()) {
+                    notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName());
+                } else {
+                    auto logic_type = getLogicFromString(logic_name);
+                    if (logic_type == Logic_t::UNDEF) {
+                        notify_formatted(true, "unknown logic %s", logic_name);
+                        break;
+                    }
+                    initializeLogic(logic_type);
+                    main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
+                    main_solver->initialize();
+                    notify_success();
                 }
-                initializeLogic(logic_type);
-                main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
-                main_solver->initialize();
+                break;
+            }
+            case t_setinfo: {
+                setInfo(**(n.children->begin()));
                 notify_success();
-                }
-            break;
-        }
-        case t_setinfo:
-        {
-            setInfo(**(n.children->begin()));
-            notify_success();
-            break;
-        }
-        case t_getinfo:
-        {
-            getInfo(**(n.children->begin()));
-            break;
-        }
-        case t_setoption:
-        {
-            setOption(**(n.children->begin()));
-            notify_success();
-            break;
-        }
-        case  t_getoption:
-        {
-            getOption(**(n.children->begin()));
-            break;
-        }
-        case t_declaresort:
-        {
-            if (isInitialized()) {
-                Logic& logic = main_solver->getLogic();
-                char* name = buildSortName(n);
-                bool was_new = !logic.containsSort(name);
-                free(name);
-                SRef sr = newSort(n);
-                if (!was_new) {
-                    notify_formatted(true, "sort %s already declared", logic.getSortName(sr));
-                }
-                else {
-                    notify_success();
-                }
+                break;
             }
-            else
-                notify_formatted(true, "illegal command before set-logic: declare-sort");
-            break;
-        }
-        case t_declarefun:
-        {
-            if (isInitialized()) {
-                if (declareFun(n))
-                    notify_success();
+            case t_getinfo: {
+                getInfo(**(n.children->begin()));
+                break;
             }
-            else
-                notify_formatted(true, "Illegal command before set-logic: declare-fun");
-            break;
-        }
-        case t_declareconst:
-        {
-            if (isInitialized()) {
-                declareConst(n);
+            case t_setoption: {
+                setOption(**(n.children->begin()));
+                notify_success();
+                break;
             }
-            else
-                notify_formatted(true, "Illegal command before set-logic: declare-const");
-            break;
-        }
-        case t_assert:
-        {
-            if (isInitialized()) {
-                sstat status;
-                ASTNode& asrt = **(n.children->begin());
-                LetRecords letRecords;
-                PTRef tr = parseTerm(asrt, letRecords);
-                if (tr == PTRef_Undef)
-                    notify_formatted(true, "assertion returns an unknown sort");
-                else {
-                    assertions.push(tr);
-                    char* err_msg = NULL;
-                    status = main_solver->insertFormula(tr, &err_msg);
-
-                    if (status == s_Error)
-                        notify_formatted(true, "Error");
-                    else if (status == s_Undef)
+            case t_getoption: {
+                getOption(**(n.children->begin()));
+                break;
+            }
+            case t_declaresort: {
+                if (isInitialized()) {
+                    Logic &logic = main_solver->getLogic();
+                    char *name = buildSortName(n);
+                    bool was_new = !logic.containsSort(name);
+                    free(name);
+                    SRef sr = newSort(n);
+                    if (!was_new) {
+                        notify_formatted(true, "sort %s already declared", logic.getSortName(sr));
+                    } else {
                         notify_success();
-                    else if (status == s_False)
+                    }
+                } else
+                    notify_formatted(true, "illegal command before set-logic: declare-sort");
+                break;
+            }
+            case t_declarefun: {
+                if (isInitialized()) {
+                    if (declareFun(n))
                         notify_success();
+                } else
+                    notify_formatted(true, "Illegal command before set-logic: declare-fun");
+                break;
+            }
+            case t_declareconst: {
+                if (isInitialized()) {
+                    declareConst(n);
+                } else
+                    notify_formatted(true, "Illegal command before set-logic: declare-const");
+                break;
+            }
+            case t_assert: {
+                if (isInitialized()) {
+                    sstat status;
+                    ASTNode &asrt = **(n.children->begin());
+                    LetRecords letRecords;
+                    PTRef tr = parseTerm(asrt, letRecords);
+                    if (tr == PTRef_Undef)
+                        notify_formatted(true, "assertion returns an unknown sort");
+                    else {
+                        assertions.push(tr);
+                        char *err_msg = NULL;
+                        status = main_solver->insertFormula(tr, &err_msg);
 
-                    if (err_msg != NULL && status == s_Error)
-                        notify_formatted(true, err_msg);
-                    if (err_msg != NULL && status != s_Error)
-                        comment_formatted(err_msg);
-                    free(err_msg);
+                        if (status == s_Error)
+                            notify_formatted(true, "Error");
+                        else if (status == s_Undef)
+                            notify_success();
+                        else if (status == s_False)
+                            notify_success();
+
+                        if (err_msg != NULL && status == s_Error)
+                            notify_formatted(true, err_msg);
+                        if (err_msg != NULL && status != s_Error)
+                            comment_formatted(err_msg);
+                        free(err_msg);
+                    }
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: assert");
                 }
+                break;
             }
-            else {
-                notify_formatted(true, "Illegal command before set-logic: assert");
+            case t_definefun: {
+                if (isInitialized()) {
+                    defineFun(n);
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: define-fun");
+                }
+                break;
             }
-            break;
-        }
-        case t_definefun:
-        {
-            if (isInitialized()) {
-                defineFun(n);
-            }
-            else {
-                notify_formatted(true, "Illegal command before set-logic: define-fun");
-            }
-            break;
-        }
-        case t_simplify:
-        {
-            sstat status = main_solver->simplifyFormulas();
-            if (status == s_Error)
-                notify_formatted(true, "Simplify");
-            break;
-        }
-        case t_checksat:
-        {
-            checkSat();
-            break;
-        }
-        case t_getinterpolants:
-        {
-            if (config.produce_inter()) {
-                getInterpolants(n);
-            } else {
-                notify_formatted(true,
-                                 "Option to produce interpolants has not been set, skipping this command ...");
-            }
-            break;
-        }
-        case t_getassignment:
-        {
-           getAssignment();
-           break;
-        }
-        case t_getvalue:
-        {
-            getValue(n.children);
-            break;
-        }
-        case t_getmodel:
-        {
-            if (not isInitialized()) {
-                notify_formatted(true, "Illegal command before set-logic: get-model");
-            }
-            else if (main_solver->getStatus() != s_True) {
-                notify_formatted(true, "Command get-model called, but solver is not in SAT state");
-            }
-            else {
-                getModel();
-            }
-            break;
-        }
-
-        case t_writestate:
-        {
-            if (main_solver->solverEmpty()) {
+            case t_simplify: {
                 sstat status = main_solver->simplifyFormulas();
                 if (status == s_Error)
-                    notify_formatted(true, "write-state");
+                    notify_formatted(true, "Simplify");
+                break;
             }
-            writeState((**(n.children->begin())).getValue());
-            break;
-        }
-        case t_writefuns:
-        {
-            const char* filename = (**(n.children->begin())).getValue();
-            main_solver->writeFuns_smtlib2(filename);
-            break;
-        }
-        case t_echo:
-        {
-            const char* str = (**(n.children->begin())).getValue();
-            notify_formatted(false, "%s", str);
-            break;
-        }
-        case t_push:
-        {
-            std::string str((**(n.children->begin())).getValue());
-            try {
-                int num = std::stoi(str);
-                if (num < 0) {
-                    notify_formatted(true, "Incorrect push command, value is negative.");
-                    break;
+            case t_checksat: {
+                checkSat();
+                break;
+            }
+            case t_getinterpolants: {
+                if (config.produce_inter()) {
+                    getInterpolants(n);
+                } else {
+                    notify_formatted(true,
+                                     "Option to produce interpolants has not been set, skipping this command ...");
                 }
-                bool success = true;
-                while (num-- and success) { success = push(); }
-                if (success) { notify_success(); }
+                break;
             }
-            catch(std::out_of_range const & ex) {
-                notify_formatted(true, "Incorrect push command, the value is out of range.");
+            case t_getassignment: {
+                getAssignment();
+                break;
             }
-            break;
-        }
-        case t_pop:
-        {
-            std::string str((**(n.children->begin())).getValue());
-            try {
-                int num = std::stoi(str);
-                if (num < 0) {
-                    notify_formatted(true, "Incorrect pop command, value is negative.");
-                    break;
+            case t_getvalue: {
+                getValue(n.children);
+                break;
+            }
+            case t_getmodel: {
+                if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: get-model");
+                } else if (main_solver->getStatus() != s_True) {
+                    notify_formatted(true, "Command get-model called, but solver is not in SAT state");
+                } else {
+                    getModel();
                 }
-                bool success = true;
-                while (num-- and success) { success = pop(); }
-                if (success) { notify_success(); }
+                break;
             }
-            catch(std::out_of_range const & ex) {
-                notify_formatted(true, "Incorrect pop command, the value is out of range.");
+
+            case t_writestate: {
+                if (main_solver->solverEmpty()) {
+                    sstat status = main_solver->simplifyFormulas();
+                    if (status == s_Error)
+                        notify_formatted(true, "write-state");
+                }
+                writeState((**(n.children->begin())).getValue());
+                break;
             }
-            break;
+            case t_writefuns: {
+                const char *filename = (**(n.children->begin())).getValue();
+                main_solver->writeFuns_smtlib2(filename);
+                break;
+            }
+            case t_echo: {
+                const char *str = (**(n.children->begin())).getValue();
+                notify_formatted(false, "%s", str);
+                break;
+            }
+            case t_push: {
+                std::string str((**(n.children->begin())).getValue());
+                try {
+                    int num = std::stoi(str);
+                    if (num < 0) {
+                        notify_formatted(true, "Incorrect push command, value is negative.");
+                        break;
+                    }
+                    bool success = true;
+                    while (num-- and success) { success = push(); }
+                    if (success) { notify_success(); }
+                }
+                catch (std::out_of_range const &ex) {
+                    notify_formatted(true, "Incorrect push command, the value is out of range.");
+                }
+                break;
+            }
+            case t_pop: {
+                std::string str((**(n.children->begin())).getValue());
+                try {
+                    int num = std::stoi(str);
+                    if (num < 0) {
+                        notify_formatted(true, "Incorrect pop command, value is negative.");
+                        break;
+                    }
+                    bool success = true;
+                    while (num-- and success) { success = pop(); }
+                    if (success) { notify_success(); }
+                }
+                catch (std::out_of_range const &ex) {
+                    notify_formatted(true, "Incorrect pop command, the value is out of range.");
+                }
+                break;
+            }
+            case t_exit: {
+                exit();
+                notify_success();
+                break;
+            }
+            default: {
+                notify_formatted(true, "Unknown command encountered!");
+            }
         }
-        case t_exit:
-        {
-            exit();
-            notify_success();
-            break;
-        }
-        default:
-        {
-            notify_formatted(true, "Unknown command encountered!");
-        }
+    } catch (OsmtApiException e) {
+        notify_formatted(true, e.what());
     }
 }
 
@@ -421,6 +394,7 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
 
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
+    logic->enableExtendedSignature(config.useExtendedSignature());
     ASTType t = term.getType();
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();

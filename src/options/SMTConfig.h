@@ -302,6 +302,7 @@ public:
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
   static const char* o_ghost_vars;
+  static const char* o_extended_signature;
 
 private:
 
@@ -685,6 +686,8 @@ public:
         else
             insertOption(o_dump_query_name, new SMTOption(strdup(dump_query_name)));
     }
+
+
   char* dump_query_name() const
     {
         char* n;
@@ -907,6 +910,24 @@ public:
 
     int getSimplifyInterpolant() const {
         return simplify_inter();
+    }
+
+    void set_use_extended_signature(bool val)
+    {
+        if (optionTable.has(o_extended_signature)) {
+            delete optionTable[o_extended_signature];
+            optionTable[o_extended_signature] = new SMTOption(val);
+        }
+        else
+            insertOption(o_extended_signature, new SMTOption(val));
+    }
+
+    bool useExtendedSignature() const {
+        if (optionTable.has(o_extended_signature)) {
+            return optionTable[o_extended_signature]->getValue().numval != 0;
+        } else {
+            return false;
+        }
     }
 
 private:

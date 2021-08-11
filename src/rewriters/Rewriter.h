@@ -48,6 +48,7 @@ public:
                 continue;
             }
             // If we are here, we have already processed all children
+            assert(not substitutions.has(currentRef));
             vec<PTRef> newArgs(childrenCount);
             bool needsChange = false;
             for (unsigned i = 0; i < childrenCount; ++i) {
@@ -57,12 +58,10 @@ public:
                 newArgs[i] = childChanged ? target : term[i];
             }
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), newArgs) : currentRef;
-            if (needsChange) {
-                substitutions.insert(currentRef, newTerm);
-            }
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
+
             PTRef rewritten = cfg.rewrite(newTerm);
-            if (rewritten != newTerm) {
+            if (rewritten != newTerm || needsChange) {
                 substitutions.insert(currentRef, rewritten);
             }
             done[currentId] = 1;

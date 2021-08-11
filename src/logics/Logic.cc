@@ -88,6 +88,7 @@ Logic::Logic() :
     , sort_BOOL(SRef_Undef)
     , term_TRUE(PTRef_Undef)
     , term_FALSE(PTRef_Undef)
+    , use_extended_signature(false)
     , subst_num(0)
 {
     char* msg;
@@ -927,7 +928,12 @@ void Logic::markConstant(SymId id) {
 
 PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     PTRef tr = mkFun(f, args);
-    assert(isUFTerm(tr) || isUP(tr));
+    if (not isUFTerm(tr) and not isUP(tr)) {
+        char * name = printSym(f);
+        std::string msg = "Unknown symbol: " + std::string(name);
+        free(name);
+        throw OsmtApiException(msg);
+    }
     return tr;
 }
 

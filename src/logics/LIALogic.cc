@@ -206,10 +206,12 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
 }
 
 PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
-    if (sym == get_sym_Int_MOD())
-        return mkIntMod(terms);
-    if (sym == get_sym_Int_DIV())
-        return mkIntDiv(terms);
+    if (extendedSignatureEnabled()) {
+        if (sym == get_sym_Int_MOD())
+            return mkIntMod(terms);
+        if (sym == get_sym_Int_DIV())
+            return mkIntDiv(terms);
+    }
     return LALogic::insertTerm(sym, terms);
 }
 
