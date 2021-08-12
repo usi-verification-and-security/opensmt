@@ -1,19 +1,19 @@
 #include "LABounds.h"
 #include "LRALogic.h"
 
-LABound::LABound(BoundT type, LVRef var, const Delta& delta, int id)
+LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
     : type(type.t)
     , bidx(UINT32_MAX)
     , id(id)
     , var(var)
-    , delta(delta)
+    , delta(std::move(delta))
 {}
 
-LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, const Delta& delta)
+LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, Delta && delta)
 {
     uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
     LABoundRef id = {v};
-    new (lea(id)) LABound(type, var, delta, static_cast<int>(allocatedBounds.size()));
+    new (lea(id)) LABound(type, var, std::move(delta), static_cast<int>(allocatedBounds.size()));
     allocatedBounds.push_back(id);
     return id;
 }

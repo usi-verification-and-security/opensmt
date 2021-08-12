@@ -25,7 +25,7 @@ class LABound
     Delta delta;
 public:
     struct BLIdx { unsigned x; };
-    LABound(BoundT type, LVRef var, const Delta& delta, int id);
+    LABound(BoundT type, LVRef var, Delta && delta, int id);
     inline void setIdx(BLIdx i)  { bidx = i.x; }
     inline BLIdx getIdx() const { return {bidx}; }
     inline const Delta& getValue() const { return delta; }
@@ -43,7 +43,7 @@ public:
     LABoundAllocator() {}
     ~LABoundAllocator() { clear(); }
 
-    LABoundRef alloc(BoundT type, LVRef var, const Delta& delta);
+    LABoundRef alloc(BoundT type, LVRef var, Delta && delta);
     inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
     inline LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
