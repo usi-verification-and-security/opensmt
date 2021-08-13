@@ -1227,7 +1227,7 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
     PTRef intermediate_next_reason = PTRef_Undef;
     if (cgraph.hasNode(intermediateTerm)) {
         intermediate = cgraph.getNode(intermediateTerm);
-        if (intermediate->next != nullptr) {
+        if (intermediate->next) {
             intermediate_next = intermediate->next->target;
             intermediate_next_reason = intermediate->next->reason;
             cgraph.removeCEdge(intermediate->next);
