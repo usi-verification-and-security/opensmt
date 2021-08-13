@@ -521,7 +521,7 @@ UFInterpolator::J(const path_t & p, vector<path_t> & b_paths) {
 
     vec<PTRef> conj;
 
-    for (auto path : b_paths) {
+    for (const auto & path : b_paths) {
         conj.push(logic.mkEq(path.first->e, path.second->e));
     }
 
@@ -555,13 +555,13 @@ UFInterpolator::Iprime(const path_t & pi) {
         conj.push(I(theta));
     }
 
-    for (auto path : b_paths)
+    for (const auto & path : b_paths)
         conj.push(I(path));
 
     // Finally compute implication
     vec<PTRef> conj_impl;
 
-    for (auto path : b_paths)
+    for (const auto & path : b_paths)
         conj_impl.push(logic.mkEq(path.first->e, path.second->e));
 
     PTRef implicant = logic.mkAnd(conj_impl);
@@ -592,13 +592,13 @@ UFInterpolator::IprimeSwap(const path_t & pi) {
         conj.push(ISwap(theta));
     }
 
-    for (auto path : b_paths)
+    for (const auto & path : b_paths)
         conj.push(ISwap(path));
 
     // Finally compute implication
     vec<PTRef> conj_impl;
 
-    for (auto path : b_paths) {
+    for (const auto & path : b_paths) {
         conj_impl.push(logic.mkEq(path.first->e, path.second->e));
     }
 
