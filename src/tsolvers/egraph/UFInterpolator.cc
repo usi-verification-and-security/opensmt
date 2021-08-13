@@ -421,28 +421,24 @@ bool UFInterpolator::getSubpaths(const path_t & pi, path_t & pi_1, path_t & thet
     if (tcolor == I_B || tcolor == I_AB) rnode = y;
     else if (scolor == I_B || scolor == I_AB) rnode = x;
 
-    bool rfound = false;
+    if (not lnode or not rnode) {
+        for (auto edge : sorted_edges) {
+            scolor = edge->source->color;
+            tcolor = edge->target->color;
 
-    if (rnode != nullptr) rfound = true;
-
-    if (lnode == nullptr || rnode == nullptr) {
-        for (std::size_t i = 0; i < sorted_edges.size(); ++i) {
-            scolor = sorted_edges[i]->source->color;
-            tcolor = sorted_edges[i]->target->color;
-
-            if (lnode == nullptr) {
-                if (scolor == I_B || scolor == I_AB) lnode = sorted_edges[i]->source;
-                else if (tcolor == I_B || tcolor == I_AB) lnode = sorted_edges[i]->target;
+            if (not lnode) {
+                if (scolor == I_B || scolor == I_AB) lnode = edge->source;
+                else if (tcolor == I_B || tcolor == I_AB) lnode = edge->target;
             }
 
-            if (!rfound) {
-                if (tcolor == I_B || tcolor == I_AB) rnode = sorted_edges[i]->target;
-                else if (scolor == I_B || scolor == I_AB) rnode = sorted_edges[i]->source;
+            if (not rnode) {
+                if (tcolor == I_B || tcolor == I_AB) rnode = edge->target;
+                else if (scolor == I_B || scolor == I_AB) rnode = edge->source;
             }
         }
     }
 
-    if (lnode == nullptr || rnode == nullptr || lnode == rnode) {
+    if (not lnode || not rnode || lnode == rnode) {
         //theta empty
         pi_1.first = pi.first;
         pi_1.second = pi.first;
@@ -483,28 +479,24 @@ UFInterpolator::getSubpathsSwap(const path_t & pi, path_t & pi_1, path_t & theta
     if (tcolor == I_A || tcolor == I_AB) rnode = y;
     else if (scolor == I_A || scolor == I_AB) rnode = x;
 
-    bool rfound = false;
+    if (not lnode || not rnode) {
+        for (auto edge : sorted_edges) {
+            scolor = edge->source->color;
+            tcolor = edge->target->color;
 
-    if (rnode != nullptr) rfound = true;
-
-    if (lnode == nullptr || rnode == nullptr) {
-        for (std::size_t i = 0; i < sorted_edges.size(); ++i) {
-            scolor = sorted_edges[i]->source->color;
-            tcolor = sorted_edges[i]->target->color;
-
-            if (lnode == nullptr) {
-                if (scolor == I_A || scolor == I_AB) lnode = sorted_edges[i]->source;
-                else if (tcolor == I_A || tcolor == I_AB) lnode = sorted_edges[i]->target;
+            if (not lnode) {
+                if (scolor == I_A || scolor == I_AB) lnode = edge->source;
+                else if (tcolor == I_A || tcolor == I_AB) lnode = edge->target;
             }
 
-            if (!rfound) {
-                if (tcolor == I_A || tcolor == I_AB) rnode = sorted_edges[i]->target;
-                else if (scolor == I_A || scolor == I_AB) rnode = sorted_edges[i]->source;
+            if (not rnode) {
+                if (tcolor == I_A || tcolor == I_AB) rnode = edge->target;
+                else if (scolor == I_A || scolor == I_AB) rnode = edge->source;
             }
         }
     }
 
-    if (lnode == nullptr || rnode == nullptr || lnode == rnode) {
+    if (not lnode || not rnode || lnode == rnode) {
         //theta empty
         pi_1.first = pi.first;
         pi_1.second = pi.first;
@@ -529,16 +521,12 @@ UFInterpolator::J(const path_t & p, vector<path_t> & b_paths) {
 
     vec<PTRef> conj;
 
-    for (unsigned i = 0; i < b_paths.size(); i++) {
-        conj.push(logic.mkEq(b_paths[i].first->e, b_paths[i].second->e));
-        //  conj.push_back( egraph.mkEq( egraph.cons( b_paths[ i ].first->e
-        //                       , egraph.cons( b_paths[ i ].second->e ) ) ) );
+    for (auto path : b_paths) {
+        conj.push(logic.mkEq(path.first->e, path.second->e));
     }
 
     PTRef implicant = logic.mkAnd(conj);
-    //PTRef implicant = egraph.mkAnd( egraph.cons( conj ) );
     PTRef implicated = logic.mkEq(p.first->e, p.second->e);
-    //PTRef implicated = egraph.mkEq( egraph.cons( p.first->e, egraph.cons( p.second->e ) ) );
 
     // Notice that it works also for A-paths like
     //
@@ -548,7 +536,6 @@ UFInterpolator::J(const path_t & p, vector<path_t> & b_paths) {
     // should be (not (<= 2 1))
 
     PTRef res = logic.mkImpl(implicant, implicated);
-    //PTRef res = egraph.mkImplies( egraph.cons( implicant, egraph.cons( implicated ) ) );
     return res;
 }
 
@@ -568,15 +555,14 @@ UFInterpolator::Iprime(const path_t & pi) {
         conj.push(I(theta));
     }
 
-    for (unsigned i = 0; i < b_paths.size(); i++)
-        conj.push(I(b_paths[i]));
+    for (auto path : b_paths)
+        conj.push(I(path));
 
     // Finally compute implication
     vec<PTRef> conj_impl;
 
-    for (unsigned i = 0; i < b_paths.size(); i++) {
-        conj_impl.push(logic.mkEq(b_paths[i].first->e, b_paths[i].second->e));
-    }
+    for (auto path : b_paths)
+        conj_impl.push(logic.mkEq(path.first->e, path.second->e));
 
     PTRef implicant = logic.mkAnd(conj_impl);
     PTRef implicated = PTRef_Undef;
@@ -606,14 +592,14 @@ UFInterpolator::IprimeSwap(const path_t & pi) {
         conj.push(ISwap(theta));
     }
 
-    for (unsigned i = 0; i < b_paths.size(); i++)
-        conj.push(ISwap(b_paths[i]));
+    for (auto path : b_paths)
+        conj.push(ISwap(path));
 
     // Finally compute implication
     vec<PTRef> conj_impl;
 
-    for (unsigned i = 0; i < b_paths.size(); i++) {
-        conj_impl.push(logic.mkEq(b_paths[i].first->e, b_paths[i].second->e));
+    for (auto path : b_paths) {
+        conj_impl.push(logic.mkEq(path.first->e, path.second->e));
     }
 
     PTRef implicant = logic.mkAnd(conj_impl);
@@ -663,12 +649,11 @@ UFInterpolator::Irec(const path_t & p, std::map<path_t, PTRef> & cache) {
             B(p, b_premise_set);
             conj.push(J(p, b_premise_set));
 
-            for (unsigned i = 0; i < b_premise_set.size(); i++) {
-                path_t & fac = b_premise_set[i];
+            for (const auto & fac : b_premise_set) {
                 assert (L.find(fac) != L.end());
 
                 if (L[fac] == I_B) {
-                    conj.push(Irec(b_premise_set[i], cache));
+                    conj.push(Irec(fac, cache));
                 } else {
                     //swap here
                     conj_swap.push(logic.mkNot(IprimeSwap(fac)));
@@ -682,8 +667,8 @@ UFInterpolator::Irec(const path_t & p, std::map<path_t, PTRef> & cache) {
             // It's a B-path
         else {
             // Recurse on parents
-            for (unsigned i = 0; i < parents.size(); i++)
-                conj.push(Irec(parents[i], cache));
+            for (auto const & parent : parents)
+                conj.push(Irec(parent, cache));
         }
     } else {
         // Recurse on factors
@@ -757,8 +742,8 @@ UFInterpolator::Irec(const path_t & p, std::map<path_t, PTRef> & cache) {
                 }
             }
         } else {
-            for (std::size_t i = 0; i < factors.size(); ++i)
-                conj.push(Irec(factors[i], cache));
+            for (const auto & factor : factors)
+                conj.push(Irec(factor, cache));
         }
     }
 
@@ -789,8 +774,7 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
             vector<path_t> b_premise_set;
             BSwap(p, b_premise_set);
             conj.push(J(p, b_premise_set));
-            for (unsigned i = 0; i < b_premise_set.size(); i++) {
-                path_t & fac = b_premise_set[i];
+            for (const auto & fac : b_premise_set) {
                 assert (L.find(fac) != L.end());
 
                 if (L[fac] == I_A) {
@@ -807,8 +791,8 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
             // It's an A-path
         else {
             // Recurse on parents
-            for (unsigned i = 0; i < parents.size(); i++) {
-                conj.push(IrecSwap(parents[i], cache));
+            for (const auto & parent : parents) {
+                conj.push(IrecSwap(parent, cache));
             }
         }
     } else {
@@ -879,9 +863,8 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
                 }
             }
         } else {
-
-            for (std::size_t i = 0; i < factors.size(); ++i) {
-                conj.push(IrecSwap(factors[i], cache));
+            for (const auto & factor : factors) {
+                conj.push(IrecSwap(factor, cache));
             }
         }
     }
@@ -919,16 +902,16 @@ void UFInterpolator::Brec(const path_t & p, vector<path_t> & b_premise_set, set<
     if (factors.size() == 1) {
         // It's an A-path
         if (a_factor) {
-            for (unsigned i = 0; i < parents.size(); i++)
-                Brec(parents[i], b_premise_set, cache);
+            for (const auto & parent : parents)
+                Brec(parent, b_premise_set, cache);
         }
             // It's a B-path
         else
             b_premise_set.push_back(p);
     } else {
         // Recurse on factors
-        for (unsigned i = 0; i < factors.size(); i++)
-            Brec(factors[i], b_premise_set, cache);
+        for (const auto & factor : factors)
+            Brec(factor, b_premise_set, cache);
     }
 }
 
@@ -950,16 +933,16 @@ void UFInterpolator::BrecSwap(const path_t & p, vector<path_t> & a_premise_set, 
     if (factors.size() == 1) {
         // It's an A-path
         if (!a_factor) {
-            for (unsigned i = 0; i < parents.size(); i++)
-                BrecSwap(parents[i], a_premise_set, cache);
+            for (const auto & parent : parents)
+                BrecSwap(parent, a_premise_set, cache);
         }
             // It's a B-path
         else
             a_premise_set.push_back(p);
     } else {
         // Recurse on factors
-        for (unsigned i = 0; i < factors.size(); i++)
-            BrecSwap(factors[i], a_premise_set, cache);
+        for (const auto & factor : factors)
+            BrecSwap(factor, a_premise_set, cache);
     }
 }
 
@@ -1083,8 +1066,8 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         CNode * tn = x;
         assert (logic.getPterm(tx->e).size() == logic.getPterm(tn->e).size());
         // Examine children of the congruence edge
-        Pterm & px = logic.getPterm(tx->e);
-        Pterm & pn = logic.getPterm(tn->e);
+        const Pterm & px = logic.getPterm(tx->e);
+        const Pterm & pn = logic.getPterm(tn->e);
 
         for (int j = 0; j < px.size(); ++j) {
             PTRef arg_tx = px[j];
@@ -1107,8 +1090,8 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         if (sorted_edges[i]->reason == PTRef_Undef) {
             assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
             // Examine children of the congruence edge
-            Pterm & px = logic.getPterm(x->e);
-            Pterm & pn = logic.getPterm(n->e);
+            const Pterm & px = logic.getPterm(x->e);
+            const Pterm & pn = logic.getPterm(n->e);
 
             for (int j = 0; j < px.size(); ++j) {
                 PTRef arg_x = px[j];
@@ -1122,8 +1105,7 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         }
 
         // New factor
-        if (i < sorted_edges.size()
-            && sorted_edges[i]->color != last_color) {
+        if (i < sorted_edges.size() && sorted_edges[i]->color != last_color) {
             factors.back().second = x;
             factors.push_back(path(x, y));
             last_color = sorted_edges[i]->color;
@@ -1141,21 +1123,21 @@ void
 UFInterpolator::labelFactors(std::vector<path_t> & factors) {
     // McMillan
     if (usingStrong())
-        for (std::size_t i = 0; i < factors.size(); ++i)
-            L[factors[i]] = I_B;
+        for (const auto & factor : factors)
+            L[factor] = I_B;
 
-        // McMillan'
+    // McMillan'
     else if (usingWeak())
-        for (std::size_t i = 0; i < factors.size(); ++i)
-            L[factors[i]] = I_A;
+        for (const auto & factor : factors)
+            L[factor] = I_A;
 
-        // Random
+    // Random
     else if (usingRandom()) {
-        for (std::size_t i = 0; i < factors.size(); ++i) {
+        for (const auto & factor : factors) {
             if (rand() % 2) {
-                L[factors[i]] = I_B;
+                L[factor] = I_B;
             } else {
-                L[factors[i]] = I_A;
+                L[factor] = I_A;
             }
         }
     }
