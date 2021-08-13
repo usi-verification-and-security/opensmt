@@ -5,12 +5,12 @@
 #ifndef OPENSMT_BOOLREWRITING_H
 #define OPENSMT_BOOLREWRITING_H
 
-#include <PTRef.h>
+#include "PTRef.h"
+#include "Logic.h"
+
 #include <vector>
 #include <unordered_map>
-#include <Logic.h>
 
-class Logic;
 
 void computeIncomingEdges(const Logic& logic, PTRef tr, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming);
 
