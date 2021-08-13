@@ -1251,7 +1251,7 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
 
     cgraph.addCEdge(intermediate, to, PTRef_Undef);
 //    intermediate->next->color = to->color;
-    if (intermediate_next != nullptr) {
+    if (intermediate_next) {
         // MB: It looks like it is possible that there has already been an edge n -> cnn
         // In that case a self-loop edge would be added here and that causes trouble later
         // We need to prevent that
