@@ -1,0 +1,8 @@
+(set-logic QF_LIA)
+(set-info :status sat)
+(declare-const a Int)
+(declare-const b Int)
+(assert (= a 1))
+(assert (= b 1))
+(check-sat)
+(exit)

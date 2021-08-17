@@ -267,7 +267,7 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
         // Check that enode_store's PTRef -> ERef conversion is consistent
         assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
 
-        if (logic.isVarOrIte(tr)) {
+        if (logic.isVarOrIte(tr) or logic.isConstant(tr)) {
             // Original is a theory variable
             PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
             modelBuilder.addVarValue(tr, val_tr);

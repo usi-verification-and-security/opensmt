@@ -834,11 +834,13 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
         free(name);
         return false;
     }
-    PTRef rval = logic.mkConst(ret_sort, fname);
-    if (rval == PTRef_Undef) {
+    char * msg;
+    SymRef rval = logic.declareFun(fname, ret_sort, {}, &msg, false);
+    if (rval == SymRef_Undef) {
         comment_formatted("While declare-const %s: %s", fname, "error");
         return false;
     }
+    user_declarations.push(rval);
     notify_success();
     return true;
 }
