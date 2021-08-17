@@ -10,6 +10,7 @@
 #include <Opensmt.h>
 
 #include <memory>
+#include <Substitutor.h>
 
 class UFModelTest : public ::testing::Test {
 protected:
@@ -161,20 +162,22 @@ protected:
     UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
         char * msg;
         SRef U = logic.declareSort("U", &msg);
-        SymRef fs = logic.declareFun("f", U, {U}, &msg, false);
+        fs = logic.declareFun("f", U, {U}, &msg, false);
         x = logic.mkVar(U, "x");
         a = logic.mkConst(U, "a");
-        f_a = logic.mkUninterpFun(fs, {x});
+        f_a = logic.mkUninterpFun(fs, {a});
         eq_x_f_a = logic.mkEq(x, f_a);
         ms.insertFormula(eq_x_f_a);
         ms.check();
         model = ms.getModel();
     }
     PTRef getModelFor(PTRef tr) { return model->evaluate(tr); }
+    TemplateFunction getDefinitionFor(SymRef sr) { return model->getDefinition(sr); }
     Logic logic;
     SMTConfig c;
     MainSolver ms;
     std::unique_ptr<Model> model;
+    SymRef fs;
     PTRef a;
     PTRef x;
     PTRef f_a;
@@ -189,6 +192,12 @@ TEST_F(UFConstModelTest, test_constModel) {
     PTRef f_a_model = getModelFor(f_a);
     PTRef x_model = getModelFor(x);
     ASSERT_EQ(f_a_model, x_model);
+
+    TemplateFunction tf = model->getDefinition(fs);
+    Logic::SubstMap sm;
+    sm.insert(tf.getArgs()[0], a);
+    PTRef rewritten = Substitutor(logic, sm).rewrite(tf.getBody());
+    ASSERT_EQ(rewritten, x_model);
 }
 
 class LAModelTest : public ::testing::Test {
