@@ -156,6 +156,41 @@ TEST_F(UFModelBuilderTest, test_functionModel) {
     ASSERT_TRUE(logic.isIte(templateFun.getBody()));
 }
 
+class UFConstModelTest : public ::testing::Test {
+protected:
+    UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
+        char * msg;
+        SRef U = logic.declareSort("U", &msg);
+        SymRef fs = logic.declareFun("f", U, {U}, &msg, false);
+        x = logic.mkVar(U, "x");
+        a = logic.mkConst(U, "a");
+        f_a = logic.mkUninterpFun(fs, {x});
+        eq_x_f_a = logic.mkEq(x, f_a);
+        ms.insertFormula(eq_x_f_a);
+        ms.check();
+        model = ms.getModel();
+    }
+    PTRef getModelFor(PTRef tr) { return model->evaluate(tr); }
+    Logic logic;
+    SMTConfig c;
+    MainSolver ms;
+    std::unique_ptr<Model> model;
+    PTRef a;
+    PTRef x;
+    PTRef f_a;
+    PTRef eq_x_f_a;
+};
+
+TEST_F(UFConstModelTest, test_constModel) {
+    PTRef a_model = getModelFor(a);
+    char * a_model_name = logic.pp(a_model);
+    ASSERT_EQ(strcmp(a_model_name, "a"), 0);
+    free(a_model_name);
+    PTRef f_a_model = getModelFor(f_a);
+    PTRef x_model = getModelFor(x);
+    ASSERT_EQ(f_a_model, x_model);
+}
+
 class LAModelTest : public ::testing::Test {
 protected:
     LAModelTest(): logic{} {}
