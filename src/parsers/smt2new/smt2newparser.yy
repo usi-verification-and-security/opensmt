@@ -149,7 +149,7 @@ command: '(' TK_SETLOGIC TK_SYM ')'
 
             $$->children->push_back($7);
         }
-    | '(' TK_DECLARECONST const_val '(' ')' sort ')'
+    | '(' TK_DECLARECONST const_val sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
@@ -159,7 +159,7 @@ command: '(' TK_SETLOGIC TK_SYM ')'
             sortl->children = new std::vector<ASTNode*>();
             $$->children->push_back(sortl);
 
-            $$->children->push_back($6);
+            $$->children->push_back($4);
         }
     | '(' TK_DEFINEFUN TK_SYM '(' sorted_var_list ')' sort term ')'
         {
