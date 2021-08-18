@@ -41,6 +41,7 @@ Bug fixes:
    uninterpreted functions.
  - Interpret: Support correctly push and pop commands with integer
    argument.
+ - Interpret: Standard-compliant handling of `declare-const`
  - Interpret: fix the methods for unbuffered reading from pipe
  - Data structures: Do not use `mtl::vec` when the stored type is not trivially copyable.
  - Fixed handling of distinct that are not on the top level of the input formula.
