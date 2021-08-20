@@ -50,7 +50,7 @@ void ProofGraph::getGraphInfo()
     num_edges=0;
     num_unary=0;
     num_leaves=0;
-    proof_variables.empty();
+    proof_variables.clear();
 
     q.push_back(getRoot());
     do
