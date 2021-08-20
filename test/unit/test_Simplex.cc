@@ -17,7 +17,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
     LVRef y = vs.getNewVar();
 
     LVRef y_minus_x = vs.getNewVar();
-    auto p_y_minus_x = std::unique_ptr<Polynomial>(new Polynomial());
+    auto p_y_minus_x = std::make_unique<Polynomial>();
 
     p_y_minus_x->addTerm(x, -1);
     p_y_minus_x->addTerm(y, 1);
@@ -131,7 +131,7 @@ TEST(Simplex_test, test_Assignment)
 
     s.newNonbasicVar(x);
     s.newNonbasicVar(y);
-    auto p_y_plus_x = std::unique_ptr<Polynomial>(new Polynomial());
+    auto p_y_plus_x = std::make_unique<Polynomial>();
     p_y_plus_x->addTerm(x, 1);
     p_y_plus_x->addTerm(y, 1);
     s.newRow(y_minus_x, std::move(p_y_plus_x));

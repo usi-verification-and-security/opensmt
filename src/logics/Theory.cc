@@ -57,9 +57,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
             current_units_vec.push(PtAsgn{key, new_units[key]});
         }
 
-        auto resAndSubst = getLogic().retrieveSubstitutions(current_units_vec);
-        auto res = resAndSubst.first;
-        auto & newsubsts = resAndSubst.second;
+        auto [res, newsubsts] = getLogic().retrieveSubstitutions(current_units_vec);
         getLogic().substitutionsTransitiveClosure(newsubsts);
 
 

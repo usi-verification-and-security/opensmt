@@ -224,8 +224,9 @@ std::unique_ptr<Model> MainSolver::getModel() {
 
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
-    return std::unique_ptr<InterpolationContext>(new InterpolationContext(config, *theory, term_mapper,
-                                                                          getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()));
+    return std::make_unique<InterpolationContext>(
+        config, *theory, term_mapper, getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()
+    );
 }
 
 void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const

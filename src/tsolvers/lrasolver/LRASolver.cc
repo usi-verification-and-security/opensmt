@@ -106,7 +106,7 @@ LRASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t
     vec<PtAsgn> explCopy;
     explanation.copyTo(explCopy);
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
-                                    std::unique_ptr<TermColorInfo>(new GlobalTermColorInfo(pmanager, mask)));
+                                    std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }

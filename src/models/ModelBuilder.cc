@@ -14,7 +14,7 @@ std::unique_ptr<Model> ModelBuilder::build() {
         TemplateFunction templateFun(std::move(symbolSigVal.second.first), body);
         builtDefinitions[symbolSigVal.first] = std::move(templateFun);
     }
-    return std::unique_ptr<Model>(new Model(logic, assignment, builtDefinitions));
+    return std::make_unique<Model>(logic, assignment, builtDefinitions);
 }
 
 void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef val)

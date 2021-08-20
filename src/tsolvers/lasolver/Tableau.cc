@@ -29,7 +29,7 @@ void Tableau::newNonbasicVar(LVRef v) {
     assert(!isProcessed(v));
     ensureTableauReadyFor(v);
     assert(!cols[v.x]);
-    cols[v.x] = std::unique_ptr<Column>(new Column());
+    cols[v.x] = std::make_unique<Column>();
     varTypes[getVarId(v)] = VarType::NONBASIC;
 }
 

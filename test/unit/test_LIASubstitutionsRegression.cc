@@ -8,7 +8,7 @@
 class LIASubstitutionsRegression: public ::testing::Test {
 public:
     std::unique_ptr<Opensmt> getLIAOsmt() {
-        return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_lia, "test"));
+        return std::make_unique<Opensmt>(opensmt_logic::qf_lia, "test");
     }
 };
 

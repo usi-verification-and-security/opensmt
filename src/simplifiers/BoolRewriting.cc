@@ -27,8 +27,7 @@ void computeIncomingEdges(const Logic& logic, PTRef root, std::unordered_map<PTR
     unprocessed_ptrefs.push(root);
     while (unprocessed_ptrefs.size() > 0) {
         PTRef current = unprocessed_ptrefs.last();
-        auto it = PTRefToIncoming.find(current);
-        if (it != PTRefToIncoming.end()) {
+        if (auto it = PTRefToIncoming.find(current); it != PTRefToIncoming.end()) {
             it->second++;
             unprocessed_ptrefs.pop();
             continue;

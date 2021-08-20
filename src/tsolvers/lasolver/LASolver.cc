@@ -10,9 +10,7 @@ PtAsgn LASolver::getAsgnByBound(LABoundRef br) const {
 }
 
 LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
-    auto constTermPair = logic.leqToConstantAndTerm(leq_tr);
-    PTRef const_tr = constTermPair.first;
-    PTRef sum_tr = constTermPair.second;
+    auto [const_tr, sum_tr] = logic.leqToConstantAndTerm(leq_tr);
     assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
     bool sum_term_is_negated = logic.isNegated(sum_tr);
@@ -76,9 +74,7 @@ void LASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
     assert(logic.isNumLeq(tr));
-    auto constTermPair = logic.leqToConstantAndTerm(tr);
-    PTRef cons = constTermPair.first;
-    PTRef sum  = constTermPair.second;
+    auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
     assert(logic.isNumVarOrIte(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
     assert(!logic.isNumTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
@@ -231,7 +227,7 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 }
 
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
-    auto poly = std::unique_ptr<Polynomial>(new Polynomial());
+    auto poly = std::make_unique<Polynomial>();
     bool negated = logic.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;

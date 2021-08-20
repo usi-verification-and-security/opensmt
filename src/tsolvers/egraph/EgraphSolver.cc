@@ -223,7 +223,7 @@ void Egraph::computeModel( )
     if (values != nullptr)
         return;
 
-    values = std::unique_ptr<Values>(new Values());
+    values = std::make_unique<Values>();
     for (ERef er : enode_store.getTermEnodes()) {
         ERef root_r = enode_store[er].getRoot();
         values->addValue(er, root_r);
@@ -721,8 +721,7 @@ bool Egraph::assertNEq(ERef p, ERef q, const Expl &r)
     cerr << "Reason is " << logic.printTerm(r.tr) << endl;
 #endif
     ELRef pdist = ELRef_Undef;
-    Enode& en_q = enode_store[q];
-    if ( en_q.getForbid() == ELRef_Undef ) {
+    if (Enode & en_q = getEnode(q); en_q.getForbid() == ELRef_Undef) {
         pdist = forbid_allocator.alloc(p, r, q);
         en_q.setForbid( pdist );
         forbid_allocator[pdist].link = pdist;
@@ -750,8 +749,7 @@ bool Egraph::assertNEq(ERef p, ERef q, const Expl &r)
 
     // Create new distinction in p
     ELRef qdist = ELRef_Undef;
-    Enode& en_p = enode_store[p];
-    if ( en_p.getForbid() == ELRef_Undef ) {
+    if (Enode & en_p = getEnode(p); en_p.getForbid() == ELRef_Undef ) {
         qdist = forbid_allocator.alloc(q, r, p);
         en_p.setForbid( qdist );
         forbid_allocator[qdist].link = qdist;
@@ -1292,9 +1290,7 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
     const Enode& en_p = getEnode(p);
     const Enode& en_q = getEnode(q);
 
-    dist_t intersection = en_p.getDistClasses() & en_q.getDistClasses();
-
-    if (intersection) {
+    if (dist_t intersection = en_p.getDistClasses() & en_q.getDistClasses()) {
         // Compute the first index in the intersection
         // TODO: Use hacker's delight
         unsigned index = 0;
