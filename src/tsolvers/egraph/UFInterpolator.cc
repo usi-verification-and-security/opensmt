@@ -264,7 +264,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                     }
                 }
 
-                PTRef nn = logic.mkUninterpFun(logic.getPterm(x->e).symb(), new_args);
+                PTRef nn = logic.mkUninterpFun(logic.getPterm(x->e).symb(), opensmt::Span<PTRef>(new_args));
                 if (nn == x->e) {
                     x->color = I_AB;
                 } else if (nn == n->e) {

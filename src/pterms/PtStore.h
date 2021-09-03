@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Pterm.h"
 #include "SymStore.h"
+#include "Span.h"
 #include <unordered_map>
 
 class SStore; // forward declaration
@@ -67,11 +68,7 @@ class PtStore {
   public:
     PtStore(SymStore& symstore) : symstore(symstore) {}
 
-    PTRef newTerm(const SymRef sym, const vec<PTRef>& ps);/* {
-        PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
-        assert(idToPTRef.size() == pta.getNumTerms());
-        return tr;
-    }*/
+    PTRef newTerm(const SymRef sym, const opensmt::Span<PTRef>& ps);
 
     void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy
 

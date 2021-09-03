@@ -106,8 +106,8 @@ public:
     virtual PTRef sumToNormalizedInequality(PTRef sum) override;
 
 private:
-    PTRef _mkIntMod(vec<PTRef> const & args);
-    PTRef _mkIntDiv(vec<PTRef> const & args);
+    PTRef _mkIntMod(PTRef dividend, PTRef divisor);
+    PTRef _mkIntDiv(PTRef dividend, PTRef divisor);
 };
 
 #endif

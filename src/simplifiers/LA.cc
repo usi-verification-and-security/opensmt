@@ -152,13 +152,9 @@ PTRef LAExpression::getPTRefNonConstant()
         if ( it->first == PTRef_Undef )
             constant = it->second;
         else {
-            char* msg;
             PTRef coeff = logic.mkConst(it->second);
             PTRef vv = it->first;
-            vec<PTRef> term;
-            term.push(coeff);
-            term.push(vv);
-            sum_list.push( logic.mkNumTimes(term, &msg) );
+            sum_list.push( logic.mkNumTimes({coeff, vv}) );
         }
     }
     if ( sum_list.size() == 0) {
@@ -180,13 +176,9 @@ PTRef LAExpression::toPTRef() const {
         if ( it->first == PTRef_Undef )
             constant = it->second;
         else {
-            char* msg;
             PTRef coeff = logic.mkConst(it->second);
             PTRef vv = it->first;
-            vec<PTRef> term;
-            term.push(coeff);
-            term.push(vv);
-            sum_list.push( logic.mkNumTimes(term, &msg) );
+            sum_list.push( logic.mkNumTimes({coeff, vv}) );
         }
     }
     if ( sum_list.size() == 0) {

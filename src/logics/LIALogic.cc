@@ -196,7 +196,7 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
             varFactors[i] = mkNumTimes(vars[i], mkConst(coeffs[i]));
         }
     }
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), varFactors);
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), opensmt::Span<PTRef>(varFactors));
     // 0 <= normalizedSum + constatValue
     // in LIA we can strengthen the inequality to
     // ceiling(-constantValue) <= normalizedSum
@@ -217,17 +217,14 @@ PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
 
 PTRef LIALogic::mkIntDiv(vec<PTRef> const & args) {
     if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for DIV operator"); }
-    return _mkIntDiv(args);
+    return _mkIntDiv(args[0], args[1]);
 }
 
 PTRef LIALogic::mkIntDiv(PTRef dividend, PTRef divisor) {
-    return _mkIntDiv({dividend, divisor});
+    return _mkIntDiv(dividend, divisor);
 }
 
-PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
-    assert(args.size() == 2);
-    PTRef dividend = args[0];
-    PTRef divisor = args[1];
+PTRef LIALogic::_mkIntDiv(PTRef dividend, PTRef divisor) {
     if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
     if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
 
@@ -240,22 +237,19 @@ PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
         auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
         return mkConst(intDiv);
     }
-    return insertTermHash(sym_Int_DIV, args);
+    return insertTermHash(sym_Int_DIV, {dividend, divisor});
 }
 
 PTRef LIALogic::mkIntMod(vec<PTRef> const & args) {
     if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for MOD operator"); }
-    return _mkIntMod(args);
+    return _mkIntMod(args[0], args[1]);
 }
 
 PTRef LIALogic::mkIntMod(PTRef dividend, PTRef divisor) {
-    return _mkIntMod({dividend, divisor});
+    return _mkIntMod(dividend, divisor);
 }
 
-PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
-    assert(args.size() == 2);
-    PTRef dividend = args[0];
-    PTRef divisor = args[1];
+PTRef LIALogic::_mkIntMod(PTRef dividend, PTRef divisor) {
     if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
     if (isNumZero(divisor)) { throw LADivisionByZeroException(); }
 
@@ -270,5 +264,5 @@ PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkConst(intMod);
     }
-    return insertTermHash(sym_Int_MOD, args);
+    return insertTermHash(sym_Int_MOD, {dividend, divisor});
 }

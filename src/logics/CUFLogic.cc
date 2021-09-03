@@ -207,8 +207,7 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
         v = -v;
         PTRef nterm = mkCUFConst(v);
         SymRef s = getPterm(nterm).symb();
-        vec<PTRef> args;
-        return mkFun(s, args);
+        return mkFun(s, {});
     }
     PTRef mo = mkCUFConst(-1);
     return mkCUFTimes(mo, tr);
@@ -236,13 +235,8 @@ CUFLogic::mkCUFMinus(const vec<PTRef>& args_in, char** msg)
 PTRef
 CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2, char** msg)
 {
-    vec<PTRef> sum_args;
-    sum_args.push(arg1);
-    sum_args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_PLUS, sum_args);
-    sum_args[0] = arg2;
-    sum_args[1] = arg1;
-    PTRef tr_comm = mkFun(sym_CUF_PLUS, sum_args);
+    PTRef tr = mkFun(sym_CUF_PLUS, {arg1, arg2});
+    PTRef tr_comm = mkFun(sym_CUF_PLUS, {arg2, arg1});
     PTRef tr_comm_eq = mkEq(tr, tr_comm);
     if (!comm_eqs.has(tr_comm_eq))
         comm_eqs.insert(tr_comm_eq, true);
@@ -316,14 +310,8 @@ CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 CUFLogic::mkCUFTimes(const PTRef arg1, const PTRef arg2, char** msg)
 {
-    vec<PTRef> times_args;
-    times_args.push(arg1);
-    times_args.push(arg2);
-
-    PTRef tr = mkFun(sym_CUF_TIMES, times_args);
-    times_args[0] = arg2;
-    times_args[1] = arg1;
-    PTRef tr_comm = mkFun(sym_CUF_TIMES, times_args);
+    PTRef tr = mkFun(sym_CUF_TIMES, {arg1, arg2});
+    PTRef tr_comm = mkFun(sym_CUF_TIMES, {arg2, arg1});
     PTRef tr_comm_eq = mkEq(tr, tr_comm);
     if (!comm_eqs.has(tr_comm_eq))
         comm_eqs.insert(tr_comm_eq, true);
@@ -333,10 +321,7 @@ CUFLogic::mkCUFTimes(const PTRef arg1, const PTRef arg2, char** msg)
 PTRef
 CUFLogic::mkCUFDiv(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> div_args;
-    div_args.push(arg1);
-    div_args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_DIV, div_args);
+    PTRef tr = mkFun(sym_CUF_DIV, {arg1, arg2});
     return tr;
 }
 
@@ -357,10 +342,7 @@ CUFLogic::mkCUFLeq(const PTRef arg1, const PTRef arg2, char** msg)
         else
             return getTerm_false();
     }
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef leq_tr = mkFun(sym_CUF_LEQ, args);
+    PTRef leq_tr = mkFun(sym_CUF_LEQ, {arg1, arg2});
     return mkOr(leq_tr, mkEq(arg1, arg2));
 }
 
@@ -375,10 +357,7 @@ CUFLogic::mkCUFGt(const PTRef arg1, const PTRef arg2, char** msg)
         else
             return getTerm_false();
     }
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_GT, args);
+    PTRef tr = mkFun(sym_CUF_GT, {arg1, arg2});
     // a>b -> a != b
     PTRef tr_eq = mkEq(arg1, arg2);
     PTRef n_tr_eq = mkCUFNot(tr_eq);
@@ -397,30 +376,21 @@ PTRef CUFLogic::mkCUFLshift(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg2) && getCUFNUMConst(arg2) == 0)
         return arg1;
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    return mkFun(sym_CUF_LSHIFT, args);
+    return mkFun(sym_CUF_LSHIFT, {arg1, arg2});
 }
 
 PTRef CUFLogic::mkCUFLRshift(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg2) && getCUFNUMConst(arg2) == 0)
         return arg1;
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    return mkFun(sym_CUF_LRSHIFT, args);
+    return mkFun(sym_CUF_LRSHIFT, {arg1, arg2});
 }
 
 PTRef CUFLogic::mkCUFARshift(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg2) && getCUFNUMConst(arg2) == 0)
         return arg1;
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    return mkFun(sym_CUF_ARSHIFT, args);
+    return mkFun(sym_CUF_ARSHIFT, {arg1, arg2});
 }
 
 PTRef CUFLogic::mkCUFMod(const PTRef arg1, const PTRef arg2)
@@ -429,21 +399,13 @@ PTRef CUFLogic::mkCUFMod(const PTRef arg1, const PTRef arg2)
         return getTerm_CUFZero();
     // if b > 0, then 0 <= a % b < b
     // if b < 0, then b < a % b <= 0
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    return mkFun(sym_CUF_MOD, args);
+    return mkFun(sym_CUF_MOD, {arg1, arg2});
 }
 
 PTRef CUFLogic::mkCUFBwAnd(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_BWAND, args);
-    args[0] = arg2;
-    args[1] = arg1;
-    PTRef tr_comm = mkFun(sym_CUF_BWAND, args);
+    PTRef tr = mkFun(sym_CUF_BWAND, {arg1, arg2});
+    PTRef tr_comm = mkFun(sym_CUF_BWAND, {arg2, arg1});
     PTRef tr_comm_eq = mkEq(tr, tr_comm);
     if (!comm_eqs.has(tr_comm_eq))
         comm_eqs.insert(tr_comm_eq, true);
@@ -452,13 +414,8 @@ PTRef CUFLogic::mkCUFBwAnd(const PTRef arg1, const PTRef arg2)
 
 PTRef CUFLogic::mkCUFBwOr(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_BWOR, args);
-    args[0] = arg2;
-    args[1] = arg1;
-    PTRef tr_comm = mkFun(sym_CUF_BWOR, args);
+    PTRef tr = mkFun(sym_CUF_BWOR, {arg1, arg2});
+    PTRef tr_comm = mkFun(sym_CUF_BWOR, {arg2, arg1});
     PTRef tr_comm_eq = mkEq(tr, tr_comm);
     if (!comm_eqs.has(tr_comm_eq))
         comm_eqs.insert(tr_comm_eq, true);
@@ -467,9 +424,7 @@ PTRef CUFLogic::mkCUFBwOr(const PTRef arg1, const PTRef arg2)
 
 PTRef CUFLogic::mkCUFInc(const PTRef arg1)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    PTRef tr = mkFun(sym_CUF_INC, args);
+    PTRef tr = mkFun(sym_CUF_INC, {arg1});
     PTRef neq = mkCUFNeq(arg1, tr);
     if (!inc_diseqs.has(neq))
         inc_diseqs.insert(neq, true);
@@ -478,9 +433,7 @@ PTRef CUFLogic::mkCUFInc(const PTRef arg1)
 
 PTRef CUFLogic::mkCUFDec(const PTRef arg1)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    PTRef tr = mkFun(sym_CUF_DEC, args);
+    PTRef tr = mkFun(sym_CUF_DEC, {arg1});
     PTRef neq = mkCUFNeq(arg1, tr);
     if (!inc_diseqs.has(neq))
         inc_diseqs.insert(neq, true);
@@ -489,19 +442,13 @@ PTRef CUFLogic::mkCUFDec(const PTRef arg1)
 
 PTRef CUFLogic::mkCUFLand(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_LAND, args);
+    PTRef tr = mkFun(sym_CUF_LAND, {arg1, arg2});
     return tr;
 }
 
 PTRef CUFLogic::mkCUFLor(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_LOR, args);
+    PTRef tr = mkFun(sym_CUF_LOR, {arg1, arg2});
     return tr;
 }
 
@@ -512,13 +459,8 @@ PTRef CUFLogic::mkCUFNot(const PTRef arg)
 
 PTRef CUFLogic::mkCUFBwXor(const PTRef arg1, const PTRef arg2)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    args.push(arg2);
-    PTRef tr = mkFun(sym_CUF_BWXOR, args);
-    args[0] = arg2;
-    args[1] = arg1;
-    PTRef tr_comm = mkFun(sym_CUF_BWXOR, args);
+    PTRef tr = mkFun(sym_CUF_BWXOR, {arg1, arg2});
+    PTRef tr_comm = mkFun(sym_CUF_BWXOR, {arg2, arg1});
     PTRef tr_comm_eq = mkEq(tr, tr_comm);
     if (!comm_eqs.has(tr_comm_eq))
         comm_eqs.insert(tr_comm_eq, true);
@@ -527,9 +469,7 @@ PTRef CUFLogic::mkCUFBwXor(const PTRef arg1, const PTRef arg2)
 
 PTRef CUFLogic::mkCUFCompl(const PTRef arg1)
 {
-    vec<PTRef> args;
-    args.push(arg1);
-    PTRef tr = mkFun(sym_CUF_COMPL, args);
+    PTRef tr = mkFun(sym_CUF_COMPL, {arg1});
     PTRef neq = mkCUFNeq(tr, arg1);
     if (!compl_diseqs.has(neq))
         compl_diseqs.insert(neq, true);
@@ -538,24 +478,18 @@ PTRef CUFLogic::mkCUFCompl(const PTRef arg1)
 
 PTRef CUFLogic::mkCUFSizeof(const PTRef arg)
 {
-    vec<PTRef> args;
-    args.push(arg);
-    return mkFun(sym_CUF_SIZEOF, args);
+    return mkFun(sym_CUF_SIZEOF, {arg});
 }
 
 PTRef CUFLogic::mkCUFAddrof(const PTRef arg)
 {
-    vec<PTRef> args;
-    args.push(arg);
-    return mkFun(sym_CUF_SIZEOF, args);
+    return mkFun(sym_CUF_SIZEOF, {arg});
 }
 
 
 PTRef CUFLogic::mkCUFPtr(const PTRef arg)
 {
-    vec<PTRef> args;
-    args.push(arg);
-    return mkFun(sym_CUF_PTR, args);
+    return mkFun(sym_CUF_PTR, {arg});
 }
 
 PTRef CUFLogic::mkCUFCond(const PTRef cond, PTRef i_arg, PTRef e_arg)

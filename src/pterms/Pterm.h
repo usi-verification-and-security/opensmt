@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "SymRef.h"
 #include "PtStructs.h"
+#include "Span.h"
 
 
 // A key used for pterm resolve lookups
@@ -147,14 +148,14 @@ class Pterm {
 #endif
 private:
     // MB: Constructor is private to forbid any use outside PtermAllocator, which is a friend
-    Pterm(const SymRef sym_, const vec<PTRef> & ps) : sym(sym_) {
+    Pterm(const SymRef sym_, opensmt::Span<PTRef> const & ps) : sym(sym_) {
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
         header.size      = ps.size();
 
-        for (int i = 0; i < ps.size(); i++) { args[i] = ps[i]; }
+        for (std::size_t i = 0; i < ps.size(); ++i) { args[i] = ps[i]; }
     }
 };
 
@@ -200,9 +201,9 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to);
     }
 
-    PTRef alloc(const SymRef sym, const vec<PTRef> & ps)
+    PTRef alloc(const SymRef sym, const opensmt::Span<PTRef> & ps)
     {
-        assert(sizeof(PTRef) == sizeof(uint32_t));
+        static_assert(sizeof(PTRef) == sizeof(uint32_t), "Unexpected size of PTRef");
 
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(ps.size()));
         PTRef tid = {v};

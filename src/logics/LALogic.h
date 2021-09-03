@@ -126,19 +126,20 @@ public:
     virtual PTRef getTerm_NumZero() const = 0;
     virtual PTRef getTerm_NumOne() const = 0;
     virtual PTRef getTerm_NumMinusOne() const = 0;
-    virtual PTRef mkNumNeg(PTRef, char **);
     virtual PTRef mkNumNeg(PTRef tr);
     virtual PTRef mkNumMinus(const vec<PTRef> &, char **);
     virtual PTRef mkNumMinus(const vec<PTRef> &args);
     virtual PTRef mkNumMinus(const PTRef a1, const PTRef a2);
-    virtual PTRef mkNumPlus(const vec<PTRef> &, char **);
-    virtual PTRef mkNumPlus(const vec<PTRef> &args);
-    virtual PTRef mkNumPlus(const std::vector<PTRef> &args);
-    virtual PTRef mkNumPlus(const PTRef p1, const PTRef p2);
-    virtual PTRef mkNumTimes(const vec<PTRef> &, char **);
-    virtual PTRef mkNumTimes(const vec<PTRef> &args);
-    virtual PTRef mkNumTimes(const PTRef p1, const PTRef p2);
-    virtual PTRef mkNumTimes(const std::vector<PTRef> &args);
+    virtual PTRef mkNumPlus(opensmt::Span<PTRef> const & args);
+    inline PTRef mkNumPlus(std::initializer_list<PTRef> l) { return mkNumPlus(opensmt::Span<PTRef>(l)); }
+    inline PTRef mkNumPlus(const vec<PTRef> &args) { return mkNumPlus(opensmt::Span<PTRef>(args)); }
+    inline PTRef mkNumPlus(const std::vector<PTRef> &args) { return mkNumPlus(opensmt::Span<PTRef>(args)); }
+    inline PTRef mkNumPlus(const PTRef p1, const PTRef p2) { return mkNumPlus({p1,p2}); }
+    virtual PTRef mkNumTimes(const opensmt::Span<PTRef> &args);
+    inline PTRef mkNumTimes(std::initializer_list<PTRef> l) { return mkNumTimes(opensmt::Span<PTRef>(l)); }
+    inline PTRef mkNumTimes(const PTRef p1, const PTRef p2) { return mkNumTimes({p1, p2}); }
+    inline PTRef mkNumTimes(const vec<PTRef> &args) { return mkNumTimes(opensmt::Span<PTRef>(args)); }
+    inline PTRef mkNumTimes(const std::vector<PTRef> &args) { return mkNumTimes(opensmt::Span<PTRef>(args)); }
     virtual PTRef mkNumDiv(const vec<PTRef> &args) = 0;
     virtual PTRef mkNumDiv(const PTRef nom, const PTRef den) = 0;
     virtual PTRef mkNumLeq(const vec<PTRef> &args);

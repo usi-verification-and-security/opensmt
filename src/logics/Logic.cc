@@ -590,7 +590,7 @@ Logic::mkIte(const vec<PTRef>& args)
 
     assert(sortToIte.has(sr));
     SymRef iteSym = sortToIte[sr];
-    return mkFun(iteSym, args);
+    return mkFun(iteSym, opensmt::Span<PTRef>(args));
 
 }
 
@@ -638,7 +638,7 @@ PTRef Logic::mkAnd(const vec<PTRef>& args) {
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_and(), newargs);
+    return mkFun(getSym_and(), opensmt::Span<PTRef>(newargs));
 }
 
 PTRef Logic::mkOr(const vec<PTRef>& args) {
@@ -683,7 +683,7 @@ PTRef Logic::mkOr(const vec<PTRef>& args) {
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_or(), newargs);
+    return mkFun(getSym_or(), opensmt::Span<PTRef>(newargs));
 }
 
 PTRef Logic::mkXor(const vec<PTRef>& args) {
@@ -707,7 +707,7 @@ PTRef Logic::mkXor(const vec<PTRef>& args) {
     vec<PTRef> newargs;
     args.copyTo(newargs);
     sort(newargs);
-    tr = mkFun(getSym_xor(), newargs);
+    tr = mkFun(getSym_xor(), opensmt::Span<PTRef>(newargs));
 
     if(tr == PTRef_Undef) {
         printf("Error in mkXor");
@@ -783,7 +783,7 @@ PTRef Logic::mkEq(const vec<PTRef>& args) {
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
     SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
-    return mkFun(eq_sym, args);
+    return mkFun(eq_sym, opensmt::Span<PTRef>(args));
 }
 
 // Given args = {a_1, ..., a_n}, distinct(args) holds iff
@@ -819,7 +819,7 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     }
     else {
         if (distinctClassCount < maxDistinctClasses) {
-            PTRef res = term_store.newTerm(diseq_sym, args);
+            PTRef res = term_store.newTerm(diseq_sym, opensmt::Span<PTRef>(args));
             term_store.addToCplxMap(std::move(key), res);
             distinctClassCount++;
             return res;
@@ -850,9 +850,7 @@ PTRef Logic::mkNot(PTRef arg) {
     else if (isTrue(arg)) return getTerm_false();
     else if (isFalse(arg)) return getTerm_true();
     else {
-        vec<PTRef> tmp;
-        tmp.push(arg);
-        tr = mkFun(getSym_not(), tmp);
+        tr = mkFun(getSym_not(), {arg});
     }
 
     if(tr == PTRef_Undef) {
@@ -884,8 +882,7 @@ PTRef Logic::mkVar(SRef s, const char* name) {
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
-    vec<PTRef> tmp;
-    PTRef ptr = mkFun(sr, tmp);
+    PTRef ptr = mkFun(sr, {});
     assert (ptr != PTRef_Undef);
 
     return ptr;
@@ -926,7 +923,7 @@ void Logic::markConstant(SymId id) {
     constants[id] = true;
 }
 
-PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
+PTRef Logic::mkUninterpFun(SymRef f, opensmt::Span<PTRef> const & args) {
     PTRef tr = mkFun(f, args);
     if (not isUFTerm(tr) and not isUP(tr)) {
         char * name = printSym(f);
@@ -937,7 +934,7 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     return tr;
 }
 
-PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args)
+PTRef Logic::mkFun(SymRef f, const opensmt::Span<PTRef>& args)
 {
     PTRef tr;
     if (f == SymRef_Undef)
@@ -954,8 +951,7 @@ PTRef Logic::mkBoolVar(const char* name)
     char* msg;
     SymRef sr = declareFun(name, sort_BOOL, tmp, &msg);
     assert(sr != SymRef_Undef);
-    vec<PTRef> tmp2;
-    PTRef tr = mkFun(sr, tmp2);
+    PTRef tr = mkFun(sr, {});
     return tr;
 }
 
@@ -1028,13 +1024,24 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
         return getTerm_false();
     if (isVar(sym)) {
         assert(terms.size() == 0);
-        return mkFun(sym, terms);
+        return mkFun(sym, {});
     }
-    return mkUninterpFun(sym, terms);
+    return mkUninterpFun(sym, opensmt::Span<PTRef>(terms));
+}
+
+namespace {
+void copyTo(opensmt::Span<PTRef> const & what, vec<PTRef> & to) {
+    std::size_t sz = what.size();
+    to.clear();
+    to.growTo(sz);
+    for (std::size_t i = 0; i < sz; ++i) {
+        to[i] = what[i];
+    }
+}
 }
 
 PTRef
-Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
+Logic::insertTermHash(SymRef sym, const opensmt::Span<PTRef>& terms)
 {
     PTRef res = PTRef_Undef;
     char *msg;
@@ -1051,7 +1058,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
             !sym_store[sym].right_assoc() &&
             !sym_store[sym].chainable() &&
             !sym_store[sym].pairwise() &&
-            sym_store[sym].nargs() != terms.size_())
+            sym_store[sym].nargs() != terms.size())
         {
             msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
             strcpy(msg, e_argnum_mismatch);
@@ -1059,14 +1066,14 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         }
         PTLKey k;
         k.sym = sym;
-        terms.copyTo(k.args);
+        copyTo(terms, k.args);
         if (sym_store[sym].commutes()) {
             termSort(k.args);
         }
         if (term_store.hasCplxKey(k))
             res = term_store.getFromCplxMap(k);
         else {
-            res = term_store.newTerm(sym, k.args);
+            res = term_store.newTerm(sym, opensmt::Span<PTRef>(k.args));
             term_store.addToCplxMap(std::move(k), res);
         }
     }
@@ -1074,23 +1081,13 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         // Boolean operator
         PTLKey k;
         k.sym = sym;
-        terms.copyTo(k.args);
+        copyTo(terms,k.args);
         if (term_store.hasBoolKey(k)) {//bool_map.contains(k)) {
             res = term_store.getFromBoolMap(k); //bool_map[k];
-#ifdef SIMPLIFY_DEBUG
-            char* ts = printTerm(res);
-            cerr << "duplicate: " << ts << endl;
-            ::free(ts);
-#endif
         }
         else {
             res = term_store.newTerm(sym, terms);
             term_store.addToBoolMap(std::move(k), res);
-#ifdef SIMPLIFY_DEBUG
-            char* ts = printTerm(res);
-            cerr << "new: " << ts << endl;
-            ::free(ts);
-#endif
         }
     }
     return res;

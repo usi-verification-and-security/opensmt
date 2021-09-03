@@ -124,7 +124,8 @@ PTRef PtermIter::operator* () {
 const PtermIter& PtermIter::operator++ () { i++; return *this; }
 
 
-PTRef PtStore::newTerm(const SymRef sym, const vec<PTRef>& ps) {
+
+PTRef PtStore::newTerm(const SymRef sym, const opensmt::Span<PTRef>& ps) {
     PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
     assert(idToPTRef.size_() == pta.getNumTerms());
     return tr;
