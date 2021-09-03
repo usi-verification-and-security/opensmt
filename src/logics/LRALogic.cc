@@ -153,7 +153,7 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkNumTimes(args_new);
     }
-    PTRef tr = mkFun(s_new, opensmt::Span<PTRef>(args_new));
+    PTRef tr = mkFun(s_new, opensmt::make_span(args_new));
     return tr;
 }
 

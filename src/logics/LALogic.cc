@@ -191,7 +191,7 @@ PTRef LALogic::mkNumNeg(PTRef tr)
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
         }
-        PTRef tr_n = mkFun(get_sym_Num_PLUS(), opensmt::Span<PTRef>(args));
+        PTRef tr_n = mkFun(get_sym_Num_PLUS(), opensmt::make_span(args));
         assert(tr_n == mkNumPlus(args));
         assert(tr_n != PTRef_Undef);
         return tr_n;
@@ -307,7 +307,7 @@ PTRef LALogic::mkNumPlus(opensmt::Span<PTRef> const & args)
     if (args_new.size() == 1)
         return args_new[0];
     if (s_new != get_sym_Num_PLUS()) {
-        return mkFun(s_new, opensmt::Span<PTRef>(args_new));
+        return mkFun(s_new, opensmt::make_span(args_new));
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
@@ -345,7 +345,7 @@ PTRef LALogic::mkNumPlus(opensmt::Span<PTRef> const & args)
     }
     if (sum_args.size() == 0) return getTerm_NumZero();
     if (sum_args.size() == 1) return sum_args[0];
-    PTRef tr = mkFun(s_new, opensmt::Span<PTRef>(sum_args));
+    PTRef tr = mkFun(s_new, opensmt::make_span(sum_args));
     return tr;
 }
 PTRef LALogic::mkNumTimes(opensmt::Span<PTRef> const & tmp_args)
@@ -365,7 +365,7 @@ PTRef LALogic::mkNumTimes(opensmt::Span<PTRef> const & tmp_args)
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new);
-    PTRef tr = mkFun(s_new, opensmt::Span<PTRef>(args_new));
+    PTRef tr = mkFun(s_new, opensmt::make_span(args_new));
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
     if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr) || isIte(tr))
@@ -788,7 +788,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
     splitTermToVarAndConst(leadingFactor, var, coeff);
     opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), opensmt::Span<PTRef>(varFactors));
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), opensmt::make_span(varFactors));
     if (normalizationCoeff != 1) {
         // normalize the whole sum
         normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
@@ -796,7 +796,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
         constantVal /= normalizationCoeff;
     }
     constantVal.negate(); // moving the constant to the LHS of the inequality
-    return insertTermHash(get_sym_Num_LEQ(), opensmt::Span<PTRef>{mkConst(constantVal), normalizedSum});
+    return insertTermHash(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
 }
 
 PTRef LALogic::getConstantFromLeq(PTRef leq) {

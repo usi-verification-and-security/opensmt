@@ -40,6 +40,12 @@ struct Span {
     T const & operator[](std::size_t i) const { return *(pointer + i); }
 };
 
+template<typename T>
+inline Span<T> make_span(vec<T> const & v) { return Span<T>(v); }
+
+template<typename T>
+inline Span<T> make_span(std::vector<T> const & v) { return Span<T>(v); }
+
 }
 
 #endif //OPENSMT_SPAN_H

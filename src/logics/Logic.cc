@@ -590,7 +590,7 @@ Logic::mkIte(const vec<PTRef>& args)
 
     assert(sortToIte.has(sr));
     SymRef iteSym = sortToIte[sr];
-    return mkFun(iteSym, opensmt::Span<PTRef>(args));
+    return mkFun(iteSym, opensmt::make_span(args));
 
 }
 
@@ -638,7 +638,7 @@ PTRef Logic::mkAnd(const vec<PTRef>& args) {
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_and(), opensmt::Span<PTRef>(newargs));
+    return mkFun(getSym_and(), opensmt::make_span(newargs));
 }
 
 PTRef Logic::mkOr(const vec<PTRef>& args) {
@@ -683,7 +683,7 @@ PTRef Logic::mkOr(const vec<PTRef>& args) {
     for (int k = 0; k < tmp_args.size(); k++) {
         newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_or(), opensmt::Span<PTRef>(newargs));
+    return mkFun(getSym_or(), opensmt::make_span(newargs));
 }
 
 PTRef Logic::mkXor(const vec<PTRef>& args) {
@@ -707,7 +707,7 @@ PTRef Logic::mkXor(const vec<PTRef>& args) {
     vec<PTRef> newargs;
     args.copyTo(newargs);
     sort(newargs);
-    tr = mkFun(getSym_xor(), opensmt::Span<PTRef>(newargs));
+    tr = mkFun(getSym_xor(), opensmt::make_span(newargs));
 
     if(tr == PTRef_Undef) {
         printf("Error in mkXor");
@@ -783,7 +783,7 @@ PTRef Logic::mkEq(const vec<PTRef>& args) {
             return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
     }
     SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
-    return mkFun(eq_sym, opensmt::Span<PTRef>(args));
+    return mkFun(eq_sym, opensmt::make_span(args));
 }
 
 // Given args = {a_1, ..., a_n}, distinct(args) holds iff
@@ -819,7 +819,7 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     }
     else {
         if (distinctClassCount < maxDistinctClasses) {
-            PTRef res = term_store.newTerm(diseq_sym, opensmt::Span<PTRef>(args));
+            PTRef res = term_store.newTerm(diseq_sym, opensmt::make_span(args));
             term_store.addToCplxMap(std::move(key), res);
             distinctClassCount++;
             return res;
@@ -1026,7 +1026,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
         assert(terms.size() == 0);
         return mkFun(sym, {});
     }
-    return mkUninterpFun(sym, opensmt::Span<PTRef>(terms));
+    return mkUninterpFun(sym, opensmt::make_span(terms));
 }
 
 namespace {
@@ -1073,7 +1073,7 @@ Logic::insertTermHash(SymRef sym, const opensmt::Span<PTRef>& terms)
         if (term_store.hasCplxKey(k))
             res = term_store.getFromCplxMap(k);
         else {
-            res = term_store.newTerm(sym, opensmt::Span<PTRef>(k.args));
+            res = term_store.newTerm(sym, opensmt::make_span(k.args));
             term_store.addToCplxMap(std::move(k), res);
         }
     }

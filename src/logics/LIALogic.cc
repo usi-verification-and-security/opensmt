@@ -196,7 +196,7 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
             varFactors[i] = mkNumTimes(vars[i], mkConst(coeffs[i]));
         }
     }
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), opensmt::Span<PTRef>(varFactors));
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), opensmt::make_span(varFactors));
     // 0 <= normalizedSum + constatValue
     // in LIA we can strengthen the inequality to
     // ceiling(-constantValue) <= normalizedSum
