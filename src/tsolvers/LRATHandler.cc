@@ -1,14 +1,16 @@
 #include "LRATHandler.h"
+
 #include "TreeOps.h"
-#include "lrasolver/LRASolver.h"
+#include "lasolver/LASolver.h"
+#include "LRALogic.h"
 
 LRATHandler::LRATHandler(SMTConfig & c, LRALogic & l)
         : TSolverHandler(c)
         , logic(l)
 {
-    lrasolver = new LRASolver(config, logic);
-    SolverId my_id = lrasolver->getId();
-    tsolvers[my_id.id] = lrasolver;
+    lasolver = new LASolver(config, logic);
+    SolverId my_id = lasolver->getId();
+    tsolvers[my_id.id] = lasolver;
     solverSchedule.push(my_id.id);
 }
 
@@ -25,12 +27,12 @@ const Logic &LRATHandler::getLogic() const
 }
 
 lbool LRATHandler::getPolaritySuggestion(PTRef p) const {
-    return lrasolver->getPolaritySuggestion(p);
+    return lasolver->getPolaritySuggestion(p);
 }
 
 PTRef LRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
-    return lrasolver->getInterpolant(mask, labels, pmanager);
+    return lasolver->getInterpolant(mask, labels, pmanager);
 }
 
 

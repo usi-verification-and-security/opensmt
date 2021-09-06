@@ -1,16 +1,17 @@
 #include "UFLRATHandler.h"
-#include "lrasolver/LRASolver.h"
+#include "lasolver/LASolver.h"
 #include "TreeOps.h"
 //#include "InterpolatingEgraph.h"
 #include "Egraph.h"
+#include "LRALogic.h"
 
 UFLRATHandler::UFLRATHandler(SMTConfig & c, LRALogic & l)
         : LRATHandler(c, l)
         , logic(l)
 {
-    lrasolver = new LRASolver(config, logic);
-    SolverId lra_id = lrasolver->getId();
-    tsolvers[lra_id.id] = lrasolver;
+    lasolver = new LASolver(config, logic);
+    SolverId lra_id = lasolver->getId();
+    tsolvers[lra_id.id] = lasolver;
     solverSchedule.push(lra_id.id);
 
     ufsolver = new Egraph(config, logic);

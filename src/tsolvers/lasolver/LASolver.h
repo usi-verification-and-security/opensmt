@@ -15,22 +15,18 @@
 #include <unordered_map>
 #include "LAVarMapper.h"
 
-class LAVar;
 class LAVarStore;
 class Delta;
+class PartitionManager;
 
 class LASolverStats: public TSolverStats
 {
     public:
-        int num_pivot_ops;
-        int num_bland_ops;
         int num_vars;
         opensmt::OSMTTimeVal timer;
 
         LASolverStats()
         : TSolverStats()
-        , num_pivot_ops(0)
-        , num_bland_ops(0)
         , num_vars(0)
         {}
 
@@ -96,6 +92,7 @@ protected:
 
 public:
 
+    LASolver(SMTConfig & c, LALogic & l);
     LASolver(SolverDescr dls, SMTConfig & c, LALogic & l);
 
     virtual ~LASolver( );                                      // Destructor ;-)
@@ -104,11 +101,14 @@ public:
 
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
+    TRes  check              (bool) override;                    // Checks the satisfiability of current constraints
     bool  check_simplex      (bool);
     bool  assertLit          ( PtAsgn ) override;                // Push the constraint into Solver
     void  pushBacktrackPoint ( ) override;                       // Push a backtrack point
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
+    lbool getPolaritySuggestion(PTRef) const;
+    PTRef getInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
 
 
     // Return the conflicting bounds

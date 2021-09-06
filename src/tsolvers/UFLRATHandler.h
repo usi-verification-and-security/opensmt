@@ -29,14 +29,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LRATHandler.h"
 
 class Egraph;
-class LRALogc;
-class LRASolver;
+class LASolver;
 
 class UFLRATHandler : public LRATHandler
 {
   private:
     LRALogic      &logic;
-    LRASolver     *lrasolver;
+    LASolver      *lasolver;
     Egraph        *ufsolver;
   public:
     UFLRATHandler(SMTConfig & c, LRALogic & l);

@@ -9,32 +9,6 @@
 
 #include <map>
 
-class LIASolverStats: public LASolverStats
-{
-public:
-
-    int num_vars;
-    opensmt::OSMTTimeVal bb_timer;
-
-    LIASolverStats()
-            : LASolverStats()
-            , num_vars(0)
-    {}
-
-    void printStatistics(ostream& os) override
-    {
-        os << "; -------------------------" << endl;
-        os << "; STATISTICS FOR LIA SOLVER" << endl;
-        os << "; -------------------------" << endl;
-        LASolverStats::printStatistics(os);
-        os << "; Number of LIA vars.......: " << num_vars << endl;
-        //os << "; Pivot operations.........: " << num_pivot_ops << endl;
-        //os << "; Bland operations.........: " << num_bland_ops << endl;
-        os << "; BB time.............: " << bb_timer.getTime() << " s\n";
-    }
-};
-
-
 //
 // Class to solve Linear Arithmetic theories
 //
@@ -43,10 +17,7 @@ class LIASolver: public LASolver
 {
 private:
 
-    struct LVRefPair { LVRef p1; LVRef p2; };
-
     LIALogic&            logic;
-    LIASolverStats lasolverstats;
 
 
 public:

@@ -28,14 +28,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "TSolverHandler.h"
 
-class LRASolver;
+class LASolver;
 class LRALogic;
 
 class LRATHandler : public TSolverHandler
 {
   private:
     LRALogic& logic;
-    LRASolver *lrasolver;
+    LASolver *lasolver;
   public:
     LRATHandler(SMTConfig & c, LRALogic & l);
     virtual ~LRATHandler();

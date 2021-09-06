@@ -1,4 +1,6 @@
 #include "LASolver.h"
+
+#include "FarkasInterpolator.h"
 #include "LA.h"
 #include "ModelBuilder.h"
 
@@ -81,6 +83,8 @@ void LASolver::isProperLeq(PTRef tr)
                                       (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
     (void) cons; (void)sum;
 }
+
+LASolver::LASolver(SMTConfig & c, LALogic & l) : LASolver(descr_la_solver, c, l) {}
 
 LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
         : TSolver((SolverId) dls, (const char *) dls, c)
@@ -764,5 +768,43 @@ LABoundStore::BoundValuePair LASolver::getBoundsValueForRealVar(const Real & c, 
     }
 }
 
+lbool LASolver::getPolaritySuggestion(PTRef ptref) const {
+    if (!this->isInformed(ptref)) { return l_Undef; }
+    LVRef var = this->getVarForLeq(ptref);
+    LABoundRefPair bounds = getBoundRefPair(ptref);
+    assert( bounds.pos != LABoundRef_Undef && bounds.neg != LABoundRef_Undef );
+    return simplex.getPolaritySuggestion(var, bounds.pos, bounds.neg);
+}
+
+TRes LASolver::check(bool complete) {
+
+    if (check_simplex(complete))
+        return TRes::SAT;
+    else
+        return TRes::UNSAT;
+
+}
+
+//
+// Compute interpolants for the conflict
+//
+PTRef
+LASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
+    assert(status == UNSAT);
+    vec<PtAsgn> explCopy;
+    explanation.copyTo(explCopy);
+    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+    auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
+    if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor())); }
+    else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
+    else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
+    else {
+        assert(false); // Incoorrect value in config
+        return interpolator.getFarkasInterpolant();
+    }
+}
 
 
