@@ -1,5 +1,7 @@
-### 2.1.1 (unreleased)
+### 2.2.0 (unreleased)
 
+Build:
+ - Switch to C++17.
 
 ### 2.1.0 (2021-08-16)
 
