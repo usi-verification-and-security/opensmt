@@ -1,5 +1,7 @@
-### 2.1.1 (unreleased)
+### 2.1.1 (2021-09-07)
+Bug fixes:
 
+ - LIA: Fix incorrect update of bounds after split.
 
 ### 2.1.0 (2021-08-16)
 
