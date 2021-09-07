@@ -91,13 +91,21 @@ void LABoundStore::updateBound(BoundInfo bi) {
         bound_lessthan lessthan(ba);
         for (; idx > 0; --idx) {
             if (lessthan(varBounds[idx - 1], varBounds[idx])) {
-                ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
                 break;
             }
             std::swap(varBounds[idx - 1], varBounds[idx]);
             ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
         }
+        assert(varBounds[idx] == bound);
+        ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
     }
+    // Post-condition; indices must correspond to the place in the bound list
+    assert([&](){
+        for (unsigned i = 0; i < varBounds.size_(); ++i) {
+            if (ba[varBounds[i]].getIdx().x != i) { return false; }
+        }
+        return true;
+    }());
 }
 
 void LABoundStore::buildBounds()
