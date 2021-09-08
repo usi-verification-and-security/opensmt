@@ -1,8 +1,3 @@
-build_filter: &build_filter
-  filters:
-    tags:
-      only: /^v.*/
-
 version: 2.1
 jobs:
     build-recent:
@@ -156,11 +151,15 @@ jobs:
                     INSTALL: ~/osmt-install
 
 workflows:
-    build-test:
-        jobs:
-          - build-starexec:
-            <<: *build_filter
-          - build-recent:
-            <<: *build_filter
-          - build-macos:
-            <<: *build_filter
+  build-test:
+      jobs:
+        - build-starexec:
+          filters: &filters-build-test
+            tags:
+              only: /^v.*/
+        - build-recent:
+          filters:
+            <<: *filters-build-test
+        - build-macos:
+          filters:
+            <<: *filters-build-test
