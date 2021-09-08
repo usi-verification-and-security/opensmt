@@ -151,8 +151,15 @@ jobs:
                     INSTALL: ~/osmt-install
 
 workflows:
-    build-test:
-        jobs:
-            - build-starexec
-            - build-recent
-            - build-macos
+  build-test:
+      jobs:
+        - build-starexec:
+          filters: &filters-build-test
+            tags:
+              only: /^v.*/
+        - build-recent:
+          filters:
+            <<: *filters-build-test
+        - build-macos:
+          filters:
+            <<: *filters-build-test
