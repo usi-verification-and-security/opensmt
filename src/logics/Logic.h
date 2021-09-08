@@ -115,7 +115,7 @@ class Logic {
     PTRef               term_FALSE;
 
 
-    virtual PTRef insertTermHash(SymRef, const opensmt::Span<PTRef>&);
+    virtual PTRef insertTermHash(SymRef, opensmt::Span<const PTRef>);
 
     void dumpFunction(ostream &, const TemplateFunction&);
 
@@ -170,7 +170,7 @@ class Logic {
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
-    PTRef       mkFun         (SymRef f, const opensmt::Span<PTRef>& args);
+    PTRef       mkFun         (SymRef f, opensmt::Span<const PTRef> args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
@@ -208,7 +208,7 @@ class Logic {
     // Returns the default value of the given sort
     virtual PTRef getDefaultValuePTRef(const SRef sref) const;
 
-    PTRef       mkUninterpFun (SymRef f, opensmt::Span<PTRef> const & args);
+    PTRef       mkUninterpFun (SymRef f, opensmt::Span<const PTRef> args);
     // Boolean term generation
     PTRef       mkAnd         (const vec<PTRef>&);
     PTRef       mkAnd         (PTRef a1, PTRef a2) { return mkAnd({a1, a2}); }

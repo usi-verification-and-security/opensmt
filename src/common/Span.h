@@ -9,26 +9,46 @@ namespace opensmt {
 
 template<typename T>
 struct Span {
-    T const * pointer = nullptr;
+    T * pointer = nullptr;
     std::size_t length = 0;
 
-    using iterator = T const *;
+    using iterator = T *;
+    using element_type = T;
 
     Span() = default;
 
-    Span(std::initializer_list<T> list) noexcept {
+    template<typename U,
+        std::enable_if_t<std::is_const<element_type>::value and std::is_convertible_v<U,T>,
+            int> = 0>
+    Span(std::initializer_list<U> list) noexcept {
         length = list.size();
         pointer = list.begin();
     }
 
-    explicit Span(vec<T> const & v) noexcept {
+    template<typename U,
+        std::enable_if_t<std::is_const<element_type>::value and std::is_convertible_v<U,T>,
+            int> = 0>
+    explicit Span(vec<U> const & v) noexcept {
         length = v.size();
         pointer = v.begin();
     }
 
-    explicit Span(std::vector<T> const & v) noexcept {
+    explicit Span(vec<T> & v) noexcept {
         length = v.size();
-        pointer = &v[0];
+        pointer = v.begin();
+    }
+
+    template<typename U,
+    std::enable_if_t<std::is_const<element_type>::value and std::is_convertible_v<U,T>,
+        int> = 0>
+    explicit Span(std::vector<U> const & v) noexcept {
+        length = v.size();
+        pointer = v.data();
+    }
+
+    explicit Span(std::vector<T> & v) noexcept {
+        length = v.size();
+        pointer = v.data();
     }
 
 
@@ -41,10 +61,10 @@ struct Span {
 };
 
 template<typename T>
-inline Span<T> make_span(vec<T> const & v) { return Span<T>(v); }
+inline Span<const T> make_span(vec<T> const & v) { return Span<const T>(v); }
 
 template<typename T>
-inline Span<T> make_span(std::vector<T> const & v) { return Span<T>(v); }
+inline Span<const T> make_span(std::vector<T> const & v) { return Span<const T>(v); }
 
 }
 

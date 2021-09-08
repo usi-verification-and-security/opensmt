@@ -284,7 +284,7 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
     return mkNumPlus(args);
 }
 
-PTRef LALogic::mkNumPlus(opensmt::Span<PTRef> const & args)
+PTRef LALogic::mkNumPlus(opensmt::Span<const PTRef> args)
 {
     vec<PTRef> new_args;
     new_args.capacity(args.size());
@@ -348,7 +348,7 @@ PTRef LALogic::mkNumPlus(opensmt::Span<PTRef> const & args)
     PTRef tr = mkFun(s_new, opensmt::make_span(sum_args));
     return tr;
 }
-PTRef LALogic::mkNumTimes(opensmt::Span<PTRef> const & tmp_args)
+PTRef LALogic::mkNumTimes(opensmt::Span<const PTRef> tmp_args)
 {
     vec<PTRef> args;
     // Flatten possible internal multiplications

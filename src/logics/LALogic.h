@@ -130,14 +130,14 @@ public:
     virtual PTRef mkNumMinus(const vec<PTRef> &, char **);
     virtual PTRef mkNumMinus(const vec<PTRef> &args);
     virtual PTRef mkNumMinus(const PTRef a1, const PTRef a2);
-    virtual PTRef mkNumPlus(opensmt::Span<PTRef> const & args);
-    inline PTRef mkNumPlus(std::initializer_list<PTRef> l) { return mkNumPlus(opensmt::Span<PTRef>(l)); }
+    virtual PTRef mkNumPlus(opensmt::Span<const PTRef> args);
+    inline PTRef mkNumPlus(std::initializer_list<PTRef> l) { return mkNumPlus(opensmt::Span<const PTRef>(l)); }
     inline PTRef mkNumPlus(const vec<PTRef> &args) { return mkNumPlus(opensmt::make_span(args)); }
     inline PTRef mkNumPlus(const std::vector<PTRef> &args) { return mkNumPlus(opensmt::make_span(args)); }
     inline PTRef mkNumPlus(const PTRef p1, const PTRef p2) { return mkNumPlus({p1,p2}); }
-    virtual PTRef mkNumTimes(const opensmt::Span<PTRef> &args);
-    inline PTRef mkNumTimes(std::initializer_list<PTRef> l) { return mkNumTimes(opensmt::Span<PTRef>(l)); }
+    virtual PTRef mkNumTimes(opensmt::Span<const PTRef> args);
     inline PTRef mkNumTimes(const vec<PTRef> &args) { return mkNumTimes(opensmt::make_span(args)); }
+    inline PTRef mkNumTimes(std::initializer_list<PTRef> l) { return mkNumTimes(opensmt::Span<const PTRef>(l)); }
     inline PTRef mkNumTimes(const std::vector<PTRef> &args) { return mkNumTimes(opensmt::make_span(args)); }
     inline PTRef mkNumTimes(const PTRef p1, const PTRef p2) { return mkNumTimes({p1, p2}); }
     virtual PTRef mkNumDiv(const vec<PTRef> &args) = 0;

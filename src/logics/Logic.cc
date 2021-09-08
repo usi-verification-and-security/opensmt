@@ -923,7 +923,7 @@ void Logic::markConstant(SymId id) {
     constants[id] = true;
 }
 
-PTRef Logic::mkUninterpFun(SymRef f, opensmt::Span<PTRef> const & args) {
+PTRef Logic::mkUninterpFun(SymRef f, opensmt::Span<const PTRef> args) {
     PTRef tr = mkFun(f, args);
     if (not isUFTerm(tr) and not isUP(tr)) {
         char * name = printSym(f);
@@ -934,7 +934,7 @@ PTRef Logic::mkUninterpFun(SymRef f, opensmt::Span<PTRef> const & args) {
     return tr;
 }
 
-PTRef Logic::mkFun(SymRef f, const opensmt::Span<PTRef>& args)
+PTRef Logic::mkFun(SymRef f, opensmt::Span<const PTRef> args)
 {
     PTRef tr;
     if (f == SymRef_Undef)
@@ -1030,7 +1030,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
 }
 
 namespace {
-void copyTo(opensmt::Span<PTRef> const & what, vec<PTRef> & to) {
+void copyTo(opensmt::Span<const PTRef> what, vec<PTRef> & to) {
     std::size_t sz = what.size();
     to.clear();
     to.growTo(sz);
@@ -1041,7 +1041,7 @@ void copyTo(opensmt::Span<PTRef> const & what, vec<PTRef> & to) {
 }
 
 PTRef
-Logic::insertTermHash(SymRef sym, const opensmt::Span<PTRef>& terms)
+Logic::insertTermHash(SymRef sym, opensmt::Span<const PTRef> terms)
 {
     PTRef res = PTRef_Undef;
     char *msg;

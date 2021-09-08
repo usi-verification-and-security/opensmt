@@ -68,7 +68,7 @@ class PtStore {
   public:
     PtStore(SymStore& symstore) : symstore(symstore) {}
 
-    PTRef newTerm(const SymRef sym, const opensmt::Span<PTRef>& ps);
+    PTRef newTerm(const SymRef sym, opensmt::Span<const PTRef> ps);
 
     void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy
 

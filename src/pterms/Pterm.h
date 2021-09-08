@@ -148,7 +148,7 @@ class Pterm {
 #endif
 private:
     // MB: Constructor is private to forbid any use outside PtermAllocator, which is a friend
-    Pterm(const SymRef sym_, opensmt::Span<PTRef> const & ps) : sym(sym_) {
+    Pterm(const SymRef sym_, opensmt::Span<const PTRef> ps) : sym(sym_) {
         header.type      = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -201,7 +201,7 @@ class PtermAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to);
     }
 
-    PTRef alloc(const SymRef sym, const opensmt::Span<PTRef> & ps)
+    PTRef alloc(const SymRef sym, opensmt::Span<const PTRef> ps)
     {
         static_assert(sizeof(PTRef) == sizeof(uint32_t), "Unexpected size of PTRef");
 
