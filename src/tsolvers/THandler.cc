@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CoreSMTSolver.h"
 #include "TSolver.h"
 #include "ModelBuilder.h"
+#include "OsmtInternalException.h"
 
 #include <sys/wait.h>
 #include <assert.h>
@@ -268,9 +269,9 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
     PtAsgn conflictingPolarity = PtAsgn(e, sign(~l) ? l_False : l_True);
     lbool res = solver->assertLit(conflictingPolarity) == false ? l_False : l_Undef;
 
-    if ( res != l_False ) {
-        std::cout << std::endl << "unknown" << std::endl;
+    if (res != l_False) {
         assert(false);
+        throw OsmtInternalException("Error in computing reason for theory-propagated literal");
     }
 
     // Get Explanation
