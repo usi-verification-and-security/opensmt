@@ -28,7 +28,6 @@ endif()
 
 include(egraph/CMakeLists.txt)
 include(lasolver/CMakeLists.txt)
-include(lrasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)
 include(liasolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)

@@ -8,7 +8,7 @@
 #include "lasolver/LABounds.h"
 #include "lasolver/Tableau.h"
 #include "lasolver/LAVar.h"
-#include "lrasolver/LRAModel.h"
+#include "LRAModel.h"
 #include "SMTConfig.h"
 
 class SimplexStats {

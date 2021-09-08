@@ -7,7 +7,7 @@
 #include "LALogic.h"
 
 #include "TSolver.h"
-#include "lrasolver/LRAModel.h"
+#include "LRAModel.h"
 #include "Tableau.h"
 #include "Polynomial.h"
 #include "Simplex.h"

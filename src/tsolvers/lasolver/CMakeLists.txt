@@ -13,9 +13,13 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LARefs.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LABounds.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LRAModel.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LRAModel.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Delta.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LASolver.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Simplex.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.h"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.cc"
     )
 
 option(SIMPLEX_DEBUG "Deeper debugging of Simplex" OFF)
