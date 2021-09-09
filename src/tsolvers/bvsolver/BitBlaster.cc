@@ -524,8 +524,6 @@ BitBlaster::bbBvland(PTRef tr)
     vec<PTRef> names;
     getBVVars("lan", names, bitwidth);
 
-    vec<BVRef> bb_args;
-
     // Bit-blast the arguments, and put the corresponding vectors
     // into bb_args.
     PTRef arg1 = logic.getPterm(tr)[0];
@@ -545,7 +543,7 @@ BitBlaster::bbBvland(PTRef tr)
     bs.copyAsgnTo(bv1, bv1_bits);
     bs.copyAsgnTo(bv2, bv2_bits);
 
-    result[0] = logic.mkAnd(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
+    result[0] = logic.mkAnd(logic.mkOr(std::move(bv1_bits)), logic.mkOr(std::move(bv2_bits)));
 //    for (int i = 1; i < result.size(); i++)
 //        result[i] = logic.getTerm_false();
 
@@ -587,7 +585,7 @@ BitBlaster::bbBvor(PTRef tr)
             assert(bs[bb_args[j]].size() == n_bits);
             and_args.push((bs[bb_args[j]])[i]);
         }
-        result.push(logic.mkOr(and_args));
+        result.push(logic.mkOr(std::move(and_args)));
     }
 
     // Save result and return
@@ -624,7 +622,7 @@ BitBlaster::bbBvlor(PTRef tr)
     vec<PTRef> bv2_bits;
     bs.copyAsgnTo(bv2, bv2_bits);
 
-    result[0] = logic.mkOr(logic.mkOr(bv1_bits), logic.mkOr(bv2_bits));
+    result[0] = logic.mkOr(logic.mkOr(std::move(bv1_bits)), logic.mkOr(std::move(bv2_bits)));
 //    for (int i = 1; i < result.size(); i++)
 //        result[i] = logic.getTerm_false();
 
@@ -720,7 +718,7 @@ BitBlaster::bbBvlnot(PTRef tr)
 
     vec<PTRef> asgn;
     bs.copyAsgnTo(bb_arg, asgn);
-    result[0] = logic.mkNot(logic.mkOr(asgn));
+    result[0] = logic.mkNot(logic.mkOr(std::move(asgn)));
 //    for ( int i = 1 ; i < bitwidth; i ++ )
 //        result[i] = logic.getTerm_false();
 

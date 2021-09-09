@@ -80,11 +80,8 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
         }
     }
 
-    PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
-    vec<PTRef> AC_args;
-    AC_args.push(pmanager.getPartition(mask, PartitionManager::part::A));
-    AC_args.push(cl_ptref);
-    PTRef implicant = logic.mkAnd(AC_args);
+    PTRef cl_ptref = logic.mkNot(logic.mkOr(std::move(restricted_clause)));
+    PTRef implicant = logic.mkAnd({pmanager.getPartition(mask, PartitionManager::part::A), cl_ptref});
 
     /*
     cout << "; MASK IS " << mask << endl;
@@ -132,11 +129,8 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
         }
     }
 
-    PTRef cl_ptref = logic.mkNot(logic.mkOr(restricted_clause));
-    vec<PTRef> BC_args;
-    BC_args.push(pmanager.getPartition(mask, PartitionManager::part::B));
-    BC_args.push(cl_ptref);
-    PTRef implicant = logic.mkAnd(BC_args);
+    PTRef cl_ptref = logic.mkNot(logic.mkOr(std::move(restricted_clause)));
+    PTRef implicant = logic.mkAnd({pmanager.getPartition(mask, PartitionManager::part::B), cl_ptref});
 
     /*
     cout << "; MASK IS " << mask << endl;

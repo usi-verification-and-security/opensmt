@@ -65,7 +65,7 @@ PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part
             opensmt_error("Assertion is neither A or B");
         }
     }
-    PTRef A = logic.mkAnd(args);
+    PTRef A = logic.mkAnd(std::move(args));
     return A;
 }
 

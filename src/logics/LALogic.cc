@@ -181,30 +181,30 @@ bool LALogic::isNumTerm(PTRef tr) const
         return false;
 }
 
-PTRef LALogic::mkNumNeg(PTRef tr, char** msg)
+PTRef LALogic::mkNumNeg(PTRef tr)
 {
     assert(!isNumNeg(tr)); // MB: The invariant now is that there is no "Minus" node
-    vec<PTRef> args;
-    if (isNumPlus(tr)) {
-        for (int i = 0; i < getPterm(tr).size(); i++) {
-            PTRef tr_arg = mkNumNeg(getPterm(tr)[i], msg);
-            assert(tr_arg != PTRef_Undef);
-            args.push(tr_arg);
-        }
-        PTRef tr_n = mkFun(get_sym_Num_PLUS(), args);
-        assert(tr_n == mkNumPlus(args, msg));
-        assert(tr_n != PTRef_Undef);
-        return tr_n;
-    }
     if (isConstant(tr)) {
         const opensmt::Number& v = getNumConst(tr);
         opensmt::Number min = -v;
         PTRef nterm = mkConst(min);
         return nterm;
     }
+    vec<PTRef> args;
+    if (isNumPlus(tr)) {
+        args.capacity(getPterm(tr).size());
+        for (int i = 0; i < getPterm(tr).size(); ++i) {
+            PTRef tr_arg = mkNumNeg(getPterm(tr)[i]);
+            assert(tr_arg != PTRef_Undef);
+            args.push(tr_arg);
+        }
+        PTRef tr_n = mkFun(get_sym_Num_PLUS(), std::move(args));
+        assert(tr_n != PTRef_Undef);
+        return tr_n;
+    }
     PTRef mo = this->getTerm_NumMinusOne();
     args.push(mo); args.push(tr);
-    return mkNumTimes(args);
+    return mkNumTimes(std::move(args));
 }
 
 PTRef  LALogic::mkConst(const opensmt::Number& c)
@@ -222,130 +222,55 @@ PTRef  LALogic::mkConst(const opensmt::Number& c)
     return ptr;
 }
 
-//PTRef mkNumNeg(PTRef, char **);
-PTRef LALogic::mkNumNeg(PTRef tr) {
-    char *msg;
-    PTRef trn = mkNumNeg(tr, &msg);
-    assert(trn != PTRef_Undef);
-    return trn;
-}
-PTRef mkNumMinus(const vec<PTRef> &, char **);
-PTRef LALogic::mkNumMinus(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumMinus(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
-PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
-    return mkNumMinus({a1, a2});
-}
-
-PTRef LALogic::mkNumPlus(const PTRef p1, const PTRef p2) {
-    return mkNumPlus(vec<PTRef>({p1, p2}));
-}
-
-PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumPlus(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
-PTRef LALogic::mkNumPlus(const std::vector<PTRef> &args) {
-    vec<PTRef> tmp;
-    for (PTRef arg : args) { tmp.push(arg); }
-    return mkNumPlus(tmp);
-}
-
-PTRef LALogic::mkNumTimes(const vec<PTRef> &args) {
-    char *msg;
-    PTRef tr = mkNumTimes(args, &msg);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
-PTRef LALogic::mkNumTimes(const PTRef p1, const PTRef p2) {
-    return mkNumTimes(vec<PTRef>({p1, p2}));
-}
-PTRef LALogic::mkNumTimes(const std::vector<PTRef> &args) {
-    vec<PTRef> tmp;
-    for (PTRef arg : args) { tmp.push(arg); }
-    return mkNumTimes(tmp);
-}
-
-PTRef LALogic::mkNumLeq(const vec<PTRef> &args) {
-    assert(args.size() == 2);
-    PTRef tr = mkNumLeq(args[0], args[1]);
-    assert(tr != PTRef_Undef);
-    return tr;
-}
-
-PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
-    return mkNumLeq(arg2, arg1);
-}
-
-PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
-    return mkNumLt({arg1, arg2});
-}
-
-PTRef LALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
-    return mkNumGt({arg1, arg2});
-}
-
 char* LALogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
 char* LALogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
+PTRef LALogic::mkNumMinus(vec<PTRef> && args)
 {
-    vec<PTRef> args;
-    args_in.copyTo(args);
+    assert(args.size() > 0);
     if (args.size() == 1) {
-        return mkNumNeg(args[0], msg);
+        return mkNumNeg(args[0]);
     }
-    assert (args.size() == 2);
-    PTRef mo = mkConst(getSort_num(), "-1");
-    if (mo == PTRef_Undef) {
-        printf("Error: %s\n", *msg);
-        assert(false);
-    }
-    PTRef fact = mkNumTimes({mo, args[1]}, msg);
-    if (fact == PTRef_Undef) {
-        printf("Error: %s\n", *msg);
-        assert(false);
-    }
+    assert(args.size() == 2);
+    if (args.size() > 2) { throw OsmtApiException("Too many terms provided to LALogic::mkNumMinus"); }
+    PTRef mo = getTerm_NumMinusOne();
+    PTRef fact = mkNumTimes(mo, args[1]);
+    assert(fact != PTRef_Undef);
     args[1] = fact;
-    return mkNumPlus(args);
+    return mkNumPlus(std::move(args));
 }
 
-PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
+PTRef LALogic::mkNumPlus(vec<PTRef> && args)
 {
-    vec<PTRef> new_args;
-    new_args.capacity(args.size());
+    vec<PTRef> flattened_args;
+    flattened_args.capacity(args.size());
     // Flatten possible internal sums.  This needs not be done properly,
     // with a post-order dfs, since we are guaranteed that the inner
     // sums are already flattened.
-    for (int i = 0; i < args.size(); i++) {
+    for (int i = 0; i < args.size(); ++i) {
         if (isNumPlus(args[i])) {
-            Pterm& t = getPterm(args[i]);
+            Pterm const & t = getPterm(args[i]);
             for (int j = 0; j < t.size(); j++)
-                new_args.push(t[j]);
+                flattened_args.push(t[j]);
         } else {
-            new_args.push(args[i]);
+            flattened_args.push(args[i]);
         }
     }
     SimplifyConstSum simp(*this);
-    vec<PTRef> args_new;
+    args.clear();
     SymRef s_new;
-    simp.simplify(get_sym_Num_PLUS(), new_args, s_new, args_new);
-    if (args_new.size() == 1)
-        return args_new[0];
+    simp.simplify(get_sym_Num_PLUS(), flattened_args, s_new, args);
+    if (args.size() == 1)
+        return args[0];
     if (s_new != get_sym_Num_PLUS()) {
-        return mkFun(s_new, args_new);
+        return mkFun(s_new, std::move(args));
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
-    for (int i = 0; i < args_new.size(); ++i) {
+    for (int i = 0; i < args.size(); ++i) {
         PTRef v;
         PTRef c;
-        splitTermToVarAndConst(args_new[i], v, c);
+        splitTermToVarAndConst(args[i], v, c);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (!s2t.has(v)) {
@@ -354,49 +279,46 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
         } else
             s2t[v].push(c);
     }
-    vec<PTRef> sum_args;
+    flattened_args.clear();
     for (int i = 0; i < keys.size(); i++) {
         const vec<PTRef>& consts = s2t[keys[i]];
         PTRef consts_summed = consts.size() == 1 ? consts[0] : mkNumPlus(consts);
         if (isNumZero(consts_summed)) { continue; }
         if (keys[i] == PTRef_Undef) {
-            sum_args.push(consts_summed);
+            flattened_args.push(consts_summed);
             continue;
         }
         if (isNumOne(consts_summed)) {
-            sum_args.push(keys[i]);
+            flattened_args.push(keys[i]);
             continue;
         }
         // default case, variable and constant (cannot be simplified)
-        vec<PTRef> term_args;
-        term_args.push(consts_summed);
-        term_args.push(keys[i]);
-        PTRef term = mkFun(get_sym_Num_TIMES(), term_args);
-        sum_args.push(term);
+        PTRef term = mkFun(get_sym_Num_TIMES(), {consts_summed, keys[i]});
+        flattened_args.push(term);
     }
-    if (sum_args.size() == 0) return getTerm_NumZero();
-    if (sum_args.size() == 1) return sum_args[0];
-    PTRef tr = mkFun(s_new, sum_args);
+    if (flattened_args.size() == 0) return getTerm_NumZero();
+    if (flattened_args.size() == 1) return flattened_args[0];
+    PTRef tr = mkFun(s_new, std::move(flattened_args));
     return tr;
 }
-PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
+PTRef LALogic::mkNumTimes(vec<PTRef> && args)
 {
-    vec<PTRef> args;
+    vec<PTRef> flatten_args;
     // Flatten possible internal multiplications
-    for (int i = 0; i < tmp_args.size(); i++) {
-        if (isNumTimes(tmp_args[i])) {
-            Pterm& t = getPterm(tmp_args[i]);
+    for (int i = 0; i < args.size(); i++) {
+        if (isNumTimes(args[i])) {
+            Pterm const & t = getPterm(args[i]);
             for (int j = 0; j < t.size(); j++)
-                args.push(t[j]);
+                flatten_args.push(t[j]);
         } else {
-            args.push(tmp_args[i]);
+            flatten_args.push(args[i]);
         }
     }
     SimplifyConstTimes simp(*this);
-    vec<PTRef> args_new;
+    args.clear();
     SymRef s_new;
-    simp.simplify(get_sym_Num_TIMES(), args, s_new, args_new);
-    PTRef tr = mkFun(s_new, args_new);
+    simp.simplify(get_sym_Num_TIMES(), flatten_args, s_new, args);
+    PTRef tr = mkFun(s_new, std::move(args));
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
     if (isNumTerm(tr) || isNumPlus(tr) || isUF(tr) || isIte(tr))
@@ -408,35 +330,30 @@ PTRef LALogic::mkNumTimes(const vec<PTRef>& tmp_args, char** msg)
 
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
-PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
-{
+PTRef LALogic::mkNumLeq(vec<PTRef> && args) {
+    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments passed to LALogic::mkNumLeq"); }
+    PTRef lhs = args[0];
+    PTRef rhs = args[1];
     if (isConstant(lhs) && isConstant(rhs)) {
         opensmt::Number const & v1 = this->getNumConst(lhs);
         opensmt::Number const & v2 = this->getNumConst(rhs);
-        if (v1 <= v2)
-            return getTerm_true();
-        else
-            return getTerm_false();
+        return v1 <= v2 ? getTerm_true() : getTerm_false();
     }
     // Should be in the form that on one side there is a constant
     // and on the other there is a sum
     PTRef sum_tmp = [&](){
        if (lhs == getTerm_NumZero()) { return rhs; }
        if (rhs == getTerm_NumZero()) { return mkNumNeg(lhs); }
-       vec<PTRef> sum_args;
-       sum_args.push(rhs);
-       sum_args.push(mkNumNeg(lhs));
-       return mkNumPlus(sum_args);
+       return mkNumPlus(rhs, mkNumNeg(lhs));
     }(); // now the inequality is "0 <= sum_tmp" where "sum_tmp = rhs - lhs"
     if (isConstant(sum_tmp)) {
         opensmt::Number const & v = this->getNumConst(sum_tmp);
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
     } if (isNumVarLike(sum_tmp) || isNumTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
         sum_tmp = isNumTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
-        vec<PTRef> args;
-        args.push(getTerm_NumZero());
-        args.push(sum_tmp);
-        return mkFun(get_sym_Num_LEQ(), args);
+        args[0] = getTerm_NumZero();
+        args[1] = sum_tmp;
+        return mkFun(get_sym_Num_LEQ(), std::move(args));
     } else if (isNumPlus(sum_tmp)) {
         // Normalize the sum
         return sumToNormalizedInequality(sum_tmp);
@@ -445,58 +362,45 @@ PTRef LALogic::mkNumLeq(PTRef lhs, PTRef rhs)
     throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
 }
 
-PTRef LALogic::mkNumGeq(const vec<PTRef> & args)
-{
-    assert(args.size() == 2);
-    return mkNumLeq(args[1], args[0]);
+PTRef LALogic::mkNumGeq(vec<PTRef> && args) {
+    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments passed to LALogic::mkNumGeq"); }
+    std::swap(args[0], args[1]);
+    return mkNumLeq(std::move(args));
 }
-PTRef LALogic::mkNumLt(const vec<PTRef> & args)
+
+PTRef LALogic::mkNumLt(vec<PTRef> && args)
 {
-    if (isConstant(args[0]) && isConstant(args[1])) {
-        opensmt::Number const& v1 = this->getNumConst(args[0]);
-        opensmt::Number const& v2 = this->getNumConst(args[1]);
-        if (v1 < v2) {
-            return getTerm_true();
-        } else {
-            return getTerm_false();
-        }
-    }
-    PTRef tr = mkNumLeq(args[1], args[0]);
-    if (tr == PTRef_Undef) {
-//        printf("%s\n", *msg);
-        assert(false);
-    }
+    PTRef tr = mkNumGeq(std::move(args));
     return mkNot(tr);
 }
-PTRef LALogic::mkNumGt(const vec<PTRef> & args)
+
+PTRef LALogic::mkNumGt(vec<PTRef> && args)
 {
-    PTRef tr = mkNumLeq(args);
-    if (tr == PTRef_Undef) {
-        assert(false);
-    }
+    PTRef tr = mkNumLeq(std::move(args));
     return mkNot(tr);
 }
-PTRef LALogic::insertTerm(SymRef sym, vec<PTRef>& terms)
+
+PTRef LALogic::insertTerm(SymRef sym, vec<PTRef> && terms)
 {
     if (sym == get_sym_Num_NEG())
         return mkNumNeg(terms[0]);
     if (sym == get_sym_Num_MINUS())
-        return mkNumMinus(terms);
+        return mkNumMinus(std::move(terms));
     if (sym == get_sym_Num_PLUS())
-        return mkNumPlus(terms);
+        return mkNumPlus(std::move(terms));
     if (sym == get_sym_Num_TIMES())
-        return mkNumTimes(terms);
+        return mkNumTimes(std::move(terms));
     if (sym == get_sym_Num_LEQ())
-        return mkNumLeq(terms);
+        return mkNumLeq(std::move(terms));
     if (sym == get_sym_Num_LT())
-        return mkNumLt(terms);
+        return mkNumLt(std::move(terms));
     if (sym == get_sym_Num_GEQ())
-        return mkNumGeq(terms);
+        return mkNumGeq(std::move(terms));
     if (sym == get_sym_Num_GT())
-        return mkNumGt(terms);
+        return mkNumGt(std::move(terms));
     if (sym == get_sym_Num_ITE())
-        return mkIte(terms);
-    return Logic::insertTerm(sym, terms);
+        return mkIte(std::move(terms));
+    return Logic::insertTerm(sym, std::move(terms));
 }
 
 PTRef LALogic::mkConst(const char *name, const char **msg)
@@ -631,16 +535,14 @@ void SimplifyConstTimes::constSimplify(const SymRef& s, const vec<PTRef>& terms,
         //distribute the constant over the sum
         vec<PTRef> sum_args;
         int termSize = l.getPterm(plus).size();
-        for(int i = 0; i < termSize; ++i)
+        for (int i = 0; i < termSize; ++i)
         {
-            vec<PTRef> times_args;
-            times_args.push(con);
             // MB: we cannot use Pterm& here, because in the line after next new term might be allocated, which might
             //     trigger reallocation of the table of terms
-            times_args.push(l.getPterm(plus)[i]);
-            sum_args.push(l.mkNumTimes(times_args));
+            PTRef arg = l.getPterm(plus)[i];
+            sum_args.push(l.mkNumTimes(con, arg));
         }
-        terms_new.push(l.mkNumPlus(sum_args));
+        terms_new.push(l.mkNumPlus(std::move(sum_args)));
     }
     if (terms_new.size() == 0) {
         // The term was multiplication of all ones
@@ -822,7 +724,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
     splitTermToVarAndConst(leadingFactor, var, coeff);
     opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), varFactors);
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), std::move(varFactors));
     if (normalizationCoeff != 1) {
         // normalize the whole sum
         normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));

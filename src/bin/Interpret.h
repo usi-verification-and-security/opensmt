@@ -113,8 +113,6 @@ class Interpret {
     VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
     vec<char*>      term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
                                             // partition to it name.
-    vec<PTRef>      vec_ptr_empty;
-
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
 

@@ -67,7 +67,7 @@ PTRef IteHandler::replaceItes(PTRef root) {
             needsChange |= childChanged;
             newArgs[i] = childChanged ? it->second : term[i];
         }
-        PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), newArgs) : currentRef;
+        PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(newArgs)) : currentRef;
         if (needsChange) {
             substitutions.insert({currentRef, newTerm});
         }

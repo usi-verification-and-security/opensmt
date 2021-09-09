@@ -116,12 +116,12 @@ public:
 
     const SymRef get_sym_Real_DIV () const { return sym_Real_DIV; }
 
-    PTRef mkNumDiv(vec<PTRef> const& args) override { return mkRealDiv(args); }
+    PTRef mkNumDiv(vec<PTRef> && args) override { return mkRealDiv(std::move(args)); }
     PTRef mkNumDiv(PTRef dividend, PTRef divisor) override { return mkRealDiv(dividend, divisor); }
-    PTRef mkRealDiv(vec<PTRef> const&);
+    PTRef mkRealDiv(vec<PTRef> const &);
     PTRef mkRealDiv(PTRef dividend, PTRef divisor) { return mkRealDiv({dividend, divisor}); }
 
-    PTRef insertTerm(SymRef sym, vec<PTRef> &terms) override;
+    PTRef insertTerm(SymRef sym, vec<PTRef> &&terms) override;
 
 };
 

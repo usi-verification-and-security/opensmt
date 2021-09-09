@@ -1017,7 +1017,7 @@ inline void CoreSMTSolver::printClause(const C& c)
         PTRef tr = sign(c[i]) ? logic.mkNot(theory_handler.varToTerm(var(c[i]))) : theory_handler.varToTerm(var(c[i]));
         args.push(tr);
     }
-    PTRef tr = logic.mkOr(args);
+    PTRef tr = logic.mkOr(std::move(args));
     char* clause = logic.printTerm(tr);
     fprintf(stderr, "; %s", clause);
     free(clause);
@@ -1039,7 +1039,7 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef>
 			if (sign(literal)) ptr = logic.mkNot(ptr);
 			literals.push(ptr);
 		}
-		clauses.push(logic.mkOr(literals));
+		clauses.push(logic.mkOr(std::move(literals)));
 	}
 }
 
@@ -1050,9 +1050,7 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<Lit> 
 		Var v = var(literal);
 		PTRef ptr = theory_handler.varToTerm(v);
 		if (sign(literal)) ptr = logic.mkNot(ptr);
-		vec<PTRef> clause;
-		clause.push(ptr);
-		clauses.push(logic.mkOr(clause));
+		clauses.push(logic.mkOr({ptr}));
 	}
 }
 
@@ -1062,7 +1060,7 @@ inline char * CoreSMTSolver::printCnfClauses()
 	this->populateClauses(cnf_clauses, clauses);
 	
 	Logic& logic = theory_handler.getLogic();
-	return logic.printTerm(logic.mkAnd(cnf_clauses));
+	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
 }
 
 inline char * CoreSMTSolver::printCnfLearnts()
@@ -1072,7 +1070,7 @@ inline char * CoreSMTSolver::printCnfLearnts()
 	//this->populateClauses(cnf_clauses, trail);
 	
 	Logic& logic = theory_handler.getLogic();
-	return logic.printTerm(logic.mkAnd(cnf_clauses));
+	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
 }
 
 

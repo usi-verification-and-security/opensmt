@@ -28,7 +28,7 @@ PTRef Theory::getCollateFunction(const vec<PFRef> & formulas, int curr)
         for (int j = 0; j < pfstore[formulas[i]].size(); j++)
             coll_f_args.push(pfstore[formulas[i]][j]);
     }
-    return getLogic().mkAnd(coll_f_args);
+    return getLogic().mkAnd(std::move(coll_f_args));
 }
 
 Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
@@ -116,5 +116,5 @@ PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
         args.push(logic.mkEq(entry, target));
     }
     args.push(sr.result);
-    return logic.mkAnd(args);
+    return logic.mkAnd(std::move(args));
 }

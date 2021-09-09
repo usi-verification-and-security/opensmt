@@ -264,7 +264,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                     }
                 }
 
-                PTRef nn = logic.mkUninterpFun(logic.getPterm(x->e).symb(), new_args);
+                PTRef nn = logic.mkUninterpFun(logic.getPterm(x->e).symb(), std::move(new_args));
                 if (nn == x->e) {
                     x->color = I_AB;
                 } else if (nn == n->e) {
@@ -573,7 +573,7 @@ UFInterpolator::Iprime(const path_t & pi) {
         implicated = logic.mkNot(logic.mkEq(theta.first->e, theta.second->e));
 
     conj.push(logic.mkImpl(implicant, implicated));
-    return logic.mkAnd(conj);
+    return logic.mkAnd(std::move(conj));
 }
 
 PTRef
@@ -611,7 +611,7 @@ UFInterpolator::IprimeSwap(const path_t & pi) {
         implicated = logic.mkNot(logic.mkEq(theta.first->e, theta.second->e));
 
     conj.push(logic.mkImpl(implicant, implicated));
-    return logic.mkAnd(conj);
+    return logic.mkAnd(std::move(conj));
 }
 
 PTRef
@@ -747,7 +747,7 @@ UFInterpolator::Irec(const path_t & p, std::map<path_t, PTRef> & cache) {
         }
     }
 
-    PTRef res = logic.mkAnd(conj);
+    PTRef res = logic.mkAnd(std::move(conj));
     assert (res != PTRef_Undef);
     return res;
 }
@@ -869,7 +869,7 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
         }
     }
 
-    PTRef res = logic.mkAnd(conj);
+    PTRef res = logic.mkAnd(std::move(conj));
     assert (res != PTRef_Undef);
     return res;
 }

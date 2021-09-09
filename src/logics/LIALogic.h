@@ -95,19 +95,19 @@ public:
     const SymRef get_sym_Int_ABS() const { return sym_Int_ABS; }
     virtual const SRef get_sort_Num () const override { return sort_INTEGER; }
 
-    PTRef mkNumDiv(vec<PTRef> const& args) override { return mkIntDiv(args); }
+    PTRef mkNumDiv(vec<PTRef> && args) override { return mkIntDiv(std::move(args)); }
     PTRef mkNumDiv(PTRef dividend, PTRef divisor) override { return mkIntDiv(dividend, divisor); }
-    PTRef mkIntMod(vec<PTRef> const & args);
+    PTRef mkIntMod(vec<PTRef> && args);
     PTRef mkIntMod(PTRef first, PTRef second);
-    PTRef mkIntDiv(vec<PTRef> const & args);
+    PTRef mkIntDiv(vec<PTRef> && args);
     PTRef mkIntDiv(PTRef dividend, PTRef divisor);
 
-    PTRef insertTerm (SymRef sym, vec<PTRef>& terms) override;
+    PTRef insertTerm (SymRef sym, vec<PTRef>&& terms) override;
     virtual PTRef sumToNormalizedInequality(PTRef sum) override;
 
 private:
-    PTRef _mkIntMod(vec<PTRef> const & args);
-    PTRef _mkIntDiv(vec<PTRef> const & args);
+    PTRef _mkIntMod(vec<PTRef> && args);
+    PTRef _mkIntDiv(vec<PTRef> && args);
 };
 
 #endif

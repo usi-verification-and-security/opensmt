@@ -66,7 +66,7 @@ PTRef Model::evaluate(PTRef term) {
             PTRef root = tfun.getBody();
             val = Substitutor(logic, substMap).rewrite(root);
         } else {
-            val = logic.insertTerm(symbol, nargs);
+            val = logic.insertTerm(symbol, std::move(nargs));
         }
         assert(val != PTRef_Undef);
         addDerivedVal(term, val);

@@ -48,7 +48,7 @@ PTRef mergeAndOrArgs(Logic & logic, PTRef tr, Map<PTRef,PTRef,PTRefHash>& cache,
         }
     }
     if (!changed) { return tr; }
-    PTRef new_tr = (sr == logic.getSym_and() ? logic.mkAnd(new_args) : logic.mkOr(new_args));
+    PTRef new_tr = (sr == logic.getSym_and() ? logic.mkAnd(std::move(new_args)) : logic.mkOr(std::move(new_args)));
     return new_tr;
 }
 

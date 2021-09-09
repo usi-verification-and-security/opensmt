@@ -196,7 +196,7 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
             varFactors[i] = mkNumTimes(vars[i], mkConst(coeffs[i]));
         }
     }
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), varFactors);
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), std::move(varFactors));
     // 0 <= normalizedSum + constatValue
     // in LIA we can strengthen the inequality to
     // ceiling(-constantValue) <= normalizedSum
@@ -205,26 +205,26 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
     return mkFun(get_sym_Num_LEQ(), {mkConst(constantValue), normalizedSum});
 }
 
-PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
+PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> && terms) {
     if (extendedSignatureEnabled()) {
         if (sym == get_sym_Int_MOD())
-            return mkIntMod(terms);
+            return mkIntMod(std::move(terms));
         if (sym == get_sym_Int_DIV())
-            return mkIntDiv(terms);
+            return mkIntDiv(std::move(terms));
     }
-    return LALogic::insertTerm(sym, terms);
+    return LALogic::insertTerm(sym, std::move(terms));
 }
 
-PTRef LIALogic::mkIntDiv(vec<PTRef> const & args) {
+PTRef LIALogic::mkIntDiv(vec<PTRef> && args) {
     if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for DIV operator"); }
-    return _mkIntDiv(args);
+    return _mkIntDiv(std::move(args));
 }
 
 PTRef LIALogic::mkIntDiv(PTRef dividend, PTRef divisor) {
     return _mkIntDiv({dividend, divisor});
 }
 
-PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
+PTRef LIALogic::_mkIntDiv(vec<PTRef> && args) {
     assert(args.size() == 2);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
@@ -240,19 +240,19 @@ PTRef LIALogic::_mkIntDiv(const vec<PTRef> & args) {
         auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
         return mkConst(intDiv);
     }
-    return insertTermHash(sym_Int_DIV, args);
+    return insertTermHash(sym_Int_DIV, std::move(args));
 }
 
-PTRef LIALogic::mkIntMod(vec<PTRef> const & args) {
+PTRef LIALogic::mkIntMod(vec<PTRef> && args) {
     if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments for MOD operator"); }
-    return _mkIntMod(args);
+    return _mkIntMod(std::move(args));
 }
 
 PTRef LIALogic::mkIntMod(PTRef dividend, PTRef divisor) {
     return _mkIntMod({dividend, divisor});
 }
 
-PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
+PTRef LIALogic::_mkIntMod(vec<PTRef> && args) {
     assert(args.size() == 2);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
@@ -270,5 +270,5 @@ PTRef LIALogic::_mkIntMod(vec<PTRef> const & args) {
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkConst(intMod);
     }
-    return insertTermHash(sym_Int_MOD, args);
+    return insertTermHash(sym_Int_MOD, std::move(args));
 }

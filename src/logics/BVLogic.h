@@ -260,7 +260,7 @@ class BVLogic: public CUFLogic
     PTRef mkBVEq      (const vec<PTRef>& args) {assert(args.size() == 2); return mkBVEq(args[0], args[1]);}
     PTRef mkBVEq      (const PTRef, const PTRef);
     virtual PTRef mkEq(const PTRef a1, const PTRef a2) { if (hasSortBVNUM(a1)) assert(false); return CUFLogic::mkEq(a1, a2); }
-    virtual PTRef mkEq(vec<PTRef>& args) { if (hasSortBVNUM(args[0])) assert(false); return CUFLogic::mkEq(args); }
+    virtual PTRef mkEq(vec<PTRef>&& args) { if (hasSortBVNUM(args[0])) assert(false); return CUFLogic::mkEq(std::move(args)); }
 
 
     PTRef mkBVNeq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVNeq(args[0], args[1]);}

@@ -26,15 +26,11 @@ public:
             Pterm const  & p = logic.getPterm(term);
             PTRef a1 = p[0];
             PTRef a2 = p[1];
-            vec<PTRef> args;
-            args.push(a1); args.push(a2);
-            PTRef i1 = logic.mkNumLeq(args);
-            PTRef i2 = logic.mkNumGeq(args);
+            PTRef i1 = logic.mkNumLeq(a1, a2);
+            PTRef i2 = logic.mkNumGeq(a1, a2);
             notOkToPartition->insert(i1, true);
             notOkToPartition->insert(i2, true);
-            args.clear();
-            args.push(i1); args.push(i2);
-            term = logic.mkAnd(args);
+            term = logic.mkAnd(i1, i2);
         }
         return term;
     }

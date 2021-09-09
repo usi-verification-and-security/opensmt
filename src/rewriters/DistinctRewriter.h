@@ -33,7 +33,7 @@ public:
                     inequalities.push(logic.mkNot(logic.mkEq(args[i], args[j])));
                 }
             }
-            return logic.mkAnd(inequalities);
+            return logic.mkAnd(std::move(inequalities));
         }
         return ptr;
     }

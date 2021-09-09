@@ -809,7 +809,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
                     or_args.push (lit);
                 }
 
-                partial_interp = logic_.mkOr (or_args);
+                partial_interp = logic_.mkOr (std::move(or_args));
                 assert (partial_interp != PTRef_Undef);
             }
 
@@ -864,7 +864,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
                     and_args.push (lit);
                 }
 
-                partial_interp = logic_.mkAnd (and_args);
+                partial_interp = logic_.mkAnd (std::move(and_args));
                 assert (partial_interp != PTRef_Undef);
             }
 
@@ -1117,13 +1117,12 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
                 lit = varToPTRef (var (restricted_clause[i]));
 
                 //Check polarity literal
-                if (sign (restricted_clause[i])) lit = logic_.mkNot (lit);
+                if (sign (restricted_clause[i])) lit = logic_.mkNot(lit);
 
                 //Build adding literals progressively
                 or_args.push (lit);
             }
-
-            partial_interp = logic_.mkOr (or_args);
+            partial_interp = logic_.mkOr(std::move(or_args));
         }
     }
     // Leaf belongs to B -> interpolant = negation of leaf clause restricted to a
@@ -1179,13 +1178,12 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
 
                 // Check polarity literal
                 if ( !sign ( restricted_clause[i] ) )
-                    lit = logic_.mkNot (lit);
+                    lit = logic_.mkNot(lit);
 
                 // Build adding literals progressively
                 and_args.push (lit);
             }
-
-            partial_interp = logic_.mkAnd (and_args);
+            partial_interp = logic_.mkAnd (std::move(and_args));
         }
     }
     else opensmt_error ( "Clause has no color" );

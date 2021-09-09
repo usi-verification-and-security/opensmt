@@ -417,7 +417,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 //            comment_formatted("Found a let reference to term %d", tr);
             return tr;
         }
-        tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
+        tr = logic->resolveTerm(name, {}, &msg);
         if (tr == PTRef_Undef)
             comment_formatted("unknown qid term %s: %s", name, msg);
         free(msg);
@@ -441,7 +441,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         char* msg = NULL;
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic->resolveTerm(name, args, &msg);
+            tr = logic->resolveTerm(name, std::move(args), &msg);
         }
         catch (LADivisionByZeroException & ex) {
             notify_formatted(true, ex.what());
@@ -449,9 +449,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         }
         if (tr == PTRef_Undef) {
             notify_formatted(true, "No such symbol %s: %s", name, msg);
-            comment_formatted("The symbol %s is not defined for the following sorts:", name);
-            for (int j = 0; j < args.size(); j++)
-                comment_formatted("arg %d: %s", j, logic->getSortName(logic->getSortRef(args[j]) )); //store.getName(symstore[ptstore[args[j]].symb()].rsort()));
+            comment_formatted("The symbol %s is not defined for the given sorts", name);
             if (logic->hasSym(name)) {
                 comment_formatted("candidates are:");
                 const vec<SymRef>& trefs = logic->symNameToRef(name);

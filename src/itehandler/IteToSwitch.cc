@@ -176,7 +176,7 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
                 }
             }
 
-            PTRef pathCondition = logic.mkOr(parentConditions);
+            PTRef pathCondition = logic.mkOr(std::move(parentConditions));
             dagNodeToPTRef[el_r] = pathCondition;
 
             if (el.isLeaf()) {
@@ -279,7 +279,7 @@ PTRef IteToSwitch::makeSwitch(PTRef root) {
     for (auto condVal : root_switches) {
         cases.push(logic.mkImpl(condVal.cond, logic.mkEq(root, condVal.val)));
     }
-    return logic.mkAnd(cases);
+    return logic.mkAnd(std::move(cases));
 }
 
 PTRef IteToSwitch::conjoin(PTRef root) {

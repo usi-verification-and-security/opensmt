@@ -235,7 +235,7 @@ void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out)
         vec<PTRef> disj_vec;
         for (PtAsgn pta : constr)
             disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
-        out.push(logic.mkOr(disj_vec));
+        out.push(logic.mkOr(std::move(disj_vec)));
     }
 }
 

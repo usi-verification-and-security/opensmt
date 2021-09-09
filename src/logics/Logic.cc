@@ -512,8 +512,7 @@ bool Logic::declare_sort_hook(SRef sr) {
     return true;
 }
 
-// The vec argument might be sorted!
-PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s)) {
@@ -546,7 +545,7 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>& args, char** msg) {
     assert(sref != SymRef_Undef);
     PTRef rval;
 
-    rval = insertTerm(sref, args);
+    rval = insertTerm(sref, std::move(args));
     if (rval == PTRef_Undef)
         printf("Error in resolveTerm\n");
 
@@ -573,7 +572,7 @@ Logic::getDefaultValuePTRef(const SRef sref) const {
 }
 
 PTRef
-Logic::mkIte(const vec<PTRef>& args)
+Logic::mkIte(vec<PTRef>&& args)
 {
     if (!hasSortBool(args[0])) return PTRef_Undef;
     if (args.size() != 3) throw OsmtApiException("ITE needs to have 3 arguments");
@@ -590,13 +589,13 @@ Logic::mkIte(const vec<PTRef>& args)
 
     assert(sortToIte.has(sr));
     SymRef iteSym = sortToIte[sr];
-    return mkFun(iteSym, args);
+    return mkFun(iteSym, std::move(args));
 
 }
 
 // Check if arguments contain trues or a false and return the simplified
 // term
-PTRef Logic::mkAnd(const vec<PTRef>& args) {
+PTRef Logic::mkAnd(vec<PTRef>&& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -633,15 +632,15 @@ PTRef Logic::mkAnd(const vec<PTRef>& args) {
     } else if (tmp_args.size() == 1) {
         return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
     }
-    vec<PTRef> newargs;
-    newargs.capacity(tmp_args.size());
+    args.clear();
+    args.capacity(tmp_args.size());
     for (int k = 0; k < tmp_args.size(); k++) {
-        newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+        args.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_and(), newargs);
+    return mkFun(getSym_and(), std::move(args));
 }
 
-PTRef Logic::mkOr(const vec<PTRef>& args) {
+PTRef Logic::mkOr(vec<PTRef> && args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
     vec<PtAsgn> tmp_args;
@@ -678,15 +677,15 @@ PTRef Logic::mkOr(const vec<PTRef>& args) {
     } else if (tmp_args.size() == 1) {
         return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
     }
-    vec<PTRef> newargs;
-    newargs.capacity(tmp_args.size());
+    args.clear();
+    args.capacity(tmp_args.size());
     for (int k = 0; k < tmp_args.size(); k++) {
-        newargs.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+        args.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
     }
-    return mkFun(getSym_or(), newargs);
+    return mkFun(getSym_or(), std::move(args));
 }
 
-PTRef Logic::mkXor(const vec<PTRef>& args) {
+PTRef Logic::mkXor(vec<PTRef>&& args) {
     PTRef tr = PTRef_Undef;
 
     for (int i = 0; i < args.size(); i++)
@@ -704,10 +703,8 @@ PTRef Logic::mkXor(const vec<PTRef>& args) {
     else if (args[0] == getTerm_false() || args[1] == getTerm_false())
         return (args[0] == getTerm_false() ? args[1] : args[0]);
 
-    vec<PTRef> newargs;
-    args.copyTo(newargs);
-    sort(newargs);
-    tr = mkFun(getSym_xor(), newargs);
+    sort(args);
+    tr = mkFun(getSym_xor(), std::move(args));
 
     if(tr == PTRef_Undef) {
         printf("Error in mkXor");
@@ -717,17 +714,7 @@ PTRef Logic::mkXor(const vec<PTRef>& args) {
     return tr;
 }
 
-
-PTRef
-Logic::mkImpl(PTRef _a, PTRef _b)
-{
-    vec<PTRef> args;
-    args.push(_a);
-    args.push(_b);
-    return mkImpl(args);
-}
-
-PTRef Logic::mkImpl(const vec<PTRef>& args) {
+PTRef Logic::mkImpl(vec<PTRef> && args) {
 
     for (int i = 0; i < args.size(); i++)
         if (!hasSortBool(args[i]))
@@ -743,10 +730,8 @@ PTRef Logic::mkImpl(const vec<PTRef>& args) {
                 tr = getTerm_false();
         else
         {
-            vec<PTRef> or_args;
-            or_args.push(mkNot(args[0]));
-            or_args.push(args[1]);
-            tr = mkOr(or_args);
+            args[0] = mkNot(args[0]);
+            tr = mkOr(std::move(args));
         }
 
         if (tr == PTRef_Undef) {
@@ -757,43 +742,45 @@ PTRef Logic::mkImpl(const vec<PTRef>& args) {
         return tr;
 }
 
-PTRef Logic::mkEq(const vec<PTRef>& args) {
+PTRef Logic::mkEq(PTRef lhs, PTRef rhs) {
+    if (lhs == rhs) return getTerm_true();
+    if (isConstant(lhs) && isConstant(rhs))
+        return getTerm_false();
+
+    // Simplify more here now that the equals type is known
+    if (hasSortBool(lhs)) {
+        if (lhs == mkNot(rhs)) return getTerm_false();
+        if (lhs == getTerm_true() || rhs == getTerm_true())
+            return lhs == getTerm_true() ? rhs : lhs;
+        if (lhs == getTerm_false() || rhs == getTerm_false())
+            return lhs == getTerm_false() ? mkNot(rhs) : mkNot(lhs);
+    }
+    vec<PTRef> args {lhs, rhs};
+    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
+    return mkFun(eq_sym, std::move(args));
+}
+
+PTRef Logic::mkEq(vec<PTRef>&& args) {
     if (args.size() < 2) { return PTRef_Undef; }
     if (args.size() > 2) { // split to chain of equalities with 2 arguments
         vec<PTRef> binaryEqualities;
-        vec<PTRef> argPair;
-        argPair.growTo(2, PTRef_Undef);
         for (int i = 0; i < args.size() - 1; ++i) {
-            argPair[0] = args[i];
-            argPair[1] = args[i + 1];
-            binaryEqualities.push(mkEq(argPair));
+            binaryEqualities.push(mkEq(args[i], args[i + 1]));
         }
-        return mkAnd(binaryEqualities);
+        return mkAnd(std::move(binaryEqualities));
     }
     assert(args.size() == 2);
-    if (isConstant(args[0]) && isConstant(args[1]))
-        return (args[0] == args[1]) ? getTerm_true() : getTerm_false();
-    if (args[0] == args[1]) return getTerm_true();
-    // Simplify more here now that the equals type is known
-    if (hasSortBool(args[0])) {
-        if (args[0] == mkNot(args[1])) return getTerm_false();
-        if (args[0] == getTerm_true() || args[1] == getTerm_true())
-            return args[0] == getTerm_true() ? args[1] : args[0];
-        if (args[0] == getTerm_false() || args[1] == getTerm_false())
-            return args[0] == getTerm_false() ? mkNot(args[1]) : mkNot(args[0]);
-    }
-    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
-    return mkFun(eq_sym, args);
+    return mkEq(args[0], args[1]);
 }
 
 // Given args = {a_1, ..., a_n}, distinct(args) holds iff
 // for all a_i, a_j \in args s.t. i != j: a_i != a_j
 // General distinctions are represented as separate terms until the distinction classes have been used up.
 // After this, they are written explicitly as the O(n^2) expansion.
-PTRef Logic::mkDistinct(vec<PTRef>& args) {
+PTRef Logic::mkDistinct(vec<PTRef>&& args) {
     if (args.size() == 0) return getTerm_true();
     if (args.size() == 1) return getTerm_true();
-    if (args.size() == 2) return mkNot(mkEq(args));
+    if (args.size() == 2) return mkNot(mkEq(std::move(args)));
 
     // The boolean distinctness over > 2 args is false
     if (hasSortBool(args[0])) {
@@ -813,31 +800,30 @@ PTRef Logic::mkDistinct(vec<PTRef>& args) {
     assert(!isBooleanOperator(diseq_sym));
     PTLKey key;
     key.sym = diseq_sym;
-    args.copyTo(key.args);
+    args.moveTo(key.args);
     if (term_store.hasCplxKey(key)) {
         return term_store.getFromCplxMap(key);
     }
     else {
         if (distinctClassCount < maxDistinctClasses) {
-            PTRef res = term_store.newTerm(diseq_sym, args);
+            PTRef res = term_store.newTerm(diseq_sym, key.args);
             term_store.addToCplxMap(std::move(key), res);
             distinctClassCount++;
             return res;
         }
         else {
             vec<PTRef> distinct_terms;
-            for (int i = 0; i < args.size(); i++) {
-                for (int j = i + 1; j < args.size(); j++) {
-                    vec<PTRef> small_distinct{args[i], args[j]};
-                    distinct_terms.push(mkDistinct(small_distinct));
+            for (int i = 0; i < key.args.size(); i++) {
+                for (int j = i + 1; j < key.args.size(); j++) {
+                    distinct_terms.push(mkDistinct({key.args[i], key.args[j]}));
                 }
             }
-            return mkAnd(distinct_terms);
+            return mkAnd(std::move(distinct_terms));
         }
     }
 }
 
-PTRef Logic::mkNot(vec<PTRef>& args) {
+PTRef Logic::mkNot(vec<PTRef>&& args) {
     assert(args.size() == 1);
     return mkNot(args[0]);
 }
@@ -866,9 +852,8 @@ PTRef Logic::mkConst(const char* name, const char** msg)
     //assert(0);
     //return PTRef_Undef;
     assert(strlen(name) > 0);
-    vec<PTRef> args;
     char *msg2;
-    return resolveTerm(name, args, &msg2);
+    return resolveTerm(name, {}, &msg2);
 }
 
 
@@ -923,8 +908,8 @@ void Logic::markConstant(SymId id) {
     constants[id] = true;
 }
 
-PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
-    PTRef tr = mkFun(f, args);
+PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
+    PTRef tr = mkFun(f, std::move(args));
     if (not isUFTerm(tr) and not isUP(tr)) {
         char * name = printSym(f);
         std::string msg = "Unknown symbol: " + std::string(name);
@@ -934,13 +919,13 @@ PTRef Logic::mkUninterpFun(SymRef f, const vec<PTRef> & args) {
     return tr;
 }
 
-PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args)
+PTRef Logic::mkFun(SymRef f, vec<PTRef>&& args)
 {
     PTRef tr;
     if (f == SymRef_Undef)
         tr = PTRef_Undef;
     else {
-        tr = insertTermHash(f, args);
+        tr = insertTermHash(f, std::move(args));
     }
     return tr;
 }
@@ -998,37 +983,37 @@ bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTR
     return true;
 }
 
-PTRef Logic::insertTerm(SymRef sym, vec<PTRef>& terms)
+PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 {
     if (sym == getSym_and())
-        return mkAnd(terms);
+        return mkAnd(std::move(terms));
     if (sym == getSym_or())
-        return mkOr(terms);
+        return mkOr(std::move(terms));
     if (sym == getSym_xor())
-        return mkXor(terms);
+        return mkXor(std::move(terms));
     if (sym == getSym_not())
-        return mkNot(terms[0]);
+        return mkNot(std::move(terms));
     if (isEquality(sym))
-        return mkEq(terms);
+        return mkEq(std::move(terms));
     if (isDisequality(sym))
-        return mkDistinct(terms);
+        return mkDistinct(std::move(terms));
     if (isIte(sym))
-        return mkIte(terms);
+        return mkIte(std::move(terms));
     if (sym == getSym_implies())
-        return mkImpl(terms);
+        return mkImpl(std::move(terms));
     if (sym == getSym_true())
         return getTerm_true();
     if (sym == getSym_false())
         return getTerm_false();
     if (isVar(sym)) {
         assert(terms.size() == 0);
-        return mkFun(sym, terms);
+        return mkFun(sym, std::move(terms));
     }
-    return mkUninterpFun(sym, terms);
+    return mkUninterpFun(sym, std::move(terms));
 }
 
 PTRef
-Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
+Logic::insertTermHash(SymRef sym, vec<PTRef>&& terms)
 {
     PTRef res = PTRef_Undef;
     char *msg;
@@ -1053,7 +1038,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         }
         PTLKey k;
         k.sym = sym;
-        terms.copyTo(k.args);
+        terms.moveTo(k.args);
         if (sym_store[sym].commutes()) {
             termSort(k.args);
         }
@@ -1068,7 +1053,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
         // Boolean operator
         PTLKey k;
         k.sym = sym;
-        terms.copyTo(k.args);
+        terms.moveTo(k.args);
         if (term_store.hasBoolKey(k)) {//bool_map.contains(k)) {
             res = term_store.getFromBoolMap(k); //bool_map[k];
 #ifdef SIMPLIFY_DEBUG
@@ -1078,7 +1063,7 @@ Logic::insertTermHash(SymRef sym, const vec<PTRef>& terms)
 #endif
         }
         else {
-            res = term_store.newTerm(sym, terms);
+            res = term_store.newTerm(sym, k.args);
             term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
             char* ts = printTerm(res);
@@ -1436,14 +1421,8 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
 
                 const bool cond2 = (x1 == x2 && z1 == z2) || (x1 == z2 && x2 == z1);
                 if (cond2) {
-                    vec<PTRef> args_eq;
-                    args_eq.push(x1);
-                    args_eq.push(z1);
-                    PTRef eq = mkEq(args_eq);
-                    vec<PTRef> args_impl;
-                    args_impl.push(tr);
-                    args_impl.push(eq);
-                    PTRef impl = mkImpl(args_impl);
+                    PTRef eq = mkEq(x1,z1);
+                    PTRef impl = mkImpl(tr,eq);
                     implications.push(impl);
                 }
             }
@@ -1452,7 +1431,7 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
     }
 
     if (implications.size() > 0)
-        return mkAnd(implications);
+        return mkAnd(std::move(implications));
     else
         return getTerm_true();
 }

@@ -167,7 +167,7 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
         }
 
     }
-    return isAnd ? logic.mkAnd(newargs) : logic.mkOr(newargs);
+    return isAnd ? logic.mkAnd(std::move(newargs)) : logic.mkOr(std::move(newargs));
 }
 }
 
@@ -312,7 +312,7 @@ PTRef simplifyUnderAssignment_Aggressive(PTRef node, Logic & logic, std::unorder
     }
     // after we are done with this node, we don't need to remember its assignment anymore
     assignments.erase(node);
-    return isAnd ? logic.mkAnd(newargs) : logic.mkOr(newargs);
+    return isAnd ? logic.mkAnd(std::move(newargs)) : logic.mkOr(std::move(newargs));
 }
 }
 

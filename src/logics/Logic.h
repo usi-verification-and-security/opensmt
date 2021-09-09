@@ -115,7 +115,7 @@ class Logic {
     PTRef               term_FALSE;
 
 
-    virtual PTRef insertTermHash(SymRef, const vec<PTRef>&);
+    virtual PTRef insertTermHash(SymRef, vec<PTRef>&&);
 
     void dumpFunction(ostream &, const TemplateFunction&);
 
@@ -169,7 +169,7 @@ class Logic {
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
-    PTRef       mkFun         (SymRef f, const vec<PTRef>& args);
+    PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
@@ -207,29 +207,33 @@ class Logic {
     // Returns the default value of the given sort
     virtual PTRef getDefaultValuePTRef(const SRef sref) const;
 
-    PTRef       mkUninterpFun (SymRef f, const vec<PTRef>& args);
+    PTRef       mkUninterpFun (SymRef f, vec<PTRef>&& args);
     // Boolean term generation
-    PTRef       mkAnd         (const vec<PTRef>&);
+    PTRef       mkAnd         (vec<PTRef>&&);
+    PTRef       mkAnd         (vec<PTRef> const& args) { vec<PTRef> tmp; args.copyTo(tmp); return mkAnd(std::move(tmp)); }
     PTRef       mkAnd         (PTRef a1, PTRef a2) { return mkAnd({a1, a2}); }
-    PTRef       mkOr          (const vec<PTRef>&);
+
+    PTRef       mkOr          (vec<PTRef>&&);
+    PTRef       mkOr          (vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkOr(std::move(tmp)); }
     PTRef       mkOr          (PTRef a1, PTRef a2) { return mkOr({a1, a2}); }
-    PTRef       mkXor         (const vec<PTRef>&);
+
+    PTRef       mkXor         (vec<PTRef>&&);
     PTRef       mkXor         (PTRef a1, PTRef a2) { return mkXor({a1, a2}); }
-    PTRef       mkImpl        (const vec<PTRef>&);
-    PTRef       mkImpl        (PTRef _a, PTRef _b);
+    PTRef       mkImpl        (vec<PTRef>&&);
+    PTRef       mkImpl        (PTRef a1, PTRef a2) { return mkImpl({a1, a2}); }
     PTRef       mkNot         (PTRef);
-    PTRef       mkNot         (vec<PTRef>&);
-    PTRef       mkIte         (const vec<PTRef>&);
+    PTRef       mkNot         (vec<PTRef>&&);
+    PTRef       mkIte         (vec<PTRef>&&);
     PTRef       mkIte         (PTRef c, PTRef t, PTRef e) { return mkIte({c, t, e}); }
 
 
     // Generic equalities
-    PTRef       mkEq          (const vec<PTRef>& args);
-    PTRef       mkEq          (PTRef a1, PTRef a2) { return mkEq({a1, a2}); }
+    PTRef       mkEq          (vec<PTRef>&& args);
+    PTRef       mkEq          (vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkEq(std::move(tmp)); }
+    PTRef       mkEq          (PTRef a1, PTRef a2);
 
     // General disequalities
-    PTRef       mkDistinct    (vec<PTRef>& args);
-    PTRef       mkDistinct    (vec<PTRef>&& args) { return mkDistinct(args); }
+    PTRef       mkDistinct    (vec<PTRef>&& args);
 
     // Generic variables
     PTRef       mkVar         (SRef, const char*);
@@ -351,10 +355,9 @@ class Logic {
     virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
-    PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
+    PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
 
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>& terms);
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms) { return insertTerm(sym, terms); }
+    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms);
 
     // Top-level equalities based substitutions
     bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);

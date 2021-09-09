@@ -48,7 +48,7 @@ public:
     LALogic() = default;
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
     bool             isBuiltinFunction(SymRef sr) const override;
-    PTRef            insertTerm       (SymRef sym, vec<PTRef>& terms) override;
+    PTRef            insertTerm       (SymRef sym, vec<PTRef>&& terms) override;
     virtual SRef     getSort_num      () const = 0;
     PTRef            mkConst          (const char* name, const char **msg) override;
     PTRef            mkConst          (SRef s, const char* name) override;
@@ -126,29 +126,41 @@ public:
     virtual PTRef getTerm_NumZero() const = 0;
     virtual PTRef getTerm_NumOne() const = 0;
     virtual PTRef getTerm_NumMinusOne() const = 0;
-    virtual PTRef mkNumNeg(PTRef, char **);
-    virtual PTRef mkNumNeg(PTRef tr);
-    virtual PTRef mkNumMinus(const vec<PTRef> &, char **);
-    virtual PTRef mkNumMinus(const vec<PTRef> &args);
-    virtual PTRef mkNumMinus(const PTRef a1, const PTRef a2);
-    virtual PTRef mkNumPlus(const vec<PTRef> &, char **);
-    virtual PTRef mkNumPlus(const vec<PTRef> &args);
-    virtual PTRef mkNumPlus(const std::vector<PTRef> &args);
-    virtual PTRef mkNumPlus(const PTRef p1, const PTRef p2);
-    virtual PTRef mkNumTimes(const vec<PTRef> &, char **);
-    virtual PTRef mkNumTimes(const vec<PTRef> &args);
-    virtual PTRef mkNumTimes(const PTRef p1, const PTRef p2);
-    virtual PTRef mkNumTimes(const std::vector<PTRef> &args);
-    virtual PTRef mkNumDiv(const vec<PTRef> &args) = 0;
+
+    PTRef mkNumNeg(PTRef tr);
+
+    PTRef mkNumMinus(vec<PTRef> && args);
+    PTRef mkNumMinus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumMinus(std::move(tmp)); }
+    PTRef mkNumMinus(PTRef a1, PTRef a2) { return mkNumMinus({a1, a2}); }
+
+    PTRef mkNumPlus(vec<PTRef> && args);
+    PTRef mkNumPlus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumPlus(std::move(tmp)); }
+    PTRef mkNumPlus(std::vector<PTRef> const & args) { return mkNumPlus(vec<PTRef>(args)); }
+    PTRef mkNumPlus(PTRef p1, PTRef p2) { return mkNumPlus(vec<PTRef>{p1, p2}); }
+
+    PTRef mkNumTimes(vec<PTRef> && args);
+    PTRef mkNumTimes(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumTimes(std::move(tmp)); }
+    PTRef mkNumTimes(PTRef p1, PTRef p2) { return mkNumTimes(vec<PTRef>{p1, p2}); }
+    PTRef mkNumTimes(std::vector<PTRef> const & args) { return mkNumTimes(vec<PTRef>(args)); }
+
+    virtual PTRef mkNumDiv(vec<PTRef> && args) = 0;
     virtual PTRef mkNumDiv(const PTRef nom, const PTRef den) = 0;
-    virtual PTRef mkNumLeq(const vec<PTRef> &args);
-    virtual PTRef mkNumLeq(const PTRef arg1, const PTRef arg2);
-    virtual PTRef mkNumGeq(const vec<PTRef> & args);
-    virtual PTRef mkNumGeq(const PTRef arg1, const PTRef arg2);
-    virtual PTRef mkNumLt(const vec<PTRef> & args);
-    virtual PTRef mkNumLt(const PTRef arg1, const PTRef arg2);
-    virtual PTRef mkNumGt(const vec<PTRef> & args);
-    virtual PTRef mkNumGt(const PTRef arg1, const PTRef arg2);
+
+    PTRef mkNumLeq(vec<PTRef> && args);
+    PTRef mkNumLeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumLeq(std::move(tmp)); }
+    PTRef mkNumLeq(PTRef arg1, PTRef arg2) { return mkNumLeq({arg1, arg2}); }
+
+    PTRef mkNumGeq(vec<PTRef> && args);
+    PTRef mkNumGeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGeq(std::move(tmp)); }
+    PTRef mkNumGeq(PTRef arg1, PTRef arg2) { return mkNumGeq({arg1, arg2}); }
+
+    PTRef mkNumLt(vec<PTRef> && args);
+    PTRef mkNumLt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumLt(std::move(tmp)); }
+    PTRef mkNumLt(PTRef arg1, PTRef arg2) { return mkNumLt({arg1, arg2}); }
+
+    PTRef mkNumGt(vec<PTRef> && args);
+    PTRef mkNumGt(const vec<PTRef> & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGt(std::move(tmp)); }
+    PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkNumGt({arg1, arg2}); }
 
     virtual bool isNegated(PTRef tr) const;
     virtual bool isLinearTerm(PTRef tr) const;

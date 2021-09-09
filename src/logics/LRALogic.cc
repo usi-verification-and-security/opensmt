@@ -133,7 +133,7 @@ LRALogic::LRALogic() :
     sym_store.setInterpreted(sym_Real_ITE);
 }
 
-PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
+PTRef LRALogic::mkRealDiv(vec<PTRef> const & args)
 {
     if (args.size() != 2) {
         throw OsmtApiException("Division operation requries exactly 2 arguments");
@@ -151,14 +151,14 @@ PTRef LRALogic::mkRealDiv(const vec<PTRef>& args)
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isNumPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
-        return mkNumTimes(args_new);
+        return mkNumTimes(std::move(args_new));
     }
-    PTRef tr = mkFun(s_new, args_new);
+    PTRef tr = mkFun(s_new, std::move(args_new));
     return tr;
 }
 
-PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &terms) {
+PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &&terms) {
     if (sym == get_sym_Real_DIV())
         return mkRealDiv(terms);
-    return LALogic::insertTerm(sym, terms);
+    return LALogic::insertTerm(sym, std::move(terms));
 }
