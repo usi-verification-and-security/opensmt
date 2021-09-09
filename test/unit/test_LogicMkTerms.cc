@@ -17,40 +17,23 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     SRef ufsort = logic.declareSort("U", nullptr);
     PTRef x = logic.mkVar(ufsort, "x");
     PTRef y = logic.mkVar(ufsort, "y");
-    vec<PTRef> args;
-    args.push(x);
-    args.push(y);
-    PTRef distinct = logic.mkDistinct(args);
+    PTRef distinct = logic.mkDistinct({x,y});
     ASSERT_NE(distinct, logic.getTerm_false());
     ASSERT_NE(distinct, logic.getTerm_true());
 
-    args.clear();
-    args.push(x);
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({x});
     ASSERT_EQ(distinct, logic.getTerm_true());
 
-    args.clear();
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({});
     ASSERT_EQ(distinct, logic.getTerm_true());
 
-    args.push(x);
-    args.push(x);
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({x,x});
     ASSERT_EQ(distinct, logic.getTerm_false());
 
-    args.clear();
-    args.push(x);
-    args.push(y);
-    args.push(x);
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({x,y,x});
     ASSERT_EQ(distinct, logic.getTerm_false());
 
-
-
-    args.clear();
-    args.push(x);
-    args.push(y);
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({x,y});
     // MB: dinstinct(x,y) is equivalent to not equal(x,y) and the second version is preferred
     ASSERT_TRUE(logic.isNot(distinct) && logic.isEquality(logic.getPterm(distinct)[0]));
 
@@ -58,11 +41,7 @@ TEST_F(LogicMkTermsTest, test_Distinct){
     PTRef b2 = logic.mkBoolVar("b2");
     PTRef b3 = logic.mkBoolVar("b3");
 
-    args.clear();
-    args.push(b1);
-    args.push(b2);
-    args.push(b3);
-    distinct = logic.mkDistinct(args);
+    distinct = logic.mkDistinct({b1,b2,b3});
     ASSERT_EQ(distinct, logic.getTerm_false());
 
     PTRef z = logic.mkVar(ufsort, "z");
@@ -81,8 +60,7 @@ TEST_F(LogicMkTermsTest, test_ManyDistinct) {
     for (int i = 0; i < 9; i++) {
         for (int j = i+1; j < 9; j++) {
             for (int k = j+1; k < 9; k++) {
-                vec<PTRef> triple{names[i], names[j], names[k]};
-                distincts1.push(logic.mkDistinct(triple));
+                distincts1.push(logic.mkDistinct({names[i], names[j], names[k]}));
             }
         }
     }
@@ -90,8 +68,7 @@ TEST_F(LogicMkTermsTest, test_ManyDistinct) {
     for (int i = 0; i < 9; i++) {
         for (int j = i+1; j < 9; j++) {
             for (int k = j+1; k < 9; k++) {
-                vec<PTRef> triple{names[j], names[i], names[k]};
-                distincts2.push(logic.mkDistinct(triple));
+                distincts2.push(logic.mkDistinct({names[j], names[i], names[k]}));
             }
         }
     }
@@ -99,8 +76,7 @@ TEST_F(LogicMkTermsTest, test_ManyDistinct) {
     for (int i = 0; i < 9; i++) {
         for (int j = i+1; j < 9; j++) {
             for (int k = j+1; k < 9; k++) {
-                vec<PTRef> triple{names[k], names[i], names[j]};
-                distincts3.push(logic.mkDistinct(triple));
+                distincts3.push(logic.mkDistinct({names[k], names[i], names[j]}));
             }
         }
     }

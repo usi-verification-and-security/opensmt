@@ -902,20 +902,14 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
     // Pivot class A -> interpolant = interpolant of ant1 OR interpolant of ant2
     if ( pivot_class == I_A )
     {
-        vec<PTRef> or_args;
-        or_args.push (partial_interp_ant1);
-        or_args.push (partial_interp_ant2);
-        partial_interp = logic_.mkOr (or_args);
+        partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
 //        cout << "Class A inner" << endl;
     }
     // Pivot class B -> interpolant = interpolant of ant1 AND interpolant of ant2
     else if ( pivot_class == I_B )
     {
-        vec<PTRef> and_args;
-        and_args.push (partial_interp_ant1);
-        and_args.push (partial_interp_ant2);
-        partial_interp = logic_.mkAnd (and_args);
+        partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
 //        cout << "Class B inner" << endl;
     }
@@ -940,18 +934,9 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
             // Equivalent formula (I_1 /\ ~p) \/ (I_2 /\ p)
             if ( choose_alternative )
             {
-                vec<PTRef> and1_args;
-                and1_args.push (partial_interp_ant1);
-                and1_args.push (logic_.mkNot (piv));
-                PTRef and_1 = logic_.mkAnd (and1_args);
-                vec<PTRef> and2_args;
-                and2_args.push (partial_interp_ant2);
-                and2_args.push (piv);
-                PTRef and_2 = logic_.mkAnd (and2_args);
-                vec<PTRef> or_args;
-                or_args.push (and_1);
-                or_args.push (and_2);
-                partial_interp = logic_.mkOr (or_args);
+                PTRef and_1 = logic_.mkAnd({partial_interp_ant1, logic_.mkNot(piv)});
+                PTRef and_2 = logic_.mkAnd({partial_interp_ant2, piv});
+                partial_interp = logic_.mkOr({and_1, and_2});
 
 //              PTRef and_1 = logic_.mkAnd( logic_.cons( partial_interp_ant1, logic_.cons( logic_.mkNot( logic_.cons( piv ) ) ) ) );
 //              PTRef and_2 = logic_.mkAnd( logic_.cons( partial_interp_ant2, logic_.cons( piv ) ) );
@@ -965,20 +950,9 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
             // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
             else
             {
-                vec<PTRef> or1_args;
-                or1_args.push (partial_interp_ant1);
-                or1_args.push (piv);
-                PTRef or_1 = logic_.mkOr (or1_args);
-
-                vec<PTRef> or2_args;
-                or2_args.push (partial_interp_ant2);
-                or2_args.push (logic_.mkNot (piv));
-                PTRef or_2 = logic_.mkOr (or2_args);
-
-                vec<PTRef> args;
-                args.push (or_1);
-                args.push (or_2);
-                partial_interp = logic_.mkAnd (args); // FIXME used to be a new declaration
+                PTRef or_1 = logic_.mkOr({partial_interp_ant1, piv});
+                PTRef or_2 = logic_.mkOr({partial_interp_ant2, logic_.mkNot(piv)});
+                partial_interp = logic_.mkAnd({or_1, or_2});
 
 //              PTRef or_1 = logic_.mkOr( logic_.cons( partial_interp_ant1, logic_.cons( piv ) ) );
 //              PTRef or_2 = logic_.mkOr( logic_.cons( partial_interp_ant2, logic_.cons( logic_.mkNot( logic_.cons( piv ) ) ) ) );
@@ -991,20 +965,13 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
         }
         else if ( usingMcMillanInterpolation( ) )
         {
-            vec<PTRef> args;
-            args.push (partial_interp_ant1);
-            args.push (partial_interp_ant2);
-
-            partial_interp = logic_.mkAnd (args); // logic_.cons( partial_interp_ant1, logic_.cons( partial_interp_ant2 ) ) );
+            partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
             assert (partial_interp != PTRef_Undef);
 //            cout << "Class AB McMillan inner" << endl;
         }
         else if ( usingMcMillanPrimeInterpolation( ) )
         {
-            vec<PTRef> args;
-            args.push (partial_interp_ant1);
-            args.push (partial_interp_ant2);
-            partial_interp = logic_.mkOr (args); // logic_.cons( partial_interp_ant1, logic_.cons( partial_interp_ant2 ) ) );
+            partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
             assert (partial_interp != PTRef_Undef);
 //            cout << "Class AB McMillan' inner" << endl;
         }
@@ -1254,19 +1221,15 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
         }
     }
 
-    vec<PTRef> args;
-    args.push (partial_interp_ant1);
-    args.push (partial_interp_ant2);
-
     // Pivot colored a -> interpolant = interpolant of ant1 OR interpolant of ant2
     if ( pivot_color == I_A)
     {
-        partial_interp = logic_.mkOr (args);
+        partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
     }
     // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
     else if ( pivot_color == I_B )
     {
-        partial_interp = logic_.mkAnd (args);
+        partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
     }
     // Pivot colored ab -> interpolant = (pivot OR interpolant of ant1) AND ((NOT pivot) OR interpolant of ant2)
     // Alternative interpolant = ((NOT pivot) AND interpolant of ant1) OR (pivot AND interpolant of ant2)
@@ -1283,17 +1246,8 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
         // Equivalent formula (I_1 /\ ~p) \/ (I_2 /\ p)
         if ( choose_alternative )
         {
-            vec<PTRef> and1_args;
-            vec<PTRef> and2_args;
-            vec<PTRef> or_args;
-
-            and1_args.push (partial_interp_ant1);
-            and1_args.push (logic_.mkNot (piv));
-            PTRef and_1 = logic_.mkAnd (and1_args);
-
-            and2_args.push (partial_interp_ant2);
-            and2_args.push (piv);
-            PTRef and_2 = logic_.mkAnd (and2_args);
+            PTRef and_1 = logic_.mkAnd({partial_interp_ant1, logic_.mkNot(piv)});
+            PTRef and_2 = logic_.mkAnd({partial_interp_ant2, piv});
 
             if (logic_.isNot (and_1) && (logic_.getPterm (and_1)[0] == and_2))
                 partial_interp = logic_.getTerm_true();
@@ -1301,29 +1255,15 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
                 partial_interp = logic_.getTerm_true();
             else
             {
-                or_args.push (and_1);
-                or_args.push (and_2);
-                partial_interp = logic_.mkOr (or_args);
-
-                // TODO ~piv \/ piv is not simplified, but should be!
-                // now it should be
+                partial_interp = logic_.mkOr({and_1, and_2});
                 assert (partial_interp != logic_.getTerm_true());
             }
         }
         // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
         else
         {
-            vec<PTRef> or1_args;
-            vec<PTRef> or2_args;
-            vec<PTRef> and_args;
-
-            or1_args.push (partial_interp_ant1);
-            or1_args.push (piv);
-            PTRef or_1 = logic_.mkOr (or1_args);
-
-            or2_args.push (partial_interp_ant2);
-            or2_args.push (logic_.mkNot (piv));
-            PTRef or_2 = logic_.mkOr (or2_args);
+            PTRef or_1 = logic_.mkOr({partial_interp_ant1, piv});
+            PTRef or_2 = logic_.mkOr({partial_interp_ant2, logic_.mkNot(piv)});
 
             if (logic_.isNot (or_1) && (logic_.getPterm (or_1)[0] == or_2))
                 partial_interp = logic_.getTerm_false();
@@ -1331,9 +1271,7 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
                 partial_interp = logic_.getTerm_false();
             else
             {
-                and_args.push (or_1);
-                and_args.push (or_2);
-                partial_interp = logic_.mkAnd (and_args);
+                partial_interp = logic_.mkAnd({or_1, or_2});
                 assert (partial_interp != logic_.getTerm_false());
             }
 

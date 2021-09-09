@@ -49,26 +49,14 @@ TEST_F(LogicIteTest, test_UFIte) {
     PTRef y = logic.mkVar(ufsort, "y");
     PTRef cond = logic.mkEq(x, y);
 
-    vec<PTRef> args;
-    args.push(cond);
-    args.push(x);
-    args.push(y);
-    PTRef ite = logic.mkIte(args);
+    PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 
-    args.clear();
-    args.push(logic.getTerm_true());
-    args.push(x);
-    args.push(y);
-    ite = logic.mkIte(args);
+    ite = logic.mkIte(logic.getTerm_true(), x, y);
     ASSERT_EQ(ite, x);
 
-    args.clear();
-    args.push(logic.getTerm_false());
-    args.push(x);
-    args.push(y);
-    ite = logic.mkIte(args);
+    ite = logic.mkIte(logic.getTerm_false(), x, y);
     ASSERT_EQ(ite, y);
 
 }
@@ -80,11 +68,7 @@ TEST_F(LogicIteTest, test_BoolIte) {
     PTRef y = logic.mkVar(boolsort, "y");
     PTRef cond = logic.mkEq(x, y);
 
-    vec<PTRef> args;
-    args.push(cond);
-    args.push(x);
-    args.push(y);
-    PTRef ite = logic.mkIte(args);
+    PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 }
@@ -96,11 +80,7 @@ TEST_F(LRAIteTest, test_LRAIte) {
     PTRef y = logic.mkVar(lrasort, "y");
     PTRef cond = logic.mkEq(x, y);
 
-    vec<PTRef> args;
-    args.push(cond);
-    args.push(x);
-    args.push(y);
-    PTRef ite = logic.mkIte(args);
+    PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
     std::cout << logic.pp(ite) << endl;
 }
