@@ -20,6 +20,14 @@ struct Span {
     template<typename U,
         std::enable_if_t<std::is_const<element_type>::value and std::is_convertible_v<U,T>,
             int> = 0>
+    Span(Span<U> other) noexcept {
+        length = other.length;
+        pointer = other.pointer;
+    }
+
+    template<typename U,
+        std::enable_if_t<std::is_const<element_type>::value and std::is_convertible_v<U,T>,
+            int> = 0>
     Span(std::initializer_list<U> list) noexcept {
         length = list.size();
         pointer = list.begin();
@@ -64,7 +72,13 @@ template<typename T>
 inline Span<const T> make_span(vec<T> const & v) { return Span<const T>(v); }
 
 template<typename T>
+inline Span<T> make_span(vec<T> & v) { return Span<T>(v); }
+
+template<typename T>
 inline Span<const T> make_span(std::vector<T> const & v) { return Span<const T>(v); }
+
+template<typename T>
+inline Span<T> make_span(std::vector<T> & v) { return Span<T>(v); }
 
 }
 
