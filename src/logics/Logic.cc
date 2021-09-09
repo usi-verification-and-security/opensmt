@@ -1135,30 +1135,6 @@ bool Logic::isUP(PTRef ptr) const {
     return true;
 }
 
-// Adds the uninterpreted predicate if ptr is an uninterpreted predicate.
-// Returns reference to corresponding equality term or PTRef_Undef.  Creates
-// the eq term if it does not exist.
-// If the term is an equality (disequality), it must be an equality
-// (disequality) over terms with non-boolean return type.  Those must be then
-// returned as is.
-PTRef Logic::lookupUPEq(PTRef ptr) {
-    assert(isUP(ptr));
-    // already seen
-//    if (UP_map.contains(ptr)) return UP_map[ptr];
-    // already an equality
-    Pterm& t = term_store[ptr];
-    if (isEquality(t.symb()) | isDisequality(t.symb()))
-        return ptr;
-
-    // Create a new equality
-//    Symbol& sym = sym_store[t.symb()];
-    vec<PTRef> args;
-    args.push(ptr);
-    args.push(getTerm_true());
-    return mkEq(args);
-//    return resolveTerm(tk_equals, args);
-}
-
 // Check if the term store contains an equality over the given arguments
 // Return the reference if yes, return PTRef_Undef if no
 // Changes the argument!

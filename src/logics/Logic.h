@@ -132,7 +132,6 @@ class Logic {
     void enableExtendedSignature(bool flag) { use_extended_signature = flag; }
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
-    bool existsTermHash(SymRef, const vec<PTRef>&);
     static const char*  tk_val_uf_default;
     static const char*  tk_val_bool_default;
     static const char*  tk_true;
@@ -343,12 +342,7 @@ class Logic {
 
     bool        hasSortBool(PTRef tr) const;// { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
     bool        hasSortBool(SymRef sr) const;// { return sym_store[sr].rsort() == sort_BOOL; }
-    //bool        hasSortInt (PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_INTEGER; }
 
-
-    // Return the corresponding equivalence term if yes,
-    // PTRef_Undef otherwise.
-    PTRef       lookupUPEq         (PTRef tr);
 
     // Returns an equality over args if term store contains one, otherwise returns PTRef_Undef.
     // args is sorted before lookup, but not simplified otherwise
@@ -356,11 +350,6 @@ class Logic {
     // Override for different logics...
     virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
-
-    // Simplify a term tree.  Return l_True, l_False, or l_Undef, if
-    // simplification resulted in constant true or false, or neither,
-    // respectively
-    void        simplifyTree       (PTRef tr, PTRef& root_out);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>& args, char** msg);
 
