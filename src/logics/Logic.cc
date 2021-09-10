@@ -850,9 +850,7 @@ PTRef Logic::mkNot(PTRef arg) {
     else if (isTrue(arg)) return getTerm_false();
     else if (isFalse(arg)) return getTerm_true();
     else {
-        vec<PTRef> tmp;
-        tmp.push(arg);
-        tr = mkFun(getSym_not(), tmp);
+        tr = mkFun(getSym_not(), {arg});
     }
 
     if(tr == PTRef_Undef) {
@@ -884,8 +882,7 @@ PTRef Logic::mkVar(SRef s, const char* name) {
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
-    vec<PTRef> tmp;
-    PTRef ptr = mkFun(sr, tmp);
+    PTRef ptr = mkFun(sr, {});
     assert (ptr != PTRef_Undef);
 
     return ptr;
@@ -950,13 +947,10 @@ PTRef Logic::mkFun(SymRef f, const vec<PTRef>& args)
 
 PTRef Logic::mkBoolVar(const char* name)
 {
-    vec<SRef> tmp;
     char* msg;
-    SymRef sr = declareFun(name, sort_BOOL, tmp, &msg);
+    SymRef sr = declareFun(name, sort_BOOL, {}, &msg);
     assert(sr != SymRef_Undef);
-    vec<PTRef> tmp2;
-    PTRef tr = mkFun(sr, tmp2);
-    return tr;
+    return mkFun(sr, {});
 }
 
 SRef Logic::declareSort(const char* id, char** msg)

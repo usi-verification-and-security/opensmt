@@ -237,15 +237,11 @@ PTRef LALogic::mkNumMinus(const vec<PTRef> &args) {
     return tr;
 }
 PTRef LALogic::mkNumMinus(const PTRef a1, const PTRef a2) {
-    vec<PTRef> tmp;
-    tmp.push(a1);
-    tmp.push(a2);
-    return mkNumMinus(tmp);
+    return mkNumMinus({a1, a2});
 }
 
 PTRef LALogic::mkNumPlus(const PTRef p1, const PTRef p2) {
-    vec<PTRef> tmp {p1, p2};
-    return mkNumPlus(tmp);
+    return mkNumPlus(vec<PTRef>({p1, p2}));
 }
 
 PTRef LALogic::mkNumPlus(const vec<PTRef> &args) {
@@ -267,10 +263,7 @@ PTRef LALogic::mkNumTimes(const vec<PTRef> &args) {
     return tr;
 }
 PTRef LALogic::mkNumTimes(const PTRef p1, const PTRef p2) {
-    vec<PTRef> tmp;
-    tmp.push(p1);
-    tmp.push(p2);
-    return mkNumTimes(tmp);
+    return mkNumTimes(vec<PTRef>({p1, p2}));
 }
 PTRef LALogic::mkNumTimes(const std::vector<PTRef> &args) {
     vec<PTRef> tmp;
@@ -290,17 +283,11 @@ PTRef LALogic::mkNumGeq(const PTRef arg1, const PTRef arg2) {
 }
 
 PTRef LALogic::mkNumLt(const PTRef arg1, const PTRef arg2) {
-    vec<PTRef> tmp;
-    tmp.push(arg1);
-    tmp.push(arg2);
-    return mkNumLt(tmp);
+    return mkNumLt({arg1, arg2});
 }
 
 PTRef LALogic::mkNumGt(const PTRef arg1, const PTRef arg2) {
-    vec<PTRef> tmp;
-    tmp.push(arg1);
-    tmp.push(arg2);
-    return mkNumGt(tmp);
+    return mkNumGt({arg1, arg2});
 }
 
 char* LALogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
@@ -318,10 +305,7 @@ PTRef LALogic::mkNumMinus(const vec<PTRef>& args_in, char** msg)
         printf("Error: %s\n", *msg);
         assert(false);
     }
-    vec<PTRef> tmp;
-    tmp.push(mo);
-    tmp.push(args[1]);
-    PTRef fact = mkNumTimes(tmp, msg);
+    PTRef fact = mkNumTimes({mo, args[1]}, msg);
     if (fact == PTRef_Undef) {
         printf("Error: %s\n", *msg);
         assert(false);
@@ -365,9 +349,7 @@ PTRef LALogic::mkNumPlus(const vec<PTRef>& args, char** msg)
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (!s2t.has(v)) {
-            vec<PTRef> tmp;
-            tmp.push(c);
-            s2t.insert(v, tmp);
+            s2t.insert(v, {c});
             keys.push(v);
         } else
             s2t[v].push(c);

@@ -225,7 +225,6 @@ CUFLogic::mkCUFMinus(const vec<PTRef>& args_in, char** msg)
     else {
         assert(args.size() == 2);
         PTRef mo = mkCUFConst(-1);
-        vec<PTRef> tmp;
         PTRef fact = mkCUFTimes(mo, args[1], msg);
         args[1] = fact;
         return mkCUFPlus(args[0], args[1]);

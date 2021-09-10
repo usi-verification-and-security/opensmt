@@ -304,8 +304,7 @@ BitBlaster::bbEq(PTRef tr)
         result_args.push(logic.mkEq(bs[bb_lhs][i], bs[bb_rhs][i]));
     }
     PTRef res = simplify( logic.mkAnd( result_args ) );
-    vec<PTRef> tmp;
-    tmp.growTo(bitwidth, logic.getTerm_false());
+    vec<PTRef> tmp(bitwidth, logic.getTerm_false());
     tmp[0] = res;
     return bs.newBvector(names, tmp, mkActVar(s_bbEq), tr);
 }

@@ -191,9 +191,7 @@ BVLogic::BVLogic(int width) :
     for (int i = 0; i < 32; i++) {
         std::string sym_name {s_uf_extract_base};
         sym_name += std::to_string(i);
-        vec<SRef> tmp;
-        tmp.push(sort_CUFNUM);
-        declareFun(sym_name.c_str(), getSort_bool(), tmp, &msg, true);
+        declareFun(sym_name.c_str(), getSort_bool(), {sort_CUFNUM}, &msg, true);
     }
 }
 
@@ -243,7 +241,6 @@ BVLogic::mkBVMinus(const vec<PTRef>& args_in)
 
     assert(args.size() == 2);
     PTRef mo = mkBVConst(-1);
-    vec<PTRef> tmp;
     PTRef fact = mkBVTimes(mo, args[1]);
     args[1] = fact;
     return mkBVPlus(args[0], args[1]);
