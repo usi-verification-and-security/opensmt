@@ -240,7 +240,7 @@ PTRef LIALogic::_mkIntDiv(vec<PTRef> && args) {
         auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
         return mkConst(intDiv);
     }
-    return insertTermHash(sym_Int_DIV, std::move(args));
+    return mkFun(sym_Int_DIV, std::move(args));
 }
 
 PTRef LIALogic::mkIntMod(vec<PTRef> && args) {
@@ -270,5 +270,5 @@ PTRef LIALogic::_mkIntMod(vec<PTRef> && args) {
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkConst(intMod);
     }
-    return insertTermHash(sym_Int_MOD, std::move(args));
+    return mkFun(sym_Int_MOD, std::move(args));
 }

@@ -115,8 +115,6 @@ class Logic {
     PTRef               term_FALSE;
 
 
-    virtual PTRef insertTermHash(SymRef, vec<PTRef>&&);
-
     void dumpFunction(ostream &, const TemplateFunction&);
 
   private:

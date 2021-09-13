@@ -909,23 +909,13 @@ void Logic::markConstant(SymId id) {
 }
 
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
+    if (f == SymRef_Undef) { return PTRef_Undef; }
     PTRef tr = mkFun(f, std::move(args));
     if (not isUFTerm(tr) and not isUP(tr)) {
         char * name = printSym(f);
         std::string msg = "Unknown symbol: " + std::string(name);
         free(name);
         throw OsmtApiException(msg);
-    }
-    return tr;
-}
-
-PTRef Logic::mkFun(SymRef f, vec<PTRef>&& args)
-{
-    PTRef tr;
-    if (f == SymRef_Undef)
-        tr = PTRef_Undef;
-    else {
-        tr = insertTermHash(f, std::move(args));
     }
     return tr;
 }
@@ -1013,7 +1003,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 }
 
 PTRef
-Logic::insertTermHash(SymRef sym, vec<PTRef>&& terms)
+Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
     PTRef res = PTRef_Undef;
     char *msg;

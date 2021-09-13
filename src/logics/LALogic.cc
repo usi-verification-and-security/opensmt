@@ -724,7 +724,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
     splitTermToVarAndConst(leadingFactor, var, coeff);
     opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : insertTermHash(get_sym_Num_PLUS(), std::move(varFactors));
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), std::move(varFactors));
     if (normalizationCoeff != 1) {
         // normalize the whole sum
         normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
@@ -732,7 +732,7 @@ PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
         constantVal /= normalizationCoeff;
     }
     constantVal.negate(); // moving the constant to the LHS of the inequality
-    return insertTermHash(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
+    return mkFun(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
 }
 
 PTRef LALogic::getConstantFromLeq(PTRef leq) {
