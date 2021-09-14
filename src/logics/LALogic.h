@@ -159,11 +159,11 @@ public:
     PTRef mkNumGt(const vec<PTRef> & args);
     PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkBinaryGt(arg1, arg2); }
 
-    virtual bool isNegated(PTRef tr) const;
-    virtual bool isLinearTerm(PTRef tr) const;
-    virtual bool isLinearFactor(PTRef tr) const;
-    virtual void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
-    virtual PTRef normalizeMul(PTRef mul);
+    bool isNegated(PTRef tr) const;
+    bool isLinearTerm(PTRef tr) const;
+    bool isLinearFactor(PTRef tr) const;
+    void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
+    PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     virtual PTRef sumToNormalizedInequality(PTRef sum);
     virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & substitutions);
