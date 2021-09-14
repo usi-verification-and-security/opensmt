@@ -242,3 +242,12 @@ TEST_F(LRALogicMkTermsTest, test_ChainableInequality) {
     PTRef expandedGt = logic.mkAnd(logic.mkNumGt(x,y), logic.mkNumGt(y,z));
     EXPECT_EQ(multiArgsGt, expandedGt);
 }
+
+TEST_F(LRALogicMkTermsTest, test_EqualityNormalization) {
+    PTRef two = logic.mkConst(2);
+    PTRef eq1 = logic.mkEq(x, y);
+    PTRef eq2 = logic.mkEq(logic.mkNumTimes(x, two), logic.mkNumTimes(y, two));
+//    std::cout << logic.printTerm(eq1) << std::endl;
+//    std::cout << logic.printTerm(eq2) << std::endl;
+    EXPECT_EQ(eq1, eq2);
+}

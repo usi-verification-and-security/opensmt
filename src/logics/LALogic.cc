@@ -421,6 +421,36 @@ PTRef LALogic::mkNumGt(vec<PTRef> const & args)
     return mkAnd(std::move(binaryInequalities));
 }
 
+PTRef LALogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
+    if (getSortRef(lhs) == getSort_num()) {
+        assert(getSortRef(rhs) == getSort_num());
+        if (isConstant(lhs) && isConstant(rhs)) {
+            opensmt::Number const & v1 = this->getNumConst(lhs);
+            opensmt::Number const & v2 = this->getNumConst(rhs);
+            return v1 == v2 ? getTerm_true() : getTerm_false();
+        }
+        // diff = rhs - lhs
+        PTRef diff = [&](){
+            if (lhs == getTerm_NumZero()) { return rhs; }
+            if (rhs == getTerm_NumZero()) { return mkNumNeg(lhs); }
+            return mkNumPlus(rhs, mkNumNeg(lhs));
+        }();
+        if (isConstant(diff)) {
+            opensmt::Number const & v = this->getNumConst(diff);
+            return v.isZero() ? getTerm_true() : getTerm_false();
+        } if (isNumVarLike(diff) || isNumTimes(diff)) {
+            PTRef var, constant;
+            splitTermToVarAndConst(diff, var, constant);
+            return mkFun(get_sym_Num_EQ(), {getTerm_NumZero(), var});
+        } else if (isNumPlus(diff)) {
+            return sumToNormalizedEquality(diff);
+        }
+        assert(false);
+        throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
+    }
+    return Logic::mkBinaryEq(lhs, rhs);
+}
+
 PTRef LALogic::insertTerm(SymRef sym, vec<PTRef> && terms)
 {
     if (sym == get_sym_Num_NEG())
@@ -738,42 +768,6 @@ LALogic::printTerm_(PTRef tr, bool ext, bool safe) const
     else
         out = Logic::printTerm_(tr, ext, safe);
     return out;
-}
-
-PTRef LALogic::sumToNormalizedInequality(PTRef sum) {
-    assert(isNumPlus(sum));
-    vec<PTRef> varFactors;
-    PTRef constant = PTRef_Undef;
-    Pterm const & s = getPterm(sum);
-    for (int i = 0; i < s.size(); i++) {
-        if (isConstant(s[i])) {
-            assert(constant == PTRef_Undef);
-            constant = s[i];
-        } else {
-            assert(isLinearFactor(s[i]));
-            varFactors.push(s[i]);
-        }
-    }
-
-    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
-    opensmt::Number constantVal = getNumConst(constant);
-    assert(varFactors.size() > 0);
-    termSort(varFactors);
-    PTRef leadingFactor = varFactors[0];
-    // normalize the sum according to the leading factor
-    PTRef var, coeff;
-    splitTermToVarAndConst(leadingFactor, var, coeff);
-    opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
-    // varFactors come from a normalized sum, no need to call normalization code again
-    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), std::move(varFactors));
-    if (normalizationCoeff != 1) {
-        // normalize the whole sum
-        normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
-        // DON'T forget to update also the constant factor!
-        constantVal /= normalizationCoeff;
-    }
-    constantVal.negate(); // moving the constant to the LHS of the inequality
-    return mkFun(get_sym_Num_LEQ(), {mkConst(constantVal), normalizedSum});
 }
 
 PTRef LALogic::getConstantFromLeq(PTRef leq) {

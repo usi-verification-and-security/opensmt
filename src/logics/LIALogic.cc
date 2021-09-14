@@ -120,8 +120,7 @@ LIALogic::LIALogic() :
     sym_Int_EQ = term_store.lookupSymbol(tk_equals, {term_Int_ZERO, term_Int_ZERO});
 }
 
-
-PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
+opensmt::pair<FastRational, PTRef> LIALogic::sumToNormalizedPair(PTRef sum) {
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
     Pterm const & s = getPterm(sum);
@@ -150,7 +149,7 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
     bool changed = false; // Keep track if any change to varFactors occurs
 
     bool allIntegers = std::all_of(coeffs.begin(), coeffs.end(),
-                                   [](opensmt::Number const & coeff) { return coeff.isInteger(); });
+        [](opensmt::Number const & coeff) { return coeff.isInteger(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
         using Integer = FastRational; // TODO: change when we have FastInteger
@@ -203,8 +202,19 @@ PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
     // in LIA we can strengthen the inequality to
     // ceiling(-constantValue) <= normalizedSum
     constantValue.negate();
-    constantValue = constantValue.ceil();
-    return mkFun(get_sym_Num_LEQ(), {mkConst(constantValue), normalizedSum});
+    return {std::move(constantValue), normalizedSum};
+}
+
+
+PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
+    auto[lhsVal, rhs] = sumToNormalizedPair(sum);
+    return mkFun(get_sym_Num_LEQ(), {mkConst(lhsVal.ceil()), rhs});
+}
+
+PTRef LIALogic::sumToNormalizedEquality(PTRef sum) {
+    auto[lhsVal, rhs] = sumToNormalizedPair(sum);
+    if (not lhsVal.isInteger()) { return getTerm_false(); }
+    return mkFun(get_sym_Num_EQ(), {mkConst(lhsVal), rhs});
 }
 
 PTRef LIALogic::insertTerm(SymRef sym, vec<PTRef> && terms) {

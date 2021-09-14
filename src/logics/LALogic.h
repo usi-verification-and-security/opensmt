@@ -164,8 +164,6 @@ public:
     bool isLinearFactor(PTRef tr) const;
     void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
     PTRef normalizeMul(PTRef mul);
-    // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
-    virtual PTRef sumToNormalizedInequality(PTRef sum);
     virtual lbool arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & substitutions);
 
     opensmt::pair<lbool,SubstMap> retrieveSubstitutions(const vec<PtAsgn> &facts) override;
@@ -191,6 +189,12 @@ protected:
     PTRef mkBinaryGeq(PTRef lhs, PTRef rhs);
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs);
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs);
+    
+    PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
+    // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
+    virtual PTRef sumToNormalizedInequality(PTRef sum) = 0;
+    // Given a sum term 't' returns a normalized equality 'c = s' equivalent to '0 = t'
+    virtual PTRef sumToNormalizedEquality(PTRef sum) = 0;
 
 };
 

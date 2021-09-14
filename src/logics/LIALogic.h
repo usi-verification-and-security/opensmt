@@ -103,11 +103,14 @@ public:
     PTRef mkIntDiv(PTRef dividend, PTRef divisor);
 
     PTRef insertTerm (SymRef sym, vec<PTRef>&& terms) override;
-    virtual PTRef sumToNormalizedInequality(PTRef sum) override;
 
-private:
+protected:
     PTRef _mkIntMod(vec<PTRef> && args);
     PTRef _mkIntDiv(vec<PTRef> && args);
+
+    PTRef sumToNormalizedInequality(PTRef sum) override;
+    PTRef sumToNormalizedEquality(PTRef sum) override;
+    opensmt::pair<FastRational, PTRef> sumToNormalizedPair(PTRef sum);
 };
 
 #endif
