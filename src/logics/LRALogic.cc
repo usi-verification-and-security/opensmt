@@ -131,6 +131,8 @@ LRALogic::LRALogic() :
     ites.insert(sym_Real_ITE, true);
     sortToIte.insert(sort_REAL, sym_Real_ITE);
     sym_store.setInterpreted(sym_Real_ITE);
+
+    sym_Real_EQ = term_store.lookupSymbol(tk_equals, {term_Real_ZERO, term_Real_ZERO});
 }
 
 PTRef LRALogic::mkRealDiv(vec<PTRef> const & args)

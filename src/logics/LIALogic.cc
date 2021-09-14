@@ -116,6 +116,8 @@ LIALogic::LIALogic() :
     //sym_store[sym_Real_ITE].setLeftAssoc();
     sym_store[sym_Int_ITE].setNoScoping();
     sym_store.setInterpreted(sym_Int_ITE);
+
+    sym_Int_EQ = term_store.lookupSymbol(tk_equals, {term_Int_ZERO, term_Int_ZERO});
 }
 
 
