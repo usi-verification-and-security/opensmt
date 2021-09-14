@@ -134,3 +134,19 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization) {
 //    std::cout << logic.printTerm(eq2) << std::endl;
     EXPECT_EQ(eq1, eq2);
 }
+
+TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_ToConstantExpression) {
+    PTRef two = logic.mkConst(2);
+    PTRef eq1 = logic.mkEq(x, logic.mkNumPlus(x, two));
+    EXPECT_EQ(eq1, logic.getTerm_false());
+    PTRef eq2 = logic.mkEq(logic.mkNumTimes(x, two), logic.getTerm_NumOne());
+    EXPECT_EQ(eq2, logic.getTerm_false());
+}
+
+TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_AlreadyNormalized) {
+    PTRef two = logic.mkConst(2);
+    PTRef three = logic.mkConst(3);
+    PTRef eq1 = logic.mkEq(logic.mkNumPlus(logic.mkNumTimes(x, two), logic.mkNumTimes(y, three)), logic.getTerm_NumOne());
+    ASSERT_NE(eq1, logic.getTerm_false());
+    EXPECT_EQ(logic.getSymRef(eq1), logic.get_sym_Num_EQ());
+}

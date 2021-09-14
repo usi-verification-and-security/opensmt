@@ -251,3 +251,9 @@ TEST_F(LRALogicMkTermsTest, test_EqualityNormalization) {
 //    std::cout << logic.printTerm(eq2) << std::endl;
     EXPECT_EQ(eq1, eq2);
 }
+
+TEST_F(LRALogicMkTermsTest, test_EqualityNormalization_ToConstantExpression) {
+    PTRef two = logic.mkConst(2);
+    PTRef eq1 = logic.mkEq(x, logic.mkNumPlus(x, two));
+    EXPECT_EQ(eq1, logic.getTerm_false());
+}
