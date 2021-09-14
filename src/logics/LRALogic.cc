@@ -165,6 +165,14 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &&terms) {
     return LALogic::insertTerm(sym, std::move(terms));
 }
 
+/**
+ * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the leading coefficient is either 1 or -1.
+ * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as if
+ * it was placed on the other side of an equality.
+ *
+ * @param sum
+ * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
+ */
 opensmt::pair<PTRef, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
     assert(isNumPlus(sum));
     vec<PTRef> varFactors;

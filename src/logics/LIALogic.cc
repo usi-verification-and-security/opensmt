@@ -120,7 +120,17 @@ LIALogic::LIALogic() :
     sym_Int_EQ = term_store.lookupSymbol(tk_equals, {term_Int_ZERO, term_Int_ZERO});
 }
 
+/**
+ * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the coefficients of non-constant terms are coprime integers
+ * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as if
+ * it was placed on the other side of an equality.
+ * Note that the constant part can be a non-integer number after normalization.
+ *
+ * @param sum
+ * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
+ */
 opensmt::pair<FastRational, PTRef> LIALogic::sumToNormalizedPair(PTRef sum) {
+    assert(isNumPlus(sum));
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
     Pterm const & s = getPterm(sum);
