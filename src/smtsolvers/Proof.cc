@@ -38,7 +38,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 void Proof::newLeafClause(CRef c, clause_type t)
 {
     assert(c != CRef_Undef);
-    assert(!hasOpenChain());
     assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
     clause_to_proof_der.emplace(c, ProofDer{t});
 }

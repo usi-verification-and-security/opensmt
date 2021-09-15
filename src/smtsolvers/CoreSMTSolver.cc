@@ -748,7 +748,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (reason(var(p)) == CRef_Fake)
         {
-            assert(!logsProofForInterpolation); // MB: TODO Can we combine theory propagation and proof?
             // Before retrieving the reason it is necessary to backtrack
             // a little bit in order to remove every atom pushed after
             // p has been deduced
@@ -799,6 +798,9 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             }
             assert( ctr != CRef_Undef );
             vardata[var(p)].reason = ctr;
+            if (logsProofForInterpolation) {
+                proof->newTheoryClause(ctr);
+            }
         }
 
         confl = reason(var(p));
@@ -912,10 +914,10 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
     assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; }));
     // Cleanup generated lemmata
-    for ( int i = 0 ; i < cleanup.size() ; i ++ )
-    {
-        assert(!logsProofForInterpolation);
-        ca.free(cleanup[i]);
+    if (not logsProofForInterpolation) {
+        for (int i = 0; i < cleanup.size(); i++) {
+            ca.free(cleanup[i]);
+        }
     }
     cleanup.clear();
 //    for (int i = 0; i < out_learnt.size(); i++)
@@ -1227,10 +1229,11 @@ CRef CoreSMTSolver::propagate()
                     for (unsigned k = 1; k < c.size(); k++)
                     {
                         assert(level(var(c[k])) == 0);
+                        assert(reason(var(c[k])) != CRef_Fake);
+                        assert(reason(var(c[k])) != CRef_Undef);
                         proof->addResolutionStep(reason(var(c[k])), var(c[k]));
                     }
-                    vec<Lit> tmp = {first};
-                    CRef unitClause = ca.alloc(tmp);
+                    CRef unitClause = ca.alloc(vec<Lit>{first});
                     proof->endChain(unitClause);
                     // Replace the reason for enqueing the literal with the unit clause.
                     // Necessary for correct functioning of proof logging in analyze()
@@ -1530,12 +1533,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         ::free(name);
     }
 #endif
-    if (proof) {
-        // Force disable theory propagation, since we don't
-        // have at the moment we don't construct the reasons
-        // for the propagated literals
-        config.theory_propagation = false;
-    }
     assert(ok);
     int         backtrack_level;
     int         conflictC = 0;

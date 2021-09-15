@@ -148,10 +148,30 @@ CoreSMTSolver::handleSat()
         vec<LitLev> deds;
         deduceTheory(deds); // deds will be ordered by decision levels
         for (int i = 0; i < deds.size(); i++) {
+            Lit l = deds[i].l;
             if (deds[i].lev != decisionLevel()) {
                 // Maybe do something someday?
             }
-            uncheckedEnqueue(deds[i].l, CRef_Fake);
+            CRef deducedReason = CRef_Fake;
+            if (decisionLevel() == 0 and logsProofForInterpolation()) {
+                vec<Lit> reasonLits;
+                theory_handler.getReason(l, reasonLits);
+                assert(reasonLits.size() > 0);
+                CRef theoryReason = ca.alloc(reasonLits);
+                CRef unit = ca.alloc(vec<Lit>{l});
+                proof->newTheoryClause(theoryReason);
+                proof->beginChain(theoryReason);
+                Clause const & clause = ca[theoryReason];
+                for (unsigned j = 0; j < clause.size(); ++j) {
+                    if (clause[j] != l) {
+                        proof->addResolutionStep(reason(var(clause[j])), var(clause[j]));
+                    }
+                }
+                proof->endChain(unit);
+                vardata[var(l)].reason = unit;
+                deducedReason = unit;
+            }
+            uncheckedEnqueue(l, deducedReason);
         }
         if (deds.size() > 0) {
             return TPropRes::Propagate;
