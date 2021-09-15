@@ -10,7 +10,7 @@
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
 template<class T>
-STPSolver<T>::STPSolver(SMTConfig &c, LALogic &l)
+STPSolver<T>::STPSolver(SMTConfig &c, ArithLogic &l)
         : TSolver((SolverId) descr_stp_solver, (const char *) descr_stp_solver, c), logic(l),
           mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graphMgr(store, mapper)   // similarly, mapper is initialized before graph (per declaration in header)

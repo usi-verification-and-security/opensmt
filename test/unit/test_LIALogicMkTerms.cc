@@ -3,16 +3,17 @@
 //
 
 #include <gtest/gtest.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 
 class LIALogicMkTermsTest: public ::testing::Test {
 protected:
+    LIALogicMkTermsTest() : logic(ArithLogic::ArithType::LIA) {}
     virtual void SetUp() {
-        x = logic.mkNumVar("x");
-        y = logic.mkNumVar("y");
-        z = logic.mkNumVar("z");
+        x = logic.mkIntVar("x");
+        y = logic.mkIntVar("y");
+        z = logic.mkIntVar("z");
     }
-    LIALogic logic;
+    ArithLogic logic;
     PTRef x;
     PTRef y;
     PTRef z;
@@ -23,22 +24,22 @@ TEST_F(LIALogicMkTermsTest, testIsNumTerm) {
     ASSERT_FALSE(logic.isNumTerm(c));
     PTRef t = logic.mkNumVar("t");
     ASSERT_TRUE(logic.isNumTerm(t));
-    PTRef e = logic.mkNumTimes(logic.mkNumVar("e"), logic.mkConst(-114));
+    PTRef e = logic.mkNumTimes({logic.mkNumVar("e"), logic.mkConst(-114)});
     ASSERT_TRUE(logic.isNumTerm(e));
     PTRef ite = logic.mkIte(c, t, e);
     ASSERT_TRUE(logic.isNumTerm(ite));
-    PTRef ite_term = logic.mkNumTimes(ite, logic.mkConst(14));
+    PTRef ite_term = logic.mkNumTimes({ite, logic.mkConst(14)});
     ASSERT_TRUE(logic.isNumTerm(ite_term));
 
-    PTRef sum = logic.mkNumPlus(t, e);
+    PTRef sum = logic.mkNumPlus({t, e});
     ASSERT_FALSE(logic.isNumTerm(sum));
 }
 
 TEST_F(LIALogicMkTermsTest, testDeepLessThan) {
     PTRef a = logic.mkConst(3);
     PTRef b = logic.mkConst(-4);
-    PTRef prod2 = logic.mkNumTimes(y, b);
-    PTRef prod1 = logic.mkNumTimes(x, a);
+    PTRef prod2 = logic.mkNumTimes({y, b});
+    PTRef prod1 = logic.mkNumTimes({x, a});
 
     LessThan_deepPTRef lt_deep(&logic);
     ASSERT_EQ(lt_deep(prod1, prod2), lt_deep(x, y));
@@ -49,7 +50,7 @@ TEST_F(LIALogicMkTermsTest, testDeepLessThan) {
 TEST_F(LIALogicMkTermsTest, testDivMod) {
     PTRef two = logic.mkConst(2);
     PTRef div = logic.mkIntDiv(x,two);
-    PTRef mod = logic.mkIntMod(x,two);
+    PTRef mod = logic.mkIntMod(x, two);
     EXPECT_EQ(logic.getSymRef(div), logic.get_sym_Int_DIV());
     EXPECT_EQ(logic.getSymRef(mod), logic.get_sym_Int_MOD());
 }
@@ -57,16 +58,16 @@ TEST_F(LIALogicMkTermsTest, testDivMod) {
 TEST_F(LIALogicMkTermsTest, testMod_Plus) {
     PTRef two = logic.mkConst(2);
     PTRef mod = logic.mkIntMod(x,two);
-    PTRef plus = logic.mkNumPlus(mod, two);
-    EXPECT_EQ(logic.getSymRef(plus), logic.get_sym_Num_PLUS());
+    PTRef plus = logic.mkNumPlus({mod, two});
+    EXPECT_EQ(logic.getSymRef(plus), logic.get_sym_Int_PLUS());
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Times) {
     PTRef two = logic.mkConst(2);
     PTRef three = logic.mkConst(3);
     PTRef mod = logic.mkIntMod(x,two);
-    PTRef times = logic.mkNumTimes(mod, three);
-    EXPECT_EQ(logic.getSymRef(times), logic.get_sym_Num_TIMES());
+    PTRef times = logic.mkNumTimes({mod, three});
+    EXPECT_EQ(logic.getSymRef(times), logic.get_sym_Int_TIMES());
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Leq) {
@@ -118,10 +119,10 @@ TEST_F(LIALogicMkTermsTest, test_Inequality_Simplification)
 {
     PTRef two = logic.mkConst("2");
     ASSERT_EQ(
-            logic.mkNumLeq(logic.mkNumPlus(x,y), z),
+            logic.mkNumLeq(logic.mkNumPlus({x,y}), z),
             logic.mkNumLeq(
-                    logic.mkNumPlus(logic.mkNumTimes(x, two), logic.mkNumTimes(y, two)),
-                    logic.mkNumTimes(z, two)
+                    logic.mkNumPlus({logic.mkNumTimes({x, two}), logic.mkNumTimes({y, two})}),
+                    logic.mkNumTimes({z, two})
             )
     );
 }

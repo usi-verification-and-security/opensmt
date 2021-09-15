@@ -4,14 +4,14 @@
 #include <Vec.h>
 #include <Sort.h>
 #include <liasolver/Matrix.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 
 class HNF_test : public ::testing::Test {
 protected:
-    HNF_test() : logic{}, vecStore(va, logic), ms(vecStore) {}
+    HNF_test() : logic{ArithLogic::ArithType::LIA}, vecStore(va, logic), ms(vecStore) {}
     virtual void SetUp() {
     }
-    LIALogic logic;
+    ArithLogic logic;
     LAVecAllocator va;
     LAVecStore vecStore;
     LAMatrixStore ms;

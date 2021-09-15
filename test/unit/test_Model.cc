@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include <LRALogic.h>
+#include <ArithLogic.h>
 #include <SMTConfig.h>
 #include <Model.h>
 #include <ModelBuilder.h>
@@ -17,7 +17,7 @@ protected:
     UFModelTest(): logic{} {}
     virtual void SetUp() {
         char* err;
-        S = logic.declareSort("U", &err);
+        S = logic.declareSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
@@ -67,7 +67,7 @@ protected:
     UFModelBuilderTest(): logic{} {}
     virtual void SetUp() {
         char* err;
-        S = logic.declareSort("U", &err);
+        S = logic.declareSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
@@ -161,7 +161,7 @@ class UFConstModelTest : public ::testing::Test {
 protected:
     UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
         char * msg;
-        SRef U = logic.declareSort("U", &msg);
+        SRef U = logic.declareSort("U");
         fs = logic.declareFun("f", U, {U}, &msg, false);
         x = logic.mkVar(U, "x");
         a = logic.mkConst(U, "a");
@@ -202,7 +202,7 @@ TEST_F(UFConstModelTest, test_constModel) {
 
 class LAModelTest : public ::testing::Test {
 protected:
-    LAModelTest(): logic{} {}
+    LAModelTest(): logic{ArithLogic::ArithType::LRA} {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
@@ -211,7 +211,7 @@ protected:
         b = logic.mkBoolVar("b");
     }
     SMTConfig config;
-    LRALogic logic;
+    ArithLogic logic;
     PTRef x;
     PTRef y;
     PTRef z;
@@ -220,9 +220,9 @@ protected:
 
     std::unique_ptr<Model> getModel() {
         Model::Evaluation eval {
-                std::make_pair(x, logic.getTerm_NumOne()),
-                std::make_pair(y, logic.getTerm_NumZero()),
-                std::make_pair(z, logic.getTerm_NumOne()),
+                std::make_pair(x, logic.getTerm_RealOne()),
+                std::make_pair(y, logic.getTerm_RealZero()),
+                std::make_pair(z, logic.getTerm_RealOne()),
                 std::make_pair(a, logic.getTerm_true()),
                 std::make_pair(b, logic.getTerm_false())
         };
@@ -235,9 +235,9 @@ protected:
 
 TEST_F(LAModelTest, test_inputVarValues) {
     auto model = getModel();
-    EXPECT_EQ(model->evaluate(x), logic.getTerm_NumOne());
-    EXPECT_EQ(model->evaluate(y), logic.getTerm_NumZero());
-    EXPECT_EQ(model->evaluate(z), logic.getTerm_NumOne());
+    EXPECT_EQ(model->evaluate(x), logic.getTerm_RealOne());
+    EXPECT_EQ(model->evaluate(y), logic.getTerm_RealZero());
+    EXPECT_EQ(model->evaluate(z), logic.getTerm_RealOne());
     EXPECT_EQ(model->evaluate(a), logic.getTerm_true());
     EXPECT_EQ(model->evaluate(b), logic.getTerm_false());
 }
@@ -251,7 +251,7 @@ TEST_F(LAModelTest, test_constants) {
 
     PTRef fortytwo = logic.mkConst(42);
     PTRef one = logic.mkConst(1);
-    PTRef zero = logic.mkConst(opensmt::Real(0));
+    PTRef zero = logic.mkConst(FastRational(0));
     EXPECT_EQ(model->evaluate(fortytwo), fortytwo);
     EXPECT_EQ(model->evaluate(one), logic.getTerm_NumOne());
     EXPECT_EQ(model->evaluate(zero), logic.getTerm_NumZero());
@@ -277,9 +277,9 @@ TEST_F(LAModelTest, test_derivedArithmeticTerms) {
     PTRef two = logic.mkConst(2);
     PTRef five = logic.mkConst(5);
     vec<PTRef> args {x,z};
-    EXPECT_EQ(model->evaluate(logic.mkNumPlus(args)), two);
-    EXPECT_EQ(model->evaluate(logic.mkNumTimes(five, x)), five);
-    EXPECT_EQ(model->evaluate(logic.mkNumTimes(five, y)), logic.getTerm_NumZero());
+    EXPECT_EQ(model->evaluate(logic.mkRealPlus(args)), two);
+    EXPECT_EQ(model->evaluate(logic.mkRealTimes(five, x)), five);
+    EXPECT_EQ(model->evaluate(logic.mkRealTimes(five, y)), logic.getTerm_NumZero());
 }
 
 TEST_F(LAModelTest, test_derivedArithmeticAtoms) {
@@ -320,7 +320,7 @@ protected:
 
 TEST_F(ModelIntegrationTest, testSingleAssert) {
     auto osmt = getLRAOsmt();
-    LRALogic& logic = osmt->getLRALogic();
+    ArithLogic& logic = osmt->getLRALogic();
     PTRef x = logic.mkNumVar("x");
     PTRef y = logic.mkNumVar("y");
     PTRef fla = logic.mkNumLt(x, y);
@@ -366,10 +366,10 @@ TEST_F(ModelIntegrationTest, testTrivialBooleanSubstitutionNegation) {
 
 TEST_F(ModelIntegrationTest, testIteWithSubstitution) {
     auto osmt = getLRAOsmt();
-    LRALogic& logic = osmt->getLRALogic();
+    ArithLogic& logic = osmt->getLRALogic();
     PTRef x = logic.mkNumVar("x");
     PTRef y = logic.mkNumVar("y");
-    PTRef ite = logic.mkIte(logic.mkBoolVar("c"), x, logic.mkNumPlus(x, logic.getTerm_NumOne()));
+    PTRef ite = logic.mkIte(logic.mkBoolVar("c"), x, logic.mkRealPlus(x, logic.getTerm_RealOne()));
     PTRef fla = logic.mkEq(y, ite);
     MainSolver & mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
@@ -381,14 +381,14 @@ TEST_F(ModelIntegrationTest, testIteWithSubstitution) {
 
 TEST_F(ModelIntegrationTest, testIteWithSubstitution_SubtermsHaveValue) {
     auto osmt = getLRAOsmt();
-    LRALogic& logic = osmt->getLRALogic();
-    PTRef x = logic.mkNumVar("x");
-    PTRef y = logic.mkNumVar("y");
+    ArithLogic& logic = osmt->getLRALogic();
+    PTRef x = logic.mkRealVar("x");
+    PTRef y = logic.mkRealVar("y");
     PTRef c = logic.mkBoolVar("c");
     PTRef one = logic.getTerm_NumOne();
-    PTRef ite = logic.mkIte(c, x, logic.mkNumPlus(x, one));
+    PTRef ite = logic.mkIte(c, x, logic.mkRealPlus(x, one));
     PTRef eq = logic.mkEq(y, ite);
-    PTRef fla = logic.mkAnd({eq, logic.mkNumLeq(one, y), logic.mkNumLeq(x, logic.getTerm_NumZero())});
+    PTRef fla = logic.mkAnd({eq, logic.mkRealLeq(one, y), logic.mkRealLeq(x, logic.getTerm_RealZero())});
     MainSolver & mainSolver = osmt->getMainSolver();
     mainSolver.insertFormula(fla);
     auto res = mainSolver.check();

@@ -8,7 +8,7 @@
 
 class RDLSolver : public STPSolver<Delta> {
 public:
-    RDLSolver(SMTConfig &c, LALogic &l) : STPSolver(c, l) {};
+    RDLSolver(SMTConfig &c, ArithLogic &l) : STPSolver(c, l) {};
 };
 
 template<>

@@ -23,8 +23,8 @@ main(int argc, char** argv)
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
     SimpSMTSolver& solver = osmt->getSolver();
-    LRALogic& logic = osmt->getLRALogic();
-    
+    auto & logic = osmt->getLRALogic();
+
     // Let's build two assertions
 
     // Create vars

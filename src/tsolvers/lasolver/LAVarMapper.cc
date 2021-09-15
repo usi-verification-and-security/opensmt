@@ -3,7 +3,7 @@
 //
 
 #include "LAVarMapper.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 
 /**
  * Remembers the mapping between a linear term (PTRef) and LA var (LVRef).

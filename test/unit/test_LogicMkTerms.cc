@@ -14,7 +14,7 @@ public:
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
-    SRef ufsort = logic.declareSort("U", nullptr);
+    SRef ufsort = logic.declareSort("U");
     PTRef x = logic.mkVar(ufsort, "x");
     PTRef y = logic.mkVar(ufsort, "y");
     PTRef distinct = logic.mkDistinct({x,y});
@@ -50,7 +50,7 @@ TEST_F(LogicMkTermsTest, test_Distinct){
 }
 
 TEST_F(LogicMkTermsTest, test_ManyDistinct) {
-    SRef ufsort = logic.declareSort("U", nullptr);
+    SRef ufsort = logic.declareSort("U");
     vec<PTRef> names;
     for (int i = 0; i < 9; i++) {
         std::string name = "x" + std::to_string(i);
@@ -154,7 +154,7 @@ TEST_F(LogicMkTermsTest, testAtom_Bool) {
 
 
 TEST_F(LogicMkTermsTest, testAtom_UF) {
-    SRef sref = logic.declareSort("U", nullptr);
+    SRef sref = logic.declareSort("U");
     PTRef a = logic.mkVar(sref, "a");
     PTRef b = logic.mkVar(sref, "b");
     PTRef c = logic.mkVar(sref, "c");

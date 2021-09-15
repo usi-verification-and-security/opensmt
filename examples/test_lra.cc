@@ -16,7 +16,7 @@ main(int argc, char** argv)
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
     SimpSMTSolver& solver = osmt->getSolver();
-    LRALogic& logic = osmt->getLRALogic();
+    auto & logic = osmt->getLRALogic();
 
     const char* msg;
 //    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -25,10 +25,7 @@ main(int argc, char** argv)
     PTRef cons = logic.mkConst(-1);
 
     // assertion (<= -1 0)
-    vec<PTRef> leq_args;
-    leq_args.push(cons);
-    leq_args.push(logic.getTerm_NumZero());
-    PTRef le1 = logic.mkNumLeq(leq_args);
+    PTRef le1 = logic.mkRealLeq(cons, logic.getTerm_RealZero());
 
     mainSolver.push(le1);
 

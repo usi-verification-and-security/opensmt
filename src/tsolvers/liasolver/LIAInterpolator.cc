@@ -3,11 +3,11 @@
 //
 
 #include "LIAInterpolator.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 
 #include <memory>
 
-LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> const & explanations,
+LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                                   std::vector<opensmt::Real> const & coeffs,
                                                   std::map<PTRef, icolor_t> const & labels) {
     LAExplanations liaExplanations;
@@ -47,6 +47,6 @@ LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> co
     return liaExplanations;
 }
 
-LIAInterpolator::LIAInterpolator(LALogic & logic, LAExplanations liaExplanations)
+LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
     : farkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs), std::move(liaExplanations.labels))
     { }

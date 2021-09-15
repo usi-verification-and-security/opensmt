@@ -52,7 +52,7 @@ class Symbol {
     friend class SymbolAllocator;
     friend class SymStore;
     // Note: do not use directly (no memory allocation for args)
-    Symbol(const vec<SRef>& ps) {
+    Symbol(vec<SRef> const & ps) {
         header.type      = 0;
         header.commutes  = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
@@ -107,7 +107,7 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    SymRef alloc(const vec<SRef>& ps)
+    SymRef alloc(vec<SRef> const & ps)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));

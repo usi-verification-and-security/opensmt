@@ -1,5 +1,5 @@
 #include "LABounds.h"
-#include "LRALogic.h"
+#include "ArithLogic.h"
 
 LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
     : type(type.t)

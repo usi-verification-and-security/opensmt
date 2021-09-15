@@ -19,7 +19,7 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
     PTRef x = lialogic.mkNumVar("x");
     PTRef y = lialogic.mkNumVar("y");
     PTRef two = lialogic.mkConst(2);
-    PTRef eq = lialogic.mkEq(x, lialogic.mkNumTimes(two, y));
+    PTRef eq = lialogic.mkEq(x, lialogic.mkIntTimes(two, y));
     PTRef a = lialogic.mkBoolVar("a");
     PTRef conj = lialogic.mkAnd(
             lialogic.mkImpl(a, lialogic.mkEq(x, lialogic.getTerm_NumOne())),

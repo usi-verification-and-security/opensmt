@@ -3,11 +3,11 @@
 //
 
 #include "IDLTHandler.h"
-#include "LIALogic.h"
+#include "ArithLogic.h"
 #include "IDLSolver.h"
 #include "TreeOps.h"
 
-IDLTHandler::IDLTHandler(SMTConfig& c, LIALogic& l)
+IDLTHandler::IDLTHandler(SMTConfig& c, ArithLogic& l)
         : TSolverHandler(c)
         , logic(l)
 {

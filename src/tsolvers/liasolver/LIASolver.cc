@@ -21,7 +21,7 @@ bool LIASolver::isModelInteger(LVRef v) const
     return !( val.hasDelta() || !val.R().isInteger() );
 }
 
-opensmt::Integer2 LIASolver::getInt(PTRef r) {
+FastRational LIASolver::getInt(PTRef r) {
     return logic.getNumConst(r);
 }
 
@@ -113,7 +113,7 @@ LIASolver::getNewSplits(vec<PTRef>& splits)
     setStatus(SAT);
 }
 
-LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
+LIASolver::LIASolver(SMTConfig & c, ArithLogic & l)
         : LASolver(descr_lia_solver, c, l)
         , logic(l)
 

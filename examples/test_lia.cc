@@ -26,15 +26,15 @@ void usingWrapper() {
     MainSolver& mainSolver = osmt->getMainSolver();
     // You can ask the wrapper for the concrete subclass of Logic, but YOU need to make sure it matches the type you
     // have provided in the constructor
-    LIALogic& logic = osmt->getLIALogic();
+    auto & logic = osmt->getLIALogic();
 
     // Create the constant
     PTRef cons = logic.mkConst(-1);
-    PTRef x = logic.mkNumVar("x");
-    PTRef y = logic.mkNumVar("y");
+    PTRef x = logic.mkIntVar("x");
+    PTRef y = logic.mkIntVar("y");
     // assertion x + y = y + x
-    PTRef lhs = logic.mkNumPlus(x, y);
-    PTRef rhs = logic.mkNumPlus(y, x);
+    PTRef lhs = logic.mkIntPlus(x, y);
+    PTRef rhs = logic.mkIntPlus(y, x);
     PTRef eq = logic.mkEq(lhs, rhs);
     // test if the negation is satisfiable
     mainSolver.insertFormula(logic.mkNot(eq));
@@ -54,17 +54,17 @@ void usingWrapper() {
 }
 
 void creatingComponentsDirectly() {
-    LIALogic logic;
+    ArithLogic logic{ArithLogic::ArithType::LIA};
     SMTConfig config;
     MainSolver mainSolver(logic, config, "LIA solver");
 
     // Create the constant
     PTRef cons = logic.mkConst(-1);
-    PTRef x = logic.mkNumVar("x");
-    PTRef y = logic.mkNumVar("y");
+    PTRef x = logic.mkIntVar("x");
+    PTRef y = logic.mkIntVar("y");
     // assertion x + y = y + x
-    PTRef lhs = logic.mkNumPlus(x, y);
-    PTRef rhs = logic.mkNumPlus(y, x);
+    PTRef lhs = logic.mkIntPlus(x, y);
+    PTRef rhs = logic.mkIntPlus(y, x);
     PTRef eq = logic.mkEq(lhs, rhs);
     // test if the negation is satisfiable
     mainSolver.insertFormula(logic.mkNot(eq));

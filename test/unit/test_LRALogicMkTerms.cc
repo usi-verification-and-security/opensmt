@@ -3,17 +3,17 @@
 //
 
 #include <gtest/gtest.h>
-#include "LRALogic.h"
+#include "ArithLogic.h"
 
 class LRALogicMkTermsTest : public ::testing::Test {
 protected:
-    LRALogicMkTermsTest(): logic{} {}
+    LRALogicMkTermsTest(): logic{ArithLogic::ArithType::LRA} {}
     virtual void SetUp() {
-        x = logic.mkNumVar("x");
-        y = logic.mkNumVar("y");
-        z = logic.mkNumVar("z");
+        x = logic.mkRealVar("x");
+        y = logic.mkRealVar("y");
+        z = logic.mkRealVar("z");
     }
-    LRALogic logic;
+    ArithLogic logic;
     PTRef x;
     PTRef y;
     PTRef z;
@@ -32,8 +32,8 @@ TEST_F(LRALogicMkTermsTest, test_Sum_Zero)
 TEST_F(LRALogicMkTermsTest, test_Sum_Ignore_Zeros)
 {
     PTRef zero = logic.mkConst("0");
-    PTRef a = logic.mkNumVar("a");
-    PTRef res = logic.mkNumPlus(zero, a);
+    PTRef a = logic.mkRealVar("a");
+    PTRef res = logic.mkRealPlus(zero, a);
 
     ASSERT_EQ(res, a);
 }
@@ -42,9 +42,9 @@ TEST_F(LRALogicMkTermsTest, test_One_Arg_Multiplication)
 {
     PTRef two = logic.mkConst("2");
     PTRef one = logic.mkConst("1");
-    PTRef a = logic.mkNumVar("a");
-    PTRef div = logic.mkNumDiv(a, two);
-    PTRef res = logic.mkNumTimes(div, one);
+    PTRef a = logic.mkRealVar("a");
+    PTRef div = logic.mkRealDiv(a, two);
+    PTRef res = logic.mkRealTimes(div, one);
 
     ASSERT_EQ(res, div);
 }
@@ -53,7 +53,7 @@ TEST_F(LRALogicMkTermsTest, test_Times_Ignore_Ones)
 {
     PTRef one = logic.mkConst("1");
     PTRef a = logic.mkNumVar("a");
-    PTRef res = logic.mkNumTimes(a, one);
+    PTRef res = logic.mkRealTimes(a, one);
 
     ASSERT_EQ(res, a);
 }
@@ -82,7 +82,7 @@ TEST_F(LRALogicMkTermsTest, test_Sum_Single_Arg_Nested)
 {
     PTRef a = logic.mkNumVar("a");
     PTRef two = logic.mkConst("2");
-    PTRef times = logic.mkNumTimes(a,two);
+    PTRef times = logic.mkRealTimes(a,two);
     vec<PTRef> args;
     args.push(times);
     PTRef res = logic.mkNumPlus(args);
@@ -95,8 +95,8 @@ TEST_F(LRALogicMkTermsTest, test_Sum_Single_Arg_Nested_With_Simplification)
     PTRef a = logic.mkNumVar("a");
     PTRef two = logic.mkConst("2");
     PTRef zero = logic.mkConst("0");
-    PTRef times = logic.mkNumTimes(a,two);
-    PTRef res = logic.mkNumPlus(times, zero);
+    PTRef times = logic.mkRealTimes(a,two);
+    PTRef res = logic.mkRealPlus(times, zero);
 
     ASSERT_EQ(res, times);
 }
@@ -162,46 +162,46 @@ TEST_F(LRALogicMkTermsTest, test_Inequality_Var_NonZero)
 
 TEST_F(LRALogicMkTermsTest, test_SumToZero)
 {
-    PTRef var = logic.mkNumVar("a");
-    PTRef minusVar = logic.mkNumNeg(var);
-    PTRef sum = logic.mkNumPlus(minusVar, var);
-    ASSERT_EQ(sum, logic.getTerm_NumZero());
-    sum = logic.mkNumPlus(var, minusVar);
-    ASSERT_EQ(sum, logic.getTerm_NumZero());
+    PTRef var = logic.mkRealVar("a");
+    PTRef minusVar = logic.mkRealNeg(var);
+    PTRef sum = logic.mkRealPlus(minusVar, var);
+    ASSERT_EQ(sum, logic.getTerm_RealZero());
+    sum = logic.mkRealPlus(var, minusVar);
+    ASSERT_EQ(sum, logic.getTerm_RealZero());
 }
 
 TEST_F(LRALogicMkTermsTest, test_NonLinearException)
 {
-    EXPECT_THROW(logic.mkNumTimes(x,y), LANonLinearException);
+    EXPECT_THROW(logic.mkRealTimes(x,y), LANonLinearException);
     PTRef two = logic.mkConst("2");
-    EXPECT_NO_THROW(logic.mkNumTimes(x,two));
+    EXPECT_NO_THROW(logic.mkRealTimes(x,two));
 }
 
 TEST_F(LRALogicMkTermsTest, test_ConstantSimplification)
 {
     PTRef two = logic.mkConst("2");
-    EXPECT_EQ(logic.mkConst("1/2"), logic.mkNumDiv(logic.getTerm_NumOne(), two));
-    EXPECT_EQ(two, logic.mkNumDiv(logic.mkConst("4"), two));
+    EXPECT_EQ(logic.mkConst("1/2"), logic.mkRealDiv(logic.getTerm_NumOne(), two));
+    EXPECT_EQ(two, logic.mkRealDiv(logic.mkConst("4"), two));
 }
 
 TEST_F(LRALogicMkTermsTest, test_Inequality_Constant)
 {
-    PTRef one = logic.getTerm_NumOne();
-    PTRef a = logic.mkNumVar("a");
-    PTRef sum = logic.mkNumPlus(a, one);
-    ASSERT_EQ(logic.mkNumLeq(a, a), logic.getTerm_true());
-    ASSERT_EQ(logic.mkNumLeq(a, sum), logic.getTerm_true());
-    ASSERT_EQ(logic.mkNumGeq(a, sum), logic.getTerm_false());
+    PTRef one = logic.getTerm_RealOne();
+    PTRef a = logic.mkRealVar("a");
+    PTRef sum = logic.mkRealPlus(a, one);
+    ASSERT_EQ(logic.mkRealLeq(a, a), logic.getTerm_true());
+    ASSERT_EQ(logic.mkRealLeq(a, sum), logic.getTerm_true());
+    ASSERT_EQ(logic.mkRealGeq(a, sum), logic.getTerm_false());
 }
 
 TEST_F(LRALogicMkTermsTest, test_Inequality_Simplification)
 {
     PTRef two = logic.mkConst("2");
     ASSERT_EQ(
-            logic.mkNumLeq(logic.mkNumPlus(x,y), z),
-            logic.mkNumLeq(
-                    logic.mkNumPlus(logic.mkNumTimes(x, two), logic.mkNumTimes(y, two)),
-                    logic.mkNumTimes(z, two)
+            logic.mkRealLeq(logic.mkRealPlus(x,y), z),
+            logic.mkRealLeq(
+                    logic.mkRealPlus(logic.mkRealTimes(x, two), logic.mkRealTimes(y, two)),
+                    logic.mkRealTimes(z, two)
             )
     );
 }
@@ -219,9 +219,9 @@ TEST_F(LRALogicMkTermsTest, testAtom_LRA) {
     EXPECT_TRUE(logic.isAtom(eq));
     EXPECT_FALSE(logic.isAtom(logic.mkNot(eq)));
 
-    PTRef sum = logic.mkNumPlus(x,y);
+    PTRef sum = logic.mkRealPlus(x,y);
     EXPECT_FALSE(logic.isAtom(sum));
-    PTRef product = logic.mkNumTimes(x, logic.mkConst(2));
+    PTRef product = logic.mkRealTimes(x, logic.mkConst(2));
     EXPECT_FALSE(logic.isAtom(product));
 }
 

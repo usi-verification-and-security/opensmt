@@ -243,12 +243,20 @@ public:
     PTRef       mkUniqueAbstractValue(SRef);
 
     // Generic constants
-    virtual PTRef mkConst     (const char*, const char** msg);
+    virtual PTRef mkConst     (const char*);
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
+    SymRef      declareFun    (const std::string & fname, const SRef rsort, const vec<SRef>& args, bool interpreted = false) { char *msg; return declareFun(fname.data(), rsort, args, &msg, interpreted); };
+    virtual SymRef declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args, true); sym_store[sr].setNoScoping(); return sr; }
+    virtual SymRef declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    virtual SymRef declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    virtual SymRef declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    virtual SymRef declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSort   (const char* id, char** msg);
+    SRef        declareSortAndCreateFunctions(std::string const & id);
+    SRef        declareSort   (char const * id);
+    SRef        declareSort   (const std::string& id) { return declareSort(id.c_str()); }
 
     PTRef       mkBoolVar     (const char* name);
 
@@ -354,8 +362,6 @@ public:
     // Returns an equality over args if term store contains one, otherwise returns PTRef_Undef.
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
-    // Override for different logics...
-    virtual bool declare_sort_hook  (SRef sr);
     inline bool isPredef           (string&)        const ;//{ return false; };
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);

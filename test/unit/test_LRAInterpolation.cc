@@ -3,22 +3,22 @@
 //
 
 #include <gtest/gtest.h>
-#include <LRALogic.h>
+#include <ArithLogic.h>
 #include "VerificationUtils.h"
 #include <FarkasInterpolator.h>
 
 class LRAInterpolationTest : public ::testing::Test {
 protected:
-    LRAInterpolationTest(): logic{} {}
+    LRAInterpolationTest(): logic{ArithLogic::ArithType::LRA} {}
     virtual void SetUp() {
-        x = logic.mkNumVar("x");
-        y = logic.mkNumVar("y");
-        x1 = logic.mkNumVar("x1");
-        x2 = logic.mkNumVar("x2");
-        x3 = logic.mkNumVar("x3");
-        x4 = logic.mkNumVar("x4");
+        x = logic.mkRealVar("x");
+        y = logic.mkRealVar("y");
+        x1 = logic.mkRealVar("x1");
+        x2 = logic.mkRealVar("x2");
+        x3 = logic.mkRealVar("x3");
+        x4 = logic.mkRealVar("x4");
     }
-    LRALogic logic;
+    ArithLogic logic;
     SMTConfig config;
     PTRef x, y, x1, x2, x3, x4;
 
@@ -36,10 +36,10 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothNonstrict){
      *      x4 - x3 >= 0
      */
     PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLeq(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef leq1 = logic.mkRealLeq(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkRealLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkRealGeq(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
@@ -63,11 +63,11 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Astrict){
      * B    x1 - x4 >= 1
      *      x4 - x3 >= 0
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLt(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkRealLt(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkRealLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkRealGeq(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
@@ -91,11 +91,11 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Bstrict){
      * B    x1 - x4 > 1
      *      x4 - x3 >= 0
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLeq(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGt(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkRealLeq(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkRealLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkRealGt(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(logic.mkNot(leq3), l_False), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
@@ -120,10 +120,10 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothStrict){
      *      x4 - x3 >= 0
      */
     PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLt(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGt(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef leq1 = logic.mkRealLt(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkRealLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkRealGt(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(leq2, l_True), PtAsgn(logic.mkNot(leq3), l_False), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
@@ -146,11 +146,11 @@ TEST_F(LRAInterpolationTest, test_AllInA){
      *      x1 - x4 >= 1
      *      x4 - x3 >= 0
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLeq(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkRealLeq(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkRealLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkRealGeq(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A}, {conflict[3].tr, I_A}};
@@ -180,10 +180,10 @@ TEST_F(LRAInterpolationTest, test_AllInB){
      *      x4 - x3 >= 0
      */
     PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumLeq(logic.mkNumPlus(x1,x2), zero);
-    PTRef leq2 = logic.mkNumLeq(logic.mkNumNeg(logic.mkNumPlus(x2,x3)), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumMinus(x1,x4), logic.getTerm_NumOne());
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x4,x3), zero);
+    PTRef leq1 = logic.mkNumLeq(logic.mkRealPlus(x1,x2), zero);
+    PTRef leq2 = logic.mkNumLeq(logic.mkRealNeg(logic.mkRealPlus(x2,x3)), zero);
+    PTRef leq3 = logic.mkNumGeq(logic.mkRealMinus(x1,x4), logic.getTerm_RealOne());
+    PTRef leq4 = logic.mkNumGeq(logic.mkRealMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_B}, {conflict[1].tr, I_B}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
@@ -215,14 +215,14 @@ TEST_F(LRAInterpolationTest, test_Decomposition_NonStrict){
      *      -x4 - x2 >= 0
      *      x4 >= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumGeq(x1, zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(x2,x1), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), zero);
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkRealGeq(x1, zero);
+    PTRef leq2 = logic.mkRealGeq(logic.mkRealMinus(x2,x1), zero);
+    PTRef leq3 = logic.mkRealGeq(logic.mkRealNeg(logic.mkRealPlus(x3,x1)), zero);
 
-    PTRef leq4 = logic.mkNumGeq(logic.mkNumMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
-    PTRef leq6 = logic.mkNumGeq(x4, logic.getTerm_NumOne());
+    PTRef leq4 = logic.mkRealGeq(logic.mkRealMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkRealGeq(logic.mkRealNeg(logic.mkRealPlus(x4,x2)), zero);
+    PTRef leq6 = logic.mkRealGeq(x4, logic.getTerm_RealOne());
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True),
                           PtAsgn(leq4, l_True), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
@@ -247,14 +247,14 @@ TEST_F(LRAInterpolationTest, test_Decomposition_Strict){
      *      -x4 - x2 >= 0
      *      x4 >= 0
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef leq1 = logic.mkNumGeq(x1, zero);
-    PTRef leq2 = logic.mkNumGt(logic.mkNumMinus(x2,x1), zero);
-    PTRef leq3 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), zero);
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkRealGeq(x1, zero);
+    PTRef leq2 = logic.mkRealGt(logic.mkRealMinus(x2,x1), zero);
+    PTRef leq3 = logic.mkRealGeq(logic.mkRealNeg(logic.mkRealPlus(x3,x1)), zero);
 
-    PTRef leq4 = logic.mkNumGt(logic.mkNumMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
-    PTRef leq6 = logic.mkNumGeq(x4, logic.getTerm_NumOne());
+    PTRef leq4 = logic.mkRealGt(logic.mkRealMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkRealGeq(logic.mkRealNeg(logic.mkRealPlus(x4,x2)), zero);
+    PTRef leq6 = logic.mkRealGeq(x4, logic.getTerm_RealOne());
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(logic.mkNot(leq2), l_False), PtAsgn(leq3, l_True),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));

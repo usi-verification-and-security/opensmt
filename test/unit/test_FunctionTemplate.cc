@@ -18,7 +18,7 @@ protected:
     char *msg;
 public:
     TemplateTest()
-            : s(logic.declareSort("S", &msg))
+            : s(logic.declareSort("S"))
             , a1(logic.mkVar(s, "a1"))
             , a2(logic.mkVar(s, "a2"))
             , b1(logic.mkVar(s, "b1"))

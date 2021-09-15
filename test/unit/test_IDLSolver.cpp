@@ -4,19 +4,19 @@
 
 #include <gtest/gtest.h>
 #include <SMTConfig.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 #include <IDLSolver.h>
 
 class IDLSolverTest : public ::testing::Test {
 protected:
-    IDLSolverTest() {}
+    IDLSolverTest() : logic{ArithLogic::ArithType::IDL} {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
         z = logic.mkNumVar("z");
     }
     SMTConfig config;
-    LIALogic logic;
+    ArithLogic logic;
     SRef ufsort;
     PTRef x;
     PTRef y;
@@ -27,11 +27,11 @@ protected:
 
 
 TEST_F(IDLSolverTest, test_SimpleTest){
-    PTRef ineq1 = logic.mkNumLeq(logic.mkNumMinus(x, y), logic.getTerm_NumZero());
-    PTRef ineq2 = logic.mkNumLeq(logic.mkNumMinus(y, z), logic.getTerm_NumZero());
-    PTRef ineq3 = logic.mkNumLeq(logic.mkNumMinus(z, x), logic.mkConst(-1));
-    PTRef ineq4 = logic.mkNumLeq(logic.mkConst(3), x);
-    PTRef ineq5 = logic.mkNumLeq(y, logic.mkConst(-2));
+    PTRef ineq1 = logic.mkIntLeq(logic.mkIntMinus(x, y), logic.getTerm_IntZero());
+    PTRef ineq2 = logic.mkIntLeq(logic.mkIntMinus(y, z), logic.getTerm_IntZero());
+    PTRef ineq3 = logic.mkIntLeq(logic.mkIntMinus({z, x}), logic.mkConst(-1));
+    PTRef ineq4 = logic.mkIntLeq(logic.mkConst(3), x);
+    PTRef ineq5 = logic.mkIntLeq(y, logic.mkConst(-2));
 
     IDLSolver solver(config, logic);
 

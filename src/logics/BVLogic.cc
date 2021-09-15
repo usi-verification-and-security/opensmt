@@ -86,102 +86,97 @@ BVLogic::BVLogic(int width) :
     , bitwidth(width)
 {
     char* msg;
-    sort_BVNUM = declareSort(s_sort_bvnum, &msg);
+    sort_BVNUM = declareSort(s_sort_bvnum);
 
-    vec<SRef> params;
     term_BV_ZERO = mkBVConst(tk_bv_zero);
     sym_BV_ZERO  = getSymRef(term_BV_ZERO);
     term_BV_ONE  = mkBVConst(tk_bv_one);
     sym_BV_ONE   = getSymRef(term_BV_ONE);
 
-    params.push(sort_BVNUM);
-
     // Unary
-    sym_BV_NEG    = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
-    sym_BV_COMPL  = declareFun(tk_bv_compl, sort_BVNUM, params, &msg, true);
-    sym_BV_NOT = declareFun(tk_bv_not, sort_BVNUM, params, &msg, true);
-
-    params.push(sort_BVNUM);
+    sym_BV_NEG    = declareFun(tk_bv_neg, sort_BVNUM, {sort_BVNUM}, &msg, true);
+    sym_BV_COMPL  = declareFun(tk_bv_compl, sort_BVNUM, {sort_BVNUM}, &msg, true);
+    sym_BV_NOT = declareFun(tk_bv_not, sort_BVNUM, {sort_BVNUM}, &msg, true);
 
     // Binary
-    sym_BV_MINUS = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
+    sym_BV_MINUS = declareFun(tk_bv_neg, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_MINUS].setLeftAssoc();
 
-    sym_BV_EQ    = declareFun(tk_bv_eq, sort_BVNUM, params, &msg, true);
+    sym_BV_EQ    = declareFun(tk_bv_eq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     equalities.insert(sym_BV_EQ, true);
     sym_store[sym_BV_EQ].setNoScoping();
     sym_store[sym_BV_EQ].setCommutes();
     sym_store[sym_BV_EQ].setLeftAssoc();
 
-    sym_BV_PLUS  = declareFun(tk_bv_plus, sort_BVNUM, params, &msg, true);
+    sym_BV_PLUS  = declareFun(tk_bv_plus, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_PLUS].setNoScoping();
     sym_store[sym_BV_PLUS].setCommutes();
     sym_store[sym_BV_PLUS].setLeftAssoc();
 
-    sym_BV_TIMES = declareFun(tk_bv_times, sort_BVNUM, params, &msg, true);
+    sym_BV_TIMES = declareFun(tk_bv_times, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_TIMES].setNoScoping();
     sym_store[sym_BV_TIMES].setLeftAssoc();
     sym_store[sym_BV_TIMES].setCommutes();
 
-    sym_BV_DIV   = declareFun(tk_bv_div, sort_BVNUM, params, &msg, true);
+    sym_BV_DIV   = declareFun(tk_bv_div, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_DIV].setNoScoping();
     sym_store[sym_BV_DIV].setLeftAssoc();
 
-    sym_BV_SLEQ  = declareFun(tk_bv_sleq, sort_BVNUM, params, &msg, true);
+    sym_BV_SLEQ  = declareFun(tk_bv_sleq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_SLEQ].setNoScoping();
     sym_store[sym_BV_SLEQ].setChainable();
 
-    sym_BV_ULEQ  = declareFun(tk_bv_uleq, sort_BVNUM, params, &msg, true);
+    sym_BV_ULEQ  = declareFun(tk_bv_uleq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_ULEQ].setNoScoping();
     sym_store[sym_BV_ULEQ].setChainable();
 
-    sym_BV_SLT  = declareFun(tk_bv_slt, sort_BVNUM, params, &msg, true);
+    sym_BV_SLT  = declareFun(tk_bv_slt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_SLT].setNoScoping();
     sym_store[sym_BV_SLT].setChainable();
 
-    sym_BV_ULT  = declareFun(tk_bv_ult, sort_BVNUM, params, &msg, true);
+    sym_BV_ULT  = declareFun(tk_bv_ult, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_ULT].setNoScoping();
     sym_store[sym_BV_ULT].setChainable();
 
-    sym_BV_UGEQ = declareFun(tk_bv_ugeq, sort_BVNUM, params, &msg, true);
+    sym_BV_UGEQ = declareFun(tk_bv_ugeq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_UGEQ].setNoScoping();
     sym_store[sym_BV_UGEQ].setChainable();
 
-    sym_BV_SGEQ = declareFun(tk_bv_sgeq, sort_BVNUM, params, &msg, true);
+    sym_BV_SGEQ = declareFun(tk_bv_sgeq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_SGEQ].setNoScoping();
     sym_store[sym_BV_SGEQ].setChainable();
 
-    sym_BV_SGT  = declareFun(tk_bv_sgt, sort_BVNUM, params, &msg, true);
+    sym_BV_SGT  = declareFun(tk_bv_sgt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_SGT].setNoScoping();
     sym_store[sym_BV_SGT].setChainable();
 
-    sym_BV_UGT   = declareFun(tk_bv_ugt, sort_BVNUM, params, &msg, true);
+    sym_BV_UGT   = declareFun(tk_bv_ugt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_UGT].setNoScoping();
     sym_store[sym_BV_UGT].setChainable();
 
-    sym_BV_LAND   = declareFun(tk_bv_land, sort_BVNUM, params, &msg, true);
+    sym_BV_LAND   = declareFun(tk_bv_land, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_LAND].setCommutes();
 
-    sym_BV_LOR    = declareFun(tk_bv_lor, sort_BVNUM, params, &msg, true);
+    sym_BV_LOR    = declareFun(tk_bv_lor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_LOR].setCommutes();
 
-    sym_BV_LSHIFT = declareFun(tk_bv_lshift, sort_BVNUM, params, &msg, true);
+    sym_BV_LSHIFT = declareFun(tk_bv_lshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
 
-    sym_BV_ARSHIFT = declareFun(tk_bv_arshift, sort_BVNUM, params, &msg, true);
-    sym_BV_LRSHIFT = declareFun(tk_bv_lrshift, sort_BVNUM, params, &msg, true);
+    sym_BV_ARSHIFT = declareFun(tk_bv_arshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
+    sym_BV_LRSHIFT = declareFun(tk_bv_lrshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
 
-    sym_BV_MOD    = declareFun(tk_bv_mod, sort_BVNUM, params, &msg, true);
+    sym_BV_MOD    = declareFun(tk_bv_mod, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
 
-    sym_BV_BWAND  = declareFun(tk_bv_bwand, sort_BVNUM, params, &msg, true);
+    sym_BV_BWAND  = declareFun(tk_bv_bwand, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_BWAND].setCommutes();
 
-    sym_BV_BWOR   = declareFun(tk_bv_bwor, sort_BVNUM, params, &msg, true);
+    sym_BV_BWOR   = declareFun(tk_bv_bwor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_BWOR].setCommutes();
 
-    sym_BV_BWXOR  = declareFun(tk_bv_bwxor, sort_BVNUM, params, &msg, true);
+    sym_BV_BWXOR  = declareFun(tk_bv_bwxor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}, &msg, true);
     sym_store[sym_BV_BWXOR].setCommutes();
 
-    declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
+    declareFun(tk_bv_neg, sort_BVNUM, {sort_BVNUM}, &msg, true);
 
     vec<SRef> coll_params;
     for (int i = 0; i < 32; i++)

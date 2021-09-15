@@ -4,10 +4,7 @@
 
 #include "LogicFactory.h"
 
-#include "LRALogic.h"
-#include "LIALogic.h"
-#include "IDLogic.h"
-#include "RDLogic.h"
+#include "ArithLogic.h"
 #include "BVLogic.h"
 #include "OsmtApiException.h"
 
@@ -39,25 +36,25 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
         case Logic_t::QF_RDL:
         case Logic_t::QF_UFRDL:
         {
-            l = new RDLogic();
+            l = new ArithLogic(ArithLogic::ArithType::RDL);
             break;
         }
         case Logic_t::QF_LRA:
         case Logic_t::QF_UFLRA:
         {
-            l = new LRALogic();
+            l = new ArithLogic(ArithLogic::ArithType::LRA);
             break;
         }
         case Logic_t::QF_IDL:
         case Logic_t::QF_UFIDL:
         {
-            l = new IDLogic();
+            l = new ArithLogic(ArithLogic::ArithType::IDL);
             break;
         }
         case Logic_t::QF_LIA:
         case Logic_t::QF_UFLIA:
         {
-            l = new LIALogic();
+            l = new ArithLogic(ArithLogic::ArithType::LIA);
             break;
         }
         case Logic_t::QF_UF:
@@ -78,7 +75,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
     return l;
 }
 
-LRALogic * opensmt::LogicFactory::getLRAInstance() { return new LRALogic(); }
+ArithLogic * opensmt::LogicFactory::getLRAInstance() { return new ArithLogic(ArithLogic::ArithType::LRA); }
 
-LIALogic * opensmt::LogicFactory::getLIAInstance() { return new LIALogic(); }
+ArithLogic * opensmt::LogicFactory::getLIAInstance() { return new ArithLogic(ArithLogic::ArithType::LIA); }
 

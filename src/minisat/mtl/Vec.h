@@ -35,8 +35,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 //
 // NOTE! Don't use this vector on datatypes that cannot be re-located in memory (with realloc)
 
-template<class T>
+template<class R>
 class vec {
+    typedef typename std::remove_const<R>::type T;
     T*  data;
     int sz;
     int cap;
@@ -74,7 +75,13 @@ public:
     void     capacity (int min_cap);
     void     growTo   (int size);
     void     growTo   (int size, const T& pad);
-    void     clear    (bool dealloc = false);
+    void clear(bool dealloc = false) {
+        if (data != NULL){
+            for (int i = 0; i < sz; i++) data[i].~T();
+            sz = 0;
+            if (dealloc) free(data), data = NULL, cap = 0; }
+    }
+
     void     reset    ();
 
     // Stack interface:
@@ -93,8 +100,8 @@ public:
     T&       last  (void)              { return data[sz-1]; }
 
     // Vector interface:
-    const T& operator [] (int index) const { return data[index]; }
-    T&       operator [] (int index)       { return data[index]; }
+    const T& operator [] (int const index) const { return data[index]; }
+    T&       operator [] (int const index)       { return data[index]; }
 
     // methods for STL compatibility
     T*          begin()       { return data; }
@@ -139,12 +146,7 @@ void vec<T>::growTo(int size) {
     for (int i = sz; i < size; i++) new (&data[i]) T();
     sz = size; }
 
-template<class T>
-void vec<T>::clear(bool dealloc) {
-    if (data != NULL){
-        for (int i = 0; i < sz; i++) data[i].~T();
-        sz = 0;
-        if (dealloc) free(data), data = NULL, cap = 0; } }
+
 
 template<class T>
 void vec<T>::reset() {

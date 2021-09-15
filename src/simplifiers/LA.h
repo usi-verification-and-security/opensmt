@@ -28,24 +28,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LA_H
 
 #include "PtStructs.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 #include "Real.h"
 
 
 class LAExpression {
-    LALogic & logic;
+    ArithLogic & logic;
 
 public:
-    LAExpression(LALogic & l) : logic(l), r(OP::UNDEF) {
+    LAExpression(ArithLogic & l) : logic(l), r(OP::UNDEF) {
         polynome[PTRef_Undef] = 0;
     }
 
-    LAExpression(LALogic & l, PTRef e, bool do_canonize) :
+    LAExpression(ArithLogic & l, PTRef e, bool do_canonize) :
         logic(l),r(l.isNumEq(e) ? OP::EQ : (l.isNumLeq(e) ? OP::LEQ : OP::UNDEF)) {
         initialize(e, do_canonize);
     }
 
-    LAExpression(LALogic & l, PTRef e) : LAExpression(l, e, true) {}
+    LAExpression(ArithLogic & l, PTRef e) : LAExpression(l, e, true) {}
 
     inline bool isTrue() {
         return polynome.size() == 1 && (r == OP::EQ ? polynome[PTRef_Undef] == 0 : polynome[PTRef_Undef] >= 0);

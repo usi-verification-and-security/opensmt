@@ -1,8 +1,8 @@
 #include "RDLTHandler.h"
-#include "LRALogic.h"
+#include "ArithLogic.h"
 #include "RDLSolver.h"
 
-RDLTHandler::RDLTHandler(SMTConfig &c, LRALogic &l)
+RDLTHandler::RDLTHandler(SMTConfig &c, ArithLogic &l)
         : TSolverHandler(c)
         , logic(l)
 {

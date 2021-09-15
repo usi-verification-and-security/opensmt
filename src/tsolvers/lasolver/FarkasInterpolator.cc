@@ -15,7 +15,7 @@
 
 
 #include "FarkasInterpolator.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 #include "Real.h"
 #include "LA.h"
 #include "OsmtInternalException.h"
@@ -35,7 +35,7 @@ namespace {
 
 // TODO: when is explanation negated?
 struct ItpHelper {
-    ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
+    ItpHelper(ArithLogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
                                                           expl_coeff(std::move(coeff)), expr(logic, ineq.tr, false) {}
     PTRef explanation;
     bool negated;
@@ -325,7 +325,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return basis;
     }
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, ArithLogic & logic) {
         assert(ineqs.size() == coeffs.size());
         LAExpression init{logic};
         auto it_ineq = ineqs.begin();
@@ -349,13 +349,13 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so everything is multiplied by -1
         // therefore we need to create the inequality with the terms on LHS, because they are treated like LHS when LAExpressions are created
-        PTRef rhs = logic.mkConst("0");
+        PTRef rhs = logic.getTerm_NumZero();
         PTRef lhs = init.toPTRef();
 //        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
         return delta_flag ? logic.mkNumLt(lhs, rhs) : logic.mkNumLeq(lhs, rhs);
     }
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, LALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, ArithLogic & logic) {
         std::vector<Real> coeffs;
         coeffs.reserve(ineqs.size());
         for (const auto & helper : ineqs) {
@@ -453,7 +453,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
                 ? logic.getTerm_false() : logic.getTerm_true();
     }
     std::vector<ItpHelper> helpers;
-    LALogic & logic = this->logic;
+    ArithLogic & logic = this->logic;
     std::transform(candidates.begin(), it, std::back_inserter(helpers),
                    [&logic](std::pair<PtAsgn, Real> const & expl) {
                        return ItpHelper{logic, expl.first, expl.second};

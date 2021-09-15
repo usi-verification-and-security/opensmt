@@ -84,9 +84,9 @@ void LASolver::isProperLeq(PTRef tr)
     (void) cons; (void)sum;
 }
 
-LASolver::LASolver(SMTConfig & c, LALogic & l) : LASolver(descr_la_solver, c, l) {}
+LASolver::LASolver(SMTConfig & c, ArithLogic & l) : LASolver(descr_la_solver, c, l) {}
 
-LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
+LASolver::LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l)
         : TSolver((SolverId) dls, (const char *) dls, c)
         , logic(l)
         , laVarMapper(l)
@@ -716,7 +716,7 @@ LASolver::~LASolver( )
 #endif // STATISTICS
 }
 
-LALogic&  LASolver::getLogic()  { return logic; }
+ArithLogic&  LASolver::getLogic()  { return logic; }
 
 
 /**

@@ -186,3 +186,20 @@ target_sources(SplitTest
 
 target_link_libraries(SplitTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SplitTest)
+
+add_executable(NumberParserTest)
+target_sources(NumberParserTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_NumberParser.cc"
+        )
+
+target_link_libraries(NumberParserTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET NumberParserTest)
+
+add_executable(ArithLogicApiTest)
+target_sources(ArithLogicApiTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ArithLogicApi.cc"
+        )
+
+target_link_libraries(ArithLogicApiTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET ArithLogicApiTest)
+

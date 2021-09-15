@@ -40,7 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct SRef {
     uint32_t x;
-    void operator= (uint32_t v) { x = v; }
+    SRef & operator= (uint32_t const v) { x = v; return *this; }
     inline friend bool operator== (const SRef& a1, const SRef& a2) {return a1.x == a2.x; }
     inline friend bool operator!= (const SRef& a1, const SRef& a2) {return a1.x != a2.x; }
 };
@@ -192,7 +192,7 @@ class Sort {
     int         size;
     SRef        rest_sorts[0];
   public:
-    Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef>& rest)
+    Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef> const & rest)
         : idr(idr_)
         , uniq_id(uniq_id_)
         , canon_name(name)
@@ -242,7 +242,7 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(IdRef idr, SStrRef nr, vec<SRef>& rest)
+    SRef alloc(IdRef idr, SStrRef nr, vec<SRef> const & rest)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
         SRef sid;

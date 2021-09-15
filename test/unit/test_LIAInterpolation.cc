@@ -3,14 +3,14 @@
 //
 
 #include <gtest/gtest.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 #include <VerificationUtils.h>
 #include <LIAInterpolator.h>
 #include <MainSolver.h>
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
-    LIAInterpolationTest(): logic{} {}
+    LIAInterpolationTest(): logic{ArithLogic::ArithType::LIA} {}
     virtual void SetUp() {
         x = logic.mkNumVar("x");
         y = logic.mkNumVar("y");
@@ -19,7 +19,7 @@ protected:
         x3 = logic.mkNumVar("x3");
         x4 = logic.mkNumVar("x4");
     }
-    LIALogic logic;
+    ArithLogic logic;
     SMTConfig config;
     PTRef x, y, x1, x2, x3, x4;
 
@@ -65,13 +65,13 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
      */
     PTRef zero = logic.getTerm_NumZero();
     PTRef minusOne = logic.getTerm_NumMinusOne();
-    PTRef leq1 = logic.mkNumGt(x1, minusOne);
-    PTRef leq2 = logic.mkNumGt(logic.mkNumMinus(x2,x1), minusOne);
-    PTRef leq3 = logic.mkNumGt(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), minusOne);
+    PTRef leq1 = logic.mkIntGt(x1, minusOne);
+    PTRef leq2 = logic.mkIntGt(logic.mkIntMinus(x2,x1), minusOne);
+    PTRef leq3 = logic.mkIntGt(logic.mkIntNeg(logic.mkIntPlus(x3,x1)), minusOne);
 
-    PTRef leq4 = logic.mkNumGt(logic.mkNumMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
-    PTRef leq6 = logic.mkNumGeq(x4, zero);
+    PTRef leq4 = logic.mkIntGt(logic.mkIntMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkIntGeq(logic.mkIntNeg(logic.mkIntPlus({x4,x2})), zero);
+    PTRef leq6 = logic.mkIntGeq(x4, zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False),
                           PtAsgn(logic.mkNot(leq3), l_False),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
@@ -95,14 +95,14 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
      * B:
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+    PTRef leq1 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(three, y), logic.mkIntTimes(two, x)), zero);
+    PTRef leq2 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(two, x), y), two);
 
-    PTRef leq3 = logic.mkNumLeq(y, one);
+    PTRef leq3 = logic.mkIntLeq(y, one);
 
     const char* msg = "ok";
     config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -129,12 +129,12 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
      * A:
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+    PTRef leq1 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(three, y), logic.mkIntTimes(two, x)), zero);
+    PTRef leq2 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(two, x), y), two);
 
     PTRef leq3 = logic.mkNumLeq(y, one);
 
@@ -164,13 +164,13 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
      *      2x - y >= 2
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
-    PTRef leq3 = logic.mkNumLeq(y, one);
+    PTRef leq1 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(three, y), logic.mkIntTimes(two, x)), zero);
+    PTRef leq2 = logic.mkIntGeq(logic.mkIntMinus(logic.mkIntTimes(two, x), y), two);
+    PTRef leq3 = logic.mkIntLeq(y, one);
 
     const char* msg = "ok";
     config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
