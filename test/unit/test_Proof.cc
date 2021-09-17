@@ -244,6 +244,68 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents) {
     EXPECT_TRUE(true);
 }
 
+TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents_AfterPhaseOneReplace) {
+    CRef a_d = ca.alloc(vec<Lit>{a,d}, false);
+    CRef b_nd = ca.alloc(vec<Lit>{b,~d}, false);
+    CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);
+    CRef na_nc = ca.alloc(vec<Lit>{~a,~c}, false);
+    CRef nb_c_nd = ca.alloc(vec<Lit>{~b,c,~d}, false);
+    CRef nc_nd = ca.alloc(vec<Lit>{~c,~d}, false);
+    CRef d_e = ca.alloc(vec<Lit>{d,e}, false);
+    CRef b_nc_nd_ne = ca.alloc(vec<Lit>{b,~c,~d,~e}, false);
+    CRef d_ne = ca.alloc(vec<Lit>{d,~e}, false);
+    CRef nb_ne = ca.alloc(vec<Lit>{~b,~e}, false);
+    vec<CRef> clauses = {a_d, b_nd, na_c, na_nc, nb_c_nd, nc_nd, d_e, b_nc_nd_ne, d_ne, nb_ne};
+    for (CRef cr : clauses) {
+        partitionManager.addClauseClassMask(cr, 1);
+    }
+    for (CRef cr : clauses) {
+        proof.newOriginalClause(cr);
+    }
+    // Learnt clauses
+    CRef a_b = ca.alloc(vec<Lit>{a,b}, true);
+
+    proof.beginChain(a_d);
+    proof.addResolutionStep(b_nd, var(d));
+    proof.endChain(a_b);
+
+    CRef b_c = ca.alloc(vec<Lit>{b,c}, true);
+
+    proof.beginChain(na_c);
+    proof.addResolutionStep(a_b, var(a));
+    proof.endChain(b_c);
+
+    CRef ne = ca.alloc(vec<Lit>{~e}, true);
+
+    proof.beginChain(b_nc_nd_ne);
+    proof.addResolutionStep(b_c, var(c));
+    proof.addResolutionStep(nb_ne, var(b));
+    proof.addResolutionStep(d_ne, var(d));
+    proof.endChain(ne);
+
+    // bot
+    proof.beginChain(na_nc);
+    proof.addResolutionStep(b_c, var(c));
+    proof.addResolutionStep(a_b,var(a));
+    proof.addResolutionStep(nb_c_nd, var(b));
+    proof.addResolutionStep(nc_nd, var(c));
+    proof.addResolutionStep(d_e, var(d));
+    proof.addResolutionStep(ne, var(e));
+    proof.endChain(CRef_Undef);
+
+    int nVars = 5;
+    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    pg.fillProofGraph();
+    pg.checkProof(true);
+//    pg.printProofAsDotty(std::cout);
+    pg.recyclePivotsIter();
+    pg.checkProof(true);
+//    std::cout << "\n\n\n";
+//    pg.printProofAsDotty(std::cout);
+    pg.emptyProofGraph();
+    EXPECT_TRUE(true);
+}
+
 TEST_F(ReductionTest, test_proofTransformAndRestructure) {
     CRef a_b = ca.alloc(vec<Lit>{a,b}, false);
     CRef na_c = ca.alloc(vec<Lit>{~a,c}, false);

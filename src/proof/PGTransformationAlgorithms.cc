@@ -191,7 +191,6 @@ double ProofGraph::recyclePivotsIter() {
                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
                     else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
-                    assert(res->getAnt1() != res->getAnt2());
                     replacing->addRes(resId);
                     assert(not isSetVisited2(resId));
                     q.push_back(resId);
