@@ -1090,7 +1090,6 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             {
                 if (reason(x) == CRef_Fake)
                 {
-                    assert(!logsProofForInterpolation()); // MB: If we make theory propagation work with proof logging, fix this.
                     cancelUntilVarTempInit(x);
                     vec<Lit> r;
                     theory_handler.getReason(trail[i], r);
@@ -1100,6 +1099,12 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         seen[var(r[j])] = 1;
                     }
                     cancelUntilVarTempDone();
+                    if (logsProofForInterpolation()) {
+                        CRef theoryClause = ca.alloc(r);
+                        vardata[x].reason = theoryClause;
+                        proof->newTheoryClause(theoryClause);
+                        proof->addResolutionStep(theoryClause, x);
+                    }
                 }
                 else
                 {
