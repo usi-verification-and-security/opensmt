@@ -225,3 +225,20 @@ TEST_F(LRALogicMkTermsTest, testAtom_LRA) {
     EXPECT_FALSE(logic.isAtom(product));
 }
 
+TEST_F(LRALogicMkTermsTest, test_ChainableInequality) {
+    PTRef multiArgsLeq = logic.mkNumLeq({x,y,z});
+    PTRef expandedLeq = logic.mkAnd(logic.mkNumLeq(x,y), logic.mkNumLeq(y,z));
+    EXPECT_EQ(multiArgsLeq, expandedLeq);
+
+    PTRef multiArgsLt = logic.mkNumLt({x,y,z});
+    PTRef expandedLt = logic.mkAnd(logic.mkNumLt(x,y), logic.mkNumLt(y,z));
+    EXPECT_EQ(multiArgsLt, expandedLt);
+
+    PTRef multiArgsGeq = logic.mkNumGeq({x,y,z});
+    PTRef expandedGeq = logic.mkAnd(logic.mkNumGeq(x,y), logic.mkNumGeq(y,z));
+    EXPECT_EQ(multiArgsGeq, expandedGeq);
+
+    PTRef multiArgsGt = logic.mkNumGt({x,y,z});
+    PTRef expandedGt = logic.mkAnd(logic.mkNumGt(x,y), logic.mkNumGt(y,z));
+    EXPECT_EQ(multiArgsGt, expandedGt);
+}
