@@ -146,21 +146,17 @@ public:
     virtual PTRef mkNumDiv(vec<PTRef> && args) = 0;
     virtual PTRef mkNumDiv(const PTRef nom, const PTRef den) = 0;
 
-    PTRef mkNumLeq(vec<PTRef> && args);
-    PTRef mkNumLeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumLeq(std::move(tmp)); }
-    PTRef mkNumLeq(PTRef arg1, PTRef arg2) { return mkNumLeq({arg1, arg2}); }
+    PTRef mkNumLeq(vec<PTRef> const & args);
+    PTRef mkNumLeq(PTRef arg1, PTRef arg2) { return mkBinaryLeq(arg1, arg2); }
 
-    PTRef mkNumGeq(vec<PTRef> && args);
-    PTRef mkNumGeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGeq(std::move(tmp)); }
-    PTRef mkNumGeq(PTRef arg1, PTRef arg2) { return mkNumGeq({arg1, arg2}); }
+    PTRef mkNumGeq(vec<PTRef> const & args);
+    PTRef mkNumGeq(PTRef arg1, PTRef arg2) { return mkBinaryGeq(arg1, arg2); }
 
-    PTRef mkNumLt(vec<PTRef> && args);
-    PTRef mkNumLt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumLt(std::move(tmp)); }
-    PTRef mkNumLt(PTRef arg1, PTRef arg2) { return mkNumLt({arg1, arg2}); }
+    PTRef mkNumLt(vec<PTRef> const & args);
+    PTRef mkNumLt(PTRef arg1, PTRef arg2) { return mkBinaryLt(arg1, arg2); }
 
-    PTRef mkNumGt(vec<PTRef> && args);
-    PTRef mkNumGt(const vec<PTRef> & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGt(std::move(tmp)); }
-    PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkNumGt({arg1, arg2}); }
+    PTRef mkNumGt(const vec<PTRef> & args);
+    PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkBinaryGt(arg1, arg2); }
 
     virtual bool isNegated(PTRef tr) const;
     virtual bool isLinearTerm(PTRef tr) const;
@@ -188,6 +184,12 @@ public:
 
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
+
+protected:
+    PTRef mkBinaryLeq(PTRef lhs, PTRef rhs);
+    PTRef mkBinaryGeq(PTRef lhs, PTRef rhs);
+    PTRef mkBinaryLt(PTRef lhs, PTRef rhs);
+    PTRef mkBinaryGt(PTRef lhs, PTRef rhs);
 
 };
 

@@ -330,10 +330,7 @@ PTRef LALogic::mkNumTimes(vec<PTRef> && args)
 
 // If the call results in a leq it is guaranteed that arg[0] is a
 // constant, and arg[1][0] has factor 1 or -1
-PTRef LALogic::mkNumLeq(vec<PTRef> && args) {
-    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments passed to LALogic::mkNumLeq"); }
-    PTRef lhs = args[0];
-    PTRef rhs = args[1];
+PTRef LALogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
     if (isConstant(lhs) && isConstant(rhs)) {
         opensmt::Number const & v1 = this->getNumConst(lhs);
         opensmt::Number const & v2 = this->getNumConst(rhs);
@@ -351,9 +348,7 @@ PTRef LALogic::mkNumLeq(vec<PTRef> && args) {
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
     } if (isNumVarLike(sum_tmp) || isNumTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
         sum_tmp = isNumTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
-        args[0] = getTerm_NumZero();
-        args[1] = sum_tmp;
-        return mkFun(get_sym_Num_LEQ(), std::move(args));
+        return mkFun(get_sym_Num_LEQ(), {getTerm_NumZero(), sum_tmp});
     } else if (isNumPlus(sum_tmp)) {
         // Normalize the sum
         return sumToNormalizedInequality(sum_tmp);
@@ -362,22 +357,70 @@ PTRef LALogic::mkNumLeq(vec<PTRef> && args) {
     throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
 }
 
-PTRef LALogic::mkNumGeq(vec<PTRef> && args) {
-    if (args.size() != 2) { throw OsmtApiException("Incorrect number of arguments passed to LALogic::mkNumGeq"); }
-    std::swap(args[0], args[1]);
-    return mkNumLeq(std::move(args));
+PTRef LALogic::mkBinaryGeq(PTRef lhs, PTRef rhs) {
+    return mkBinaryLeq(rhs, lhs);
 }
 
-PTRef LALogic::mkNumLt(vec<PTRef> && args)
-{
-    PTRef tr = mkNumGeq(std::move(args));
-    return mkNot(tr);
+PTRef LALogic::mkBinaryLt(PTRef lhs, PTRef rhs) {
+    return mkNot(mkBinaryGeq(lhs, rhs));
 }
 
-PTRef LALogic::mkNumGt(vec<PTRef> && args)
+PTRef LALogic::mkBinaryGt(PTRef lhs, PTRef rhs) {
+    return mkNot(mkBinaryLeq(lhs, rhs));
+}
+
+PTRef LALogic::mkNumLeq(vec<PTRef> const & args) {
+    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLeq"); }
+    if (args.size() == 2) {
+        return mkBinaryLeq(args[0], args[1]);
+    }
+    vec<PTRef> binaryInequalities;
+    binaryInequalities.capacity(args.size() - 1);
+    for (int i = 1; i < args.size(); ++i) {
+        binaryInequalities.push(mkBinaryLeq(args[i - 1], args[i]));
+    }
+    return mkAnd(std::move(binaryInequalities));
+}
+
+PTRef LALogic::mkNumGeq(vec<PTRef> const & args) {
+    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGeq"); }
+    if (args.size() == 2) {
+        return mkBinaryGeq(args[0], args[1]);
+    }
+    vec<PTRef> binaryInequalities;
+    binaryInequalities.capacity(args.size() - 1);
+    for (int i = 1; i < args.size(); ++i) {
+        binaryInequalities.push(mkBinaryGeq(args[i - 1], args[i]));
+    }
+    return mkAnd(std::move(binaryInequalities));
+}
+
+PTRef LALogic::mkNumLt(vec<PTRef> const & args)
 {
-    PTRef tr = mkNumLeq(std::move(args));
-    return mkNot(tr);
+    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLt"); }
+    if (args.size() == 2) {
+        return mkBinaryLt(args[0], args[1]);
+    }
+    vec<PTRef> binaryInequalities;
+    binaryInequalities.capacity(args.size() - 1);
+    for (int i = 1; i < args.size(); ++i) {
+        binaryInequalities.push(mkBinaryLt(args[i - 1], args[i]));
+    }
+    return mkAnd(std::move(binaryInequalities));
+}
+
+PTRef LALogic::mkNumGt(vec<PTRef> const & args)
+{
+    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGt"); }
+    if (args.size() == 2) {
+        return mkBinaryGt(args[0], args[1]);
+    }
+    vec<PTRef> binaryInequalities;
+    binaryInequalities.capacity(args.size() - 1);
+    for (int i = 1; i < args.size(); ++i) {
+        binaryInequalities.push(mkBinaryGt(args[i - 1], args[i]));
+    }
+    return mkAnd(std::move(binaryInequalities));
 }
 
 PTRef LALogic::insertTerm(SymRef sym, vec<PTRef> && terms)
