@@ -267,10 +267,10 @@ PTRef LALogic::mkNumPlus(vec<PTRef> && args)
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
-    for (int i = 0; i < args.size(); ++i) {
+    for (PTRef arg : args) {
         PTRef v;
         PTRef c;
-        splitTermToVarAndConst(args[i], v, c);
+        splitTermToVarAndConst(arg, v, c);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (!s2t.has(v)) {
@@ -280,20 +280,20 @@ PTRef LALogic::mkNumPlus(vec<PTRef> && args)
             s2t[v].push(c);
     }
     flattened_args.clear();
-    for (int i = 0; i < keys.size(); i++) {
-        const vec<PTRef>& consts = s2t[keys[i]];
+    for (PTRef key : keys) {
+        const vec<PTRef>& consts = s2t[key];
         PTRef consts_summed = consts.size() == 1 ? consts[0] : mkNumPlus(consts);
         if (isNumZero(consts_summed)) { continue; }
-        if (keys[i] == PTRef_Undef) {
+        if (key == PTRef_Undef) {
             flattened_args.push(consts_summed);
             continue;
         }
         if (isNumOne(consts_summed)) {
-            flattened_args.push(keys[i]);
+            flattened_args.push(key);
             continue;
         }
         // default case, variable and constant (cannot be simplified)
-        PTRef term = mkFun(get_sym_Num_TIMES(), {consts_summed, keys[i]});
+        PTRef term = mkFun(get_sym_Num_TIMES(), {consts_summed, key});
         flattened_args.push(term);
     }
     if (flattened_args.size() == 0) return getTerm_NumZero();
@@ -301,17 +301,18 @@ PTRef LALogic::mkNumPlus(vec<PTRef> && args)
     PTRef tr = mkFun(s_new, std::move(flattened_args));
     return tr;
 }
+
 PTRef LALogic::mkNumTimes(vec<PTRef> && args)
 {
     vec<PTRef> flatten_args;
     // Flatten possible internal multiplications
-    for (int i = 0; i < args.size(); i++) {
-        if (isNumTimes(args[i])) {
-            Pterm const & t = getPterm(args[i]);
-            for (int j = 0; j < t.size(); j++)
-                flatten_args.push(t[j]);
+    for (PTRef arg : args) {
+        if (isNumTimes(arg)) {
+            Pterm const & t = getPterm(arg);
+            for (PTRef child : t)
+                flatten_args.push(child);
         } else {
-            flatten_args.push(args[i]);
+            flatten_args.push(arg);
         }
     }
     SimplifyConstTimes simp(*this);

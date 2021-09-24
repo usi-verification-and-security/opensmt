@@ -634,8 +634,8 @@ PTRef Logic::mkAnd(vec<PTRef>&& args) {
     }
     args.clear();
     args.capacity(tmp_args.size());
-    for (int k = 0; k < tmp_args.size(); k++) {
-        args.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+    for (PtAsgn tmp_arg : tmp_args) {
+        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
     }
     return mkFun(getSym_and(), std::move(args));
 }
@@ -679,8 +679,8 @@ PTRef Logic::mkOr(vec<PTRef> && args) {
     }
     args.clear();
     args.capacity(tmp_args.size());
-    for (int k = 0; k < tmp_args.size(); k++) {
-        args.push(tmp_args[k].sgn == l_True ? tmp_args[k].tr : mkNot(tmp_args[k].tr));
+    for (PtAsgn tmp_arg : tmp_args) {
+        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
     }
     return mkFun(getSym_or(), std::move(args));
 }
