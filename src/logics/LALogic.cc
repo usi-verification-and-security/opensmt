@@ -339,11 +339,8 @@ PTRef LALogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
     }
     // Should be in the form that on one side there is a constant
     // and on the other there is a sum
-    PTRef sum_tmp = [&](){
-       if (lhs == getTerm_NumZero()) { return rhs; }
-       if (rhs == getTerm_NumZero()) { return mkNumNeg(lhs); }
-       return mkNumPlus(rhs, mkNumNeg(lhs));
-    }(); // now the inequality is "0 <= sum_tmp" where "sum_tmp = rhs - lhs"
+    PTRef sum_tmp = lhs == getTerm_NumZero() ? rhs : rhs == getTerm_NumZero() ? mkNumNeg(lhs) : mkNumPlus(rhs, mkNumNeg(lhs));
+    // "sum_tmp = rhs - lhs" so the inequality is "0 <= sum_tmp"
     if (isConstant(sum_tmp)) {
         opensmt::Number const & v = this->getNumConst(sum_tmp);
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
