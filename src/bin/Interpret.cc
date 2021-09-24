@@ -720,7 +720,7 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     const char *s = logic->protectName(logic->getSymName(tr));
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
-    char* val_string = logic->pp(val);
+    char* val_string = logic->printTerm(val);
     ss << "    " << val_string << ")\n";
     free(val_string);
     return ss.str();
