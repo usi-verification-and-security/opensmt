@@ -48,6 +48,7 @@ public:
     LALogic() = default;
     ~LALogic() { for(int i = 0; i < numbers.size(); ++i) {delete numbers[i];}}
     bool             isBuiltinFunction(SymRef sr) const override;
+    using Logic::insertTerm;
     PTRef            insertTerm       (SymRef sym, vec<PTRef>&& terms) override;
     virtual SRef     getSort_num      () const = 0;
     PTRef            mkConst          (const char* name, const char **msg) override;

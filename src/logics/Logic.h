@@ -206,6 +206,8 @@ class Logic {
     virtual PTRef getDefaultValuePTRef(const SRef sref) const;
 
     PTRef       mkUninterpFun (SymRef f, vec<PTRef>&& args);
+    PTRef       mkUninterpFun (SymRef f, vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkUninterpFun(f, std::move(tmp)); }
+
     // Boolean term generation
     PTRef       mkAnd         (vec<PTRef>&&);
     PTRef       mkAnd         (vec<PTRef> const& args) { vec<PTRef> tmp; args.copyTo(tmp); return mkAnd(std::move(tmp)); }
@@ -355,7 +357,8 @@ class Logic {
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
 
-    virtual PTRef       insertTerm         (SymRef sym, vec<PTRef>&& terms);
+    virtual PTRef insertTerm (SymRef sym, vec<PTRef> && args);
+    PTRef insertTerm(SymRef sym, vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return insertTerm(sym, std::move(tmp)); }
 
     // Top-level equalities based substitutions
     bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
