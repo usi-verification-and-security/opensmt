@@ -911,12 +911,14 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     }
 #endif
 
-    for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
+    for (Lit l : analyze_toclear) {
+        seen[var(l)] = 0;
+    } // ('seen[]' is now cleared)
     assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; }));
     // Cleanup generated lemmata
     if (not logsProofForInterpolation) {
-        for (int i = 0; i < cleanup.size(); i++) {
-            ca.free(cleanup[i]);
+        for (CRef cref : cleanup) {
+            ca.free(cref);
         }
     }
     cleanup.clear();
