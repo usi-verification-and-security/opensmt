@@ -1043,17 +1043,6 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef>
 	}
 }
 
-inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<Lit> &lits) {
-	Logic& logic = theory_handler.getLogic();
-	for (int i = 0; i < lits.size(); i++) {
-		const Lit& literal = lits[i];
-		Var v = var(literal);
-		PTRef ptr = theory_handler.varToTerm(v);
-		if (sign(literal)) ptr = logic.mkNot(ptr);
-		clauses.push(logic.mkOr({ptr}));
-	}
-}
-
 inline char * CoreSMTSolver::printCnfClauses()
 {
 	vec<PTRef> cnf_clauses;
