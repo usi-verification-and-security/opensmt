@@ -340,46 +340,37 @@ Logic::pp(PTRef tr) const
 char*
 Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
-    char* out;
+    std::stringstream ss;
 
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    char* name_escaped = printSym(sr);
+    char* name_escaped_c = printSym(sr);
+
+    std::string name_escaped = name_escaped_c;
+    free(name_escaped_c);
 
     if (t.size() == 0) {
-        int res = ext ? asprintf(&out, "%s <%d>", name_escaped, tr.x)
-                : asprintf(&out, "%s", name_escaped);
-        assert(res >= 0); (void)res;
-        free(name_escaped);
-        return out;
-    }
-
-    // Here we know that t.size() > 0
-
-    char* old;
-    int chars_written = asprintf(&out, "(%s ", name_escaped);
-    assert(chars_written >= 0);
-    free(name_escaped);
-
-    for (int i = 0; i < t.size(); i++) {
-        old = out;
-        char * current_term = printTerm_(t[i], ext, safe);
-        chars_written = asprintf(&out, "%s%s", old, current_term);
-        assert(chars_written >= 0);
-        ::free(old);
-        ::free(current_term);
-        if (i < t.size()-1) {
-            old = out;
-            chars_written = asprintf(&out, "%s ", old);
-            assert(chars_written >= 0);
-            ::free(old);
+        std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
+        if (isKnownToUser(sr)) {
+            ss << name_escaped << (ext ? ext_string : "");
+        } else {
+            ss << "(as " << name_escaped << ext_string << " " << getSortName(getSortRef(sr)) << ")";
         }
+        return strdup(ss.str().data());
+    } else {
+        // Here we know that t.size() > 0
+        ss << "(" << name_escaped;
+        bool first = true;
+        for (auto arg : t) {
+            char *current_term_p = printTerm_(arg, ext, safe);
+            std::string current_term = current_term_p;
+            free(current_term_p);
+            ss << (first ? "" : " ") << current_term;
+            first = false;
+        }
+        ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
     }
-    old = out;
-    chars_written = ext ? asprintf(&out, "%s) <%d>", old, tr.x) : asprintf(&out, "%s)", old);
-    assert(chars_written >= 0); (void)chars_written;
-    ::free(old);
-    return out;
+    return strdup(ss.str().data());
 }
 
 bool Logic::isTheoryTerm(PTRef ptr) const {
