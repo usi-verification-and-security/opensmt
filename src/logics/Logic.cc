@@ -363,9 +363,8 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
         bool first = true;
         for (auto arg : t) {
             char *current_term_p = printTerm_(arg, ext, safe);
-            std::string current_term = current_term_p;
+            ss << (first ? "" : " ") << current_term_p;
             free(current_term_p);
-            ss << (first ? "" : " ") << current_term;
             first = false;
         }
         ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
