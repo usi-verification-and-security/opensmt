@@ -3,6 +3,10 @@
 Build:
  - Switch to C++17.
 
+Bug fixes:
+ - LA: Fix incorrect update of bounds after split.
+ - LA: Fix bound store not being cleared properly between consecutive `(check-sat)` commands.
+
 ### 2.1.0 (2021-08-16)
 
 API changes:
