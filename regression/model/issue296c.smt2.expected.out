@@ -1,0 +1,5 @@
+sat
+(
+  (define-fun a () Real
+    (- 1))
+)
