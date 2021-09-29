@@ -174,7 +174,7 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &&terms) {
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
 
-opensmt::pair<FastRational, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
+opensmt::pair<opensmt::Number, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
