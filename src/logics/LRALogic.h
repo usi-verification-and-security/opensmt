@@ -123,6 +123,12 @@ public:
 
     PTRef insertTerm(SymRef sym, vec<PTRef> &&terms) override;
 
+protected:
+    PTRef sumToNormalizedInequality(PTRef sum) override;
+    PTRef sumToNormalizedEquality(PTRef sum) override;
+
+    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedPair(PTRef sum);
+
 };
 
 #endif

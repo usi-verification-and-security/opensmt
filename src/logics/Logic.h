@@ -230,7 +230,10 @@ class Logic {
     // Generic equalities
     PTRef       mkEq          (vec<PTRef>&& args);
     PTRef       mkEq          (vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkEq(std::move(tmp)); }
-    PTRef       mkEq          (PTRef a1, PTRef a2);
+    PTRef       mkEq          (PTRef a1, PTRef a2) { return mkBinaryEq(a1, a2); }
+protected:
+    virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
+public:
 
     // General disequalities
     PTRef       mkDistinct    (vec<PTRef>&& args);

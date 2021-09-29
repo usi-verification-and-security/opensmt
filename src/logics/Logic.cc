@@ -730,7 +730,7 @@ PTRef Logic::mkImpl(vec<PTRef> && args) {
         return tr;
 }
 
-PTRef Logic::mkEq(PTRef lhs, PTRef rhs) {
+PTRef Logic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     if (lhs == rhs) return getTerm_true();
     if (isConstant(lhs) && isConstant(rhs))
         return getTerm_false();
@@ -753,12 +753,12 @@ PTRef Logic::mkEq(vec<PTRef>&& args) {
     if (args.size() > 2) { // split to chain of equalities with 2 arguments
         vec<PTRef> binaryEqualities;
         for (int i = 0; i < args.size() - 1; ++i) {
-            binaryEqualities.push(mkEq(args[i], args[i + 1]));
+            binaryEqualities.push(mkBinaryEq(args[i], args[i + 1]));
         }
         return mkAnd(std::move(binaryEqualities));
     }
     assert(args.size() == 2);
-    return mkEq(args[0], args[1]);
+    return mkBinaryEq(args[0], args[1]);
 }
 
 // Given args = {a_1, ..., a_n}, distinct(args) holds iff

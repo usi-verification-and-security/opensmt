@@ -131,6 +131,8 @@ LRALogic::LRALogic() :
     ites.insert(sym_Real_ITE, true);
     sortToIte.insert(sort_REAL, sym_Real_ITE);
     sym_store.setInterpreted(sym_Real_ITE);
+
+    sym_Real_EQ = term_store.lookupSymbol(tk_equals, {term_Real_ZERO, term_Real_ZERO});
 }
 
 PTRef LRALogic::mkRealDiv(vec<PTRef> const & args)
@@ -161,4 +163,44 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &&terms) {
     if (sym == get_sym_Real_DIV())
         return mkRealDiv(terms);
     return LALogic::insertTerm(sym, std::move(terms));
+}
+
+/**
+ * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the leading coefficient is either 1 or -1.
+ * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as if
+ * it was placed on the other side of an equality.
+ *
+ * @param sum
+ * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
+ */
+
+opensmt::pair<opensmt::Number, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
+
+    auto [constantValue, varFactors] = getConstantAndFactors(sum);
+
+    PTRef leadingFactor = varFactors[0];
+    // normalize the sum according to the leading factor
+    PTRef var, coeff;
+    splitTermToVarAndConst(leadingFactor, var, coeff);
+    opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
+    // varFactors come from a normalized sum, no need to call normalization code again
+    PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), std::move(varFactors));
+    if (normalizationCoeff != 1) {
+        // normalize the whole sum
+        normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
+        // DON'T forget to update also the constant factor!
+        constantValue /= normalizationCoeff;
+    }
+    constantValue.negate(); // moving the constant to the LHS of the inequality
+    return {std::move(constantValue), normalizedSum};
+}
+
+PTRef LRALogic::sumToNormalizedInequality(PTRef sum) {
+    auto [lhsVal, rhs] = sumToNormalizedPair(sum);
+    return mkFun(get_sym_Num_LEQ(), {mkConst(lhsVal), rhs});
+}
+
+PTRef LRALogic::sumToNormalizedEquality(PTRef sum) {
+    auto [lhsVal, rhs] = sumToNormalizedPair(sum);
+    return mkFun(get_sym_Num_EQ(), {mkConst(lhsVal), rhs});
 }
