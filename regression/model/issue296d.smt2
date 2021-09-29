@@ -1,0 +1,6 @@
+(set-logic QF_LRA)
+(declare-fun a () Real)
+(assert (= a (- 1)))
+(check-sat)
+(get-value (a))
+(exit)
