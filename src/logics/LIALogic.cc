@@ -134,13 +134,13 @@ opensmt::pair<FastRational, PTRef> LIALogic::sumToNormalizedPair(PTRef sum) {
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
     Pterm const & s = getPterm(sum);
-    for (int i = 0; i < s.size(); i++) {
-        if (isConstant(s[i])) {
+    for (PTRef arg : s) {
+        if (isConstant(arg)) {
             assert(constant == PTRef_Undef);
-            constant = s[i];
+            constant = arg;
         } else {
-            assert(isLinearFactor(s[i]));
-            varFactors.push(s[i]);
+            assert(isLinearFactor(arg));
+            varFactors.push(arg);
         }
     }
     if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
@@ -209,20 +209,18 @@ opensmt::pair<FastRational, PTRef> LIALogic::sumToNormalizedPair(PTRef sum) {
     }
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Num_PLUS(), std::move(varFactors));
     // 0 <= normalizedSum + constatValue
-    // in LIA we can strengthen the inequality to
-    // ceiling(-constantValue) <= normalizedSum
     constantValue.negate();
     return {std::move(constantValue), normalizedSum};
 }
 
 
 PTRef LIALogic::sumToNormalizedInequality(PTRef sum) {
-    auto[lhsVal, rhs] = sumToNormalizedPair(sum);
+    auto [lhsVal, rhs] = sumToNormalizedPair(sum);
     return mkFun(get_sym_Num_LEQ(), {mkConst(lhsVal.ceil()), rhs});
 }
 
 PTRef LIALogic::sumToNormalizedEquality(PTRef sum) {
-    auto[lhsVal, rhs] = sumToNormalizedPair(sum);
+    auto [lhsVal, rhs] = sumToNormalizedPair(sum);
     if (not lhsVal.isInteger()) { return getTerm_false(); }
     return mkFun(get_sym_Num_EQ(), {mkConst(lhsVal), rhs});
 }

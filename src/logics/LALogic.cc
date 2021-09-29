@@ -430,11 +430,7 @@ PTRef LALogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
             return v1 == v2 ? getTerm_true() : getTerm_false();
         }
         // diff = rhs - lhs
-        PTRef diff = [&](){
-            if (lhs == getTerm_NumZero()) { return rhs; }
-            if (rhs == getTerm_NumZero()) { return mkNumNeg(lhs); }
-            return mkNumPlus(rhs, mkNumNeg(lhs));
-        }();
+        PTRef diff = lhs == getTerm_NumZero() ? rhs : rhs == getTerm_NumZero() ? mkNumNeg(lhs) : mkNumPlus(rhs, mkNumNeg(lhs));
         if (isConstant(diff)) {
             opensmt::Number const & v = this->getNumConst(diff);
             return v.isZero() ? getTerm_true() : getTerm_false();

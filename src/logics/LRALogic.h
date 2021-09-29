@@ -127,7 +127,7 @@ protected:
     PTRef sumToNormalizedInequality(PTRef sum) override;
     PTRef sumToNormalizedEquality(PTRef sum) override;
 
-    opensmt::pair<PTRef, PTRef> sumToNormalizedPair(PTRef sum);
+    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedPair(PTRef sum);
 
 };
 
