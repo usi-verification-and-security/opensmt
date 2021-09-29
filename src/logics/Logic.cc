@@ -360,12 +360,10 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
     } else {
         // Here we know that t.size() > 0
         ss << "(" << name_escaped;
-        bool first = true;
         for (auto arg : t) {
             char *current_term_p = printTerm_(arg, ext, safe);
-            ss << (first ? "" : " ") << current_term_p;
+            ss << " " << current_term_p;
             free(current_term_p);
-            first = false;
         }
         ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
     }
