@@ -191,6 +191,9 @@ protected:
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs);
     
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
+
+    // Given a 'sum' returns its constant and the non-constant terms as a sorted vector in a form suitable for LRA and LIA normalization
+    std::pair<opensmt::Number, vec<PTRef>> getConstantAndFactors(PTRef sum);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     virtual PTRef sumToNormalizedInequality(PTRef sum) = 0;
     // Given a sum term 't' returns a normalized equality 'c = s' equivalent to '0 = t'

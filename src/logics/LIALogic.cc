@@ -130,22 +130,9 @@ LIALogic::LIALogic() :
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
 opensmt::pair<FastRational, PTRef> LIALogic::sumToNormalizedPair(PTRef sum) {
-    assert(isNumPlus(sum));
-    vec<PTRef> varFactors;
-    PTRef constant = PTRef_Undef;
-    Pterm const & s = getPterm(sum);
-    for (PTRef arg : s) {
-        if (isConstant(arg)) {
-            assert(constant == PTRef_Undef);
-            constant = arg;
-        } else {
-            assert(isLinearFactor(arg));
-            varFactors.push(arg);
-        }
-    }
-    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
-    auto constantValue = getNumConst(constant);
-    termSort(varFactors);
+
+    auto [constantValue, varFactors] = getConstantAndFactors(sum);
+
     vec<PTRef> vars; vars.capacity(varFactors.size());
     std::vector<opensmt::Number> coeffs; coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {

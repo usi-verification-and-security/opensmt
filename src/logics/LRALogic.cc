@@ -173,25 +173,11 @@ PTRef LRALogic::insertTerm(SymRef sym, vec<PTRef> &&terms) {
  * @param sum
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
-opensmt::pair<opensmt::Number, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
-    assert(isNumPlus(sum));
-    vec<PTRef> varFactors;
-    PTRef constant = PTRef_Undef;
-    Pterm const & s = getPterm(sum);
-    for (PTRef arg : s) {
-        if (isConstant(arg)) {
-            assert(constant == PTRef_Undef);
-            constant = arg;
-        } else {
-            assert(isLinearFactor(arg));
-            varFactors.push(arg);
-        }
-    }
 
-    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
-    opensmt::Number constantVal = getNumConst(constant);
-    assert(varFactors.size() > 0);
-    termSort(varFactors);
+opensmt::pair<FastRational, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
+
+    auto [constantValue, varFactors] = getConstantAndFactors(sum);
+
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
     PTRef var, coeff;
@@ -203,10 +189,10 @@ opensmt::pair<opensmt::Number, PTRef> LRALogic::sumToNormalizedPair(PTRef sum) {
         // normalize the whole sum
         normalizedSum = mkNumTimes(normalizedSum, mkConst(normalizationCoeff.inverse()));
         // DON'T forget to update also the constant factor!
-        constantVal /= normalizationCoeff;
+        constantValue /= normalizationCoeff;
     }
-    constantVal.negate(); // moving the constant to the LHS of the inequality
-    return {std::move(constantVal), normalizedSum};
+    constantValue.negate(); // moving the constant to the LHS of the inequality
+    return {std::move(constantValue), normalizedSum};
 }
 
 PTRef LRALogic::sumToNormalizedInequality(PTRef sum) {

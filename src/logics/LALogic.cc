@@ -62,6 +62,27 @@ LALogic::getNumConst(PTRef tr) const
     return *numbers[id];
 }
 
+std::pair<opensmt::Number, vec<PTRef>> LALogic::getConstantAndFactors(PTRef sum) {
+    assert(isNumPlus(sum));
+    vec<PTRef> varFactors;
+    PTRef constant = PTRef_Undef;
+    Pterm const & s = getPterm(sum);
+    for (PTRef arg : s) {
+        if (isConstant(arg)) {
+            assert(constant == PTRef_Undef);
+            constant = arg;
+        } else {
+            assert(isLinearFactor(arg));
+            varFactors.push(arg);
+        }
+    }
+    if (constant == PTRef_Undef) { constant = getTerm_NumZero(); }
+    auto constantValue = getNumConst(constant);
+    assert(varFactors.size() > 0);
+    termSort(varFactors);
+    return std::pair(std::move(constantValue), std::move(varFactors));
+}
+
 void LALogic::splitTermToVarAndConst(const PTRef& term, PTRef& var, PTRef& fac) const
 {
     assert(isNumTimes(term) || isNumVarLike(term) || isConstant(term));
