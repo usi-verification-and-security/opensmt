@@ -81,6 +81,7 @@ bool LABoundStore::isUnbounded(LVRef v) const { return getBounds(v).size() == 0;
 void LABoundStore::clear() {
     this->ba.clear();
     this->in_bounds.clear();
+    this->bounds.clear();
 }
 
 void LABoundStore::updateBound(BoundInfo bi) {
