@@ -107,7 +107,7 @@ if [[ $(grep '^sat' ${tmpout}) ]]; then
         exit 1
     fi
 else
-    echo "Not satsfiable: $1"
+    echo "Not satisfiable: $1"
     exit 1
 fi
 
