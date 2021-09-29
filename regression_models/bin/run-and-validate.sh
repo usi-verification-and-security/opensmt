@@ -11,8 +11,6 @@ DEFAULTCHECKER=${CHECKER:-~/bin/ModelValidator}
 DEFAULTOUTDIR=./out/
 DEFAULTPRESERVE=false
 
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
 
 usage="Usage: $0 [-h] [-o <osmt2-binary>] [-s <scrambler>] [-c <checker>] [ -d <output-directory> ] [-p <true|false>] <file>"
 
@@ -78,8 +76,14 @@ fi
 [ -x ${checker} ] || \
     (echo "Checker not found or not executable: ${checker}"; exit 1)
 
-tmpin=${TMPDIR}/file.smt2
-tmpout=${TMPDIR}/file.out
+output=${outdir}/$(basename $1 .smt2).out
+tmpin=${TMPDIR}file.smt2
+tmpout=${TMPDIR}file.out
+
+TMPDIR=$(mktemp -d)
+trap "[ ${preserve} == "true" ] && (\
+    printf 'Left the annotated instance the model, and validation output to \n - %s\n - %s\n - %s\n' ${tmpin} ${tmpout} ${output}) \
+        || rm -rf ${output} ${tmpin} ${tmpout} ${TMPDIR}" EXIT
 
 mkdir -p ${outdir}
 
@@ -98,17 +102,17 @@ if [[ $(grep '^sat' ${tmpout}) ]]; then
         ulimit -Sv 4000000;
         ${checker} --smt2 ${tmpin} --model ${tmpout}" \
             > ${output}
-    grep "model_validator_status=VALID" ${output} >/dev/null || \
-        (echo "Invalid model for $1"; exit 1)
+    if (! $(grep "model_validator_status=VALID" ${output} >/dev/null)); then
+        echo "Invalid model: $1";
+        exit 1
+    fi
 else
-    echo "not sat"
+    echo "Not satisfiable: $1"
     exit 1
 fi
 
 if [[ ${preserve} == "true" ]]; then
     echo "Left the annotated instance and the model to ${tmpin} and ${tmpout}"
     echo "Left the model validation output to ${output}"
-else
-    rm -rf ${tmpin} ${tmpout} ${output} ${outdir}
 fi
 
