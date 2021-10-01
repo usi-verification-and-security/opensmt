@@ -1,11 +1,20 @@
-### 2.2.0 (unreleased)
+### 2.2.0 (2021-10-04)
+
+API changes:
+ - LA: Inequalities with multiple arguments are now handled according to SMT-LIB standard.
+ - Logic: Refactoring of methods for term creation (added overloads for taking arguments as r-value reference). 
+
+Bug fixes:
+ - LA: Fix bound store not being cleared properly between consecutive `(check-sat)` commands.
+ - LA: Fix incorrect update of bounds after split.
 
 Build:
  - Switch to C++17.
 
-Bug fixes:
- - LA: Fix incorrect update of bounds after split.
- - LA: Fix bound store not being cleared properly between consecutive `(check-sat)` commands.
+Various improvements:
+ - Interpolation mode now also uses theory propagation.
+ - LA: Arithmetic equalities are now normalized in the same way as inequalities are.
+
 
 ### 2.1.0 (2021-08-16)
 
