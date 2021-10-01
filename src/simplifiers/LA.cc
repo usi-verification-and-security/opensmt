@@ -30,15 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 void LAExpression::initialize(PTRef e, bool do_canonize) {
     assert(logic.isNumEq(e) || logic.isNumLeq(e));
 
-    vector<PTRef> curr_term;
-    vector<opensmt::Real> curr_const;
-
     PTRef lhs = logic.getPterm(e)[0];
     PTRef rhs = logic.getPterm(e)[1];
-    curr_term.push_back(lhs);
-    curr_const.push_back(1);
-    curr_term.push_back(rhs);
-    curr_const.push_back(-1);
+    vector<PTRef> curr_term{lhs, rhs};
+    vector<opensmt::Real> curr_const{1, -1};
 
     while (!curr_term.empty()) {
         PTRef t = curr_term.back();
@@ -50,10 +45,9 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
         // If it is plus, enqueue the arguments with same constant
         if (logic.isNumPlus(t)) {
             const Pterm & term = logic.getPterm(t);
-            for (int i = 0; i < term.size(); i++) {
-                PTRef arg = term[i];
-                curr_term.push_back(arg);
-                curr_const.push_back(c);
+            for (PTRef arg : term) {
+                curr_term.emplace_back(arg);
+                curr_const.emplace_back(c);
             }
         } else if (logic.isNumTimes(t)) {
             // If it is times, then one side must be constant, other
@@ -64,14 +58,12 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             PTRef y = term[1];
             assert(logic.isConstant(x) || logic.isConstant(y));
             if (logic.isConstant(y)) {
-                PTRef tmp = y;
-                y = x;
-                x = tmp;
+                std::swap(x, y);
             }
             opensmt::Real new_c = logic.getNumConst(x);
-            new_c = new_c * c;
-            curr_term.push_back(y);
-            curr_const.push_back(std::move(new_c));
+            new_c *= c;
+            curr_term.emplace_back(y);
+            curr_const.emplace_back(std::move(new_c));
         } else {
             // Otherwise it is a variable, Ite, UF or constant
             assert(logic.isNumVarLike(t) || logic.isConstant(t) || logic.isUF(t));
@@ -102,18 +94,18 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
 
 PTRef LAExpression::toPTRef() const {
     assert(polynome.find(PTRef_Undef) != polynome.end());
-    assert(polynome.size() > 0);
+    assert(not polynome.empty());
     //
     // There is at least one variable
     //
     vec<PTRef> sum_list;
     opensmt::Real constant = 0;
-    for (auto const & term: polynome) {
-        if (term.first == PTRef_Undef) {
-            constant = term.second;
+    for (auto const & [var, factor] : polynome) {
+        if (var == PTRef_Undef) {
+            constant = factor;
         } else {
-            PTRef coeff = logic.mkConst(term.second);
-            PTRef vv = term.first;
+            PTRef coeff = logic.mkConst(factor);
+            PTRef vv = var;
             sum_list.push(logic.mkNumTimes(coeff, vv));
         }
     }
@@ -123,7 +115,7 @@ PTRef LAExpression::toPTRef() const {
     // Return in the form ax + by + ... = -c
     if (r == OP::EQ || r == OP::LEQ) {
         PTRef poly = logic.mkNumPlus(sum_list);
-        constant = -constant;
+        constant.negate();
         PTRef c = logic.mkConst(constant);
         if (r == OP::EQ) {
             return logic.mkEq(poly, c);
@@ -140,7 +132,7 @@ PTRef LAExpression::toPTRef() const {
 
 void LAExpression::print(ostream & os) const {
     assert(polynome.find(PTRef_Undef) != polynome.end());
-    assert(polynome.size() > 0);
+    assert(not polynome.empty());
     if (r == OP::EQ)
         os << "(=";
     else if (r == OP::LEQ)
@@ -151,11 +143,11 @@ void LAExpression::print(ostream & os) const {
     else {
         // There is at least one variable
         os << " (+";
-        for (auto const & term: polynome) {
-            if (term.first == PTRef_Undef)
-                constant = -term.second;
+        for (auto const & [var, factor] : polynome) {
+            if (var == PTRef_Undef)
+                constant = - factor;
             else
-                os << " (* " << term.second << " " << logic.printTerm(term.first) << ")";
+                os << " (* " << factor << " " << logic.printTerm(var) << ")";
         }
         os << ")";
     }
@@ -167,8 +159,7 @@ void LAExpression::print(ostream & os) const {
 opensmt::pair<PTRef, PTRef> LAExpression::getSubst() {
     if (polynome.size() == 1) {
         assert(polynome.find(PTRef_Undef) != polynome.end());
-        PTRef v1 = PTRef_Undef, v2 = PTRef_Undef;
-        return {v1, v2};
+        return {PTRef_Undef, PTRef_Undef};
     }
     // There is at least one variable
     // Solve w.r.t. first variable
@@ -176,18 +167,16 @@ opensmt::pair<PTRef, PTRef> LAExpression::getSubst() {
     vec<PTRef> sum_list;
     opensmt::Real constant = 0;
     PTRef var = PTRef_Undef;
-    for (auto const & term: polynome) {
-        if (term.first == PTRef_Undef) {
-            constant = -term.second;
+    for (auto const & [v, factor] : polynome) {
+        if (v == PTRef_Undef) {
+            constant = - factor;
         } else {
             if (var == PTRef_Undef) {
-                var = term.first;
-                assert(term.second == 1);
+                var = v;
+                assert(factor == 1);
             } else {
-                opensmt::Real coeff = -term.second;
-                PTRef c = logic.mkConst(coeff);
-                PTRef vv = term.first;
-                sum_list.push(logic.mkNumTimes(c, vv));
+                PTRef c =  logic.mkConst(- factor);
+                sum_list.push(logic.mkNumTimes(c, v));
             }
         }
     }
@@ -267,13 +256,14 @@ void LAExpression::addExprWithCoeff(const LAExpression & a, const opensmt::Real 
     //
     // Iterate over expression to add
     //
-    for (auto it = a.polynome.begin(); it != a.polynome.end(); ++it) {
-        auto it2 = polynome.find(it->first);
+    for (auto const & [var, factor] : a.polynome) {
+        auto it2 = polynome.find(var);
         if (it2 != polynome.end()) {
-            it2->second += coeff * it->second;
+            it2->second += coeff * factor;
             if (it2->first != PTRef_Undef && it2->second == 0)
                 polynome.erase(it2);
-        } else
-            polynome[it->first] = coeff * it->second;
+        } else {
+            polynome[var] = coeff * factor;
+        }
     }
 }
