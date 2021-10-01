@@ -179,3 +179,10 @@ target_sources(ProofTest
 target_link_libraries(ProofTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET ProofTest)
 
+add_executable(SplitTest)
+target_sources(SplitTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Splitting.cc"
+        )
+
+target_link_libraries(SplitTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET SplitTest)
