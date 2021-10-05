@@ -19,7 +19,8 @@ bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, 
         auto subs_res = computeSubstitutions(coll_f);
         currentFrame.root = flaFromSubstitutionResult(subs_res);
     }
-    currentFrame.root = rewriteDistinctsKeepTopLevel(getLogic(), currentFrame.root);
+    currentFrame.root = curr == 0 ? rewriteDistinctsKeepTopLevel(getLogic(), currentFrame.root)
+        : rewriteDistincts(getLogic(), currentFrame.root);
     AppearsInUfVisitor(getLogic()).visit(currentFrame.root);
     return true;
 }
