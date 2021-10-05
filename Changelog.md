@@ -1,5 +1,7 @@
 ### 2.2.1 (unreleased)
 
+Bug fixes:
+ - UF: Fix internal error on top-level distinct in incremental mode.
 
 ### 2.2.0 (2021-10-04)
 

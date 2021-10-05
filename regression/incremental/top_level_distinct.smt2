@@ -8,7 +8,6 @@
 (assert (distinct x0 x1 x2))
 (check-sat)
 (pop 1)
-(push 1)
 (assert (= x0 x1))
 (check-sat)
 (exit)
