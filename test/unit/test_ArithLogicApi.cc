@@ -18,9 +18,9 @@ public:
 TEST_F(ArithLogicApiTest, test_LRA) {
     PTRef c1 = lraLogic.mkConst("213");
     PTRef c2 = lraLogic.mkNumVar("a");
-    PTRef t1 = lraLogic.mkNumPlus({c1, c2});
-    PTRef t2 = lraLogic.mkRealPlus({c1, c2});
+    PTRef t1 = lraLogic.mkNumPlus(vec<PTRef>{c1, c2});
+    PTRef t2 = lraLogic.mkRealPlus(vec<PTRef>{c1, c2});
     ASSERT_EQ(t1, t2);
-    ASSERT_THROW(lraLogic.mkRealTimes({c2, c2}), LANonLinearException);
-    ASSERT_THROW(lraLogic.mkIntPlus({c1, c2}), OsmtApiException);
+    ASSERT_THROW(lraLogic.mkRealTimes(vec<PTRef>{c2, c2}), LANonLinearException);
+    ASSERT_THROW(lraLogic.mkIntPlus(vec<PTRef>{c1, c2}), OsmtApiException);
 }

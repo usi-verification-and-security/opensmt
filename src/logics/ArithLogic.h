@@ -151,13 +151,18 @@ public:
     PTRef            mkIntVar         (const char* name) { return mkVar(sort_INT, name); }
     PTRef            mkRealVar        (const char* name) { return mkVar(sort_REAL, name); }
 
-    bool             isBuiltinSort    (SRef sr) const override { return sr == get_sort_Num() || Logic::isBuiltinSort(sr); }
-    bool             isBuiltinConstant(SymRef sr) const override { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
+    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() ||sr == getSort_real() || Logic::isBuiltinSort(sr); }
+    bool             isBuiltinConstant(SymRef sr) const override { return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
 
     bool isNumConst (SymRef sr) const { return Logic::isConstant(sr) && hasSortNum(sr); }
     bool isNumConst (PTRef tr)  const { return isNumConst(getPterm(tr).symb()); }
+    bool isIntConst(SymRef sr) const { return isNumConst(sr) && (sym_store[sr].rsort() == getSort_int()); }
+    bool isIntConst (PTRef tr) const { return isIntConst(getPterm(tr).symb()); }
+    bool isRealConst(SymRef sr) const { return isNumConst(sr) && (sym_store[sr].rsort() == getSort_real()); }
+    bool isRealConst (PTRef tr) const { return isRealConst(getPterm(tr).symb()); }
+
     bool isNonnegNumConst (PTRef tr) const { return isNumConst(tr) && getNumConst(tr) >= 0; }
-    bool hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == get_sort_Num(); }
+    bool hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == getSort_int() || sym_store[sr].rsort() == getSort_real(); }
     bool hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
     virtual const FastRational & getNumConst(PTRef tr) const;
 
@@ -348,27 +353,33 @@ public:
     PTRef mkNumPlus(vec<PTRef> &&);
     PTRef mkNumPlus(PTRef p1, PTRef p2) { return mkNumPlus(vec<PTRef>({p1, p2})); }
     PTRef mkNumPlus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumPlus(std::move(tmp)); }
+    PTRef mkNumPlus(std::vector<PTRef> const & args) { return mkNumPlus(vec<PTRef>(args)); }
 
     PTRef mkIntPlus(vec<PTRef> && args) { checkSortInt(args); return mkNumPlus(std::move(args)); }
     PTRef mkIntPlus(PTRef p1, PTRef p2) { return mkIntPlus(vec<PTRef>{p1, p2}); }
     PTRef mkIntPlus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntPlus(std::move(tmp)); }
+    PTRef mkIntPlus(std::vector<PTRef> const & args) { return mkIntPlus(vec<PTRef>(args)); }
 
     PTRef mkRealPlus(vec<PTRef> && args) { checkSortReal(args); return mkNumPlus(std::move(args)); }
     PTRef mkRealPlus(PTRef p1, PTRef p2) { return mkRealPlus(vec<PTRef>{p1, p2}); }
     PTRef mkRealPlus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumPlus(std::move(tmp)); }
+    PTRef mkRealPlus(std::vector<PTRef> const & args) { return mkRealPlus(vec<PTRef>(args)); }
 
     // Times
     PTRef mkNumTimes(vec<PTRef> && args);
     PTRef mkNumTimes(PTRef p1, PTRef p2) { return mkNumTimes(vec<PTRef>{p1, p2}); }
     PTRef mkNumTimes(vec<PTRef> const &args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumTimes(std::move(tmp)); }
+    PTRef mkNumTimes(std::vector<PTRef> const &args) { return mkNumTimes(vec<PTRef>(args)); }
 
     PTRef mkIntTimes(vec<PTRef> && args) { checkSortInt(args); return mkNumTimes(std::move(args)); }
     PTRef mkIntTimes(PTRef p1, PTRef p2) { return mkIntTimes(vec<PTRef>{p1, p2}); }
     PTRef mkIntTimes(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntTimes(std::move(tmp)); }
+    PTRef mkIntTimes(std::vector<PTRef> const &args) { return mkIntTimes(vec<PTRef>(args)); }
 
     PTRef mkRealTimes(vec<PTRef> && args) { checkSortReal(args); return mkNumTimes(std::move(args)); }
     PTRef mkRealTimes(PTRef p1, PTRef p2) { return mkRealTimes(vec<PTRef>{p1, p2}); }
     PTRef mkRealTimes(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumTimes(std::move(tmp)); }
+    PTRef mkRealTimes(std::vector<PTRef> const &args) { return mkRealTimes(vec<PTRef>(args)); }
 
     // Div
     PTRef mkIntDiv(vec<PTRef> && args);
@@ -380,7 +391,8 @@ public:
     PTRef mkRealDiv(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealDiv(std::move(tmp)); }
 
     // Mod
-    PTRef mkIntMod(PTRef a, PTRef b);
+    PTRef mkIntMod(vec<PTRef> && args);
+    PTRef mkIntMod(PTRef first, PTRef second) { return mkIntMod(vec<PTRef>{first, second}); }
 
     // Abs
     PTRef mkNumAbs(PTRef p);
@@ -388,56 +400,44 @@ public:
     PTRef mkRealAbs(PTRef p) { checkSortReal(p); return mkNumAbs(p); }
 
     // Leq
-    PTRef mkNumLeq(vec<PTRef> && args);
-    PTRef mkNumLeq(PTRef lhs, PTRef rhs) { return mkNumLeq(vec<PTRef>{lhs, rhs}); }
-    PTRef mkNumLeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumLeq(std::move(tmp)); };
+    PTRef mkNumLeq(vec<PTRef> const & args);
+    PTRef mkNumLeq(PTRef arg1, PTRef arg2) { return mkBinaryLeq(arg1, arg2); }
 
-    PTRef mkIntLeq(vec<PTRef> && args) { checkSortInt(args); return mkNumLeq(std::move(args)); }
-    PTRef mkIntLeq(PTRef arg1, PTRef arg2) { return mkIntLeq(vec<PTRef>{arg1, arg2}); }
-    PTRef mkIntLeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntLeq(std::move(tmp)); }
+    PTRef mkIntLeq(vec<PTRef> const & args) { checkSortInt(args); return mkNumLeq(args); };
+    PTRef mkIntLeq(PTRef arg1, PTRef arg2) { checkSortInt(arg1); checkSortInt(arg2); return mkBinaryLeq(arg1, arg2); }
 
-    PTRef mkRealLeq(vec<PTRef> && args) { checkSortReal(args); return mkNumLeq(std::move(args)); }
-    PTRef mkRealLeq(PTRef arg1, PTRef arg2) { return mkRealLeq(vec<PTRef>{arg1, arg2}); }
-    PTRef mkRealLeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealLeq(std::move(tmp)); }
+    PTRef mkRealLeq(vec<PTRef> const & args) { checkSortReal(args); return mkNumLeq(args); };
+    PTRef mkRealLeq(PTRef arg1, PTRef arg2) { checkSortReal(arg1); checkSortReal(arg2); return mkBinaryLeq(arg1, arg2); }
 
     // Geq
-    PTRef mkNumGeq(vec<PTRef> && args);
-    PTRef mkNumGeq(PTRef arg1, PTRef arg2) { return mkNumGeq(vec<PTRef>{arg1, arg2}); }
-    PTRef mkNumGeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGeq(std::move(tmp)); }
+    PTRef mkNumGeq(vec<PTRef> const & args);
+    PTRef mkNumGeq(PTRef arg1, PTRef arg2) { return mkBinaryGeq(arg1, arg2); }
 
-    PTRef mkIntGeq(vec<PTRef> && args) { checkSortInt(args); return mkNumGeq(std::move(args)); }
-    PTRef mkIntGeq(PTRef arg1, PTRef arg2) { return mkIntGeq(vec<PTRef>{arg1, arg2}); }
-    PTRef mkIntGeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntGeq(std::move(tmp)); }
+    PTRef mkIntGeq(vec<PTRef> const & args) { checkSortInt(args); return mkNumGeq(args); }
+    PTRef mkIntGeq(PTRef arg1, PTRef arg2) { checkSortInt(arg1); checkSortInt(arg2); return mkBinaryGeq(arg1, arg2); }
 
-    PTRef mkRealGeq(vec<PTRef> && args) { checkSortReal(args); return mkNumGeq(std::move(args)); }
-    PTRef mkRealGeq(PTRef arg1, PTRef arg2) { return mkNumGeq(vec<PTRef>{arg1, arg2}); }
-    PTRef mkRealGeq(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealGeq(std::move(tmp)); }
+    PTRef mkRealGeq(vec<PTRef> const & args) { checkSortReal(args); return mkNumGeq(args); }
+    PTRef mkRealGeq(PTRef arg1, PTRef arg2) { checkSortReal(arg1); checkSortReal(arg2); return mkBinaryGeq(arg1, arg2); }
 
     // Lt
-    PTRef mkNumLt(vec<PTRef> && args);
-    PTRef mkNumLt(PTRef arg1, PTRef arg2) { return mkNumLt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkNumLt(vec<PTRef> const & args){ vec<PTRef> tmp; args.copyTo(tmp); return mkNumLt(std::move(tmp)); }
+    PTRef mkNumLt(vec<PTRef> const & args);
+    PTRef mkNumLt(PTRef arg1, PTRef arg2) { return mkBinaryLt(arg1, arg2); }
 
-    PTRef mkIntLt(vec<PTRef> && args) { checkSortInt(args); return mkNumLt(std::move(args)); }
-    PTRef mkIntLt(PTRef arg1, PTRef arg2) { return mkNumLt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkIntLt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntLt(std::move(tmp)); }
+    PTRef mkIntLt(vec<PTRef> const & args) { checkSortInt(args); return mkNumLt(args); }
+    PTRef mkIntLt(PTRef arg1, PTRef arg2) { checkSortInt(arg1); checkSortInt(arg2); return mkBinaryLt(arg1, arg2); }
 
-    PTRef mkRealLt(vec<PTRef> && args) { checkSortReal(args); return mkNumLt(std::move(args)); }
-    PTRef mkRealLt(PTRef arg1, PTRef arg2) { return mkRealLt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkRealLt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealLt(std::move(tmp)); }
+    PTRef mkRealLt(vec<PTRef> const & args) { checkSortReal(args); return mkNumLt(args); }
+    PTRef mkRealLt(PTRef arg1, PTRef arg2) { checkSortReal(arg1); checkSortReal(arg2); return mkBinaryLt(arg1, arg2); }
 
     // Gt
-    PTRef mkNumGt(vec<PTRef> && args);
-    PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkNumGt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkNumGt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkNumGt(std::move(tmp)); }
+    PTRef mkNumGt(vec<PTRef> const & args);
+    PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkBinaryGt(arg1, arg2); }
 
-    PTRef mkIntGt(vec<PTRef> && args) { checkSortInt(args); return mkNumGt(std::move(args)); }
-    PTRef mkIntGt(PTRef arg1, PTRef arg2) { return mkNumGt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkInt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntGt(std::move(tmp)); }
+    PTRef mkIntGt(vec<PTRef> const & args) { checkSortInt(args); return mkNumGt(args); }
+    PTRef mkIntGt(PTRef arg1, PTRef arg2) { checkSortInt(arg1); checkSortInt(arg2); return mkBinaryGt(arg1, arg2); }
 
-    PTRef mkRealGt(vec<PTRef> && args) { checkSortReal(args); return mkNumGt(std::move(args)); }
-    PTRef mkRealGt(PTRef arg1, PTRef arg2) { return mkNumGt(vec<PTRef>{arg1, arg2}); }
-    PTRef mkRealGt(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealGt(std::move(tmp)); }
+    PTRef mkRealGt(vec<PTRef> const & args) { checkSortReal(args); return mkNumGt(args); }
+    PTRef mkRealGt(PTRef arg1, PTRef arg2) { checkSortReal(arg1); checkSortReal(arg2); return mkBinaryGt(arg1, arg2); }
 
     virtual bool isNegated(PTRef tr) const;
     virtual bool isLinearTerm(PTRef tr) const;

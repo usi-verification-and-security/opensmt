@@ -436,7 +436,7 @@ PTRef ArithLogic::mkNumNeg(PTRef tr)
         return tr_n;
     }
     PTRef mo = this->getTerm_NumMinusOne();
-    return mkNumTimes({mo, tr});
+    return mkNumTimes(vec<PTRef>{mo, tr});
 }
 
 PTRef ArithLogic::mkConst(const opensmt::Number& c)
@@ -609,7 +609,7 @@ PTRef ArithLogic::mkBinaryGt(PTRef lhs, PTRef rhs) {
     return mkNot(mkBinaryLeq(lhs, rhs));
 }
 
-PTRef ArithLogic::mkNumLeq(vec<PTRef> && args) {
+PTRef ArithLogic::mkNumLeq(vec<PTRef> const & args) {
     if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLeq"); }
     if (args.size() == 2) {
         return mkBinaryLeq(args[0], args[1]);
@@ -622,7 +622,7 @@ PTRef ArithLogic::mkNumLeq(vec<PTRef> && args) {
     return mkAnd(std::move(binaryInequalities));
 }
 
-PTRef ArithLogic::mkNumGeq(vec<PTRef> && args) {
+PTRef ArithLogic::mkNumGeq(vec<PTRef> const & args) {
     if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGeq"); }
     if (args.size() == 2) {
         return mkBinaryGeq(args[0], args[1]);
@@ -635,7 +635,7 @@ PTRef ArithLogic::mkNumGeq(vec<PTRef> && args) {
     return mkAnd(std::move(binaryInequalities));
 }
 
-PTRef ArithLogic::mkNumLt(vec<PTRef> && args)
+PTRef ArithLogic::mkNumLt(vec<PTRef> const & args)
 {
     if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLt"); }
     if (args.size() == 2) {
@@ -649,7 +649,7 @@ PTRef ArithLogic::mkNumLt(vec<PTRef> && args)
     return mkAnd(std::move(binaryInequalities));
 }
 
-PTRef ArithLogic::mkNumGt(vec<PTRef> && args)
+PTRef ArithLogic::mkNumGt(vec<PTRef> const & args)
 {
     if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGt"); }
     if (args.size() == 2) {
@@ -689,16 +689,18 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     return Logic::mkBinaryEq(lhs, rhs);
 }
 
-PTRef ArithLogic::mkIntMod(const PTRef a, const PTRef b) {
-    checkSortInt(a);
-    checkSortInt(b);
+PTRef ArithLogic::mkIntMod(vec<PTRef> && args) {
+    if (args.size() != 2) { throw OsmtApiException("Modulo needs exactly two arguments"); }
+    PTRef dividend = args[0];
+    PTRef divisor = args[1];
+    checkSortInt(dividend);
+    checkSortInt(divisor);
 
-    PTRef dividend = a;
-    PTRef divisor = b;
-    if (not isNumConst(divisor) and not isNumConst(dividend)) { throw OsmtApiException("Divisor or dividend must be constant in linear logic"); }
+
+    if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
     if (isNumZero(divisor)) { throw ArithDivisionByZeroException(); }
 
-    if (isConstant(divisor) and isConstant(dividend)) {
+    if (isConstant(dividend)) {
         auto const& dividendValue = getNumConst(dividend);
         auto const& divisorValue = getNumConst(divisor);
         assert(dividendValue.isInteger() and divisorValue.isInteger());
