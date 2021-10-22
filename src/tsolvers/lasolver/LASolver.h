@@ -50,7 +50,7 @@ class LASolverStats: public TSolverStats
 class LASolver: public TSolver
 {
 
-protected:
+private:
     struct DecEl { PtAsgn asgn; int dl; };
 
     ArithLogic&          logic;
@@ -86,7 +86,6 @@ protected:
     void setBound(PTRef leq);
     bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
 
-protected:
     PTRef getVarPTRef(LVRef v) const {
         return laVarMapper.getVarPTRef(v);
     }
@@ -135,8 +134,8 @@ private:
 
     opensmt::Number getNum(PTRef);
 
-    virtual bool isIntVar(LVRef v) const { return int_vars_map.has(v); }
-    virtual void markVarAsInt(LVRef v);
+    bool isIntVar(LVRef v) const { return int_vars_map.has(v); }
+    void markVarAsInt(LVRef v);
     FastRational getInt(PTRef tr);
 
     // Compute the values for an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
@@ -166,10 +165,7 @@ private:
     void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
 
 
-    Delta evalSum(PTRef tr) const;
     std::vector<opensmt::Real> concrete_model;              // Save here the concrete model for the vars indexed by Id
-//    const Delta overBound(LVRef v);
-//    bool isModelOutOfBounds(LVRef v) const;
 
     opensmt::Real evaluateTerm(PTRef tr);
 
@@ -196,8 +192,6 @@ private:
 
     // Debug stuff
     void isProperLeq(PTRef tr);  // The Leq term conforms to the assumptions of its form.  Only asserts.
-    void crashInconsistency(LVRef v, int line);
-
     void deduce(LABoundRef bound_prop);
 };
 
