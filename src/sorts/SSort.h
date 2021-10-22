@@ -40,9 +40,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct SRef {
     uint32_t x;
-    SRef & operator= (uint32_t const v) { x = v; return *this; }
-    inline friend bool operator== (const SRef& a1, const SRef& a2) {return a1.x == a2.x; }
-    inline friend bool operator!= (const SRef& a1, const SRef& a2) {return a1.x != a2.x; }
+    SRef & operator= (uint32_t v) { x = v; return *this; }
+    inline friend bool operator== (SRef a1, SRef a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (SRef a1, SRef a2) {return a1.x != a2.x; }
 };
 
 const static struct SRef SRef_Undef = {INT32_MAX};
