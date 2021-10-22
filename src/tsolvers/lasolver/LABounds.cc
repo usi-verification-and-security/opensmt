@@ -1,5 +1,6 @@
 #include "LABounds.h"
-#include "ArithLogic.h"
+#include "Map.h"
+#include "Sort.h"
 
 LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
     : type(type.t)

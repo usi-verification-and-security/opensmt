@@ -38,7 +38,8 @@ PTRef rewriteDivMod(TLogic &, PTRef fla) { return fla; }
 
 template<>
 PTRef rewriteDivMod<ArithLogic>(ArithLogic & logic, PTRef fla) {
-    return DivModRewriter(logic).rewrite(fla);
+    // Real logic cannot have div and mod
+    return logic.isRealLogic() ? fla : DivModRewriter(logic).rewrite(fla);
 }
 
 PTRef rewriteAbs(ArithLogic & logic, PTRef fla) {

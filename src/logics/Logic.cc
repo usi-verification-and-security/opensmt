@@ -811,7 +811,6 @@ PTRef Logic::mkConst(const char* name)
 
 
 PTRef Logic::mkVar(SRef s, const char* name) {
-    vec<SRef> sort_args;
     SymRef sr = newSymb(name, {s});
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
