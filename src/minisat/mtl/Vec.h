@@ -100,8 +100,8 @@ public:
     T&       last  (void)              { return data[sz-1]; }
 
     // Vector interface:
-    const T& operator [] (int const index) const { return data[index]; }
-    T&       operator [] (int const index)       { return data[index]; }
+    const T& operator [] (int index) const { return data[index]; }
+    T&       operator [] (int index)       { return data[index]; }
 
     // methods for STL compatibility
     T*          begin()       { return data; }
