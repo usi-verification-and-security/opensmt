@@ -34,8 +34,8 @@ LABoundStore::printBound(LABoundRef br) const
     free(v_str_lvr);
     const Delta & d = ba[br].getValue();
 
-    opensmt::Real r = d.R();
-    opensmt::Real s = d.D();
+    opensmt::Real const & r = d.R();
+    opensmt::Real const & s = d.D();
     BoundT type = ba[br].getType();
     if ((type == bound_l) && (s == 0))
         written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
