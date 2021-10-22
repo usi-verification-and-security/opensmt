@@ -3,6 +3,7 @@
 #include "FarkasInterpolator.h"
 #include "LA.h"
 #include "ModelBuilder.h"
+#include "LIAInterpolator.h"
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
@@ -123,6 +124,9 @@ void LASolver::clearSolver()
     LABoundRefToLeqAsgn.clear();
     LeqToLABoundRefPair.clear();
 
+    cuts.clear();
+    int_vars.clear();
+    int_vars_map.clear();
     // TODO: clear statistics
 //    this->tsolver_stats.clear();
 }
@@ -208,6 +212,22 @@ opensmt::Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
 }
 
+void LASolver::notifyVar(LVRef v) {
+    assert(logic.isNumVarOrIte(getVarPTRef(v)));
+    if (logic.hasSortInt(getVarPTRef(v))) {
+        markVarAsInt(v);
+    }
+}
+
+void LASolver::markVarAsInt(LVRef v) {
+    if (!int_vars_map.has(v)) {
+        int_vars_map.insert(v, true);
+        int_vars.push(v);
+    }
+    while (static_cast<unsigned>(cuts.size()) <= getVarId(v)) {
+        cuts.emplace_back(0);
+    }
+}
 
 bool LASolver::hasVar(PTRef expr) {
     expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
@@ -331,6 +351,77 @@ void LASolver::informNewSplit(PTRef tr)
     laVarMapper.addLeqVar(tr, v);
     updateBound(tr);
 }
+
+TRes LASolver::checkIntegersAndSplit() {
+
+    bool nonint_models = false;  // Keep track whether non-integer models are seen
+
+    for (LVRef x : int_vars) {
+
+        if (!isModelInteger(x)) {
+            nonint_models = true;
+            //Prepare the variable to store a splitting value
+            opensmt::Real c;
+
+            // if val of int variable is not int, set it to integer by getting floor (c) and ceiling (c+1)
+            // if real part of int var is int, then delta must be non-zero
+            Delta x_val = simplex.getValuation(x);
+            if (!x_val.R().isInteger()) {
+                c = x_val.R().floor();
+            } else { //but if the value from LRA solver returned is integer(which is here subset of real), then we consider delta part
+                assert(x_val.D() != 0);
+                if (x_val.D() < 0) {
+                    c = x_val.R() - 1;
+                } else {
+                    c = x_val.R();
+                }
+            }
+
+            // We might have this blocked already, and then the solver should essentially return "I don't know, please go ahead".
+            if (cuts[getVarId(x)].find(c) != cuts[getVarId(x)].end()) {
+                continue;
+            }
+            cuts[getVarId(x)][c] = true;
+
+            // Check if integer splitting is possible for the current variable
+            if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
+
+                explanation.push(getAsgnByBound(simplex.readLBoundRef(x)));
+                explanation.push(getAsgnByBound(simplex.readUBoundRef(x)));
+                //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
+                setStatus(UNSAT);
+                return TRes::UNSAT;
+            }
+
+            //constructing new constraint
+            //x <= c || x >= c+1;
+            PTRef upperBound = logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c));
+            PTRef lowerBound = logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1));
+            PTRef constr = logic.mkOr(upperBound, lowerBound);
+            //printf("LIA solver constraint %s\n", logic.pp(constr));
+
+            splitondemand.push(constr);
+            setStatus(NEWSPLIT);
+            return TRes::SAT;
+        }
+
+    }
+    if (nonint_models) {// We could not block these, so we tell the solver that we don't know the satisfiability.
+        setStatus(UNKNOWN);
+        return TRes::UNKNOWN;
+    }
+    else {
+        setStatus(SAT);
+        return TRes::SAT;
+    }
+}
+
+void LASolver::getNewSplits(vec<PTRef>& splits) {
+    splitondemand.copyTo(splits);
+    splitondemand.clear();
+    setStatus(SAT);
+}
+
 
 //
 // Push the constraint into the solver and increase the level
@@ -777,24 +868,24 @@ lbool LASolver::getPolaritySuggestion(PTRef ptref) const {
 }
 
 TRes LASolver::check(bool complete) {
-
-    if (check_simplex(complete))
-        return TRes::SAT;
-    else
-        return TRes::UNSAT;
-
+    bool rval = check_simplex(complete);
+    if (complete && rval) {
+        return checkIntegersAndSplit();
+    }
+    return rval ? TRes::SAT : TRes::UNSAT;
 }
 
-//
-// Compute interpolants for the conflict
-//
-PTRef
-LASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
-    assert(status == UNSAT);
-    vec<PtAsgn> explCopy;
-    explanation.copyTo(explCopy);
-    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
-        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+bool LASolver::isModelInteger(LVRef v) const
+{
+    Delta val = simplex.getValuation(v);
+    return !( val.hasDelta() || !val.R().isInteger() );
+}
+
+FastRational LASolver::getInt(PTRef r) {
+    return logic.getNumConst(r);
+}
+
+PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const {
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
@@ -802,9 +893,26 @@ LASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t>
     else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
     else {
-        assert(false); // Incoorrect value in config
+        assert(false); // Incorrect value in config
         return interpolator.getFarkasInterpolant();
     }
 }
 
+//
+// Compute interpolants for the conflict
+//
+PTRef
+LASolver::getRealInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
+    assert(status == UNSAT);
+    vec<PtAsgn> explCopy;
+    explanation.copyTo(explCopy);
+    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+    return interpolateUsingEngine(interpolator);
+}
 
+PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
+    assert(status == UNSAT);
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
+    return interpolateUsingEngine(interpolator);
+}

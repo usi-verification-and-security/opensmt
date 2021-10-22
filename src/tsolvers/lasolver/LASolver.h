@@ -11,6 +11,7 @@
 #include "Tableau.h"
 #include "Polynomial.h"
 #include "Simplex.h"
+#include "FarkasInterpolator.h"
 
 #include <unordered_map>
 #include "LAVarMapper.h"
@@ -99,6 +100,7 @@ public:
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
+    void getNewSplits(vec<PTRef>& splits) override;
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
     void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     TRes  check              (bool) override;                    // Checks the satisfiability of current constraints
@@ -108,8 +110,8 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
     lbool getPolaritySuggestion(PTRef) const;
-    PTRef getInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
-
+    PTRef getRealInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
+    PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);
 
     // Return the conflicting bounds
     void        getConflict(bool, vec<PtAsgn>& e) override;
@@ -118,7 +120,11 @@ public:
     bool        isValid(PTRef tr) override;
 
 
-protected:
+private:
+
+    Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
+    vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
+    std::vector<std::unordered_map<opensmt::Real, bool, FastRationalHash> > cuts;
 
     LABoundStore::BoundInfo addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);
@@ -129,8 +135,10 @@ protected:
 
     opensmt::Number getNum(PTRef);
 
-    virtual bool isIntVar(LVRef v) const { return false; }
-    virtual void markVarAsInt(LVRef v) {/* do nothing as default */}
+    virtual bool isIntVar(LVRef v) const { return int_vars_map.has(v); }
+    virtual void markVarAsInt(LVRef v);
+    FastRational getInt(PTRef tr);
+
     // Compute the values for an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
     LABoundStore::BoundValuePair getBoundsValue(LVRef v, const Real & c, bool strict);
     LABoundStore::BoundValuePair getBoundsValueForIntVar(const Real & c, bool strict);
@@ -140,7 +148,11 @@ protected:
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
-    virtual void notifyVar(LVRef) {}                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
+    void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
+
+    TRes checkIntegersAndSplit();
+    bool isModelInteger (LVRef v) const;
+
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
     void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
@@ -177,6 +189,8 @@ protected:
         return out;
     }
     void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
+
+    PTRef interpolateUsingEngine(FarkasInterpolator &) const;
 
     inline int     verbose                       ( ) const { return config.verbosity(); }
 

@@ -48,5 +48,5 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
 }
 
 LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
-    : farkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs), std::move(liaExplanations.labels))
+    : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs), std::move(liaExplanations.labels))
     { }

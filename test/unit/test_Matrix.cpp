@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <Vec.h>
 #include <Sort.h>
-#include <liasolver/Matrix.h>
+#include <lasolver/Matrix.h>
 #include <ArithLogic.h>
 
 using Real = opensmt::Real;

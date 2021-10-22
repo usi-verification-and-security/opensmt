@@ -2,7 +2,7 @@
 // Created by prova on 24.08.18.
 //
 
-#include <liasolver/Matrix.h>
+#include "Matrix.h"
 
 LAVecRef
 LAVecStore::getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den)
@@ -666,9 +666,8 @@ LAMatrixStore::compute_hnf(MId &H, const MId A){//, int &dim) {//maybe no need f
                     x = f.get_den();
                     y = f.get_num();
 
-                    for (int j = 1; j <= Hm.nCols(); j++) {
-
-                        MM(H, i, j) = x * MM(H, i, j) - y * MM(H, k, j);
+                    for (int l = 1; l <= Hm.nCols(); j++) {
+                        MM(H, i, l) = x * MM(H, i, l) - y * MM(H, k, l);
                     }
 
                 } else {
