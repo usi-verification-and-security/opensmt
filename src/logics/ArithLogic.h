@@ -162,9 +162,15 @@ public:
     bool isRealConst (PTRef tr) const { return isRealConst(getPterm(tr).symb()); }
 
     bool isNonnegNumConst (PTRef tr) const { return isNumConst(tr) && getNumConst(tr) >= 0; }
-    bool hasSortNum(SymRef sr) const { return sym_store[sr].rsort() == getSort_int() || sym_store[sr].rsort() == getSort_real(); }
-    bool hasSortNum(PTRef tr)  const { return hasSortNum(getPterm(tr).symb()); }
-    virtual const FastRational & getNumConst(PTRef tr) const;
+
+    bool hasSortInt(SymRef sr) const { return sym_store[sr].rsort() == getSort_int(); }
+    bool hasSortInt(PTRef tr)  const { return hasSortInt(getPterm(tr).symb()); }
+    bool hasSortReal(SymRef sr) const { return sym_store[sr].rsort() == getSort_real(); }
+    bool hasSortReal(PTRef tr)  const { return hasSortReal(getPterm(tr).symb()); }
+    bool hasSortNum(SymRef sr) const { return hasSortInt(sr) || hasSortReal(sr); }
+    bool hasSortNum(PTRef tr)  const { return hasSortInt(tr) || hasSortReal(tr); }
+
+    const FastRational & getNumConst(PTRef tr) const;
 
     bool           isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
     bool           isTheoryEquality(PTRef tr) const override { return isNumEq(tr); }
