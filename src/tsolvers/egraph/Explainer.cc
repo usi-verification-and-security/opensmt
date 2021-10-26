@@ -33,8 +33,6 @@
 */
 void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
 {
-    assert(getEnode(x).isTerm());
-    assert(getEnode(y).isTerm());
     assert(getEnode(x).getRoot() != getEnode(y).getRoot());
 
     // They must be different because the merge hasn't occured yet
@@ -214,35 +212,16 @@ void Explainer::enqueueArguments(ERef x, ERef y, PendingQueue &exp_pending) {
     if (x == y) {
         return;
     }
-    assert(getEnode(x).isTerm() && getEnode(y).isTerm());
-    assert(getEnode(x).getCar() == getEnode(y).getCar());
-
     // Recursively enqueue the explanations for the args
+    Enode const & xnode = getEnode(x);
+    Enode const & ynode = getEnode(y);
 
-    ERef ERef_Nil = store.get_Nil();
-    std::pair<ERef,ERef> ERefNilPair{ERef_Nil,ERef_Nil};
-
-    auto getNext = [this, ERef_Nil](ERef x, ERef y) -> std::pair<ERef,ERef> {
-        (void)ERef_Nil; assert(x != ERef_Nil and y != ERef_Nil);
-        return {this->getEnode(x).getCdr(), this->getEnode(y).getCdr()};
-    };
-
-    std::pair<ERef,ERef> xyPair;
-    while ((xyPair = getNext(x, y)) != ERefNilPair) {
-        x = xyPair.first;
-        y = xyPair.second;
-        ERef xptr = getEnode(x).getCar();
-        ERef yptr = getEnode(y).getCar();
-        assert(getEnode(xptr).isTerm());
-        assert(getEnode(yptr).isTerm());
-#ifdef VERBOSE_EUFEX
-        cerr << "in loop pushing " << toString(xptr) << " and " << toString(yptr) << endl;
-#endif
-        if (xptr != yptr) {
-            exp_pending.push({xptr, yptr});
-#ifdef EXPLICIT_CONGRUENCE_EXPLANATIONS
-            congruences.push({store.getPTRef(xptr), store.getPTRef(yptr)});
-#endif
+    assert(xnode.getSize() == ynode.getSize());
+    for (uint32_t i = 0; i < xnode.getSize(); ++i) {
+        ERef xchild = xnode[i];
+        ERef ychild = ynode[i];
+        if (xchild != ychild) {
+            exp_pending.push({xchild, ychild});
         }
     }
 }
@@ -265,7 +244,7 @@ PtAsgn Explainer::explainEdge(const ERef v, const ERef p, PendingQueue &exp_pend
         // like (v)f(a1,...,an) (p)f(b1,...,bn), and that
         // a1,...,an = b1,...bn. For each pair ai,bi
         // we have therefore to compute the reasons
-        assert(getEnode(v).getCar() == getEnode(p).getCar());
+        assert(getEnode(v).getSymbol() == getEnode(p).getSymbol());
         enqueueArguments(v, p, exp_pending);
     }
     makeUnion(v, p);
@@ -439,8 +418,6 @@ PtAsgn InterpolatingExplainer::explainEdge(ERef from, ERef to, PendingQueue &exp
     PtAsgn expl = Explainer::explainEdge(from, to, exp_pending, dc);
     const Enode& from_node = getEnode(from);
     const Enode& to_node = getEnode(to);
-    assert(from_node.isTerm());
-    assert(to_node.isTerm());
     cgraph->addCNode( from_node.getTerm() );
     cgraph->addCNode( to_node.getTerm() );
     cgraph->addCEdge( from_node.getTerm(), to_node.getTerm(), from_node.getExpReason().tr);

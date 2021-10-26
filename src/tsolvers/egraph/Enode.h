@@ -2,7 +2,7 @@
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
 OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+                          2008 - 2012 Roberto Bruttomesso
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CgTypes.h"
 #include "SigMap.h"
 
-//typedef RegionAllocator<uint32_t>::Ref ERef;
 
 struct ERef {
     uint32_t x;
@@ -48,7 +47,31 @@ struct ERef {
 };
 static struct ERef ERef_Undef = {INT32_MAX};
 
+struct UseVectorIndex {
+    int32_t x;
+    inline friend bool operator== (const UseVectorIndex& a1, const UseVectorIndex& a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (const UseVectorIndex& a1, const UseVectorIndex& a2) {return a1.x != a2.x; }
+    static UseVectorIndex NoIndex;
+    static UseVectorIndex DuplicateIndex;
+};
+
+
+
+static_assert(sizeof(ERef) == sizeof(UseVectorIndex));
+
 inline void swap(ERef & y, ERef & z) { ERef tmp = y; y = z; z = tmp; }
+
+class ERefSpan {
+    ERef * beg;
+    uint32_t size;
+public:
+    ERefSpan(ERef* beg, uint32_t size) : beg{beg}, size{size} {}
+    uint32_t getSize() const { return size; }
+    ERef operator[](uint32_t index) { return *(beg + index); }
+};
+
+using CgId = uint32_t;
+
 
 //
 // Data structure used to store forbid lists
@@ -59,152 +82,80 @@ struct ELRef {
     void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const ELRef& a1, const ELRef& a2) {return a1.x == a2.x; }
     inline friend bool operator!= (const ELRef& a1, const ELRef& a2) {return a1.x != a2.x; }
-//    struct ELRef operator() (uint32_t v) { x = v; return *this;}
-//    explicit ELRef(uint32_t v) { x = v; }
 };
 
-// FIXME this is uninitialized right now.
 static struct ELRef ELRef_Undef = {INT32_MAX};
-
-class Extra {
-    struct {
-        ERef        car;
-        ERef        cdr;
-        ERef        next;           // Next node in the class
-        int         size;           // Size of the eq class
-        int         carParentIndex;
-        int         cdrParentIndex;
-    } lst;
-    struct {
-        PTRef       pterm;          // The corresponding pterm
-        ELRef       forbid;         // List of unmergeable Enodes
-        dist_t      dist_classes;   // The bit vector for distinction classes
-        int         dist_index;     // My distinction index
-        // fields related to explanation
-        PtAsgn      exp_reason;
-        ERef        exp_parent;
-        ERef        exp_root;
-        int         exp_time_stamp;
-    } trm;
-    friend class Enode;
-    friend class EnodeAllocator;
-};
 
 class EnodeAllocator;
 
-typedef uint32_t CgId;
-
-class Enode
+class Enode final
 {
 private:
-    // Defined for list and term Enodes
-    void setCar  (ERef er)       { assert(type() != et_symb); ex->lst.car = er; }
-    void setCdr  (ERef er)       { assert(type() != et_symb); ex->lst.cdr = er; }
-    void setPterm(PTRef tr)      { assert(isTerm()); ex->trm.pterm = tr; }
-
-protected:
     static uint32_t cgid_ctr;
 
-    struct {
-        unsigned type      : 2;
-        enodeid_t id       : 30; } header;
+    ERef    root;           // The root of this enode's equivalence class
+    cgId    cid;            // The congruence id of the enode (never changes)
+    ERef    eq_next;           // Next node in this enode's equivalence class
+    int     eq_size;           // Size of this enode's equivalence class
+    PTRef   pterm;          // The corresponding pterm
+    ELRef   forbid;         // List of unmergeable Enodes
+    dist_t  dist_classes;   // The bit vector for distinction classes
 
-    static_assert(sizeof(SymRef) == sizeof(ERef), "Expected size of types does not match");
-    union {
-        SymRef symb;
-        ERef   root;
-    };
+    // fields related to explanation
+    PtAsgn      exp_reason;
+    ERef        exp_parent;
+    ERef        exp_root;
+    int         exp_time_stamp;
 
-    ERef        er;             // Either my eref or reference to the relocated one
-    cgId        cid;            // The congruence id of the enode (defined also for symbols)
+    // Term representation
+    SymRef symb;
+    uint32_t argSize;
     // Must be last field!
-    Extra       ex[0];          // Enode specific data
+    ERef args[0];
 
     friend class EnodeAllocator;
     friend class EnodeStore;
 
 public:
-    static ERef ERef_Nil;
-    enum en_type { et_symb, et_list, et_term };
+    Enode(EnodeAllocator& ea, SymRef symbol, ERefSpan children, ERef myRef, PTRef ptr);
 
-    // For symbols
-    Enode(SymRef symb_, ERef er_, enodeid_t id_)
-        : header  ({et_symb, id_})
-        , symb     (symb_)
-        , er      (er_)
-        , cid     (cgid_ctr++) {}
+    CgId  getCid() const { return cid; }
+    ERef getRoot() const { return root; }
+    void setRoot(ERef r) { root = r; }
 
-    // For lists and terms
-    Enode(ERef car_, ERef cdr_, EnodeAllocator& ea, ERef er_, enodeid_t id_, PTRef ptr = PTRef_Undef);
-    // Defined for all Enodes
+    ERef getEqNext () const {  return eq_next; }
+    void setEqNext (ERef n) { eq_next = n; }
+    int  getEqSize () const { return eq_size; }
+    void setEqSize (int i) { eq_size = i; }
 
-    en_type type        ()        const { return (en_type)header.type; }
-    uint32_t getId      ()        const { return header.id; }
+    PtAsgn getExpReason       () const { return exp_reason; }
+    ERef   getExpParent       () const { return exp_parent; }
+    ERef   getExpRoot         () const { return exp_root; }
+    int    getExpTimeStamp    () const { return exp_time_stamp; }
 
-    bool  isList        ()        const { return (en_type)header.type == et_list; }
-    bool  isTerm        ()        const { return (en_type)header.type == et_term; }
-    bool  isSymb        ()        const { return (en_type)header.type == et_symb; }
+    void setExpReason     (PtAsgn r)     { exp_reason = r; }
+    void setExpParent     (ERef r)       { exp_parent = r; }
+    void setExpRoot       (ERef r)       { exp_root   = r; }
+    void setExpTimeStamp  (const int t)  { exp_time_stamp = t; }
 
-    CgId  getCid        ()        const { return cid; }
-    void  setCid        (CgId id)       { cid = id; }
+    PTRef getTerm       ()        const { return pterm; }
+    ELRef getForbid     ()        const { return forbid; }
+    void  setForbid     (ELRef r)       { forbid = r; }
+    void  setDistClasses( const dist_t& d) { dist_classes = d; }
+    dist_t getDistClasses() const { return dist_classes; }
 
-    // Defined for symbol enodes
-    SymRef getSymb()             const { assert(type() == et_symb); return symb; }
-
-    ERef getCar()                const { assert(type() != et_symb); return ex->lst.car; }
-    ERef getCdr()                const { assert(type() != et_symb); return ex->lst.cdr; }
-    ERef getRoot()               const { if (isSymb()) return er; else return root; }
-    void setRoot       (ERef r)        { assert(type() != et_symb); root = r; }
-
-    void setCarParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.carParentIndex = idx; }
-    void setCdrParentIndex(int32_t idx) { assert(type() != et_symb); ex->lst.cdrParentIndex = idx; }
-    int32_t getCarParentIndex() const   { assert(type() != et_symb); return ex->lst.carParentIndex; }
-    int32_t getCdrParentIndex() const   { assert(type() != et_symb); return ex->lst.cdrParentIndex; }
-
-    ERef getNext       ()        const { assert(type() != et_symb); return ex->lst.next; }
-    void setNext       (ERef n)        { assert(type() != et_symb); ex->lst.next = n; }
-    int  getSize       ()        const { assert(type() != et_symb); return ex->lst.size; }
-    void setSize       (int i)         { assert(type() != et_symb); ex->lst.size = i; }
-    ERef getERef       ()        const { return er; }
-
-    PtAsgn getExpReason       () const { assert(type() == et_term); return ex->trm.exp_reason; }
-    ERef   getExpParent       () const { assert(type() == et_term); return ex->trm.exp_parent; }
-    ERef   getExpRoot         () const { assert(type() == et_term); return ex->trm.exp_root; }
-    int    getExpTimeStamp    () const { assert(type() == et_term); return ex->trm.exp_time_stamp; }
-
-    void setExpReason     (PtAsgn r)     { assert(type() == et_term); ex->trm.exp_reason = r; }
-    void setExpParent     (ERef r)       { assert(type() == et_term); ex->trm.exp_parent = r; }
-    void setExpRoot       (ERef r)       { assert(type() == et_term); ex->trm.exp_root   = r; }
-    void setExpTimeStamp  (const int t)  { assert(type() == et_term); ex->trm.exp_time_stamp   = t; }
-
-    PTRef getTerm       ()        const { assert(isTerm()); return ex->trm.pterm; }
-    ELRef getForbid     ()        const { assert(!isSymb()); if (isList()) return ELRef_Undef; else return ex->trm.forbid; }
-    ELRef& altForbid    ()              { assert(isTerm()); return ex->trm.forbid; }
-    void  setForbid     (ELRef r)       { assert(isTerm()); ex->trm.forbid = r; }
-    int   getDistIndex  ()        const { assert(!isSymb()); if (isList()) return 0; else return ex->trm.dist_index; }
-    void  setDistIndex  (int i)         { assert(isTerm()); ex->trm.dist_index = i; }
-    void  setDistClasses( const dist_t& d) { assert(!isSymb()); if (isList()) assert(d == 0); else ex->trm.dist_classes = d; }
-
-    inline dist_t getDistClasses() const { assert(!isSymb()); if (isTerm()) return ex->trm.dist_classes; else return 0; }
+    uint32_t getSize() const { return argSize; }
+    SymRef getSymbol() const { return symb; }
+    ERef operator[](std::size_t i) const { return *(args + i); }
+    ERef const * begin() const { return args; }
+    ERef const * end() const { return args + argSize; }
+    UseVectorIndex getIndex(uint32_t i) { return UseVectorIndex{static_cast<int32_t>((args + argSize + i)->x)}; }
+    void setIndex(uint32_t i, UseVectorIndex index) { (args + argSize + i)->x = static_cast<uint32_t>(index.x); }
 };
 
 struct ERefHash {
     uint32_t operator () (const ERef& s) const {
         return (uint32_t)s.x; }
-};
-
-struct ERef_vecHash {
-    uint32_t operator () (const vec<ERef>& s) const {
-        int m = 0; for (int i = 0; i < s.size(); i++) m += s[i].x;
-        return m; }
-};
-
-struct ERef_vecEq {
-    bool operator () (const vec<ERef>& s1, const vec<ERef>& s2) const {
-        if (s1.size() != s2.size()) return false;
-        for (int i = 0; i < s1.size(); i++)
-            if (s1[i] != s2[i]) return false;
-        return true; }
 };
 
 class EnodeAllocator : public RegionAllocator<uint32_t>
@@ -215,42 +166,28 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     EnodeAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_enodes(0) {}
     EnodeAllocator() : n_enodes(0) {}
 
-    static int symEnodeWord32Size()  { return sizeof(Enode) / sizeof(int32_t); }
-    static int listEnodeWord32Size() { return (sizeof(Enode) + sizeof(Extra::lst)) / sizeof(int32_t); }
-    static int termEnodeWord32Size() { return (sizeof(Enode) + sizeof(Extra)) / sizeof(int32_t); }
+    /* The children refs and corresponding use-vector indices are stored at the end of the object */
+    static int enodeWord32Size(std::size_t argCount) { return (sizeof(Enode) + 2 * argCount * sizeof(ERef)) / sizeof(int32_t); }
 
     void moveTo(EnodeAllocator& to){
         RegionAllocator<uint32_t>::moveTo(to);
         to.n_enodes = n_enodes;
     }
 
-    // For symbols
-    ERef alloc(SymRef sym) {
-        static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
-        static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
-        uint32_t v = RegionAllocator<uint32_t>::alloc(symEnodeWord32Size());
-        ERef eid;
-        eid.x = v;
-        new (lea(eid)) Enode(sym, eid, n_enodes++);
-        return eid;
-    }
-
-    // For terms and lists
-    ERef alloc(ERef car, ERef cdr, Enode::en_type t, PTRef ptr) {
+    ERef alloc(SymRef symbol, ERefSpan children, PTRef term) {
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
-        assert(t == Enode::et_list || t == Enode::et_term);
-        uint32_t v = RegionAllocator<uint32_t>::alloc(t == Enode::et_list ? listEnodeWord32Size() : termEnodeWord32Size());
+        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(children.getSize()));
         // MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
         // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
         // but here is a dynamic check just in case.
         if (v >= (static_cast<uint32_t>(-1) >> 2)) { throw OutOfMemoryException(); }
-        ERef eid;
-        eid.x = v;
-        assert(t != Enode::et_list || ptr == PTRef_Undef);
-        new (lea(eid)) Enode(car, cdr, *this, eid, n_enodes++, ptr);
-        return eid;
+        ERef eref;
+        eref.x = v;
+        ++n_enodes;
+        new (lea(eref)) Enode(*this, symbol, children, eref, term);
+        return eref;
     }
 
     ERef alloc(Enode&) = delete;
@@ -266,13 +203,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     void free(ERef eid)
     {
         Enode& e = operator[](eid);
-        if ((e.type() == Enode::et_list))
-            RegionAllocator<uint32_t>::free(listEnodeWord32Size());
-        else if (e.type() == Enode::et_term)
-            RegionAllocator<uint32_t>::free(termEnodeWord32Size());
-        else
-            RegionAllocator<uint32_t>::free(symEnodeWord32Size());
-
+        RegionAllocator<uint32_t>::free(enodeWord32Size(e.getSize()));
     }
 
 };

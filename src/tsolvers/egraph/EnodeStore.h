@@ -30,36 +30,55 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Enode.h"
 #include "OsmtInternalException.h"
 
+#include <unordered_map>
+
 class Logic;
 
 struct PTRefERefPair { PTRef tr; ERef er; };
 
 class EnodeStore {
+
+    struct Signature {
+        std::vector<uint32_t> nums;
+    };
+
+    struct SignatureHash {
+        std::size_t operator()(Signature const & sig) const {
+            auto const & nums = sig.nums;
+            std::size_t seed = nums.size();
+            for(uint32_t i = 0; i < nums.size(); ++i) {
+                seed ^= nums[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            }
+            return seed;
+        }
+    };
+
+    struct SignatureEqual {
+        bool operator()(Signature const & a, Signature const & b) const {
+            if (a.nums.size() != b.nums.size()) { return false; }
+            for(uint32_t i = 0; i < a.nums.size(); ++i) {
+                if (a.nums[i] != b.nums[i]) { return false; }
+            }
+            return true;
+        }
+    };
+
     Logic&         logic;
-    Map<SigPair,ERef,SigHash,Equal<const SigPair&> > sig_tab;
     EnodeAllocator ea;
-    ERef           ERef_Nil;
+    std::unordered_map<Signature, ERef, SignatureHash, SignatureEqual> sig_tab;
     ERef           ERef_True;
     ERef           ERef_False;
-    ERef           sym_uf_not;
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
     uint32_t       dist_idx;
 
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
-    Map<SymRef,ERef,SymRefHash,Equal<SymRef> > symToERef;
     Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
-
-#ifdef PEDANTIC_DEBUG
-    ELAllocator&   fa;
-#endif
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
     vec<ERef>      termEnodes;
 
-    ERef  addTerm(ERef sym, ERef args, PTRef pt);
-    ERef  addSymb(SymRef t);
-    ERef  addList(ERef car, ERef cdr);
-
+    ERef  addTerm(PTRef pt);
+    ERef  addAnonTerm(PTRef pt);
 
 public:
     EnodeStore(Logic& l);
@@ -72,7 +91,6 @@ public:
     ERef getEnode_true()  { return ERef_True;  }
     ERef getEnode_false() { return ERef_False; }
 
-    ERef get_Nil() const { return ERef_Nil; }
     void free(ERef er) { ea.free(er); }
 
 
@@ -112,60 +130,42 @@ public:
         dist_idx++;
     }
 
+    Signature getSignature(ERef e) const {
+        Signature ret;
+        Enode const & node = ea[e];
+        auto size = node.getSize();
+        ret.nums.reserve(size + 1);
+        ret.nums.push_back(node.getSymbol().x);
+        for (uint32_t i = 0; i < size; ++i) {
+            ret.nums.push_back(ea[node[i]].getRoot().x);
+        }
+        return ret;
+    }
+
     inline bool containsSig(ERef e) const {
-        const Enode & en_e = ea[e];
-        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
-        return sig_tab.has(sp);
+        return sig_tab.find(getSignature(e)) != sig_tab.end();
     }
-
-    inline bool containsSig(ERef car, ERef cdr) const {
-        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
-        return sig_tab.has(sp);
-    }
-
 
     inline ERef lookupSig(ERef e) const {
-        const Enode & en_e = ea[e];
-        SigPair sp(ea[ea[en_e.getCar()].getRoot()].getCid(), ea[ea[en_e.getCdr()].getRoot()].getCid());
-        return sig_tab[sp];
-    }
-
-    inline ERef lookupSig(ERef car, ERef cdr) const {
-        SigPair sp(ea[ea[car].getRoot()].getCid(), ea[ea[cdr].getRoot()].getCid());
-        return sig_tab[sp];
+        assert(containsSig(e));
+        return sig_tab.find(getSignature(e))->second;
     }
 
     inline void removeSig(ERef e) {
         assert(containsSig(e));
-        const Enode & en_e = ea[e];
-        ERef carRoot = ea[en_e.getCar()].getRoot();
-        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
-        SigPair sp(ea[carRoot].getCid(), ea[cdrRoot].getCid());
-        sig_tab.remove(sp);
+        sig_tab.erase(getSignature(e));
         assert(!containsSig(e));
     }
 
     inline void insertSig(ERef e) {
-        const Enode & en_e = ea[e];
-        ERef carRoot = ea[en_e.getCar()].getRoot();
-        ERef cdrRoot = ea[en_e.getCdr()].getRoot();
         assert(!containsSig(e));
-//        assert(e == en_e.getCgPtr()); // MB: Only congruence roots should be inserted
-        sig_tab.insert(SigPair(ea[carRoot].getCid(), ea[cdrRoot].getCid()), e);
+        sig_tab.emplace(getSignature(e), e);
         assert(containsSig(e));
     }
-
-    ERef addAnonSymb(PTRef tr);
-
-// DEBUG
-#ifdef PEDANTIC_DEBUG
-    bool checkInvariants();
-#endif
 
     char* printEnode(ERef);
 
     vec<ERef> getArgTermsAsVector(ERef) const;
-//    friend class Egraph;
 };
 
 #endif

@@ -436,17 +436,6 @@ private:
 };
 } // namespace opensmt
 
-struct EnodeIdHash {
-    opensmt::enodeid_t operator() (const opensmt::enodeid_t s) const {
-        return s; }
-};
-
-template <>
-struct Equal<const opensmt::enodeid_t> {
-    bool operator() (const opensmt::enodeid_t s1, const opensmt::enodeid_t s2) const {
-        return s1 == s2; }
-};
-
 static inline int getLog2Ceil(int i)
 {
     if (i == 0 || i == 1) return 0;

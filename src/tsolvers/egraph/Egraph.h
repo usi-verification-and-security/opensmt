@@ -169,31 +169,25 @@ private:
     //***************************************************************************************************************
     std::vector<UseVector> parents;
 
-    Map<PTRef, ERef, PTRefHash> boolTermToERef;
-
     void addToParentVectors(ERef);
     void updateParentsVector(PTRef);
 
-    inline void addToCarUseVector(ERef parent, Enode & parentNode);
-    inline void addToCarUseVectorExceptSymbols(ERef parent, Enode & parentNode);
-    inline void addToCdrUseVector(ERef parent, Enode & parentNode);
-    inline void addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode);
-
-    inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
-    inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
-    inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
-    inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
+    void removeFromUseVectorExcept(ERef parent, CgId cgid);
+    void removeFromUseVectors(ERef parent);
 
     unsigned getParentsSize(ERef ref) {
         assert(getEnode(ref).getCid() < parents.size());
         return parents[getEnode(ref).getCid()].size();
     }
 
+    bool childDuplicatesClass(ERef parent, uint32_t childIndex);
+
     //***************************************************************************************************************
+    Map<PTRef, ERef, PTRefHash> boolTermToERef;
+
     ELAllocator forbid_allocator;
 
     EnodeStore enode_store;
-    ERef ERef_Nil;
 
     bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
     bool isEffectivelyEquality(PTRef tr) const;
@@ -253,7 +247,7 @@ public:
     PTRef ERefToTerm(ERef er) const { return getEnode(er).getTerm(); }
 
     bool isConstant(ERef er) const {
-        return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
+        return logic.isConstant(getEnode(er).getTerm());
     }
 
 #ifdef STATISTICS
@@ -404,14 +398,16 @@ private:
     void checkForbidReferences       ( ERef );
     void checkRefConsistency         ( );
     // Helper methods
-    void mergeForbidLists(Enode & to, const Enode & from);
-    void unmergeForbidLists(Enode & to, const Enode & from);
+    void mergeForbidLists(ERef to, const Enode & from);
+    void unmergeForbidLists(ERef to, const Enode & from);
     void mergeDistinctionClasses(Enode & to, const Enode & from);
     void unmergeDistinctionClasses(Enode & to, const Enode & from);
     void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
-    void processParentsAfterMerge(UseVector & parents, ERef merged);
-    void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
+    void processParentsBeforeMerge(ERef mergedRoot);
+    void processParentsAfterMerge(ERef mergedRoot);
+    void processParentsBeforeUnMerge(ERef oldroot);
+    void processParentsAfterUnMerge(ERef oldroot);
 
 #ifdef VERBOSE_EUF
 public:

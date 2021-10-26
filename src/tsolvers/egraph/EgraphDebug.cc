@@ -198,6 +198,7 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 //=============================================================================
 // Printing Routines
 
+/*
 char* Egraph::printEqClass(PTRef tr) const {
     char* out;
     char* old;
@@ -230,6 +231,7 @@ char* Egraph::printEqClass(PTRef tr) const {
     ::free(old);
     return out;
 }
+ */
 
 std::string Egraph::printExplanationTreeDotty(ERef x)
 {
@@ -266,7 +268,6 @@ char* Egraph::printDistinctions(PTRef x) const
 
 
     const ERef er = enode_store[enode_store.getERef(x)].getRoot();
-    assert(enode_store[er].isTerm());
 
     ELRef elr = enode_store[er].getForbid();
     if (elr == ELRef_Undef) {
@@ -320,8 +321,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
                 os << "| reloced to: " << ela[x].rel_e.x << endl;
             else {
                 os << "| different from enode " << ela[x].e.x << endl;
-                if (enode_store[ela[x].e].isTerm())
-                    os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
             }
             os << "| link: " << ela[x].link.x << endl;
         } else {
@@ -331,8 +331,7 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
                << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
 
             os << "| different from enode " << ela[x].e.x << endl;
-            if (enode_store[ela[x].e].isTerm())
-                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+            os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
         }
         os << "+-----------------------------------------------------------+" << endl;
 
@@ -365,84 +364,7 @@ void Egraph::checkRefConsistency() {
 }
 
 std::string Egraph::toString(ERef er) const {
-    if (er == ERef_Nil) { return "empty list" ; }
     if (er == ERef_Undef) { return "undef"; }
     const Enode & node = getEnode(er);
-    if (node.isSymb()) {
-        return logic.printSym(node.getSymb());
-    }
-    if (node.isTerm()) {
-        return logic.printTerm(node.getTerm());
-    }
-    return "List with head " + toString(node.getCar()) + "\nand tail " + toString(node.getCdr());
+    return logic.printTerm(node.getTerm());
 }
-
-/*
-#ifdef PEDANTIC_DEBUG
-const char* Egraph::printUndoTrail() {
-    std::stringstream ss;
-    for (int i = 0; i < undo_stack_main.size(); i++) {
-        Undo& u = undo_stack_main[i];
-        oper_t action = u.oper;
-        if (action == MERGE) {
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-            if (en_e.type() == Enode::et_list)
-                ss << i << " --- merge of list" << endl;
-            else
-                ss << i << " --- merge of terms " << logic.printTerm(en_e.getTerm())
-                   << " and " << logic.printTerm(enode_store[u.merged_with].getTerm())
-                   << " by term " << logic.printTerm(u.bool_term) << endl;
-        }
-        else if (action == DISEQ)
-            ss << i << " --- disequality by term " << logic.printTerm(u.bool_term) << endl;
-        else
-            ss << i << " --- other" << endl;
-    }
-    // print the equivalence classes of true and false
-    return ss.str().c_str();
-}
-
-const char* Egraph::printAsrtTrail()
-{
-    std::stringstream ss;
-    for (int i = 0; i < undo_stack_main.size(); i++) {
-        Undo& u = undo_stack_main[i];
-        oper_t action = u.oper;
-        if (action == MERGE) {
-            ERef e = u.arg.er;
-            Enode& en_e = enode_store[e];
-            if ((en_e.type() != Enode::et_list) && (en_e.getTerm() != logic.getTerm_false()) && (enode_store[u.merged_with].getTerm() != logic.getTerm_false()))
-                ss << i << " --- rel to eq " << logic.printTerm(u.bool_term) << endl;
-        }
-        else if (action == DISEQ)
-            ss << i << " --- rel to diseq " << logic.printTerm(u.bool_term) << endl;
-    }
-    return ss.str().c_str();
-}
-
-
-#endif
-*/
-/*
-void Egraph::printParents( ostream & os, Enode * w )
-{
-  assert( w->hasCongData( ) );
-  Enode * p = w->getParent( );
-  const Enode * pstart = p;
-  // w might be NULL, i.e. it may not have fathers
-  const bool scdr = w == NULL ? false : w->isList( );
-  if ( p != NULL ) os << "Parents of " << w << " :" << endl;
-  else os << "No parents for " << w << endl;
-  for ( ; p != NULL ; )
-  {
-    assert( p->isTerm( ) || p->isList( ) );
-    os << "  " << p << endl;
-    // Next element
-    p = scdr ? p->getSameCdr( ) : p->getSameCar( ) ;
-    // End of cycle
-    if ( p == pstart )
-      p = NULL;
-  }
-}
-*/
