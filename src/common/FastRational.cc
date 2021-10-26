@@ -10,7 +10,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 
 FastRational::FastRational( const char * s, const int base )
 {
-    mpq_init(mpq);
+    mpq = pool.alloc();
     mpq_set_str(mpq, s, base);
     mpq_canonicalize( mpq );
     state = State::MPQ_ALLOCATED_AND_VALID;
@@ -23,12 +23,13 @@ FastRational::FastRational( const char * s, const int base )
 FastRational::FastRational(uint32_t x)
 {
     if (x > INT_MAX) {
-        mpq_init(mpq);
+        mpq = pool.alloc();
         mpq_set_ui(mpq, x, 1);
         state = State::MPQ_ALLOCATED_AND_VALID;
     } else {
         num = x;
         den = 1;
+        mpq = nullptr;
         state = State::WORD_VALID;
     }
 }

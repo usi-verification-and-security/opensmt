@@ -11,6 +11,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <cassert>
 #include <climits>
 #include "Vec.h"
+#include "mpqpool.h"
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -79,7 +80,9 @@ class FastRational
     State state;
     word num;
     uword den;
-    mpq_t mpq;
+    mpq_ptr mpq;
+
+    inline static mpqPool pool;
 
     static const MpzUnit unit;
 
@@ -132,7 +135,7 @@ public:
             state = State::WORD_VALID;
         }
         else {
-            mpq_init( mpq );
+            mpq = pool.alloc();
             mpq_set_num( mpq, x.get_mpz_t( ) );
             mpz_class tmp_den = 1;
             mpq_set_den( mpq, tmp_den.get_mpz_t( ) );
@@ -158,7 +161,7 @@ private:
     void kill_mpq()
     {
         if (mpqMemoryAllocated()) {
-            mpq_clear(mpq);
+            pool.release(mpq);
             state = State::WORD_VALID;
         }
     }
@@ -166,7 +169,7 @@ private:
         if (!mpqPartValid()) {
             assert(wordPartValid());
             if (!mpqMemoryAllocated()) {
-                mpq_init(mpq);
+                mpq = pool.alloc();
             }
             mpz_set_si(mpq_numref(mpq), num);
             mpz_set_ui(mpq_denref(mpq), den);
@@ -180,7 +183,7 @@ private:
     void ensure_mpq_memory_allocated()
     {
         if (!mpqMemoryAllocated()) {
-            mpq_init(mpq);
+            mpq = pool.alloc();
             setMpqMemoryAllocated();
         }
     }
@@ -432,7 +435,7 @@ inline FastRational::FastRational(const FastRational& x) {
     }
     else {
         assert(x.mpqPartValid());
-        mpq_init(mpq);
+        mpq = pool.alloc();
         mpq_set(mpq, x.mpq);
         state = State::MPQ_ALLOCATED_AND_VALID;
     }
@@ -454,7 +457,7 @@ inline FastRational& FastRational::operator=(const FastRational& x) {
     else {
         assert(x.mpqPartValid());
         if (!this->mpqMemoryAllocated()) {
-            mpq_init(mpq);
+            mpq = pool.alloc();
         }
         mpq_set(mpq, x.mpq);
         this->state = State::MPQ_ALLOCATED_AND_VALID;
@@ -477,7 +480,7 @@ inline FastRational FastRational::operator-() const {
     } else {
         force_ensure_mpq_valid();
         FastRational x;
-        mpq_init(x.mpq);
+        x.mpq = pool.alloc();
         mpq_neg(x.mpq, mpq);
         x.state = State::MPQ_ALLOCATED_AND_VALID;
         x.try_fit_word(); // MB: If current value is 2^31, it does not fit word representation, but it's negation -2^31 does.

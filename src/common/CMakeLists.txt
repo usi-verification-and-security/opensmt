@@ -17,6 +17,7 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/NatSet.h"
     "${CMAKE_CURRENT_LIST_DIR}/PartitionInfo.cc"
     "${CMAKE_CURRENT_LIST_DIR}/VerificationUtils.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/mpqpool.cpp"
 )
 
 install(FILES 
