@@ -136,7 +136,6 @@ public:
     inline FastRational  (const FastRational &);
     inline FastRational  (FastRational&& other) noexcept;
 
-    //FastRational(const mpz_class & x );
     FastRational(mpz_t x);
 
     //
@@ -300,14 +299,10 @@ public:
             if ( num < 0 ) ret = -ret; // Guaranteed not to overflow since den >= 2
             else ++ret;
             return ret;
-        }
-        else {
-            mpz_t q;
-            mpz_init(q);
-            mpz_cdiv_q (q, mpq_numref(mpq) , mpq_denref(mpq));
-            FastRational ret(q);
-            mpz_clear(q);
-            return ret;
+        } else {
+            mpz_class q;
+            mpz_cdiv_q(q.get_mpz_t(), mpq_numref(mpq), mpq_denref(mpq));
+            return (q);
         }
     }
     inline FastRational floor() const

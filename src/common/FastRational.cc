@@ -11,11 +11,10 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 mpq_ptr FastRational::mpqPool::alloc()
 {
     mpq_ptr r;
-    if (!pool.empty()){
+    if (!pool.empty()) {
         r = pool.top();
         pool.pop();
-    }
-    else{
+    } else {
         r = store.emplace().get_mpq_t();
     }
     return r;
@@ -38,33 +37,20 @@ FastRational::FastRational( const char * s, const int base )
     assert( isWellFormed( ) );
 }
 
-//FastRational::FastRational(const mpz_class &x)
-//{
-//    if ( x.fits_sint_p() ) {
-//        num = x.get_si();
-//        den = 1;
-//        state = State::WORD_VALID;
-//    }
-//    else {
-//        mpq = pool.alloc();
-//        mpq_set_num( mpq, x.get_mpz_t( ) );
-//        mpz_class tmp_den = 1;
-//        mpq_set_den( mpq, tmp_den.get_mpz_t( ) );
-//        state = State::MPQ_ALLOCATED_AND_VALID;
-//    }
-//}
-FastRational::FastRational(mpz_t z){
-    if (mpz_fits_sint_p(z)){
+FastRational::FastRational(mpz_t z)
+{
+    if (mpz_fits_sint_p(z)) {
         num = mpz_get_si(z);
         den = 1;
         state = State::WORD_VALID;
-    }
-    else{
-        mpq=pool.alloc();
-        mpq_set_num(mpq, z);
-        state=State::MPQ_ALLOCATED_AND_VALID;
+    } else {
+        mpq = pool.alloc();
+        mpz_set(mpq_numref(mpq), z);
+        mpz_set_ui(mpq_denref(mpq), 1);
+        state = State::MPQ_ALLOCATED_AND_VALID;
     }
 }
+
 FastRational::FastRational(uint32_t x)
 {
     if (x > INT_MAX) {
