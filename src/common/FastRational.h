@@ -302,7 +302,7 @@ public:
         } else {
             mpz_class q;
             mpz_cdiv_q(q.get_mpz_t(), mpq_numref(mpq), mpq_denref(mpq));
-            return (q);
+            return FastRational(q.get_mpz_t());
         }
     }
     inline FastRational floor() const
