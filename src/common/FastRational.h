@@ -11,7 +11,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <cassert>
 #include <climits>
 #include "Vec.h"
-#include "mpqpool.h"
+#include <stack>
+#include <vector>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -77,6 +78,14 @@ inline ulword absVal(lword x) {
 
 class FastRational
 {
+    class mpqPool
+    {
+        std::stack<mpq_class> store; // uses deque as storage to avoid realloc
+        std::stack<mpq_ptr, std::vector<mpq_ptr>> pool;
+    public:
+        mpq_ptr alloc();
+        void release(mpq_ptr);
+    };
     State state;
     word num{0};
     uword den{1};

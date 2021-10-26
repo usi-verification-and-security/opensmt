@@ -8,6 +8,24 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <sstream>
 #include <algorithm>
 
+mpq_ptr FastRational::mpqPool::alloc()
+{
+    mpq_ptr r;
+    if (!pool.empty()){
+        r = pool.top();
+        pool.pop();
+    }
+    else{
+        r = store.emplace().get_mpq_t();
+    }
+    return r;
+}
+
+void FastRational::mpqPool::release(mpq_ptr ptr)
+{
+    pool.push(ptr);
+}
+
 FastRational::FastRational( const char * s, const int base )
 {
     mpq = pool.alloc();
