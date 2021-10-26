@@ -78,9 +78,9 @@ inline ulword absVal(lword x) {
 class FastRational
 {
     State state;
-    word num;
-    uword den;
-    mpq_ptr mpq;
+    word num{0};
+    uword den{1};
+    mpq_ptr mpq{nullptr};
 
     inline static mpqPool pool;
 
@@ -127,21 +127,8 @@ public:
     inline FastRational  (const FastRational &);
     inline FastRational  (FastRational&& other) noexcept;
 
-    FastRational         ( const mpz_class & x )
-    {
-        if ( x.fits_sint_p() ) {
-            num = x.get_si();
-            den = 1;
-            state = State::WORD_VALID;
-        }
-        else {
-            mpq = pool.alloc();
-            mpq_set_num( mpq, x.get_mpz_t( ) );
-            mpz_class tmp_den = 1;
-            mpq_set_den( mpq, tmp_den.get_mpz_t( ) );
-            state = State::MPQ_ALLOCATED_AND_VALID;
-        }
-    }
+    //FastRational(const mpz_class & x );
+    FastRational(mpz_t x);
 
     //
     // Destroyer
@@ -246,7 +233,7 @@ public:
         }
         else {
             force_ensure_mpq_valid();
-            return FastRational(mpz_class(mpq_denref(mpq)));
+            return FastRational(mpq_denref(mpq));
         }
     }
     FastRational get_num() const {
@@ -254,7 +241,7 @@ public:
             return FastRational(num);
         }
         else {
-            return FastRational(mpz_class(mpq_numref(mpq)));
+            return FastRational(mpq_numref(mpq));
         }
     }
 
@@ -306,9 +293,11 @@ public:
             return ret;
         }
         else {
-            mpz_class q;
-            mpz_cdiv_q (q.get_mpz_t() , mpq_numref(mpq) , mpq_denref(mpq));
+            mpz_t q;
+            mpz_init(q);
+            mpz_cdiv_q (q, mpq_numref(mpq) , mpq_denref(mpq));
             FastRational ret(q);
+            mpz_clear(q);
             return ret;
         }
     }

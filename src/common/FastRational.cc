@@ -20,6 +20,33 @@ FastRational::FastRational( const char * s, const int base )
     assert( isWellFormed( ) );
 }
 
+//FastRational::FastRational(const mpz_class &x)
+//{
+//    if ( x.fits_sint_p() ) {
+//        num = x.get_si();
+//        den = 1;
+//        state = State::WORD_VALID;
+//    }
+//    else {
+//        mpq = pool.alloc();
+//        mpq_set_num( mpq, x.get_mpz_t( ) );
+//        mpz_class tmp_den = 1;
+//        mpq_set_den( mpq, tmp_den.get_mpz_t( ) );
+//        state = State::MPQ_ALLOCATED_AND_VALID;
+//    }
+//}
+FastRational::FastRational(mpz_t z){
+    if (mpz_fits_sint_p(z)){
+        num = mpz_get_si(z);
+        den = 1;
+        state = State::WORD_VALID;
+    }
+    else{
+        mpq=pool.alloc();
+        mpq_set_num(mpq, z);
+        state=State::MPQ_ALLOCATED_AND_VALID;
+    }
+}
 FastRational::FastRational(uint32_t x)
 {
     if (x > INT_MAX) {
@@ -29,7 +56,6 @@ FastRational::FastRational(uint32_t x)
     } else {
         num = x;
         den = 1;
-        mpq = nullptr;
         state = State::WORD_VALID;
     }
 }
@@ -90,7 +116,7 @@ FastRational gcd(FastRational const & a, FastRational const & b)
         mpz_t o;
         mpz_init(o);
         mpz_gcd(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd = FastRational(mpz_class(o));
+        FastRational o_gcd(o);
         mpz_clear(o);
         return o_gcd;
     }
@@ -108,7 +134,7 @@ FastRational lcm(FastRational const & a, FastRational const & b)
         mpz_t o;
         mpz_init(o);
         mpz_lcm(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd = FastRational(mpz_class(o));
+        FastRational o_gcd(o);
         mpz_clear(o);
         return o_gcd;
     }
@@ -143,7 +169,9 @@ overflow:
     mpz_t t;
     mpz_init(t);
     mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-    return FastRational(mpz_class(t));
+    FastRational r(t);
+    mpz_clear(t);
+    return r;
 }
 
 //void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -170,7 +198,9 @@ FastRational divexact(FastRational const & n, FastRational const & d) {
         mpz_t t;
         mpz_init(t);
         mpz_divexact(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-        return FastRational(mpz_class(t));
+        FastRational r(t);
+        mpz_clear(t);
+        return r;
     }
 }
 
