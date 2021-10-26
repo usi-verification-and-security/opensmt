@@ -24,15 +24,6 @@ typedef uint64_t ulword;
 #define LWORD_MIN LONG_MIN
 #define LWORD_MAX LONG_MAX
 
-class MpzUnit
-{
-private:
-    mpz_t unit;
-public:
-    MpzUnit() { mpz_init(unit); mpz_set_si(unit, 1); }
-    const mpz_t& getUnit() const { return unit; }
-};
-
 enum class State: unsigned char {
     /*
      * bit 0 - wheter word part is valid or not
@@ -92,8 +83,9 @@ class FastRational
     mpq_ptr mpq{nullptr};
 
     inline static mpqPool pool;
+    inline static thread_local mpz_class temp;
+    inline static mpz_ptr mpz() { return temp.get_mpz_t(); }
 
-    static const MpzUnit unit;
 
     // Bit masks for questioning state:
     static const unsigned char wordValidMask = 0x1;
@@ -300,9 +292,8 @@ public:
             else ++ret;
             return ret;
         } else {
-            mpz_class q;
-            mpz_cdiv_q(q.get_mpz_t(), mpq_numref(mpq), mpq_denref(mpq));
-            return FastRational(q.get_mpz_t());
+            mpz_cdiv_q(mpz(), mpq_numref(mpq), mpq_denref(mpq));
+            return FastRational(mpz());
         }
     }
     inline FastRational floor() const

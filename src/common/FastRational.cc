@@ -117,12 +117,8 @@ FastRational gcd(FastRational const & a, FastRational const & b)
     else {
         a.force_ensure_mpq_valid();
         b.force_ensure_mpq_valid();
-        mpz_t o;
-        mpz_init(o);
-        mpz_gcd(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd(o);
-        mpz_clear(o);
-        return o_gcd;
+        mpz_gcd(FastRational::mpz(), mpq_numref(a.mpq), mpq_numref(b.mpq));
+        return FastRational(FastRational::mpz());
     }
 }
 
@@ -135,12 +131,8 @@ FastRational lcm(FastRational const & a, FastRational const & b)
     else {
         a.force_ensure_mpq_valid();
         b.force_ensure_mpq_valid();
-        mpz_t o;
-        mpz_init(o);
-        mpz_lcm(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd(o);
-        mpz_clear(o);
-        return o_gcd;
+        mpz_lcm(FastRational::mpz(), mpq_numref(a.mpq), mpq_numref(b.mpq));
+        return FastRational(FastRational::mpz());
     }
 }
 
@@ -170,12 +162,8 @@ FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d) {
 overflow:
     n.force_ensure_mpq_valid();
     d.force_ensure_mpq_valid();
-    mpz_t t;
-    mpz_init(t);
-    mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-    FastRational r(t);
-    mpz_clear(t);
-    return r;
+    mpz_fdiv_q(FastRational::mpz(), mpq_numref(n.mpq), mpq_numref(d.mpq));
+    return FastRational(FastRational::mpz());
 }
 
 //void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -199,12 +187,8 @@ FastRational divexact(FastRational const & n, FastRational const & d) {
         assert(n.mpqPartValid() || d.mpqPartValid());
         n.force_ensure_mpq_valid();
         d.force_ensure_mpq_valid();
-        mpz_t t;
-        mpz_init(t);
-        mpz_divexact(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-        FastRational r(t);
-        mpz_clear(t);
-        return r;
+        mpz_divexact(FastRational::mpz(), mpq_numref(n.mpq), mpq_numref(d.mpq));
+        return FastRational(FastRational::mpz());
     }
 }
 
