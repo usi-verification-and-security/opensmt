@@ -8,9 +8,26 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <sstream>
 #include <algorithm>
 
+mpq_ptr FastRational::mpqPool::alloc()
+{
+    mpq_ptr r;
+    if (!pool.empty()) {
+        r = pool.top();
+        pool.pop();
+    } else {
+        r = store.emplace().get_mpq_t();
+    }
+    return r;
+}
+
+void FastRational::mpqPool::release(mpq_ptr ptr)
+{
+    pool.push(ptr);
+}
+
 FastRational::FastRational( const char * s, const int base )
 {
-    mpq_init(mpq);
+    mpq = pool.alloc();
     mpq_set_str(mpq, s, base);
     mpq_canonicalize( mpq );
     state = State::MPQ_ALLOCATED_AND_VALID;
@@ -20,10 +37,24 @@ FastRational::FastRational( const char * s, const int base )
     assert( isWellFormed( ) );
 }
 
+FastRational::FastRational(mpz_t z)
+{
+    if (mpz_fits_sint_p(z)) {
+        num = mpz_get_si(z);
+        den = 1;
+        state = State::WORD_VALID;
+    } else {
+        mpq = pool.alloc();
+        mpz_set(mpq_numref(mpq), z);
+        mpz_set_ui(mpq_denref(mpq), 1);
+        state = State::MPQ_ALLOCATED_AND_VALID;
+    }
+}
+
 FastRational::FastRational(uint32_t x)
 {
     if (x > INT_MAX) {
-        mpq_init(mpq);
+        mpq = pool.alloc();
         mpq_set_ui(mpq, x, 1);
         state = State::MPQ_ALLOCATED_AND_VALID;
     } else {
@@ -89,7 +120,7 @@ FastRational gcd(FastRational const & a, FastRational const & b)
         mpz_t o;
         mpz_init(o);
         mpz_gcd(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd = FastRational(mpz_class(o));
+        FastRational o_gcd(o);
         mpz_clear(o);
         return o_gcd;
     }
@@ -107,7 +138,7 @@ FastRational lcm(FastRational const & a, FastRational const & b)
         mpz_t o;
         mpz_init(o);
         mpz_lcm(o, mpq_numref(a.mpq), mpq_numref(b.mpq));
-        FastRational o_gcd = FastRational(mpz_class(o));
+        FastRational o_gcd(o);
         mpz_clear(o);
         return o_gcd;
     }
@@ -142,7 +173,9 @@ overflow:
     mpz_t t;
     mpz_init(t);
     mpz_fdiv_q(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-    return FastRational(mpz_class(t));
+    FastRational r(t);
+    mpz_clear(t);
+    return r;
 }
 
 //void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -169,7 +202,9 @@ FastRational divexact(FastRational const & n, FastRational const & d) {
         mpz_t t;
         mpz_init(t);
         mpz_divexact(t, mpq_numref(n.mpq), mpq_numref(d.mpq));
-        return FastRational(mpz_class(t));
+        FastRational r(t);
+        mpz_clear(t);
+        return r;
     }
 }
 

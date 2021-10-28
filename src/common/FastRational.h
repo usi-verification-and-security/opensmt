@@ -11,6 +11,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <cassert>
 #include <climits>
 #include "Vec.h"
+#include <stack>
+#include <vector>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -76,10 +78,20 @@ inline ulword absVal(lword x) {
 
 class FastRational
 {
+    class mpqPool
+    {
+        std::stack<mpq_class> store; // uses deque as storage to avoid realloc
+        std::stack<mpq_ptr, std::vector<mpq_ptr>> pool;
+    public:
+        mpq_ptr alloc();
+        void release(mpq_ptr);
+    };
     State state;
-    word num;
-    uword den;
-    mpq_t mpq;
+    word num{0};
+    uword den{1};
+    mpq_ptr mpq{nullptr};
+
+    inline static mpqPool pool;
 
     static const MpzUnit unit;
 
@@ -124,21 +136,7 @@ public:
     inline FastRational  (const FastRational &);
     inline FastRational  (FastRational&& other) noexcept;
 
-    FastRational         ( const mpz_class & x )
-    {
-        if ( x.fits_sint_p() ) {
-            num = x.get_si();
-            den = 1;
-            state = State::WORD_VALID;
-        }
-        else {
-            mpq_init( mpq );
-            mpq_set_num( mpq, x.get_mpz_t( ) );
-            mpz_class tmp_den = 1;
-            mpq_set_den( mpq, tmp_den.get_mpz_t( ) );
-            state = State::MPQ_ALLOCATED_AND_VALID;
-        }
-    }
+    FastRational(mpz_t x);
 
     //
     // Destroyer
@@ -158,7 +156,7 @@ private:
     void kill_mpq()
     {
         if (mpqMemoryAllocated()) {
-            mpq_clear(mpq);
+            pool.release(mpq);
             state = State::WORD_VALID;
         }
     }
@@ -166,7 +164,7 @@ private:
         if (!mpqPartValid()) {
             assert(wordPartValid());
             if (!mpqMemoryAllocated()) {
-                mpq_init(mpq);
+                mpq = pool.alloc();
             }
             mpz_set_si(mpq_numref(mpq), num);
             mpz_set_ui(mpq_denref(mpq), den);
@@ -180,7 +178,7 @@ private:
     void ensure_mpq_memory_allocated()
     {
         if (!mpqMemoryAllocated()) {
-            mpq_init(mpq);
+            mpq = pool.alloc();
             setMpqMemoryAllocated();
         }
     }
@@ -243,7 +241,7 @@ public:
         }
         else {
             force_ensure_mpq_valid();
-            return FastRational(mpz_class(mpq_denref(mpq)));
+            return FastRational(mpq_denref(mpq));
         }
     }
     FastRational get_num() const {
@@ -251,7 +249,7 @@ public:
             return FastRational(num);
         }
         else {
-            return FastRational(mpz_class(mpq_numref(mpq)));
+            return FastRational(mpq_numref(mpq));
         }
     }
 
@@ -301,12 +299,10 @@ public:
             if ( num < 0 ) ret = -ret; // Guaranteed not to overflow since den >= 2
             else ++ret;
             return ret;
-        }
-        else {
+        } else {
             mpz_class q;
-            mpz_cdiv_q (q.get_mpz_t() , mpq_numref(mpq) , mpq_denref(mpq));
-            FastRational ret(q);
-            return ret;
+            mpz_cdiv_q(q.get_mpz_t(), mpq_numref(mpq), mpq_denref(mpq));
+            return FastRational(q.get_mpz_t());
         }
     }
     inline FastRational floor() const
@@ -432,7 +428,7 @@ inline FastRational::FastRational(const FastRational& x) {
     }
     else {
         assert(x.mpqPartValid());
-        mpq_init(mpq);
+        mpq = pool.alloc();
         mpq_set(mpq, x.mpq);
         state = State::MPQ_ALLOCATED_AND_VALID;
     }
@@ -454,7 +450,7 @@ inline FastRational& FastRational::operator=(const FastRational& x) {
     else {
         assert(x.mpqPartValid());
         if (!this->mpqMemoryAllocated()) {
-            mpq_init(mpq);
+            mpq = pool.alloc();
         }
         mpq_set(mpq, x.mpq);
         this->state = State::MPQ_ALLOCATED_AND_VALID;
@@ -477,7 +473,7 @@ inline FastRational FastRational::operator-() const {
     } else {
         force_ensure_mpq_valid();
         FastRational x;
-        mpq_init(x.mpq);
+        x.mpq = pool.alloc();
         mpq_neg(x.mpq, mpq);
         x.state = State::MPQ_ALLOCATED_AND_VALID;
         x.try_fit_word(); // MB: If current value is 2^31, it does not fit word representation, but it's negation -2^31 does.
