@@ -30,34 +30,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Enode.h"
 #include "OsmtInternalException.h"
 
-#include <unordered_map>
-
 class Logic;
 
 struct PTRefERefPair { PTRef tr; ERef er; };
 
 class EnodeStore {
 
-    struct Signature {
-        std::vector<uint32_t> nums;
-    };
-
     struct SignatureHash {
-        std::size_t operator()(Signature const & sig) const {
-            auto const & nums = sig.nums;
-            std::size_t seed = nums.size();
-            for(uint32_t i = 0; i < nums.size(); ++i) {
-                seed ^= nums[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        EnodeAllocator const & ea;
+
+        SignatureHash(EnodeAllocator const & ea) : ea{ea} {}
+
+        std::size_t operator()(ERef ref) const {
+            Enode const & node = ea[ref];
+            std::size_t seed = node.getSymbol().x;
+            for(uint32_t i = 0; i < node.getSize(); ++i) {
+                seed ^= ea[node[i]].getRoot().x + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             }
             return seed;
         }
     };
 
     struct SignatureEqual {
-        bool operator()(Signature const & a, Signature const & b) const {
-            if (a.nums.size() != b.nums.size()) { return false; }
-            for(uint32_t i = 0; i < a.nums.size(); ++i) {
-                if (a.nums[i] != b.nums[i]) { return false; }
+        EnodeAllocator const & ea;
+
+        SignatureEqual(EnodeAllocator const & ea) : ea{ea} {}
+
+        bool operator()(ERef a, ERef b) const {
+            Enode const & anode = ea[a];
+            Enode const & bnode = ea[b];
+            if ((anode.getSize() != bnode.getSize()) or anode.getSymbol() != bnode.getSymbol()) { return false; }
+            for(uint32_t i = 0; i < anode.getSize(); ++i) {
+                if (ea[anode[i]].getRoot() != ea[bnode[i]].getRoot()) { return false; }
             }
             return true;
         }
@@ -65,7 +69,7 @@ class EnodeStore {
 
     Logic&         logic;
     EnodeAllocator ea;
-    std::unordered_map<Signature, ERef, SignatureHash, SignatureEqual> sig_tab;
+    Map<ERef, ERef, SignatureHash, SignatureEqual> sig_tab;
     ERef           ERef_True;
     ERef           ERef_False;
     Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
@@ -130,36 +134,24 @@ public:
         dist_idx++;
     }
 
-    Signature getSignature(ERef e) const {
-        Signature ret;
-        Enode const & node = ea[e];
-        auto size = node.getSize();
-        ret.nums.reserve(size + 1);
-        ret.nums.push_back(node.getSymbol().x);
-        for (uint32_t i = 0; i < size; ++i) {
-            ret.nums.push_back(ea[node[i]].getRoot().x);
-        }
-        return ret;
-    }
-
     inline bool containsSig(ERef e) const {
-        return sig_tab.find(getSignature(e)) != sig_tab.end();
+        return lookupSig(e) != ERef_Undef;
     }
 
     inline ERef lookupSig(ERef e) const {
-        assert(containsSig(e));
-        return sig_tab.find(getSignature(e))->second;
+        bool found = sig_tab.peek(e, e);
+        return found ? e : ERef_Undef;
     }
 
     inline void removeSig(ERef e) {
         assert(containsSig(e));
-        sig_tab.erase(getSignature(e));
-        assert(!containsSig(e));
+        sig_tab.remove(e);
+        assert(not containsSig(e));
     }
 
     inline void insertSig(ERef e) {
-        assert(!containsSig(e));
-        sig_tab.emplace(getSignature(e), e);
+        assert(not containsSig(e));
+        sig_tab.insert(e,e);
         assert(containsSig(e));
     }
 

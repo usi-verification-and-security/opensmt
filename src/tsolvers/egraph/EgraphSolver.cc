@@ -1469,6 +1469,7 @@ void Egraph::processParentsBeforeMerge(ERef oldroot) {
         assert(!entry.isMarked());
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
+            enode_store.removeSig(parent);
             removeFromUseVectorExcept(parent, getEnode(oldroot).getCid());
         }
     }
@@ -1488,9 +1489,9 @@ void Egraph::processParentsAfterMerge(ERef oldroot) {
         assert(!entry.isMarked());
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
-            if (enode_store.containsSig(parent)) {
+            ERef q = enode_store.lookupSig(parent);
+            if (q != ERef_Undef) {
                 // Case 1: p joins q's congruence class
-                ERef q = enode_store.lookupSig(parent);
                 assert(q != parent);
                 pending.push(parent);
                 pending.push(q);
@@ -1529,7 +1530,7 @@ void Egraph::processParentsAfterUnMerge(ERef oldroot) {
     for (auto it = oldroot_parents.begin(); it != oldroot_parents.end(); ++it) {
         if (it->isValid()) {
             ERef parent = UseVector::entryToERef(*it);
-            assert(enode_store.containsSig(parent));
+            enode_store.insertSig(parent);
             oldroot_parents.clearEntryAt(it - oldroot_parents.begin()); // required for reinserting for all children
             addToParentVectors(parent);
         }

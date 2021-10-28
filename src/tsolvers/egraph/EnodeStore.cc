@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 EnodeStore::EnodeStore(Logic& l)
       : logic(l)
       , ea(1024*1024)
+      , sig_tab(SignatureHash(ea), SignatureEqual(ea))
       , dist_idx(0)
 {
     // For the uninterpreted predicates and propositional structures inside
