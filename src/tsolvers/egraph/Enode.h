@@ -110,14 +110,18 @@ private:
     // Term representation
     SymRef symb;
     uint32_t argSize;
-    // Must be last field!
+
+    /*
+     * Pointer to the end of object, where ENodeAllocator allocated enough space for Enode's children and
+     * their use-vector indices.
+     */
     ERef args[0];
 
     friend class EnodeAllocator;
-    friend class EnodeStore;
+    Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef ptr);
+    Enode(Enode const&) = delete;
 
 public:
-    Enode(EnodeAllocator& ea, SymRef symbol, ERefSpan children, ERef myRef, PTRef ptr);
 
     CgId  getCid() const { return cid; }
     ERef getRoot() const { return root; }
@@ -186,7 +190,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         ERef eref;
         eref.x = v;
         ++n_enodes;
-        new (lea(eref)) Enode(*this, symbol, children, eref, term);
+        new (lea(eref)) Enode(symbol, children, eref, term);
         return eref;
     }
 

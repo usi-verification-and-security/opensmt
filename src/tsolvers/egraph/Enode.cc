@@ -30,7 +30,7 @@ cgId Enode::cgid_ctr = cgId_Nil+1;
 UseVectorIndex UseVectorIndex::NoIndex = {-1};
 UseVectorIndex UseVectorIndex::DuplicateIndex = {-2};
 
-Enode::Enode(EnodeAllocator& ea, SymRef symbol, ERefSpan children, ERef myRef, PTRef term)
+Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term)
      : cid(cgid_ctr++), pterm(term), symb(symbol), argSize(children.getSize())
 {
     setRoot(myRef);
