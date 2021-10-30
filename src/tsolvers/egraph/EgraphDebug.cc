@@ -198,13 +198,12 @@ bool Egraph::checkExpReachable( PTRef x, PTRef h_x ) {
 //=============================================================================
 // Printing Routines
 
-/*
+
 char* Egraph::printEqClass(PTRef tr) const {
     char* out;
     char* old;
 
     const ERef er = enode_store.getERef(tr);
-    assert(enode_store[er].isTerm());
     ERef c_er = er;
     char* tmp = logic.printTerm(tr);
     int written = asprintf(&out, "In the same eq class with %s are:\n[ ",
@@ -213,10 +212,10 @@ char* Egraph::printEqClass(PTRef tr) const {
     ::free(tmp);
 
     while (true) {
-        const Enode& en = enode_store[c_er];
-        ERef next_er = en.getNext();
+        Enode const & en = getEnode(c_er);
+        ERef next_er = en.getEqNext();
         if (next_er == er) break;
-        const Enode& en_o = enode_store[next_er];
+        Enode const & en_o = getEnode(next_er);
         old = out;
         tmp = logic.printTerm(en_o.getTerm());
         written = asprintf(&out, "%s%s ", old, tmp);
@@ -231,7 +230,6 @@ char* Egraph::printEqClass(PTRef tr) const {
     ::free(old);
     return out;
 }
- */
 
 std::string Egraph::printExplanationTreeDotty(ERef x)
 {
@@ -271,7 +269,7 @@ char* Egraph::printDistinctions(PTRef x) const
 
     ELRef elr = enode_store[er].getForbid();
     if (elr == ELRef_Undef) {
-        char* tmp = out;
+        tmp = out;
         written = asprintf(&out, "%s]", tmp);
         assert(written >= 0);
         free(tmp);
