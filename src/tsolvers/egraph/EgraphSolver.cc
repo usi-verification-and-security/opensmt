@@ -328,7 +328,7 @@ void Egraph::declareTerm(PTRef tr) {
     }
 
     for (auto PTRefERefPair : PTRefERefPairVec) {
-        updateParentsVector(PTRefERefPair.tr);
+        updateUseVectors(PTRefERefPair.tr);
     }
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
@@ -839,7 +839,6 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
         deduce( x, y, reason );
     }
 
-    // Get the references right here
     Enode & en_x = getEnode(x);
     Enode const & en_y = getEnode(y);
 
@@ -860,10 +859,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
 
     // Step 5: Consists of several operations
 
-    // Step 5.2: Remove old signatures of y’s class’s parents.
-    // MB: This step is skipped now, we keep the old signatures in the table
-//     removeSignaturesOfParentsThatAreCongruenceRoots(w);
-    // remove parents of y from other use vectors
+    // Step 5.2: Remove old signatures of y’s class’s parents and remove parents of y from other use vectors
     processParentsBeforeMerge(y);
 
     // Step 5.3: Union of equivalence classes
@@ -872,8 +868,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // Step 5.5: Insert new signatures and propagate congruences
     processParentsAfterMerge(y);
 
-    // Step 6: Merge parent lists
-//    mergeParentLists(en_x, en_y);
+    // Step 6: Merge parent lists -> done in 5.5
     // Step 7: Not relevant -> skipped
 
     // Step 8: Push undo record
@@ -1463,6 +1458,11 @@ void Egraph::unmergeForbidLists(ERef toRef, const Enode & from) {
 
 
 
+/**
+ * Before oldroot is merged, the parents of its conruence class are scanned to
+ * 1. Remove them from signature table
+ * 2. Remove them from use-vectors of the other children (they are kept in the oldroot's use-vector for post-merge pass)
+ */
 void Egraph::processParentsBeforeMerge(ERef oldroot) {
     UseVector & oldroot_parents = parents[getEnode(oldroot).getCid()];
     for (auto & entry : oldroot_parents) {
@@ -1470,18 +1470,23 @@ void Egraph::processParentsBeforeMerge(ERef oldroot) {
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
             enode_store.removeSig(parent);
-            removeFromUseVectorExcept(parent, getEnode(oldroot).getCid());
+            removeFromUseVectorsExcept(parent, getEnode(oldroot).getCid());
         }
     }
 }
 
-/*
-   * Reprocess all parents of y
+/**
    *
-   * For backtracking, we keep all its parents
-   * - if parent remains a congruence root, it's kept as is
-   * - if parent is no longer a congruence root, it's kept as a marked
-   *   entry
+   * After merge, the parents of the merged root (oldroot) are scanned again to restore the invariants.
+   * Their signature has changed after the merge.
+   * Either i) there already is a term with the new signature, or ii) there is no term with the new signature.
+   *
+   * i) The parent is no longer a congruence root. This means there already is a representative in the signature table
+   * and use-vectors. We only mark the parent in the old use-vector for backtracking and enqueue the discovered congruence.
+   *
+   * ii) There is no other representative with the new signature, so the parent remains a congruence root.
+   * Since we removed it from signature table and use-vectors in processParentsBeforeMerge, we reintroduce it to both
+   * data-structures. Note that the new signature will be used at this point.
    */
 void Egraph::processParentsAfterMerge(ERef oldroot) {
     UseVector & oldroot_parents = parents[getEnode(oldroot).getCid()];
@@ -1502,12 +1507,15 @@ void Egraph::processParentsAfterMerge(ERef oldroot) {
             else {
                 // Case 2: p remains congruent root (but now has new signature)
                 enode_store.insertSig(parent);
-                addToParentVectors(parent);
+                addToUseVectors(parent);
             }
         }
     }
 }
 
+/**
+ * Undoes the effect of processParentsAfterMerge
+ */
 void Egraph::processParentsBeforeUnMerge(ERef oldroot) {
     UseVector & oldroot_parents = parents[getEnode(oldroot).getCid()];
     for (auto & entry : oldroot_parents) {
@@ -1525,6 +1533,9 @@ void Egraph::processParentsBeforeUnMerge(ERef oldroot) {
     }
 }
 
+/**
+ * Undoes the effect of processParentsBeforeMerge
+ */
 void Egraph::processParentsAfterUnMerge(ERef oldroot) {
     UseVector & oldroot_parents = parents[getEnode(oldroot).getCid()];
     for (auto it = oldroot_parents.begin(); it != oldroot_parents.end(); ++it) {
@@ -1532,7 +1543,7 @@ void Egraph::processParentsAfterUnMerge(ERef oldroot) {
             ERef parent = UseVector::entryToERef(*it);
             enode_store.insertSig(parent);
             oldroot_parents.clearEntryAt(it - oldroot_parents.begin()); // required for reinserting for all children
-            addToParentVectors(parent);
+            addToUseVectors(parent);
         }
     }
 }
@@ -1590,15 +1601,20 @@ uint32_t UseVector::getFreeSlotIndex() {
     return ret;
 }
 
-void Egraph::updateParentsVector(PTRef term) {
+void Egraph::updateUseVectors(PTRef term) {
     ERef eref = termToERef(term);
     auto cid = getEnode(eref).getCid();
     while (cid >= parents.size()) {
         parents.emplace_back();
     }
-    addToParentVectors(eref);
+    addToUseVectors(eref);
 }
 
+/**
+ * Determines whether some earlier child of the parent enode is in the same congruence class as the given child.
+ * @param parent parent enode
+ * @param childIndex index in the list of children of child under consideration
+ */
 bool Egraph::childDuplicatesClass(ERef parent, uint32_t childIndex) {
     assert(childIndex < getEnode(parent).getSize());
     if (childIndex == 0) { return false; }
@@ -1612,11 +1628,16 @@ bool Egraph::childDuplicatesClass(ERef parent, uint32_t childIndex) {
     return false;
 }
 
-void Egraph::addToParentVectors(ERef parentRef) {
+/**
+ * Adds the parent enode to the use-vectors of its children.
+ *
+ * The parent enode remembers its indices in the use-vectors.
+ * If two children are in the same congruence class, only the use-vector of the first one remembers the parent.
+ */
+void Egraph::addToUseVectors(ERef parentRef) {
     Enode & parent = getEnode(parentRef);
     for (uint32_t i = 0; i < parent.getSize(); ++i) {
         ERef childRef = parent[i];
-//        assert(parent.getIndex(i) == UseVectoIndex_NoIndex);
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
         assert(parents.size() > childCid);
         if (childDuplicatesClass(parentRef, i)) {
@@ -1628,6 +1649,12 @@ void Egraph::addToParentVectors(ERef parentRef) {
     }
 }
 
+/**
+ * Removes the parent enode from the use-vectors of its children.
+ *
+ * Note that the indices in the parent are not reset, they remain invalid.
+ *
+ */
 void Egraph::removeFromUseVectors(ERef parent) {
     Enode & parentNode = getEnode(parent);
     for (uint32_t i = 0; i < parentNode.getSize(); ++i) {
@@ -1641,8 +1668,12 @@ void Egraph::removeFromUseVectors(ERef parent) {
     }
 }
 
-
-void Egraph::removeFromUseVectorExcept(ERef parent, CgId cgid) {
+/**
+ * Removes the parent enode from the use-vectors of its children except the one with the given congruence id.
+ *
+ * Same as removeFromUseVectors except we keep the parent entry in the use-vector with the given congrunce id.
+ */
+void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
     Enode & parentNode = getEnode(parent);
     for (uint32_t i = 0; i < parentNode.getSize(); ++i) {
         ERef childRef = parentNode[i];

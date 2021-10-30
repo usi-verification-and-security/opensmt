@@ -169,10 +169,10 @@ private:
     //***************************************************************************************************************
     std::vector<UseVector> parents;
 
-    void addToParentVectors(ERef);
-    void updateParentsVector(PTRef);
+    void addToUseVectors(ERef);
+    void updateUseVectors(PTRef);
 
-    void removeFromUseVectorExcept(ERef parent, CgId cgid);
+    void removeFromUseVectorsExcept(ERef parent, CgId cgid);
     void removeFromUseVectors(ERef parent);
 
     unsigned getParentsSize(ERef ref) {
