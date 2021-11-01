@@ -33,19 +33,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class UFLRATheory : public Theory
 {
   private:
-    ArithLogic &    lralogic;
+    ArithLogic &  logic;
     UFLRATHandler uflratshandler;
-    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
   public:
     UFLRATheory(SMTConfig& c, ArithLogic & logic)
         : Theory(c)
-        , lralogic(logic)
-        , uflratshandler(c, lralogic)
+        , logic(logic)
+        , uflratshandler(c, logic)
     { }
-    virtual ArithLogic&       getLogic() override { return lralogic; }
-    virtual const ArithLogic& getLogic() const override { return lralogic; }
+    virtual ArithLogic&       getLogic() override { return logic; }
+    virtual const ArithLogic& getLogic() const override { return logic; }
     virtual UFLRATHandler&  getTSolverHandler() override { return uflratshandler; }
     virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
+
+protected:
+    PTRef purify(PTRef fla);
+    PTRef splitArithmeticEqualities(PTRef fla);
+    PTRef addInterfaceClauses(PTRef fla);
+    bool containsUF(PTRef term) const;
 };
 
 #endif
