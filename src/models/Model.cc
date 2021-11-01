@@ -58,13 +58,7 @@ PTRef Model::evaluate(PTRef term) {
         PTRef val;
         if (symDef.find(symbol) != symDef.end()) {
             const TemplateFunction & tfun = symDef.at(symbol);
-            const vec<PTRef> & tfunArgs = tfun.getArgs();
-            MapWithKeys<PTRef,PTRef,PTRefHash> substMap;
-            for (int i = 0; i < nargs.size(); i++) {
-                substMap.insert(tfunArgs[i], nargs[i]);
-            }
-            PTRef root = tfun.getBody();
-            val = Substitutor(logic, substMap).rewrite(root);
+            val = logic.instantiateFunctionTemplate(tfun, nargs);
         } else {
             val = logic.insertTerm(symbol, std::move(nargs));
         }

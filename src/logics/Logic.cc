@@ -504,25 +504,13 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
     SymRef sref = term_store.lookupSymbol(s, args);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s)) {
-            // Make a new function by substituting the arguments of defined_functions[s] with whatever is in args
-            const vec<PTRef>& tpl_args = defined_functions[s].getArgs();
-            SubstMap subst_map;
-            if (args.size() != tpl_args.size()) {
-                int written = asprintf(msg, "Arg size mismatch: should be %d but is %d", tpl_args.size(), args.size());
-                assert(written >= 0); (void)written;
+            auto const & tpl = defined_functions[s];
+            try {
+                return instantiateFunctionTemplate(tpl, args);
+            } catch (OsmtApiException const & e) {
+                *msg = strdup(e.what());
                 return PTRef_Undef;
             }
-            for (int i = 0; i < args.size(); i++) {
-                if (getSortRef(args[i]) == getSortRef(tpl_args[i]))
-                    subst_map.insert(tpl_args[i], args[i]);
-                else {
-                    int written = asprintf(msg, "Arg %s (%d) return sort mismatch: should be %s but is %s",
-                            printTerm(args[i]), i, getSymName(tpl_args[i]), getSymName(args[i]));
-                    assert(written >= 0); (void)written;
-                    return PTRef_Undef;
-                }
-            }
-            return instantiateFunctionTemplate(s, subst_map);
         }
         else {
             int written = asprintf(msg, "Unknown symbol `%s'", s);
@@ -1574,26 +1562,26 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     dump_out << ')' << endl;
 }
 
-PTRef
-Logic::instantiateFunctionTemplate(const char* fname, const SubstMap& subst)
-{
-    const TemplateFunction& tpl_fun = defined_functions[fname];
-    PTRef tr = tpl_fun.getBody();
-    const vec<PTRef>& args = tpl_fun.getArgs();
-    for (int i = 0; i < args.size(); i++) {
-        if (!subst.has(args[i])) {
-            std::string argName = pp(args[i]);
-            throw OsmtApiException(
-                    "No value provided for function " + tpl_fun.getName() + " argument " + argName);
-        }
-        if (getSortRef(subst[args[i]]) != getSortRef(args[i])) {
-            throw OsmtApiException("Substitution source and target sort mismatch" );
-        }
-    }
+PTRef Logic::instantiateFunctionTemplate(const char * name, vec<PTRef> const & args) {
+    assert(defined_functions.has(name));
+    return instantiateFunctionTemplate(defined_functions[name], args);
+}
 
-    PTRef tr_subst = Substitutor(*this, subst).rewrite(tr);
-    assert (getSortRef(tr_subst) == tpl_fun.getRetSort());
-    return tr_subst;
+PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args) {
+    auto const & targs = tmplt.getArgs();
+    if (args.size() != targs.size()) {
+        throw OsmtApiException("Function instantiation argument count mismatch");
+    }
+    SubstMap substMap;
+    for (int i = 0; i < args.size(); ++i) {
+        if (getSortRef(targs[i]) != getSortRef(args[i])) {
+            throw OsmtApiException("Function instantiation source and target sort mismatch");
+        }
+        substMap.insert(targs[i], args[i]);
+    }
+    PTRef res = Substitutor(*this, substMap).rewrite(tmplt.getBody());
+    assert(getSortRef(res) == tmplt.getRetSort());
+    return res;
 }
 
 void
