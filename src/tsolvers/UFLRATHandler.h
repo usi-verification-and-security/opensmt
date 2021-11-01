@@ -26,13 +26,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UFLRATHandler_H
 #define UFLRATHandler_H
 
-#include "LATHandler.h"
+#include "TSolverHandler.h"
 #include "ArithLogic.h"
 
 class Egraph;
 class LASolver;
 
-class UFLRATHandler : public LATHandler
+class UFLRATHandler : public TSolverHandler
 {
   private:
     ArithLogic      &logic;
@@ -40,10 +40,11 @@ class UFLRATHandler : public LATHandler
     Egraph        *ufsolver;
   public:
     UFLRATHandler(SMTConfig & c, ArithLogic & l);
-    virtual ~UFLRATHandler();
-    virtual Logic& getLogic();
+    ~UFLRATHandler() override = default;
+    Logic & getLogic() override { return logic; }
+    Logic const & getLogic() const override { return logic; }
 
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager);
+    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 };
 
 #endif

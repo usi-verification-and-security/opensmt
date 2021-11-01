@@ -1,11 +1,10 @@
 #include "UFLRATHandler.h"
 #include "lasolver/LASolver.h"
 #include "TreeOps.h"
-//#include "InterpolatingEgraph.h"
 #include "Egraph.h"
 
 UFLRATHandler::UFLRATHandler(SMTConfig & c, ArithLogic & l)
-        : LATHandler(c, l)
+        : TSolverHandler(c)
         , logic(l)
 {
     lasolver = new LASolver(config, logic);
@@ -19,13 +18,6 @@ UFLRATHandler::UFLRATHandler(SMTConfig & c, ArithLogic & l)
     tsolvers[uf_id.id] = ufsolver;
     solverSchedule.push(uf_id.id);
 
-}
-
-UFLRATHandler::~UFLRATHandler() {}
-
-Logic &UFLRATHandler::getLogic()
-{
-    return logic;
 }
 
 PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
