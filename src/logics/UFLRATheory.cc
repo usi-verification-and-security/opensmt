@@ -28,11 +28,45 @@ namespace {
         return logic.isUF(sym) and logic.getSym(sym).nargs() > 0;
     }
 
+    class NeedsPurificationConfig : public DefaultVisitorConfig {
+        ArithLogic & logic;
+        Map<PTRef, bool, PTRefHash> needsRenaming;
+    public:
+        NeedsPurificationConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
 
-    class PurifyConfig : public DefaultVisitorConfig {
+        Map<PTRef, bool, PTRefHash> const & getNeedsRenamingMap() const { return needsRenaming; }
+
+        void visit(PTRef ptref) override {
+            auto const & term = logic.getPterm(ptref);
+            if (isArithmeticSymbol(logic, term.symb())) {
+                auto nargs = term.nargs();
+                for (unsigned i = 0; i < nargs; ++i) {
+                    PTRef child = logic.getPterm(ptref)[i];
+                    if (isUninterpreted(logic, logic.getSymRef(child))) {
+                        if (not needsRenaming.has(child)) {
+                            needsRenaming.insert(child, true);
+                        }
+                    }
+                }
+            } else if (isUninterpreted(logic, term.symb())) {
+                auto nargs = term.nargs();
+                for (unsigned i = 0; i < nargs; ++i) {
+                    PTRef child = logic.getPterm(ptref)[i];
+                    if (isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child)) {
+                        if (not needsRenaming.has(child)) {
+                            needsRenaming.insert(child, true);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    class PurifyConfig : public DefaultRewriterConfig {
         static std::string prefix;
         ArithLogic & logic;
         Logic::SubstMap substMap;
+        Map<PTRef, bool, PTRefHash> needsRenaming;
 
         void createVarFor(PTRef ptref) {
             if (substMap.has(ptref)) {
@@ -44,20 +78,33 @@ namespace {
             substMap.insert(ptref, var);
         }
 
-    public:
-        PurifyConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
-
-        void visit(PTRef ptref) override {
-            auto const & term = logic.getPterm(ptref);
-            if (isArithmeticSymbol(logic, term.symb())) {
-                auto nargs = term.nargs();
-                for (unsigned i = 0; i < nargs; ++i) {
-                    PTRef child = logic.getPterm(ptref)[i];
-                    if (isUninterpreted(logic, logic.getSymRef(child))) {
-                        createVarFor(child);
-                    }
-                }
+        void updateNeedsRenaming(PTRef term) {
+            assert(needsRenaming.has(term));
+            needsRenaming.remove(term);
+            Logic::SubstMap sub;
+            sub.insert(term, substMap[term]);
+            Substitutor substitutor(logic, sub);
+            vec<PTRef> keys;
+            needsRenaming.getKeys(keys);
+            for (PTRef key : keys) {
+                needsRenaming.remove(key);
+                needsRenaming.insert(substitutor.rewrite(key), true);
             }
+        }
+
+    public:
+        PurifyConfig(ArithLogic & logic, Map<PTRef, bool, PTRefHash> const & needsRenaming) : DefaultRewriterConfig(),
+            logic(logic) {
+            needsRenaming.copyTo(this->needsRenaming);
+        }
+
+        PTRef rewrite(PTRef ptref) override {
+            if (needsRenaming.has(ptref)) {
+                createVarFor(ptref);
+                updateNeedsRenaming(ptref);
+                return substMap[ptref];
+            }
+            return ptref;
         }
 
         Logic::SubstMap const & getPurificationMap() const { return substMap; }
@@ -65,26 +112,29 @@ namespace {
 
     std::string PurifyConfig::prefix = ".purify_";
 
-    class Purifier : public TermVisitor<PurifyConfig> {
+    class Purifier : public Rewriter<PurifyConfig> {
         PurifyConfig config;
 
     public:
-        Purifier(ArithLogic & logic) : TermVisitor<PurifyConfig>(logic, config), config(logic) {}
+        Purifier(ArithLogic & logic, Map<PTRef, bool, PTRefHash> const & needsRenaming)
+            : Rewriter<PurifyConfig>(logic, config), config(logic, needsRenaming) {}
 
         Logic::SubstMap const & getPurificationMap() const { return config.getPurificationMap(); }
     };
 }
 
 PTRef UFLRATheory::purify(PTRef fla) {
-    Purifier purifier(getLogic());
-    purifier.visit(fla);
+    NeedsPurificationConfig conf(logic);
+    TermVisitor<NeedsPurificationConfig>(logic, conf).visit(fla);
+    Purifier purifier(logic, conf.getNeedsRenamingMap());
+    PTRef rewritten = purifier.rewrite(fla);
     auto const & renameMap = purifier.getPurificationMap();
     vec<PTRef> equalities;
     equalities.capacity(renameMap.getSize() + 1);
     for (PTRef key : renameMap.getKeys()) {
         equalities.push(logic.mkEq(key, renameMap[key]));
     }
-    equalities.push(Substitutor(logic, renameMap).rewrite(fla));
+    equalities.push(rewritten);
     return logic.mkAnd(equalities);
 }
 
