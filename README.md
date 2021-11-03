@@ -18,11 +18,11 @@ API; the distribution includes a minimal example how to use the API.
 
 ## Building from source
 
-To build the system from the source code repository, you need a C++11
+To build the system from the source code repository, you need a C++17
 compliant compiler and the following libraries and headers installed:
 
  - gmp
- - libedit (or readline)
+ - libedit or readline (optional)
 
 In addition the `smtlib2` parser uses `flex` and `bison`.
 OpenSMT2 uses `cmake` as a build system generator. To compile OpenSMT2 (using `make` build system), use the following
@@ -31,9 +31,14 @@ command
 $ mkdir build; cd build; cmake ..; make
 ```
 
-By default, OpenSMT is linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/). You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To enable `readline` and create a GPL-licensed build of OpenSMT:
+For better interactive experience from shell, OpenSMT can be linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/). You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To enable line editing with editline:
 ```
-$ cmake -DUSE_READLINE:BOOL=ON ..
+$ cmake -DENABLE_LINE_EDITING:BOOL=ON ..
+```
+
+and to enable `readline` and create a GPL-licensed build of OpenSMT:
+```
+$ cmake -DENABLE_LINE_EDITING:BOOL=ON -DUSE_READLINE:BOOL=ON ..
 ```
 
 ### Changing build type
@@ -74,8 +79,7 @@ The install directory can be customized using cmake variable CMAKE_INSTALL_PREFI
 This installs the library in the folder `<INSTALL_DIR>/lib` and puts the necessary header files in the folder `<INSTALL_DIR>/include/opensmt`.
 
 ## Capabilities and usage examples
-OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT currently supports the following SMT-LIB logics: `QF_UF`, `QF_LRA`, `QF_RDL`, and `QF_LIA`, both in a single-query and an incremental mode.
-Note however that the incremental mode for QF_LIA has not been thoroughly tested yet.
+OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT currently supports the following SMT-LIB logics: `QF_UF`, `QF_LRA`, `QF_RDL`, `QF_IDL`, and `QF_LIA`, both in a single-query and an incremental mode.
 
 To run OpenSMT on a SMT-LIB2 file (.smt2) simply pass the path to the file as an argument to the executable:
 ```
@@ -95,10 +99,9 @@ When using OpenSMT as an executable, interpolation is off by default. It can be 
 
 When using OpenSMT as a library, the option needs to be set in `SMTConfig` **before** `Opensmt` object is created, see [this example](examples/test_lra_itp.cc).
 
-Interpolation is supported for SMT-LIB logics `QF_UF` and `QF_LRA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
+Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
 
 ## Contact
-If you have questions please mail them to me at
-antti.hyvarinen@gmail.com, or to the discussion forum!
+If you have questions please mail them to me at antti.hyvarinen@gmail.com, or at [github](https://github.com/usi-verification-and-security/opensmt)
 
 
