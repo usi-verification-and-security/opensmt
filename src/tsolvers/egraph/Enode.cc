@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 cgId Enode::cgid_ctr = cgId_Nil+1;
 UseVectorIndex UseVectorIndex::NotValidIndex = {UINT32_MAX};
 
-Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term) :
+Enode::Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef term) :
     root(myRef),
     cid(cgid_ctr++),
     eq_next(myRef),
@@ -42,10 +42,10 @@ Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term) :
     exp_root(myRef),
     exp_time_stamp(0),
     symb(symbol),
-    argSize(children.getSize())
+    argSize(children.size())
 {
     assert(term != PTRef_Undef);
-    for (uint32_t i = 0; i < children.getSize(); ++i) {
+    for (uint32_t i = 0; i < argSize; ++i) {
         args[i] = children[i];
         setIndex(i, UseVectorIndex::NotValidIndex);
     }

@@ -51,7 +51,7 @@ ERef EnodeStore::addAnonTerm(PTRef term) {
         return termToERef[term];
 
     SymRef symref = logic.getSym_anon();
-    ERef newEnode = ea.alloc(symref, ERefSpan(nullptr, 0) , term);
+    ERef newEnode = ea.alloc(symref, opensmt::span<ERef>(nullptr, 0) , term);
     termToERef.insert(term, newEnode);
     assert(not ERefToTerm.has(newEnode));
     ERefToTerm.insert(newEnode, term);
@@ -74,7 +74,7 @@ ERef EnodeStore::addTerm(PTRef term) {
         assert(termToERef.has(arg));
         args.push(termToERef[arg]);
     }
-    ERef newEnode = ea.alloc(symref, ERefSpan(args.begin(), args.size_()) , term);
+    ERef newEnode = ea.alloc(symref, opensmt::span(args.begin(), args.size_()) , term);
     // Term's signature must not exist.  Otherwise the term would have two different signatures.
     assert(not containsSig(newEnode));
     insertSig(newEnode);

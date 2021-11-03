@@ -58,15 +58,6 @@ static_assert(sizeof(ERef) == sizeof(UseVectorIndex));
 
 inline void swap(ERef & y, ERef & z) { ERef tmp = y; y = z; z = tmp; }
 
-class ERefSpan {
-    ERef * beg;
-    uint32_t size;
-public:
-    ERefSpan(ERef* beg, uint32_t size) : beg{beg}, size{size} {}
-    uint32_t getSize() const { return size; }
-    ERef operator[](uint32_t index) { return *(beg + index); }
-};
-
 using CgId = uint32_t;
 
 
@@ -115,7 +106,7 @@ private:
     ERef args[0];
 
     friend class EnodeAllocator;
-    Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef ptr);
+    Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef ptr);
 
 public:
     Enode(Enode const &) = delete;
@@ -175,11 +166,11 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         to.n_enodes = n_enodes;
     }
 
-    ERef alloc(SymRef symbol, ERefSpan children, PTRef term) {
+    ERef alloc(SymRef symbol, opensmt::span<ERef> children, PTRef term) {
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
-        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(children.getSize()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(children.size()));
         // MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
         // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
         // but here is a dynamic check just in case.
