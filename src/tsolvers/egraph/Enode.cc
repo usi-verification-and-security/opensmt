@@ -37,7 +37,7 @@ Enode::Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef term
     pterm(term),
     forbid(ELRef_Undef),
     dist_classes(0),
-    exp_reason(PtAsgn(PTRef_Undef, l_Undef)),
+    exp_reason(PTRef_Undef, l_Undef),
     exp_parent(ERef_Undef),
     exp_root(myRef),
     exp_time_stamp(0),

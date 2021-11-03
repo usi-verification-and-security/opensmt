@@ -327,8 +327,8 @@ void Egraph::declareTerm(PTRef tr) {
         return;
     }
 
-    for (auto PTRefERefPair : PTRefERefPairVec) {
-        updateUseVectors(PTRefERefPair.tr);
+    for (auto [term, eref] : PTRefERefPairVec) {
+        updateUseVectors(term); (void)eref;
     }
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
@@ -1621,11 +1621,10 @@ bool Egraph::childDuplicatesClass(ERef parent, uint32_t childIndex) {
     Enode const & parentNode = getEnode(parent);
     ERef child = parentNode[childIndex];
     auto childClass = getEnode(getEnode(child).getRoot()).getCid();
-    for (uint32_t i = 0; i < childIndex; ++i) {
-        auto otherClass = getEnode(getEnode(parentNode[i]).getRoot()).getCid();
-        if (otherClass == childClass) { return true; }
-    }
-    return false;
+    auto precedingChildren = opensmt::span(parentNode.begin(), childIndex);
+    return std::any_of(precedingChildren.begin(), precedingChildren.end(), [&](ERef precChild) {
+       return childClass == getEnode(getEnode(precChild).getRoot()).getCid();
+    });
 }
 
 /**

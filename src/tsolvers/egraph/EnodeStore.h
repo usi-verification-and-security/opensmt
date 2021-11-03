@@ -41,6 +41,7 @@ class EnodeStore {
 
         SignatureHash(EnodeAllocator const & ea) : ea{ea} {}
 
+        // Hash function from https://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector
         std::size_t operator()(ERef ref) const {
             Enode const & node = ea[ref];
             std::size_t seed = node.getSymbol().x;
