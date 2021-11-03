@@ -48,14 +48,11 @@ struct ERef {
 static struct ERef ERef_Undef = {INT32_MAX};
 
 struct UseVectorIndex {
-    int32_t x;
+    uint32_t x;
     inline friend bool operator== (const UseVectorIndex& a1, const UseVectorIndex& a2) {return a1.x == a2.x; }
     inline friend bool operator!= (const UseVectorIndex& a1, const UseVectorIndex& a2) {return a1.x != a2.x; }
-    static UseVectorIndex NoIndex;
-    static UseVectorIndex DuplicateIndex;
+    static UseVectorIndex NotValidIndex;
 };
-
-
 
 static_assert(sizeof(ERef) == sizeof(UseVectorIndex));
 
@@ -153,8 +150,8 @@ public:
     ERef operator[](std::size_t i) const { return *(args + i); }
     ERef const * begin() const { return args; }
     ERef const * end() const { return args + argSize; }
-    UseVectorIndex getIndex(uint32_t i) const { return UseVectorIndex{static_cast<int32_t>((args + argSize + i)->x)}; }
-    void setIndex(uint32_t i, UseVectorIndex index) { (args + argSize + i)->x = static_cast<uint32_t>(index.x); }
+    UseVectorIndex getIndex(uint32_t i) const { return UseVectorIndex{(args + argSize + i)->x}; }
+    void setIndex(uint32_t i, UseVectorIndex index) { (args + argSize + i)->x = index.x; }
 };
 
 struct ERefHash {

@@ -1641,10 +1641,10 @@ void Egraph::addToUseVectors(ERef parentRef) {
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
         assert(parents.size() > childCid);
         if (childDuplicatesClass(parentRef, i)) {
-            parent.setIndex(i, UseVectorIndex::DuplicateIndex);
+            parent.setIndex(i, UseVectorIndex::NotValidIndex);
         } else {
             auto index = parents[childCid].addParent(parentRef);
-            parent.setIndex(i, UseVectorIndex{static_cast<int32_t>(index)});
+            parent.setIndex(i, UseVectorIndex{index});
         }
     }
 }
@@ -1661,7 +1661,7 @@ void Egraph::removeFromUseVectors(ERef parent) {
         ERef childRef = parentNode[i];
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
         auto parentIndex = parentNode.getIndex(i);
-        if (parentIndex.x >= 0) {
+        if (parentIndex != UseVectorIndex::NotValidIndex) {
             assert(UseVector::entryToERef(parents[childCid][parentIndex.x]) == parent);
             parents[childCid].clearEntryAt(parentIndex.x);
         }
@@ -1680,7 +1680,7 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
         if (childCid != cgid) {
             auto parentIndex = parentNode.getIndex(i);
-            if (parentIndex.x >= 0) {
+            if (parentIndex != UseVectorIndex::NotValidIndex) {
                 assert(UseVector::entryToERef(parents[childCid][parentIndex.x]) == parent);
                 parents[childCid].clearEntryAt(parentIndex.x);
             }

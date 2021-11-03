@@ -27,8 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Enode.h"
 
 cgId Enode::cgid_ctr = cgId_Nil+1;
-UseVectorIndex UseVectorIndex::NoIndex = {-1};
-UseVectorIndex UseVectorIndex::DuplicateIndex = {-2};
+UseVectorIndex UseVectorIndex::NotValidIndex = {UINT32_MAX};
 
 Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term)
      : cid(cgid_ctr++), pterm(term), symb(symbol), argSize(children.getSize())
@@ -47,6 +46,6 @@ Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term)
     setExpTimeStamp(0);
     for (uint32_t i = 0; i < children.getSize(); ++i) {
         args[i] = children[i];
-        setIndex(i, UseVectorIndex::NoIndex);
+        setIndex(i, UseVectorIndex::NotValidIndex);
     }
 }
