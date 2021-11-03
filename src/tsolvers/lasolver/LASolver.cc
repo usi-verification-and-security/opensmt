@@ -390,7 +390,7 @@ bool LASolver::assertLit(PtAsgn asgn)
         assert(getStatus());
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
-        if (config.theory_propagation) { getSimpleDeductions(it, bound_ref); }
+        getSimpleDeductions(it, bound_ref);
         tsolver_stats.sat_calls++;
     } else {
         tsolver_stats.unsat_calls++;
