@@ -154,8 +154,6 @@ public:
         sig_tab.insert(e,e);
         assert(containsSig(e));
     }
-
-    vec<ERef> getArgTermsAsVector(ERef) const;
 };
 
 #endif

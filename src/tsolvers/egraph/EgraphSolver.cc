@@ -274,10 +274,10 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
  */
 void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er) const {
     ERef orig_er = enode_store.getERef(orig_tr);
-    vec<ERef> args = enode_store.getArgTermsAsVector(orig_er);
-    assert(args.size() > 0);
-    vec<PTRef> vals; vals.capacity(args.size());
-    for (ERef child_er : args) {
+    Enode const & orig_enode = getEnode(orig_er);
+    assert(orig_enode.getSize() > 0);
+    vec<PTRef> vals; vals.capacity(orig_enode.getSize());
+    for (ERef child_er : orig_enode) {
         PTRef child_tr = enode_store.getPTRef(child_er);
         vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
     }

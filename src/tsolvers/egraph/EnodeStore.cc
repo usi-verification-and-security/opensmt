@@ -110,20 +110,6 @@ bool EnodeStore::needsEnode(PTRef tr) const {
 }
 
 /**
- * Given a term enode of form f(a, b, c), return [a, b, c]
- * @param er the term enode
- * @return the vector of terms as erefs
- */
-vec<ERef> EnodeStore::getArgTermsAsVector(ERef er) const {
-    Enode const & node = operator[](er);
-    vec<ERef> args;
-    for (uint32_t i = 0; i < node.getSize(); ++i) {
-        args.push(node[i]);
-    }
-    return args;
-}
-
-/**
  * Construct an Enode for a given PTRef, assuming that all the child PTRefs have
  * already been introduced an Enode.  In case of a Boolean return valued Enode,
  * add also an enode of the negation of the PTRef.  If the Boolean Enode is
