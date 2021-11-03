@@ -25,7 +25,7 @@ namespace {
     }
 
     bool isUninterpreted(ArithLogic const & logic, SymRef sym) {
-        return logic.isUF(sym) and logic.getSym(sym).nargs() > 0;
+        return logic.isUF(sym) and logic.getSym(sym).nargs() > 0 and not logic.isNumEq(sym);
     }
 
     class NeedsPurificationConfig : public DefaultVisitorConfig {
