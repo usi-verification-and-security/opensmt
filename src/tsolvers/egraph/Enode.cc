@@ -29,21 +29,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 cgId Enode::cgid_ctr = cgId_Nil+1;
 UseVectorIndex UseVectorIndex::NotValidIndex = {UINT32_MAX};
 
-Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term)
-     : cid(cgid_ctr++), pterm(term), symb(symbol), argSize(children.getSize())
+Enode::Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef term) :
+    root(myRef),
+    cid(cgid_ctr++),
+    eq_next(myRef),
+    eq_size(1),
+    pterm(term),
+    forbid(ELRef_Undef),
+    dist_classes(0),
+    exp_reason(PtAsgn(PTRef_Undef, l_Undef)),
+    exp_parent(ERef_Undef),
+    exp_root(myRef),
+    exp_time_stamp(0),
+    symb(symbol),
+    argSize(children.getSize())
 {
-    setRoot(myRef);
-    setEqNext(myRef);
-    setEqSize(1);
-
     assert(term != PTRef_Undef);
-    // Term specific data
-    setDistClasses(0);
-    setForbid(ELRef_Undef);
-    setExpParent(ERef_Undef);
-    setExpRoot(myRef);
-    setExpReason(PtAsgn(PTRef_Undef, l_Undef));
-    setExpTimeStamp(0);
     for (uint32_t i = 0; i < children.getSize(); ++i) {
         args[i] = children[i];
         setIndex(i, UseVectorIndex::NotValidIndex);
