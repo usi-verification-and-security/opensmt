@@ -44,7 +44,7 @@ class EnodeStore {
         std::size_t operator()(ERef ref) const {
             Enode const & node = ea[ref];
             std::size_t seed = node.getSymbol().x;
-            for(uint32_t i = 0; i < node.getSize(); ++i) {
+            for (uint32_t i = 0; i < node.getSize(); ++i) {
                 seed ^= ea[node[i]].getRoot().x + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             }
             return seed;
@@ -59,8 +59,8 @@ class EnodeStore {
         bool operator()(ERef a, ERef b) const {
             Enode const & anode = ea[a];
             Enode const & bnode = ea[b];
-            if ((anode.getSize() != bnode.getSize()) or anode.getSymbol() != bnode.getSymbol()) { return false; }
-            for(uint32_t i = 0; i < anode.getSize(); ++i) {
+            if (anode.getSize() != bnode.getSize() or anode.getSymbol() != bnode.getSymbol()) { return false; }
+            for (uint32_t i = 0; i < anode.getSize(); ++i) {
                 if (ea[anode[i]].getRoot() != ea[bnode[i]].getRoot()) { return false; }
             }
             return true;
@@ -154,8 +154,6 @@ public:
         sig_tab.insert(e,e);
         assert(containsSig(e));
     }
-
-    char* printEnode(ERef);
 
     vec<ERef> getArgTermsAsVector(ERef) const;
 };

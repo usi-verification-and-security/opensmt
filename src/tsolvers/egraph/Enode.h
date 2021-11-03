@@ -119,9 +119,9 @@ private:
 
     friend class EnodeAllocator;
     Enode(SymRef symbol, ERefSpan children, ERef myRef, PTRef ptr);
-    Enode(Enode const&) = delete;
 
 public:
+    Enode(Enode const &) = delete;
 
     CgId  getCid() const { return cid; }
     ERef getRoot() const { return root; }
@@ -153,7 +153,7 @@ public:
     ERef operator[](std::size_t i) const { return *(args + i); }
     ERef const * begin() const { return args; }
     ERef const * end() const { return args + argSize; }
-    UseVectorIndex getIndex(uint32_t i) { return UseVectorIndex{static_cast<int32_t>((args + argSize + i)->x)}; }
+    UseVectorIndex getIndex(uint32_t i) const { return UseVectorIndex{static_cast<int32_t>((args + argSize + i)->x)}; }
     void setIndex(uint32_t i, UseVectorIndex index) { (args + argSize + i)->x = static_cast<uint32_t>(index.x); }
 };
 
@@ -187,8 +187,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
         // but here is a dynamic check just in case.
         if (v >= (static_cast<uint32_t>(-1) >> 2)) { throw OutOfMemoryException(); }
-        ERef eref;
-        eref.x = v;
+        ERef eref{v};
         ++n_enodes;
         new (lea(eref)) Enode(symbol, children, eref, term);
         return eref;

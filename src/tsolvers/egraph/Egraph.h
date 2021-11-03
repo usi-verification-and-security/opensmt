@@ -67,9 +67,9 @@ class UFSolverStats: public TSolverStats
 };
 
 /*
- * Defines parents of an equivalence class of terms - terms where at least one term from the class is present as a child
- * p is parent of t if t is car or cdr of p => p will be present in UseVector of class(t).
- * Moreover, if p's index in UseVector is i then p.carParentIndex or p.cdrParentIndex is i.
+ * Holds parents of a congruence class of terms: for a congruence class c its UseVector contains all terms p such that
+ * some child of p belongs to c.
+ * Moreover, if p's index in UseVector is i then p.getIndex(t) returns i for p's child t.
  */
 class UseVector {
     /* First two bits represent tag: 00 - valid entry, 01 - marked entry, 11 - empty entry

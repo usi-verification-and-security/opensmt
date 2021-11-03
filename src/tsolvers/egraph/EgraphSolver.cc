@@ -1656,7 +1656,7 @@ void Egraph::addToUseVectors(ERef parentRef) {
  *
  */
 void Egraph::removeFromUseVectors(ERef parent) {
-    Enode & parentNode = getEnode(parent);
+    Enode const & parentNode = getEnode(parent);
     for (uint32_t i = 0; i < parentNode.getSize(); ++i) {
         ERef childRef = parentNode[i];
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
@@ -1674,7 +1674,7 @@ void Egraph::removeFromUseVectors(ERef parent) {
  * Same as removeFromUseVectors except we keep the parent entry in the use-vector with the given congrunce id.
  */
 void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
-    Enode & parentNode = getEnode(parent);
+    Enode const & parentNode = getEnode(parent);
     for (uint32_t i = 0; i < parentNode.getSize(); ++i) {
         ERef childRef = parentNode[i];
         auto childCid = getEnode(getEnode(childRef).getRoot()).getCid();
