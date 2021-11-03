@@ -55,7 +55,7 @@ void        catcher            ( int );
  *                                                                           *
 \*****************************************************************************/
 
-void interpretInteractive(Interpret & interpret, FILE* input);
+void interpretInteractive(Interpret & interpret);
 
 int main( int argc, char * argv[] )
 {
@@ -123,8 +123,7 @@ int main( int argc, char * argv[] )
             interpreter.interpPipe();
         }
         else {
-            fin = stdin;
-            interpretInteractive(interpreter, fin);
+            interpretInteractive(interpreter);
         }
     }
     else {
@@ -155,7 +154,12 @@ int main( int argc, char * argv[] )
     return 0;
 }
 
-void interpretInteractive(Interpret & interpret, FILE* input) {
+#ifndef ENABLE_LINE_EDITING
+void interpretInteractive(Interpret & interpret) {
+    interpret.interpPipe();
+}
+#else
+void interpretInteractive(Interpret & interpret) {
     char* line_read = nullptr;
     bool done = false;
     int par = 0;
@@ -220,6 +224,7 @@ void interpretInteractive(Interpret & interpret, FILE* input) {
     if (parse_buf) free(parse_buf);
     if (line_read) free(line_read);
 }
+#endif
 
 namespace opensmt {
 
