@@ -32,12 +32,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <csignal>
 #include <iostream>
 
+#ifdef ENABLE_LINE_EDITING
 #if !defined(USE_READLINE)
 #include <editline/readline.h>
 #else
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#endif // ENABLE_LINE_EDITING
 
 #if defined(__linux__)
 #include <fpu_control.h>
