@@ -128,10 +128,6 @@ jobs:
             xcode: 12.4.0
         steps:
             - run:
-                name: Homebrew
-                command: |
-                  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            - run:
                 name: Packages
                 command: |
                   brew install cmake
