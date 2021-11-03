@@ -1709,8 +1709,6 @@ bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
 
-inline bool Logic::isPredef           (string&)        const { return false; };
-
 char* Logic::printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
 char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 

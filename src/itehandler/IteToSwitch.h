@@ -7,6 +7,11 @@
 
 #include "Logic.h"
 
+#include <iostream>
+#include <map>
+#include <set>
+
+
 namespace ite {
     class timer {
         time_t start;

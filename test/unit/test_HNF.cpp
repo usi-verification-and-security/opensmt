@@ -77,7 +77,7 @@ TEST_F(HNF_test, test_hnf2) {
 
     ms.compute_hnf_v1(U, H, dim, U1, V1);
 
-    cout << "The hnf matrix: " << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix: " << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
@@ -109,7 +109,7 @@ TEST_F(HNF_test, test_hnf3) {
     MId U1 = MId_Undef;
     MId V1 = MId_Undef;
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix:" << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
@@ -142,7 +142,7 @@ TEST_F(HNF_test, test_hnf4) {
     MId U1 = MId_Undef;
     MId V1 = MId_Undef;
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix:" << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
@@ -174,7 +174,7 @@ TEST_F(HNF_test, test_hnf5) {
     MId U1 = MId_Undef;
     MId V1 = MId_Undef;
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix:" << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
@@ -280,7 +280,7 @@ TEST_F(HNF_test, test_hnf8) {
     MId U1 = MId_Undef;
     MId V1 = MId_Undef;
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix:" << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);
@@ -318,7 +318,7 @@ TEST_F(HNF_test, test_hnf9) {
     MId U1 = MId_Undef;
     MId V1 = MId_Undef;
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    cout << "The hnf matrix:" << endl << ms.print(H) << endl;
+    std::cout << "The hnf matrix:" << std::endl << ms.print(H) << std::endl;
     for (int i = 0; i < rows; i++)
         for (int j = 0; j < cols; j++)
             ASSERT_EQ(ms.MM(H, i+1, j+1), hnf_ref[i][j]);

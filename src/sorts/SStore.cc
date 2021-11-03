@@ -26,6 +26,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SStore.h"
 
+#include <string>
+#include <sstream>
+
 
 
 SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
@@ -77,10 +80,10 @@ SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
 }
 
 void
-SStore::dumpSortsToFile ( ostream & dump_out )
+SStore::dumpSortsToFile ( std::ostream & dump_out )
 {
     for(int i = 1; i < sorts.size(); ++i)
 	{
-		dump_out << "(declare-sort " << getName(sorts[i]) << " 0)" << endl;
+		dump_out << "(declare-sort " << getName(sorts[i]) << " 0)" << std::endl;
 	}
 }

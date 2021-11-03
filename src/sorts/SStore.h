@@ -31,6 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "StringMap.h"
 #include "Alloc.h"
 
+#include <iosfwd>
+
 class IdentifierStore
 {
   private:
@@ -92,7 +94,7 @@ class SStore
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
     int     numSorts() const { return sorts.size(); }
-    void dumpSortsToFile(ostream&);
+    void dumpSortsToFile(std::ostream&);
 };
 
 #endif

@@ -34,6 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MapWithKeys.h"
 #include "OsmtApiException.h"
 #include "FunctionTools.h"
+#include "TypeUtils.h"
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -115,7 +116,7 @@ class Logic {
     PTRef               term_FALSE;
 
 
-    void dumpFunction(ostream &, const TemplateFunction&);
+    void dumpFunction(std::ostream &, const TemplateFunction&);
 
   private:
     bool use_extended_signature;
@@ -252,13 +253,13 @@ public:
 
     PTRef       mkBoolVar     (const char* name);
 
-    void dumpHeaderToFile(ostream& dump_out) const;
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
-    void dumpChecksatToFile(ostream& dump_out) const;
+    void dumpHeaderToFile(std::ostream& dump_out) const;
+    void dumpFormulaToFile(std::ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
+    void dumpChecksatToFile(std::ostream& dump_out) const;
 
-    void dumpFunctions(ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
-    void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
-    void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
+    void dumpFunctions(std::ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
+    void dumpFunction(std::ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
+    void dumpFunction(std::ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
     PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
@@ -356,7 +357,6 @@ public:
     PTRef       hasEquality        (vec<PTRef>& args);
     // Override for different logics...
     virtual bool declare_sort_hook  (SRef sr);
-    inline bool isPredef           (string&)        const ;//{ return false; };
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
 

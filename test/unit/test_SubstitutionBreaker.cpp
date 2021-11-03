@@ -26,7 +26,7 @@ TEST(SubstitutionBreaker, test_getVars) {
     SNRef snr = sna.alloc(a, f1);
     for (int i = 0; i < sna[snr].nChildren(); i++) {
         char *n = logic.pp(sna[snr].getChildTerm(i));
-        cerr << n << " \n";
+        std::cerr << n << " \n";
         free(n);
     }
     ASSERT_EQ(sna[snr].nChildren(), 3);

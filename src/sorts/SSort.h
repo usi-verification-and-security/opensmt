@@ -28,8 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SORT_H
 
 #include "Vec.h"
-#include "Global.h"
+#include "Map.h"
 #include "Alloc.h"
+
+#include <cstring>
 
 // XXX The implementation of sorts is incomplete: the sort system should have
 // sort symbols and concrete sorts the way pterms are constructed.  As a
@@ -181,6 +183,8 @@ class IdentifierAllocator : public RegionAllocator<uint32_t>
 
 // Sort should most likely be a tree-like structure with references.  I don't
 // like this implementation.
+
+using sortid_t = int;
 
 class Sort {
   private:

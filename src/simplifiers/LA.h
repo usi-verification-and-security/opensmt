@@ -31,6 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LALogic.h"
 #include "Real.h"
 
+#include <map>
+
 
 class LAExpression {
     LALogic & logic;
@@ -62,7 +64,7 @@ public:
     void canonize();           // Canonize (different from solve!)
     PTRef toPTRef() const;
 
-    void print(ostream &) const;
+    void print(std::ostream &) const;
 
     opensmt::pair<PTRef, PTRef> getSubst();    // Get a valid substitution
 
@@ -101,7 +103,7 @@ private:
     const OP r;                   // Arithmetic relation
 
     // Print overloading
-    inline friend ostream & operator<<(ostream & os, LAExpression & p) {
+    inline friend std::ostream & operator<<(std::ostream & os, LAExpression & p) {
         p.print(os);
         return os;
     }

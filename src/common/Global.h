@@ -279,48 +279,6 @@ namespace opensmt {
         return true;
     }
 
-    // std::pair is not trivially copyable.  This version seems to allow on current compilers faster implementations.
-    template <class T, class U> struct pair { T first; U second; };
-
-    template <typename T>
-    class span {
-        T * _beg;
-        uint32_t _size;
-    public:
-        span(T* beg, uint32_t size) : _beg{beg}, _size{size} {}
-        uint32_t size() const { return _size; }
-        T const & operator[](uint32_t index) const { return *(_beg + index); }
-        T const * begin() const { return _beg; }
-        T const * end() const { return _beg + _size; }
-    };
-
-#define Pair(T) pair< T, T >
-
-    typedef int enodeid_t;
-
-
-    typedef enodeid_t snodeid_t;
-    typedef enodeid_t sortid_t;
-#ifdef BUILD_64
-    typedef long enodeid_pair_t;
-
-    inline enodeid_pair_t encode(enodeid_t car, enodeid_t cdr) {
-        enodeid_pair_t p = car;
-        p = p << (sizeof(enodeid_t) * 8);
-        enodeid_pair_t q = cdr;
-        p |= q;
-        return p;
-    }
-
-#else
-    typedef Pair( enodeid_t ) enodeid_pair_t;
-inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
-{ return make_pair( car, cdr ); }
-#endif
-    typedef enodeid_pair_t snodeid_pair_t;
-
-//#define STATISTICS
-
 // Set the bit B to 1 and leaves the others to 0
 #define SETBIT(B) ( 1 << (B) )
 
@@ -459,11 +417,6 @@ static inline int getLog2Ceil(int i)
     return r;
 }
 
-using opensmt::enodeid_t;
-using opensmt::snodeid_t;
-using opensmt::sortid_t;
-using opensmt::enodeid_pair_t;
-using opensmt::encode;
 using opensmt::cpuTime;
 using opensmt::memUsed;
 using opensmt::icolor_t;

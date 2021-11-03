@@ -32,8 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PtStructs.h"
 #include "SymRef.h"
-#include "Global.h"
-
+#include "TypeUtils.h"
 #include "CgTypes.h"
 #include "SigMap.h"
 
@@ -59,6 +58,7 @@ static_assert(sizeof(ERef) == sizeof(UseVectorIndex));
 inline void swap(ERef & y, ERef & z) { ERef tmp = y; y = z; z = tmp; }
 
 using CgId = uint32_t;
+using enodeid_t = int;
 
 
 //

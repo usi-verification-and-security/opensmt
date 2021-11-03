@@ -27,13 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LA.h"
 
+#include <iostream>
+
 void LAExpression::initialize(PTRef e, bool do_canonize) {
     assert(logic.isNumEq(e) || logic.isNumLeq(e));
 
     PTRef lhs = logic.getPterm(e)[0];
     PTRef rhs = logic.getPterm(e)[1];
-    vector<PTRef> curr_term{lhs, rhs};
-    vector<opensmt::Real> curr_const{1, -1};
+    std::vector<PTRef> curr_term{lhs, rhs};
+    std::vector<opensmt::Real> curr_const{1, -1};
 
     while (!curr_term.empty()) {
         PTRef t = curr_term.back();
@@ -130,7 +132,7 @@ PTRef LAExpression::toPTRef() const {
     return poly;
 }
 
-void LAExpression::print(ostream & os) const {
+void LAExpression::print(std::ostream & os) const {
     assert(polynome.find(PTRef_Undef) != polynome.end());
     assert(not polynome.empty());
     if (r == OP::EQ)

@@ -21,6 +21,6 @@ TEST_F(SplitTest, test_TermPrinting) {
     std::string str(str_p);
     std::string reference = "(f a a)";
     free(str_p);
-    std::cout << str << endl;
+    std::cout << str << std::endl;
     ASSERT_EQ(str.compare(reference), 0);
 }

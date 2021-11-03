@@ -5,6 +5,8 @@
 #include "Model.h"
 #include "Substitutor.h"
 
+#include <sstream>
+
 bool Model::isCorrect(const SymbolDefinition & defs) const {
     for (const auto & entry : defs) {
         SymRef sr = entry.first;
@@ -80,7 +82,7 @@ PTRef Model::evaluate(PTRef term) {
  * @param formalArgDefaultPrefix
  * @return a string that is guaranteed to be different from sr
  */
-std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix) {
+std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const std::string & formalArgDefaultPrefix) {
     const std::string & symName(logic.getSymName(sr));
 
     // Collision is possible if formalArgDefaultPrefix can be extended to symName by adding at least one character.

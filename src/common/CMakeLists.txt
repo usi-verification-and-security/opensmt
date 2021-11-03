@@ -21,7 +21,7 @@ target_sources(common
 
 install(FILES 
     Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h SigMap.h Timer.h osmtinttypes.h
-    TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h
+    TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 
