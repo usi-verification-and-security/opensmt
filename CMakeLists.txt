@@ -45,6 +45,7 @@ option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
+option(ENABLE_LINE_EDITING "Enable line editing with readline or libedit" OFF)
 option(USE_READLINE "Use readline over libedit" OFF)
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
@@ -130,9 +131,13 @@ if(STATISTICS)
     add_definitions(-DSTATISTICS)
 endif(STATISTICS)
 
-if (USE_READLINE)
-  add_definitions(-DUSE_READLINE)
+if (ENABLE_LINE_EDITING)
+  add_definitions(-DENABLE_LINE_EDITING)
+  if (USE_READLINE)
+    add_definitions(-DUSE_READLINE)
+  endif()
 endif()
+
 if (EXPLICIT_CONGRUENCE_EXPLANATIONS)
   add_definitions(-DEXPLICIT_CONGRUENCE_EXPLANATIONS)
 endif()
@@ -170,7 +175,7 @@ endif()
 #########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
 
-if (USE_READLINE)
+if (ENABLE_LINE_EDITING AND USE_READLINE)
   message("You have chosen to build OpenSMT against optional GPL-licensed components (readline)."
           "\n"
           "As these libraries are covered under the GPL, so will the resulting binary of OpenSMT.")
