@@ -1,5 +1,8 @@
 ### 2.2.1 (unreleased)
 
+API changes:
+ - Interpret: the default build does not depend on line editing libraries.
+
 Bug fixes:
  - UF: Fix internal error on top-level distinct in incremental mode.
 
