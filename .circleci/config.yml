@@ -36,6 +36,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Debug
+                    ENABLE_LINE_EDITING: ON
             - run:
                 name: Clean build directory
                 command: |
