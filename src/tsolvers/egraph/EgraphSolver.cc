@@ -937,14 +937,8 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
         // We deduce only things that aren't currently assigned or
         // that we previously deduced on this branch
         PTRef v_tr = getEnode(v).getTerm();
-        if (logic.isNot(v_tr)) {
-            // Negation of a boolean valued term.  Propagation handled in the positive case already
-            v = getEnode(v).getEqNext();
-            if (v == vstart)
-                break;
-            continue;
-        }
-        if (!hasPolarity(v_tr)) {
+        if (not hasPolarity(v_tr) and not logic.isNot(v_tr)) {
+            // Negated boolean terms are handled in the positive case
             assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef STATISTICS
