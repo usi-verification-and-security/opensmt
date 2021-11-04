@@ -830,9 +830,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
-    if (config.theory_propagation) {
-        deduce( x, y, reason );
-    }
+    deduce( x, y, reason );
 
     Enode & en_x = getEnode(x);
     Enode const & en_y = getEnode(y);
