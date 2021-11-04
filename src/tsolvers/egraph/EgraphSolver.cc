@@ -101,9 +101,6 @@ Egraph::Egraph(SMTConfig & c, Logic & l, ExplainerType explainerType)
 //
 void Egraph::pushBacktrackPoint( )
 {
-#ifdef VERBOSE_EUF
-  cerr << "bt point " << backtrack_points.size() << endl;
-#endif
   // Save solver state if required
   backtrack_points.push( undo_stack_main.size( ) );
 
@@ -354,9 +351,6 @@ bool Egraph::addEquality(PtAsgn pa) {
         res = assertEq(e, pt[i], pa);
 
     if (res) {
-#ifdef VERBOSE_EUF
-//        cerr << "Asserting the equality to true / false" << endl;
-#endif
         bool res2;
         // First: I'm not sure this is the right way to do this!
         // second:
@@ -395,9 +389,6 @@ bool Egraph::addDisequality(PtAsgn pa) {
     if (res == true && pt.size() == 2)
 #endif
     {
-#ifdef VERBOSE_EUF
-//        cerr << "Asserting the equality to false/true" << endl;
-#endif
         bool res2;
         // pa.sgn == true if this is a disequality
         if (pa.sgn == l_True)
@@ -426,9 +417,6 @@ bool Egraph::addTrue(PTRef term) {
         tsolver_stats.unsat_calls++;
     else {
         tsolver_stats.sat_calls++;
-#ifdef VERBOSE_EUF
-        cerr << "sat call" << endl;
-#endif
     }
 #endif
     return res;
@@ -444,9 +432,6 @@ bool Egraph::addFalse(PTRef term) {
         tsolver_stats.unsat_calls++;
     else {
         tsolver_stats.sat_calls++;
-#ifdef VERBOSE_EUF
-        cerr << "sat call" << endl;
-#endif
     }
 #endif
     return res;
@@ -925,16 +910,6 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                     // Found the equality, and we deduce its negation
                     ERef ded_eq = enode_store.termToERef[eq];
                     enode_store[ded_eq].setDeduced(l_False);
-#ifdef VERBOSE_EUF
-                    cerr << "Neg-Deducing ";
-                    cerr << "not " << logic.printTerm(eq);
-                    cerr << " since ";
-                    cerr << logic.printTerm(enode_store[x].getTerm());
-                    cerr << " and ";
-                    cerr << logic.printTerm(enode_store[y].getTerm());
-                    cerr << " are now equal";
-                    cerr << endl;
-#endif
                     deductions.push(PtAsgn_reason(eq, l_False, reason.tr));
                     tsolver_stats.deductions_done ++;
                 }
@@ -1101,20 +1076,6 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
     ERef p = getEnode(x).getRoot();
     ERef q = getEnode(y).getRoot();
 
-#ifdef VERBOSE_EUF
-    if (enode_store[x].isTerm()) {
-        cerr << "Checking unmergeability of "
-             << logic.printTerm(enode_store[x].getTerm())
-             << " (" << p.x << ") "
-             << " [" << logic.printTerm(enode_store[p].getTerm())
-             << "] and "
-             << logic.printTerm(enode_store[y].getTerm())
-             << " (" << q.x << ") "
-             << " [" << logic.printTerm(enode_store[q].getTerm())
-             << "]" << endl;
-    }
-#endif
-
     // If they are in the same class, they can merge
     if ( p == q ) return false;
     // Check if they have different constants. It is sufficient
@@ -1158,19 +1119,11 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
         const Elist& el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
         if (getEnode(el_pptr.e).getRoot() == q) {
-#ifdef VERBOSE_EUF
-            cerr << "Unmergeable-q: " << logic.printTerm(enode_store[q].getTerm()) << endl;
-            cerr << " - reason: " << logic.printTerm(el_pptr.reason.tr) << endl;
-#endif
             r = el_pptr.reason;
             assert((r.type == Expl::Type::pol) or ((logic.isEquality(r.pta.tr) and r.pta.sgn == l_False) or (logic.isDisequality(r.pta.tr) and r.pta.sgn == l_True)));
             return true;
         }
         if (getEnode(el_qptr.e).getRoot() == p) {
-#ifdef VERBOSE_EUF
-            cerr << "Unmergeable-p: " << logic.printTerm(enode_store[p].getTerm()) << endl;
-            cerr << " - reason: " << logic.printTerm(el_qptr.reason.tr) << endl;
-#endif
             r = el_qptr.reason;
             assert((r.type == Expl::Type::pol) or ((logic.isEquality(r.pta.tr) and r.pta.sgn == l_False) or (logic.isDisequality(r.pta.tr) and r.pta.sgn == l_True)));
             return true;

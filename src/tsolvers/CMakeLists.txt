@@ -18,14 +18,6 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFTHandler.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TSolver.cc"
 )
 
-if(VERBOSE_EUF)
-    target_compile_definitions(tsolvers PRIVATE -DVERBOSE_EUF)
-endif()
-
-if(VERBOSE_EUFEX)
-    target_compile_definitions(tsolvers PRIVATE -DVERBOSE_EUFEX)
-endif()
-
 include(egraph/CMakeLists.txt)
 include(lasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)

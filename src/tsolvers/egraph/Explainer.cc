@@ -63,12 +63,6 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
     // backtracking. So we just save reason and check both parts
     exp_undo_stack.push(x);
     exp_undo_stack.push(y);
-
-#ifdef VERBOSE_EUF
-    assert( checkExpTree(getEnode(x).getTerm()) );
-    assert( checkExpTree(getEnode(y).getTerm()) );
-//    cout << printExplanationTree( tr_y ) << endl;
-#endif
 }
 
 //
@@ -91,10 +85,6 @@ void Explainer::reRootOn(ERef x) {
         // Reverse edge & reason
         getEnode(parent).setExpParent(p);
         getEnode(parent).setExpReason(saved_reason);
-
-#ifdef VERBOSE_EUF
-        assert( checkExpTree( getEnode(parent).getTerm() ) );
-#endif
 
         // Move the two pointers
         p = parent;
@@ -120,25 +110,12 @@ vec<PtAsgn> Explainer::explain(opensmt::pair<ERef,ERef> nodePair) {
 
         if (p == q) continue;
 
-#ifdef VERBOSE_EUF
-        assert( checkExpTree( getEnode(p).getTerm() ) );
-        assert( checkExpTree( getEnode(q).getTerm() ) );
-#endif
-#ifdef VERBOSE_EUFEX
-        cerr << "Explain " << toString(p) << " and " << toString(q) << endl;
-#endif
         ERef w = NCA(p, q);
         if (w == ERef_Undef) {
             throw OsmtInternalException("Equality explanation queried for terms not in same equivalence class");
         }
 
-#ifdef VERBOSE_EUFEX
-        cerr << "Explaining along path " << toString(p) << " -> " << toString(w) << endl;
-#endif
         explainAlongPath(p, w, explanation, exp_pending, dupChecker);
-#ifdef VERBOSE_EUFEX
-        cerr << "Explaining along path " << toString(q) << " -> " << toString(w) << endl;
-#endif
         explainAlongPath(q, w, explanation, exp_pending, dupChecker);
     }
     cleanup();
@@ -151,25 +128,14 @@ vec<PtAsgn> Explainer::explain(opensmt::pair<ERef,ERef> nodePair) {
 //
 vec<PtAsgn> Explainer::explain(ERef x, ERef y)
 {
-#ifdef VERBOSE_EUFEX
-    cerr << "exp pending size " << exp_pending.size() << endl;
-    cerr << "explain pushing " << toString(x) << " and " << toString(y) << endl;
-#endif
     return explain({x, y});
 }
 
 void Explainer::cleanup() {
     // Destroy the eq classes of the explanation
-    // May be reversed once debug's fine
-#ifdef VERBOSE_EUFEX
-    cerr << "Cleanup called" << endl;
-#endif
     for (int i = exp_cleanup.size()-1; i >= 0; i--) {
         auto x = exp_cleanup[i];
         getEnode(x).setExpRoot(x);
-#ifdef VERBOSE_EUFEX
-        cerr << "clean: " << toString(x) << endl;
-#endif
     }
     exp_cleanup.clear();
 }
@@ -183,9 +149,6 @@ void Explainer::explainAlongPath(ERef x, ERef y, vec<PtAsgn> &outExplanation, Pe
     // Why this? Not in the pseudo code!
     auto to = highestNode(y);
 
-#ifdef VERBOSE_EUFEX
-    cerr << "Explaining " << toString(v) << " to " << toString(to) << endl;
-#endif
     while ( v != to ) {
         ERef p = getEnode(v).getExpParent();
         assert(p != ERef_Undef);
@@ -252,23 +215,11 @@ PtAsgn Explainer::explainEdge(const ERef v, const ERef p, PendingQueue &exp_pend
 }
 
 void Explainer::makeUnion(ERef x, ERef y) {
-#ifdef VERBOSE_EUFEX
-    cerr << "Union: " << toString(x) << " " << toString(y) << endl;
-#endif
     // Unions are always between a node and its parent
     assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
     ERef x_exp_root = find(x);
     ERef y_exp_root = find(y);
-#ifdef VERBOSE_EUFEX
-    cerr << "Root of " << toString(x) << " is " << toString(x_exp_root) << endl;
-    cerr << "Root of " << toString(y) << " is " << toString(y_exp_root) << endl;
-#endif
-
-#ifdef VERBOSE_EUF
-    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(x_exp_root).getTerm() ) );
-    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(y_exp_root).getTerm() ) );
-#endif
 
     // No need to merge elements of the same class
     if ( x_exp_root == y_exp_root )
@@ -278,19 +229,8 @@ void Explainer::makeUnion(ERef x, ERef y) {
     getEnode(x_exp_root).setExpRoot(y_exp_root);
 
     // Keep track of this union
-#ifdef VERBOSE_EUFEX
-    cerr << "Union: cleanup " << toString(x_exp_root) << endl;
-#endif
     exp_cleanup.push(x_exp_root);
-#ifdef VERBOSE_EUFEX
-    cerr << "Union: cleanup " << toString(y_exp_root) << endl;
-#endif
     exp_cleanup.push(y_exp_root);
-
-#ifdef VERBOSE_EUF
-    assert(checkExpReachable(getEnode(x).getTerm(), getEnode(x_exp_root).getTerm()));
-    assert(checkExpReachable(getEnode(y).getTerm(), getEnode(y_exp_root).getTerm()));
-#endif
 }
 
 //
@@ -301,16 +241,10 @@ ERef Explainer::find(ERef x) {
     // If x is the root, return x
     if (getEnode(x).getExpRoot() == x) return x;
     // Recurse
-#ifdef VERBOSE_EUFEX
-    cerr << "expFind: " << toString(x) << endl;
-#endif
     ERef exp_root = find(getEnode(x).getExpRoot());
     // Path compression
     if (exp_root != getEnode(x).getExpRoot()) {
         getEnode(x).setExpRoot(exp_root);
-#ifdef VERBOSE_EUFEX
-        cerr << "expFind: cleanup " << toString(x) << endl;
-#endif
         exp_cleanup.push(x);
     }
     return exp_root;
@@ -330,17 +264,7 @@ ERef Explainer::NCA(ERef x, ERef y) {
     ++time_stamp;
 
     auto h_x = highestNode(x);
-#ifdef VERBOSE_EUFEX
-    cerr << "Highest node of " << toString(x) << " is " << toString(h_x) << endl;
-#endif
     auto h_y = highestNode(y);
-#ifdef VERBOSE_EUFEX
-    cerr << "Highest node of " << toString(y) << " is " << toString(h_y) << endl;
-#endif
-#ifdef VERBOSE_EUF
-    assert(checkExpReachable( getEnode(x).getTerm(), getEnode(h_x).getTerm()));
-    assert(checkExpReachable( getEnode(y).getTerm(), getEnode(h_y).getTerm() ));
-#endif
 
     while ( h_x != h_y ) {
         assert(h_x == ERef_Undef || getEnode(h_x).getExpTimeStamp() <= time_stamp);
@@ -348,18 +272,10 @@ ERef Explainer::NCA(ERef x, ERef y) {
         if ( h_x != ERef_Undef ) {
             // We reached a node already marked by h_y
             if (getEnode(h_x).getExpTimeStamp() == time_stamp) {
-#ifdef VERBOSE_EUFEX
-                cerr << "found x, " << toString(h_x) << endl;
-#endif
                 return h_x;
             }
 
             // Mark the node and move to the next
-#ifdef VERBOSE_EUFEX
-            // MB: this does not work any, there is no term_store member anymore
-//            cerr << "x: ExpParent of " << logic.printTerm(h_x) << " is "
-//                 << (term_store[h_x].getExpParent() == PTRef_Undef ? "undef" : logic.printTerm(term_store[h_x].getExpParent())) << endl;
-#endif
             if (getEnode(h_x).getExpParent() != h_x) {
                 getEnode(h_x).setExpTimeStamp(time_stamp);
                 h_x = getEnode(h_x).getExpParent();
@@ -368,9 +284,6 @@ ERef Explainer::NCA(ERef x, ERef y) {
         if ( h_y != ERef_Undef ) {
             // We reached a node already marked by h_x
             if (getEnode(h_y).getExpTimeStamp() == time_stamp) {
-#ifdef VERBOSE_EUFEX
-                cerr << "found y, " << toString(h_y) << endl;
-#endif
                 return h_y;
             }
             // Mark the node and move to the next

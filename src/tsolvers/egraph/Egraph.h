@@ -409,19 +409,6 @@ private:
     void processParentsBeforeUnMerge(ERef oldroot);
     void processParentsAfterUnMerge(ERef oldroot);
 
-#ifdef VERBOSE_EUF
-public:
-    const char* printUndoTrail     ( );
-    const char* printAsrtTrail     ( );
-private:
-    bool checkParents              ( ERef );
-    bool checkInvariants           ( );
-    bool checkInvariantSTC         ( ) { return true; }
-    bool checkExp                  ( );
-    bool checkExpTree              ( PTRef );
-    bool checkExpReachable         ( PTRef, PTRef );
-#endif
-
 #ifdef STATISTICS
     void printStatistics ( ofstream & );
 #endif
