@@ -147,8 +147,8 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
     // MB: it could be uninterpreted predicate! No suggestion in that case
     if (!logic.isEquality(p) && !logic.isDisequality(p)) { return l_Undef; }
     bool equality = logic.isEquality(p);
-    const Pterm& term = logic.getPterm(p);
-    if(term.size() > 2) { return l_Undef; } // For now focus on 2 arguments
+    Pterm const & term = logic.getPterm(p);
+    if (term.size() > 2) { return l_Undef; } // For now focus on 2 arguments
     PTRef lhs = term[0];
     PTRef rhs = term[1];
     assert(enode_store.has(lhs) && enode_store.has(rhs));
@@ -175,8 +175,8 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
 void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 {
     (void)deduction;
-    for (int i = 0; i < explanation.size(); i++) {
-        cnfl.push(explanation[i]);
+    for (PtAsgn pta : explanation) {
+        cnfl.push(pta);
     }
 #ifdef STATISTICS
     if (deduction) {
@@ -278,7 +278,7 @@ void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig
         PTRef child_tr = enode_store.getPTRef(child_er);
         vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
     }
-    modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), std::move(vals), getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
+    modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), vals, getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
 }
 
 void Egraph::declareAtom(PTRef atom) {
@@ -293,8 +293,8 @@ void Egraph::declareTermRecursively(PTRef tr) {
     const Pterm& term = logic.getPterm(tr);
     // declare first the childen and then the current term
     assert(not logic.isIte(tr));
-    for (int i = 0; i < term.size(); ++i) {
-        declareTermRecursively(term[i]);
+    for (PTRef child : term) {
+        declareTermRecursively(child);
     }
 
     if (enode_store.needsEnode(tr)) {
@@ -330,8 +330,8 @@ void Egraph::declareTerm(PTRef tr) {
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
         assert(PTRefERefPairVec.size() == 2);
-        for (auto PTRefERefPair : PTRefERefPairVec) {
-            boolTermToERef.insert(PTRefERefPair.tr, PTRefERefPair.er);
+        for (auto [child_tr, child_er] : PTRefERefPairVec) {
+            boolTermToERef.insert(child_tr, child_er);
         }
         assert(PTRefERefPairVec[0].tr == logic.mkNot(PTRefERefPairVec[1].tr));
         assertNEq(PTRefERefPairVec[0].er, PTRefERefPairVec[1].er, Expl(Expl::Type::pol, PtAsgn_Undef, PTRefERefPairVec[0].tr));
@@ -343,7 +343,7 @@ void Egraph::declareTerm(PTRef tr) {
 }
 
 bool Egraph::addEquality(PtAsgn pa) {
-    Pterm& pt = logic.getPterm(pa.tr);
+    Pterm const & pt = logic.getPterm(pa.tr);
     assert(pt.size() == 2);
     bool res = true;
     PTRef e = pt[0];
@@ -375,7 +375,7 @@ bool Egraph::addEquality(PtAsgn pa) {
 }
 
 bool Egraph::addDisequality(PtAsgn pa) {
-    const Pterm& pt = logic.getPterm(pa.tr);
+    Pterm const & pt = logic.getPterm(pa.tr);
     bool res = true;
 
     if (pt.size() == 2)
@@ -386,7 +386,7 @@ bool Egraph::addDisequality(PtAsgn pa) {
 #ifdef ENABLE_DIST_BOOL // This should be more efficient but osmt1 does not do it
     if (res == true)
 #else
-    if (res == true && pt.size() == 2)
+    if (res && pt.size() == 2)
 #endif
     {
         bool res2;
@@ -507,13 +507,12 @@ bool Egraph::mergeLoop( PtAsgn reason )
         has_explanation = true;
         ERef reason_1 = ERef_Undef;
         ERef reason_2 = ERef_Undef;
-        //
-        // Different constants
-        //
+
         ERef enr_proot = en_p.getRoot();
         ERef enr_qroot = en_q.getRoot();
 
         if ( reason_inequality.type == Expl::Type::cons) {
+            // Different constants
             explainConstants(p,q);
         }
         // Does the reason term correspond to disequality symbol
@@ -523,7 +522,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
                 // A distinction.
                 // We should iterate through the elements of the distinction
                 // and find which atoms are causing the conflict
-                const Pterm& pt_reason = logic.getPterm(pta.tr);
+                Pterm const & pt_reason = logic.getPterm(pta.tr);
                 for (auto ptr_arg : pt_reason) {
                     // (1) Get the enode corresponding to the proper term
                     // (2) Find the enode corresponding to the root
@@ -542,7 +541,7 @@ bool Egraph::mergeLoop( PtAsgn reason )
             } else if ( logic.isEquality(reason_inequality.pta.tr) ) {
                 // The reason is a negated equality
                 assert(reason_inequality.pta.sgn == l_False);
-                const Pterm& pt_reason = logic.getPterm(reason_inequality.pta.tr);
+                Pterm const & pt_reason = logic.getPterm(reason_inequality.pta.tr);
 
                 // The equality
                 // If properly booleanized, the left and righ sides of equality
@@ -612,7 +611,7 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, const Expl &r ) {
     return assertNEq(p, q, r);
 }
 
-bool Egraph::assertNEq(ERef p, ERef q, const Expl &r)
+bool Egraph::assertNEq(ERef p, ERef q, Expl const & r)
 {
     // Is it possible that x is already in the list of y
     // and viceversa ? YES. If things have
@@ -816,7 +815,7 @@ void Egraph::merge ( ERef x, ERef y, PtAsgn reason )
     // Step 1: Ensure that the constant or the one with a larger equivalence
     // class will be in x (and will become the root). Constants must be roots! It is an invariant that other code depends on!
     if (isConstant(y) || (!(isConstant(x)) && (getParentsSize(x) < getParentsSize(y)))) {
-        swap(x,y);
+        std::swap(x,y);
     }
 
     // MB: Before we actually merge the classes, we check if we are not merging with eq. class of constant True or False
@@ -1035,7 +1034,7 @@ void Egraph::undoDisequality(ERef x)
     assert( en_x.getRoot( ) != en_y.getRoot( ) );
 
     ELRef ydist = el_xfirst.link == xfirst ? xfirst : el_xfirst.link;
-    Elist& el_ydist = forbid_allocator[ydist];
+    Elist const & el_ydist = forbid_allocator[ydist];
 
     // Only one node in the list
     if ( el_ydist.link == ydist ) {
@@ -1049,7 +1048,7 @@ void Egraph::undoDisequality(ERef x)
     forbid_allocator.free(ydist);
 
     ELRef xdist = el_yfirst.link == yfirst ? yfirst : el_yfirst.link;
-    Elist& el_xdist = forbid_allocator[xdist];
+    Elist const & el_xdist = forbid_allocator[xdist];
 
     // Only one node in the list
     if ( el_xdist.link == xdist ) {
@@ -1087,12 +1086,12 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
         r = Expl(Expl::Type::cons, PtAsgn_Undef, PTRef_Undef);
         return true;
     }
-    const Enode& en_p = getEnode(p);
-    const Enode& en_q = getEnode(q);
+    Enode const & en_p = getEnode(p);
+    Enode const & en_q = getEnode(q);
 
     if (dist_t intersection = en_p.getDistClasses() & en_q.getDistClasses()) {
         // Compute the first index in the intersection
-        // TODO: Use hacker's delight
+        // TODO: Use index = std::countr_zero<unsigned>(intersection) when c++20 becomes available?
         unsigned index = 0;
         while ((intersection & 1) == 0) {
             intersection = intersection >> 1;
@@ -1104,8 +1103,8 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
         return true;
     }
     // Check forbid lists (binary distinction)
-    const ELRef pstart = en_p.getForbid();
-    const ELRef qstart = en_q.getForbid();
+    ELRef pstart = en_p.getForbid();
+    ELRef qstart = en_q.getForbid();
     // If at least one is empty, they can merge
     if (pstart == ELRef_Undef || qstart == ELRef_Undef) {
         return false;
@@ -1115,8 +1114,8 @@ bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
     ELRef qptr = qstart;
 
     for (;;) {
-        const Elist& el_pptr = forbid_allocator[pptr];
-        const Elist& el_qptr = forbid_allocator[qptr];
+        Elist const & el_pptr = forbid_allocator[pptr];
+        Elist const & el_qptr = forbid_allocator[qptr];
         // They are unmergeable if they are on the other forbid list
         if (getEnode(el_pptr.e).getRoot() == q) {
             r = el_pptr.reason;
@@ -1252,12 +1251,11 @@ void Egraph::relocAll(ELAllocator& to) {
             cerr << "  new node: " << er.x << endl;
 #endif
             // er_old points to the old allocator
-            int id = to[er].getId();
-            for (int j = 0; j < to.referenced_by[id].size(); j++) {
+            auto id = to[er].getId();
+            for (ERef o : to.referenced_by[id]) {
 #ifdef GC_DEBUG
                 cerr << "Updating owner references" << endl;
 #endif
-                ERef o = to.referenced_by[id][j];
                 assert(o != ERef_Undef);
                 enode_store[o].setForbid(er);
 #ifdef GC_DEBUG
@@ -1266,7 +1264,7 @@ void Egraph::relocAll(ELAllocator& to) {
             }
             if (prev_fx != ELRef_Undef)
                 to[prev_fx].link = er;
-            if (done == true) break;
+            if (done) break;
             prev_fx = er;
             er = forbid_allocator[er_old].link;
 #ifdef GC_DEBUG
@@ -1328,13 +1326,12 @@ void Egraph::faGarbageCollect() {
 void Egraph::mergeForbidLists(ERef toRef, const Enode & from) {
     Enode & to = getEnode(toRef);
     if ( from.getForbid( ) != ELRef_Undef ) {
-        // We assign the same forbid list
         if ( to.getForbid( ) == ELRef_Undef ) {
+            // We assign the same forbid list
             to.setForbid( from.getForbid( ) );
             forbid_allocator.addReference(to.getForbid(), toRef);
-        }
+        } else {
             // Otherwise we splice the two lists
-        else {
             ELRef tmp = forbid_allocator[to.getForbid()].link;
             forbid_allocator[to.getForbid()].link = forbid_allocator[from.getForbid()].link;
             forbid_allocator[from.getForbid()].link = tmp;
@@ -1354,7 +1351,7 @@ void Egraph::mergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     // Perform the union of the two equivalence classes
     // i.e. reroot every node in y's class to point to x
     ERef v = oldroot;
-    const ERef vstart = v;
+    ERef vstart = v;
     while (true) {
         Enode & en_v = getEnode(v);
         en_v.setRoot(newroot);
@@ -1384,7 +1381,7 @@ void Egraph::unmergeEquivalenceClasses(ERef newroot, ERef oldroot) {
     en_y.setEqNext(tmp);
     // Reroot each node of y's eq class back to y
     ERef v = oldroot;
-    const ERef vstart = v;
+    ERef vstart = v;
     while (true) {
         Enode & en_v = getEnode(v);
         en_v.setRoot(oldroot);
@@ -1401,7 +1398,7 @@ void Egraph::unmergeForbidLists(ERef toRef, const Enode & from) {
         forbid_allocator.removeRef(toRef, to.getForbid());
         to.setForbid( ELRef_Undef );
     }
-        // Unsplice back the two lists
+    // Unsplice back the two lists
     else if ( from.getForbid( ) != ELRef_Undef ) {
         ELRef tmp = forbid_allocator[to.getForbid()].link;
         forbid_allocator[to.getForbid()].link = forbid_allocator[from.getForbid()].link;
@@ -1412,14 +1409,14 @@ void Egraph::unmergeForbidLists(ERef toRef, const Enode & from) {
 
 
 /**
- * Before oldroot is merged, the parents of its conruence class are scanned to
+ * Before oldroot is merged, the parents of its congruence class are scanned to
  * 1. Remove them from signature table
  * 2. Remove them from use-vectors of the other children (they are kept in the oldroot's use-vector for post-merge pass)
  */
 void Egraph::processParentsBeforeMerge(ERef oldroot) {
-    UseVector & oldroot_parents = parents[getEnode(oldroot).getCid()];
-    for (auto & entry : oldroot_parents) {
-        assert(!entry.isMarked());
+    UseVector const & oldroot_parents = parents[getEnode(oldroot).getCid()];
+    for (auto entry : oldroot_parents) {
+        assert(not entry.isMarked());
         if (entry.isValid()) {
             ERef parent = UseVector::entryToERef(entry);
             enode_store.removeSig(parent);

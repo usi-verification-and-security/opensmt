@@ -53,11 +53,8 @@ struct UseVectorIndex {
 
 static_assert(sizeof(ERef) == sizeof(UseVectorIndex));
 
-inline void swap(ERef & y, ERef & z) { ERef tmp = y; y = z; z = tmp; }
-
 using CgId = uint32_t;
 using enodeid_t = int;
-
 
 //
 // Data structure used to store forbid lists
@@ -65,7 +62,7 @@ using enodeid_t = int;
 
 struct ELRef {
     uint32_t x;
-    void operator= (uint32_t v) { x = v; }
+    ELRef & operator= (uint32_t v) { x = v; return *this; }
     inline friend bool operator== (const ELRef& a1, const ELRef& a2) {return a1.x == a2.x; }
     inline friend bool operator!= (const ELRef& a1, const ELRef& a2) {return a1.x != a2.x; }
 };
@@ -186,7 +183,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     const Enode& operator[](ERef r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
     Enode*       lea       (ERef r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
     const Enode* lea       (ERef r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
-    ERef         ael       (const Enode* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ERef rf; rf.x = r; return rf; }
+    ERef         ael       (const Enode* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return {r}; }
 
     void free(ERef eid)
     {

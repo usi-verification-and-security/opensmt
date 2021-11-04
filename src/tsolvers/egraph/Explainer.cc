@@ -39,7 +39,7 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
     if (getEnode(x).getRoot() == getEnode(y).getRoot()) {
         throw OsmtInternalException("Attempting to store explanation for already known equality");
     }
-    // The main observation here is that the explanation tree, altough
+    // The main observation here is that the explanation tree, although
     // differently oriented, has the same size as the equivalence tree
     // (actually we don't keep the equivalence tree, because we use
     // the quick-find approach, but here we just need the size). So we
@@ -48,10 +48,10 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
     // balanced (which is a requirement to keep the O(nlogn) bound
 
     // Make sure that x is the node with the larger number of edges to switch
-    const Enode& root_x = getEnode(getEnode(x).getRoot());
-    const Enode& root_y = getEnode(getEnode(y).getRoot());
+    Enode const & root_x = getEnode(getEnode(x).getRoot());
+    Enode const & root_y = getEnode(getEnode(y).getRoot());
     if ( root_x.getSize() < root_y.getSize() ) {
-        swap(x,y);
+        std::swap(x,y);
     }
     // Reroot the explanation tree on y. It has an amortized cost of logn
     reRootOn( y );
@@ -76,7 +76,7 @@ void Explainer::reRootOn(ERef x) {
     PtAsgn reason = getEnode(p).getExpReason();
     getEnode(x).setExpParent(ERef_Undef);
     getEnode(x).setExpReason(PtAsgn_Undef);
-    while( parent != ERef_Undef ) {
+    while (parent != ERef_Undef) {
         // Save grandparent
         ERef grandparent = getEnode(parent).getExpParent();
         // Save reason
@@ -133,8 +133,7 @@ vec<PtAsgn> Explainer::explain(ERef x, ERef y)
 
 void Explainer::cleanup() {
     // Destroy the eq classes of the explanation
-    for (int i = exp_cleanup.size()-1; i >= 0; i--) {
-        auto x = exp_cleanup[i];
+    for (auto x : exp_cleanup) {
         getEnode(x).setExpRoot(x);
     }
     exp_cleanup.clear();

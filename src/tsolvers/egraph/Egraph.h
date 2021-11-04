@@ -346,8 +346,8 @@ private:
 
     bool    assertEq        (PTRef, PTRef, PtAsgn);               // Asserts an equality
     bool    assertEq        (ERef, ERef, PtAsgn);                 // Called by the above
-    bool    assertNEq       (PTRef, PTRef, const Expl &r);        // Asserts a negated equality
-    bool    assertNEq       (ERef, ERef, const Expl &r);          // Called by the above
+    bool    assertNEq       (PTRef, PTRef, Expl const & r);        // Asserts a negated equality
+    bool    assertNEq       (ERef, ERef, Expl const & r);          // Called by the above
     bool    assertDist      ( PTRef, PtAsgn);                     // Asserts a distinction
     //
     // Backtracking
@@ -400,8 +400,8 @@ private:
     // Helper methods
     void mergeForbidLists(ERef to, const Enode & from);
     void unmergeForbidLists(ERef to, const Enode & from);
-    void mergeDistinctionClasses(Enode & to, const Enode & from);
-    void unmergeDistinctionClasses(Enode & to, const Enode & from);
+    static void mergeDistinctionClasses(Enode & to, const Enode & from);
+    static void unmergeDistinctionClasses(Enode & to, const Enode & from);
     void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void processParentsBeforeMerge(ERef mergedRoot);
