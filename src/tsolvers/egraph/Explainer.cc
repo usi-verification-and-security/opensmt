@@ -48,10 +48,12 @@ void Explainer::storeExplanation(ERef x, ERef y, PtAsgn reason)
     // balanced (which is a requirement to keep the O(nlogn) bound
 
     // Make sure that x is the node with the larger number of edges to switch
-    Enode const & root_x = getEnode(getEnode(x).getRoot());
-    Enode const & root_y = getEnode(getEnode(y).getRoot());
-    if ( root_x.getSize() < root_y.getSize() ) {
-        std::swap(x,y);
+    {
+        Enode const &root_x = getEnode(getEnode(x).getRoot());
+        Enode const &root_y = getEnode(getEnode(y).getRoot());
+        if (root_x.getEqSize() < root_y.getEqSize()) {
+            std::swap(x, y);
+        }
     }
     // Reroot the explanation tree on y. It has an amortized cost of logn
     reRootOn( y );
