@@ -451,8 +451,7 @@ bool Egraph::assertEq ( PTRef tr_x, PTRef tr_y, PtAsgn r ) {
 
 bool Egraph::assertEq(ERef x, ERef y, PtAsgn r) {
     assert(pending.size() == 0);
-    pending.push(x);
-    pending.push(y);
+    pending.push({x, y});
     return mergeLoop(r);
 }
 
@@ -465,12 +464,10 @@ bool Egraph::mergeLoop( PtAsgn reason )
 
     while ( pending.size() != 0 ) {
         // Remove a pending equivalence
-        assert( pending.size( ) >= 2 );
-        assert( pending.size( ) % 2 == 0 );
-        ERef p = pending.last( ); pending.pop( );
-        ERef q = pending.last( ); pending.pop( );
-        const Enode& en_p = getEnode(p);
-        const Enode& en_q = getEnode(q);
+        auto [p, q] = pending.last();
+        pending.pop();
+        Enode const & en_p = getEnode(p);
+        Enode const & en_q = getEnode(q);
 
         if ( en_p.getRoot( ) == en_q.getRoot( ) )
             continue;
@@ -1448,8 +1445,7 @@ void Egraph::processParentsAfterMerge(ERef oldroot) {
             if (q != ERef_Undef) {
                 // Case 1: p joins q's congruence class
                 assert(q != parent);
-                pending.push(parent);
-                pending.push(q);
+                pending.push({parent, q});
                 // p is no longer in the congruence table
                 // put a mark for backtracking
                 entry.mark();

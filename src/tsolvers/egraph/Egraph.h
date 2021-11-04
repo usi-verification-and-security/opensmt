@@ -366,7 +366,7 @@ private:
     void    undoDistinction ( PTRef );                            // Undoes a distinction
 
 
-    vec<ERef>                 pending;                          // Pending merges
+    vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
     void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
