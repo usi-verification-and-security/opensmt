@@ -84,30 +84,10 @@ bool THandler::assertLits(const vec<Lit> & trail)
         if ( pt_r == getLogic().getTerm_true() )       { assert(sign(l) == false); continue; }
         else if ( pt_r == getLogic().getTerm_false() ) { assert(sign(l) == true ); continue; }
 
-#ifdef VERBOSE_EUF
-        // We are interested only in theory atoms from here onwards
-        cerr << "Asserting " << (sign(l) ? "not " : "")  << getLogic().printTerm(pt_r) << endl;
-//        cerr << "Asserting " << (sign(l) ? "not " : "")  << getLogic().printTerm(pt_r) << " (" << pt_r.x << ")" << endl;
-
-//        cout << printAssertion(l);
-#endif
-
         res = assertLit(PtAsgn(pt_r, sign(l) ? l_False : l_True));
-//        res &= check(true);
-
-#ifdef VERBOSE_EUF
-//        if (res == l_False) {
-//            cerr << "conflict asserting " << logic.term_store.printTerm(pt_r)
-//                 << endl;
-//        }
-#endif
-//    if ( !res && config.certification_level > 2 )
-//      verifyCallWithExternalTool( res, i );
     }
 
     checked_trail_size = stack.size( );
-//  assert( !res || trail.size( ) == (int)stack.size( ) );
-
     return res;
 }
 
@@ -173,9 +153,6 @@ void THandler::getConflict (
         assert(i != getSolverHandler().tsolvers.size());
     }
 
-#ifdef VERBOSE_EUF
-//    std::cout << printExplanation(explanation, assigns);
-#endif
     if (explanation.size() == 0) {
         max_decision_level = 0;
         return;

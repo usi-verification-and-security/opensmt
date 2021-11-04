@@ -346,8 +346,8 @@ private:
 
     bool    assertEq        (PTRef, PTRef, PtAsgn);               // Asserts an equality
     bool    assertEq        (ERef, ERef, PtAsgn);                 // Called by the above
-    bool    assertNEq       (PTRef, PTRef, const Expl &r);        // Asserts a negated equality
-    bool    assertNEq       (ERef, ERef, const Expl &r);          // Called by the above
+    bool    assertNEq       (PTRef, PTRef, Expl const & r);        // Asserts a negated equality
+    bool    assertNEq       (ERef, ERef, Expl const & r);          // Called by the above
     bool    assertDist      ( PTRef, PtAsgn);                     // Asserts a distinction
     //
     // Backtracking
@@ -366,7 +366,7 @@ private:
     void    undoDistinction ( PTRef );                            // Undoes a distinction
 
 
-    vec<ERef>                 pending;                          // Pending merges
+    vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
     void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
@@ -400,27 +400,14 @@ private:
     // Helper methods
     void mergeForbidLists(ERef to, const Enode & from);
     void unmergeForbidLists(ERef to, const Enode & from);
-    void mergeDistinctionClasses(Enode & to, const Enode & from);
-    void unmergeDistinctionClasses(Enode & to, const Enode & from);
+    static void mergeDistinctionClasses(Enode & to, const Enode & from);
+    static void unmergeDistinctionClasses(Enode & to, const Enode & from);
     void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void processParentsBeforeMerge(ERef mergedRoot);
     void processParentsAfterMerge(ERef mergedRoot);
     void processParentsBeforeUnMerge(ERef oldroot);
     void processParentsAfterUnMerge(ERef oldroot);
-
-#ifdef VERBOSE_EUF
-public:
-    const char* printUndoTrail     ( );
-    const char* printAsrtTrail     ( );
-private:
-    bool checkParents              ( ERef );
-    bool checkInvariants           ( );
-    bool checkInvariantSTC         ( ) { return true; }
-    bool checkExp                  ( );
-    bool checkExpTree              ( PTRef );
-    bool checkExpReachable         ( PTRef, PTRef );
-#endif
 
 #ifdef STATISTICS
     void printStatistics ( ofstream & );

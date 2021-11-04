@@ -150,9 +150,6 @@ vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
 }
 
 bool EnodeStore::needsRecursiveDefinition(PTRef tr) const {
-    bool recdef = true;
-    for (auto ch : logic.getPterm(tr)) {
-        recdef &= needsEnode(ch);
-    }
-    return recdef;
+    Pterm const & t = logic.getPterm(tr);
+    return std::all_of(t.begin(), t.end(), [this](PTRef ch) { return needsEnode(ch); });
 }

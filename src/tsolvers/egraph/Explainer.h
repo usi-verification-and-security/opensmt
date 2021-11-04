@@ -56,14 +56,13 @@ protected:
     using PendingQueue = vec<opensmt::pair<ERef,ERef>>;
     virtual vec<PtAsgn> explain      (opensmt::pair<ERef,ERef>);        // Main routine for explanation
     virtual PtAsgn  explainEdge      (ERef v, ERef p, PendingQueue &exp_pending, DupChecker& dc);
-    virtual void    explainAlongPath (ERef, ERef, vec<PtAsgn> &outExplanation, PendingQueue &exp_pending, DupChecker& dc); // Store explanation in explanation
-    virtual void    enqueueArguments (ERef, ERef, PendingQueue &exp_pending); // Enqueue arguments to be explained
-    virtual void    reRootOn         (ERef);                     // Reroot the proof tree on x
-    virtual void    makeUnion        (ERef, ERef);               // Union of x and y in the explanation
-    virtual ERef    find             (ERef);                     // Find for the eq classes of the explanation
-    virtual ERef    highestNode      (ERef);                     // Returns the node of the eq class of x that is closest to the root of the explanation tree
-    virtual ERef    NCA              (ERef, ERef);               // Return the nearest common ancestor of x and y
-    virtual void    cleanup          ();                         // Undoes the effect of expExplain
+    void explainAlongPath (ERef, ERef, vec<PtAsgn> &outExplanation, PendingQueue &exp_pending, DupChecker& dc); // Store explanation in explanation
+    void enqueueArguments (ERef, ERef, PendingQueue &exp_pending); // Enqueue arguments to be explained
+    void reRootOn         (ERef);                     // Reroot the proof tree on x
+    void makeUnion        (ERef, ERef);               // Union of x and y in the explanation
+    ERef findAndCompress  (ERef);                     // Find for the eq classes of the explanation
+    ERef NCA              (ERef, ERef);               // Return the nearest common ancestor of x and y
+    void cleanup          ();                         // Undoes the effect of expExplain
 
 
 #if MORE_DEDUCTIONS
