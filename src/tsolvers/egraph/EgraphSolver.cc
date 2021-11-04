@@ -761,32 +761,44 @@ void Egraph::backtrackToStackSize ( size_t size ) {
 
         undo_stack_main.pop();
 
-        if (last_action == MERGE) {
-            ERef e = u.arg.er;
-            undoMerge(e);
-            explainer->removeExplanation();
-        }
-
+        switch (last_action) {
+            case MERGE: {
+                ERef e = u.arg.er;
+                undoMerge(e);
+                explainer->removeExplanation();
+                break;
+            }
 #if MORE_DEDUCTIONS
-        else if ( last_action == ASSERT_NEQ ) {
-            ERef e = u.arg.er;
-            assert( neq_list.last( ) == e );
-            neq_list.pop( );
-        }
+            case ASSERT_NEQ: {
+                ERef e = u.arg.er;
+                assert( neq_list.last( ) == e );
+                neq_list.pop( );
+                break;
+            }
 #endif
-
-        else if (last_action == DISEQ) {
-            ERef e = u.arg.er;
-            undoDisequality(e);
-        } else if (last_action == DIST) {
-            PTRef ptr = u.arg.ptr;
-            undoDistinction(ptr);
-        } else if (last_action == CONS)
-            ;
-        else if (last_action == SET_POLARITY) {
-            assert(hasPolarity(u.arg.ptr));
-            clearPolarity(u.arg.ptr);
-        } else opensmt_error("unknown action");
+            case DISEQ: {
+                ERef e = u.arg.er;
+                undoDisequality(e);
+                break;
+            }
+            case DIST: {
+                PTRef ptr = u.arg.ptr;
+                undoDistinction(ptr);
+                break;
+            }
+            case CONS: {
+                break;
+            }
+            case SET_POLARITY: {
+                assert(hasPolarity(u.arg.ptr));
+                clearPolarity(u.arg.ptr);
+                break;
+            }
+            default: {
+                opensmt_error("unknown action");
+                break;
+            }
+        }
     }
 }
 
