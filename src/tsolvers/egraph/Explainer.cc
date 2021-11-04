@@ -145,9 +145,9 @@ void Explainer::cleanup() {
 // A step of explanation for x and y
 //
 void Explainer::explainAlongPath(ERef x, ERef y, vec<PtAsgn> &outExplanation, PendingQueue &pendingExplanations, DupChecker& dc) {
-    auto v  = highestNode(x);
+    auto v  = findAndCompress(x);
     // Why this? Not in the pseudo code!
-    auto to = highestNode(y);
+    auto to = findAndCompress(y);
 
     while ( v != to ) {
         ERef p = getEnode(v).getExpParent();
@@ -156,10 +156,7 @@ void Explainer::explainAlongPath(ERef x, ERef y, vec<PtAsgn> &outExplanation, Pe
         if (edgeExplanation != PtAsgn_Undef) {
             outExplanation.push(edgeExplanation);
         }
-        ERef v_old = v;
-        v = highestNode( p );
-        if (v_old == v)
-            assert(false); // loop in the explanation graph!
+        v = findAndCompress(p);
     }
 }
 
@@ -218,8 +215,8 @@ void Explainer::makeUnion(ERef x, ERef y) {
     // Unions are always between a node and its parent
     assert(getEnode(x).getExpParent() == y);
     // Retrieve the representant for the explanation class for x and y
-    ERef x_exp_root = find(x);
-    ERef y_exp_root = find(y);
+    ERef x_exp_root = findAndCompress(x);
+    ERef y_exp_root = findAndCompress(y);
 
     // No need to merge elements of the same class
     if ( x_exp_root == y_exp_root )
@@ -237,22 +234,17 @@ void Explainer::makeUnion(ERef x, ERef y) {
 // Find the representant of x's equivalence class
 // and meanwhile do path compression
 //
-ERef Explainer::find(ERef x) {
+ERef Explainer::findAndCompress(ERef x) {
     // If x is the root, return x
     if (getEnode(x).getExpRoot() == x) return x;
     // Recurse
-    ERef exp_root = find(getEnode(x).getExpRoot());
+    ERef exp_root = findAndCompress(getEnode(x).getExpRoot());
     // Path compression
     if (exp_root != getEnode(x).getExpRoot()) {
         getEnode(x).setExpRoot(exp_root);
         exp_cleanup.push(x);
     }
     return exp_root;
-}
-
-ERef Explainer::highestNode(ERef x) {
-    ERef x_exp_root = find(x);
-    return x_exp_root;
 }
 
 //
@@ -263,8 +255,8 @@ ERef Explainer::NCA(ERef x, ERef y) {
     // Increase time stamp
     ++time_stamp;
 
-    auto h_x = highestNode(x);
-    auto h_y = highestNode(y);
+    auto h_x = findAndCompress(x);
+    auto h_y = findAndCompress(y);
 
     while ( h_x != h_y ) {
         assert(h_x == ERef_Undef || getEnode(h_x).getExpTimeStamp() <= time_stamp);
