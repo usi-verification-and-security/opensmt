@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "SymRef.h"
 #include "TypeUtils.h"
+#include "Global.h"
 #include "CgTypes.h"
 
 struct ERef {
@@ -128,6 +129,8 @@ public:
     PTRef getTerm       ()        const { return pterm; }
     ELRef getForbid     ()        const { return forbid; }
     void  setForbid     (ELRef r)       { forbid = r; }
+    void addDistClass(uint32_t index) { assert(index <= 32); setDistClasses(getDistClasses() | SETBIT(index)); }
+    void clearDistClass(uint32_t index) { assert(index <= 32); setDistClasses(getDistClasses() & ~SETBIT(index)); }
     void  setDistClasses( const dist_t& d) { dist_classes = d; }
     dist_t getDistClasses() const { return dist_classes; }
 

@@ -686,57 +686,59 @@ bool Egraph::assertDist( PTRef tr_d, PtAsgn tr_r )
     assert(tr_d == tr_r.tr);
 
     // Retrieve distinction number
-    int index = enode_store.getDistIndex(tr_d);
+    auto index = enode_store.getDistIndex(tr_d);
     // While asserting, check that no two nodes are congruent
     Map<ERef, ERef, ERefHash> root_to_enode;
-    // Nodes changed
+    // Changed nodes recorded here for undoing the distinction in case of conflict
     vec<ERef> nodes_changed;
     // Assign distinction flag to all arguments
     const Pterm& pt_d = logic.getPterm(tr_d);
-    for (int i = 0; i < pt_d.size(); i++) {
-        PTRef tr_c = pt_d[i];
+
+    ERef inConflict = ERef_Undef;
+
+    for (PTRef tr_c : pt_d) {
         ERef er_c = enode_store.getERef(tr_c);
-        Enode const & en_c = getEnode(er_c);
-        ERef root = en_c.getRoot();
+        ERef root = getEnode(er_c).getRoot();
         if (root_to_enode.has(root)) {
             // Two equivalent nodes in the same distinction. Conflict
-            // Extract the other node with the same root
-            ERef p = root_to_enode[root];
-            // Check condition
-            assert(getEnode(p).getRoot() == en_c.getRoot());
-            // Retrieve explanation
-            doExplain(er_c, p, tr_r);
-            // Revert changes, as the current context is inconsistent
-            while(nodes_changed.size() != 0) {
-                ERef n = nodes_changed.last();
-                nodes_changed.pop();
-                // Deactivate distinction in n
-                Enode & en_n = getEnode(n);
-                en_n.setDistClasses( en_n.getDistClasses() & ~(SETBIT( index )) );
-            }
-            return false;
+            inConflict = er_c;
+            break;
         }
-        else {
-            root_to_enode.insert(root, er_c);
-        }
+        assert(not root_to_enode.has(root));
+        root_to_enode.insert(root, er_c);
+
         // Activate distinction in e
         // This should be done for the root of en_c, not en_c
-        getEnode(root).setDistClasses(getEnode(root).getDistClasses() | SETBIT(index));
-        nodes_changed.push(en_c.getRoot());
+        getEnode(root).addDistClass(index);
+        nodes_changed.push(root);
     }
+
+    if (inConflict != ERef_Undef) {
+        // Extract the other node with the same root
+        Enode const & en_c = getEnode(inConflict);
+        ERef root = en_c.getRoot();
+        ERef p = root_to_enode[root];
+        assert(getEnode(p).getRoot() == en_c.getRoot());
+        // Retrieve explanation
+        doExplain(inConflict, p, tr_r);
+        // Revert changes, as the current context is inconsistent
+        for (ERef n : nodes_changed) {
+            // Deactivate distinction in n
+            getEnode(n).clearDistClass(index);
+        }
+        return false;
+    }
+    assert(inConflict == ERef_Undef);
     // Distinction pushed without conflict
     undo_stack_main.push(Undo(DIST, tr_d));
     return true;
 }
 
 void Egraph::undoDistinction(PTRef tr_d) {
-    dist_t index = enode_store.getDistIndex(tr_d);
+    auto index = enode_store.getDistIndex(tr_d);
     Pterm const & pt_d = logic.getPterm(tr_d);
-    for (int i = 0; i < pt_d.size(); i++) {
-        PTRef tr_c = pt_d[i];
-        ERef er_c = enode_store.getERef(tr_c);
-        Enode & en_c = getEnode(er_c);
-        en_c.setDistClasses( en_c.getDistClasses() & ~(SETBIT(index)) );
+    for (PTRef tr_c : pt_d) {
+        getEnode(enode_store.getERef(tr_c)).clearDistClass(index);
     }
 }
 
