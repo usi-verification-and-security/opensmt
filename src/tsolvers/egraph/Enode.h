@@ -34,8 +34,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymRef.h"
 #include "TypeUtils.h"
 #include "CgTypes.h"
-#include "SigMap.h"
-
 
 struct ERef {
     uint32_t x;
