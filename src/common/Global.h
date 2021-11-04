@@ -279,9 +279,6 @@ namespace opensmt {
         return true;
     }
 
-// Set the bit B to 1 and leaves the others to 0
-#define SETBIT(B) ( 1 << (B) )
-
     static inline double cpuTime(void)
     {
         struct rusage ru;
