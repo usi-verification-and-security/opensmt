@@ -328,8 +328,7 @@ void Egraph::declareTerm(PTRef tr) {
         updateUseVectors(term); (void)eref;
     }
 
-    if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
-        assert(PTRefERefPairVec.size() == 2);
+    if (logic.hasSortBool(tr) and not logic.isDisequality(tr) and PTRefERefPairVec.size() == 2) {
         for (auto [child_tr, child_er] : PTRefERefPairVec) {
             boolTermToERef.insert(child_tr, child_er);
         }
@@ -408,6 +407,8 @@ bool Egraph::addDisequality(PtAsgn pa) {
 }
 
 bool Egraph::addTrue(PTRef term) {
+    assert(logic.hasSortBool(term));
+    assert(not logic.isNot(term));
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
     if (res and boolTermToERef.has(logic.mkNot(term))) {
         res = assertEq(logic.mkNot(term), logic.getTerm_false(), PtAsgn(term, l_True));
@@ -423,6 +424,8 @@ bool Egraph::addTrue(PTRef term) {
 }
 
 bool Egraph::addFalse(PTRef term) {
+    assert(logic.hasSortBool(term));
+    assert(not logic.isNot(term));
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
     if (res and boolTermToERef.has(logic.mkNot(term))) {
         res = assertEq(logic.mkNot(term), logic.getTerm_true(), PtAsgn(term, l_False));
