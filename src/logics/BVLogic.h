@@ -11,7 +11,6 @@ Module: New Logic for BitVector
 #include "CUFLogic.h"
 #include "NumberUtils.h"
 
-
 class BVLogic: public CUFLogic
 {
 //  protected:
