@@ -31,9 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "StringMap.h"
 
 class SymStore {
-    friend class LRALogic;
-    friend class LIALogic;
-    friend class LALogic;
   private:
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
     vec<SymRef>                                 symbols;
@@ -44,7 +41,7 @@ class SymStore {
     ~SymStore();
     // Construct a new symbol.  The first argument in args is the return
     // sort of the symbol
-    SymRef newSymb(const char * fname, const vec<SRef> & args);
+    SymRef newSymb(const char * fname, vec<SRef> const & args);
     bool contains(const char* fname)            const { return symbolTable.has(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
