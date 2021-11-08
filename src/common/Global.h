@@ -158,6 +158,76 @@ namespace opensmt {
         ~strConvException() { free(reason); }
     };
 
+    bool static inline isIntString(char const *str) {
+        if (str[0] == '\0') return false;
+
+        bool isInt = true;
+        for (int i = str[0] == '-' ? 1 : 0; str[i] != '\0'; i++) {
+            if (str[i] < '0' or str[i] > '9') {
+                isInt = false;
+                break;
+            }
+        }
+        return isInt;
+    }
+
+    bool static inline isRealString(char const *str) {
+        if (str[0] == '\0') return false;
+        enum t_State {S0, S1, S2, S3, S4, S5, S6, S7};
+        auto isDigit = [](char const c) { return c >= '0' and c <= '9'; };
+        t_State state = S0;
+        bool unexpectedSymbol = false;
+        for (int i = str[0] == '-' ? 1 : 0; str[i] != '\0' and not unexpectedSymbol; i++) {
+            switch (state) {
+                case S0:
+                    if (str[i] == '.') state = S2;
+                    else if (isDigit(str[i])) state = S1;
+                    else unexpectedSymbol = true;
+                    break;
+                case S1:
+                    if (str[i] == '.') state = S2;
+                    else if (isDigit(str[i])) state = S1;
+                    else if (str[i] == '/') state = S4;
+                    else unexpectedSymbol = true;
+                    break;
+                case S2:
+                    if (isDigit(str[i])) state = S3;
+                    else unexpectedSymbol = true;
+                    break;
+                case S3:
+                    if (isDigit(str[i])) state = S3;
+                    else if (str[i] == '/') state = S4;
+                    else unexpectedSymbol = true;
+                    break;
+                case S4:
+                case S5:
+                    if (isDigit(str[i])) state = S5;
+                    else if (str[i] == '.') state = S6;
+                    else unexpectedSymbol = true;
+                    break;
+                case S6:
+                case S7:
+                    if (isDigit(str[i])) state = S7;
+                    else unexpectedSymbol = true;
+                    break;
+            }
+        }
+        if (unexpectedSymbol) return false;
+        switch (state) {
+            case S1:
+            case S3:
+            case S5:
+            case S7:
+                return true;
+            case S0:
+            case S2:
+            case S4:
+            case S6:
+                return false;
+        }
+        assert(false); // Unreachable
+        return false;
+    }
 
     bool static inline stringToRational(char *&rat, const char *flo) {
         int nom_l = 0;
