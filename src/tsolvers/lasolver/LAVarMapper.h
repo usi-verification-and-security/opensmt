@@ -51,6 +51,7 @@ public:
 
     void   clear();
 
+    bool   isNegated(PTRef tr) const;
 };
 
 

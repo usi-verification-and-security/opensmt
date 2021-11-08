@@ -15,7 +15,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     auto [const_tr, sum_tr] = logic.leqToConstantAndTerm(leq_tr);
     assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
 
-    bool sum_term_is_negated = logic.isNegated(sum_tr);
+    bool sum_term_is_negated = laVarMapper.isNegated(sum_tr);
 
     LVRef v = laVarMapper.getVarByLeqId(logic.getPterm(leq_tr).getId());
     assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
@@ -210,7 +210,7 @@ opensmt::Number LASolver::getNum(PTRef r) {
 
 
 bool LASolver::hasVar(PTRef expr) {
-    expr =  logic.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
+    expr =  laVarMapper.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
     return laVarMapper.hasVar(id);
 }
@@ -224,7 +224,7 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
         return getVarForTerm(expr_in);
     }
 
-    PTRef expr = logic.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
+    PTRef expr = laVarMapper.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
     LVRef x = laVarStore.getNewVar();
     laVarMapper.registerNewMapping(x, expr);
     return x;
@@ -232,7 +232,7 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
 std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
     auto poly = std::make_unique<Polynomial>();
-    bool negated = logic.isNegated(term);
+    bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         PTRef v;
         PTRef c;
@@ -274,7 +274,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         PTRef c;
 
         logic.splitTermToVarAndConst(expr, v, c);
-        assert(logic.isNumVarOrIte(v) || (logic.isNegated(v) && logic.isNumVarOrIte(logic.mkNumNeg(v))));
+        assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNumNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
         notifyVar(x);

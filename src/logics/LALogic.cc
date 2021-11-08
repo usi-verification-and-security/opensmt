@@ -10,28 +10,6 @@
 
 #include <memory>
 
-bool LALogic::isNegated(PTRef tr) const {
-    //static const opensmt::Integer zero = 0;
-    if (isNumConst(tr))
-        return getNumConst(tr) < 0; // Case (0a) and (0b)
-    if (isNumVar(tr))
-        return false; // Case (1a)
-    if (isNumTimes(tr)) {
-        // Cases (2)
-        PTRef v;
-        PTRef c;
-        splitTermToVarAndConst(tr, v, c);
-        return isNegated(c);
-    }
-    if (isIte(tr)) {
-        return false;
-    }
-    else {
-        // Cases(3)
-        return isNegated(getPterm(tr)[0]);
-    }
-}
-
 bool LALogic::isLinearFactor(PTRef tr) const {
     if (isNumConst(tr) || isNumVarLike(tr)) { return true; }
     if (isNumTimes(tr)) {
