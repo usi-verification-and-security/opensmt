@@ -35,7 +35,7 @@ public:
     void printTopLevelSwitches(IteToSwitch &iteManager) {
         PTRef tr = logic.getTerm_true();
         tr = iteManager.conjoin(tr);
-        std::cout << logic.pp(tr) << endl;
+        std::cout << logic.pp(tr) << std::endl;
     }
     static bool contains(const vec<PTRef>& trs, PTRef tr) {
         return std::any_of(trs.begin(), trs.end(), [tr](PTRef tr_in_vec) { return tr_in_vec == tr; });
@@ -51,7 +51,7 @@ TEST_F(LogicIteTest, test_UFIte) {
 
     PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
-    std::cout << logic.pp(ite) << endl;
+    std::cout << logic.pp(ite) << std::endl;
 
     ite = logic.mkIte(logic.getTerm_true(), x, y);
     ASSERT_EQ(ite, x);
@@ -70,7 +70,7 @@ TEST_F(LogicIteTest, test_BoolIte) {
 
     PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
-    std::cout << logic.pp(ite) << endl;
+    std::cout << logic.pp(ite) << std::endl;
 }
 
 TEST_F(LRAIteTest, test_LRAIte) {
@@ -82,7 +82,7 @@ TEST_F(LRAIteTest, test_LRAIte) {
 
     PTRef ite = logic.mkIte(cond, x, y);
     ASSERT_TRUE(logic.isIte(ite));
-    std::cout << logic.pp(ite) << endl;
+    std::cout << logic.pp(ite) << std::endl;
 }
 
 TEST_F(IteManagerTest, test_Basic) {
