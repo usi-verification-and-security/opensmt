@@ -851,8 +851,8 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 PTRef
 Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
+    assert(typeCheck(sym, terms));
     PTRef res = PTRef_Undef;
-    char *msg;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -868,9 +868,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
-            strcpy(msg, e_argnum_mismatch);
-            return PTRef_Undef;
+            throw OsmtApiException(e_argnum_mismatch);
         }
         PTLKey k;
         k.sym = sym;
@@ -1600,3 +1598,20 @@ char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTer
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
+
+bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
+    Symbol const & symbol = sym_store[sym];
+    if (symbol.chainable()) {
+
+    }
+    if (symbol.left_assoc()) {
+
+    }
+    if (symbol.nargs() == args.size_()) {
+        for (unsigned int i = 0; i < symbol.nargs(); i++) {
+            if (symbol[i] != getSortRef(args[i]))
+                return false;
+        }
+    }
+    return true;
+}
