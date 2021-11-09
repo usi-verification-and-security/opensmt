@@ -9,7 +9,7 @@ Module: New Logic for BitVector
 #define BVLOGIC_H
 #include "Logic.h"
 #include "CUFLogic.h"
-#include "Global.h"
+#include "NumberUtils.h"
 
 
 class BVLogic: public CUFLogic

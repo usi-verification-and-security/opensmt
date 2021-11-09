@@ -1,7 +1,7 @@
 #include "SStore.h"
 #include "PtStore.h"
 #include "TreeOps.h"
-#include "Global.h"
+#include "StringConv.h"
 #include "LA.h"
 #include "LALogic.h"
 #include "FastRational.h"

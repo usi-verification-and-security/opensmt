@@ -9,8 +9,10 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/Global.h"
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"
+    "${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h"
     "${CMAKE_CURRENT_LIST_DIR}/osmtinttypes.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
+    "${CMAKE_CURRENT_LIST_DIR}/StringConv.h"
     "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
     "${CMAKE_CURRENT_LIST_DIR}/TreeOps.h"
     "${CMAKE_CURRENT_LIST_DIR}/NatSet.h"
@@ -20,7 +22,7 @@ target_sources(common
 
 install(FILES 
     Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h Timer.h osmtinttypes.h
-    TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h
+    TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h NumberUtils.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 
