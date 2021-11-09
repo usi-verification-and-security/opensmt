@@ -258,3 +258,7 @@ TEST_F(LRALogicMkTermsTest, test_EqualityNormalization_ToConstantExpression) {
     PTRef eq1 = logic.mkEq(x, logic.mkPlus(x, two));
     EXPECT_EQ(eq1, logic.getTerm_false());
 }
+
+TEST_F(LRALogicMkTermsTest, test_FailWithIntArgs) {
+    EXPECT_THROW(logic.mkIntConst(2), OsmtApiException);
+}
