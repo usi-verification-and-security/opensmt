@@ -78,14 +78,16 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
                     it->second += c;
                     if (it->first != PTRef_Undef && it->second == 0)
                         polynome.erase(it);
-                } else
-                    polynome[t] = c;
+                } else {
+                    polynome.insert({t, c});
+                }
             }
         }
     }
 
-    if (polynome.find(PTRef_Undef) == polynome.end())
-        polynome[PTRef_Undef] = 0;
+    if (polynome.find(PTRef_Undef) == polynome.end()) {
+        polynome.insert({PTRef_Undef, 0});
+    }
     //
     // Canonize
     //
@@ -265,7 +267,7 @@ void LAExpression::addExprWithCoeff(const LAExpression & a, const opensmt::Real 
             if (it2->first != PTRef_Undef && it2->second == 0)
                 polynome.erase(it2);
         } else {
-            polynome[var] = coeff * factor;
+            polynome.insert({var, coeff * factor});
         }
     }
 }
