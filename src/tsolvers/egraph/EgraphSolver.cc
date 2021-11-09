@@ -328,11 +328,10 @@ void Egraph::declareTerm(PTRef tr) {
         updateUseVectors(term); (void)eref;
     }
 
-    if (logic.hasSortBool(tr) and not logic.isDisequality(tr)) {
-        assert(PTRefERefPairVec.size() == 2);
-        for (auto [child_tr, child_er] : PTRefERefPairVec) {
-            boolTermToERef.insert(child_tr, child_er);
-        }
+    if (logic.hasSortBool(tr) and not logic.isDisequality(tr) and PTRefERefPairVec.size() == 2) {
+        auto [negated_tr, negated_er] = PTRefERefPairVec[1];
+        assert(logic.isNot(negated_tr));
+        negatedTermToERef.insert(negated_tr, negated_er);
         assert(PTRefERefPairVec[0].tr == logic.mkNot(PTRefERefPairVec[1].tr));
         assertNEq(PTRefERefPairVec[0].er, PTRefERefPairVec[1].er, Expl(Expl::Type::pol, PtAsgn_Undef, PTRefERefPairVec[0].tr));
     }
@@ -408,8 +407,10 @@ bool Egraph::addDisequality(PtAsgn pa) {
 }
 
 bool Egraph::addTrue(PTRef term) {
+    assert(logic.hasSortBool(term));
+    assert(not logic.isNot(term));
     bool res = assertEq(term, logic.getTerm_true(), PtAsgn(term, l_True));
-    if (res and boolTermToERef.has(logic.mkNot(term))) {
+    if (res and negatedTermToERef.has(logic.mkNot(term))) {
         res = assertEq(logic.mkNot(term), logic.getTerm_false(), PtAsgn(term, l_True));
     }
 #ifdef STATISTICS
@@ -423,8 +424,10 @@ bool Egraph::addTrue(PTRef term) {
 }
 
 bool Egraph::addFalse(PTRef term) {
+    assert(logic.hasSortBool(term));
+    assert(not logic.isNot(term));
     bool res = assertEq(term, logic.getTerm_false(), PtAsgn(term, l_False));
-    if (res and boolTermToERef.has(logic.mkNot(term))) {
+    if (res and negatedTermToERef.has(logic.mkNot(term))) {
         res = assertEq(logic.mkNot(term), logic.getTerm_true(), PtAsgn(term, l_False));
     }
 #ifdef STATISTICS

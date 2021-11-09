@@ -142,8 +142,10 @@ vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
         assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
         assert(not logic.isNot(tr));
         PTRef tr_neg = logic.mkNot(tr);
-        ERef er_neg = addTerm(tr_neg);
-        new_enodes.push({tr_neg, er_neg});
+        if (needsEnode(tr_neg)) {
+            ERef er_neg = addTerm(tr_neg);
+            new_enodes.push({tr_neg, er_neg});
+        }
     }
 
     return new_enodes;
