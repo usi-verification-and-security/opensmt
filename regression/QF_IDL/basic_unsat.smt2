@@ -1,0 +1,6 @@
+(set-logic QF_IDL)
+(declare-fun b () Int)
+(set-info :status unsat)
+(assert (and (< 0 b) (< b 1)))
+(check-sat)
+(exit)
