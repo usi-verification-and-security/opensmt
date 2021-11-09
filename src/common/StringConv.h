@@ -39,14 +39,12 @@ namespace opensmt {
     bool static inline isIntString(char const *str) {
         if (str[0] == '\0') return false;
 
-        bool isInt = true;
         for (int i = str[0] == '-' ? 1 : 0; str[i] != '\0'; i++) {
-            if (str[i] < '0' or str[i] > '9') {
-                isInt = false;
-                break;
+            if (not isDigit(str[i])) {
+                return false;
             }
         }
-        return isInt;
+        return true;
     }
 
     bool static inline isRealString(char const *str) {
