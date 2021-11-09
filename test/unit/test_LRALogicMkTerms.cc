@@ -136,7 +136,8 @@ TEST_F(LRALogicMkTermsTest, test_mkNumNeg)
     PTRef one = logic.getTerm_NumOne();
     PTRef minus = logic.mkNumNeg(one);
     ASSERT_TRUE(logic.isConstant(minus));
-    ASSERT_TRUE(logic.isNegated(minus));
+    ASSERT_TRUE(logic.isNumConst(minus));
+    ASSERT_LT(logic.getNumConst(minus), 0);
     ASSERT_EQ(logic.mkNumNeg(minus), one);
     ASSERT_EQ(logic.getNumConst(minus), -1);
 }

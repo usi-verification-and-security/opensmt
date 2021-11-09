@@ -17,7 +17,7 @@
  */
 void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     assert(!hasVar(e_orig));
-    assert(!logic.isNegated(e_orig));
+    assert(!isNegated(e_orig));
     if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) {
         laVarToPTRef.growTo(lv.x+1, PTRef_Undef);
     }
@@ -56,6 +56,26 @@ bool LAVarMapper::hasVar(PTRef tr) const { return hasVar(logic.getPterm(tr).getI
 
 bool   LAVarMapper::hasVar(PTId i) const {
     return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef_Undef;
+}
+
+bool LAVarMapper::isNegated(PTRef tr) const {
+    if (logic.isNumConst(tr))
+        return logic.getNumConst(tr) < 0; // Case (0a) and (0b)
+    if (logic.isNumVar(tr))
+        return false; // Case (1a)
+    if (logic.isNumTimes(tr)) {
+        // Cases (2)
+        PTRef v;
+        PTRef c;
+        logic.splitTermToVarAndConst(tr, v, c);
+        return isNegated(c);
+    }
+    if (logic.isIte(tr)) {
+        return false;
+    } else {
+        // Cases(3)
+        return isNegated(logic.getPterm(tr)[0]);
+    }
 }
 
 void LAVarMapper::clear() {

@@ -159,7 +159,6 @@ public:
     PTRef mkNumGt(const vec<PTRef> & args);
     PTRef mkNumGt(PTRef arg1, PTRef arg2) { return mkBinaryGt(arg1, arg2); }
 
-    bool isNegated(PTRef tr) const;
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
     void splitTermToVarAndConst(const PTRef &term, PTRef &var, PTRef &fac) const;
