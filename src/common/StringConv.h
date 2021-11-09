@@ -52,7 +52,6 @@ namespace opensmt {
         enum t_State {
             S0, S1, S2, S3, S4, S5, S6, S7
         };
-        auto isDigit = [](char const c) { return c >= '0' and c <= '9'; };
         t_State state = S0;
         bool unexpectedSymbol = false;
         for (int i = str[0] == '-' ? 1 : 0; str[i] != '\0' and not unexpectedSymbol; i++) {
