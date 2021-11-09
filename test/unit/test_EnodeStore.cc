@@ -91,7 +91,7 @@ TEST_F(EnodeStoreTest, testUFMixed) {
     EnodeStore enodeStore(logic);
     // No enode needed: x is a boolean var not apparing in UF
     ASSERT_FALSE(enodeStore.needsEnode(x));
-    SRef ufsort = logic.declareSort("U", nullptr);
+    SRef ufsort = logic.declareSort("U");
     PTRef a = logic.mkUninterpFun(logic.declareFun("a", ufsort, {}, nullptr), {});
     PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}, nullptr), {a, x});
     AppearsInUfVisitor(logic).visit(mixed);

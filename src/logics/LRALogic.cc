@@ -72,7 +72,7 @@ LRALogic::LRALogic() :
 {
     char* m;
     char** msg = &m;
-    sort_REAL = declareSort(s_sort_real, msg);
+    sort_REAL = declareSort(s_sort_real);
     ufsorts.remove(sort_REAL);
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
     vec<SRef> params;

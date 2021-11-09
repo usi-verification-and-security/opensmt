@@ -52,7 +52,7 @@ LIALogic::LIALogic() :
     char* m;
     char** msg = &m;
 
-    sort_INTEGER = declareSort(s_sort_integer, msg);
+    sort_INTEGER = declareSort(s_sort_integer);
     ufsorts.remove(sort_INTEGER);
 
 //    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));

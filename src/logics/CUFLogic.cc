@@ -102,8 +102,7 @@ CUFLogic::CUFLogic() :
     , term_CUF_ZERO(PTRef_Undef)
     , term_CUF_ONE(PTRef_Undef)
 {
-    char* msg;
-    sort_CUFNUM = declareSort(s_sort_cufnum, &msg);
+    sort_CUFNUM = declareSort(s_sort_cufnum);
 
     vec<SRef> params;
     term_CUF_ZERO = mkCUFConst(tk_cuf_zero);
@@ -113,6 +112,7 @@ CUFLogic::CUFLogic() :
 
     params.push(sort_CUFNUM);
 
+    char *msg = nullptr;
     // Unary
     sym_CUF_NEG    = declareFun(tk_cuf_neg, sort_CUFNUM, params, &msg, true);
     sym_CUF_INC    = declareFun(tk_cuf_inc, sort_CUFNUM, params, &msg, true);

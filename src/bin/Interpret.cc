@@ -1183,9 +1183,8 @@ SRef Interpret::newSort(ASTNode& sn) {
 //    SRef rval = logic->newSort(idr, canon_name, tmp);
 //    free(canon_name);
 
-    char* msg;
     char* canon_name = buildSortName(sn);
-    SRef rval = main_solver->getLogic().declareSort(canon_name, &msg);
+    SRef rval = main_solver->getLogic().declareSort(canon_name);
     return rval;
 }
 

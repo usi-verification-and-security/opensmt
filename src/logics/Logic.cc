@@ -453,51 +453,21 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     return nestedBoolRoots;
 }
 
-
-// description: Add equality for each new sort
-// precondition: sort has been declared
-bool Logic::declare_sort_hook(SRef sr) {
-    vec<SRef> params;
-
-    params.push(sr);
-    params.push(sr);
-
-    // Equality
-
-    SymRef tr;
-
-    char* msg;
-    tr = declareFun(tk_equals, sort_BOOL, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
-    sym_store[tr].setChainable();
-    equalities.insert(tr, true);
-
-    // distinct
-    tr = declareFun(tk_distinct, sort_BOOL, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    if (sym_store[tr].setPairwise() == false) return false;
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
-    disequalities.insert(tr, true);
-
-    // ite
-    params.clear();
-    params.push(sort_BOOL);
-    params.push(sr);
-    params.push(sr);
-
-    tr = declareFun(tk_ite, sr, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    sym_store[tr].setNoScoping();
-    ites.insert(tr, true);
-    sortToIte.insert(sr, tr);
-
+/**
+ * Declare an uninterpreted sort.  Do not call for numeric sorts, since we do not want to add them a default value
+ * here nor do we want them to end up in the ufsorts.
+ * @param sortName
+ * @return sort reference
+ */
+SRef Logic::declareSort(char const * sortName) {
+    SRef sr = declareSortAndCreateFunctions(sortName);
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
     defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
-    return true;
+
+    SRef rval = sort_store[sortName];
+    ufsorts.insert(rval, true);
+    return sr;
 }
 
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
@@ -904,21 +874,41 @@ PTRef Logic::mkBoolVar(const char* name)
     return mkFun(sr, {});
 }
 
-SRef Logic::declareSort(const char* id, char** msg)
+SRef Logic::declareSortAndCreateFunctions(std::string const & id)
 {
-    if (containsSort(id)) {
-        return getSortRef(id);
+    if (containsSort(id.c_str())) {
+        return getSortRef(id.c_str());
     }
 
-    IdRef idr = id_store.newIdentifier(id);
-    vec<SRef> tmp;
-    SRef sr = sort_store.newSort(idr, tmp);
-    declare_sort_hook(sr);
-    std::string sort_name{id};
-    SRef rval = sort_store[sort_name.c_str()];
-    ufsorts.insert(rval, true);
-//    printf("Inserted sort %s\n", id);
-    return rval;
+    IdRef idr = id_store.newIdentifier(id.c_str());
+    SRef sr = sort_store.newSort(idr, {});
+
+    char *msg;
+
+    // Equality
+    SymRef tr = declareFun(tk_equals, sort_BOOL, {sr, sr}, &msg, true);
+    assert(tr != SymRef_Undef);
+    sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
+    sym_store[tr].setChainable();
+    equalities.insert(tr, true);
+
+    // distinct
+    tr = declareFun(tk_distinct, sort_BOOL, {sr, sr}, &msg, true);
+    assert(tr != SymRef_Undef);
+    if (not sym_store[tr].setPairwise()) assert(false);
+    sym_store[tr].setNoScoping();
+    sym_store[tr].setCommutes();
+    disequalities.insert(tr, true);
+
+    // ite
+    tr = declareFun(tk_ite, sr, {sort_BOOL, sr, sr}, &msg, true);
+    assert(tr != SymRef_Undef);
+    sym_store[tr].setNoScoping();
+    ites.insert(tr, true);
+    sortToIte.insert(sr, tr);
+
+    return sr;
 }
 
 SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
@@ -938,6 +928,9 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     for (unsigned i = interpreted_functions.size(); i <= id; i++)
         interpreted_functions.push(false);
     interpreted_functions[id] = interpreted;
+    if (interpreted) {
+        sym_store.setInterpreted(sr);
+    }
     return sr;
 }
 

@@ -43,7 +43,7 @@ public:
 };
 
 TEST_F(LogicIteTest, test_UFIte) {
-    SRef ufsort = logic.declareSort("U", nullptr);
+    SRef ufsort = logic.declareSort("U");
 
     PTRef x = logic.mkVar(ufsort, "x");
     PTRef y = logic.mkVar(ufsort, "y");

@@ -86,7 +86,7 @@ BVLogic::BVLogic(int width) :
     , bitwidth(width)
 {
     char* msg;
-    sort_BVNUM = declareSort(s_sort_bvnum, &msg);
+    sort_BVNUM = declareSort(s_sort_bvnum);
 
     vec<SRef> params;
     term_BV_ZERO = mkBVConst(tk_bv_zero);

@@ -10,7 +10,7 @@ class GetFactsTest : public ::testing::Test {
 protected:
     GetFactsTest(): logic{} {}
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
     }
@@ -72,7 +72,7 @@ class RetrieveSubstitutionTest : public ::testing::Test {
 protected:
     RetrieveSubstitutionTest(): logic{} {}
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
@@ -137,7 +137,7 @@ class ApplySubstitutionTest : public ::testing::Test {
 protected:
     ApplySubstitutionTest(): logic{} {}
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
