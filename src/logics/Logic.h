@@ -246,7 +246,7 @@ public:
     PTRef       mkUniqueAbstractValue(SRef);
 
     // Generic constants
-    virtual PTRef mkConst     (const char*, const char** msg);
+    virtual PTRef mkConst     (const char*);
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);

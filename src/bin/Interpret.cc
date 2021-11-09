@@ -399,12 +399,14 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();
 //        comment_formatted("Processing term %s", name);
-        const char* msg;
         vec<SymRef> params;
         //PTRef tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
-        PTRef tr = logic->mkConst(name, &msg);
-        if (tr == PTRef_Undef)
-            comment_formatted("While processing %s: %s", name, msg);
+        PTRef tr = PTRef_Undef;
+        try {
+            tr = logic->mkConst(name);
+        } catch (OsmtApiException const & e) {
+            comment_formatted("While processing %s: %s", name, e.what());
+        }
         return tr;
     }
 
