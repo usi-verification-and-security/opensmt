@@ -1522,6 +1522,21 @@ SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(s
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
 
+SRef Logic::getUniqueArgSort(SymRef sr) const {
+    SRef res = SRef_Undef;
+    for (SRef a : getSym(sr)) {
+        if (res == SRef_Undef) {
+            res = a;
+        } else {
+            if (res != a) {
+                throw OsmtApiException("getUniqueArgSort called for a symbol with non-uniform arguments");
+            }
+        }
+    }
+    return res;
+}
+
+
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }

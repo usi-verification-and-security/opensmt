@@ -180,6 +180,8 @@ class Logic {
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
     const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
+    SRef        getUniqueArgSort(SymRef sr)           const;
+    SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
     // Symbols
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
