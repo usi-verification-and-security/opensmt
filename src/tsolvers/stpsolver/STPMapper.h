@@ -2,7 +2,7 @@
 #define OPENSMT_STPMAPPER_H
 
 #include <vector>
-#include <LALogic.h>
+#include "ArithLogic.h"
 #include <Pterm.h>
 #include "STPStore.h"
 // implementations of template functions #included below class definition
@@ -10,7 +10,7 @@
 template<class T>
 class STPMapper {
 private:
-    const LALogic &logic;
+    const ArithLogic &logic;
 
     const STPStore<T> &store;
 
@@ -22,7 +22,7 @@ private:
     std::vector<std::vector<EdgeRef>> edgesContainingVert;  // list of edges each vertex appears in
 
 public:
-    STPMapper(const LALogic &l, const STPStore<T> &s);
+    STPMapper(const ArithLogic &l, const STPStore<T> &s);
 
     void setVert(PTRef var, VertexRef vert);
 

@@ -4,7 +4,7 @@
 //#define GAUSSIAN_DEBUG
 
 #include "Timer.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 
 #include "TSolver.h"
 #include "LRAModel.h"
@@ -52,7 +52,7 @@ class LASolver: public TSolver
 protected:
     struct DecEl { PtAsgn asgn; int dl; };
 
-    LALogic&             logic;
+    ArithLogic&          logic;
     LAVarStore           laVarStore;
     LAVarMapper          laVarMapper;
     LABoundStore         boundStore;
@@ -92,8 +92,8 @@ protected:
 
 public:
 
-    LASolver(SMTConfig & c, LALogic & l);
-    LASolver(SolverDescr dls, SMTConfig & c, LALogic & l);
+    LASolver(SMTConfig & c, ArithLogic & l);
+    LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l);
 
     virtual ~LASolver( );                                      // Destructor ;-)
 
@@ -114,8 +114,8 @@ public:
     // Return the conflicting bounds
     void          getConflict(bool, vec<PtAsgn>& e) override;
 
-    LALogic&   getLogic() override;
-    bool       isValid(PTRef tr) override;
+    ArithLogic& getLogic() override;
+    bool        isValid(PTRef tr) override;
 
 
 protected:

@@ -7,7 +7,7 @@
 
 #include <memory>
 #include "TSolver.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 #include "SMTConfig.h"
 #include "STPMapper.h"
 #include "STPGraphManager.h"
@@ -26,7 +26,7 @@ private:
         T c;                // cost of the edge
     };
 
-    LALogic &logic;
+    ArithLogic &logic;
 
     STPStore<T> store;
 
@@ -42,7 +42,7 @@ private:
     ParsedPTRef parseRef(PTRef ref) const;
 
 public:
-    STPSolver(SMTConfig &c, LALogic &l);
+    STPSolver(SMTConfig &c, ArithLogic &l);
 
     ~STPSolver() override;
 

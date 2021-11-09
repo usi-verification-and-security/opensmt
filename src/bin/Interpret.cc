@@ -445,7 +445,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         try {
             tr = logic->resolveTerm(name, std::move(args), &msg);
         }
-        catch (LADivisionByZeroException & ex) {
+        catch (ArithDivisionByZeroException & ex) {
             notify_formatted(true, ex.what());
             return PTRef_Undef;
         }

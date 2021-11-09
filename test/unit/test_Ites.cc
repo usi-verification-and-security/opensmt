@@ -3,7 +3,7 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <LRALogic.h>
+#include <ArithLogic.h>
 #include <IteToSwitch.h>
 #include <IteHandler.h>
 #include <TreeOps.h>
@@ -16,8 +16,8 @@ public:
 
 class LRAIteTest: public ::testing::Test {
 public:
-    LRALogic logic;
-    LRAIteTest() : logic{} {}
+    ArithLogic logic;
+    LRAIteTest() : logic{ArithLogic::ArithType::LRA} {}
 };
 
 class IteManagerTest: public ::testing::Test {
@@ -27,10 +27,10 @@ public:
         const vec<PTRef> & getTopLevelItes() const { return iteDag.getTopLevelItes(); }
         IteToSwitchInternal(Logic &l, PTRef tr) : IteToSwitch(l, tr) {}
     };
-    LRALogic logic;
+    ArithLogic logic;
     SRef lrasort;
 
-    IteManagerTest() : lrasort(logic.getSort_num()) {}
+    IteManagerTest() : logic{ArithLogic::ArithType::LRA}, lrasort(logic.getSort_real()) {}
 
     void printTopLevelSwitches(IteToSwitch &iteManager) {
         PTRef tr = logic.getTerm_true();
@@ -74,7 +74,7 @@ TEST_F(LogicIteTest, test_BoolIte) {
 }
 
 TEST_F(LRAIteTest, test_LRAIte) {
-    SRef lrasort = logic.getSort_num();
+    SRef lrasort = logic.getSort_real();
 
     PTRef x = logic.mkVar(lrasort, "x");
     PTRef y = logic.mkVar(lrasort, "y");
@@ -93,7 +93,7 @@ TEST_F(IteManagerTest, test_Basic) {
 
     PTRef ite = logic.mkIte(cond, x, y);
     SRef sr = logic.getSortRef(ite);
-    ASSERT_EQ(sr, logic.getSort_num());
+    ASSERT_EQ(sr, logic.getSort_real());
     PTRef eq = logic.mkEq(x, ite);
 
     IteToSwitch iteManager(logic, eq);
@@ -120,7 +120,7 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    EXPECT_NO_THROW(logic.mkNumTimes(ite, c2));
+    EXPECT_NO_THROW(logic.mkTimes(ite, c2));
 }
 
 TEST_F(IteManagerTest, test_IteTimesVar) {
@@ -132,7 +132,7 @@ TEST_F(IteManagerTest, test_IteTimesVar) {
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
 
-    EXPECT_THROW(logic.mkNumTimes(ite, x), LANonLinearException);
+    EXPECT_THROW(logic.mkTimes(ite, x), LANonLinearException);
 
 }
 
@@ -149,7 +149,7 @@ TEST_F(IteManagerTest, test_IteTimesIte) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, c2, c1);
 
-    EXPECT_THROW(logic.mkNumTimes(ite1, ite2), LANonLinearException);
+    EXPECT_THROW(logic.mkTimes(ite1, ite2), LANonLinearException);
 }
 
 TEST_F(IteManagerTest, test_IteChain) {
@@ -179,7 +179,7 @@ TEST_F(IteManagerTest, test_IteSum) {
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
-    EXPECT_NO_THROW(logic.mkNumPlus(ite, c2));
+    EXPECT_NO_THROW(logic.mkPlus(ite, c2));
 }
 
 TEST_F(IteManagerTest, testBoolean) {

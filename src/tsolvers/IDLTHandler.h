@@ -7,16 +7,16 @@
 
 #include "TSolverHandler.h"
 
-class LIALogic;
+class ArithLogic;
 class IDLSolver;
 
 class IDLTHandler : public TSolverHandler
 {
 private:
-    LIALogic& logic;
+    ArithLogic& logic;
     IDLSolver *idlsolver;
 public:
-    IDLTHandler(SMTConfig& c, LIALogic& l);
+    IDLTHandler(SMTConfig& c, ArithLogic& l);
     virtual ~IDLTHandler() = default;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;

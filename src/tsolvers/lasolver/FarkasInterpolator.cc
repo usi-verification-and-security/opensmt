@@ -15,7 +15,7 @@
 
 
 #include "FarkasInterpolator.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 #include "Real.h"
 #include "LA.h"
 #include "OsmtInternalException.h"
@@ -35,7 +35,7 @@ namespace {
 
 // TODO: when is explanation negated?
 struct ItpHelper {
-    ItpHelper(LALogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
+    ItpHelper(ArithLogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
                                                           expl_coeff(std::move(coeff)), expr(logic, ineq.tr, false) {}
     PTRef explanation;
     bool negated;
@@ -325,13 +325,16 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return basis;
     }
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, LALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, ArithLogic & logic) {
         assert(ineqs.size() == coeffs.size());
+        assert(ineqs.size() > 0);
         LAExpression init{logic};
         auto it_ineq = ineqs.begin();
         auto it_coeff = coeffs.begin();
         bool delta_flag = false;
+        SRef itpSort = SRef_Undef;
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
+            itpSort = itpSort != SRef_Undef ? itpSort : logic.getSortRef(logic.getPterm((*it_ineq).explanation)[0]);
             auto const & coeff = *it_coeff;
             if(coeff.isZero()) {continue;} // when some basis is found, some coordinates could be zero; ignore those
             auto const & ineq = *it_ineq;
@@ -349,13 +352,13 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         }
         // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so everything is multiplied by -1
         // therefore we need to create the inequality with the terms on LHS, because they are treated like LHS when LAExpressions are created
-        PTRef rhs = logic.mkConst("0");
-        PTRef lhs = init.toPTRef();
+        PTRef rhs = logic.getZeroForSort(itpSort);
+        PTRef lhs = init.toPTRef(itpSort);
 //        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
-        return delta_flag ? logic.mkNumLt(lhs, rhs) : logic.mkNumLeq(lhs, rhs);
+        return delta_flag ? logic.mkLt(lhs, rhs) : logic.mkLeq(lhs, rhs);
     }
 
-    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, LALogic & logic) {
+    PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, ArithLogic & logic) {
         std::vector<Real> coeffs;
         coeffs.reserve(ineqs.size());
         for (const auto & helper : ineqs) {
@@ -453,7 +456,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
                 ? logic.getTerm_false() : logic.getTerm_true();
     }
     std::vector<ItpHelper> helpers;
-    LALogic & logic = this->logic;
+    ArithLogic & logic = this->logic;
     std::transform(candidates.begin(), it, std::back_inserter(helpers),
                    [&logic](std::pair<PtAsgn, Real> const & expl) {
                        return ItpHelper{logic, expl.first, expl.second};
@@ -599,9 +602,12 @@ PTRef FarkasInterpolator::getDualFarkasInterpolant() {
 PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system) {
     LAExpression interpolant(logic);
     bool delta_flag = false;
+    SRef sumSort = SRef_Undef;
     for (auto const & entry : system) {
         auto literal = entry.first;
         PTRef atom = literal.tr;
+        sumSort = sumSort != SRef_Undef ? sumSort : logic.getUniqueArgSort(atom);
+        assert(sumSort != SRef_Undef);
         lbool sign = literal.sgn;
         if (sign == l_False) {
             interpolant.addExprWithCoeff(LAExpression(logic, atom, false), entry.second);
@@ -616,8 +622,11 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Rea
     } else if (interpolant.isFalse() || (interpolant.isTrue() && delta_flag)) {
         itp = logic.getTerm_false();
     } else {
-        vec<PTRef> args {logic.getTerm_NumZero(), interpolant.toPTRef()};
-        itp = delta_flag ? logic.mkNumLt(args) : logic.mkNumLeq(args);
+        assert(sumSort != SRef_Undef);
+        PTRef itpRef = interpolant.toPTRef(sumSort);
+        SRef itpSort = logic.getSortRef(itpRef);
+        vec<PTRef> args {logic.getZeroForSort(itpSort), itpRef};
+        itp = delta_flag ? logic.mkLt(args) : logic.mkLeq(args);
     }
     return itp;
 }
@@ -656,23 +665,24 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
     }
     PTRef itpB = weightedSum(systemB);
     auto extractSides = [this](PTRef inequality) {
-        assert(logic.isNumLeq(inequality) or logic.isNumLeq(logic.mkNot(inequality)));
+        assert(logic.isLeq(inequality) or logic.isLeq(logic.mkNot(inequality)));
         bool negated = logic.isNot(inequality);
         PTRef positive = negated ? logic.mkNot(inequality) : inequality;
         PTRef term = logic.getTermFromLeq(positive);
         PTRef constant = logic.getConstantFromLeq(positive);
-        return negated ? std::make_pair(logic.mkNumNeg(term), logic.mkNumNeg(constant)) : std::make_pair(term, constant);
+        return negated ? std::make_pair(logic.mkNeg(term), logic.mkNeg(constant)) : std::make_pair(term, constant);
     };
     auto sidesA = extractSides(itpA);
     auto sidesB = extractSides(itpB);
-    assert(sidesA.first == logic.mkNumNeg(sidesB.first));
+    assert(sidesA.first == logic.mkNeg(sidesB.first));
     opensmt::Real c1 = logic.getNumConst(sidesA.second);
     opensmt::Real c2 = logic.getNumConst(sidesB.second);
     opensmt::Real lowerBound = c1;
     opensmt::Real upperBound = -c2;
     opensmt::Real strengthDiff = upperBound - lowerBound;
     opensmt::Real newConstant = lowerBound + (strengthDiff * strengthFactor);
-    PTRef itp = logic.mkNumLeq(logic.mkConst(newConstant), sidesA.first);
+    SRef itpSort = logic.getSortRef(sidesA.first);
+    PTRef itp = logic.mkLeq(logic.mkConst(itpSort, newConstant), sidesA.first);
     return itp;
 }
 

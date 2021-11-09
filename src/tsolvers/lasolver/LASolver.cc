@@ -69,24 +69,24 @@ void LASolver::updateBound(PTRef tr)
 
 bool LASolver::isValid(PTRef tr)
 {
-    return logic.isNumLeq(tr); // MB: LA solver expects only inequalities in LEQ form!
+    return logic.isLeq(tr); // MB: LA solver expects only inequalities in LEQ form!
 }
 
 void LASolver::isProperLeq(PTRef tr)
 {
     assert(logic.isAtom(tr));
-    assert(logic.isNumLeq(tr));
+    assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVarOrIte(sum) || logic.isNumPlus(sum) || logic.isNumTimes(sum));
-    assert(!logic.isNumTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && (logic.mkNumNeg(logic.getPterm(sum)[1])) == logic.getTerm_NumOne()) ||
-                                      (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && (logic.mkNumNeg(logic.getPterm(sum)[0])) == logic.getTerm_NumOne())));
+    assert(logic.isNumVarOrIte(sum) || logic.isPlus(sum) || logic.isTimes(sum));
+    assert(!logic.isTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1])) ||
+                                      (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0]))))));
     (void) cons; (void)sum;
 }
 
-LASolver::LASolver(SMTConfig & c, LALogic & l) : LASolver(descr_la_solver, c, l) {}
+LASolver::LASolver(SMTConfig & c, ArithLogic & l) : LASolver(descr_la_solver, c, l) {}
 
-LASolver::LASolver(SolverDescr dls, SMTConfig & c, LALogic & l)
+LASolver::LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l)
         : TSolver((SolverId) dls, (const char *) dls, c)
         , logic(l)
         , laVarMapper(l)
@@ -210,7 +210,7 @@ opensmt::Number LASolver::getNum(PTRef r) {
 
 
 bool LASolver::hasVar(PTRef expr) {
-    expr =  laVarMapper.isNegated(expr) ? logic.mkNumNeg(expr) : expr;
+    expr =  laVarMapper.isNegated(expr) ? logic.mkNeg(expr) : expr;
     PTId id = logic.getPterm(expr).getId();
     return laVarMapper.hasVar(id);
 }
@@ -224,7 +224,7 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
         return getVarForTerm(expr_in);
     }
 
-    PTRef expr = laVarMapper.isNegated(expr_in) ? logic.mkNumNeg(expr_in) : expr_in;
+    PTRef expr = laVarMapper.isNegated(expr_in) ? logic.mkNeg(expr_in) : expr_in;
     LVRef x = laVarStore.getNewVar();
     laVarMapper.registerNewMapping(x, expr);
     return x;
@@ -268,13 +268,13 @@ LVRef LASolver::exprToLVar(PTRef expr) {
         }
     }
 
-    if (logic.isNumVarOrIte(expr) || logic.isNumTimes(expr)) {
+    if (logic.isNumVarOrIte(expr) || logic.isTimes(expr)) {
         // Case (1), (2a), and (2b)
         PTRef v;
         PTRef c;
 
         logic.splitTermToVarAndConst(expr, v, c);
-        assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNumNeg(v))));
+        assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
         notifyVar(x);
@@ -306,7 +306,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
 //
 void LASolver::declareAtom(PTRef leq_tr)
 {
-    if (!logic.isNumLeq(leq_tr)) { return; }
+    if (!logic.isLeq(leq_tr)) { return; }
 
     if (isInformed(leq_tr)) { return; }
 
@@ -678,7 +678,7 @@ void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     for (LVRef lvar : laVarStore) {
         PTRef term = laVarMapper.getVarPTRef(lvar);
         if (logic.isNumVar(term)) {
-            PTRef val = logic.mkConst(concrete_model[getVarId(lvar)]);
+            PTRef val = logic.mkConst(logic.getSortRef(term), concrete_model[getVarId(lvar)]);
             modelBuilder.addVarValue(term, val);
         }
     }
@@ -716,7 +716,7 @@ LASolver::~LASolver( )
 #endif // STATISTICS
 }
 
-LALogic&  LASolver::getLogic()  { return logic; }
+ArithLogic&  LASolver::getLogic()  { return logic; }
 
 
 /**

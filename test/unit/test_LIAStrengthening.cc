@@ -7,21 +7,21 @@
 #include <Vec.h>
 #include <Sort.h>
 #include <SMTConfig.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 
 class LIAStrengthening: public ::testing::Test {
 public:
-    LIALogic logic;
-    LIAStrengthening() : logic{} {}
+    ArithLogic logic;
+    LIAStrengthening() : logic{ArithLogic::ArithType::LIA} {}
 };
 
 TEST_F(LIAStrengthening, test_LIAStrengthening) {
-    PTRef c2 = logic.mkConst(2);
-    PTRef c3 = logic.mkConst(3);
-    PTRef x = logic.mkNumVar("x");
-    PTRef y = logic.mkNumVar("y");
-    PTRef sum = logic.mkNumTimes(c2, logic.mkNumPlus(x, y));
-    PTRef ineq = logic.mkNumGeq(sum, c3);
+    PTRef c2 = logic.mkIntConst(2);
+    PTRef c3 = logic.mkIntConst(3);
+    PTRef x = logic.mkIntVar("x");
+    PTRef y = logic.mkIntVar("y");
+    PTRef sum = logic.mkTimes(c2, logic.mkPlus(x, y));
+    PTRef ineq = logic.mkGeq(sum, c3);
     ASSERT_EQ(logic.getConstantFromLeq(ineq), logic.mkConst("2"));
-    ASSERT_EQ(logic.getTermFromLeq(ineq), logic.mkNumPlus(x,y));
+    ASSERT_EQ(logic.getTermFromLeq(ineq), logic.mkPlus(x,y));
 }

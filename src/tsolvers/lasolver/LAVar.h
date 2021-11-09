@@ -30,9 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LARefs.h"
 #include <vector>
 
-class LRASolver;
 class LAVarStore;
-class LALogic;
+class ArithLogic;
 
 
 class LAVarStore

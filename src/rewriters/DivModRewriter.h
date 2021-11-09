@@ -8,7 +8,7 @@
 #include "PTRef.h"
 
 #include "Rewriter.h"
-#include "LIALogic.h"
+#include "ArithLogic.h"
 
 #include "OsmtApiException.h"
 
@@ -16,7 +16,7 @@
 #include <string>
 
 class DivModConfig : public DefaultRewriterConfig {
-    LIALogic & logic;
+    ArithLogic & logic;
 
     struct DivModPair {
         PTRef div;
@@ -33,15 +33,15 @@ class DivModConfig : public DefaultRewriterConfig {
         std::string id = "_" + std::to_string(dividend.x) + "_" + std::to_string(divisor.x);
         std::string divName = divPrefix + id;
         std::string modName = modPrefix + id;
-        return {logic.mkNumVar(divName.c_str()), logic.mkNumVar(modName.c_str())};
+        return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
     }
 
 public:
-    DivModConfig(LIALogic & logic) : logic(logic) {}
+    DivModConfig(ArithLogic & logic) : logic(logic) {}
 
     PTRef rewrite(PTRef term) override {
         SymRef symRef = logic.getSymRef(term);
-        if (logic.isIntDiv(symRef) || logic.isIntMod(symRef)) {
+        if (logic.isIntDiv(symRef) || logic.isMod(symRef)) {
             assert(logic.getPterm(term).size() == 2);
             PTRef dividend = logic.getPterm(term)[0];
             PTRef divisor = logic.getPterm(term)[1];
@@ -64,10 +64,10 @@ public:
                 // dividend = divVar * divisor + modVar
                 // 0 <= modVar <= |dividend| - 1
                 definitions.push(logic.mkAnd(
-                        logic.mkEq(dividend, logic.mkNumPlus(logic.mkNumTimes(divisor, divVar), modVar)),
+                        logic.mkEq(dividend, logic.mkPlus(logic.mkTimes(divisor, divVar), modVar)),
                         logic.mkAnd(
-                                logic.mkNumLeq(logic.getTerm_NumZero(), modVar),
-                                logic.mkNumLeq(modVar, logic.mkConst(upperBound))
+                                logic.mkLeq(logic.getTerm_IntZero(), modVar),
+                                logic.mkLeq(modVar, logic.mkIntConst(upperBound))
                         )
                 ));
             }
@@ -84,10 +84,10 @@ public:
 };
 
 class DivModRewriter : Rewriter<DivModConfig> {
-    LIALogic & logic;
+    ArithLogic & logic;
     DivModConfig config;
 public:
-    DivModRewriter(LIALogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
+    DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
 
     PTRef rewrite(PTRef term) {
         if (term == PTRef_Undef or not logic.hasSortBool(term)) {
@@ -102,7 +102,7 @@ public:
 };
 
 // Simple single-use version
-inline PTRef rewriteDivMod(LIALogic & logic, PTRef root) {
+inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) {
     return DivModRewriter(logic).rewrite(root);
 }
 

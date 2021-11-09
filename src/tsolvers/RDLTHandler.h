@@ -3,16 +3,16 @@
 
 #include "TSolverHandler.h"
 
-class LRALogic;
+class ArithLogic;
 class RDLSolver;
 
 class RDLTHandler : public TSolverHandler
 {
 private:
-    LRALogic& logic;
+    ArithLogic& logic;
     RDLSolver *rdlsolver;
 public:
-    RDLTHandler(SMTConfig &c, LRALogic &l);
+    RDLTHandler(SMTConfig &c, ArithLogic &l);
     virtual ~RDLTHandler() = default;
     Logic &getLogic() override;
     const Logic &getLogic() const override;

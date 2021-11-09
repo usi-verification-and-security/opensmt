@@ -28,22 +28,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Theory.h"
 #include "UFLRATHandler.h"
-#include "LRALogic.h"
+#include "ArithLogic.h"
 
 class UFLRATheory : public Theory
 {
   private:
-    LRALogic &    lralogic;
+    ArithLogic &    lralogic;
     UFLRATHandler uflratshandler;
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
   public:
-    UFLRATheory(SMTConfig& c, LRALogic & logic)
+    UFLRATheory(SMTConfig& c, ArithLogic & logic)
         : Theory(c)
         , lralogic(logic)
         , uflratshandler(c, lralogic)
     { }
-    virtual LRALogic&       getLogic() override { return lralogic; }
-    virtual const LRALogic& getLogic() const override { return lralogic; }
+    virtual ArithLogic&       getLogic() override { return lralogic; }
+    virtual const ArithLogic& getLogic() const override { return lralogic; }
     virtual UFLRATHandler&  getTSolverHandler() override { return uflratshandler; }
     virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
 };

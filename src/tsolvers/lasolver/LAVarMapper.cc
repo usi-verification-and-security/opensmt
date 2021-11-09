@@ -3,7 +3,7 @@
 //
 
 #include "LAVarMapper.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 
 /**
  * Remembers the mapping between a linear term (PTRef) and LA var (LVRef).
@@ -24,7 +24,7 @@ void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     laVarToPTRef[lv.x] = e_orig;
 
     PTId id_pos = logic.getPterm(e_orig).getId();
-    PTId id_neg = logic.getPterm(logic.mkNumNeg(e_orig)).getId();
+    PTId id_neg = logic.getPterm(logic.mkNeg(e_orig)).getId();
     assert(!hasVar(id_pos));
     int max_id = std::max(Idx(id_pos), Idx(id_neg));
 
@@ -63,7 +63,7 @@ bool LAVarMapper::isNegated(PTRef tr) const {
         return logic.getNumConst(tr) < 0; // Case (0a) and (0b)
     if (logic.isNumVar(tr))
         return false; // Case (1a)
-    if (logic.isNumTimes(tr)) {
+    if (logic.isTimes(tr)) {
         // Cases (2)
         PTRef v;
         PTRef c;

@@ -8,7 +8,7 @@
 #include <Real.h>
 #include <Vec.h>
 #include <Alloc.h>
-#include <LALogic.h>
+#include "ArithLogic.h"
 //
 // Class to store the term of constraints as a column of Simplex method tableau
 //
@@ -89,9 +89,9 @@ class LAVecStore
 private:
     vec<LAVecRef>   lavecs;
     LAVecAllocator& lva;
-    LALogic&        logic;
+    ArithLogic&     logic;
 public:
-    LAVecStore(LAVecAllocator& lva, LALogic& logic) : lva(lva), logic(logic) {}
+    LAVecStore(LAVecAllocator& lva, ArithLogic & logic) : lva(lva), logic(logic) {}
     inline void   clear() { lavecs.clear(); };
     LAVecRef getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den);
     LAVecRef getNewVec(std::vector<opensmt::Real>&& ps) { return getNewVec(std::move(ps), 1); }

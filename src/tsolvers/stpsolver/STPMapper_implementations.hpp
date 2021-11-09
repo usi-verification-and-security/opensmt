@@ -5,7 +5,7 @@
 #include "STPMapper.h"
 
 template<class T>
-STPMapper<T>::STPMapper(const LALogic &l, const STPStore<T> &s)
+STPMapper<T>::STPMapper(const ArithLogic &l, const STPStore<T> &s)
         : logic(l), store(s) {}
 
 // assigns a VertexRef to a PTRef variable
