@@ -21,7 +21,7 @@ bool LIASolver::isModelInteger(LVRef v) const
     return !( val.hasDelta() || !val.R().isInteger() );
 }
 
-opensmt::Integer2 LIASolver::getInt(PTRef r) {
+FastRational LIASolver::getInt(PTRef r) {
     return logic.getNumConst(r);
 }
 
