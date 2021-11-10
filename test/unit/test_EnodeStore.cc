@@ -93,7 +93,7 @@ TEST_F(EnodeStoreTest, testUFMixed) {
     ASSERT_FALSE(enodeStore.needsEnode(x));
     SRef ufsort = logic.declareSort("U", nullptr);
     PTRef a = logic.mkUninterpFun(logic.declareFun("a", ufsort, {}, nullptr), {});
-    PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}, nullptr), {x, a});
+    PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}, nullptr), {a, x});
     AppearsInUfVisitor(logic).visit(mixed);
     // Enode needed: a is a UF, mixed is a UP, and x appears in mixed
     ASSERT_TRUE(enodeStore.needsEnode(a));

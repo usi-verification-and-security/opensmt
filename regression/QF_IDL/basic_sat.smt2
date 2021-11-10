@@ -1,0 +1,7 @@
+(set-logic QF_IDL)
+(declare-fun a () Int)
+(declare-fun b () Int)
+(set-info :status sat)
+(assert (> (- a b) 10))
+(check-sat)
+(exit)
