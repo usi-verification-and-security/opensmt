@@ -67,13 +67,13 @@ class Symbol {
     int      size        ()      const   { return header.size; }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
     /**
-     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
-     * @return A pointer to the first child of the term
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
+     * @return A pointer to the first child of the symbol
      */
     SRef const * begin   ()      const   { return (SRef*)(args + 1); }
     /**
-     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
-     * @return A pointer to the last child of the term
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
+     * @return A pointer to the last child of the symbol
      */
     SRef const * end     ()      const   { return (SRef*)(args + size()); }
     SRef     rsort       ()      const   { return args[0].sort; }
