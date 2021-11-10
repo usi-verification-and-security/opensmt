@@ -250,10 +250,10 @@ TEST_F(LAModelTest, test_constants) {
     EXPECT_EQ(model->evaluate(tval), tval);
 
     PTRef fortytwo = logic.mkConst(42);
-    PTRef one = logic.mkConst(1);
-    PTRef zero = logic.mkConst(opensmt::Real(0));
     EXPECT_EQ(model->evaluate(fortytwo), fortytwo);
+    PTRef one = logic.mkConst(1);
     EXPECT_EQ(model->evaluate(one), logic.getTerm_NumOne());
+    PTRef zero = logic.mkConst(opensmt::Real(0));
     EXPECT_EQ(model->evaluate(zero), logic.getTerm_NumZero());
 }
 
