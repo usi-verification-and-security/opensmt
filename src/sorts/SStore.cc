@@ -45,7 +45,7 @@ SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
         return sr;
     }
 }
-SRef SStore::newSort(IdRef idr, vec<SRef>& rest)
+SRef SStore::newSort(IdRef idr, vec<SRef> const & rest)
 {
     SRef sr = SRef_Undef;
     std::string canon_name;

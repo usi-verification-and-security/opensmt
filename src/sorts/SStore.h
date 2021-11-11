@@ -86,7 +86,7 @@ class SStore
     SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
     Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
-    SRef    newSort         (IdRef id, vec<SRef>& rest);
+    SRef    newSort         (IdRef id, vec<SRef> const & rest);
     SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
     bool    containsSort    (const char* name) const
         { bool rval = sortTable.has(name); return rval; }
