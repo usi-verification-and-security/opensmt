@@ -251,13 +251,16 @@ public:
     SymRef      declareFun    (const std::string & fname, const SRef rsort, const vec<SRef>& args, bool interpreted = false) { char *msg; return declareFun(fname.data(), rsort, args, &msg, interpreted); };
     SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args, true); sym_store[sr].setNoScoping(); return sr; }
     SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
     SymRef      declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    SymRef      declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
     SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Pairwise(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     SRef        declareSortAndCreateFunctions(std::string const & id);
-    SRef        declareSort   (char const * id);
-    SRef        declareSort   (const std::string& id) { return declareSort(id.c_str()); }
+    SRef        declareUninterpretedSort   (char const * id);
+    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
 
     PTRef       mkBoolVar     (const char* name);
 

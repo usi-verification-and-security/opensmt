@@ -17,7 +17,7 @@ protected:
     UFModelTest(): logic{} {}
     virtual void SetUp() {
         char* err;
-        S = logic.declareSort("U");
+        S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
@@ -67,7 +67,7 @@ protected:
     UFModelBuilderTest(): logic{} {}
     virtual void SetUp() {
         char* err;
-        S = logic.declareSort("U");
+        S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
@@ -161,7 +161,7 @@ class UFConstModelTest : public ::testing::Test {
 protected:
     UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
         char * msg;
-        SRef U = logic.declareSort("U");
+        SRef U = logic.declareUninterpretedSort("U");
         fs = logic.declareFun("f", U, {U}, &msg, false);
         x = logic.mkVar(U, "x");
         a = logic.mkConst(U, "a");

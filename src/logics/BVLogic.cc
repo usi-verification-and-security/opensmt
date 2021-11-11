@@ -13,8 +13,8 @@ Module: New Logic for BitVector
 #include "TreeOps.h"
 #include "Global.h"
 
-int         BVLogic::tk_bv_zero  = 0;
-int         BVLogic::tk_bv_one   = 1;
+const char* BVLogic::tk_bv_zero  = "0";
+const char* BVLogic::tk_bv_one   = "1";
 const char* BVLogic::tk_bv_neg   = "-";
 const char* BVLogic::tk_bv_eq    = "==";
 const char* BVLogic::tk_bv_minus = "-";
@@ -51,147 +51,47 @@ const int BVLogic::i_default_bitwidth = 32;
 
 BVLogic::BVLogic(int width) :
     CUFLogic()
-    , sym_BV_ZERO(SymRef_Undef)
-    , sym_BV_ONE(SymRef_Undef)
-    , sym_BV_NEG(SymRef_Undef)
-    , sym_BV_MINUS(SymRef_Undef)
-    , sym_BV_PLUS(SymRef_Undef)
-    , sym_BV_TIMES(SymRef_Undef)
-    , sym_BV_DIV(SymRef_Undef)
-    , sym_BV_EQ(SymRef_Undef)
-    , sym_BV_SLEQ(SymRef_Undef)
-    , sym_BV_ULEQ(SymRef_Undef)
-    , sym_BV_SGEQ(SymRef_Undef)
-    , sym_BV_UGEQ(SymRef_Undef)
-    , sym_BV_SLT(SymRef_Undef)
-    , sym_BV_ULT(SymRef_Undef)
-    , sym_BV_SGT(SymRef_Undef)
-    , sym_BV_UGT(SymRef_Undef)
-    , sym_BV_BWXOR(SymRef_Undef)
-    , sym_BV_LSHIFT(SymRef_Undef)
-    , sym_BV_LRSHIFT(SymRef_Undef)
-    , sym_BV_ARSHIFT(SymRef_Undef)
-    , sym_BV_MOD(SymRef_Undef)
-    , sym_BV_BWOR(SymRef_Undef)
-    , sym_BV_BWAND(SymRef_Undef)
-    , sym_BV_LAND(SymRef_Undef)
-    , sym_BV_LOR(SymRef_Undef)
-    , sym_BV_NOT(SymRef_Undef)
-    , sym_BV_COMPL(SymRef_Undef)
-    , sym_BV_COLLATE32(SymRef_Undef)
-
     , sort_BVNUM(SRef_Undef)
-    , term_BV_ZERO(PTRef_Undef)
-    , term_BV_ONE(PTRef_Undef)
+    , term_BV_ZERO(mkConst(sort_BVNUM, tk_bv_zero))
+    , term_BV_ONE(mkConst(sort_BVNUM, tk_bv_one))
+    , sym_BV_ZERO(getSymRef(term_BV_ZERO))
+    , sym_BV_ONE(getSymRef(term_BV_ONE))
+    , sym_BV_NEG(declareFun_NoScoping(tk_bv_neg, sort_BVNUM, {sort_BVNUM}))
+    , sym_BV_MINUS(declareFun_NoScoping_LeftAssoc(tk_bv_minus, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_PLUS(declareFun_NoScoping_LeftAssoc(tk_bv_plus, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_TIMES(declareFun_NoScoping_LeftAssoc(tk_bv_times, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_DIV(declareFun_NoScoping_LeftAssoc(tk_bv_div, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_EQ(declareFun_NoScoping_LeftAssoc(tk_equals, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_SLEQ(declareFun_NoScoping_RightAssoc(tk_bv_sleq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_ULEQ(declareFun_NoScoping_RightAssoc(tk_bv_uleq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_SGEQ(declareFun_NoScoping_RightAssoc(tk_bv_sgeq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_UGEQ(declareFun_NoScoping_RightAssoc(tk_bv_ugeq, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_SLT(declareFun_NoScoping_RightAssoc(tk_bv_slt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_ULT(declareFun_NoScoping_RightAssoc(tk_bv_ult, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_SGT(declareFun_NoScoping_RightAssoc(tk_bv_sgt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_UGT(declareFun_NoScoping_RightAssoc(tk_bv_ugt, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_BWXOR(declareFun_NoScoping_LeftAssoc(tk_bv_bwxor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_LSHIFT(declareFun_NoScoping_LeftAssoc(tk_bv_lshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_LRSHIFT(declareFun_NoScoping_LeftAssoc(tk_bv_lrshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_ARSHIFT(declareFun_NoScoping_LeftAssoc(tk_bv_lrshift, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_MOD(declareFun_NoScoping_LeftAssoc(tk_bv_mod, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_BWOR(declareFun_NoScoping_LeftAssoc(tk_bv_bwor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_BWAND(declareFun_NoScoping_LeftAssoc(tk_bv_bwand, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_LAND(declareFun_NoScoping_LeftAssoc(tk_bv_land, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_LOR(declareFun_NoScoping_LeftAssoc(tk_bv_lor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_NOT(declareFun_NoScoping(tk_bv_not, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_COMPL(declareFun_NoScoping(tk_bv_compl, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_COLLATE32(declareFun_NoScoping(tk_bv_coll32, sort_CUFNUM,
+        {sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
+         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
+         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
+         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL}))
     , bitwidth(width)
 {
-    char* msg;
-    sort_BVNUM = declareSort(s_sort_bvnum);
-
-    vec<SRef> params;
-    term_BV_ZERO = mkBVConst(tk_bv_zero);
-    sym_BV_ZERO  = getSymRef(term_BV_ZERO);
-    term_BV_ONE  = mkBVConst(tk_bv_one);
-    sym_BV_ONE   = getSymRef(term_BV_ONE);
-
-    params.push(sort_BVNUM);
-
-    // Unary
-    sym_BV_NEG    = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
-    sym_BV_COMPL  = declareFun(tk_bv_compl, sort_BVNUM, params, &msg, true);
-    sym_BV_NOT = declareFun(tk_bv_not, sort_BVNUM, params, &msg, true);
-
-    params.push(sort_BVNUM);
-
-    // Binary
-    sym_BV_MINUS = declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_MINUS].setLeftAssoc();
-
-    sym_BV_EQ    = declareFun(tk_bv_eq, sort_BVNUM, params, &msg, true);
-    equalities.insert(sym_BV_EQ, true);
-    sym_store[sym_BV_EQ].setNoScoping();
-    sym_store[sym_BV_EQ].setCommutes();
-    sym_store[sym_BV_EQ].setLeftAssoc();
-
-    sym_BV_PLUS  = declareFun(tk_bv_plus, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_PLUS].setNoScoping();
-    sym_store[sym_BV_PLUS].setCommutes();
-    sym_store[sym_BV_PLUS].setLeftAssoc();
-
-    sym_BV_TIMES = declareFun(tk_bv_times, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_TIMES].setNoScoping();
-    sym_store[sym_BV_TIMES].setLeftAssoc();
-    sym_store[sym_BV_TIMES].setCommutes();
-
-    sym_BV_DIV   = declareFun(tk_bv_div, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_DIV].setNoScoping();
-    sym_store[sym_BV_DIV].setLeftAssoc();
-
-    sym_BV_SLEQ  = declareFun(tk_bv_sleq, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_SLEQ].setNoScoping();
-    sym_store[sym_BV_SLEQ].setChainable();
-
-    sym_BV_ULEQ  = declareFun(tk_bv_uleq, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_ULEQ].setNoScoping();
-    sym_store[sym_BV_ULEQ].setChainable();
-
-    sym_BV_SLT  = declareFun(tk_bv_slt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_SLT].setNoScoping();
-    sym_store[sym_BV_SLT].setChainable();
-
-    sym_BV_ULT  = declareFun(tk_bv_ult, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_ULT].setNoScoping();
-    sym_store[sym_BV_ULT].setChainable();
-
-    sym_BV_UGEQ = declareFun(tk_bv_ugeq, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_UGEQ].setNoScoping();
-    sym_store[sym_BV_UGEQ].setChainable();
-
-    sym_BV_SGEQ = declareFun(tk_bv_sgeq, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_SGEQ].setNoScoping();
-    sym_store[sym_BV_SGEQ].setChainable();
-
-    sym_BV_SGT  = declareFun(tk_bv_sgt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_SGT].setNoScoping();
-    sym_store[sym_BV_SGT].setChainable();
-
-    sym_BV_UGT   = declareFun(tk_bv_ugt, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_UGT].setNoScoping();
-    sym_store[sym_BV_UGT].setChainable();
-
-    sym_BV_LAND   = declareFun(tk_bv_land, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_LAND].setCommutes();
-
-    sym_BV_LOR    = declareFun(tk_bv_lor, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_LOR].setCommutes();
-
-    sym_BV_LSHIFT = declareFun(tk_bv_lshift, sort_BVNUM, params, &msg, true);
-
-    sym_BV_ARSHIFT = declareFun(tk_bv_arshift, sort_BVNUM, params, &msg, true);
-    sym_BV_LRSHIFT = declareFun(tk_bv_lrshift, sort_BVNUM, params, &msg, true);
-
-    sym_BV_MOD    = declareFun(tk_bv_mod, sort_BVNUM, params, &msg, true);
-
-    sym_BV_BWAND  = declareFun(tk_bv_bwand, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_BWAND].setCommutes();
-
-    sym_BV_BWOR   = declareFun(tk_bv_bwor, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_BWOR].setCommutes();
-
-    sym_BV_BWXOR  = declareFun(tk_bv_bwxor, sort_BVNUM, params, &msg, true);
-    sym_store[sym_BV_BWXOR].setCommutes();
-
-    declareFun(tk_bv_neg, sort_BVNUM, params, &msg, true);
-
-    vec<SRef> coll_params;
-    for (int i = 0; i < 32; i++)
-        coll_params.push(getSort_bool());
-    sym_BV_COLLATE32 = declareFun(tk_bv_coll32, sort_CUFNUM, coll_params, &msg, true);
-
     for (int i = 0; i < 32; i++) {
         std::string sym_name {s_uf_extract_base};
         sym_name += std::to_string(i);
-        declareFun(sym_name.c_str(), getSort_bool(), {sort_CUFNUM}, &msg, true);
+        declareFun_NoScoping(sym_name.c_str(), sort_BOOL, {sort_CUFNUM});
     }
 }
 

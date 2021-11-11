@@ -33,6 +33,29 @@ class LRALogic: public LALogic
 {
 protected:
     vec<opensmt::Real*> reals;
+
+    static const char*  e_nonlinear_term;
+
+    static const char*  tk_real_zero;
+    static const char*  tk_real_one;
+    static const char*  tk_real_minusone;
+    static const char*  tk_real_neg;
+    static const char*  tk_real_minus;
+    static const char*  tk_real_plus;
+    static const char*  tk_real_times;
+    static const char*  tk_real_div;
+    static const char*  tk_real_leq;
+    static const char*  tk_real_lt;
+    static const char*  tk_real_geq;
+    static const char*  tk_real_gt;
+    static const char*  s_sort_real;
+
+    SRef                sort_REAL;
+
+    PTRef               term_Real_ZERO;
+    PTRef               term_Real_ONE;
+    PTRef               term_Real_MINUSONE;
+
     SymRef              sym_Real_ZERO;
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
@@ -46,24 +69,7 @@ protected:
     SymRef              sym_Real_GEQ;
     SymRef              sym_Real_GT;
     SymRef              sym_Real_ITE;
-    SRef                sort_REAL;
-    PTRef               term_Real_ZERO;
-    PTRef               term_Real_ONE;
-    PTRef               term_Real_MINUSONE;
-    //static const char*  tk_val_real_default;
-    static const char*  tk_real_zero;
-    static const char*  tk_real_one;
-    static const char*  tk_real_neg;
-    static const char*  tk_real_minus;
-    static const char*  tk_real_plus;
-    static const char*  tk_real_times;
-    static const char*  tk_real_div;
-    static const char*  tk_real_leq;
-    static const char*  tk_real_lt;
-    static const char*  tk_real_geq;
-    static const char*  tk_real_gt;
-    static const char*  s_sort_real;
-    static const char*  e_nonlinear_term;
+
     bool split_eq;
 
 public:

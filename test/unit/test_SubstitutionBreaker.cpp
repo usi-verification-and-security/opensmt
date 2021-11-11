@@ -13,7 +13,7 @@ TEST(SubstitutionBreaker, test_getVars) {
 
 
     char *tmp;
-    SRef U = logic.declareSort("U");
+    SRef U = logic.declareUninterpretedSort("U");
     PTRef a = logic.mkVar(U, "a");
     PTRef b = logic.mkVar(U, "b");
     PTRef c = logic.mkVar(U, "c");
@@ -50,7 +50,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
     Logic logic;
 
     char* tmp;
-    SRef U = logic.declareSort("U");
+    SRef U = logic.declareUninterpretedSort("U");
     PTRef a = logic.mkVar(U, "a");
     PTRef b = logic.mkVar(U, "b");
     PTRef c = logic.mkVar(U, "c");
@@ -78,7 +78,7 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     Logic logic;
 
     char* tmp;
-    SRef U = logic.declareSort("U");
+    SRef U = logic.declareUninterpretedSort("U");
     PTRef a1 = logic.mkVar(U, "a1");
     PTRef b1 = logic.mkVar(U, "b1");
     PTRef c1 = logic.mkVar(U, "c1");
@@ -121,7 +121,7 @@ TEST(SubstitutionBreaker, test_getLoops3) {
     Logic logic;
 
     char* tmp;
-    SRef U = logic.declareSort("U");
+    SRef U = logic.declareUninterpretedSort("U");
     PTRef e0 = logic.mkVar(U, "e0");
     PTRef e1 = logic.mkVar(U, "e1");
     PTRef e2 = logic.mkVar(U, "e2");

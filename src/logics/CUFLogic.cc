@@ -29,8 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TreeOps.h"
 #include "Global.h"
 
-int CUFLogic::tk_cuf_zero  = 0;
-int CUFLogic::tk_cuf_one   = 1;
+const char* CUFLogic::tk_cuf_zero  = "0";
+const char* CUFLogic::tk_cuf_one   = "1";
 const char* CUFLogic::tk_cuf_neg   = "-";
 const char* CUFLogic::tk_cuf_minus = "-";
 const char* CUFLogic::tk_cuf_plus  = "+";
@@ -64,120 +64,41 @@ const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 const char*  CUFLogic::s_sort_cufstr = "CUFStr";
 
 CUFLogic::CUFLogic() :
-    Logic()
-    , sym_CUF_ZERO(SymRef_Undef)
-    , sym_CUF_ONE(SymRef_Undef)
-    , sym_CUF_NEG(SymRef_Undef)
-    , sym_CUF_MINUS(SymRef_Undef)
-    , sym_CUF_PLUS(SymRef_Undef)
-    , sym_CUF_TIMES(SymRef_Undef)
-    , sym_CUF_DIV(SymRef_Undef)
-//    , sym_CUF_EQ(SymRef_Undef)
-    , sym_CUF_LEQ(SymRef_Undef)
-    , sym_CUF_LT(SymRef_Undef)
-    , sym_CUF_GEQ(SymRef_Undef)
-    , sym_CUF_GT(SymRef_Undef)
-    , sym_CUF_LSHIFT(SymRef_Undef)
-    , sym_CUF_LRSHIFT(SymRef_Undef)
-    , sym_CUF_ARSHIFT(SymRef_Undef)
-    , sym_CUF_MOD(SymRef_Undef)
-    , sym_CUF_BWAND(SymRef_Undef)
-    , sym_CUF_BWOR(SymRef_Undef)
-    , sym_CUF_INC(SymRef_Undef)
-    , sym_CUF_DEC(SymRef_Undef)
-    , sym_CUF_NEQ(SymRef_Undef)
-    , sym_CUF_LAND(SymRef_Undef)
-    , sym_CUF_LOR(SymRef_Undef)
-//    , sym_CUF_NOT(SymRef_Undef)
-    , sym_CUF_BWXOR(SymRef_Undef)
-    , sym_CUF_COMPL(SymRef_Undef)
-    , sym_CUF_SIZEOF(SymRef_Undef)
-    , sym_CUF_ADDROF(SymRef_Undef)
-    , sym_CUF_PTR(SymRef_Undef)
-//    , sym_CUF_COND(SymRef_Undef)
+      Logic()
+    , sort_CUFNUM(declareSortAndCreateFunctions(s_sort_cufnum))
+    , sort_CUFSTR(declareSortAndCreateFunctions(s_sort_cufstr))
 
-    , sort_CUFNUM(SRef_Undef)
-    , sort_CUFSTR(SRef_Undef)
-
-    , term_CUF_ZERO(PTRef_Undef)
-    , term_CUF_ONE(PTRef_Undef)
-{
-    sort_CUFNUM = declareSort(s_sort_cufnum);
-
-    vec<SRef> params;
-    term_CUF_ZERO = mkCUFConst(tk_cuf_zero);
-    sym_CUF_ZERO  = getSymRef(term_CUF_ZERO);
-    term_CUF_ONE  = mkCUFConst(tk_cuf_one);
-    sym_CUF_ONE   = getSymRef(term_CUF_ONE);
-
-    params.push(sort_CUFNUM);
-
-    char *msg = nullptr;
-    // Unary
-    sym_CUF_NEG    = declareFun(tk_cuf_neg, sort_CUFNUM, params, &msg, true);
-    sym_CUF_INC    = declareFun(tk_cuf_inc, sort_CUFNUM, params, &msg, true);
-    sym_CUF_DEC    = declareFun(tk_cuf_dec, sort_CUFNUM, params, &msg, true);
-    sym_CUF_COMPL  = declareFun(tk_cuf_compl, sort_CUFNUM, params, &msg, true);
-    sym_CUF_SIZEOF = declareFun(tk_cuf_sizeof, sort_CUFNUM, params, &msg, true);
-    sym_CUF_ADDROF = declareFun(tk_cuf_addrof, sort_CUFNUM, params, &msg, true);
-    sym_CUF_PTR    = declareFun(tk_cuf_ptr, sort_CUFNUM, params, &msg, true);
-
-    params.push(sort_CUFNUM);
-    // Binary
-    sym_CUF_MINUS = declareFun(tk_cuf_neg, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_MINUS].setLeftAssoc();
-
-    sym_CUF_PLUS  = declareFun(tk_cuf_plus, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_PLUS].setNoScoping();
-//    sym_store[sym_CUF_PLUS].setCommutes();
-    sym_store[sym_CUF_PLUS].setLeftAssoc();
-
-    sym_CUF_TIMES = declareFun(tk_cuf_times, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_TIMES].setNoScoping();
-    sym_store[sym_CUF_TIMES].setLeftAssoc();
-//    sym_store[sym_CUF_TIMES].setCommutes();
-
-    sym_CUF_DIV   = declareFun(tk_cuf_div, sort_CUFNUM, params, &msg, true);
-    sym_store[sym_CUF_DIV].setNoScoping();
-    sym_store[sym_CUF_DIV].setLeftAssoc();
-
-    sym_CUF_LEQ  = declareFun(tk_cuf_leq, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_LEQ].setNoScoping();
-    sym_store[sym_CUF_LEQ].setChainable();
-
-    sym_CUF_LT   = declareFun(tk_cuf_lt, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_LT].setNoScoping();
-    sym_store[sym_CUF_LT].setChainable();
-
-    sym_CUF_GEQ  = declareFun(tk_cuf_geq, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_GEQ].setNoScoping();
-    sym_store[sym_CUF_GEQ].setChainable();
-
-    sym_CUF_GT   = declareFun(tk_cuf_gt, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_GEQ].setNoScoping();
-    sym_store[sym_CUF_GEQ].setChainable();
-
-    sym_CUF_NEQ    = declareFun(tk_cuf_neq, sort_BOOL, params, &msg, true);
-    sym_store[sym_CUF_NEQ].setCommutes();
-
-    sym_CUF_LAND   = declareFun(tk_cuf_land, sort_BOOL, params, &msg, true);
-//    sym_store[sym_CUF_LAND].setCommutes();
-
-    sym_CUF_LOR    = declareFun(tk_cuf_lor, sort_BOOL, params, &msg, true);
-//    sym_store[sym_CUF_LOR].setCommutes();
-
-    sym_CUF_LSHIFT = declareFun(tk_cuf_lshift, sort_CUFNUM, params, &msg, true);
-    sym_CUF_LRSHIFT = declareFun(tk_cuf_lrshift, sort_CUFNUM, params, &msg, true);
-    sym_CUF_ARSHIFT = declareFun(tk_cuf_arshift, sort_CUFNUM, params, &msg, true);
-
-    sym_CUF_MOD    = declareFun(tk_cuf_mod, sort_CUFNUM, params, &msg, true);
-    sym_CUF_BWAND  = declareFun(tk_cuf_bwand, sort_CUFNUM, params, &msg, true);
-//    sym_store[sym_CUF_BWAND].setCommutes();
-
-    sym_CUF_BWOR   = declareFun(tk_cuf_bwor, sort_CUFNUM, params, &msg, true);
-//    sym_store[sym_CUF_BWOR].setCommutes();
-    sym_CUF_BWXOR  = declareFun(tk_cuf_bwxor, sort_CUFNUM, params, &msg, true);
-}
+    , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
+    , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))
+    , sym_CUF_ZERO(getSymRef(term_CUF_ZERO))
+    , sym_CUF_ONE(getSymRef(term_CUF_ONE))
+    , sym_CUF_NEG(declareFun_NoScoping(tk_cuf_neg, sort_CUFNUM, {sort_CUFNUM}))
+    , sym_CUF_MINUS(declareFun_NoScoping_LeftAssoc(tk_cuf_minus, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_PLUS(declareFun_NoScoping_LeftAssoc(tk_cuf_plus, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_TIMES(declareFun_NoScoping_LeftAssoc(tk_cuf_times, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_DIV(declareFun_NoScoping_LeftAssoc(tk_cuf_div, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_MOD(declareFun_NoScoping(tk_cuf_mod, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LEQ(declareFun_NoScoping_Chainable(tk_cuf_leq, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LT(declareFun_NoScoping_Chainable(tk_cuf_lt, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_GEQ(declareFun_NoScoping_Chainable(tk_cuf_geq, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_GT(declareFun_NoScoping_Chainable(tk_cuf_gt, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LSHIFT(declareFun_NoScoping_LeftAssoc(tk_cuf_lshift, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LRSHIFT(declareFun_NoScoping_LeftAssoc(tk_cuf_lrshift, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_ARSHIFT(declareFun_NoScoping_LeftAssoc(tk_cuf_arshift, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_BWAND(declareFun_NoScoping_LeftAssoc(tk_cuf_bwand, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_BWOR(declareFun_NoScoping_LeftAssoc(tk_cuf_bwor, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_INC(declareFun_NoScoping(tk_cuf_inc, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_DEC(declareFun_NoScoping(tk_cuf_dec, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_NEQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LAND(declareFun_NoScoping_LeftAssoc(tk_cuf_land, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_LOR(declareFun_NoScoping_LeftAssoc(tk_cuf_lor, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_BWXOR(declareFun_Commutative_NoScoping_LeftAssoc(tk_cuf_bwxor, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_COMPL(declareFun_Commutative_NoScoping_LeftAssoc(tk_cuf_bwxor, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_SIZEOF(declareFun_NoScoping(tk_cuf_sizeof, sort_CUFNUM, {sort_CUFNUM}))
+    , sym_CUF_ADDROF(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
+    , sym_CUF_PTR(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
+{}
 
 CUFLogic::~CUFLogic()
 {}

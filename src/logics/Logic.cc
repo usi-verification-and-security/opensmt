@@ -459,7 +459,7 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
  * @param sortName
  * @return sort reference
  */
-SRef Logic::declareSort(char const * sortName) {
+SRef Logic::declareUninterpretedSort(char const * sortName) {
     SRef sr = declareSortAndCreateFunctions(sortName);
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
@@ -883,28 +883,19 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
     IdRef idr = id_store.newIdentifier(id.c_str());
     SRef sr = sort_store.newSort(idr, {});
 
-    char *msg;
-
     // Equality
-    SymRef tr = declareFun(tk_equals, sort_BOOL, {sr, sr}, &msg, true);
+    SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
-    sym_store[tr].setChainable();
     equalities.insert(tr, true);
 
     // distinct
-    tr = declareFun(tk_distinct, sort_BOOL, {sr, sr}, &msg, true);
+    tr = declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
-    if (not sym_store[tr].setPairwise()) assert(false);
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
     disequalities.insert(tr, true);
 
     // ite
-    tr = declareFun(tk_ite, sr, {sort_BOOL, sr, sr}, &msg, true);
+    tr = declareFun_NoScoping(tk_ite, sr, {sort_BOOL, sr, sr});
     assert(tr != SymRef_Undef);
-    sym_store[tr].setNoScoping();
     ites.insert(tr, true);
     sortToIte.insert(sr, tr);
 

@@ -1184,7 +1184,7 @@ SRef Interpret::newSort(ASTNode& sn) {
 //    free(canon_name);
 
     char* canon_name = buildSortName(sn);
-    SRef rval = main_solver->getLogic().declareSort(canon_name);
+    SRef rval = main_solver->getLogic().declareUninterpretedSort(canon_name);
     return rval;
 }
 
