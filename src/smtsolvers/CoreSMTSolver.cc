@@ -1198,7 +1198,7 @@ CRef CoreSMTSolver::propagate()
             Clause&  c         = ca[cr];
 
             // Try to avoid inspecting the clause:
-            if (c.size() > 2 && value(c[2]) == l_True)
+            if (c.size() > 2 && (value(c[2]) == l_True || value(c[1]) == l_True || value(c[0]) == l_True))
             {
                 *j++ = *i++;
                 continue;
@@ -1214,13 +1214,12 @@ CRef CoreSMTSolver::propagate()
                 }
             } else if (c[1] == false_lit) {
                 if (c.size() > 2 && value(c[2]) == l_Undef) {
-                    c[0] = c[2], c[2] = false_lit;
+                    c[1] = c[2], c[2] = false_lit;
                 }
             }
 
-            // TODO: more precise assertion is possible
             if (c.size() > 2) {
-                assert(c[2] == false_lit);
+                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
             } else {
                 assert(c[1] == false_lit);
             }
@@ -1236,7 +1235,7 @@ CRef CoreSMTSolver::propagate()
             }
 
             // Look for new watch:
-            for (unsigned k = 2; k < c.size(); k++)
+            for (unsigned k = 3; k < c.size(); k++)
                 if (value(c[k]) != l_False)
                 {
                     c[2] = c[k];
