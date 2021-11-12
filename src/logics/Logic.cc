@@ -687,7 +687,7 @@ PTRef Logic::mkNot(PTRef arg) {
     return tr;
 }
 
-PTRef Logic::mkConst(const char* name, const char** msg)
+PTRef Logic::mkConst(const char* name)
 {
     //assert(0);
     //return PTRef_Undef;

@@ -51,10 +51,9 @@ public:
     using Logic::insertTerm;
     PTRef            insertTerm       (SymRef sym, vec<PTRef>&& terms) override;
     virtual SRef     getSort_num      () const = 0;
-    PTRef            mkConst          (const char* name, const char **msg) override;
     PTRef            mkConst          (SRef s, const char* name) override;
     virtual PTRef    mkConst          (const opensmt::Number& c);
-    virtual PTRef    mkConst          (const char* num) { return mkConst(getSort_num(), num); }
+    virtual PTRef    mkConst          (const char* num) override { return mkConst(getSort_num(), num); }
     virtual PTRef    mkNumVar         (const char* name) { return mkVar(getSort_num(), name); }
     bool             isBuiltinSort    (SRef sr) const override { return sr == get_sort_Num() || Logic::isBuiltinSort(sr); }
     bool             isBuiltinConstant(SymRef sr) const override { return (isNumConst(sr) || Logic::isBuiltinConstant(sr)); }
