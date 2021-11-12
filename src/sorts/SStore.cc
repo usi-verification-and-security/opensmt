@@ -29,29 +29,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
-
-
-SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
-{
-    if (sortTable.has(name_))
-        return sortTable[name_];
-    else {
-        char* name = strdup(name_);
-        SStrRef nr = ssa.alloc(name);
-        SRef sr = sa.alloc(id, nr, rest);
-        sorts.push(sr);
-        sortTable.insert(name, sr);
-        sort_names.push(name);
-        return sr;
-    }
-}
-SRef SStore::newSort(IdRef idr, vec<SRef> const & rest)
+SRef SStore::newSort(Identifier idr, vec<SRef> const & rest)
 {
     SRef sr = SRef_Undef;
     std::string canon_name;
     if (rest.size() > 0) {
         std::stringstream ss;
-        ss << is.getName(idr);
+        ss << idr.name;
         ss << " (";
         ss << getName(rest[0]);
         for (int i = 1; i < rest.size(); i++) {
@@ -61,17 +45,15 @@ SRef SStore::newSort(IdRef idr, vec<SRef> const & rest)
         ss << ')';
         canon_name = ss.str();
     } else {
-        canon_name = is.getName(idr);
+        canon_name = idr.name;
     }
 
     const char* c_canon_name = canon_name.c_str();
     if (sortTable.has(c_canon_name)) {
-        SRef sr = sortTable[c_canon_name];
-        return sr;
+        return sortTable[c_canon_name];
     } else {
         char* new_name = strdup(c_canon_name);
-        SStrRef nr = ssa.alloc(new_name);
-        sr = sa.alloc(idr, nr, rest);
+        sr = sa.alloc(std::move(idr), rest);
         sorts.push(sr);
         sortTable.insert(new_name, sr);
         sort_names.push(new_name);

@@ -33,30 +33,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iosfwd>
 
-class IdentifierStore
-{
-  private:
-    StrAllocator<IdStr, IdStrRef> isa {1024};
-    IdentifierAllocator ia {1024};
-  public:
-    // Provided for simplicity
-    IdRef newIdentifier(const char* name) {
-        IdStrRef nr = isa.alloc(name);
-        return ia.alloc(nr);
-    }
-    IdRef newIdentifier(const char* name, vec<int>& nl) {
-        IdStrRef nr = isa.alloc(name);
-        return ia.alloc(nr, nl);
-    }
-    ~IdentifierStore() {}
-    const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
-};
-
 class SStore
 {
   private:
-    IdentifierStore& is;
-    StrAllocator<SStr, SStrRef> ssa {1024};
     SortAllocator sa {512};
     Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
     vec<SRef>                                     sorts;
@@ -70,7 +49,7 @@ class SStore
 
   public:
 
-    SStore(IdentifierStore & is_) : is(is_) { }
+    SStore() = default;
 
     ~SStore() {
         for (int i = 0; i < sort_names.size(); i++)
@@ -82,15 +61,14 @@ class SStore
 
     bool    contains        (const char* s)   const { return sortTable.has(s); }
     SRef    operator []     (const char* s)   const { return sortTable[s]; }
-    bool    contains        (const Sort& s)   const { return sortTable.has(ssa[s.getNameRef()].getName()); }
-    SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
+    bool    contains        (const Sort& s)   const { return sortTable.has(s.getName()); }
+    SRef    operator []     (const Sort& s) { return sortTable[s.getName()]; }
     Sort*   operator []     (SRef sr)       { return &sa[sr]; }
 
-    SRef    newSort         (IdRef id, vec<SRef> const & rest);
-    SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
+    SRef    newSort         (Identifier id, vec<SRef> const & rest);
     bool    containsSort    (const char* name) const
         { bool rval = sortTable.has(name); return rval; }
-    const char* getName     (SRef sr) const { return ssa[sa[sr].getNameRef()].getName(); }
+    const char* getName     (SRef sr) const { return sa[sr].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }
     int     numSorts() const { return sorts.size(); }

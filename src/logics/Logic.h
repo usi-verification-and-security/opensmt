@@ -94,9 +94,6 @@ class Logic {
     vec<bool>           interpreted_functions;
 
 
-
-
-    IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
@@ -162,14 +159,10 @@ class Logic {
     virtual std::string const getName() const { return "QF_UF"; }
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
-    // Identifiers
-    IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }
-    IdRef       newIdentifier (const char* name, vec<int>& nl);//{ return id_store.newIdentifier(name, nl); }
     // Fetching sorts
     bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
-    SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);

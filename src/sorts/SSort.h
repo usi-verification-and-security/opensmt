@@ -28,17 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SORT_H
 
 #include "Vec.h"
-#include "Map.h"
 #include "Alloc.h"
 
-#include <cstring>
-
-// XXX The implementation of sorts is incomplete: the sort system should have
-// sort symbols and concrete sorts the way pterms are constructed.  As a
-// result, we only support "constant sorts" of arity 0
-
-//typedef RegionAllocator<uint32_t>::Ref SRef;
-//const SRef SRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+#include <string>
 
 struct SRef {
     uint32_t x;
@@ -55,184 +47,32 @@ struct SRefHash {
         return (uint32_t)s.x; }
 };
 
-template <>
-struct Equal<const SRef> {
-    bool operator() (const SRef& s1, const SRef& s2) const { return s1 == s2; }
+struct Identifier {
+    std::string name;
+    Identifier(std::string name_) : name(std::move(name_)) {};
 };
-
-
-enum SortType { S_EMPTY, S_ID, S_ID_LIST };
-
-// What are these for?
-enum DataType { SORT_ID_SIMPL, SORT_ID_REAL, SORT_ID_INT, SORT_ID_ARRAY, SORT_ID_COST, SORT_ID_BITVEC, SORT_ID_BOOL, SORT_ID_CMPLX, SORT_ID_UNDEF };
-enum IdType   { IDTYPE_SIMPLE, IDTYPE_CMPLX };
-
-class IdStr;
-typedef RegionAllocator<uint32_t>::Ref IdStrRef;
-const IdStrRef IdStr_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-
-class SStr;
-typedef RegionAllocator<uint32_t>::Ref SStrRef;
-const IdStrRef SStr_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-
-class IdStr {
-    char str[0];
-  public:
-    IdStr(const char* c) { int i; for (i = 0; *c != 0; i++, c++) str[i] = *c; str[i] = 0; }
-    int size() { return strlen(str); }
-    const char* getName() { return str; }
-};
-
-class SStr {
-    char str[0];
-  public:
-    SStr(const char* c) { int i; for (i = 0; *c != 0; i++, c++) str[i] = *c; str[i] = 0; }
-    int size() { return strlen(str); }
-    const char* getName() const { return str; }
-};
-
-template<class T, class TR>
-class StrAllocator : public RegionAllocator<uint32_t>
-{
-    static int StrWord32Size(int size) {
-        return (size+1) / sizeof(uint32_t) + ((size+1) % sizeof(uint32_t) == 0 ? 0 : 1); }
-  public:
-    StrAllocator() {}
-    StrAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
-    ~StrAllocator() {}
-    void moveTo(StrAllocator &to) {
-        RegionAllocator<uint32_t>::moveTo(to); }
-    TR alloc(const char* c)
-    {
-        TR sid = RegionAllocator<uint32_t>::alloc(StrWord32Size(strlen(c)));
-        new (lea(sid)) T(c);
-        return sid;
-    }
-    T&       operator[](Ref r)       { return (T&)RegionAllocator<uint32_t>::operator[](r); }
-    const T& operator[](Ref r) const { return (T&)RegionAllocator<uint32_t>::operator[](r); }
-    T*       lea       (Ref r)       { return (T*)RegionAllocator<uint32_t>::lea(r); }
-    Ref      ael       (const T* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
-
-    void free(TR sid)
-    {
-        T& s = operator[](sid);
-        RegionAllocator<uint32_t>::free(StrWord32Size(s.size()));
-    }
-
-    void reloc(TR&, StrAllocator&) { assert(false); }
-};
-
-class Identifier;
-typedef RegionAllocator<uint32_t>::Ref IdRef;
-const IdRef IdRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-
-class Identifier {
-  private:
-    IdStrRef      nr;
-    IdType        type;
-    vec<int>      numlist;
-
-  public:
-    Identifier(IdStrRef name_) : nr(name_), type(IDTYPE_SIMPLE) {};
-    Identifier(IdStrRef name_, vec<int>& nl) : nr(name_), type(IDTYPE_CMPLX) {
-        for (int i = 0; i < nl.size(); i++) { numlist.push(nl[i]); }
-    };
-//    inline const std::string& toString() const { return name; };
-    inline IdStrRef getNameRef() const { return nr; }
-    inline IdType getType() const { return type; };
-    int size() { return numlist.size(); }
-};
-
-class IdentifierAllocator : public RegionAllocator<uint32_t>
-{
-    static int IdentifierWord32Size(int size) {
-        return (sizeof(Identifier) + size) / sizeof(uint32_t); }
-  public:
-    IdentifierAllocator() {}
-    IdentifierAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
-    void moveTo(IdentifierAllocator &to) {
-        RegionAllocator<uint32_t>::moveTo(to); }
-    IdRef alloc(IdStrRef nr)
-    {
-        IdRef sid = RegionAllocator<uint32_t>::alloc(IdentifierWord32Size(0));
-        new (lea(sid)) Identifier(nr);
-        return sid;
-    }
-    IdRef alloc(IdStrRef nr, vec<int>& nl)
-    {
-        IdRef sid = RegionAllocator<uint32_t>::alloc(IdentifierWord32Size(nl.size()));
-        new (lea(sid)) Identifier(nr, nl);
-        return sid;
-    }
-    Identifier&       operator[](Ref r)       { return (Identifier&)RegionAllocator<uint32_t>::operator[](r); }
-    const Identifier& operator[](Ref r) const { return (Identifier&)RegionAllocator<uint32_t>::operator[](r); }
-    Identifier*       lea       (Ref r)       { return (Identifier*)RegionAllocator<uint32_t>::lea(r); }
-    Ref               ael       (const Identifier* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
-
-    void free(IdRef idr)
-    {
-        Identifier& s = operator[](idr);
-        RegionAllocator<uint32_t>::free(IdentifierWord32Size(s.size()));
-    }
-
-    void reloc(IdRef&, IdentifierAllocator&) { assert(false); }
-};
-
-
-
-
-// Sort should most likely be a tree-like structure with references.  I don't
-// like this implementation.
 
 using sortid_t = int;
 
 class Sort {
   private:
 
-//    SortType    type;
-    IdRef       idr;
+    Identifier  idr;
     sortid_t    uniq_id;
-    SStrRef     canon_name;
     int         size;
     SRef        rest_sorts[0];
   public:
-    Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef> const & rest)
-        : idr(idr_)
+    Sort(Identifier idr_, sortid_t uniq_id_, vec<SRef> const & rest)
+        : idr(std::move(idr_))
         , uniq_id(uniq_id_)
-        , canon_name(name)
         , size(0)
     { for (int i = 0; i < rest.size(); i++) rest_sorts[i] = rest[i]; }
-//    Sort(Identifier& id, vec<Sort*>& rest);
-//    Sort(Identifier& id);
 
-    SStrRef  getNameRef        () const { return canon_name; }
-    SStrRef  getCanonNameRef   () const { return canon_name; }
-    int      getSize           () const { return size; }
+    int getSize() const { return size; }
 
-//    inline bool hasSortBool           () const { return stype == SORT_ID_BOOL;   };
-//    inline bool hasSortReal           () const { return stype == SORT_ID_REAL;   };
-//    inline bool hasSortInt            () const { return stype == SORT_ID_INT;    };
-//    inline bool hasSortArray          () const { return stype == SORT_ID_ARRAY;  };
-//    inline bool hasSortCost           () const { return stype == SORT_ID_COST;   };
-//    inline bool hasSortBitvec         () const { return stype == SORT_ID_BITVEC; };
-//    inline bool hasSortCmplx          () const { return stype == SORT_ID_CMPLX;  };
-//    inline bool hasSortUndef          () const { return stype == SORT_ID_UNDEF;  };
+    inline sortid_t getId() const { return uniq_id; };
 
-    inline IdRef          getCar () const { return idr;                      };
-//    inline Sort*          get2nd () const { return rest_sorts[0];           };
-//    inline Sort*          get3rd () const { return rest_sorts[1];           };
-//    inline bool           isPara () const { return false;                   };
-    inline sortid_t       getId  () const { return uniq_id;                 };
-
-    struct idLessThan
-    {
-      inline bool operator( )( Sort * x, Sort * y )
-      {
-        return (x->getId( ) <  y->getId( )); // Too shallow? What is this for?
-//  	  || (x->getId( ) == y->getId( ) && x->getCdr( )->getId( ) < y->getCdr( )->getId( ) );
-      }
-    };
-
+    const char * getName() const { return idr.name.c_str(); }
 };
 
 
@@ -246,12 +86,12 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(IdRef idr, SStrRef nr, vec<SRef> const & rest)
+    SRef alloc(Identifier id, vec<SRef> const & rest)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
         SRef sid;
         sid.x = v;
-        new (lea(sid)) Sort(idr, static_uniq_id++, nr, rest);
+        new (lea(sid)) Sort(std::move(id), static_uniq_id++, rest);
         return sid;
     }
     Sort&       operator[](SRef r)       { return (Sort&)RegionAllocator<uint32_t>::operator[](r.x); }
@@ -264,8 +104,6 @@ class SortAllocator : public RegionAllocator<uint32_t>
         Sort& s = operator[](sr);
         RegionAllocator<uint32_t>::free(SortWord32Size(s.getSize()));
     }
-
-    void reloc(IdRef&, IdentifierAllocator&) { assert(false); }
 };
 
 

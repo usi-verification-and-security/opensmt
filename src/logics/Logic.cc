@@ -72,9 +72,9 @@ std::size_t Logic::abstractValueCount = 0;
 // The constructor initiates the base logic (Boolean)
 Logic::Logic() :
       distinctClassCount(0)
-    , sort_store(id_store)
+    , sort_store()
     , term_store(sym_store)
-    , sort_BOOL(sort_store.newSort(id_store.newIdentifier(s_sort_bool), {}))
+    , sort_BOOL(sort_store.newSort(Identifier(s_sort_bool), {}))
     , term_TRUE(mkConst(getSort_bool(), tk_true))
     , term_FALSE(mkConst(getSort_bool(), tk_false))
     , sym_TRUE(getSymRef(term_TRUE))
@@ -765,8 +765,7 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
         return getSortRef(id.c_str());
     }
 
-    IdRef idr = id_store.newIdentifier(id.c_str());
-    SRef sr = sort_store.newSort(idr, {});
+    SRef sr = sort_store.newSort(Identifier(id), {});
 
     // Equality
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
@@ -1506,12 +1505,8 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 
 PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
-IdRef       Logic::newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
-IdRef       Logic::newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
 // Fetching sorts
 bool        Logic::containsSort  (const char* name)      const { return sort_store.containsSort(name); }
-
-SRef        Logic::newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
 
 SRef        Logic::getSortRef    (const char* name)      const { return sort_store[name]; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
