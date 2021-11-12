@@ -239,6 +239,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
+//    next_v.emplace_back();
     inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
@@ -323,6 +324,13 @@ void CoreSMTSolver::attachClause(CRef cr)
     assert(value(c[0]) != l_False or value(c[1]) != l_False);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
+    if(c.size() > 2 )
+        watches[~c[2]].push(Watcher(cr, c[0]));
+    else{
+        next_v.back().insert(var(~c[0]));
+        next_v.back().insert(var(~c[1]));
+    }
+
     if (c.learnt()) learnts_literals += c.size();
     else            clauses_literals += c.size();
 }
@@ -335,12 +343,20 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
     {
         remove(watches[~c[0]], Watcher(cr, c[1]));
         remove(watches[~c[1]], Watcher(cr, c[0]));
+        if(c.size() > 2 )
+            remove(watches[~c[2]], Watcher(cr, c[0]));
+        else {
+            next_v.back().erase(var(~c[0]));
+            next_v.back().erase(var(~c[1]));
+        }
     }
     else
     {
         // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
         watches.smudge(~c[0]);
         watches.smudge(~c[1]);
+        if (c.size() > 2)
+            watches.smudge(~c[2]);
     }
 
     if (c.learnt()) learnts_literals -= c.size();
@@ -819,9 +835,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         }
     }
     cleanup.clear();
-//    for (int i = 0; i < out_learnt.size(); i++)
-//        printf("%d ", out_learnt[i]);
-//    printf("\n");
 }
 
 
@@ -1048,6 +1061,7 @@ CRef CoreSMTSolver::propagate()
     while (qhead < trail.size())
     {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+        next_v.back().erase(var(p));
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
@@ -1056,76 +1070,116 @@ CRef CoreSMTSolver::propagate()
         {
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
-            if (value(blocker) == l_True)
-            {
-                *j++ = *i++;
-                continue;
-            }
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
-            Lit false_lit = ~p;
-            if (c[0] == false_lit)
-                c[0] = c[1], c[1] = false_lit;
 
-            assert(c[1] == false_lit);
+            if (value(blocker) == l_True)
+            {
+                *j++ = *i++;
+                next_v.back().erase(var(~c[0]));
+                next_v.back().erase(var(~c[1]));
+                continue;
+            }
+
+
+            // Try to avoid inspecting the clause:
+            if (c.size() > 2 && (value(c[2]) == l_True || value(c[1]) == l_True || value(c[0]) == l_True))
+            {
+                *j++ = *i++;
+                next_v.back().erase(var(~c[0]));
+                next_v.back().erase(var(~c[1]));
+                continue;
+            }
+
+            if(value(c[0]) == l_True || value(c[1]) == l_True){
+                *j++ = *i++;
+                next_v.back().erase(var(~c[0]));
+                next_v.back().erase(var(~c[1]));
+                continue;
+            }
+
+            // Depending on the clause length reassign clauses, so the last one watched is defined:
+            Lit false_lit = ~p;
+            if (c[0] == false_lit) {
+                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
+                    c[0] = c[2], c[2] = false_lit;
+                } else {
+                    c[0] = c[1], c[1] = false_lit;
+                }
+            } else if (c[1] == false_lit) {
+                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
+                    c[1] = c[2], c[2] = false_lit;
+                }
+                if (c[1] == false_lit){
+                    c[1] = c[2], c[2] = false_lit;
+                }
+            }
+            else {
+                if (c[0] == false_lit) {
+                    c[0] = c[1], c[1] = false_lit;
+                }
+            }
+
+            if (c.size() > 2) {
+                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
+            } else {
+                assert(c[1] == false_lit);
+            }
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
             Lit first = c[0];
             Watcher w = Watcher(cr, first);
-            if (first != blocker && value(first) == l_True)
-            {
-                *j++ = w;
-                continue;
-            }
-
             // Look for new watch:
-            for (unsigned k = 2; k < c.size(); k++)
+            for (unsigned k = 3; k < c.size(); k++)
                 if (value(c[k]) != l_False)
                 {
-                    c[1] = c[k];
+                    c[2] = c[k];
                     c[k] = false_lit;
-                    watches[~c[1]].push(w);
+                    watches[~c[2]].push(w);
                     goto NextClause;
                 }
 
-            // Did not find watch
             *j++ = w;
-            if (value(first) == l_False) // clause is falsified
-            {
-                confl = cr;
-                qhead = trail.size();
-                // Copy the remaining watches:
-                while (i < end) {
-                    *j++ = *i++;
-                }
-                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                    this->finalizeProof(confl);
-                }
-            }
-            else {  // clause is unit under assignment:
-                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                    // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
-                    //     is not constructed correctly
-                    proof->beginChain(cr);
-                    for (unsigned k = 1; k < c.size(); k++)
-                    {
-                        assert(level(var(c[k])) == 0);
-                        assert(reason(var(c[k])) != CRef_Fake);
-                        assert(reason(var(c[k])) != CRef_Undef);
-                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+            if(value(c[1]) == l_False){
+                next_v.back().erase(var(~c[0]));
+                next_v.back().erase(var(~c[1]));
+                if (value(first) == l_False) // clause is falsified
+                {
+                    confl = cr;
+                    qhead = trail.size();
+                    // Copy the remaining watches:
+                    while (i < end) {
+                        *j++ = *i++;
                     }
-                    CRef unitClause = ca.alloc(vec<Lit>{first});
-                    proof->endChain(unitClause);
-                    // Replace the reason for enqueing the literal with the unit clause.
-                    // Necessary for correct functioning of proof logging in analyze()
-                    cr = unitClause;
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        this->finalizeProof(confl);
+                    }
+                } else {  // clause is unit under assignment:
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
+                        //     is not constructed correctly
+                        proof->beginChain(cr);
+                        for (unsigned k = 1; k < c.size(); k++) {
+                            assert(level(var(c[k])) == 0);
+                            assert(reason(var(c[k])) != CRef_Fake);
+                            assert(reason(var(c[k])) != CRef_Undef);
+                            proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                        }
+                        CRef unitClause = ca.alloc(vec<Lit>{first});
+                        proof->endChain(unitClause);
+                        // Replace the reason for enqueing the literal with the unit clause.
+                        // Necessary for correct functioning of proof logging in analyze()
+                        cr = unitClause;
+                    }
+                    uncheckedEnqueue(first, cr);
                 }
-                uncheckedEnqueue(first, cr);
+            } else if (value(c[2]) == l_False) {
+                next_v.back().insert(var(~c[0]));
+                next_v.back().insert(var(~c[1]));
             }
-
 NextClause:
             ;
         }

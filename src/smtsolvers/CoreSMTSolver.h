@@ -73,8 +73,6 @@ std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a 
 template<class A, class B>
 struct Pair { A first; B second; };
 
-
-
 //=================================================================================================
 // Solver -- the main class:
 
@@ -304,6 +302,7 @@ protected:
     uint32_t            n_clauses;        // number of clauses in the problem
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
+    vector<set<Var>>    next_v = {set<Var>()};           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
 #ifdef PEDANTIC_DEBUG
     vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
