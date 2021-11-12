@@ -172,7 +172,9 @@ class Logic {
     SRef        getSortRef    (const PTRef tr)        const;
     SRef        getSortRef    (const SymRef sr)       const;
     Sort const* getSort       (const SRef s)          const;
-    const char* getSortName   (const SRef s)          const;
+
+    std::string const & getSortName(const SRef s) const;
+
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 

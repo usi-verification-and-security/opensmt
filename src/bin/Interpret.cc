@@ -195,7 +195,7 @@ void Interpret::interp(ASTNode& n) {
                     bool was_new = !logic.containsSort(name);
                     SRef sr = newSort(n);
                     if (!was_new) {
-                        notify_formatted(true, "sort %s already declared", logic.getSortName(sr));
+                        notify_formatted(true, "sort %s already declared", logic.getSortName(sr).c_str());
                     } else {
                         notify_success();
                     }
@@ -459,7 +459,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                     const Symbol& t = logic->getSym(ctr);
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]));
+                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]).c_str());
                     }
                 }
             }
@@ -731,7 +731,7 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         char* tmp = logic->pp(args[i]);
-        const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
+        auto sortString = logic->getSortName(logic->getSortRef(args[i]));
         ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
         free(tmp);
     }
@@ -888,7 +888,7 @@ bool Interpret::defineFun(const ASTNode& n)
         return false;
     }
     else if (logic.getSortRef(tr) != ret_sort) {
-        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic.getSortName(logic.getSortRef(tr)), logic.getSortName(ret_sort));
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic.getSortName(logic.getSortRef(tr)).c_str(), logic.getSortName(ret_sort).c_str());
         return false;
     }
     bool rval = logic.defineFun(fname, arg_trs, ret_sort, tr);

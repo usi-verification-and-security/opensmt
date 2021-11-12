@@ -73,7 +73,7 @@ class Sort {
 
     inline sortid_t getId() const { return uniq_id; };
 
-    const char * getName() const { return idr.name.c_str(); }
+    std::string const & getName() const { return idr.name; }
 };
 
 

@@ -1426,12 +1426,10 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (int i = 0; i < args.size(); ++i) {
         char* arg_name = printTerm(args[i]);
-        const char* sort_name = getSortName(getSortRef(args[i]));
-        dump_out << '(' << arg_name << ' ' <<  sort_name << ") ";
+        dump_out << '(' << arg_name << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
         free(arg_name);
     }
-    const char* rsort = getSortName(tpl_fun.getRetSort());
-    dump_out << ") " << rsort;
+    dump_out << ") " << getSortName(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
@@ -1511,7 +1509,8 @@ SRef        Logic::getSortRef    (std::string const & name) const { return sort_
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 Sort const* Logic::getSort       (const SRef s)          const { return sort_store[s]; }
-const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
+
+std::string const & Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
     SRef res = SRef_Undef;
