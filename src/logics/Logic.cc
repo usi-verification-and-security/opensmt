@@ -696,9 +696,7 @@ PTRef Logic::mkConst(const char* name, const char** msg)
 
 
 PTRef Logic::mkVar(SRef s, const char* name) {
-    vec<SRef> sort_args;
-    sort_args.push(s);
-    SymRef sr = newSymb(name, sort_args);
+    SymRef sr = newSymb(name, {s});
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
