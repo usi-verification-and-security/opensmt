@@ -73,138 +73,27 @@ Logic::Logic() :
       distinctClassCount(0)
     , sort_store(id_store)
     , term_store(sym_store)
-    , sym_TRUE(SymRef_Undef)
-    , sym_FALSE(SymRef_Undef)
-    , sym_ANON(SymRef_Undef)
-    , sym_AND(SymRef_Undef)
-    , sym_OR(SymRef_Undef)
-    , sym_XOR(SymRef_Undef)
-    , sym_NOT(SymRef_Undef)
-    , sym_UF_NOT(SymRef_Undef)
-    , sym_EQ(SymRef_Undef)
-    , sym_IMPLIES(SymRef_Undef)
-    , sym_DISTINCT(SymRef_Undef)
-    , sym_ITE(SymRef_Undef)
-    , sort_BOOL(SRef_Undef)
-    , term_TRUE(PTRef_Undef)
-    , term_FALSE(PTRef_Undef)
+    , sort_BOOL(sort_store.newSort(id_store.newIdentifier(s_sort_bool), {}))
+    , term_TRUE(mkConst(getSort_bool(), tk_true))
+    , term_FALSE(mkConst(getSort_bool(), tk_false))
+    , sym_TRUE(getSymRef(term_TRUE))
+    , sym_FALSE(getSymRef(term_FALSE))
+    , sym_ANON(sym_store.newSymb(tk_anon, {}))
+    , sym_AND(declareFun_Commutative_NoScoping_LeftAssoc(tk_and, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_OR(declareFun_Commutative_NoScoping_LeftAssoc(tk_or, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_XOR(declareFun_Commutative_NoScoping_LeftAssoc(tk_xor, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_NOT(declareFun_NoScoping(tk_not, sort_BOOL, {sort_BOOL}))
+    , sym_UF_NOT(declareFun_NoScoping(tk_uf_not, sort_BOOL, {sort_BOOL}))
+    , sym_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_IMPLIES(declareFun_NoScoping_RightAssoc(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_DISTINCT(declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_ITE(declareFun_NoScoping_LeftAssoc(tk_ite, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , use_extended_signature(false)
-    , subst_num(0)
 {
-    char* msg;
-    // We can't use declareSort here since it assumes that sort_BOOL
-    // exists for making the equality symbol!
-    IdRef bool_id = id_store.newIdentifier("Bool");
-    vec<SRef> tmp_srefs;
-    sort_store.newSort(bool_id, tmp_srefs);
-    sort_BOOL = sort_store["Bool"];
-
-    term_TRUE = mkConst(getSort_bool(), tk_true);
-    if (term_TRUE == PTRef_Undef) {
-        printf("Error in constructing term %s\n", tk_true);
-        assert(false);
-    }
-    sym_TRUE = sym_store.nameToRef(tk_true)[0];
-    sym_store[sym_TRUE].setNoScoping();
-    sym_store.setInterpreted(sym_TRUE);
-
-    term_FALSE = mkConst(getSort_bool(), tk_false);
-    if (term_FALSE  == PTRef_Undef) {
-        printf("Error in constructing term %s\n", tk_false);
-        assert(false);
-    }
-    sym_FALSE = sym_store.nameToRef(tk_false)[0];
-    sym_store[sym_FALSE].setNoScoping();
-    sym_store.setInterpreted(sym_FALSE);
-
-    // The anonymous symbol for the enodes of non-propositional Ites and propositional formulas nested inside UFs (or UPs)
-    vec<SRef> params;
-    sym_ANON = sym_store.newSymb(tk_anon, params);
-
-    params.push(sort_BOOL);
-
-    // UF not that is not visible outside the uf solver
-    sym_UF_NOT = sym_store.newSymb(tk_uf_not, params);
-
-
-    if ((sym_NOT = declareFun(tk_not, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_not, msg);
-        assert(false);
-    }
-    sym_store[sym_NOT].setNoScoping();
-    sym_store.setInterpreted(sym_NOT);
-
-    params.push(sort_BOOL);
-
-    if ((sym_EQ = declareFun(tk_equals, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_equals, msg);
-        assert(false);
-    }
-    if (sym_store[sym_EQ].setChainable() == false) { assert(false); }
-    sym_store[sym_EQ].setNoScoping();
-    sym_store[sym_EQ].setCommutes();
-    equalities.insert(sym_EQ, true);
-    sym_store.setInterpreted(sym_EQ);
-
-    if ((sym_IMPLIES = declareFun(tk_implies, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_implies, msg);
-        assert(false);
-    }
-    if (sym_store[sym_IMPLIES].setRightAssoc() == false) { assert(false); }
-    sym_store[sym_IMPLIES].setNoScoping();
-    sym_store.setInterpreted(sym_IMPLIES);
-
-    if ((sym_AND = declareFun(tk_and, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_and, msg);
-        assert(false);
-    }
-    if (sym_store[sym_AND].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_AND].setNoScoping();
-    sym_store[sym_AND].setCommutes();
-    sym_store.setInterpreted(sym_AND);
-
-    if ((sym_OR = declareFun(tk_or, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_or, msg);
-        assert(false);
-    }
-    if (sym_store[sym_OR].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_OR].setNoScoping();
-    sym_store[sym_OR].setCommutes();
-    sym_store.setInterpreted(sym_OR);
-
-    if ((sym_XOR = declareFun(tk_xor, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_xor, msg);
-        assert(false);
-    }
-    if (sym_store[sym_XOR].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_XOR].setNoScoping();
-    sym_store[sym_XOR].setCommutes();
-    sym_store.setInterpreted(sym_OR);
-
-    // Boolean distincts will never be created (they are turned to a Boolean expression),
-    // but we need this symbol so that they can be processed.
-    if ((sym_DISTINCT = declareFun(tk_distinct, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_distinct, msg);
-        assert(false);
-    }
-    if (sym_store[sym_DISTINCT].setPairwise() == false) { assert(false); }
-    sym_store[sym_DISTINCT].setNoScoping();
-    sym_store[sym_DISTINCT].setCommutes();
-    disequalities.insert(sym_DISTINCT, true);
-    sym_store.setInterpreted(sym_DISTINCT);
-
-    if ((sym_ITE = declareFun(tk_ite, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_ite, msg);
-        assert(false);
-    }
-    if (sym_store[sym_ITE].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_ITE].setNoScoping();
-    sym_store.setInterpreted(sym_ITE);
-
     ites.insert(sym_ITE, true);
     sortToIte.insert(sort_BOOL, sym_ITE);
-
-    /////////////////////////////////////////
+    equalities.insert(sym_EQ, true);
+    disequalities.insert(sym_DISTINCT, true);
 }
 
 bool Logic::isBuiltinFunction(const SymRef sr) const

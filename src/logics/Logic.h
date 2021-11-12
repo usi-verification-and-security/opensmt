@@ -98,6 +98,11 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    SRef                sort_BOOL;
+    PTRef               term_TRUE;
+    PTRef               term_FALSE;
+
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_ANON;
@@ -110,11 +115,6 @@ class Logic {
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
-
-    SRef                sort_BOOL;
-    PTRef               term_TRUE;
-    PTRef               term_FALSE;
-
 
     void dumpFunction(std::ostream &, const TemplateFunction&);
 
@@ -403,7 +403,6 @@ public:
 #endif
 
     // Statistics
-    int subst_num; // Number of substitutions
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
