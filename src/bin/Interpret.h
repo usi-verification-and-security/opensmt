@@ -118,7 +118,7 @@ class Interpret {
 
     void                        initializeLogic(opensmt::Logic_t logicType);
     bool                        isInitialized() const { return logic.get() != nullptr; }
-    char*                       buildSortName(ASTNode& n);
+    std::string                 buildSortName(ASTNode& n);
     SRef                        newSort      (ASTNode& n);
 
     void                        setInfo(ASTNode& n);

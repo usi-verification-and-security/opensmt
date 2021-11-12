@@ -191,9 +191,8 @@ void Interpret::interp(ASTNode& n) {
             case t_declaresort: {
                 if (isInitialized()) {
                     Logic &logic = main_solver->getLogic();
-                    char *name = buildSortName(n);
+                    auto name = buildSortName(n);
                     bool was_new = !logic.containsSort(name);
-                    free(name);
                     SRef sr = newSort(n);
                     if (!was_new) {
                         notify_formatted(true, "sort %s already declared", logic.getSortName(sr));
@@ -773,27 +772,23 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
 
     vec<SRef> args;
 
-    char* name = buildSortName(ret_node);
+    auto name = buildSortName(ret_node);
     Logic& logic = main_solver->getLogic();
 
     if (logic.containsSort(name)) {
         SRef sr = logic.getSortRef(name);
         args.push(sr);
-        free(name);
     } else {
-        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-        free(name);
+        notify_formatted(true, "Unknown return sort %s of %s", name.c_str(), fname);
         return false;
     }
     for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-        char* name = buildSortName(**it2);
+        name = buildSortName(**it2);
         if (logic.containsSort(name)) {
             args.push(logic.getSortRef(name));
-            free(name);
         }
         else {
-            notify_formatted(true, "Undefined sort %s in function %s", name, fname);
-            free(name);
+            notify_formatted(true, "Undefined sort %s in function %s", name.c_str(), fname);
             return false;
         }
     }
@@ -822,16 +817,14 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
     it++; // args_node
     ASTNode& ret_node = **(it++);
     const char* fname = name_node.getValue();
-    char* name = buildSortName(ret_node);
+    auto name = buildSortName(ret_node);
     Logic& logic = main_solver->getLogic();
     SRef ret_sort;
     if (logic.containsSort(name)) {
         ret_sort = logic.getSortRef(name);
-        free(name);
     } else {
         notify_formatted(true, "Failed to declare constant %s", fname);
-        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-        free(name);
+        notify_formatted(true, "Unknown return sort %s of %s", name.c_str(), fname);
         return false;
     }
     char * msg;
@@ -864,11 +857,10 @@ bool Interpret::defineFun(const ASTNode& n)
         string varName = (**it2).getValue();
         auto varC = (**it2).children->begin();
         auto varCC = (**varC).children->begin();
-        string sortName = (**varCC).getValue();
+        std::string sortName = (**varCC).getValue();
 
-        if (logic.containsSort(sortName.c_str())) {
-            arg_sorts.push(logic.getSortRef(sortName.c_str()));
-            //free(name);
+        if (logic.containsSort(sortName)) {
+            arg_sorts.push(logic.getSortRef(sortName));
             PTRef pvar = logic.mkVar(arg_sorts.last(), varName.c_str());
             arg_trs.push(pvar);
         }
@@ -879,14 +871,12 @@ bool Interpret::defineFun(const ASTNode& n)
     }
 
     // The return sort
-    char* rsort_name = buildSortName(ret_node);
+    auto rsort_name = buildSortName(ret_node);
     SRef ret_sort;
     if (logic.containsSort(rsort_name)) {
         ret_sort = logic.getSortRef(rsort_name);
-        free(rsort_name);
     } else {
-        notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
-        free(rsort_name);
+        notify_formatted(true, "Unknown return sort %s of %s", rsort_name.c_str(), fname);
         return false;
     }
 
@@ -1136,13 +1126,10 @@ int Interpret::interpPipe() {
 
 // The Traversal of the node is unnecessary and a result of a confusion
 // Code can possibly be reused when define-sort is implemented
-char* Interpret::buildSortName(ASTNode& sn)
+std::string Interpret::buildSortName(ASTNode& sn)
 {
     auto it = sn.children->begin();
-    char* canon_name;
-    int written = asprintf(&canon_name, "%s", (**it).getValue());
-    assert(written >= 0); (void)written;
-    return canon_name;
+    return (**it).getValue();
 
 //    MB: This code was not reachable, it seems to handle paramteric sorts, but that is not really supported now
 //    asprintf(&canon_name, "%s", (**(it++)).getValue());
@@ -1185,9 +1172,8 @@ SRef Interpret::newSort(ASTNode& sn) {
 //    SRef rval = logic->newSort(idr, canon_name, tmp);
 //    free(canon_name);
 
-    char* canon_name = buildSortName(sn);
+    auto canon_name = buildSortName(sn);
     SRef rval = main_solver->getLogic().declareUninterpretedSort(canon_name);
-    free(canon_name);
     return rval;
 }
 
