@@ -53,6 +53,8 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SRef,SymRef,SRefHash>                       sortToEquality;
+    Map<SRef,SymRef,SRefHash>                       sortToDisequality;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
@@ -98,6 +100,11 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    SRef                sort_BOOL;
+    PTRef               term_TRUE;
+    PTRef               term_FALSE;
+
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_ANON;
@@ -110,11 +117,6 @@ class Logic {
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
-
-    SRef                sort_BOOL;
-    PTRef               term_TRUE;
-    PTRef               term_FALSE;
-
 
     void dumpFunction(std::ostream &, const TemplateFunction&);
 
@@ -248,8 +250,19 @@ public:
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
+    SymRef      declareFun    (const std::string & fname, const SRef rsort, const vec<SRef>& args, bool interpreted = false) { char *msg; return declareFun(fname.data(), rsort, args, &msg, interpreted); };
+    SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args, true); sym_store[sr].setNoScoping(); return sr; }
+    SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
+    SymRef      declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    SymRef      declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
+    SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Pairwise(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSort   (const char* id, char** msg);
+    SRef        declareSortAndCreateFunctions(std::string const & id);
+    SRef        declareUninterpretedSort   (char const * id);
+    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
 
     PTRef       mkBoolVar     (const char* name);
 
@@ -355,8 +368,6 @@ public:
     // Returns an equality over args if term store contains one, otherwise returns PTRef_Undef.
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
-    // Override for different logics...
-    virtual bool declare_sort_hook  (SRef sr);
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
 
@@ -394,7 +405,6 @@ public:
 #endif
 
     // Statistics
-    int subst_num; // Number of substitutions
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 

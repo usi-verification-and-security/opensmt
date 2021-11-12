@@ -25,7 +25,7 @@ protected:
 
     UFExplainTest(): logic{}, store(logic) {}
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareUninterpretedSort("U");
         c0 = makeAndStorePTRef(logic.mkVar(ufsort, "c0"));
         c1 = makeAndStorePTRef(logic.mkVar(ufsort, "c1"));
         c2 = makeAndStorePTRef(logic.mkVar(ufsort, "c2"));

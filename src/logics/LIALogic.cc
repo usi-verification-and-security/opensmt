@@ -13,12 +13,12 @@ const char* LIALogic::e_nonlinear_term = "Logic does not support nonlinear terms
 const char* LIALogic::tk_int_zero  = "0";
 const char* LIALogic::tk_int_one   = "1";
 const char* LIALogic::tk_int_neg   = "-";
+const char* LIALogic::tk_int_minusone = "-1";
 const char* LIALogic::tk_int_minus = "-";
 const char* LIALogic::tk_int_plus  = "+";
 const char* LIALogic::tk_int_times = "*";
 const char* LIALogic::tk_int_div   = "div";
 const char* LIALogic::tk_int_mod   = "mod";
-const char* LIALogic::tk_int_abs   = "abs";
 const char* LIALogic::tk_int_lt    = "<";
 const char* LIALogic::tk_int_leq   = "<=";
 const char* LIALogic::tk_int_gt    = ">";
@@ -27,98 +27,28 @@ const char* LIALogic::tk_int_geq   = ">=";
 const char* LIALogic::s_sort_integer = "Int";
 
 LIALogic::LIALogic() :
-    LALogic()
-        , sym_Int_ZERO(SymRef_Undef)
-        , sym_Int_ONE(SymRef_Undef)
-        , sym_Int_NEG(SymRef_Undef)
-        , sym_Int_MINUS(SymRef_Undef)
-        , sym_Int_PLUS(SymRef_Undef)
-        , sym_Int_TIMES(SymRef_Undef)
-        , sym_Int_DIV(SymRef_Undef)
-        , sym_Int_MOD(SymRef_Undef)
-        , sym_Int_ABS(SymRef_Undef)
-        , sym_Int_EQ(SymRef_Undef)
-        , sym_Int_LEQ(SymRef_Undef)
-        , sym_Int_LT(SymRef_Undef)
-        , sym_Int_GEQ(SymRef_Undef)
-        , sym_Int_GT(SymRef_Undef)
-        , sym_Int_ITE(SymRef_Undef)
-        , sort_INTEGER(SRef_Undef)
-        , term_Int_ZERO(PTRef_Undef)
-        , term_Int_ONE(PTRef_Undef)
-        , term_Int_MINUSONE(PTRef_Undef)
+          LALogic()
+        , sort_INTEGER(declareSortAndCreateFunctions(s_sort_integer))
+        , term_Int_ZERO(mkConst(sort_INTEGER, tk_int_zero))
+        , term_Int_ONE(mkConst(sort_INTEGER, tk_int_one))
+        , term_Int_MINUSONE(mkConst(sort_INTEGER, tk_int_minusone))
+        , sym_Int_ZERO(getSymRef(term_Int_ZERO))
+        , sym_Int_ONE(getSymRef(term_Int_ONE))
+        , sym_Int_NEG(declareFun_NoScoping(tk_int_neg, sort_INTEGER, {sort_INTEGER}))
+        , sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_EQ(sortToEquality[sort_INTEGER])
+        , sym_Int_LEQ(declareFun_NoScoping_Chainable(tk_int_leq, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_LT(declareFun_NoScoping_Chainable(tk_int_lt, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_GEQ(declareFun_NoScoping_Chainable(tk_int_geq, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_ITE(sortToIte[sort_INTEGER])
+        , sym_Int_DISTINCT(sortToDisequality[sort_INTEGER])
         , split_eq(false)
-{
-    char* m;
-    char** msg = &m;
-
-    sort_INTEGER = declareSort(s_sort_integer, msg);
-    ufsorts.remove(sort_INTEGER);
-
-//    printf("Setting sort_REAL to %d at %p\n", sort_REAL.x, &(sort_REAL.x));
-    vec<SRef> params;
-    term_Int_ZERO = mkConst(sort_INTEGER, tk_int_zero);
-    sym_Int_ZERO  = getSymRef(term_Int_ZERO);
-    sym_store.setInterpreted(sym_Int_ZERO);
-
-    term_Int_ONE  = mkConst(sort_INTEGER, tk_int_one);
-    sym_Int_ONE   = getSymRef(term_Int_ONE);
-    sym_store.setInterpreted(sym_Int_ONE);
-    term_Int_MINUSONE  = mkConst(sort_INTEGER, "-1");
-    params.push(sort_INTEGER);
-    // Negation
-    sym_Int_NEG = declareFun(tk_int_neg, sort_INTEGER, params, msg, true);
-    sym_store.setInterpreted(sym_Int_NEG);
-    sym_Int_ABS = declareFun(tk_int_abs, sort_INTEGER, params, msg, true);
-    sym_store.setInterpreted(sym_Int_ABS);
-    params.push(sort_INTEGER);
-    sym_Int_MINUS = declareFun(tk_int_neg, sort_INTEGER, params, msg, true);
-    sym_store[sym_Int_MINUS].setLeftAssoc();
-    sym_store.setInterpreted(sym_Int_MINUS);
-    sym_Int_PLUS  = declareFun(tk_int_plus, sort_INTEGER, params, msg, true);
-    sym_store[sym_Int_PLUS].setNoScoping();
-    sym_store[sym_Int_PLUS].setCommutes();
-    sym_store[sym_Int_PLUS].setLeftAssoc();
-    sym_store.setInterpreted(sym_Int_PLUS);
-    sym_Int_TIMES = declareFun(tk_int_times, sort_INTEGER, params, msg, true);
-    sym_store[sym_Int_TIMES].setNoScoping();
-    sym_store[sym_Int_TIMES].setLeftAssoc();
-    sym_store[sym_Int_TIMES].setCommutes();
-    sym_store.setInterpreted(sym_Int_TIMES);
-    sym_Int_DIV   = declareFun(tk_int_div, sort_INTEGER, params, msg, true);
-    sym_store[sym_Int_DIV].setNoScoping();
-    sym_store[sym_Int_DIV].setLeftAssoc();
-    sym_store.setInterpreted(sym_Int_DIV);
-    sym_Int_MOD   = declareFun(tk_int_mod, sort_INTEGER, params, msg, true);
-    sym_store[sym_Int_MOD].setNoScoping();
-    sym_store.setInterpreted(sym_Int_MOD);
-    sym_Int_LEQ  = declareFun(tk_int_leq, sort_BOOL, params, msg, true);
-    sym_store[sym_Int_LEQ].setNoScoping();
-    sym_store[sym_Int_LEQ].setChainable();
-    sym_store.setInterpreted(sym_Int_LEQ);
-    sym_Int_LT   = declareFun(tk_int_lt, sort_BOOL, params, msg, true);
-    sym_store[sym_Int_LT].setNoScoping();
-    sym_store[sym_Int_LT].setChainable();
-    sym_store.setInterpreted(sym_Int_LT);
-    sym_Int_GEQ  = declareFun(tk_int_geq, sort_BOOL, params, msg, true);
-    sym_store[sym_Int_GEQ].setNoScoping();
-    sym_store[sym_Int_GEQ].setChainable();
-    sym_store.setInterpreted(sym_Int_GEQ);
-    sym_Int_GT   = declareFun(tk_int_gt, sort_BOOL, params, msg, true);
-    sym_store[sym_Int_GT].setNoScoping();
-    sym_store[sym_Int_GT].setChainable();
-    sym_store.setInterpreted(sym_Int_GEQ);
-    vec<SRef> ite_params;
-    ite_params.push(sort_BOOL);
-    ite_params.push(sort_INTEGER);
-    ite_params.push(sort_INTEGER);
-    sym_Int_ITE = declareFun(tk_ite, sort_INTEGER, ite_params, msg, true);
-    //sym_store[sym_Real_ITE].setLeftAssoc();
-    sym_store[sym_Int_ITE].setNoScoping();
-    sym_store.setInterpreted(sym_Int_ITE);
-
-    sym_Int_EQ = term_store.lookupSymbol(tk_equals, {term_Int_ZERO, term_Int_ZERO});
-}
+{ }
 
 /**
  * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the coefficients of non-constant terms are coprime integers

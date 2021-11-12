@@ -8,6 +8,30 @@ class LIALogic: public LALogic
 {
 protected:
     vec<opensmt::Integer2*> integers;//PS. replace this with Number?
+
+    static const char*  e_nonlinear_term;
+
+    static const char*  tk_int_zero;
+    static const char*  tk_int_one;
+    static const char*  tk_int_minusone;
+    static const char*  tk_int_neg;
+    static const char*  tk_int_minus;
+    static const char*  tk_int_plus;
+    static const char*  tk_int_times;
+    static const char*  tk_int_div;
+    static const char*  tk_int_mod;
+    static const char*  tk_int_leq;
+    static const char*  tk_int_lt;
+    static const char*  tk_int_geq;
+    static const char*  tk_int_gt;
+    static const char*  s_sort_integer;
+
+    SRef                sort_INTEGER;
+
+    PTRef               term_Int_ZERO;
+    PTRef               term_Int_ONE;
+    PTRef               term_Int_MINUSONE;
+
     SymRef              sym_Int_ZERO;
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
@@ -16,32 +40,14 @@ protected:
     SymRef              sym_Int_TIMES;
     SymRef              sym_Int_DIV;
     SymRef              sym_Int_MOD;
-    SymRef              sym_Int_ABS;
     SymRef              sym_Int_EQ;
     SymRef              sym_Int_LEQ;
     SymRef              sym_Int_LT;
     SymRef              sym_Int_GEQ;
     SymRef              sym_Int_GT;
     SymRef              sym_Int_ITE;
-    SRef                sort_INTEGER;
-    PTRef               term_Int_ZERO;
-    PTRef               term_Int_ONE;
-    PTRef               term_Int_MINUSONE;
-    static const char*  tk_int_zero;
-    static const char*  tk_int_one;
-    static const char*  tk_int_neg;
-    static const char*  tk_int_minus;
-    static const char*  tk_int_plus;
-    static const char*  tk_int_times;
-    static const char*  tk_int_div;
-    static const char*  tk_int_mod;
-    static const char*  tk_int_abs;
-    static const char*  tk_int_leq;
-    static const char*  tk_int_lt;
-    static const char*  tk_int_geq;
-    static const char*  tk_int_gt;
-    static const char*  s_sort_integer;
-    static const char*  e_nonlinear_term;
+    SymRef              sym_Int_DISTINCT;
+
     bool split_eq;
 
 public:
@@ -60,7 +66,6 @@ public:
     bool        isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
     bool        isIntDiv(SymRef sr)   const { return sr == sym_Int_DIV; }
     bool        isIntMod(SymRef sr)   const { return sr == sym_Int_MOD; }
-    bool        isIntAbs(SymRef sr)   const { return sr == sym_Int_ABS; }
     bool        isIntEq(SymRef sr)    const { return isEquality(sr) && (sym_store[sr][0] == sort_INTEGER); }
     bool        isIntLeq(SymRef sr)   const { return sr == sym_Int_LEQ; }
     bool        isIntLt(SymRef sr)    const { return sr == sym_Int_LT; }
@@ -92,7 +97,6 @@ public:
     virtual const SymRef get_sym_Num_ITE () const override { return sym_Int_ITE; }
     const SymRef get_sym_Int_DIV() const { return sym_Int_DIV; }
     const SymRef get_sym_Int_MOD() const { return sym_Int_MOD; }
-    const SymRef get_sym_Int_ABS() const { return sym_Int_ABS; }
     virtual const SRef get_sort_Num () const override { return sort_INTEGER; }
 
     PTRef mkNumDiv(vec<PTRef> && args) override { return mkIntDiv(std::move(args)); }

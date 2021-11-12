@@ -13,7 +13,7 @@ protected:
 
 TEST_F(SplitTest, test_TermPrinting) {
     char * msg;
-    SRef U = logic.declareSort("U", &msg);
+    SRef U = logic.declareUninterpretedSort("U");
     SymRef sr = logic.declareFun("f", U, {U, U}, &msg, false);
     PTRef a = logic.mkVar(U, "a");
     PTRef f_a = logic.mkUninterpFun(sr, {a, a});

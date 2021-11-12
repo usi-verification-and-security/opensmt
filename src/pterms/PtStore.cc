@@ -89,8 +89,6 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                     }
                     if (j == args.size()) return ctr;
                 }
-                else
-                    return SymRef_Undef;
             }
         }
 

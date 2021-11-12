@@ -82,7 +82,7 @@ protected:
     RewriteDistinctTest() : logic{} {}
 
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
