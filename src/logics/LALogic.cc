@@ -469,10 +469,6 @@ PTRef LALogic::insertTerm(SymRef sym, vec<PTRef> && terms)
     return Logic::insertTerm(sym, std::move(terms));
 }
 
-PTRef LALogic::mkConst(const char *name, const char **msg)
-{
-    return mkConst(getSort_num(), name);
-}
 PTRef LALogic::mkConst(SRef s, const char* name)
 {
     assert(strlen(name) != 0);

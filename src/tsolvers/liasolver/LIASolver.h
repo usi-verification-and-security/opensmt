@@ -45,7 +45,7 @@ protected:
     virtual void markVarAsInt(LVRef v) override;
 
 
-    opensmt::Integer2 getInt(PTRef r) ;
+    FastRational getInt(PTRef r) ;
 
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
