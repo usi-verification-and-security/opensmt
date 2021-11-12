@@ -349,6 +349,9 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
  * @return sort reference
  */
 SRef Logic::declareUninterpretedSort(char const * sortName) {
+    if (containsSort(sortName)) {
+        return getSortRef(sortName);
+    }
     SRef sr = declareSortAndCreateFunctions(sortName);
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
