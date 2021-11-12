@@ -47,9 +47,10 @@ struct SRefHash {
         return (uint32_t)s.x; }
 };
 
-struct Identifier {
+struct SortSymbol {
     std::string name;
-    Identifier(std::string name_) : name(std::move(name_)) {};
+    SortSymbol(std::string name_) : name(std::move(name_)) {};
+    SortSymbol(SortSymbol &&) = default;
 };
 
 using sortid_t = int;
@@ -57,12 +58,12 @@ using sortid_t = int;
 class Sort {
   private:
 
-    Identifier  idr;
+    SortSymbol  idr;
     sortid_t    uniq_id;
     int         size;
     SRef        rest_sorts[0];
   public:
-    Sort(Identifier idr_, sortid_t uniq_id_, vec<SRef> const & rest)
+    Sort(SortSymbol idr_, sortid_t uniq_id_, vec<SRef> const & rest)
         : idr(std::move(idr_))
         , uniq_id(uniq_id_)
         , size(0)
@@ -86,7 +87,7 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(Identifier id, vec<SRef> const & rest)
+    SRef alloc(SortSymbol id, vec<SRef> const & rest)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
         SRef sid;

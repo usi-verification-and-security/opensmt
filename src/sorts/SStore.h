@@ -54,7 +54,7 @@ class SStore
     SRef    operator []     (Sort const & s)        const { return (*this)[s.getName()]; }
     Sort const * operator [](SRef sr)               const { return &sa[sr]; }
 
-    SRef    newSort         (Identifier id, vec<SRef> const & rest);
+    SRef    newSort         (SortSymbol id, vec<SRef> const & rest);
     const char* getName     (SRef sr) const { return sa[sr].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }

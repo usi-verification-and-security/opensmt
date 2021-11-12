@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
-SRef SStore::newSort(Identifier idr, vec<SRef> const & rest)
+SRef SStore::newSort(SortSymbol idr, vec<SRef> const & rest)
 {
     SRef sr = SRef_Undef;
     std::string canon_name;
@@ -51,7 +51,7 @@ SRef SStore::newSort(Identifier idr, vec<SRef> const & rest)
     if (contains(canon_name)) {
         return (*this)[canon_name];
     } else {
-        sr = sa.alloc(Identifier(canon_name), rest);
+        sr = sa.alloc(SortSymbol(canon_name), rest);
         sorts.push(sr);
         sortTable.insert({canon_name, sr});
         return sr;

@@ -74,7 +74,7 @@ Logic::Logic() :
       distinctClassCount(0)
     , sort_store()
     , term_store(sym_store)
-    , sort_BOOL(sort_store.newSort(Identifier(s_sort_bool), {}))
+    , sort_BOOL(sort_store.newSort(SortSymbol(s_sort_bool), {}))
     , term_TRUE(mkConst(getSort_bool(), tk_true))
     , term_FALSE(mkConst(getSort_bool(), tk_false))
     , sym_TRUE(getSymRef(term_TRUE))
@@ -765,7 +765,7 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
         return getSortRef(id);
     }
 
-    SRef sr = sort_store.newSort(Identifier(id), {});
+    SRef sr = sort_store.newSort(SortSymbol(id), {});
 
     // Equality
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
