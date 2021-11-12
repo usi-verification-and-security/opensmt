@@ -103,6 +103,8 @@ class CUFLogic: public Logic
     SymRef              sym_CUF_SIZEOF; // sizeof
     SymRef              sym_CUF_ADDROF; // &
     SymRef              sym_CUF_PTR;    // *
+    SymRef              sym_CUF_ITE;
+    SymRef              sym_CUF_DISTINCT;
 
   public:
     CUFLogic();

@@ -46,6 +46,7 @@ protected:
     SymRef              sym_Int_GEQ;
     SymRef              sym_Int_GT;
     SymRef              sym_Int_ITE;
+    SymRef              sym_Int_DISTINCT;
 
     bool split_eq;
 

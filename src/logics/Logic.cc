@@ -85,15 +85,17 @@ Logic::Logic() :
     , sym_NOT(declareFun_NoScoping(tk_not, sort_BOOL, {sort_BOOL}))
     , sym_UF_NOT(declareFun_NoScoping(tk_uf_not, sort_BOOL, {sort_BOOL}))
     , sym_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_BOOL, sort_BOOL}))
-    , sym_IMPLIES(declareFun_NoScoping_RightAssoc(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_IMPLIES(declareFun_NoScoping(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_DISTINCT(declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_ITE(declareFun_NoScoping(tk_ite, sort_BOOL, {sort_BOOL, sort_BOOL, sort_BOOL}))
     , use_extended_signature(false)
 {
-    ites.insert(sym_ITE, true);
-    sortToIte.insert(sort_BOOL, sym_ITE);
     equalities.insert(sym_EQ, true);
     disequalities.insert(sym_DISTINCT, true);
+    ites.insert(sym_ITE, true);
+    sortToEquality.insert(sort_BOOL, sym_EQ);
+    sortToDisequality.insert(sort_BOOL, sym_DISTINCT);
+    sortToIte.insert(sort_BOOL, sym_ITE);
 }
 
 bool Logic::isBuiltinFunction(const SymRef sr) const
@@ -777,11 +779,13 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
     equalities.insert(tr, true);
+    sortToEquality.insert(sr, tr);
 
     // distinct
     tr = declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
     disequalities.insert(tr, true);
+    sortToDisequality.insert(sr, tr);
 
     // ite
     tr = declareFun_NoScoping(tk_ite, sr, {sort_BOOL, sr, sr});

@@ -53,6 +53,8 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SRef,SymRef,SRefHash>                       sortToEquality;
+    Map<SRef,SymRef,SRefHash>                       sortToDisequality;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;

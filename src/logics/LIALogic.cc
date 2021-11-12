@@ -40,12 +40,13 @@ LIALogic::LIALogic() :
         , sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
         , sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
         , sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INTEGER, {sort_INTEGER, sort_INTEGER}))
-        , sym_Int_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
+        , sym_Int_EQ(sortToEquality[sort_INTEGER])
         , sym_Int_LEQ(declareFun_NoScoping_Chainable(tk_int_leq, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
         , sym_Int_LT(declareFun_NoScoping_Chainable(tk_int_lt, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
         , sym_Int_GEQ(declareFun_NoScoping_Chainable(tk_int_geq, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
         , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INTEGER, sort_INTEGER}))
-        , sym_Int_ITE(declareFun(tk_ite, sort_INTEGER, {sort_BOOL, sort_INTEGER, sort_INTEGER}))
+        , sym_Int_ITE(sortToIte[sort_INTEGER])
+        , sym_Int_DISTINCT(sortToDisequality[sort_INTEGER])
         , split_eq(false)
 { }
 

@@ -69,6 +69,7 @@ protected:
     SymRef              sym_Real_GEQ;
     SymRef              sym_Real_GT;
     SymRef              sym_Real_ITE;
+    SymRef              sym_Real_DISTINCT;
 
     bool split_eq;
 

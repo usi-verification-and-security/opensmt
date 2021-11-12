@@ -78,7 +78,7 @@ CUFLogic::CUFLogic() :
     , sym_CUF_TIMES(declareFun_NoScoping_LeftAssoc(tk_cuf_times, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
     , sym_CUF_DIV(declareFun_NoScoping_LeftAssoc(tk_cuf_div, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
     , sym_CUF_MOD(declareFun_NoScoping(tk_cuf_mod, sort_CUFNUM, {sort_CUFNUM, sort_CUFNUM}))
-    , sym_CUF_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
+    , sym_CUF_EQ(sortToEquality[sort_CUFNUM])
     , sym_CUF_LEQ(declareFun_NoScoping_Chainable(tk_cuf_leq, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
     , sym_CUF_LT(declareFun_NoScoping_Chainable(tk_cuf_lt, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
     , sym_CUF_GEQ(declareFun_NoScoping_Chainable(tk_cuf_geq, sort_BOOL, {sort_CUFNUM, sort_CUFNUM}))
@@ -98,6 +98,8 @@ CUFLogic::CUFLogic() :
     , sym_CUF_SIZEOF(declareFun_NoScoping(tk_cuf_sizeof, sort_CUFNUM, {sort_CUFNUM}))
     , sym_CUF_ADDROF(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
     , sym_CUF_PTR(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
+    , sym_CUF_ITE(sortToIte[sort_CUFNUM])
+    , sym_CUF_DISTINCT(sortToDisequality[sort_CUFNUM])
 {}
 
 CUFLogic::~CUFLogic()

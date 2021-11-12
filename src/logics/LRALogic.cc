@@ -63,12 +63,13 @@ LRALogic::LRALogic() :
         , sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL}))
         , sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL}))
         , sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL}))
-        , sym_Real_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_REAL, sort_REAL}))
+        , sym_Real_EQ(sortToEquality[sort_REAL])
         , sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL}))
         , sym_Real_LT(declareFun_NoScoping_Chainable(tk_real_lt, sort_BOOL, {sort_REAL, sort_REAL}))
         , sym_Real_GEQ(declareFun_NoScoping_Chainable(tk_real_geq, sort_BOOL, {sort_REAL, sort_REAL}))
         , sym_Real_GT(declareFun_NoScoping_Chainable(tk_real_gt, sort_BOOL, {sort_REAL, sort_REAL}))
-        , sym_Real_ITE(declareFun(tk_ite, sort_REAL, {sort_BOOL, sort_REAL, sort_REAL}))
+        , sym_Real_ITE(sortToIte[sort_REAL])
+        , sym_Real_DISTINCT(sortToDisequality[sort_REAL])
         , split_eq(false)
 { }
 
