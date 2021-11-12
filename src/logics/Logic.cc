@@ -98,21 +98,13 @@ Logic::Logic() :
     sortToIte.insert(sort_BOOL, sym_ITE);
 }
 
+Logic::~Logic() = default;
+
 bool Logic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;
     if (isEquality(sr) || isDisequality(sr)) return true;
     return false;
-}
-
-Logic::~Logic()
-{
-#ifdef STATISTICS
-    cerr << "; -------------------------\n";
-    cerr << "; STATISTICS FOR LOGICS\n";
-    cerr << "; -------------------------\n";
-    cerr << "; Substitutions............: " << subst_num << endl;
-#endif // STATISTICS
 }
 
 //
