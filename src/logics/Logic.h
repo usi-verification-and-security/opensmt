@@ -160,7 +160,7 @@ class Logic {
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
     // Fetching sorts
-    bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
+    bool        containsSort  (std::string const &) const;
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
@@ -168,11 +168,11 @@ class Logic {
     void        markConstant  (SymId sid);
 
   public:
-    SRef        getSortRef    (const char* name)      const;// { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
-    SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
-    Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
+    SRef        getSortRef    (std::string const &)   const;
+    SRef        getSortRef    (const PTRef tr)        const;
+    SRef        getSortRef    (const SymRef sr)       const;
+    Sort const* getSort       (const SRef s)          const;
+    const char* getSortName   (const SRef s)          const;
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
@@ -262,8 +262,7 @@ public:
 
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     SRef        declareSortAndCreateFunctions(std::string const & id);
-    SRef        declareUninterpretedSort   (char const * id);
-    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
+    SRef        declareUninterpretedSort (std::string const &);
 
     PTRef       mkBoolVar     (const char* name);
 

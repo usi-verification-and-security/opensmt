@@ -343,7 +343,7 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
  * @param sortName
  * @return sort reference
  */
-SRef Logic::declareUninterpretedSort(char const * sortName) {
+SRef Logic::declareUninterpretedSort(std::string const & sortName) {
     if (containsSort(sortName)) {
         return getSortRef(sortName);
     }
@@ -352,7 +352,7 @@ SRef Logic::declareUninterpretedSort(char const * sortName) {
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
     defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
 
-    SRef rval = sort_store[sortName];
+    SRef rval = getSortRef(sortName);
     ufsorts.insert(rval, true);
     return sr;
 }
@@ -761,8 +761,8 @@ PTRef Logic::mkBoolVar(const char* name)
 
 SRef Logic::declareSortAndCreateFunctions(std::string const & id)
 {
-    if (containsSort(id.c_str())) {
-        return getSortRef(id.c_str());
+    if (containsSort(id)) {
+        return getSortRef(id);
     }
 
     SRef sr = sort_store.newSort(Identifier(id), {});
@@ -1291,7 +1291,7 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
     for (int i = 0; i < sorts.size(); i++)
     {
         if (isBuiltinSort(sorts[i])) continue;
-        dump_out << "(declare-sort " << sort_store.getName(sorts[i]) << " 0)" << endl;
+        dump_out << "(declare-sort " << getSortName(sorts[i]) << " 0)" << endl;
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
@@ -1316,9 +1316,9 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         dump_out << "(";
         for(unsigned int j = 0; j < symb.nargs(); ++j)
         {
-            dump_out << sort_store.getName(symb[j]) << " ";
+            dump_out << getSortName(symb[j]) << " ";
         }
-        dump_out << ") " << sort_store.getName(symb.rsort()) << ")" << endl;
+        dump_out << ") " << getSortName(symb.rsort()) << ")" << endl;
     }
 }
 
@@ -1506,12 +1506,11 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
 // Fetching sorts
-bool        Logic::containsSort  (const char* name)      const { return sort_store.containsSort(name); }
-
-SRef        Logic::getSortRef    (const char* name)      const { return sort_store[name]; }
+bool        Logic::containsSort  (std::string const & name) const { return sort_store.contains(name); }
+SRef        Logic::getSortRef    (std::string const & name) const { return sort_store[name]; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
-Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
+Sort const* Logic::getSort       (const SRef s)          const { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {

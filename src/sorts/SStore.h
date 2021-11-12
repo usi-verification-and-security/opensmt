@@ -28,46 +28,33 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SSTORE_H
 
 #include "SSort.h"
-#include "StringMap.h"
 #include "Alloc.h"
 
+
+#include <unordered_map>
 #include <iosfwd>
 
 class SStore
 {
   private:
     SortAllocator sa {512};
-    Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
-    vec<SRef>                                     sorts;
-    vec<char*> sort_names; // Needed for deallocating the keys in sortTable
-    typedef enum {      // These constants are stored on undo_stack_oper when
-        SYMB            // A new symbol is created
-      , PARA            // A new parameter
-      , CONS            // An undoable cons is done
-    } oper_t;
-
-
+    std::unordered_map<std::string, SRef> sortTable;
+    vec<SRef> sorts;
   public:
 
     SStore() = default;
-
-    ~SStore() {
-        for (int i = 0; i < sort_names.size(); i++)
-            free(sort_names[i]);
-    }
+    ~SStore() = default;
 
     //===========================================================================
     // Public APIs for sort construction/destruction
 
-    bool    contains        (const char* s)   const { return sortTable.has(s); }
-    SRef    operator []     (const char* s)   const { return sortTable[s]; }
-    bool    contains        (const Sort& s)   const { return sortTable.has(s.getName()); }
-    SRef    operator []     (const Sort& s) { return sortTable[s.getName()]; }
-    Sort*   operator []     (SRef sr)       { return &sa[sr]; }
+    bool    contains        (std::string const & s) const { return sortTable.find(s) != sortTable.end(); }
+    bool    contains        (Sort const & s)        const { return contains(s.getName()); }
+    SRef    operator []     (std::string const & s) const { return sortTable.at(s); }
+    SRef    operator []     (Sort const & s)        const { return (*this)[s.getName()]; }
+    Sort const * operator [](SRef sr)               const { return &sa[sr]; }
 
     SRef    newSort         (Identifier id, vec<SRef> const & rest);
-    bool    containsSort    (const char* name) const
-        { bool rval = sortTable.has(name); return rval; }
     const char* getName     (SRef sr) const { return sa[sr].getName(); }
     Sort&   getSort         (SRef sr) { return sa[sr]; }
     const vec<SRef>& getSorts() const { return sorts; }

@@ -48,15 +48,12 @@ SRef SStore::newSort(Identifier idr, vec<SRef> const & rest)
         canon_name = idr.name;
     }
 
-    const char* c_canon_name = canon_name.c_str();
-    if (sortTable.has(c_canon_name)) {
-        return sortTable[c_canon_name];
+    if (contains(canon_name)) {
+        return (*this)[canon_name];
     } else {
-        char* new_name = strdup(c_canon_name);
-        sr = sa.alloc(std::move(idr), rest);
+        sr = sa.alloc(Identifier(canon_name), rest);
         sorts.push(sr);
-        sortTable.insert(new_name, sr);
-        sort_names.push(new_name);
+        sortTable.insert({canon_name, sr});
         return sr;
     }
 }
