@@ -191,9 +191,10 @@ void Interpret::interp(ASTNode& n) {
             case t_declaresort: {
                 if (isInitialized()) {
                     Logic &logic = main_solver->getLogic();
-                    auto name = buildSortName(n);
+                    ASTNode & sortNode = **(n.children->begin());
+                    auto name = buildSortName(sortNode);
                     bool was_new = !logic.containsSort(name);
-                    SRef sr = newSort(n);
+                    SRef sr = newSort(sortNode);
                     if (!was_new) {
                         notify_formatted(true, "sort %s already declared", logic.getSortName(sr).c_str());
                     } else {
@@ -853,11 +854,12 @@ bool Interpret::defineFun(const ASTNode& n)
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
-    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-        string varName = (**it2).getValue();
-        auto varC = (**it2).children->begin();
-        auto varCC = (**varC).children->begin();
-        std::string sortName = (**varCC).getValue();
+    for (auto childNodePtr : *args_node.children) {
+        ASTNode & childNode = *childNodePtr;
+        assert(childNode.children->size() == 1);
+        std::string varName = childNode.getValue();
+        ASTNode & sortNode = **(childNode.children->begin());
+        std::string sortName = buildSortName(sortNode);
 
         if (logic.containsSort(sortName)) {
             arg_sorts.push(logic.getSortRef(sortName));
@@ -1128,8 +1130,7 @@ int Interpret::interpPipe() {
 // Code can possibly be reused when define-sort is implemented
 std::string Interpret::buildSortName(ASTNode& sn)
 {
-    auto it = sn.children->begin();
-    return (**it).getValue();
+    return sn.getValue();
 
 //    MB: This code was not reachable, it seems to handle paramteric sorts, but that is not really supported now
 //    asprintf(&canon_name, "%s", (**(it++)).getValue());
