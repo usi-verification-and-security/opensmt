@@ -129,8 +129,8 @@ protected:
 
     opensmt::Number getNum(PTRef);
 
-    virtual bool isIntVar(LVRef v) const { return false; }
-    virtual void markVarAsInt(LVRef v) {/* do nothing as default */}
+    virtual bool isIntVar(LVRef) const { return false; }
+    virtual void markVarAsInt(LVRef) {/* do nothing as default */}
     // Compute the values for an upper bound v ~ c and its negation \neg (v ~ c), where ~ is < if strict and <= if !strict
     LABoundStore::BoundValuePair getBoundsValue(LVRef v, const Real & c, bool strict);
     LABoundStore::BoundValuePair getBoundsValueForIntVar(const Real & c, bool strict);

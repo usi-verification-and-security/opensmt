@@ -51,7 +51,7 @@ public:
     inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
 
 
-    std::vector<PTRef> getPartitions(ipartitions_t const & mask) {
+    std::vector<PTRef> getPartitions(ipartitions_t const &) {
         throw std::logic_error{"Not supported at the moment!"};
     }
 

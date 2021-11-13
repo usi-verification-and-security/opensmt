@@ -172,12 +172,11 @@ inline void orbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipart
 // Or-bit
 // And-bit
 // Basic operations
-inline bool isABmixed( const ipartitions_t & p ) { return false; } //{ return p % 2 == 1; }
-inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & mask) != 0; }
-inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & ~mask) != 0; }
-inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) && !isBlocal( p, mask ); }
-inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isBlocal( p, mask ) && !isAlocal( p, mask ); }
-inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) &&  isBlocal( p, mask ); }
+inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & mask) != 0; }
+inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & ~mask) != 0; }
+inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) && !isBlocal( p, mask ); }
+inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isBlocal( p, mask ) && !isAlocal( p, mask ); }
+inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) &&  isBlocal( p, mask ); }
 
     // To specify the tree structure of a collection of partitions
 // NOTE Partitions should be tagged with consecutive ids >=1
@@ -237,7 +236,6 @@ using opensmt::isBlocal;
 using opensmt::isAstrict;
 using opensmt::isBstrict;
 using opensmt::isAB;
-using opensmt::isABmixed;
 
 #ifndef INT32_MAX
 #define INT32_MAX 0x7fffffffL
