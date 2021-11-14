@@ -1601,11 +1601,30 @@ void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_Tr
 
 bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
 
-    auto genSortMismatchString = [&](int i, SymRef sym, vec<PTRef> const & args) {
-        return "Sort of argument " + std::to_string(i) +
-               " of symbol " + getSymName(sym) + " should be " +
-               getSortName(getSym(sym)[i]) + " but is " +
-               getSortName(getSortRef(args[i]));
+    auto genSortMismatchString = [&](SymRef sym, vec<PTRef> const & args) {
+        std::string symStr = getSymName(sym);
+        Symbol const & symbol = sym_store[sym];
+        if (symbol.chainable() or symbol.pairwise()) {
+            for (auto i : args) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+        } else if (symbol.left_assoc()) {
+            symStr += " " + std::string(getSortName(symbol[0]));
+            for (auto i : opensmt::span(args.begin() + 1, args.size()-1)) {
+                symStr += " " + std::string(getSortName(symbol[1]));
+            }
+        } else if (symbol.right_assoc()) {
+            for (auto i : opensmt::span(args.begin(), args.size()-1)) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+            symStr += " " + std::string(getSortName(symbol[1]));
+        }
+
+        std::string argSorts;
+        for (PTRef tr : args) {
+            argSorts += std::string(getSortName(getSortRef(tr))) + " ";
+        }
+        return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
     };
 
     auto genArgNumMismatchString = [&](SymRef sym, int expectedArgs, int actualArgs) {
@@ -1620,36 +1639,26 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
         if (args.size() < 2) throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
         SRef argSort = getSortRef(args[0]);
         if (argSort != symbol[0]) {
-            throw OsmtApiException(genSortMismatchString(0, sym, args));
+            throw OsmtApiException(genSortMismatchString(sym, args));
         }
         if (not std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); })) {
-            int faultyIndex = 0;
-            for (; faultyIndex < args.size(); ++ faultyIndex) {
-                if (getSortRef(args[faultyIndex]) != argSort) break;
-            }
-            assert (faultyIndex != args.size());
-            throw OsmtApiException(genSortMismatchString(faultyIndex, sym, args));
+            throw OsmtApiException(genSortMismatchString(sym, args));
         }
     } else if (symbol.left_assoc()) {
         // Needs to have at least two arguments
-        // first arg must match symbol's first sort , and
+        // first arg must match symbol's first sort, and
         // all other arguments must match symbol's second sort
         if (args.size() < 2) {
             throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
         }
-        SRef firstSort = getSortRef(args[0]);
-        SRef secondSort = getSortRef(args[1]);
-        if (firstSort != symbol[0]) {
-            throw OsmtApiException(genSortMismatchString(0, sym, args));
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        if (firstSort != getSortRef(args[0])) {
+            throw OsmtApiException(genSortMismatchString(sym, args));
         } else if (not std::all_of(args.begin()+1, args.end(),
                             [&](PTRef tr) { return secondSort == getSortRef(tr); }
                             )) {
-            int faultyIndex = 1;
-            for (; faultyIndex < args.size(); faultyIndex++) {
-                if (getSortRef(args[faultyIndex]) != secondSort) break;
-            }
-            assert (faultyIndex != args.size());
-            throw OsmtApiException(genSortMismatchString(faultyIndex, sym, args));
+            throw OsmtApiException(genSortMismatchString(sym, args));
         }
     } else if (symbol.right_assoc()) {
         // Needs to have at least two arguments
@@ -1658,24 +1667,19 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
         if (args.size() < 2) {
             throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
         }
-        SRef firstSort = getSortRef(args[0]);
-        SRef lastSort = getSortRef(args[1]);
-        if (lastSort != getSortRef(args.last())) {
-            throw OsmtApiException(genSortMismatchString(args.size() - 1, sym, args));
-        } else if (std::all_of(args.begin(), args.end()-1,
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        if (secondSort != getSortRef(args.last())) {
+            throw OsmtApiException(genSortMismatchString(sym, args));
+        } else if (not std::all_of(args.begin(), args.end()-1,
                    [&](PTRef tr) { return firstSort == getSortRef(tr); })) {
-            int faultyIndex = 0;
-            for (; faultyIndex < args.size()-1; faultyIndex++) {
-                if (getSortRef(args[faultyIndex]) != firstSort) break;
-            }
-            assert (faultyIndex != args.size());
-            throw OsmtApiException(genSortMismatchString(faultyIndex, sym, args));
+            throw OsmtApiException(genSortMismatchString(sym, args));
         }
     } else if (symbol.nargs() == args.size_()) {
         // Normal symbol: all argument sorts must match symbol sorts
         for (unsigned int i = 0; i < symbol.nargs(); i++) {
             if (symbol[i] != getSortRef(args[i]))
-                throw OsmtApiException(genSortMismatchString(i, sym, args));
+                throw OsmtApiException(genSortMismatchString(sym, args));
         }
     } else if (symbol.nargs() != args.size_()) {
         throw OsmtApiException(genArgNumMismatchString(sym, symbol.nargs(), args.size()));

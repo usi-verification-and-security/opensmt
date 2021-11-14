@@ -194,3 +194,11 @@ target_sources(NumberParserTest
 
 target_link_libraries(NumberParserTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET NumberParserTest)
+
+add_executable(TermTypecheckingTest)
+target_sources(TermTypecheckingTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TermTypechecking.cc"
+        )
+
+target_link_libraries(TermTypecheckingTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TermTypecheckingTest)
