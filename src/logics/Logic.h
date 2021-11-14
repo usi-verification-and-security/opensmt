@@ -416,7 +416,7 @@ public:
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
-    bool typeCheck(SymRef sym, vec<PTRef> const & args) const;
+    bool typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const;
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
 

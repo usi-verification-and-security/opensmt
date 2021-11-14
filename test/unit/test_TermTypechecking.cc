@@ -38,54 +38,53 @@ public:
 };
 
 TEST_F(TermTypecheckingTest, test_UnaryFun) {
-    ASSERT_NO_THROW(logic.mkUninterpFun(ufun1, {uvar}));
-    ASSERT_THROW(logic.mkUninterpFun(ufun1, {vvar}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(ufun1, {}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(ufun1, {uvar, uvar}), OsmtApiException);
+    std::string msg;
+    ASSERT_TRUE(logic.typeCheck(ufun1, {uvar}, msg));
+    ASSERT_TRUE(logic.typeCheck(ufun1, {uvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun1, {vvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun1, {}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun1, {uvar, uvar}, msg));
 }
 
 TEST_F(TermTypecheckingTest, test_BinaryFun) {
-    ASSERT_NO_THROW(logic.mkUninterpFun(ufun2, {uvar, uvar}));
-    ASSERT_THROW(logic.mkUninterpFun(ufun2, {uvar, vvar}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(ufun2, {}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(ufun2, {uvar, uvar, uvar}), OsmtApiException);
+    std::string msg;
+    ASSERT_TRUE(logic.typeCheck(ufun2, {uvar, uvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun2, {uvar, vvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun2, {}, msg));
+    ASSERT_FALSE(logic.typeCheck(ufun2, {uvar, uvar, uvar}, msg));
 }
 
 TEST_F(TermTypecheckingTest, test_MixedFun) {
-    ASSERT_NO_THROW(logic.mkUninterpFun(mixfun2, {uvar, vvar}));
-    ASSERT_THROW(logic.mkUninterpFun(mixfun2, {uvar, uvar}), OsmtApiException);
-    ASSERT_NO_THROW(logic.mkUninterpFun(mixfun3, {uvar, vvar, uvar}));
-    ASSERT_THROW(logic.mkUninterpFun(mixfun3, {uvar, vvar, vvar}), OsmtApiException);
+    std::string msg;
+    ASSERT_TRUE(logic.typeCheck(mixfun2, {uvar, vvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(mixfun2, {uvar, uvar}, msg));
+    ASSERT_TRUE(logic.typeCheck(mixfun3, {uvar, vvar, uvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(mixfun3, {uvar, vvar, vvar}, msg));
 }
 
 TEST_F(TermTypecheckingTest, test_PairwiseAndChainable) {
     for (SymRef f: {chainableFun, pairwiseFun}) {
-        ASSERT_NO_THROW(logic.mkUninterpFun(f, {uvar, uvar}));
-        ASSERT_NO_THROW(logic.mkUninterpFun(f, {uvar, uvar, uvar, uvar, uvar}));
-        ASSERT_THROW(logic.mkUninterpFun(f, {uvar}), OsmtApiException);
-        ASSERT_THROW(logic.mkUninterpFun(f, {}), OsmtApiException);
-        ASSERT_THROW(logic.mkUninterpFun(f, {uvar, vvar}), OsmtApiException);
-        ASSERT_THROW(logic.mkUninterpFun(f, {uvar, uvar, uvar, uvar, vvar}), OsmtApiException);
+        std::string msg;
+        ASSERT_TRUE(logic.typeCheck(f, {uvar, uvar}, msg));
+        ASSERT_TRUE(logic.typeCheck(f, {uvar, uvar, uvar, uvar, uvar}, msg));
+        ASSERT_FALSE(logic.typeCheck(f, {uvar}, msg));
+        ASSERT_FALSE(logic.typeCheck(f, {}, msg));
+        ASSERT_FALSE(logic.typeCheck(f, {uvar, vvar}, msg));
+        ASSERT_FALSE(logic.typeCheck(f, {uvar, uvar, uvar, uvar, vvar}, msg));
     }
 }
 
 TEST_F(TermTypecheckingTest, test_AssociativeFun) {
-    PTRef test = logic.mkUninterpFun(chainableFun, {uvar, uvar});
-    Pterm & t = logic.getPterm(test);
-    std::for_each(t.begin(), t.end()-1, [&](PTRef tr) { std::cout << logic.pp(tr) <<"\n"; });
-    std::cout << std::endl;
-    for (PTRef ch : logic.getPterm(test)) {
-        std::cout << logic.pp(ch) << std::endl;
-    }
-    ASSERT_NO_THROW(logic.mkUninterpFun(leftAssocFun, {uvar, vvar}));
-    ASSERT_NO_THROW(logic.mkUninterpFun(leftAssocFun, {uvar, vvar, vvar, vvar}));
-    ASSERT_THROW(logic.mkUninterpFun(leftAssocFun, {}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(leftAssocFun, {uvar}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(leftAssocFun, {uvar, vvar, vvar, uvar}), OsmtApiException);
+    std::string msg;
+    ASSERT_TRUE(logic.typeCheck(leftAssocFun, {uvar, vvar}, msg));
+    ASSERT_TRUE(logic.typeCheck(leftAssocFun, {uvar, vvar, vvar, vvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(leftAssocFun, {}, msg));
+    ASSERT_FALSE(logic.typeCheck(leftAssocFun, {uvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(leftAssocFun, {uvar, vvar, vvar, uvar}, msg));
 
-    ASSERT_NO_THROW(logic.mkUninterpFun(rightAssocFun, {vvar, uvar}));
-    ASSERT_NO_THROW(logic.mkUninterpFun(rightAssocFun, {vvar, vvar, vvar, uvar}));
-    ASSERT_THROW(logic.mkUninterpFun(rightAssocFun, {}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(rightAssocFun, {vvar}), OsmtApiException);
-    ASSERT_THROW(logic.mkUninterpFun(rightAssocFun, {vvar, vvar, vvar, vvar}), OsmtApiException);
+    ASSERT_TRUE(logic.typeCheck(rightAssocFun, {vvar, uvar}, msg));
+    ASSERT_TRUE(logic.typeCheck(rightAssocFun, {vvar, vvar, vvar, uvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(rightAssocFun, {}, msg));
+    ASSERT_FALSE(logic.typeCheck(rightAssocFun, {vvar}, msg));
+    ASSERT_FALSE(logic.typeCheck(rightAssocFun, {vvar, vvar, vvar, vvar}, msg));
 }

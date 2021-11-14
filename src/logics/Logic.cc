@@ -851,7 +851,16 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 PTRef
 Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
-    assert(typeCheck(sym, terms));
+    assert(
+        [this](SymRef sym, vec<PTRef> const & terms) {
+            std::string why;
+            bool rval = typeCheck(sym, terms, why);
+            if (not rval) {
+                throw OsmtApiException(why);
+            }
+            return rval;
+        }(sym, terms)
+    );
     PTRef res = PTRef_Undef;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
@@ -1599,7 +1608,7 @@ void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
 
-bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
+bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const {
 
     auto genSortMismatchString = [&](SymRef sym, vec<PTRef> const & args) {
         std::string symStr = getSymName(sym);
@@ -1639,53 +1648,67 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
 
     if (symbol.chainable() or symbol.pairwise()) {
         // Need to have at least two arguments and they all need to be of the same sort
-        if (args.size() < 2) throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
         SRef argSort = getSortRef(args[0]);
         if (argSort != symbol[0]) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign(genSortMismatchString(sym, args));
+            return false;
         }
         if (not std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); })) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign(genSortMismatchString(sym, args));
+            return false;
         }
     } else if (symbol.left_assoc()) {
         // Needs to have at least two arguments
         // first arg must match symbol's first sort, and
         // all other arguments must match symbol's second sort
         if (args.size() < 2) {
-            throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
         }
         SRef firstSort = symbol[0];
         SRef secondSort = symbol[1];
         if (firstSort != getSortRef(args[0])) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign (genSortMismatchString(sym, args));
+            return false;
         } else if (not std::all_of(args.begin()+1, args.end(),
                             [&](PTRef tr) { return secondSort == getSortRef(tr); }
                             )) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign(genSortMismatchString(sym, args));
+            return false;
         }
     } else if (symbol.right_assoc()) {
         // Needs to have at least two arguments
         // all but last argument must match symbol's first sort
         // last argument must match symbol's second sort
         if (args.size() < 2) {
-            throw OsmtApiException(genArgNumMismatchString(sym, 2, args.size()));
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
         }
         SRef firstSort = symbol[0];
         SRef secondSort = symbol[1];
         if (secondSort != getSortRef(args.last())) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign(genSortMismatchString(sym, args));
+            return false;
         } else if (not std::all_of(args.begin(), args.end()-1,
                    [&](PTRef tr) { return firstSort == getSortRef(tr); })) {
-            throw OsmtApiException(genSortMismatchString(sym, args));
+            why.assign(genSortMismatchString(sym, args));
+            return false;
         }
     } else if (symbol.nargs() == args.size_()) {
         // Normal symbol: all argument sorts must match symbol sorts
         for (unsigned int i = 0; i < symbol.nargs(); i++) {
-            if (symbol[i] != getSortRef(args[i]))
-                throw OsmtApiException(genSortMismatchString(sym, args));
+            if (symbol[i] != getSortRef(args[i])) {
+                why.assign(genSortMismatchString(sym, args));
+                return false;
+            }
         }
     } else if (symbol.nargs() != args.size_()) {
-        throw OsmtApiException(genArgNumMismatchString(sym, symbol.nargs(), args.size()));
+        why.assign(genArgNumMismatchString(sym, symbol.nargs(), args.size()));
+        return false;
     }
     return true;
 }
