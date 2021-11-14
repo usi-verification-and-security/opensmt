@@ -73,7 +73,7 @@ class Symbol {
     SRef const * begin   ()      const   { return (SRef*)(args + 1); }
     /**
      * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
-     * @return A pointer to the last child of the symbol
+     * @return A pointer to right past the last child of the symbol
      */
     SRef const * end     ()      const   { return (SRef*)(args + size()); }
     SRef     rsort       ()      const   { return args[0].sort; }
