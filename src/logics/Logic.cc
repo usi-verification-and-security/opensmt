@@ -1605,16 +1605,19 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args) const {
         std::string symStr = getSymName(sym);
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
-            for (auto i : args) {
+            for (auto _ : args) {
+                (void)_;
                 symStr += " " + std::string(getSortName(symbol[0]));
             }
         } else if (symbol.left_assoc()) {
             symStr += " " + std::string(getSortName(symbol[0]));
-            for (auto i : opensmt::span(args.begin() + 1, args.size()-1)) {
+            for (auto _ : opensmt::span(args.begin() + 1, args.size()-1)) {
+                (void)_;
                 symStr += " " + std::string(getSortName(symbol[1]));
             }
         } else if (symbol.right_assoc()) {
-            for (auto i : opensmt::span(args.begin(), args.size()-1)) {
+            for (auto _ : opensmt::span(args.begin(), args.size()-1)) {
+                (void)_;
                 symStr += " " + std::string(getSortName(symbol[0]));
             }
             symStr += " " + std::string(getSortName(symbol[1]));
