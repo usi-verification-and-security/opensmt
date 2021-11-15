@@ -1207,13 +1207,13 @@ CRef CoreSMTSolver::propagate()
             // Depending on the clause length reassign clauses, so the last one watched is defined:
             Lit false_lit = ~p;
             if (c[0] == false_lit) {
-                if (c.size() > 2 && value(c[2]) == l_Undef) {
+                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
                     c[0] = c[2], c[2] = false_lit;
                 } else {
                     c[0] = c[1], c[1] = false_lit;
                 }
             } else if (c[1] == false_lit) {
-                if (c.size() > 2 && value(c[2]) == l_Undef) {
+                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
                     c[1] = c[2], c[2] = false_lit;
                 }
             }
