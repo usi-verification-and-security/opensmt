@@ -61,13 +61,10 @@ const char* CUFLogic::tk_cuf_ptr    = "*";
 const char* CUFLogic::tk_cuf_cond   = "?";
 
 const char*  CUFLogic::s_sort_cufnum = "CUFNum";
-const char*  CUFLogic::s_sort_cufstr = "CUFStr";
 
 CUFLogic::CUFLogic() :
       Logic()
     , sort_CUFNUM(declareSortAndCreateFunctions(s_sort_cufnum))
-    , sort_CUFSTR(declareSortAndCreateFunctions(s_sort_cufstr))
-
     , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
     , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))
     , sym_CUF_ZERO(getSymRef(term_CUF_ZERO))

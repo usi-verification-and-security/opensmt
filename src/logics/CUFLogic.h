@@ -67,10 +67,8 @@ class CUFLogic: public Logic
     static const char*  tk_cuf_cond;
 
     static const char*  s_sort_cufnum;
-    static const char*  s_sort_cufstr;
 
     SRef                sort_CUFNUM;
-    SRef                sort_CUFSTR;
 
     PTRef               term_CUF_ZERO;
     PTRef               term_CUF_ONE;
@@ -117,7 +115,7 @@ class CUFLogic: public Logic
     virtual PTRef         mkConst   (const int c) { return mkCUFConst(c); }
     PTRef                 mkCUFConst   (const int c) { std::string num = std::to_string(c); PTRef tr = Logic::mkConst(sort_CUFNUM, num.c_str()); return tr; }
     virtual PTRef         mkCUFNumVar(const char* name) { return mkVar(sort_CUFNUM, name); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
     PTRef conjoinExtras(PTRef root) override;
