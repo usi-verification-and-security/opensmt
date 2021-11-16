@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
+#include "OsmtInternalException.h"
 #include "Substitutor.h"
 
 #include <queue>
@@ -851,16 +852,13 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 PTRef
 Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
-    assert(
-        [this](SymRef sym, vec<PTRef> const & terms) {
-            std::string why;
-            bool rval = typeCheck(sym, terms, why);
-            if (not rval) {
-                throw OsmtApiException(why);
-            }
-            return rval;
-        }(sym, terms)
-    );
+#ifndef NDEBUG
+    std::string why;
+    if (not typeCheck(sym, terms, why)) {
+        throw OsmtInternalException(why);
+    }
+#endif
+
     PTRef res = PTRef_Undef;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
@@ -1614,19 +1612,16 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         std::string symStr = getSymName(sym);
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
-            for (auto _ : args) {
-                (void)_;
+            for (int i = 0; i < args.size(); i++) {
                 symStr += " " + std::string(getSortName(symbol[0]));
             }
         } else if (symbol.left_assoc()) {
             symStr += " " + std::string(getSortName(symbol[0]));
-            for (auto _ : opensmt::span(args.begin() + 1, args.size()-1)) {
-                (void)_;
+            for (int i = 1; i < args.size(); i++) {
                 symStr += " " + std::string(getSortName(symbol[1]));
             }
         } else if (symbol.right_assoc()) {
-            for (auto _ : opensmt::span(args.begin(), args.size()-1)) {
-                (void)_;
+            for (int i = 0; i < args.size() - 1; i++) {
                 symStr += " " + std::string(getSortName(symbol[0]));
             }
             symStr += " " + std::string(getSortName(symbol[1]));
@@ -1653,11 +1648,9 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
             return false;
         }
         SRef argSort = getSortRef(args[0]);
-        if (argSort != symbol[0]) {
-            why.assign(genSortMismatchString(sym, args));
-            return false;
-        }
-        if (not std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); })) {
+        auto allArgSortsEqual = [&](vec<PTRef> const & args) {
+            return std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); });};
+        if (argSort != symbol[0] or not allArgSortsEqual(args)) {
             why.assign(genSortMismatchString(sym, args));
             return false;
         }
@@ -1671,13 +1664,10 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         }
         SRef firstSort = symbol[0];
         SRef secondSort = symbol[1];
-        if (firstSort != getSortRef(args[0])) {
+        auto allButFirstSortEqualSecond = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin()+1, args.end(), [&](PTRef tr) { return secondSort == getSortRef(tr); });};
+        if (firstSort != getSortRef(args[0]) or not allButFirstSortEqualSecond(args)) {
             why.assign (genSortMismatchString(sym, args));
-            return false;
-        } else if (not std::all_of(args.begin()+1, args.end(),
-                            [&](PTRef tr) { return secondSort == getSortRef(tr); }
-                            )) {
-            why.assign(genSortMismatchString(sym, args));
             return false;
         }
     } else if (symbol.right_assoc()) {
@@ -1690,11 +1680,9 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         }
         SRef firstSort = symbol[0];
         SRef secondSort = symbol[1];
-        if (secondSort != getSortRef(args.last())) {
-            why.assign(genSortMismatchString(sym, args));
-            return false;
-        } else if (not std::all_of(args.begin(), args.end()-1,
-                   [&](PTRef tr) { return firstSort == getSortRef(tr); })) {
+        auto allButLastSortEqualFirst = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin(), args.end()-1, [&](PTRef tr) { return firstSort == getSortRef(tr); });};
+        if (secondSort != getSortRef(args.last()) or not allButLastSortEqualFirst(args)) {
             why.assign(genSortMismatchString(sym, args));
             return false;
         }

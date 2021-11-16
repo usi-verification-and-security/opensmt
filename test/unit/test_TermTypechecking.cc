@@ -40,7 +40,6 @@ public:
 TEST_F(TermTypecheckingTest, test_UnaryFun) {
     std::string msg;
     ASSERT_TRUE(logic.typeCheck(ufun1, {uvar}, msg));
-    ASSERT_TRUE(logic.typeCheck(ufun1, {uvar}, msg));
     ASSERT_FALSE(logic.typeCheck(ufun1, {vvar}, msg));
     ASSERT_FALSE(logic.typeCheck(ufun1, {}, msg));
     ASSERT_FALSE(logic.typeCheck(ufun1, {uvar, uvar}, msg));
