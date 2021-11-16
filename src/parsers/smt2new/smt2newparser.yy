@@ -319,6 +319,7 @@ sort: identifier
         $$ = new ASTNode(LID_T, NULL);
         $$->children = $4;
         $$->children->insert($$->children->begin(), $3);
+        $$->children->insert($$->children->begin(), $2);
       }
     ;
 

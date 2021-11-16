@@ -32,6 +32,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <string>
 
+
+struct SSymRef {
+    uint32_t x;
+    SSymRef & operator= (uint32_t v) { x = v; return *this; }
+    inline friend bool operator== (SSymRef a1, SSymRef a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (SSymRef a1, SSymRef a2) {return a1.x != a2.x; }
+};
+
+const static struct SSymRef SSymRef_Undef = {INT32_MAX};
+
+struct SSymRefHash {
+    uint32_t operator () (SSymRef s) const {
+        return (uint32_t)s.x; }
+};
+
+struct SortSymbol {
+    static constexpr unsigned int INTERNAL = 0x1;
+    std::string name;
+    unsigned int arity;
+    unsigned int flags;
+    SortSymbol(std::string name_, unsigned int arity) : name(std::move(name_)), arity(arity), flags(0) {};
+    SortSymbol(std::string name_, unsigned int arity, unsigned int flags) : name(std::move(name_)), arity(arity), flags(flags) {};
+    SortSymbol(SortSymbol &&) = default;
+    SortSymbol(SortSymbol const &) = default;
+    bool isInternal() const { return (flags & INTERNAL) != 0; };
+};
+
+inline bool operator==(SortSymbol const & first, SortSymbol const & second) {
+    if (first.arity != second.arity or first.name.size() != second.name.size()) { return false; }
+    return first.name == second.name;
+}
+
+struct SortSymbolHash {
+    std::size_t operator()(SortSymbol const & symbol) const {
+        return std::hash<std::string>()(symbol.name) + symbol.arity;
+    }
+};
+
 struct SRef {
     uint32_t x;
     SRef & operator= (uint32_t v) { x = v; return *this; }
@@ -47,35 +85,52 @@ struct SRefHash {
         return (uint32_t)s.x; }
 };
 
-struct SortSymbol {
-    std::string name;
-    SortSymbol(std::string name_) : name(std::move(name_)) {};
-    SortSymbol(SortSymbol &&) = default;
-};
-
 using sortid_t = int;
 
 class Sort {
   private:
 
-    SortSymbol  idr;
+    SSymRef  symRef;
     sortid_t    uniq_id;
-    int         size;
-    SRef        rest_sorts[0];
+    uint32_t size;
+    SRef        args[0];
   public:
-    Sort(SortSymbol idr_, sortid_t uniq_id_, vec<SRef> const & rest)
-        : idr(std::move(idr_))
+    Sort(SSymRef symRef_, sortid_t uniq_id_, vec<SRef> const & rest)
+        : symRef(symRef_)
         , uniq_id(uniq_id_)
-        , size(0)
-    { for (int i = 0; i < rest.size(); i++) rest_sorts[i] = rest[i]; }
-
-    int getSize() const { return size; }
+        , size(rest.size_())
+    { for (int i = 0; i < rest.size(); i++) args[i] = rest[i]; }
 
     inline sortid_t getId() const { return uniq_id; };
 
-    std::string const & getName() const { return idr.name; }
+    SSymRef getSymRef() const { return symRef; }
+
+    uint32_t getSize() const { return size; }
 };
 
+class SortSymbolAllocator : public RegionAllocator<uint32_t>
+{
+    static int SortSymbolWord32Size() {
+        return sizeof(SortSymbol) / sizeof(uint32_t); }
+public:
+    SortSymbolAllocator() {}
+    SortSymbolAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
+    SSymRef alloc(SortSymbol symbol)
+    {
+        uint32_t v = RegionAllocator<uint32_t>::alloc(SortSymbolWord32Size());
+        SSymRef sid {v};
+        new (lea(sid)) SortSymbol(std::move(symbol));
+        return sid;
+    }
+    SortSymbol&       operator[](SSymRef r)       { return (SortSymbol&)RegionAllocator<uint32_t>::operator[](r.x); }
+    const SortSymbol& operator[](SSymRef r) const { return (SortSymbol&)RegionAllocator<uint32_t>::operator[](r.x); }
+    SortSymbol*       lea       (SSymRef r)       { return (SortSymbol*)RegionAllocator<uint32_t>::lea(r.x); }
+
+    void free(SSymRef)
+    {
+        RegionAllocator<uint32_t>::free(SortSymbolWord32Size());
+    }
+};
 
 class SortAllocator : public RegionAllocator<uint32_t>
 {
@@ -87,12 +142,12 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(SortSymbol id, vec<SRef> const & rest)
+    SRef alloc(SSymRef symRef, vec<SRef> const & rest)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
         SRef sid;
         sid.x = v;
-        new (lea(sid)) Sort(std::move(id), static_uniq_id++, rest);
+        new (lea(sid)) Sort(symRef, static_uniq_id++, rest);
         return sid;
     }
     Sort&       operator[](SRef r)       { return (Sort&)RegionAllocator<uint32_t>::operator[](r.x); }

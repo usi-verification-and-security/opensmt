@@ -29,33 +29,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
-SRef SStore::newSort(SortSymbol idr, vec<SRef> const & rest)
+bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) {
+    auto it = this->sortSymbolTable.find(symbol);
+    if (it != sortSymbolTable.end()) {
+        outRef = it->second;
+        return true;
+    }
+    return false;
+}
+
+SSymRef SStore::newSortSymbol(SortSymbol symbol) {
+    SSymRef res;
+    assert(not peek(symbol, res));
+    res = ssa.alloc(symbol);
+    sortSymbolTable.insert({std::move(symbol), res});
+    return res;
+}
+
+opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> const & rest)
 {
-    SRef sr = SRef_Undef;
-    std::string canon_name;
-    if (rest.size() > 0) {
-        std::stringstream ss;
-        ss << idr.name;
-        ss << " (";
-        ss << getName(rest[0]);
-        for (int i = 1; i < rest.size(); i++) {
-            ss << ' ';
-            ss << getName(rest[i]);
-        }
-        ss << ')';
-        canon_name = ss.str();
-    } else {
-        canon_name = idr.name;
+    SortKey key;
+    key.sym = symbolRef;
+    rest.copyTo(key.args);
+    auto it = sortTable.find(key);
+    if (it != sortTable.end()) {
+        return {it->second, false};
     }
 
-    if (contains(canon_name)) {
-        return (*this)[canon_name];
-    } else {
-        sr = sa.alloc(SortSymbol(canon_name), rest);
-        sorts.push(sr);
-        sortTable.insert({canon_name, sr});
-        return sr;
-    }
+    SRef sr = sa.alloc(symbolRef, rest);
+    sorts.push(sr);
+    auto emplaceRes = sortTable.emplace(std::move(key), sr);
+    assert(emplaceRes.second); (void)emplaceRes;
+    return {sr, true};
 }
 
 void

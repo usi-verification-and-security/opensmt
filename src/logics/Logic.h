@@ -159,8 +159,6 @@ class Logic {
     virtual std::string const getName() const { return "QF_UF"; }
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
-    // Fetching sorts
-    bool        containsSort  (std::string const &) const;
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
@@ -168,12 +166,10 @@ class Logic {
     void        markConstant  (SymId sid);
 
   public:
-    SRef        getSortRef    (std::string const &)   const;
     SRef        getSortRef    (const PTRef tr)        const;
     SRef        getSortRef    (const SymRef sr)       const;
-    Sort const* getSort       (const SRef s)          const;
-
     std::string const & getSortName(const SRef s) const;
+    SRef declareUninterpretedSort(std::string const &);
 
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
@@ -233,6 +229,9 @@ class Logic {
     PTRef       mkEq          (PTRef a1, PTRef a2) { return mkBinaryEq(a1, a2); }
 protected:
     virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
+    bool isInternalSort(SRef) const;
+    void newUninterpretedSortHandler(SRef);
+
 public:
 
     // General disequalities
@@ -263,8 +262,12 @@ public:
     SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
 
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSortAndCreateFunctions(std::string const & id);
-    SRef        declareUninterpretedSort (std::string const &);
+    void        instantiateFunctions(SRef);
+
+    bool        hasSortSymbol(SortSymbol const &);
+    bool        peekSortSymbol(SortSymbol const &, SSymRef&);
+    SSymRef     declareSortSymbol(SortSymbol symbol);
+    SRef        getSort(SSymRef, vec<SRef> const & args);
 
     PTRef       mkBoolVar     (const char* name);
 

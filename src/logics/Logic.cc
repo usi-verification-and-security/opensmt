@@ -74,7 +74,7 @@ Logic::Logic() :
       distinctClassCount(0)
     , sort_store()
     , term_store(sym_store)
-    , sort_BOOL(sort_store.newSort(SortSymbol(s_sort_bool), {}))
+    , sort_BOOL(sort_store.getOrCreateSort(sort_store.newSortSymbol(SortSymbol(s_sort_bool, 0, SortSymbol::INTERNAL)), {}).first)
     , term_TRUE(mkConst(getSort_bool(), tk_true))
     , term_FALSE(mkConst(getSort_bool(), tk_false))
     , sym_TRUE(getSymRef(term_TRUE))
@@ -337,24 +337,50 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     return nestedBoolRoots;
 }
 
-/**
- * Declare an uninterpreted sort.  Do not call for numeric sorts, since we do not want to add them a default value
- * here nor do we want them to end up in the ufsorts.
- * @param sortName
- * @return sort reference
- */
-SRef Logic::declareUninterpretedSort(std::string const & sortName) {
-    if (containsSort(sortName)) {
-        return getSortRef(sortName);
+bool Logic::hasSortSymbol(const SortSymbol & symbol) {
+    SSymRef unused;
+    return sort_store.peek(symbol, unused);
+}
+
+bool Logic::peekSortSymbol(SortSymbol const & symbol, SSymRef & out) {
+    return sort_store.peek(symbol, out);
+}
+
+SSymRef Logic::declareSortSymbol(SortSymbol symbol) {
+    SSymRef res;
+    if (sort_store.peek(symbol, res)) {
+        return res;
     }
-    SRef sr = declareSortAndCreateFunctions(sortName);
+    return sort_store.newSortSymbol(std::move(symbol));
+}
+
+SRef Logic::getSort(SSymRef symbolRef, vec<SRef> const & args) {
+    auto [sr,created] = sort_store.getOrCreateSort(symbolRef, args);
+    if (created) {
+        instantiateFunctions(sr);
+        if (not isInternalSort(sr)) {
+            newUninterpretedSortHandler(sr);
+        }
+    }
+    return sr;
+}
+
+void Logic::newUninterpretedSortHandler(SRef sref) {
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
-    defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
+    defaultValueForSort.insert(sref, mkConst(sref, ss.str().c_str()));
+    ufsorts.insert(sref, true);
+}
 
-    SRef rval = getSortRef(sortName);
-    ufsorts.insert(rval, true);
-    return sr;
+bool Logic::isInternalSort(SRef sref) const {
+    Sort const & sort = sort_store[sref];
+    SSymRef sortSymbol = sort.getSymRef();
+    return sort_store[sortSymbol].isInternal();
+}
+
+SRef Logic::declareUninterpretedSort(const std::string & name) {
+    SSymRef sortSymbol = declareSortSymbol(SortSymbol(name, 0));
+    return getSort(sortSymbol, {});
 }
 
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
@@ -759,14 +785,8 @@ PTRef Logic::mkBoolVar(const char* name)
     return mkFun(sr, {});
 }
 
-SRef Logic::declareSortAndCreateFunctions(std::string const & id)
+void Logic::instantiateFunctions(SRef sr)
 {
-    if (containsSort(id)) {
-        return getSortRef(id);
-    }
-
-    SRef sr = sort_store.newSort(SortSymbol(id), {});
-
     // Equality
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
@@ -784,8 +804,6 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
     assert(tr != SymRef_Undef);
     ites.insert(tr, true);
     sortToIte.insert(sr, tr);
-
-    return sr;
 }
 
 SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
@@ -1504,11 +1522,8 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
 // Fetching sorts
-bool        Logic::containsSort  (std::string const & name) const { return sort_store.contains(name); }
-SRef        Logic::getSortRef    (std::string const & name) const { return sort_store[name]; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
-Sort const* Logic::getSort       (const SRef s)          const { return sort_store[s]; }
 
 std::string const & Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
 
