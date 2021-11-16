@@ -129,7 +129,7 @@ class Pterm {
     const PTRef* begin() const { return args; }
     /**
      * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
-     * @return A pointer to the last child of the term
+     * @return A pointer to right past the last child of the term
      */
     const PTRef* end() const { return args + size(); }
 #ifdef PEDANTIC_DEBUG

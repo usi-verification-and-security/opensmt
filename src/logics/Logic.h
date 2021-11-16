@@ -261,6 +261,12 @@ public:
     SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
     SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Pairwise(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+
+    SymRef      declareFun_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    SymRef      declareFun_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
+    SymRef      declareFun_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
+
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     SRef        declareSortAndCreateFunctions(std::string const & id);
     SRef        declareUninterpretedSort   (char const * id);
@@ -410,6 +416,7 @@ public:
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
+    bool typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const;
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
 

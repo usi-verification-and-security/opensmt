@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
+#include "OsmtInternalException.h"
 #include "Substitutor.h"
 
 #include <queue>
@@ -851,8 +852,14 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 PTRef
 Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
+#ifndef NDEBUG
+    std::string why;
+    if (not typeCheck(sym, terms, why)) {
+        throw OsmtInternalException(why);
+    }
+#endif
+
     PTRef res = PTRef_Undef;
-    char *msg;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -868,9 +875,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
-            strcpy(msg, e_argnum_mismatch);
-            return PTRef_Undef;
+            throw OsmtApiException(e_argnum_mismatch);
         }
         PTLKey k;
         k.sym = sym;
@@ -1600,3 +1605,98 @@ char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTer
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
+
+bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const {
+
+    auto genSortMismatchString = [&](SymRef sym, vec<PTRef> const & args) {
+        std::string symStr = getSymName(sym);
+        Symbol const & symbol = sym_store[sym];
+        if (symbol.chainable() or symbol.pairwise()) {
+            for (int i = 0; i < args.size(); i++) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+        } else if (symbol.left_assoc()) {
+            symStr += " " + std::string(getSortName(symbol[0]));
+            for (int i = 1; i < args.size(); i++) {
+                symStr += " " + std::string(getSortName(symbol[1]));
+            }
+        } else if (symbol.right_assoc()) {
+            for (int i = 0; i < args.size() - 1; i++) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+            symStr += " " + std::string(getSortName(symbol[1]));
+        }
+
+        std::string argSorts;
+        for (PTRef tr : args) {
+            argSorts += std::string(getSortName(getSortRef(tr))) + " ";
+        }
+        return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
+    };
+
+    auto genArgNumMismatchString = [&](SymRef sym, int expectedArgs, int actualArgs) {
+        return "Symbol " + std::string(getSymName(sym)) + " expects " + std::to_string(expectedArgs) +
+        " but " + std::to_string(actualArgs) + " were provided. ";
+    };
+
+    Symbol const & symbol = sym_store[sym];
+
+    if (symbol.chainable() or symbol.pairwise()) {
+        // Need to have at least two arguments and they all need to be of the same sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef argSort = getSortRef(args[0]);
+        auto allArgSortsEqual = [&](vec<PTRef> const & args) {
+            return std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); });};
+        if (argSort != symbol[0] or not allArgSortsEqual(args)) {
+            why.assign(genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.left_assoc()) {
+        // Needs to have at least two arguments
+        // first arg must match symbol's first sort, and
+        // all other arguments must match symbol's second sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        auto allButFirstSortEqualSecond = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin()+1, args.end(), [&](PTRef tr) { return secondSort == getSortRef(tr); });};
+        if (firstSort != getSortRef(args[0]) or not allButFirstSortEqualSecond(args)) {
+            why.assign (genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.right_assoc()) {
+        // Needs to have at least two arguments
+        // all but last argument must match symbol's first sort
+        // last argument must match symbol's second sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        auto allButLastSortEqualFirst = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin(), args.end()-1, [&](PTRef tr) { return firstSort == getSortRef(tr); });};
+        if (secondSort != getSortRef(args.last()) or not allButLastSortEqualFirst(args)) {
+            why.assign(genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.nargs() == args.size_()) {
+        // Normal symbol: all argument sorts must match symbol sorts
+        for (unsigned int i = 0; i < symbol.nargs(); i++) {
+            if (symbol[i] != getSortRef(args[i])) {
+                why.assign(genSortMismatchString(sym, args));
+                return false;
+            }
+        }
+    } else if (symbol.nargs() != args.size_()) {
+        why.assign(genArgNumMismatchString(sym, symbol.nargs(), args.size()));
+        return false;
+    }
+    return true;
+}
