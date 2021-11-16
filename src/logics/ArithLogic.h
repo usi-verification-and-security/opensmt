@@ -2,7 +2,6 @@
 #define LALOGIC_H
 #include "Logic.h"
 #include "Number.h"
-#include "OsmtInternalException.h"
 #include <numeric>
 
 class LANonLinearException : std::runtime_error
