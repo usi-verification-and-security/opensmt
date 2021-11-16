@@ -89,8 +89,8 @@ class Symbol {
     uint32_t nargs       ()      const   { return size() - 1; }
     bool     isConstant  ()      const   { return nargs() == 0 && header.constant; }
 
-    bool     setLeftAssoc ()             { if (header.type != 0) return false; return (header.type = 1); }
-    bool     setRightAssoc()             { if (header.type != 0) return false; return (header.type = 2); }
+    bool     setLeftAssoc ()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 1); }
+    bool     setRightAssoc()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 2); }
     bool     setChainable ()             { if (header.type != 0) return false; return (header.type = 3); }
     bool     setPairwise  ()             { if (header.type != 0) return false; return (header.type = 4); }
     void     setNoScoping ()             { header.noscoping = 1; }
