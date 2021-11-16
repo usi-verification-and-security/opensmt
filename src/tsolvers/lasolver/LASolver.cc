@@ -79,8 +79,8 @@ void LASolver::isProperLeq(PTRef tr)
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
     assert(logic.isNumVarOrIte(sum) || logic.isPlus(sum) || logic.isTimes(sum));
-    assert(!logic.isTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1])) ||
-                                      (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0]))))));
+    assert(!logic.isTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1]))) ||
+                                   (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0])))));
     (void) cons; (void)sum;
 }
 
