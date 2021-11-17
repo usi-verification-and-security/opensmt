@@ -37,9 +37,13 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SymRef,bool,SymRefHash,Equal<SymRef> >      selects;
+    Map<SymRef,bool,SymRefHash,Equal<SymRef> >      stores;
     Map<SRef,SymRef,SRefHash>                       sortToEquality;
     Map<SRef,SymRef,SRefHash>                       sortToDisequality;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
+    Map<SRef,SymRef,SRefHash>                       sortToSelect;
+    Map<SRef,SymRef,SRefHash>                       sortToStore;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
@@ -87,6 +91,8 @@ class Logic {
     SymRef              sym_IMPLIES;
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
+
+    SSymRef             sym_ArraySort;
 
     void dumpFunction(std::ostream &, const TemplateFunction&);
 
@@ -145,6 +151,14 @@ class Logic {
     std::string         printSort  (SRef s)    const;
     std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
+    bool                isArraySort(SRef sref) { return sort_store[sref].getSymRef() == sym_ArraySort; }
+    bool hasArrays() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasArrays; }
+    bool isArrayStore(SymRef) const;
+    bool isArraySelect(SymRef) const;
+    PTRef mkStore(vec<PTRef> &&);
+    PTRef mkSelect(vec<PTRef> &&);
+
+
 
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
@@ -243,6 +257,7 @@ public:
     SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::Pairwise); }
 
     void        instantiateFunctions(SRef);
+    void        instantiateArrayFunctions(SRef);
 
     bool        hasSortSymbol(SortSymbol const &);
     bool        peekSortSymbol(SortSymbol const &, SSymRef&);

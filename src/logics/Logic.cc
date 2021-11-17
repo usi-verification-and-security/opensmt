@@ -82,6 +82,9 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     sortToEquality.insert(sort_BOOL, sym_EQ);
     sortToDisequality.insert(sort_BOOL, sym_DISTINCT);
     sortToIte.insert(sort_BOOL, sym_ITE);
+    if (hasArrays()) {
+        sym_ArraySort = sort_store.newSortSymbol(SortSymbol("Array", 2, SortSymbol::INTERNAL));
+    }
 }
 
 Logic::~Logic() = default;
@@ -337,6 +340,8 @@ SRef Logic::getSort(SSymRef symbolRef, vec<SRef> && args) {
         instantiateFunctions(sr);
         if (not isInternalSort(sr)) {
             newUninterpretedSortHandler(sr);
+        } else if (isArraySort(sr)) {
+            instantiateArrayFunctions(sr);
         }
     }
     return sr;
@@ -769,6 +774,33 @@ void Logic::instantiateFunctions(SRef sr)
     sortToIte.insert(sr, tr);
 }
 
+void Logic::instantiateArrayFunctions(SRef arraySRef) {
+    assert(arraySRef != SRef_Undef and isArraySort(arraySRef));
+    Sort const & sort = sort_store[arraySRef];
+    assert(sort.getSize() == 2);
+    SRef indexSRef = sort[0];
+    SRef elementSRef = sort[1];
+
+    SymRef selectRef = declareFun_NoScoping("select", elementSRef, {arraySRef, indexSRef});
+    selects.insert(selectRef, true);
+    sortToSelect.insert(arraySRef, selectRef);
+
+    SymRef storeRef = declareFun_NoScoping("store", arraySRef, {arraySRef, indexSRef, elementSRef});
+    stores.insert(storeRef, true);
+    sortToStore.insert(arraySRef, storeRef);
+}
+
+PTRef Logic::mkStore(vec<PTRef> && args) {
+    assert(args.size() == 3);
+    SRef arraySort = sym_store[getPterm(args[0]).symb()].rsort();
+    return mkFun(sortToStore[arraySort], std::move(args));
+}
+
+PTRef Logic::mkSelect(vec<PTRef> && args) {
+    assert(args.size() == 2);
+    SRef arraySort = sym_store[getPterm(args[0]).symb()].rsort();
+    return mkFun(sortToSelect[arraySort], std::move(args));
+}
 
 SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> & args, SymbolConfig const & symbolConfig)
 {
@@ -811,6 +843,12 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
     if (isVar(sym)) {
         assert(terms.size() == 0);
         return mkFun(sym, std::move(terms));
+    }
+    if (hasArrays()) {
+        if (isArrayStore(sym))
+            return mkStore(std::move(terms));
+        if (isArraySelect(sym))
+            return mkSelect(std::move(terms));
     }
     return mkUninterpFun(sym, std::move(terms));
 }
@@ -1526,6 +1564,9 @@ bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
 bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
+
+bool        Logic::isArraySelect(SymRef sr) const { return selects.has(sr); }
+bool        Logic::isArrayStore(SymRef sr) const { return stores.has(sr); }
 
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
