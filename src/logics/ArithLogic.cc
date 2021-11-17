@@ -339,10 +339,13 @@ PTRef ArithLogic::mkNeg(PTRef tr)
     if (isPlus(tr)) {
         vec<PTRef> args;
         args.capacity(getPterm(tr).size());
+        // Note: Do this in two phases to avoid calling mkNeg that invalidates the Pterm reference
         for (PTRef tr_arg : getPterm(tr)) {
-            tr_arg = mkNeg(tr_arg);
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
+        }
+        for (PTRef & tr_arg: args) {
+            tr_arg = mkNeg(tr_arg);
         }
         PTRef tr_n = mkFun(yieldsSortInt(tr) ? get_sym_Int_PLUS() : get_sym_Real_PLUS(), std::move(args));
         return tr_n;
