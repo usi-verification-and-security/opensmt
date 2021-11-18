@@ -13,8 +13,6 @@ Module: New Logic for BitVector
 #include "TreeOps.h"
 #include "Global.h"
 
-const char* BVLogic::tk_bv_zero  = "0";
-const char* BVLogic::tk_bv_one   = "1";
 const char* BVLogic::tk_bv_neg   = "-";
 const char* BVLogic::tk_bv_eq    = "==";
 const char* BVLogic::tk_bv_minus = "-";
@@ -51,9 +49,10 @@ const int BVLogic::i_default_bitwidth = 32;
 
 BVLogic::BVLogic(int width) :
     CUFLogic()
-    , sort_BVNUM(SRef_Undef)
-    , term_BV_ZERO(mkConst(sort_BVNUM, tk_bv_zero))
-    , term_BV_ONE(mkConst(sort_BVNUM, tk_bv_one))
+    , bitwidth(width)
+    , sort_BVNUM(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_bvnum, 0, SortSymbol::INTERNAL)), {}))
+    , term_BV_ZERO(mkBVConst(0))
+    , term_BV_ONE(mkBVConst(1))
     , sym_BV_ZERO(getSymRef(term_BV_ZERO))
     , sym_BV_ONE(getSymRef(term_BV_ONE))
     , sym_BV_NEG(declareFun_NoScoping(tk_bv_neg, sort_BVNUM, {sort_BVNUM}))
@@ -79,15 +78,15 @@ BVLogic::BVLogic(int width) :
     , sym_BV_BWAND(declareFun_NoScoping_LeftAssoc(tk_bv_bwand, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
     , sym_BV_LAND(declareFun_NoScoping_LeftAssoc(tk_bv_land, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
     , sym_BV_LOR(declareFun_NoScoping_LeftAssoc(tk_bv_lor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
-    , sym_BV_NOT(declareFun_NoScoping(tk_bv_not, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
-    , sym_BV_COMPL(declareFun_NoScoping(tk_bv_compl, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
+    , sym_BV_NOT(declareFun_NoScoping(tk_bv_not, sort_BVNUM, {sort_BVNUM}))
+    , sym_BV_COMPL(declareFun_NoScoping(tk_bv_compl, sort_BVNUM, {sort_BVNUM}))
     , sym_BV_COLLATE32(declareFun_NoScoping(tk_bv_coll32, sort_CUFNUM,
         {sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
          sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
          sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
          sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL}))
-    , bitwidth(width)
 {
+    equalities.insert(sym_BV_EQ, true);
     for (int i = 0; i < 32; i++) {
         std::string sym_name {s_uf_extract_base};
         sym_name += std::to_string(i);
