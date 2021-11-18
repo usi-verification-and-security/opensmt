@@ -195,6 +195,7 @@ target_sources(NumberParserTest
 target_link_libraries(NumberParserTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET NumberParserTest)
 
+
 add_executable(TermTypecheckingTest)
 target_sources(TermTypecheckingTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TermTypechecking.cc"
@@ -202,3 +203,11 @@ target_sources(TermTypecheckingTest
 
 target_link_libraries(TermTypecheckingTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET TermTypecheckingTest)
+
+add_executable(ArithLogicApiTest)
+target_sources(ArithLogicApiTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ArithLogicApi.cc"
+        )
+
+target_link_libraries(ArithLogicApiTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET ArithLogicApiTest)

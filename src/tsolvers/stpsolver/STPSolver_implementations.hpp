@@ -10,7 +10,7 @@
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
 template<class T>
-STPSolver<T>::STPSolver(SMTConfig &c, LALogic &l)
+STPSolver<T>::STPSolver(SMTConfig &c, ArithLogic &l)
         : TSolver((SolverId) descr_stp_solver, (const char *) descr_stp_solver, c), logic(l),
           mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graphMgr(store, mapper)   // similarly, mapper is initialized before graph (per declaration in header)
@@ -23,7 +23,7 @@ template<class T>
 typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     // due to how LALogic creates terms, we won't ever encounter <, >, or >= inequalities
-    assert(logic.isNumLeq(ref));
+    assert(logic.isLeq(ref));
     Pterm &leq = logic.getPterm(ref);
     assert(logic.isNumConst(leq[0]));
     auto c = -logic.getNumConst(leq[0]);  // -'c': since we want the form (y <= x + c), the constant is negated
@@ -36,7 +36,7 @@ typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     } else {  // right hand side contains at least a negative variable
         Pterm &rhsPt = logic.getPterm(rhs);
         PTRef mul{};  // (-1 * y) term
-        if (logic.isNumPlus(rhs)) {  // usual DL inequality with two variables
+        if (logic.isPlus(rhs)) {  // usual DL inequality with two variables
             uint8_t ix = logic.isNumVar(rhsPt[0]) ? 0 : 1;
             uint8_t iy = 1 - ix;
             x = rhsPt[ix];
@@ -46,7 +46,7 @@ typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
             mul = rhs;
         }
 
-        assert(logic.isNumTimes(mul));
+        assert(logic.isTimes(mul));
         Pterm &mulPt = logic.getPterm(mul);
         assert(logic.isNumConst(mulPt[0]) && logic.getNumConst(mulPt[0]) == -1);
         y = mulPt[1];
@@ -233,7 +233,7 @@ Logic &STPSolver<T>::getLogic() {
 
 template<class T>
 bool STPSolver<T>::isValid(PTRef tr) {
-    return logic.isNumLeq(tr);
+    return logic.isLeq(tr);
 }
 
 #endif //OPENSMT_STPSOLVER_IMPLEMENTATIONS_HPP

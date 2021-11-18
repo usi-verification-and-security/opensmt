@@ -156,7 +156,7 @@ void Interpret::interp(ASTNode& n) {
                 ASTNode &logic_n = **(n.children->begin());
                 const char *logic_name = logic_n.getValue();
                 if (isInitialized()) {
-                    notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName());
+                    notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
                 } else {
                     auto logic_type = getLogicFromString(logic_name);
                     if (logic_type == Logic_t::UNDEF) {
@@ -445,7 +445,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         try {
             tr = logic->resolveTerm(name, std::move(args), &msg);
         }
-        catch (LADivisionByZeroException & ex) {
+        catch (ArithDivisionByZeroException & ex) {
             notify_formatted(true, ex.what());
             return PTRef_Undef;
         }

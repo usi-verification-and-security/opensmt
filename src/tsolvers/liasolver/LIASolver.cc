@@ -84,8 +84,8 @@ TRes LIASolver::checkIntegersAndSplit() {
 
             //constructing new constraint
             //x <= c || x >= c+1;
-            PTRef upperBound = logic.mkNumLeq(getVarPTRef(x), logic.mkConst(c));
-            PTRef lowerBound = logic.mkNumGeq(getVarPTRef(x), logic.mkConst(c + 1));
+            PTRef upperBound = logic.mkLeq(getVarPTRef(x), logic.mkIntConst(c));
+            PTRef lowerBound = logic.mkGeq(getVarPTRef(x), logic.mkIntConst(c + 1));
             PTRef constr = logic.mkOr(upperBound, lowerBound);
             //printf("LIA solver constraint %s\n", logic.pp(constr));
 
@@ -113,7 +113,7 @@ LIASolver::getNewSplits(vec<PTRef>& splits)
     setStatus(SAT);
 }
 
-LIASolver::LIASolver(SMTConfig & c, LIALogic & l)
+LIASolver::LIASolver(SMTConfig & c, ArithLogic & l)
         : LASolver(descr_lia_solver, c, l)
         , logic(l)
 

@@ -2,9 +2,9 @@
 
 #include "TreeOps.h"
 #include "lasolver/LASolver.h"
-#include "LRALogic.h"
+#include "ArithLogic.h"
 
-LRATHandler::LRATHandler(SMTConfig & c, LRALogic & l)
+LRATHandler::LRATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
         , logic(l)
 {

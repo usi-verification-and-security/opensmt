@@ -3,7 +3,6 @@
 //
 
 #include "LRAModel.h"
-#include "LRALogic.h"
 
 void LRAModel::init()
 {

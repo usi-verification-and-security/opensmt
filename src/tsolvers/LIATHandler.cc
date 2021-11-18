@@ -3,7 +3,7 @@
 #include <liasolver/LIASolver.h>
 #include "OsmtInternalException.h"
 
-LIATHandler::LIATHandler(SMTConfig & c, LIALogic & l)
+LIATHandler::LIATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
         , logic(l)
 {

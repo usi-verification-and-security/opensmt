@@ -11,7 +11,7 @@
 #include <Real.h>
 #include <TheoryInterpolator.h>
 
-class LALogic;
+class ArithLogic;
 
 struct DecomposedStatistics {
     unsigned int decompositionOpportunities = 0;
@@ -41,7 +41,7 @@ struct DecomposedStatistics {
 
 class FarkasInterpolator {
 public:
-    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+    FarkasInterpolator(ArithLogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
                        std::map<PTRef, icolor_t> labels)
         : logic(logic),
           explanations(std::move(explanations)),
@@ -49,7 +49,7 @@ public:
           labels(std::move(labels))
     {}
 
-    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+    FarkasInterpolator(ArithLogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
                        std::map<PTRef, icolor_t> labels, std::unique_ptr<TermColorInfo> colorInfo)
         : logic(logic),
           explanations(std::move(explanations)),
@@ -58,7 +58,7 @@ public:
           termColorInfo(std::move(colorInfo))
     {}
 
-    FarkasInterpolator(LALogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
+    FarkasInterpolator(ArithLogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
                        std::unique_ptr<TermColorInfo> colorInfo)
         : logic(logic),
           explanations(std::move(explanations)),
@@ -104,7 +104,7 @@ private:
     PTRef weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system);
 
 private:
-    LALogic & logic;
+    ArithLogic & logic;
     const vec<PtAsgn> explanations;
     const std::vector<opensmt::Real> explanation_coeffs;
     const std::map<PTRef, icolor_t> labels;

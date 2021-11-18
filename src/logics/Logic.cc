@@ -1635,8 +1635,8 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
     };
 
     auto genArgNumMismatchString = [&](SymRef sym, int expectedArgs, int actualArgs) {
-        return "Symbol " + std::string(getSymName(sym)) + " expects " + std::to_string(expectedArgs) +
-        " but " + std::to_string(actualArgs) + " were provided. ";
+        return "Symbol `" + std::string(getSymName(sym)) + "` expects " + std::to_string(expectedArgs) +
+        " arguments but " + std::to_string(actualArgs) + " arguments were provided. ";
     };
 
     Symbol const & symbol = sym_store[sym];

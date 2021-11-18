@@ -29,15 +29,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolverHandler.h"
 
 class LASolver;
-class LRALogic;
+class ArithLogic;
 
 class LRATHandler : public TSolverHandler
 {
   private:
-    LRALogic& logic;
+    ArithLogic& logic;
     LASolver *lasolver;
   public:
-    LRATHandler(SMTConfig & c, LRALogic & l);
+    LRATHandler(SMTConfig & c, ArithLogic & l);
     virtual ~LRATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
