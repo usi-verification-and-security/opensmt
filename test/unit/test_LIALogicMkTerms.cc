@@ -24,22 +24,22 @@ TEST_F(LIALogicMkTermsTest, testIsNumTerm) {
     ASSERT_FALSE(logic.isNumTerm(c));
     PTRef t = logic.mkIntVar("t");
     ASSERT_TRUE(logic.isNumTerm(t));
-    PTRef e = logic.mkTimes(vec<PTRef>{logic.mkIntVar("e"), logic.mkIntConst(-114)});
+    PTRef e = logic.mkTimes(logic.mkIntVar("e"), logic.mkIntConst(-114));
     ASSERT_TRUE(logic.isNumTerm(e));
     PTRef ite = logic.mkIte(c, t, e);
     ASSERT_TRUE(logic.isNumTerm(ite));
-    PTRef ite_term = logic.mkTimes(vec<PTRef>{ite, logic.mkIntConst(14)});
+    PTRef ite_term = logic.mkTimes(ite, logic.mkIntConst(14));
     ASSERT_TRUE(logic.isNumTerm(ite_term));
 
-    PTRef sum = logic.mkPlus(vec<PTRef>{t, e});
+    PTRef sum = logic.mkPlus(t, e);
     ASSERT_FALSE(logic.isNumTerm(sum));
 }
 
 TEST_F(LIALogicMkTermsTest, testDeepLessThan) {
     PTRef a = logic.mkIntConst(3);
     PTRef b = logic.mkIntConst(-4);
-    PTRef prod2 = logic.mkTimes(vec<PTRef>{y, b});
-    PTRef prod1 = logic.mkTimes(vec<PTRef>{x, a});
+    PTRef prod2 = logic.mkTimes(y, b);
+    PTRef prod1 = logic.mkTimes(x, a);
 
     LessThan_deepPTRef lt_deep(logic);
     ASSERT_EQ(lt_deep(prod1, prod2), lt_deep(x, y));
@@ -58,7 +58,7 @@ TEST_F(LIALogicMkTermsTest, testDivMod) {
 TEST_F(LIALogicMkTermsTest, testMod_Plus) {
     PTRef two = logic.mkIntConst(2);
     PTRef mod = logic.mkMod(x,two);
-    PTRef plus = logic.mkPlus(vec<PTRef>{mod, two});
+    PTRef plus = logic.mkPlus(mod, two);
     EXPECT_EQ(logic.getSymRef(plus), logic.get_sym_Int_PLUS());
 }
 
@@ -66,7 +66,7 @@ TEST_F(LIALogicMkTermsTest, testMod_Times) {
     PTRef two = logic.mkIntConst(2);
     PTRef three = logic.mkIntConst(3);
     PTRef mod = logic.mkMod(x,two);
-    PTRef times = logic.mkTimes(vec<PTRef>{mod, three});
+    PTRef times = logic.mkTimes(mod, three);
     EXPECT_EQ(logic.getSymRef(times), logic.get_sym_Int_TIMES());
 }
 
@@ -119,10 +119,10 @@ TEST_F(LIALogicMkTermsTest, test_Inequality_Simplification)
 {
     PTRef two = logic.mkConst("2");
     ASSERT_EQ(
-            logic.mkLeq(logic.mkPlus(vec<PTRef>{x,y}), z),
+            logic.mkLeq(logic.mkPlus(x,y), z),
             logic.mkLeq(
-                    logic.mkPlus(vec<PTRef>{logic.mkTimes(vec<PTRef>{x, two}), logic.mkTimes(vec<PTRef>{y, two})}),
-                    logic.mkTimes(vec<PTRef>{z, two})
+                    logic.mkPlus(logic.mkTimes(x, two), logic.mkTimes(y, two)),
+                    logic.mkTimes(z, two)
             )
     );
 }

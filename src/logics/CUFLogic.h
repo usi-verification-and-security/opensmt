@@ -107,7 +107,7 @@ class CUFLogic: public Logic
   public:
     CUFLogic();
     ~CUFLogic();
-    virtual const char*   getName() const override { return "QF_CUF"; }
+    virtual std::string const getName() const override { return "QF_CUF"; }
     virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);

@@ -17,7 +17,8 @@ public:
 class LRAIteTest: public ::testing::Test {
 public:
     ArithLogic logic;
-    LRAIteTest() : logic{ArithLogic::ArithType::LRA} {}
+    SRef lrasort;
+    LRAIteTest() : logic{ArithLogic::ArithType::LRA}, lrasort(logic.getSort_real()) {}
 };
 
 class IteManagerTest: public ::testing::Test {
@@ -74,7 +75,6 @@ TEST_F(LogicIteTest, test_BoolIte) {
 }
 
 TEST_F(LRAIteTest, test_LRAIte) {
-    SRef lrasort = logic.getSort_real();
 
     PTRef x = logic.mkVar(lrasort, "x");
     PTRef y = logic.mkVar(lrasort, "y");
@@ -93,7 +93,7 @@ TEST_F(IteManagerTest, test_Basic) {
 
     PTRef ite = logic.mkIte(cond, x, y);
     SRef sr = logic.getSortRef(ite);
-    ASSERT_EQ(sr, logic.getSort_real());
+    ASSERT_EQ(sr, lrasort);
     PTRef eq = logic.mkEq(x, ite);
 
     IteToSwitch iteManager(logic, eq);

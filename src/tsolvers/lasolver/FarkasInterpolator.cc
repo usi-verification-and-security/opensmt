@@ -332,9 +332,8 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         auto it_ineq = ineqs.begin();
         auto it_coeff = coeffs.begin();
         bool delta_flag = false;
-        SRef itpSort = SRef_Undef;
+        SRef itpSort = logic.getSortRef(logic.getPterm(ineqs[0].explanation)[0]);
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
-            itpSort = itpSort != SRef_Undef ? itpSort : logic.getSortRef(logic.getPterm((*it_ineq).explanation)[0]);
             auto const & coeff = *it_coeff;
             if(coeff.isZero()) {continue;} // when some basis is found, some coordinates could be zero; ignore those
             auto const & ineq = *it_ineq;

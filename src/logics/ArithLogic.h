@@ -119,7 +119,7 @@ private:
 public:
     ArithLogic(ArithType arithType);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
-    const char       *getName() const override { return logicNames[static_cast<int>(arithType)].data(); }
+    std::string const getName() const override { return logicNames[static_cast<int>(arithType)]; }
     const opensmt::Logic_t getLogic() const override { return logicTypes[static_cast<int>(arithType)]; }
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;

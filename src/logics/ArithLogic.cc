@@ -169,10 +169,7 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
     if (isLinearFactor(tr)) { return true; }
     if (isPlus(tr)) {
         Pterm const& term = getPterm(tr);
-        for (PTRef tr : term) {
-            if (!isLinearFactor(tr)) { return false; }
-        }
-        return true;
+        return std::all_of(term.begin(), term.end(), [this](PTRef tr) { return isLinearFactor(tr); });
     }
     return false;
 }
@@ -349,7 +346,7 @@ PTRef ArithLogic::mkNeg(PTRef tr)
         return tr_n;
     }
     PTRef mo = yieldsSortInt(tr) ? getTerm_IntMinusOne() : getTerm_RealMinusOne();
-    return mkTimes(vec<PTRef>{mo, tr});
+    return mkTimes(mo, tr);
 }
 
 PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
@@ -733,17 +730,21 @@ PTRef ArithLogic::mkConst(char const * name) {
     bool isIntegralForm = opensmt::isIntString(name);
     bool isRealForm = opensmt::isRealString(name);
 
-    if (hasIntegers()) {
+    if (hasIntegers() and not hasReals()) {
         if (not isIntegralForm and isRealForm) {
             throw OsmtApiException("Expected integral constant");
         } else if (isIntegralForm) {
             return mkConst(sort_INT, name);
         }
-    } else if (hasReals()) {
+    } else if (hasReals() and not hasIntegers()) {
         if (isRealForm) {
             return mkConst(sort_REAL, name);
+        } else {
+            assert(not isRealForm);
+            throw OsmtApiException("Expected real constant");
         }
     } else {
+        assert(hasReals() and hasIntegers());
         // Logic has mixed arithmetic
         if (isIntegralForm) {
             return mkConst(sort_INT, name);

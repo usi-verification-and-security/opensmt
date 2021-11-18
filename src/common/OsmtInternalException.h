@@ -6,8 +6,6 @@
 #include <exception>
 #include <string>
 
-#include <string>
-
 class OsmtInternalException : public std::exception {
     std::string msg;
 public:
