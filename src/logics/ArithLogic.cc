@@ -22,7 +22,6 @@ const std::string ArithLogic::tk_int_plus  = "+";
 const std::string ArithLogic::tk_int_times = "*";
 const std::string ArithLogic::tk_int_div   = "div";
 const std::string ArithLogic::tk_int_mod   = "mod";
-const std::string ArithLogic::tk_int_abs   = "abs";
 const std::string ArithLogic::tk_int_lt    = "<";
 const std::string ArithLogic::tk_int_leq   = "<=";
 const std::string ArithLogic::tk_int_gt    = ">";
@@ -34,7 +33,6 @@ const std::string ArithLogic::tk_real_zero  = "0.0";
 const std::string ArithLogic::tk_real_one   = "1.0";
 const std::string ArithLogic::tk_real_neg   = "-";
 const std::string ArithLogic::tk_real_minus = "-";
-const std::string ArithLogic::tk_real_abs   = "abs";
 const std::string ArithLogic::tk_real_plus  = "+";
 const std::string ArithLogic::tk_real_times = "*";
 const std::string ArithLogic::tk_real_div   = "/";
@@ -65,16 +63,16 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Real_ONE(getSymRef(term_Real_ONE))
     , sym_Real_NEG(declareFun_NoScoping(tk_real_neg, sort_REAL, {sort_REAL}))
     , sym_Real_MINUS(declareFun_NoScoping_LeftAssoc(tk_real_minus, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_ABS(declareFun_NoScoping(tk_real_abs, sort_REAL, {sort_REAL}))
     , sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL}))
     , sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL}))
     , sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_REAL, sort_REAL}))
+    , sym_Real_EQ(sortToEquality[sort_REAL])
     , sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL}))
     , sym_Real_LT(declareFun_NoScoping_Chainable(tk_real_lt, sort_BOOL, {sort_REAL, sort_REAL}))
     , sym_Real_GEQ(declareFun_NoScoping_Chainable(tk_real_geq, sort_BOOL, {sort_REAL, sort_REAL}))
     , sym_Real_GT(declareFun_NoScoping_Chainable(tk_real_gt, sort_BOOL, {sort_REAL, sort_REAL}))
-    , sym_Real_ITE(declareFun(tk_ite, sort_REAL, {sort_BOOL, sort_REAL, sort_REAL}, true))
+    , sym_Real_ITE(sortToIte[sort_REAL])
+    , sym_Real_DISTINCT(sortToDisequality[sort_REAL])
 
     , sort_INT(declareSortAndCreateFunctions(s_sort_int))
     , term_Int_ZERO(mkConst(sort_INT, tk_int_zero))
@@ -84,17 +82,17 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Int_ONE(getSymRef(term_Int_ONE))
     , sym_Int_NEG(declareFun_NoScoping(tk_int_neg, sort_INT, {sort_INT}))
     , sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_ABS(declareFun_NoScoping(tk_int_abs, sort_INT, {sort_INT}))
     , sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT}))
     , sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT}))
     , sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT}))
     , sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_INT, sort_INT}))
+    , sym_Int_EQ(sortToEquality[sort_INT])
     , sym_Int_LEQ(declareFun_NoScoping_Chainable(tk_int_leq, sort_BOOL, {sort_INT, sort_INT}))
     , sym_Int_LT(declareFun_NoScoping_Chainable(tk_int_lt, sort_BOOL, {sort_INT, sort_INT}))
     , sym_Int_GEQ(declareFun_NoScoping_Chainable(tk_int_geq, sort_BOOL, {sort_INT, sort_INT}))
     , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INT, sort_INT}))
-    , sym_Int_ITE(declareFun(tk_ite, sort_INT, {sort_BOOL, sort_INT, sort_INT}, true))
+    , sym_Int_ITE(sortToIte[sort_INT])
+    , sym_Int_DISTINCT(sortToDisequality[sort_INT])
 
     , arithType(arithType)
 {

@@ -49,10 +49,7 @@ protected:
     static const std::string tk_int_plus;
     static const std::string tk_real_times;
     static const std::string tk_int_times;
-    static const std::string tk_real_ntimes;
-    static const std::string tk_int_ntimes;
     static const std::string tk_real_div;
-    static const std::string tk_real_ndiv;
     static const std::string tk_int_div;
     static const std::string tk_int_mod;
     static const std::string tk_real_leq;
@@ -63,8 +60,6 @@ protected:
     static const std::string tk_int_geq;
     static const std::string tk_real_gt;
     static const std::string tk_int_gt;
-    static const std::string tk_real_abs;
-    static const std::string tk_int_abs;
     static const std::string s_sort_real;
     static const std::string s_sort_int;
 
@@ -78,18 +73,16 @@ protected:
     SymRef              sym_Real_ONE;
     SymRef              sym_Real_NEG;
     SymRef              sym_Real_MINUS;
-    SymRef              sym_Real_ABS;
     SymRef              sym_Real_PLUS;
     SymRef              sym_Real_TIMES;
-    SymRef              sym_Real_NTIMES;
     SymRef              sym_Real_DIV;
-    SymRef              sym_Real_NDIV;
     SymRef              sym_Real_EQ;
     SymRef              sym_Real_LEQ;
     SymRef              sym_Real_LT;
     SymRef              sym_Real_GEQ;
     SymRef              sym_Real_GT;
     SymRef              sym_Real_ITE;
+    SymRef              sym_Real_DISTINCT;
 
 
     // Integers
@@ -101,20 +94,17 @@ protected:
     SymRef              sym_Int_ONE;
     SymRef              sym_Int_NEG;
     SymRef              sym_Int_MINUS;
-    SymRef              sym_Int_ABS;
     SymRef              sym_Int_PLUS;
     SymRef              sym_Int_TIMES;
-    SymRef              sym_Int_NTIMES;
     SymRef              sym_Int_DIV;
-    SymRef              sym_Int_NDIV;
     SymRef              sym_Int_MOD;
-    SymRef              sym_Int_NMOD;
     SymRef              sym_Int_EQ;
     SymRef              sym_Int_LEQ;
     SymRef              sym_Int_LT;
     SymRef              sym_Int_GEQ;
     SymRef              sym_Int_GT;
     SymRef              sym_Int_ITE;
+    SymRef              sym_Int_DISTINCT;
 
 public:
     enum class ArithType {
@@ -178,13 +168,9 @@ public:
 
     SymRef get_sym_Int_TIMES () const { return sym_Int_TIMES; }
     SymRef get_sym_Real_TIMES () const { return sym_Real_TIMES; }
-    SymRef get_sym_Int_NTIMES () const { return sym_Int_NTIMES; }
-    SymRef get_sym_Real_NTIMES () const { return sym_Real_NTIMES; }
     SymRef get_sym_Int_DIV () const { return sym_Int_DIV; }
     SymRef get_sym_Int_MOD () const { return sym_Int_MOD; }
-    SymRef get_sym_Int_NDIV () const { return sym_Int_NDIV; }
     SymRef get_sym_Real_DIV () const { return sym_Real_DIV; }
-    SymRef get_sym_Real_NDIV () const { return sym_Real_NDIV; }
     SymRef get_sym_Int_MINUS () const { return sym_Int_MINUS; }
     SymRef get_sym_Real_MINUS () const { return sym_Real_MINUS; }
     SymRef get_sym_Real_PLUS () const {return sym_Real_PLUS; }
@@ -207,8 +193,6 @@ public:
     SymRef get_Sym_Real_ONE() const { return sym_Real_ONE; }
     SymRef get_sym_Int_ITE() const { return sym_Int_ITE;}
     SymRef get_sym_Real_ITE() const { return sym_Real_ITE; }
-    SymRef get_sym_Int_ABS() const { return sym_Int_ABS; }
-    SymRef get_sym_Real_ABS() const { return sym_Real_ABS; }
 
     bool hasIntegers() const;
     bool hasReals() const;
