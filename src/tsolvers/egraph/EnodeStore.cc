@@ -77,7 +77,9 @@ ERef EnodeStore::addTerm(PTRef term) {
     ERef newEnode = ea.alloc(symref, opensmt::span(args.begin(), args.size_()) , term);
     // Term's signature must not exist.  Otherwise the term would have two different signatures.
     assert(not containsSig(newEnode));
-    insertSig(newEnode);
+    if (args.size() > 0) { // MB: No need to insert signatures of terms who cannot be parents
+        insertSig(newEnode);
+    }
     termToERef.insert(term, newEnode);
     assert(not ERefToTerm.has(newEnode));
     ERefToTerm.insert(newEnode, term);
