@@ -1,0 +1,8 @@
+(set-logic QF_UF)
+(declare-sort U 1)
+(declare-sort V 0)
+(declare-sort W 0)
+(declare-fun a () (U V))
+(declare-fun b () (U W))
+(assert (= a b))
+(check-sat)

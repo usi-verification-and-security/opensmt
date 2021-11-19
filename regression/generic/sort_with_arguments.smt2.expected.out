@@ -1,0 +1,5 @@
+(error "No such symbol =: Unknown symbol `='")
+
+(error "assertion returns an unknown sort")
+
+sat
