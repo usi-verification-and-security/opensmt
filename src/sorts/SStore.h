@@ -35,17 +35,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 #include <iosfwd>
 
-struct SortKey {
-    SSymRef sym;
-    vec<SRef> args;
-    friend bool operator== (const SortKey& k1, const SortKey& k2) {
-        if (k1.sym != k2.sym) return false;
-        if (k1.args.size() != k2.args.size()) return false;
-        for (int i = 0; i < k1.args.size(); i++)
-            if (k1.args[i] != k2.args[i]) return false;
-        return true;
-    }
-};
 
 struct SortHash {
     uint32_t operator() (const SortKey& s) const {
@@ -79,7 +68,7 @@ class SStore
     Sort const & operator [](SRef sr)               const { return sa[sr]; }
     SortSymbol const & operator [](SSymRef sr)      const { return ssa[sr]; }
 
-    opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> const & rest);
+    opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
     std::string const & getName (SRef sr) const { return ssa[sa[sr].getSymRef()].name; }
     int  getSize(SRef sr) const { return sa[sr].getSize(); }
     const vec<SRef>& getSorts() const { return sorts; }
