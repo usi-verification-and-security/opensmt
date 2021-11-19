@@ -123,7 +123,7 @@ public:
 
 class SortAllocator : public RegionAllocator<uint32_t>
 {
-    static sortid_t static_uniq_id;
+    sortid_t static_uniq_id = 0;
     static int SortWord32Size(int size) {
         return (sizeof(Sort) + size) / sizeof(uint32_t); }
   public:

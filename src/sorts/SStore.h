@@ -48,10 +48,10 @@ struct SortKey {
 };
 
 struct SortHash {
-    uint32_t operator () (const SortKey& s) const {
-        uint32_t v = (uint32_t)s.sym.x;
-        for (int i = 0; i < s.args.size(); i++) {
-            v += (uint32_t)s.args[i].x;
+    uint32_t operator() (const SortKey& s) const {
+        auto v = (uint32_t)s.sym.x;
+        for (SRef arg : s.args) {
+            v += (uint32_t)arg.x;
         }
         return v;
     }
