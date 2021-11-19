@@ -64,7 +64,7 @@ const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 
 CUFLogic::CUFLogic() :
       Logic()
-    , sort_CUFNUM(declareSortAndCreateFunctions(s_sort_cufnum))
+    , sort_CUFNUM(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_cufnum, 0, SortSymbol::INTERNAL)), {}))
     , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
     , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))
     , sym_CUF_ZERO(getSymRef(term_CUF_ZERO))
@@ -97,7 +97,7 @@ CUFLogic::CUFLogic() :
     , sym_CUF_PTR(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
     , sym_CUF_ITE(sortToIte[sort_CUFNUM])
     , sym_CUF_DISTINCT(sortToDisequality[sort_CUFNUM])
-{}
+{ }
 
 CUFLogic::~CUFLogic()
 {}

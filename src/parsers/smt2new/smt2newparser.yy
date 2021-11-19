@@ -313,12 +313,13 @@ identifier: TK_SYM
     ;
 
 sort: identifier
-      { $$ = new ASTNode(ID_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
+      { $$ = $1; }
     | '(' identifier sort sort_list ')'
       {
         $$ = new ASTNode(LID_T, NULL);
         $$->children = $4;
         $$->children->insert($$->children->begin(), $3);
+        $$->children->insert($$->children->begin(), $2);
       }
     ;
 

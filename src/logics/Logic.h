@@ -94,9 +94,6 @@ class Logic {
     vec<bool>           interpreted_functions;
 
 
-
-
-    IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
@@ -162,24 +159,19 @@ class Logic {
     virtual std::string const getName() const { return "QF_UF"; }
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
-    // Identifiers
-    IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }
-    IdRef       newIdentifier (const char* name, vec<int>& nl);//{ return id_store.newIdentifier(name, nl); }
-    // Fetching sorts
-    bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
-    SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
   public:
-    SRef        getSortRef    (const char* name)      const;// { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
-    SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
-    Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
+    SRef                getSortRef (PTRef tr)  const;
+    SRef                getSortRef (SymRef sr) const;
+    std::string const & getSortName(SRef s)    const;
+    std::size_t         getSortSize(SRef s)    const;
+    SRef declareUninterpretedSort(std::string const &);
+
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
@@ -238,6 +230,9 @@ class Logic {
     PTRef       mkEq          (PTRef a1, PTRef a2) { return mkBinaryEq(a1, a2); }
 protected:
     virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
+    bool isInternalSort(SRef) const;
+    void newUninterpretedSortHandler(SRef);
+
 public:
 
     // General disequalities
@@ -268,9 +263,12 @@ public:
     SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
 
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSortAndCreateFunctions(std::string const & id);
-    SRef        declareUninterpretedSort   (char const * id);
-    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
+    void        instantiateFunctions(SRef);
+
+    bool        hasSortSymbol(SortSymbol const &);
+    bool        peekSortSymbol(SortSymbol const &, SSymRef&);
+    SSymRef     declareSortSymbol(SortSymbol symbol);
+    SRef        getSort(SSymRef, vec<SRef> const & args);
 
     PTRef       mkBoolVar     (const char* name);
 

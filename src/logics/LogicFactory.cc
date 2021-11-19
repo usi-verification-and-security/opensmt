@@ -22,6 +22,7 @@ opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
     if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
+    if (name == "QF_AX") return opensmt::Logic_t::QF_AX;
     return opensmt::Logic_t::UNDEF;
 }
 
@@ -59,6 +60,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
         }
         case Logic_t::QF_UF:
         case Logic_t::QF_BOOL:
+        case Logic_t::QF_AX:
         {
             l = new Logic();
             break;

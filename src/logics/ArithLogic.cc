@@ -55,7 +55,7 @@ const vec<opensmt::Logic_t> ArithLogic::logicTypes(
 ArithLogic::ArithLogic(ArithType arithType)
     : Logic()
 
-    , sort_REAL(declareSortAndCreateFunctions(s_sort_real))
+    , sort_REAL(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_real, 0, SortSymbol::INTERNAL)), {}))
     , term_Real_ZERO(mkConst(sort_REAL, tk_real_zero.c_str()))
     , term_Real_ONE(mkConst(sort_REAL, tk_real_one.c_str()))
     , term_Real_MINUSONE(mkConst(sort_REAL, tk_real_minus + tk_real_one))
@@ -74,7 +74,7 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Real_ITE(sortToIte[sort_REAL])
     , sym_Real_DISTINCT(sortToDisequality[sort_REAL])
 
-    , sort_INT(declareSortAndCreateFunctions(s_sort_int))
+    , sort_INT(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_int, 0, SortSymbol::INTERNAL)), {}))
     , term_Int_ZERO(mkConst(sort_INT, tk_int_zero))
     , term_Int_ONE(mkConst(sort_INT, tk_int_one.c_str()))
     , term_Int_MINUSONE(mkConst(sort_INT, tk_int_minus + tk_int_one))

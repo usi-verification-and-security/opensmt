@@ -29,54 +29,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
-
-
-SRef SStore::newSort(IdRef id, const char* name_, vec<SRef>& rest)
-{
-    if (sortTable.has(name_))
-        return sortTable[name_];
-    else {
-        char* name = strdup(name_);
-        SStrRef nr = ssa.alloc(name);
-        SRef sr = sa.alloc(id, nr, rest);
-        sorts.push(sr);
-        sortTable.insert(name, sr);
-        sort_names.push(name);
-        return sr;
+bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) {
+    auto it = this->sortSymbolTable.find(symbol.name);
+    if (it != sortSymbolTable.end()) {
+        outRef = it->second;
+        return true;
     }
+    return false;
 }
-SRef SStore::newSort(IdRef idr, vec<SRef> const & rest)
+
+SSymRef SStore::newSortSymbol(SortSymbol symbol) {
+    SSymRef res;
+    assert(not peek(symbol, res));
+    res = ssa.alloc(symbol);
+    sortSymbolTable.insert({std::move(symbol.name), res});
+    return res;
+}
+
+opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> const & rest)
 {
-    SRef sr = SRef_Undef;
-    std::string canon_name;
-    if (rest.size() > 0) {
-        std::stringstream ss;
-        ss << is.getName(idr);
-        ss << " (";
-        ss << getName(rest[0]);
-        for (int i = 1; i < rest.size(); i++) {
-            ss << ' ';
-            ss << getName(rest[i]);
-        }
-        ss << ')';
-        canon_name = ss.str();
-    } else {
-        canon_name = is.getName(idr);
+    SortKey key;
+    key.sym = symbolRef;
+    rest.copyTo(key.args);
+    auto it = sortTable.find(key);
+    if (it != sortTable.end()) {
+        return {it->second, false};
     }
 
-    const char* c_canon_name = canon_name.c_str();
-    if (sortTable.has(c_canon_name)) {
-        SRef sr = sortTable[c_canon_name];
-        return sr;
-    } else {
-        char* new_name = strdup(c_canon_name);
-        SStrRef nr = ssa.alloc(new_name);
-        sr = sa.alloc(idr, nr, rest);
-        sorts.push(sr);
-        sortTable.insert(new_name, sr);
-        sort_names.push(new_name);
-        return sr;
-    }
+    SRef sr = sa.alloc(symbolRef, rest);
+    sorts.push(sr);
+    auto emplaceRes = sortTable.emplace(std::move(key), sr);
+    assert(emplaceRes.second); (void)emplaceRes;
+    return {sr, true};
 }
 
 void
@@ -84,6 +68,6 @@ SStore::dumpSortsToFile ( std::ostream & dump_out )
 {
     for(int i = 1; i < sorts.size(); ++i)
 	{
-		dump_out << "(declare-sort " << getName(sorts[i]) << " 0)" << std::endl;
+		dump_out << "(declare-sort " << getName(sorts[i]) << " " << getSize(sorts[i]) << std::endl;
 	}
 }
