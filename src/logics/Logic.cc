@@ -1305,17 +1305,13 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out) const
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-    const vec<SRef>& sorts = sort_store.getSorts();
-    for (int i = 0; i < sorts.size(); i++)
-    {
-        if (isBuiltinSort(sorts[i])) continue;
-        dump_out << "(declare-sort " << getSortName(sorts[i]) << " 0)" << endl;
+    for (SRef sr : sort_store.getSorts()) {
+        if (isBuiltinSort(sr)) continue;
+        dump_out << "(declare-sort " << getSortName(sr) << " " << getSortSize(sr) << ")" << endl;
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
-    for (int i = 0; i < symbols.size(); ++i)
-    {
-        SymRef s = symbols[i];
+    for (SymRef s : symbols) {
         if (s == getSym_true() || s == getSym_false() || s == getSym_anon())
             continue;
         if (isConstant(s)) {
@@ -1330,11 +1326,10 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         char* sym = printSym(s);
         dump_out << sym << " ";
         free(sym);
-        const Symbol& symb = sym_store[s];
+        Symbol const & symb = sym_store[s];
         dump_out << "(";
-        for(unsigned int j = 0; j < symb.nargs(); ++j)
-        {
-            dump_out << getSortName(symb[j]) << " ";
+        for (SRef sr : symb) {
+            dump_out << getSortName(sr) << " ";
         }
         dump_out << ") " << getSortName(symb.rsort()) << ")" << endl;
     }
@@ -1442,9 +1437,9 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     dump_out << "(define-fun " << quoted_name << " ( ";
     free(quoted_name);
     const vec<PTRef>& args = tpl_fun.getArgs();
-    for (int i = 0; i < args.size(); ++i) {
-        char* arg_name = printTerm(args[i]);
-        dump_out << '(' << arg_name << ' ' <<  getSortName(getSortRef(args[i])) << ") ";
+    for (PTRef arg : args) {
+        char* arg_name = printTerm(arg);
+        dump_out << '(' << arg_name << ' ' <<  getSortName(getSortRef(arg)) << ") ";
         free(arg_name);
     }
     dump_out << ") " << getSortName(tpl_fun.getRetSort());
@@ -1526,6 +1521,7 @@ SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortR
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 
 std::string const & Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
+size_t Logic::getSortSize(const SRef s) const { return sort_store.getSize(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
     SRef res = SRef_Undef;

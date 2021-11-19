@@ -81,6 +81,7 @@ class SStore
 
     opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> const & rest);
     std::string const & getName (SRef sr) const { return ssa[sa[sr].getSymRef()].name; }
+    int  getSize(SRef sr) const { return sa[sr].getSize(); }
     const vec<SRef>& getSorts() const { return sorts; }
     int     numSorts() const { return sorts.size(); }
     void dumpSortsToFile(std::ostream&);

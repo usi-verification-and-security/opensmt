@@ -166,9 +166,10 @@ class Logic {
     void        markConstant  (SymId sid);
 
   public:
-    SRef        getSortRef    (const PTRef tr)        const;
-    SRef        getSortRef    (const SymRef sr)       const;
-    std::string const & getSortName(const SRef s) const;
+    SRef                getSortRef (PTRef tr)  const;
+    SRef                getSortRef (SymRef sr) const;
+    std::string const & getSortName(SRef s)    const;
+    std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
 
     SRef        getUniqueArgSort(SymRef sr)           const;
