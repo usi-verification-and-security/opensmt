@@ -58,6 +58,7 @@ class EnodeStore {
         SignatureEqual(EnodeAllocator const & ea) : ea{ea} {}
 
         bool operator()(ERef a, ERef b) const {
+            if (a == b) { return true; }
             Enode const & anode = ea[a];
             Enode const & bnode = ea[b];
             if (anode.getSize() != bnode.getSize() or anode.getSymbol() != bnode.getSymbol()) { return false; }
