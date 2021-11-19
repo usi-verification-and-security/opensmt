@@ -103,7 +103,7 @@ class BVLogic: public CUFLogic
     BVLogic(int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
-    virtual const char*   getName() const override { return "QF_BV"; }
+    virtual std::string const getName() const override { return "QF_BV"; }
     virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);

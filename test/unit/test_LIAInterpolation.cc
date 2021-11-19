@@ -3,23 +3,23 @@
 //
 
 #include <gtest/gtest.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 #include <VerificationUtils.h>
 #include <LIAInterpolator.h>
 #include <MainSolver.h>
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
-    LIAInterpolationTest(): logic{} {}
+    LIAInterpolationTest(): logic{ArithLogic::ArithType::LIA} {}
     virtual void SetUp() {
-        x = logic.mkNumVar("x");
-        y = logic.mkNumVar("y");
-        x1 = logic.mkNumVar("x1");
-        x2 = logic.mkNumVar("x2");
-        x3 = logic.mkNumVar("x3");
-        x4 = logic.mkNumVar("x4");
+        x = logic.mkIntVar("x");
+        y = logic.mkIntVar("y");
+        x1 = logic.mkIntVar("x1");
+        x2 = logic.mkIntVar("x2");
+        x3 = logic.mkIntVar("x3");
+        x4 = logic.mkIntVar("x4");
     }
-    LIALogic logic;
+    ArithLogic logic;
     SMTConfig config;
     PTRef x, y, x1, x2, x3, x4;
 
@@ -34,10 +34,10 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
      *
      * B    x < 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
-    PTRef leq1 = logic.mkNumGt(x, zero);
-    PTRef leq2 = logic.mkNumLt(x, one);
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
+    PTRef leq1 = logic.mkGt(x, zero);
+    PTRef leq2 = logic.mkLt(x, one);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_B}};
@@ -63,15 +63,15 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
      *      -x4 - x2 >= 0
      *      x4 >= 0
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef minusOne = logic.getTerm_NumMinusOne();
-    PTRef leq1 = logic.mkNumGt(x1, minusOne);
-    PTRef leq2 = logic.mkNumGt(logic.mkNumMinus(x2,x1), minusOne);
-    PTRef leq3 = logic.mkNumGt(logic.mkNumNeg(logic.mkNumPlus(x3,x1)), minusOne);
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef minusOne = logic.getTerm_IntMinusOne();
+    PTRef leq1 = logic.mkGt(x1, minusOne);
+    PTRef leq2 = logic.mkGt(logic.mkMinus(x2,x1), minusOne);
+    PTRef leq3 = logic.mkGt(logic.mkNeg(logic.mkPlus(x3,x1)), minusOne);
 
-    PTRef leq4 = logic.mkNumGt(logic.mkNumMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkNumGeq(logic.mkNumNeg(logic.mkNumPlus(x4,x2)), zero);
-    PTRef leq6 = logic.mkNumGeq(x4, zero);
+    PTRef leq4 = logic.mkGt(logic.mkMinus(x3,x4), zero);
+    PTRef leq5 = logic.mkGeq(logic.mkNeg(logic.mkPlus(vec<PTRef>{x4,x2})), zero);
+    PTRef leq6 = logic.mkGeq(x4, zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False),
                           PtAsgn(logic.mkNot(leq3), l_False),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
@@ -95,14 +95,14 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
      * B:
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+    PTRef leq1 = logic.mkGeq(logic.mkMinus(logic.mkTimes(three, y), logic.mkTimes(two, x)), zero);
+    PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(two, x), y), two);
 
-    PTRef leq3 = logic.mkNumLeq(y, one);
+    PTRef leq3 = logic.mkLeq(y, one);
 
     const char* msg = "ok";
     config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -129,14 +129,14 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
      * A:
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
+    PTRef leq1 = logic.mkGeq(logic.mkMinus(logic.mkTimes(three, y), logic.mkTimes(two, x)), zero);
+    PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(two, x), y), two);
 
-    PTRef leq3 = logic.mkNumLeq(y, one);
+    PTRef leq3 = logic.mkLeq(y, one);
 
     const char* msg = "ok";
     config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -164,13 +164,13 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
      *      2x - y >= 2
      *      y <= 1
      */
-    PTRef zero = logic.getTerm_NumZero();
-    PTRef one = logic.getTerm_NumOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef one = logic.getTerm_IntOne();
     PTRef two = logic.mkConst("2");
     PTRef three = logic.mkConst("3");
-    PTRef leq1 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(three, y), logic.mkNumTimes(two, x)), zero);
-    PTRef leq2 = logic.mkNumGeq(logic.mkNumMinus(logic.mkNumTimes(two, x), y), two);
-    PTRef leq3 = logic.mkNumLeq(y, one);
+    PTRef leq1 = logic.mkGeq(logic.mkMinus(logic.mkTimes(three, y), logic.mkTimes(two, x)), zero);
+    PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(two, x), y), two);
+    PTRef leq3 = logic.mkLeq(y, one);
 
     const char* msg = "ok";
     config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);

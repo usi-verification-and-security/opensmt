@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include <exception>
 #include <string>
 
 class OsmtInternalException : public std::exception {

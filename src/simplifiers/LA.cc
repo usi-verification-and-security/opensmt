@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 
 void LAExpression::initialize(PTRef e, bool do_canonize) {
-    assert(logic.isNumEq(e) || logic.isNumLeq(e));
+    assert(logic.isNumEq(e) || logic.isLeq(e));
 
     PTRef lhs = logic.getPterm(e)[0];
     PTRef rhs = logic.getPterm(e)[1];
@@ -45,13 +45,13 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
         // Only 3 cases are allowed
         //
         // If it is plus, enqueue the arguments with same constant
-        if (logic.isNumPlus(t)) {
+        if (logic.isPlus(t)) {
             const Pterm & term = logic.getPterm(t);
             for (PTRef arg : term) {
                 curr_term.emplace_back(arg);
                 curr_const.emplace_back(c);
             }
-        } else if (logic.isNumTimes(t)) {
+        } else if (logic.isTimes(t)) {
             // If it is times, then one side must be constant, other
             // is enqueued with a new constant
             const Pterm & term = logic.getPterm(t);
@@ -96,7 +96,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
     }
 }
 
-PTRef LAExpression::toPTRef() const {
+PTRef LAExpression::toPTRef(SRef sort) const {
     assert(polynome.find(PTRef_Undef) != polynome.end());
     assert(not polynome.empty());
     //
@@ -108,29 +108,28 @@ PTRef LAExpression::toPTRef() const {
         if (var == PTRef_Undef) {
             constant = factor;
         } else {
-            PTRef coeff = logic.mkConst(factor);
-            PTRef vv = var;
-            sum_list.push(logic.mkNumTimes(coeff, vv));
+            PTRef coeff = logic.mkConst(sort, factor);
+            sum_list.push(logic.mkTimes(coeff, var));
         }
     }
     if (sum_list.size() == 0) {
-        sum_list.push(logic.getTerm_NumZero());
+        sum_list.push(logic.getZeroForSort(sort));
     }
     // Return in the form ax + by + ... = -c
     if (r == OP::EQ || r == OP::LEQ) {
-        PTRef poly = logic.mkNumPlus(sum_list);
+        PTRef poly = logic.mkPlus(sum_list);
         constant.negate();
-        PTRef c = logic.mkConst(constant);
+        PTRef c = logic.mkConst(sort, constant);
         if (r == OP::EQ) {
             return logic.mkEq(poly, c);
         } else {
-            return logic.mkNumLeq(poly, c);
+            return logic.mkLeq(poly, c);
         }
     }
     // Return in the form ax + by + ... + c
     assert(r == OP::UNDEF);
-    sum_list.push(logic.mkConst(constant));
-    PTRef poly = logic.mkNumPlus(sum_list);
+    sum_list.push(logic.mkConst(sort, constant));
+    PTRef poly = logic.mkPlus(sum_list);
     return poly;
 }
 
@@ -171,21 +170,24 @@ opensmt::pair<PTRef, PTRef> LAExpression::getSubst() {
     vec<PTRef> sum_list;
     opensmt::Real constant = 0;
     PTRef var = PTRef_Undef;
+    SRef polySort = SRef_Undef;
     for (auto const & [v, factor] : polynome) {
         if (v == PTRef_Undef) {
             constant = - factor;
         } else {
+            polySort = polySort != SRef_Undef ? polySort : logic.getSortRef(v);
             if (var == PTRef_Undef) {
                 var = v;
                 assert(factor == 1);
             } else {
-                PTRef c =  logic.mkConst(- factor);
-                sum_list.push(logic.mkNumTimes(c, v));
+                PTRef c =  logic.mkConst(polySort, - factor);
+                sum_list.push(logic.mkTimes(c, v));
             }
         }
     }
-    sum_list.push(logic.mkConst(constant));
-    PTRef poly = logic.mkNumPlus(sum_list);
+    assert(polySort != SRef_Undef);
+    sum_list.push(logic.mkConst(polySort, constant));
+    PTRef poly = logic.mkPlus(sum_list);
     return {var, poly};
 }
 

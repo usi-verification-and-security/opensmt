@@ -4,8 +4,7 @@
 #include "SMTConfig.h"
 #include "MainSolver.h"
 #include "Logic.h"
-#include "LRALogic.h"
-#include "LIALogic.h"
+#include "ArithLogic.h"
 
 #include <memory>
 
@@ -43,13 +42,13 @@ public:
 
     SMTConfig& getConfig() { return *config; }
     Logic& getLogic() { return *logic; }
-    LRALogic& getLRALogic()
+    ArithLogic& getLRALogic()
     {
-        return dynamic_cast<LRALogic&>(*logic);
+        return dynamic_cast<ArithLogic&>(*logic);
     }
-    LIALogic& getLIALogic()
+    ArithLogic& getLIALogic()
     {
-        return dynamic_cast<LIALogic&>(*logic);
+        return dynamic_cast<ArithLogic&>(*logic);
     }
     CUFLogic& getCUFLogic() {
         return dynamic_cast<CUFLogic&>(*logic);

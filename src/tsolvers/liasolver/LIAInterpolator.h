@@ -12,7 +12,7 @@ struct LAExplanations {
     std::vector<opensmt::Real> coeffs;
     std::map<PTRef, icolor_t> labels;
 
-    static LAExplanations getLIAExplanation(LALogic & logic, vec<PtAsgn> const & explanations,
+    static LAExplanations getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                              std::vector<opensmt::Real> const & coeffs,
                                              std::map<PTRef, icolor_t> const & labels);
 };
@@ -22,7 +22,7 @@ class LIAInterpolator {
     FarkasInterpolator farkasInterpolator;
 
 public:
-    LIAInterpolator(LALogic & logic, LAExplanations liaExplanations);
+    LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations);
 
     PTRef getFarkasInterpolant() { return farkasInterpolator.getFarkasInterpolant(); }
     PTRef getDualFarkasInterpolant() { return farkasInterpolator.getDualFarkasInterpolant(); }

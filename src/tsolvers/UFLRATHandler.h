@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define UFLRATHandler_H
 
 #include "LRATHandler.h"
+#include "ArithLogic.h"
 
 class Egraph;
 class LASolver;
@@ -34,11 +35,11 @@ class LASolver;
 class UFLRATHandler : public LRATHandler
 {
   private:
-    LRALogic      &logic;
+    ArithLogic      &logic;
     LASolver      *lasolver;
     Egraph        *ufsolver;
   public:
-    UFLRATHandler(SMTConfig & c, LRALogic & l);
+    UFLRATHandler(SMTConfig & c, ArithLogic & l);
     virtual ~UFLRATHandler();
     virtual Logic& getLogic();
 

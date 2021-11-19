@@ -3,11 +3,11 @@
 //
 
 #include "LIAInterpolator.h"
-#include "LALogic.h"
+#include "ArithLogic.h"
 
 #include <memory>
 
-LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> const & explanations,
+LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                                   std::vector<opensmt::Real> const & coeffs,
                                                   std::map<PTRef, icolor_t> const & labels) {
     LAExplanations liaExplanations;
@@ -18,7 +18,7 @@ LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> co
     for (auto explEntry : explanations) {
         PTRef positiveInequality = explEntry.tr;
         lbool sign = explEntry.sgn;
-        assert(logic.isNumLeq(positiveInequality));
+        assert(logic.isLeq(positiveInequality));
         assert(sign == l_True or sign == l_False);
         PTRef boundVal = logic.getConstantFromLeq(positiveInequality);
         PTRef boundedTerm = logic.getTermFromLeq(positiveInequality);
@@ -31,8 +31,8 @@ LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> co
             // 'not (c <= term)' => 'c > term' => 'term < c' => 'term <= c-1' => -(c-1) <= -term
             auto newBoundValue = (logic.getNumConst(boundVal) - 1);
             newBoundValue.negate();
-            PTRef nInequality = logic.mkNumLeq(logic.mkConst(newBoundValue), logic.mkNumNeg(boundedTerm));
-            assert(logic.getTermFromLeq(nInequality) == logic.mkNumNeg(boundedTerm));
+            PTRef nInequality = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
+            assert(logic.getTermFromLeq(nInequality) == logic.mkNeg(boundedTerm));
             liaExplanations.explanations.push(PtAsgn(nInequality, l_True));
         }
         // Ensure the strengthened inequality has correct partition information
@@ -47,6 +47,6 @@ LAExplanations LAExplanations::getLIAExplanation(LALogic & logic, vec<PtAsgn> co
     return liaExplanations;
 }
 
-LIAInterpolator::LIAInterpolator(LALogic & logic, LAExplanations liaExplanations)
+LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
     : farkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs), std::move(liaExplanations.labels))
     { }
