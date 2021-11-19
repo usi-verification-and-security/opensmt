@@ -26,6 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef APITOKENS_H
 #define APITOKENS_H
+
+#include <string>
+#include <unordered_map>
+
 //
 // The names for the tokens in the API for smtlib
 //
@@ -68,6 +72,8 @@ enum token {
     t_let,
     t_echo
 };
+
+extern std::unordered_map<token,std::string> tokenToName;
 
 struct smt2token
 {

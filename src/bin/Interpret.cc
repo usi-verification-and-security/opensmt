@@ -361,7 +361,7 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             default: {
-                notify_formatted(true, "Unknown command encountered!");
+                notify_formatted(true, "Unknown command encountered: %s", tokenToName.at(cmd.x).c_str());
             }
         }
     } catch (OsmtApiException const &e) {

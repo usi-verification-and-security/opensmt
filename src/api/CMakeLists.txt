@@ -21,6 +21,7 @@ add_library(api OBJECT "")
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
