@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 
 bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) {
-    auto it = this->sortSymbolTable.find(symbol);
+    auto it = this->sortSymbolTable.find(symbol.name);
     if (it != sortSymbolTable.end()) {
         outRef = it->second;
         return true;
@@ -42,7 +42,7 @@ SSymRef SStore::newSortSymbol(SortSymbol symbol) {
     SSymRef res;
     assert(not peek(symbol, res));
     res = ssa.alloc(symbol);
-    sortSymbolTable.insert({std::move(symbol), res});
+    sortSymbolTable.insert({std::move(symbol.name), res});
     return res;
 }
 

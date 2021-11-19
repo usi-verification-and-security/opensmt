@@ -63,7 +63,7 @@ class SStore
     SortAllocator sa {512};
     SortSymbolAllocator ssa {512};
     std::unordered_map<SortKey, SRef, SortHash> sortTable;
-    std::unordered_map<SortSymbol, SSymRef, SortSymbolHash> sortSymbolTable;
+    std::unordered_map<std::string, SSymRef> sortSymbolTable;
     vec<SRef> sorts;
   public:
 

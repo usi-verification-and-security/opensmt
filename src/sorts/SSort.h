@@ -59,17 +59,6 @@ struct SortSymbol {
     bool isInternal() const { return (flags & INTERNAL) != 0; };
 };
 
-inline bool operator==(SortSymbol const & first, SortSymbol const & second) {
-    if (first.arity != second.arity or first.name.size() != second.name.size()) { return false; }
-    return first.name == second.name;
-}
-
-struct SortSymbolHash {
-    std::size_t operator()(SortSymbol const & symbol) const {
-        return std::hash<std::string>()(symbol.name) + symbol.arity;
-    }
-};
-
 struct SRef {
     uint32_t x;
     SRef & operator= (uint32_t v) { x = v; return *this; }
