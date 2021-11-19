@@ -836,7 +836,6 @@ public:
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
 
-  bool         theory_propagation;           // Enables theory propagation
   // SAT-Solver related parameters
   int          sat_polarity_mode;            // Polarity mode
   int          sat_theory_polarity_suggestion;  // Should the SAT solver ask the theory solver for var polarity when making a decision

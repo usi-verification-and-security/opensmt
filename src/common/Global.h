@@ -86,232 +86,6 @@ using std::ifstream;
 namespace opensmt {
 
 
-    typedef mpz_class Integer; //PS. related to BV logic
-
-    void static inline wordToBinary(const opensmt::Integer x, char *&bin, const int width) {
-        bin = (char *) malloc(width + 1);
-
-        int p = 0;
-        opensmt::Integer one = 1;
-        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
-            bin[p++] = ((x & i) == i) ? '1' : '0';
-        bin[p] = '\0';
-    }
-
-    void static inline wordToBinary(const unsigned x, char *&bin, const int width) {
-        bin = (char *) malloc(width + 1);
-
-        int p = 0;
-        opensmt::Integer one = 1;
-        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
-            bin[p++] = ((x & i) == i) ? '1' : '0';
-        bin[p] = '\0';
-    }
-
-
-    bool static inline isDigit(char c) {
-        return (c >= '0' && c <= '9');
-    }
-
-    bool static inline isPosDig(char c) {
-        return (c > '0' && c <= '9');
-    }
-
-    void static inline normalize(char *&rat, const char *flo, bool is_neg) {
-        mpq_t num;
-        mpq_init(num);
-        int val = mpq_set_str(num, flo, 0);
-        (void) val;
-        assert(val != -1);
-        mpq_canonicalize(num);
-        if (is_neg)
-            mpq_neg(num, num);
-        gmp_asprintf(&rat, "%Qd", num);
-        mpq_clear(num);
-    }
-
-    static inline bool isPowOfTwo(int b) {
-        return b && !(b & (b - 1));
-    }
-
-    static inline int getLogFromPowOfTwo(int l) {
-        assert(isPowOfTwo(l));
-        if (l == 1) return 0;
-        int n = 0;
-        while ((2 << (n++)) != l);
-        return n;
-    }
-
-    class strConvException : std::exception {
-        char *reason;
-    public:
-        strConvException(const char *reason_) {
-            int res = asprintf(&reason, "Error converting string to rational.  %s is not a legal rational", reason_);
-            assert(res >= 0);
-            (void) res;
-        }
-
-        virtual const char *what() const noexcept {
-            return reason;
-        }
-
-        ~strConvException() { free(reason); }
-    };
-
-
-    bool static inline stringToRational(char *&rat, const char *flo) {
-        int nom_l = 0;
-        int den_l = 1;
-        int state = 0;
-        int zeroes = 0;
-        bool is_frac = false;
-        bool is_neg = false;
-
-        if (flo[0] == '-') {
-            flo++;
-            is_neg = true;
-        }
-
-        for (int i = 0; flo[i] != '\0'; i++) {
-            if (state == 0 && flo[i] == '0') {}
-            else if (state == 0 && isPosDig(flo[i])) {
-                nom_l++;
-                state = 1;
-            }
-            else if (state == 0 && flo[i] == '.') { state = 4; }
-            else if (state == 0 && flo[i] == '/') {
-                state = 5;
-                is_frac = true;
-            }
-            else if (state == 1 && isDigit(flo[i])) {
-                nom_l++;
-                state = 1;
-            }
-            else if (state == 1 && flo[i] == '.') { state = 2; }
-            else if (state == 1 && flo[i] == '/') {
-                state = 5;
-                is_frac = true;
-            }
-            else if (state == 2 && flo[i] == '0') {
-                zeroes++;
-                state = 3;
-            }
-            else if (state == 2 && isPosDig(flo[i])) {
-                nom_l++;
-                state = 2;
-            }
-            else if (state == 3 && flo[i] == '0') {
-                zeroes++;
-                state = 3;
-            }
-            else if (state == 3 && isPosDig(flo[i])) {
-                nom_l += zeroes + 1;
-                zeroes = 0;
-                state = 2;
-            }
-            else if (state == 4 && flo[i] == '0') { state = 4; }
-            else if (state == 4 && isPosDig(flo[i])) {
-                nom_l++;
-                state = 2;
-            }
-                // We come here if it is a fraction already
-            else if (state == 5 && isDigit(flo[i])) { state = 5; }
-            else { throw strConvException(flo); }
-        }
-
-        if (is_frac) {
-            normalize(rat, flo, is_neg);
-            return true;
-        }
-
-        if (nom_l == 0) {
-            normalize(rat, "0", false);
-            return true;
-        }
-
-        state = 0;
-        zeroes = 0;
-        for (int i = 0; flo[i] != '\0'; i++) {
-            if (state == 0 && isDigit(flo[i])) { state = 0; }
-            else if (state == 0 && flo[i] == '.') { state = 1; }
-            else if (state == 1 && isPosDig(flo[i])) {
-                state = 1;
-                den_l++;
-            }
-            else if (state == 1 && flo[i] == '0') {
-                state = 2;
-                zeroes++;
-            }
-            else if (state == 2 && flo[i] == '0') {
-                state = 2;
-                zeroes++;
-            }
-            else if (state == 2 && isPosDig(flo[i])) {
-                state = 1;
-                den_l += zeroes + 1;
-                zeroes = 0;
-            }
-        }
-
-//    printf("The literal %s, once converted, will have denominator of length %d and nominator of length %d characters\n", flo, den_l, nom_l);
-        char *rat_tmp = (char *) malloc(nom_l + den_l + 2);
-        rat_tmp[0] = '\0';
-
-        int i, j;
-        state = -1;
-        for (i = j = 0; j < nom_l; i++) {
-            assert(flo[i] != '\0');
-            if (state == -1 && flo[i] != '.' && flo[i] != '0') {
-                rat_tmp[j++] = flo[i];
-                state = 0;
-            }
-            else if (state == -1 && flo[i] == '.') {}
-            else if (state == -1 && flo[i] == '0') {}
-            else if (state == 0 && flo[i] != '.') { rat_tmp[j++] = flo[i]; }
-            else if (state == 0 && flo[i] == '.') {}
-        }
-        rat_tmp[j++] = '/';
-        rat_tmp[j++] = '1';
-        for (i = 0; i < den_l - 1; i++) rat_tmp[j++] = '0';
-        rat_tmp[j] = '\0';
-        normalize(rat, rat_tmp, is_neg);
-        free(rat_tmp);
-        return true;
-    }
-
-    // std::pair is not trivially copyable.  This version seems to allow on current compilers faster implementations.
-    template <class T, class U> struct pair { T first; U second; };
-
-#define Pair(T) pair< T, T >
-
-    typedef int enodeid_t;
-
-
-    typedef enodeid_t snodeid_t;
-    typedef enodeid_t sortid_t;
-#ifdef BUILD_64
-    typedef long enodeid_pair_t;
-
-    inline enodeid_pair_t encode(enodeid_t car, enodeid_t cdr) {
-        enodeid_pair_t p = car;
-        p = p << (sizeof(enodeid_t) * 8);
-        enodeid_pair_t q = cdr;
-        p |= q;
-        return p;
-    }
-
-#else
-    typedef Pair( enodeid_t ) enodeid_pair_t;
-inline enodeid_pair_t encode( enodeid_t car, enodeid_t cdr )
-{ return make_pair( car, cdr ); }
-#endif
-    typedef enodeid_pair_t snodeid_pair_t;
-
-//#define STATISTICS
-
-// Set the bit B to 1 and leaves the others to 0
-#define SETBIT(B) ( 1 << (B) )
-
     static inline double cpuTime(void)
     {
         struct rusage ru;
@@ -398,12 +172,11 @@ inline void orbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipart
 // Or-bit
 // And-bit
 // Basic operations
-inline bool isABmixed( const ipartitions_t & p ) { return false; } //{ return p % 2 == 1; }
-inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & mask) != 0; }
-inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && (p & ~mask) != 0; }
-inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) && !isBlocal( p, mask ); }
-inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isBlocal( p, mask ) && !isAlocal( p, mask ); }
-inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return !isABmixed( p ) && isAlocal( p, mask ) &&  isBlocal( p, mask ); }
+inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & mask) != 0; }
+inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & ~mask) != 0; }
+inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) && !isBlocal( p, mask ); }
+inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isBlocal( p, mask ) && !isAlocal( p, mask ); }
+inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) &&  isBlocal( p, mask ); }
 
     // To specify the tree structure of a collection of partitions
 // NOTE Partitions should be tagged with consecutive ids >=1
@@ -436,17 +209,6 @@ private:
 };
 } // namespace opensmt
 
-struct EnodeIdHash {
-    opensmt::enodeid_t operator() (const opensmt::enodeid_t s) const {
-        return s; }
-};
-
-template <>
-struct Equal<const opensmt::enodeid_t> {
-    bool operator() (const opensmt::enodeid_t s1, const opensmt::enodeid_t s2) const {
-        return s1 == s2; }
-};
-
 static inline int getLog2Ceil(int i)
 {
     if (i == 0 || i == 1) return 0;
@@ -458,11 +220,6 @@ static inline int getLog2Ceil(int i)
     return r;
 }
 
-using opensmt::enodeid_t;
-using opensmt::snodeid_t;
-using opensmt::sortid_t;
-using opensmt::enodeid_pair_t;
-using opensmt::encode;
 using opensmt::cpuTime;
 using opensmt::memUsed;
 using opensmt::icolor_t;
@@ -479,7 +236,6 @@ using opensmt::isBlocal;
 using opensmt::isAstrict;
 using opensmt::isBstrict;
 using opensmt::isAB;
-using opensmt::isABmixed;
 
 #ifndef INT32_MAX
 #define INT32_MAX 0x7fffffffL

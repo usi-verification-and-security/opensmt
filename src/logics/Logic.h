@@ -34,6 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MapWithKeys.h"
 #include "OsmtApiException.h"
 #include "FunctionTools.h"
+#include "TypeUtils.h"
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -52,6 +53,8 @@ class Logic {
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      equalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      disequalities;
     Map<SymRef,bool,SymRefHash,Equal<SymRef> >      ites;
+    Map<SRef,SymRef,SRefHash>                       sortToEquality;
+    Map<SRef,SymRef,SRefHash>                       sortToDisequality;
     Map<SRef,SymRef,SRefHash>                       sortToIte;
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
@@ -97,6 +100,11 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    SRef                sort_BOOL;
+    PTRef               term_TRUE;
+    PTRef               term_FALSE;
+
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
     SymRef              sym_ANON;
@@ -110,12 +118,7 @@ class Logic {
     SymRef              sym_DISTINCT;
     SymRef              sym_ITE;
 
-    SRef                sort_BOOL;
-    PTRef               term_TRUE;
-    PTRef               term_FALSE;
-
-
-    void dumpFunction(ostream &, const TemplateFunction&);
+    void dumpFunction(std::ostream &, const TemplateFunction&);
 
   private:
     bool use_extended_signature;
@@ -156,7 +159,7 @@ class Logic {
 
     virtual PTRef conjoinExtras(PTRef root);
 
-    virtual const char * getName() const { return "QF_UF"; }
+    virtual std::string const getName() const { return "QF_UF"; }
     virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
 
     // Identifiers
@@ -177,6 +180,8 @@ class Logic {
     SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
     Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
     const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
+    SRef        getUniqueArgSort(SymRef sr)           const;
+    SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
     // Symbols
     Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
@@ -243,22 +248,39 @@ public:
     PTRef       mkUniqueAbstractValue(SRef);
 
     // Generic constants
-    virtual PTRef mkConst     (const char*, const char** msg);
+    virtual PTRef mkConst     (const char*);
     virtual PTRef mkConst     (SRef, const char*);
 
     SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
+    SymRef      declareFun    (const std::string & fname, const SRef rsort, const vec<SRef>& args, bool interpreted = false) { char *msg; return declareFun(fname.data(), rsort, args, &msg, interpreted); };
+    SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args, true); sym_store[sr].setNoScoping(); return sr; }
+    SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
+    SymRef      declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    SymRef      declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
+    SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+    SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Pairwise(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
+
+    SymRef      declareFun_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
+    SymRef      declareFun_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
+    SymRef      declareFun_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setChainable(); return sr; }
+    SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
+
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSort   (const char* id, char** msg);
+    SRef        declareSortAndCreateFunctions(std::string const & id);
+    SRef        declareUninterpretedSort   (char const * id);
+    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
 
     PTRef       mkBoolVar     (const char* name);
 
-    void dumpHeaderToFile(ostream& dump_out) const;
-    void dumpFormulaToFile(ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
-    void dumpChecksatToFile(ostream& dump_out) const;
+    void dumpHeaderToFile(std::ostream& dump_out) const;
+    void dumpFormulaToFile(std::ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
+    void dumpChecksatToFile(std::ostream& dump_out) const;
 
-    void dumpFunctions(ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
-    void dumpFunction(ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
-    void dumpFunction(ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
+    void dumpFunctions(std::ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
+    void dumpFunction(std::ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
+    void dumpFunction(std::ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
     PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
@@ -354,9 +376,6 @@ public:
     // Returns an equality over args if term store contains one, otherwise returns PTRef_Undef.
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
-    // Override for different logics...
-    virtual bool declare_sort_hook  (SRef sr);
-    inline bool isPredef           (string&)        const ;//{ return false; };
 
     PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
 
@@ -394,10 +413,10 @@ public:
 #endif
 
     // Statistics
-    int subst_num; // Number of substitutions
 
     void collectStats(PTRef, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if);
 
+    bool typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const;
     inline int     verbose                       ( ) const;// { return config.verbosity(); }
 };
 

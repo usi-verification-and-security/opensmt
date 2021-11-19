@@ -4,6 +4,9 @@
 
 #include "SubstLoopBreaker.h"
 
+#include <iostream>
+#include <sstream>
+
 SNRef SubstNode::getNextChild() {
     if (procChild < nChildren()) return operator[](procChild++);
     return SNRef_Undef;
@@ -267,14 +270,14 @@ vec<SNRef> SubstLoopBreaker::breakLoops(const std::vector<vec<SNRef>>& loops) {
 
 std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, const std::vector<vec<SNRef>>& loops) {
     if (loops.size() == 0)
-        cerr << "No loops\n";
+        std::cerr << "No loops\n";
     int count = 0;
     for (const vec<SNRef> & loop : loops) {
-        cerr << "Loop " << count++ << endl;
+        std::cerr << "Loop " << count++ << std::endl;
         for (SNRef snr: loop)
-            cerr << "  " << logic.pp(sna[snr].getTr()) << endl;
+            std::cerr << "  " << logic.pp(sna[snr].getTr()) << std::endl;
     }
-    stringstream ss;
+    std::stringstream ss;
 
     // Debug: visualize a bit.
 

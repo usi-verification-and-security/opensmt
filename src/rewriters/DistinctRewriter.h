@@ -38,7 +38,7 @@ public:
         return ptr;
     }
 
-    virtual bool doRewriteDistinct(PTRef dist) const {
+    virtual bool doRewriteDistinct(PTRef) const {
         return true;
     }
 };

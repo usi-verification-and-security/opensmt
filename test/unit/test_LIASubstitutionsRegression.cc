@@ -16,14 +16,14 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
     auto const osmt = getLIAOsmt();
     auto & mainSolver = osmt->getMainSolver();
     auto & lialogic = osmt->getLIALogic();
-    PTRef x = lialogic.mkNumVar("x");
-    PTRef y = lialogic.mkNumVar("y");
-    PTRef two = lialogic.mkConst(2);
-    PTRef eq = lialogic.mkEq(x, lialogic.mkNumTimes(two, y));
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef two = lialogic.mkIntConst(2);
+    PTRef eq = lialogic.mkEq(x, lialogic.mkTimes(two, y));
     PTRef a = lialogic.mkBoolVar("a");
     PTRef conj = lialogic.mkAnd(
-            lialogic.mkImpl(a, lialogic.mkEq(x, lialogic.getTerm_NumOne())),
-            lialogic.mkImpl(lialogic.mkNot(a), lialogic.mkEq(x, lialogic.getTerm_NumOne()))
+            lialogic.mkImpl(a, lialogic.mkEq(x, lialogic.getTerm_IntOne())),
+            lialogic.mkImpl(lialogic.mkNot(a), lialogic.mkEq(x, lialogic.getTerm_IntOne()))
             );
     PTRef fla = lialogic.mkAnd(conj, eq);
     // x = 2y  AND (a => x=1) AND (~a => x=1)

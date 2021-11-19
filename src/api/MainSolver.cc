@@ -35,8 +35,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
 #include "IteHandler.h"
-#include "RDLogic.h"
-#include "IDLogic.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
 #include "LIATHandler.h"
@@ -421,31 +419,31 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         }
         case Logic_t::QF_LRA:
         {
-            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
-            theory = new LATheory<LRALogic,LRATHandler>(config, lraLogic);
+            ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new LATheory<ArithLogic,LRATHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
         {
-            LIALogic & liaLogic = dynamic_cast<LIALogic &>(logic);
-            theory = new LATheory<LIALogic,LIATHandler>(config, liaLogic);
+            ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new LATheory<ArithLogic,LIATHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_RDL:
         {
-            RDLogic & lraLogic = dynamic_cast<RDLogic &>(logic);
-            theory = new LATheory<RDLogic, RDLTHandler>(config, lraLogic);
+            ArithLogic& lraLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new LATheory<ArithLogic, RDLTHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_IDL:
         {
-            IDLogic & liaLogic = dynamic_cast<IDLogic &>(logic);
-            theory = new LATheory<IDLogic, IDLTHandler>(config, liaLogic);
+            ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new LATheory<ArithLogic, IDLTHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_UFLRA:
         {
-            LRALogic & lraLogic = dynamic_cast<LRALogic &>(logic);
+            ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
             theory = new UFLRATheory(config, lraLogic);
             break;
         }

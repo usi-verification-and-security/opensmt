@@ -36,8 +36,9 @@ template<typename TLogic>
 PTRef rewriteDivMod(TLogic &, PTRef fla) { return fla; }
 
 template<>
-PTRef rewriteDivMod<LIALogic>(LIALogic & logic, PTRef fla) {
-    return DivModRewriter(logic).rewrite(fla);
+PTRef rewriteDivMod<ArithLogic>(ArithLogic & logic, PTRef fla) {
+    // Real logic cannot have div and mod
+    return not logic.hasIntegers() ? fla : DivModRewriter(logic).rewrite(fla);
 }
 
 }

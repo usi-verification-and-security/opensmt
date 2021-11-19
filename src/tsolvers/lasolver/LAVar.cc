@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "LAVar.h"
-#include "LRALogic.h"
 
 LVRef LAVarStore::getNewVar() {
     auto idx = static_cast<unsigned>(lavars.size());

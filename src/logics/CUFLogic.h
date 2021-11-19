@@ -36,45 +36,8 @@ class CUFLogic: public Logic
     MapWithKeys<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
     MapWithKeys<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
 
-    SymRef              sym_CUF_ZERO;   // 0
-    SymRef              sym_CUF_ONE;    // 1
-    SymRef              sym_CUF_NEG;    // -
-    SymRef              sym_CUF_MINUS;  // -
-    SymRef              sym_CUF_PLUS;   // +
-    SymRef              sym_CUF_TIMES;  // *
-    SymRef              sym_CUF_DIV;    // /
-//    SymRef              sym_CUF_EQ;     // ==
-    SymRef              sym_CUF_LEQ;    // <=
-    SymRef              sym_CUF_LT;     // <
-    SymRef              sym_CUF_GEQ;    // >=
-    SymRef              sym_CUF_GT;     // >
-    SymRef              sym_CUF_LSHIFT; // <<
-    SymRef              sym_CUF_LRSHIFT; // l>>
-    SymRef              sym_CUF_ARSHIFT; // a>>
-    SymRef              sym_CUF_MOD;    // %
-    SymRef              sym_CUF_BWAND;  // &
-    SymRef              sym_CUF_BWOR;   // |
-    SymRef              sym_CUF_INC;    // ++
-    SymRef              sym_CUF_DEC;    // --
-    SymRef              sym_CUF_NEQ;    // !=
-    SymRef              sym_CUF_LAND;   // &&
-    SymRef              sym_CUF_LOR;    // ||
-//    SymRef              sym_CUF_NOT;    // !
-    SymRef              sym_CUF_BWXOR;  // ^
-    SymRef              sym_CUF_COMPL;  // ~
-    SymRef              sym_CUF_SIZEOF; // sizeof
-    SymRef              sym_CUF_ADDROF; // &
-    SymRef              sym_CUF_PTR;    // *
- //   SymRef              sym_CUF_COND;   // ?
-
-    SRef                sort_CUFNUM;
-    SRef                sort_CUFSTR;
-
-    PTRef               term_CUF_ZERO;
-    PTRef               term_CUF_ONE;
-
-    static int tk_cuf_zero;
-    static int tk_cuf_one;
+    static const char*  tk_cuf_zero;
+    static const char*  tk_cuf_one;
     static const char*  tk_cuf_neg;
     static const char*  tk_cuf_minus;
     static const char*  tk_cuf_plus;
@@ -104,12 +67,47 @@ class CUFLogic: public Logic
     static const char*  tk_cuf_cond;
 
     static const char*  s_sort_cufnum;
-    static const char*  s_sort_cufstr;
+
+    SRef                sort_CUFNUM;
+
+    PTRef               term_CUF_ZERO;
+    PTRef               term_CUF_ONE;
+
+    SymRef              sym_CUF_ZERO;   // 0
+    SymRef              sym_CUF_ONE;    // 1
+    SymRef              sym_CUF_NEG;    // -
+    SymRef              sym_CUF_MINUS;  // -
+    SymRef              sym_CUF_PLUS;   // +
+    SymRef              sym_CUF_TIMES;  // *
+    SymRef              sym_CUF_DIV;    // /
+    SymRef              sym_CUF_MOD;    // %
+    SymRef              sym_CUF_EQ;     // ==
+    SymRef              sym_CUF_LEQ;    // <=
+    SymRef              sym_CUF_LT;     // <
+    SymRef              sym_CUF_GEQ;    // >=
+    SymRef              sym_CUF_GT;     // >
+    SymRef              sym_CUF_LSHIFT; // <<
+    SymRef              sym_CUF_LRSHIFT; // l>>
+    SymRef              sym_CUF_ARSHIFT; // a>>
+    SymRef              sym_CUF_BWAND;  // &
+    SymRef              sym_CUF_BWOR;   // |
+    SymRef              sym_CUF_INC;    // ++
+    SymRef              sym_CUF_DEC;    // --
+    SymRef              sym_CUF_NEQ;    // !=
+    SymRef              sym_CUF_LAND;   // &&
+    SymRef              sym_CUF_LOR;    // ||
+    SymRef              sym_CUF_BWXOR;  // ^
+    SymRef              sym_CUF_COMPL;  // ~
+    SymRef              sym_CUF_SIZEOF; // sizeof
+    SymRef              sym_CUF_ADDROF; // &
+    SymRef              sym_CUF_PTR;    // *
+    SymRef              sym_CUF_ITE;
+    SymRef              sym_CUF_DISTINCT;
 
   public:
     CUFLogic();
     ~CUFLogic();
-    virtual const char*   getName() const override { return "QF_CUF"; }
+    virtual std::string const getName() const override { return "QF_CUF"; }
     virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_CUF; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
@@ -117,7 +115,7 @@ class CUFLogic: public Logic
     virtual PTRef         mkConst   (const int c) { return mkCUFConst(c); }
     PTRef                 mkCUFConst   (const int c) { std::string num = std::to_string(c); PTRef tr = Logic::mkConst(sort_CUFNUM, num.c_str()); return tr; }
     virtual PTRef         mkCUFNumVar(const char* name) { return mkVar(sort_CUFNUM, name); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || (sr == sort_CUFSTR) || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || Logic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
     PTRef conjoinExtras(PTRef root) override;

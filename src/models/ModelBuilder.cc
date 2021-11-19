@@ -3,6 +3,8 @@
 //
 
 #include "ModelBuilder.h"
+
+#include <sstream>
 #include <unordered_set>
 
 std::unique_ptr<Model> ModelBuilder::build() {

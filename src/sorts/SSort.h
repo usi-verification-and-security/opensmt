@@ -28,8 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SORT_H
 
 #include "Vec.h"
-#include "Global.h"
+#include "Map.h"
 #include "Alloc.h"
+
+#include <cstring>
 
 // XXX The implementation of sorts is incomplete: the sort system should have
 // sort symbols and concrete sorts the way pterms are constructed.  As a
@@ -40,9 +42,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 struct SRef {
     uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const SRef& a1, const SRef& a2) {return a1.x == a2.x; }
-    inline friend bool operator!= (const SRef& a1, const SRef& a2) {return a1.x != a2.x; }
+    SRef & operator= (uint32_t v) { x = v; return *this; }
+    inline friend bool operator== (SRef a1, SRef a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (SRef a1, SRef a2) {return a1.x != a2.x; }
 };
 
 const static struct SRef SRef_Undef = {INT32_MAX};
@@ -182,6 +184,8 @@ class IdentifierAllocator : public RegionAllocator<uint32_t>
 // Sort should most likely be a tree-like structure with references.  I don't
 // like this implementation.
 
+using sortid_t = int;
+
 class Sort {
   private:
 
@@ -192,7 +196,7 @@ class Sort {
     int         size;
     SRef        rest_sorts[0];
   public:
-    Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef>& rest)
+    Sort(IdRef idr_, sortid_t uniq_id_, SStrRef name, vec<SRef> const & rest)
         : idr(idr_)
         , uniq_id(uniq_id_)
         , canon_name(name)
@@ -242,7 +246,7 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(IdRef idr, SStrRef nr, vec<SRef>& rest)
+    SRef alloc(IdRef idr, SStrRef nr, vec<SRef> const & rest)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
         SRef sid;

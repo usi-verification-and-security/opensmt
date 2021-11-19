@@ -9,6 +9,7 @@ Module: New Logic for BitVector
 #define BVLOGIC_H
 #include "Logic.h"
 #include "CUFLogic.h"
+#include "NumberUtils.h"
 
 
 class BVLogic: public CUFLogic
@@ -25,6 +26,43 @@ class BVLogic: public CUFLogic
 //    void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
 
   protected:
+
+    static const char*  tk_bv_zero;
+    static const char*  tk_bv_one;
+    static const char*  tk_bv_neg;
+    static const char*  tk_bv_eq;
+    static const char*  tk_bv_minus;
+    static const char*  tk_bv_plus;
+    static const char*  tk_bv_times;
+    static const char*  tk_bv_div;
+    static const char*  tk_bv_sleq;
+    static const char*  tk_bv_uleq;
+    static const char*  tk_bv_slt;
+    static const char*  tk_bv_ult;
+    static const char*  tk_bv_sgeq;
+    static const char*  tk_bv_ugeq;
+    static const char*  tk_bv_sgt;
+    static const char*  tk_bv_ugt;
+    static const char*  tk_bv_lshift;
+    static const char*  tk_bv_arshift;
+    static const char*  tk_bv_lrshift;
+    static const char*  tk_bv_mod;
+    static const char*  tk_bv_bwand;
+    static const char*  tk_bv_bwor;
+    static const char*  tk_bv_land;
+    static const char*  tk_bv_lor;
+    static const char*  tk_bv_not;
+    static const char*  tk_bv_bwxor;
+    static const char*  tk_bv_compl;
+    static const char* tk_bv_coll32;
+    static const char* s_uf_extract_base;
+
+    static const char*  s_sort_bvnum;
+
+    SRef                sort_BVNUM;
+    PTRef               term_BV_ZERO;
+    PTRef               term_BV_ONE;
+
     SymRef              sym_BV_ZERO;   // 0
     SymRef              sym_BV_ONE;    // 1
     SymRef              sym_BV_NEG;    // -
@@ -57,45 +95,6 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_DEC;    // --
     SymRef              sym_BV_NEQ;    // !=
 
-    SRef                sort_BVNUM;
-
-    PTRef               term_BV_ZERO;
-    PTRef               term_BV_ONE;
-
-    static int          tk_bv_zero;
-    static int          tk_bv_one;
-    static const char*  tk_bv_neg;
-    static const char*  tk_bv_eq;
-    static const char*  tk_bv_minus;
-    static const char*  tk_bv_plus;
-    static const char*  tk_bv_times;
-    static const char*  tk_bv_div;
-    static const char*  tk_bv_sleq;
-    static const char*  tk_bv_uleq;
-    static const char*  tk_bv_slt;
-    static const char*  tk_bv_ult;
-    static const char*  tk_bv_sgeq;
-    static const char*  tk_bv_ugeq;
-    static const char*  tk_bv_sgt;
-    static const char*  tk_bv_ugt;
-    static const char*  tk_bv_lshift;
-    static const char*  tk_bv_arshift;
-    static const char*  tk_bv_lrshift;
-    static const char*  tk_bv_mod;
-    static const char*  tk_bv_bwand;
-    static const char*  tk_bv_bwor;
-    static const char*  tk_bv_land;
-    static const char*  tk_bv_lor;
-    static const char*  tk_bv_not;
-    static const char*  tk_bv_bwxor;
-    static const char*  tk_bv_compl;
-
-    static const char*  s_sort_bvnum;
-    //static const char*  s_sort_bvstr;
-
-    static const char* tk_bv_coll32;
-    static const char* s_uf_extract_base;
-
     static const int i_default_bitwidth;
 
     int bitwidth;
@@ -104,7 +103,7 @@ class BVLogic: public CUFLogic
     BVLogic(int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
-    virtual const char*   getName() const override { return "QF_BV"; }
+    virtual std::string const getName() const override { return "QF_BV"; }
     virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);

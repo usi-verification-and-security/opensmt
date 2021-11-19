@@ -76,7 +76,7 @@ public:
 
 class DefaultRewriterConfig {
 public:
-    virtual bool previsit(PTRef term) { return true; } // should continue visiting
+    virtual bool previsit(PTRef) { return true; } // should continue visiting
     virtual PTRef rewrite(PTRef term) { return term; } // don't do anything
 };
 

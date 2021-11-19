@@ -52,7 +52,7 @@ class Symbol {
     friend class SymbolAllocator;
     friend class SymStore;
     // Note: do not use directly (no memory allocation for args)
-    Symbol(const vec<SRef>& ps) {
+    Symbol(vec<SRef> const & ps) {
         header.type      = 0;
         header.commutes  = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
@@ -66,6 +66,16 @@ class Symbol {
   public:
     int      size        ()      const   { return header.size; }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
+     * @return A pointer to the first child of the symbol
+     */
+    SRef const * begin   ()      const   { return (SRef*)(args + 1); }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
+     * @return A pointer to right past the last child of the symbol
+     */
+    SRef const * end     ()      const   { return (SRef*)(args + size()); }
     SRef     rsort       ()      const   { return args[0].sort; }
     bool     commutes    ()      const   { return header.commutes; }
     SymRef   relocation  ()      const   { return args[0].rel; }
@@ -79,8 +89,8 @@ class Symbol {
     uint32_t nargs       ()      const   { return size() - 1; }
     bool     isConstant  ()      const   { return nargs() == 0 && header.constant; }
 
-    bool     setLeftAssoc ()             { if (header.type != 0) return false; return (header.type = 1); }
-    bool     setRightAssoc()             { if (header.type != 0) return false; return (header.type = 2); }
+    bool     setLeftAssoc ()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 1); }
+    bool     setRightAssoc()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 2); }
     bool     setChainable ()             { if (header.type != 0) return false; return (header.type = 3); }
     bool     setPairwise  ()             { if (header.type != 0) return false; return (header.type = 4); }
     void     setNoScoping ()             { header.noscoping = 1; }
@@ -107,7 +117,7 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    SymRef alloc(const vec<SRef>& ps)
+    SymRef alloc(vec<SRef> const & ps)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));

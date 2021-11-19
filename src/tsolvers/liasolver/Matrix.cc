@@ -4,6 +4,8 @@
 
 #include <liasolver/Matrix.h>
 
+#include <iostream>
+
 LAVecRef
 LAVecStore::getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den)
 {
@@ -19,7 +21,7 @@ LAVecStore::print(LAVecRef vr)
     assert(res >= 0); (void)res;
     for (int i = 1; i <= operator[](vr).size(); i++) {
         char* tmp;
-        string s = operator[](vr)[i].get_str();
+        std::string s = operator[](vr)[i].get_str();
         int res = asprintf(&tmp, "%s%s \n", str, s.c_str());
         assert(res >= 0); (void)res;
         free(str);
@@ -95,7 +97,7 @@ LAMatrixStore::addmul_column(MId A, int j, int jpivot, const opensmt::Real& x)
 void
 LAMatrixStore::addmul_row(MId A, int i, int ipivot, const opensmt::Real& x)
 {
-    string s = x.get_str();
+    std::string s = x.get_str();
 #ifdef ENABLE_MATRIX_TRACE
     printf("addmul_row i = %d, ipivot = %d, x = %s\n", i, ipivot, s.c_str());
 #endif

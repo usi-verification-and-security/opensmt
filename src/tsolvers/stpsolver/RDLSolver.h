@@ -8,7 +8,7 @@
 
 class RDLSolver : public STPSolver<Delta> {
 public:
-    RDLSolver(SMTConfig &c, LALogic &l) : STPSolver(c, l) {};
+    RDLSolver(SMTConfig &c, ArithLogic &l) : STPSolver(c, l) {};
 };
 
 template<>
@@ -69,7 +69,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         assert(logic.isVar(var));
         Delta const & varDeltaValue = entry.second;
         FastRational varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
-        PTRef val = logic.mkConst(varValue);
+        PTRef val = logic.mkRealConst(varValue);
         modelBuilder.addVarValue(var, val);
     }
 }

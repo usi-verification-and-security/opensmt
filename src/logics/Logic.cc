@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
+#include "OsmtInternalException.h"
 #include "Substitutor.h"
 
 #include <queue>
@@ -73,155 +74,38 @@ Logic::Logic() :
       distinctClassCount(0)
     , sort_store(id_store)
     , term_store(sym_store)
-    , sym_TRUE(SymRef_Undef)
-    , sym_FALSE(SymRef_Undef)
-    , sym_ANON(SymRef_Undef)
-    , sym_AND(SymRef_Undef)
-    , sym_OR(SymRef_Undef)
-    , sym_XOR(SymRef_Undef)
-    , sym_NOT(SymRef_Undef)
-    , sym_UF_NOT(SymRef_Undef)
-    , sym_EQ(SymRef_Undef)
-    , sym_IMPLIES(SymRef_Undef)
-    , sym_DISTINCT(SymRef_Undef)
-    , sym_ITE(SymRef_Undef)
-    , sort_BOOL(SRef_Undef)
-    , term_TRUE(PTRef_Undef)
-    , term_FALSE(PTRef_Undef)
+    , sort_BOOL(sort_store.newSort(id_store.newIdentifier(s_sort_bool), {}))
+    , term_TRUE(mkConst(getSort_bool(), tk_true))
+    , term_FALSE(mkConst(getSort_bool(), tk_false))
+    , sym_TRUE(getSymRef(term_TRUE))
+    , sym_FALSE(getSymRef(term_FALSE))
+    , sym_ANON(sym_store.newSymb(tk_anon, {}))
+    , sym_AND(declareFun_Commutative_NoScoping_LeftAssoc(tk_and, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_OR(declareFun_Commutative_NoScoping_LeftAssoc(tk_or, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_XOR(declareFun_Commutative_NoScoping_LeftAssoc(tk_xor, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_NOT(declareFun_NoScoping(tk_not, sort_BOOL, {sort_BOOL}))
+    , sym_UF_NOT(declareFun_NoScoping(tk_uf_not, sort_BOOL, {sort_BOOL}))
+    , sym_EQ(declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_IMPLIES(declareFun_NoScoping(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_DISTINCT(declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sort_BOOL, sort_BOOL}))
+    , sym_ITE(declareFun_NoScoping(tk_ite, sort_BOOL, {sort_BOOL, sort_BOOL, sort_BOOL}))
     , use_extended_signature(false)
-    , subst_num(0)
 {
-    char* msg;
-    // We can't use declareSort here since it assumes that sort_BOOL
-    // exists for making the equality symbol!
-    IdRef bool_id = id_store.newIdentifier("Bool");
-    vec<SRef> tmp_srefs;
-    sort_store.newSort(bool_id, tmp_srefs);
-    sort_BOOL = sort_store["Bool"];
-
-    term_TRUE = mkConst(getSort_bool(), tk_true);
-    if (term_TRUE == PTRef_Undef) {
-        printf("Error in constructing term %s\n", tk_true);
-        assert(false);
-    }
-    sym_TRUE = sym_store.nameToRef(tk_true)[0];
-    sym_store[sym_TRUE].setNoScoping();
-    sym_store.setInterpreted(sym_TRUE);
-
-    term_FALSE = mkConst(getSort_bool(), tk_false);
-    if (term_FALSE  == PTRef_Undef) {
-        printf("Error in constructing term %s\n", tk_false);
-        assert(false);
-    }
-    sym_FALSE = sym_store.nameToRef(tk_false)[0];
-    sym_store[sym_FALSE].setNoScoping();
-    sym_store.setInterpreted(sym_FALSE);
-
-    // The anonymous symbol for the enodes of non-propositional Ites and propositional formulas nested inside UFs (or UPs)
-    vec<SRef> params;
-    sym_ANON = sym_store.newSymb(tk_anon, params);
-
-    params.push(sort_BOOL);
-
-    // UF not that is not visible outside the uf solver
-    sym_UF_NOT = sym_store.newSymb(tk_uf_not, params);
-
-
-    if ((sym_NOT = declareFun(tk_not, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_not, msg);
-        assert(false);
-    }
-    sym_store[sym_NOT].setNoScoping();
-    sym_store.setInterpreted(sym_NOT);
-
-    params.push(sort_BOOL);
-
-    if ((sym_EQ = declareFun(tk_equals, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_equals, msg);
-        assert(false);
-    }
-    if (sym_store[sym_EQ].setChainable() == false) { assert(false); }
-    sym_store[sym_EQ].setNoScoping();
-    sym_store[sym_EQ].setCommutes();
     equalities.insert(sym_EQ, true);
-    sym_store.setInterpreted(sym_EQ);
-
-    if ((sym_IMPLIES = declareFun(tk_implies, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_implies, msg);
-        assert(false);
-    }
-    if (sym_store[sym_IMPLIES].setRightAssoc() == false) { assert(false); }
-    sym_store[sym_IMPLIES].setNoScoping();
-    sym_store.setInterpreted(sym_IMPLIES);
-
-    if ((sym_AND = declareFun(tk_and, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_and, msg);
-        assert(false);
-    }
-    if (sym_store[sym_AND].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_AND].setNoScoping();
-    sym_store[sym_AND].setCommutes();
-    sym_store.setInterpreted(sym_AND);
-
-    if ((sym_OR = declareFun(tk_or, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_or, msg);
-        assert(false);
-    }
-    if (sym_store[sym_OR].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_OR].setNoScoping();
-    sym_store[sym_OR].setCommutes();
-    sym_store.setInterpreted(sym_OR);
-
-    if ((sym_XOR = declareFun(tk_xor, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_xor, msg);
-        assert(false);
-    }
-    if (sym_store[sym_XOR].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_XOR].setNoScoping();
-    sym_store[sym_XOR].setCommutes();
-    sym_store.setInterpreted(sym_OR);
-
-    // Boolean distincts will never be created (they are turned to a Boolean expression),
-    // but we need this symbol so that they can be processed.
-    if ((sym_DISTINCT = declareFun(tk_distinct, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_distinct, msg);
-        assert(false);
-    }
-    if (sym_store[sym_DISTINCT].setPairwise() == false) { assert(false); }
-    sym_store[sym_DISTINCT].setNoScoping();
-    sym_store[sym_DISTINCT].setCommutes();
     disequalities.insert(sym_DISTINCT, true);
-    sym_store.setInterpreted(sym_DISTINCT);
-
-    if ((sym_ITE = declareFun(tk_ite, sort_BOOL, params, &msg, true)) == SymRef_Undef) {
-        printf("Error in declaring function %s: %s\n", tk_ite, msg);
-        assert(false);
-    }
-    if (sym_store[sym_ITE].setLeftAssoc() == false) { assert(false); }
-    sym_store[sym_ITE].setNoScoping();
-    sym_store.setInterpreted(sym_ITE);
-
     ites.insert(sym_ITE, true);
+    sortToEquality.insert(sort_BOOL, sym_EQ);
+    sortToDisequality.insert(sort_BOOL, sym_DISTINCT);
     sortToIte.insert(sort_BOOL, sym_ITE);
-
-    /////////////////////////////////////////
 }
+
+Logic::~Logic() = default;
 
 bool Logic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;
     if (isEquality(sr) || isDisequality(sr)) return true;
     return false;
-}
-
-Logic::~Logic()
-{
-#ifdef STATISTICS
-    cerr << "; -------------------------\n";
-    cerr << "; STATISTICS FOR LOGICS\n";
-    cerr << "; -------------------------\n";
-    cerr << "; Substitutions............: " << subst_num << endl;
-#endif // STATISTICS
 }
 
 //
@@ -453,51 +337,24 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     return nestedBoolRoots;
 }
 
-
-// description: Add equality for each new sort
-// precondition: sort has been declared
-bool Logic::declare_sort_hook(SRef sr) {
-    vec<SRef> params;
-
-    params.push(sr);
-    params.push(sr);
-
-    // Equality
-
-    SymRef tr;
-
-    char* msg;
-    tr = declareFun(tk_equals, sort_BOOL, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
-    sym_store[tr].setChainable();
-    equalities.insert(tr, true);
-
-    // distinct
-    tr = declareFun(tk_distinct, sort_BOOL, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    if (sym_store[tr].setPairwise() == false) return false;
-    sym_store[tr].setNoScoping();
-    sym_store[tr].setCommutes();
-    disequalities.insert(tr, true);
-
-    // ite
-    params.clear();
-    params.push(sort_BOOL);
-    params.push(sr);
-    params.push(sr);
-
-    tr = declareFun(tk_ite, sr, params, &msg, true);
-    if (tr == SymRef_Undef) { return false; }
-    sym_store[tr].setNoScoping();
-    ites.insert(tr, true);
-    sortToIte.insert(sr, tr);
-
+/**
+ * Declare an uninterpreted sort.  Do not call for numeric sorts, since we do not want to add them a default value
+ * here nor do we want them to end up in the ufsorts.
+ * @param sortName
+ * @return sort reference
+ */
+SRef Logic::declareUninterpretedSort(char const * sortName) {
+    if (containsSort(sortName)) {
+        return getSortRef(sortName);
+    }
+    SRef sr = declareSortAndCreateFunctions(sortName);
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
     defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
-    return true;
+
+    SRef rval = sort_store[sortName];
+    ufsorts.insert(rval, true);
+    return sr;
 }
 
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
@@ -823,7 +680,7 @@ PTRef Logic::mkNot(PTRef arg) {
     return tr;
 }
 
-PTRef Logic::mkConst(const char* name, const char** msg)
+PTRef Logic::mkConst(const char* name)
 {
     //assert(0);
     //return PTRef_Undef;
@@ -834,9 +691,7 @@ PTRef Logic::mkConst(const char* name, const char** msg)
 
 
 PTRef Logic::mkVar(SRef s, const char* name) {
-    vec<SRef> sort_args;
-    sort_args.push(s);
-    SymRef sr = newSymb(name, sort_args);
+    SymRef sr = newSymb(name, {s});
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -904,21 +759,34 @@ PTRef Logic::mkBoolVar(const char* name)
     return mkFun(sr, {});
 }
 
-SRef Logic::declareSort(const char* id, char** msg)
+SRef Logic::declareSortAndCreateFunctions(std::string const & id)
 {
-    if (containsSort(id)) {
-        return getSortRef(id);
+    if (containsSort(id.c_str())) {
+        return getSortRef(id.c_str());
     }
 
-    IdRef idr = id_store.newIdentifier(id);
-    vec<SRef> tmp;
-    SRef sr = sort_store.newSort(idr, tmp);
-    declare_sort_hook(sr);
-    std::string sort_name{id};
-    SRef rval = sort_store[sort_name.c_str()];
-    ufsorts.insert(rval, true);
-//    printf("Inserted sort %s\n", id);
-    return rval;
+    IdRef idr = id_store.newIdentifier(id.c_str());
+    SRef sr = sort_store.newSort(idr, {});
+
+    // Equality
+    SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
+    assert(tr != SymRef_Undef);
+    equalities.insert(tr, true);
+    sortToEquality.insert(sr, tr);
+
+    // distinct
+    tr = declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sr, sr});
+    assert(tr != SymRef_Undef);
+    disequalities.insert(tr, true);
+    sortToDisequality.insert(sr, tr);
+
+    // ite
+    tr = declareFun_NoScoping(tk_ite, sr, {sort_BOOL, sr, sr});
+    assert(tr != SymRef_Undef);
+    ites.insert(tr, true);
+    sortToIte.insert(sr, tr);
+
+    return sr;
 }
 
 SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
@@ -938,6 +806,9 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
     for (unsigned i = interpreted_functions.size(); i <= id; i++)
         interpreted_functions.push(false);
     interpreted_functions[id] = interpreted;
+    if (interpreted) {
+        sym_store.setInterpreted(sr);
+    }
     return sr;
 }
 
@@ -981,8 +852,14 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 PTRef
 Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 {
+#ifndef NDEBUG
+    std::string why;
+    if (not typeCheck(sym, terms, why)) {
+        throw OsmtInternalException(why);
+    }
+#endif
+
     PTRef res = PTRef_Undef;
-    char *msg;
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -998,9 +875,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
             !sym_store[sym].pairwise() &&
             sym_store[sym].nargs() != terms.size_())
         {
-            msg = (char*)malloc(strlen(e_argnum_mismatch)+1);
-            strcpy(msg, e_argnum_mismatch);
-            return PTRef_Undef;
+            throw OsmtApiException(e_argnum_mismatch);
         }
         PTLKey k;
         k.sym = sym;
@@ -1644,6 +1519,21 @@ SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(s
 Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
 const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
 
+SRef Logic::getUniqueArgSort(SymRef sr) const {
+    SRef res = SRef_Undef;
+    for (SRef a : getSym(sr)) {
+        if (res == SRef_Undef) {
+            res = a;
+        } else {
+            if (res != a) {
+                throw OsmtApiException("getUniqueArgSort called for a symbol with non-uniform arguments");
+            }
+        }
+    }
+    return res;
+}
+
+
 void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
 void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
 void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
@@ -1709,11 +1599,104 @@ bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
 
-inline bool Logic::isPredef           (string&)        const { return false; };
-
 char* Logic::printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
 char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
+
+bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) const {
+
+    auto genSortMismatchString = [&](SymRef sym, vec<PTRef> const & args) {
+        std::string symStr = getSymName(sym);
+        Symbol const & symbol = sym_store[sym];
+        if (symbol.chainable() or symbol.pairwise()) {
+            for (int i = 0; i < args.size(); i++) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+        } else if (symbol.left_assoc()) {
+            symStr += " " + std::string(getSortName(symbol[0]));
+            for (int i = 1; i < args.size(); i++) {
+                symStr += " " + std::string(getSortName(symbol[1]));
+            }
+        } else if (symbol.right_assoc()) {
+            for (int i = 0; i < args.size() - 1; i++) {
+                symStr += " " + std::string(getSortName(symbol[0]));
+            }
+            symStr += " " + std::string(getSortName(symbol[1]));
+        }
+
+        std::string argSorts;
+        for (PTRef tr : args) {
+            argSorts += std::string(getSortName(getSortRef(tr))) + " ";
+        }
+        return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
+    };
+
+    auto genArgNumMismatchString = [&](SymRef sym, int expectedArgs, int actualArgs) {
+        return "Symbol `" + std::string(getSymName(sym)) + "` expects " + std::to_string(expectedArgs) +
+        " arguments but " + std::to_string(actualArgs) + " arguments were provided. ";
+    };
+
+    Symbol const & symbol = sym_store[sym];
+
+    if (symbol.chainable() or symbol.pairwise()) {
+        // Need to have at least two arguments and they all need to be of the same sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef argSort = getSortRef(args[0]);
+        auto allArgSortsEqual = [&](vec<PTRef> const & args) {
+            return std::all_of(args.begin(), args.end(), [&](PTRef tr) { return argSort == getSortRef(tr); });};
+        if (argSort != symbol[0] or not allArgSortsEqual(args)) {
+            why.assign(genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.left_assoc()) {
+        // Needs to have at least two arguments
+        // first arg must match symbol's first sort, and
+        // all other arguments must match symbol's second sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        auto allButFirstSortEqualSecond = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin()+1, args.end(), [&](PTRef tr) { return secondSort == getSortRef(tr); });};
+        if (firstSort != getSortRef(args[0]) or not allButFirstSortEqualSecond(args)) {
+            why.assign (genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.right_assoc()) {
+        // Needs to have at least two arguments
+        // all but last argument must match symbol's first sort
+        // last argument must match symbol's second sort
+        if (args.size() < 2) {
+            why.assign(genArgNumMismatchString(sym, 2, args.size()));
+            return false;
+        }
+        SRef firstSort = symbol[0];
+        SRef secondSort = symbol[1];
+        auto allButLastSortEqualFirst = [&](vec<PTRef> const & args) {
+                return std::all_of(args.begin(), args.end()-1, [&](PTRef tr) { return firstSort == getSortRef(tr); });};
+        if (secondSort != getSortRef(args.last()) or not allButLastSortEqualFirst(args)) {
+            why.assign(genSortMismatchString(sym, args));
+            return false;
+        }
+    } else if (symbol.nargs() == args.size_()) {
+        // Normal symbol: all argument sorts must match symbol sorts
+        for (unsigned int i = 0; i < symbol.nargs(); i++) {
+            if (symbol[i] != getSortRef(args[i])) {
+                why.assign(genSortMismatchString(sym, args));
+                return false;
+            }
+        }
+    } else if (symbol.nargs() != args.size_()) {
+        why.assign(genArgNumMismatchString(sym, symbol.nargs(), args.size()));
+        return false;
+    }
+    return true;
+}

@@ -9,7 +9,7 @@
 #include "Pterm.h"
 #include "Vec.h"
 
-class LALogic;
+class ArithLogic;
 
 
 /**
@@ -33,9 +33,9 @@ private:
     /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
     vec<PTRef>      laVarToPTRef;
 
-    LALogic&        logic;
+    ArithLogic&        logic;
 public:
-    LAVarMapper(LALogic &logic) : logic(logic) {}
+    LAVarMapper(ArithLogic &logic) : logic(logic) {}
 
     void   registerNewMapping(LVRef lv, PTRef e_orig);
 
@@ -51,6 +51,7 @@ public:
 
     void   clear();
 
+    bool   isNegated(PTRef tr) const;
 };
 
 

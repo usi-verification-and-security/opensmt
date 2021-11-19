@@ -3,18 +3,18 @@
 
 #include "TSolverHandler.h"
 
-#include "LIALogic.h"
+#include "ArithLogic.h"
 
 class LIASolver;
-class LIALogic;
+class ArithLogic;
 
 class LIATHandler : public TSolverHandler
 {
   private:
-    LIALogic& logic;
+    ArithLogic& logic;
     LIASolver *liasolver;
   public:
-    LIATHandler(SMTConfig & c, LIALogic & l);
+    LIATHandler(SMTConfig & c, ArithLogic & l);
     virtual ~LIATHandler();
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;

@@ -23,7 +23,7 @@ public:
     Model(Logic& logic, Evaluation basicEval) : Model(logic, std::move(basicEval), {}) { }
     PTRef evaluate(PTRef term);
     TemplateFunction getDefinition(SymRef) const;
-    static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
+    static std::string getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const std::string & formalArgDefaultPrefix); // Return a string that is not equal to the argument
 
 private:
     bool isCorrect(const SymbolDefinition & defs) const;

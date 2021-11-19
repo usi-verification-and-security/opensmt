@@ -9,10 +9,10 @@
 
 
 class EqualityRewriterConfig : public DefaultRewriterConfig {
-    LALogic & logic;
+    ArithLogic & logic;
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
 public:
-    EqualityRewriterConfig(LALogic & logic): logic(logic), notOkToPartition(new Map<PTRef,bool,PTRefHash>()) {}
+    EqualityRewriterConfig(ArithLogic & logic): logic(logic), notOkToPartition(new Map<PTRef,bool,PTRefHash>()) {}
 
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() {
         auto tmp = std::unique_ptr<Map<PTRef,bool,PTRefHash>>(new Map<PTRef,bool,PTRefHash>());
@@ -26,8 +26,8 @@ public:
             Pterm const  & p = logic.getPterm(term);
             PTRef a1 = p[0];
             PTRef a2 = p[1];
-            PTRef i1 = logic.mkNumLeq(a1, a2);
-            PTRef i2 = logic.mkNumGeq(a1, a2);
+            PTRef i1 = logic.mkLeq(a1, a2);
+            PTRef i2 = logic.mkGeq(a1, a2);
             notOkToPartition->insert(i1, true);
             notOkToPartition->insert(i2, true);
             term = logic.mkAnd(i1, i2);
@@ -39,7 +39,7 @@ public:
 class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
     EqualityRewriterConfig config;
 public:
-    ArithmeticEqualityRewriter(LALogic & logic): Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
+    ArithmeticEqualityRewriter(ArithLogic & logic): Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
     std::unique_ptr<Map<PTRef,bool,PTRefHash>> getAndClearNotOkToPartition() { return config.getAndClearNotOkToPartition(); }
 };
 

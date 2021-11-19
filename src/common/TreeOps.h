@@ -82,8 +82,8 @@ public:
 
 class DefaultVisitorConfig {
 public:
-    virtual bool previsit(PTRef term) { return true; } // should continue visiting
-    virtual void visit(PTRef term) { } // don't do anything
+    virtual bool previsit(PTRef) { return true; } // should continue visiting
+    virtual void visit(PTRef) { } // don't do anything
 };
 
 class AppearsInUFVisitorConfig : public DefaultVisitorConfig {

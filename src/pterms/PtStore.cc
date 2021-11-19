@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "PtStore.h"
+#include "OsmtInternalException.h"
 
 #include <sstream>
 
@@ -70,8 +71,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                         return ctr;
                 }
                 else if (t.right_assoc()) {
-                    opensmt_error2("right assoc term not implemented yet:", symstore.getName(ctr));
-                    return SymRef_Undef;
+                    throw OsmtInternalException(std::string("right assoc term not implemented yet:") + symstore.getName(ctr));
                 }
                 else if (t.nargs() < args.size_() && t.chainable()) {
                     int j = 0;
@@ -89,8 +89,6 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                     }
                     if (j == args.size()) return ctr;
                 }
-                else
-                    return SymRef_Undef;
             }
         }
 

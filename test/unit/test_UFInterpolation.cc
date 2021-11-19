@@ -15,7 +15,7 @@ class UFInterpolationTest : public ::testing::Test {
 protected:
     UFInterpolationTest(): logic{} {}
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
         x1 = logic.mkVar(ufsort, "x1");
@@ -399,7 +399,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
 
     // Note: this requires a set-up in specific order, different from the set-up we have in UFInterpolationTest
     Logic logic;
-    SRef ufsort = logic.declareSort("U", nullptr);
+    SRef ufsort = logic.declareUninterpretedSort("U");
     SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort}, nullptr);
     SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr);
     logic.declareFun("x", ufsort, {}, nullptr);

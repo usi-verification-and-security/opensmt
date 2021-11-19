@@ -3,10 +3,9 @@
 //
 
 #include <gtest/gtest.h>
-#include <LIALogic.h>
+#include <ArithLogic.h>
 #include <BoolRewriting.h>
 #include <Logic.h>
-#include <LRALogic.h>
 #include <ArithmeticEqualityRewriter.h>
 #include <DivModRewriter.h>
 #include <MainSolver.h>
@@ -48,23 +47,23 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 
 TEST(Rewriting_test, test_RewriteEquality)
 {
-    LRALogic logic;
-    PTRef x = logic.mkNumVar("x");
-    PTRef y = logic.mkNumVar("y");
+    ArithLogic logic{ArithLogic::ArithType::LRA};
+    PTRef x = logic.mkRealVar("x");
+    PTRef y = logic.mkRealVar("y");
     PTRef eq = logic.mkEq(x,y);
     ArithmeticEqualityRewriter rewriter(logic);
     PTRef res = rewriter.rewrite(eq);
-    ASSERT_EQ(res, logic.mkAnd(logic.mkNumGeq(x,y), logic.mkNumLeq(x,y)));
+    ASSERT_EQ(res, logic.mkAnd(logic.mkGeq(x,y), logic.mkLeq(x,y)));
     ASSERT_EQ(res, rewriter.rewrite(res));
 }
 
 TEST(Rewriting_test, test_RewriteDivMod) {
-    LIALogic logic;
-    PTRef x = logic.mkNumVar("x");
-    PTRef two = logic.mkConst(2);
+    ArithLogic logic{ArithLogic::ArithType::LIA};
+    PTRef x = logic.mkIntVar("x");
+    PTRef two = logic.mkIntConst(2);
     PTRef div = logic.mkIntDiv(x,two);
-    PTRef mod = logic.mkIntMod(x,two);
-    PTRef fla = logic.mkAnd(logic.mkEq(div, two), logic.mkEq(mod, logic.getTerm_NumZero()));
+    PTRef mod = logic.mkMod(x,two);
+    PTRef fla = logic.mkAnd(logic.mkEq(div, two), logic.mkEq(mod, logic.getTerm_IntZero()));
     PTRef rewritten = DivModRewriter(logic).rewrite(fla);
 //    std::cout << logic.printTerm(rewritten) << std::endl;
     SMTConfig config;
@@ -73,7 +72,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     auto res = solver.check();
     ASSERT_EQ(res, s_True);
     auto model = solver.getModel();
-    ASSERT_EQ(model->evaluate(x), logic.mkConst(4));
+    ASSERT_EQ(model->evaluate(x), logic.mkIntConst(4));
 }
 
 
@@ -82,7 +81,7 @@ protected:
     RewriteDistinctTest() : logic{} {}
 
     virtual void SetUp() {
-        ufsort = logic.declareSort("U", nullptr);
+        ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");

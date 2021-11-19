@@ -7,21 +7,21 @@
 
 #include "TSolverHandler.h"
 
-class LIALogic;
+class ArithLogic;
 class IDLSolver;
 
 class IDLTHandler : public TSolverHandler
 {
 private:
-    LIALogic& logic;
+    ArithLogic& logic;
     IDLSolver *idlsolver;
 public:
-    IDLTHandler(SMTConfig& c, LIALogic& l);
+    IDLTHandler(SMTConfig& c, ArithLogic& l);
     virtual ~IDLTHandler() = default;
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 //    virtual lbool getPolaritySuggestion(PTRef) const override;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) override {
+    virtual PTRef getInterpolant(const ipartitions_t&, map<PTRef, icolor_t>*, PartitionManager&) override {
         throw std::logic_error("Not implemented yet");
     }
 

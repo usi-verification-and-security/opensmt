@@ -7,6 +7,8 @@
 
 #include <SolverTypes.h>
 #include <SMTConfig.h>
+#include <TypeUtils.h>
+
 #include <limits>
 #include <string>
 

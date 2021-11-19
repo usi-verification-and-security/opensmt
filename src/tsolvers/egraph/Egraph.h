@@ -67,9 +67,9 @@ class UFSolverStats: public TSolverStats
 };
 
 /*
- * Defines parents of an equivalence class of terms - terms where at least one term from the class is present as a child
- * p is parent of t if t is car or cdr of p => p will be present in UseVector of class(t).
- * Moreover, if p's index in UseVector is i then p.carParentIndex or p.cdrParentIndex is i.
+ * Holds parents of a congruence class of terms: for a congruence class c its UseVector contains all terms p such that
+ * some child of p belongs to c.
+ * Moreover, if p's index in UseVector is i then p.getIndex(t) returns i for p's child t.
  */
 class UseVector {
     /* First two bits represent tag: 00 - valid entry, 01 - marked entry, 11 - empty entry
@@ -169,31 +169,25 @@ private:
     //***************************************************************************************************************
     std::vector<UseVector> parents;
 
-    Map<PTRef, ERef, PTRefHash> boolTermToERef;
+    void addToUseVectors(ERef);
+    void updateUseVectors(PTRef);
 
-    void addToParentVectors(ERef);
-    void updateParentsVector(PTRef);
-
-    inline void addToCarUseVector(ERef parent, Enode & parentNode);
-    inline void addToCarUseVectorExceptSymbols(ERef parent, Enode & parentNode);
-    inline void addToCdrUseVector(ERef parent, Enode & parentNode);
-    inline void addToCdrUseVectorExceptNill(ERef parent, Enode & parentNode);
-
-    inline void removeFromCarUseVector(ERef parent, Enode const & parentNode);
-    inline void removeFromCarUseVectorExceptSymbols(ERef parent, Enode const & parentNode);
-    inline void removeFromCdrUseVector(ERef parent, Enode const & parentNode);
-    inline void removeFromCdrUseVectorExceptNill(ERef parent, Enode const & parentNode);
+    void removeFromUseVectorsExcept(ERef parent, CgId cgid);
+    void removeFromUseVectors(ERef parent);
 
     unsigned getParentsSize(ERef ref) {
         assert(getEnode(ref).getCid() < parents.size());
         return parents[getEnode(ref).getCid()].size();
     }
 
+    bool childDuplicatesClass(ERef parent, uint32_t childIndex);
+
     //***************************************************************************************************************
+    Map<PTRef, ERef, PTRefHash> negatedTermToERef;
+
     ELAllocator forbid_allocator;
 
     EnodeStore enode_store;
-    ERef ERef_Nil;
 
     bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
     bool isEffectivelyEquality(PTRef tr) const;
@@ -253,7 +247,7 @@ public:
     PTRef ERefToTerm(ERef er) const { return getEnode(er).getTerm(); }
 
     bool isConstant(ERef er) const {
-        return (getEnode(er).isTerm() && logic.isConstant(getEnode(er).getTerm()));
+        return logic.isConstant(getEnode(er).getTerm());
     }
 
 #ifdef STATISTICS
@@ -352,8 +346,8 @@ private:
 
     bool    assertEq        (PTRef, PTRef, PtAsgn);               // Asserts an equality
     bool    assertEq        (ERef, ERef, PtAsgn);                 // Called by the above
-    bool    assertNEq       (PTRef, PTRef, const Expl &r);        // Asserts a negated equality
-    bool    assertNEq       (ERef, ERef, const Expl &r);          // Called by the above
+    bool    assertNEq       (PTRef, PTRef, Expl const & r);        // Asserts a negated equality
+    bool    assertNEq       (ERef, ERef, Expl const & r);          // Called by the above
     bool    assertDist      ( PTRef, PtAsgn);                     // Asserts a distinction
     //
     // Backtracking
@@ -372,7 +366,7 @@ private:
     void    undoDistinction ( PTRef );                            // Undoes a distinction
 
 
-    vec<ERef>                 pending;                          // Pending merges
+    vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
     void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
@@ -404,27 +398,16 @@ private:
     void checkForbidReferences       ( ERef );
     void checkRefConsistency         ( );
     // Helper methods
-    void mergeForbidLists(Enode & to, const Enode & from);
-    void unmergeForbidLists(Enode & to, const Enode & from);
-    void mergeDistinctionClasses(Enode & to, const Enode & from);
-    void unmergeDistinctionClasses(Enode & to, const Enode & from);
+    void mergeForbidLists(ERef to, const Enode & from);
+    void unmergeForbidLists(ERef to, const Enode & from);
+    static void mergeDistinctionClasses(Enode & to, const Enode & from);
+    static void unmergeDistinctionClasses(Enode & to, const Enode & from);
     void mergeEquivalenceClasses(ERef newroot, ERef oldroot);
     void unmergeEquivalenceClasses(ERef newroot, ERef oldroot);
-    void processParentsAfterMerge(UseVector & parents, ERef merged);
-    void processParentsBeforeUnMerge(UseVector & y_parents, ERef oldroot);
-
-#ifdef VERBOSE_EUF
-public:
-    const char* printUndoTrail     ( );
-    const char* printAsrtTrail     ( );
-private:
-    bool checkParents              ( ERef );
-    bool checkInvariants           ( );
-    bool checkInvariantSTC         ( ) { return true; }
-    bool checkExp                  ( );
-    bool checkExpTree              ( PTRef );
-    bool checkExpReachable         ( PTRef, PTRef );
-#endif
+    void processParentsBeforeMerge(ERef mergedRoot);
+    void processParentsAfterMerge(ERef mergedRoot);
+    void processParentsBeforeUnMerge(ERef oldroot);
+    void processParentsAfterUnMerge(ERef oldroot);
 
 #ifdef STATISTICS
     void printStatistics ( ofstream & );

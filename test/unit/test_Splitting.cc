@@ -13,7 +13,7 @@ protected:
 
 TEST_F(SplitTest, test_TermPrinting) {
     char * msg;
-    SRef U = logic.declareSort("U", &msg);
+    SRef U = logic.declareUninterpretedSort("U");
     SymRef sr = logic.declareFun("f", U, {U, U}, &msg, false);
     PTRef a = logic.mkVar(U, "a");
     PTRef f_a = logic.mkUninterpFun(sr, {a, a});
@@ -21,6 +21,6 @@ TEST_F(SplitTest, test_TermPrinting) {
     std::string str(str_p);
     std::string reference = "(f a a)";
     free(str_p);
-    std::cout << str << endl;
+    std::cout << str << std::endl;
     ASSERT_EQ(str.compare(reference), 0);
 }
