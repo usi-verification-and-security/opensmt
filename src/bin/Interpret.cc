@@ -1151,6 +1151,7 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
             SRef argSortRef = sortFromASTNode(**it);
             if (argSortRef == SRef_Undef) { return SRef_Undef; }
+            args.push(argSortRef);
         }
         return logic->getSort(symRef, args);
     }
