@@ -95,6 +95,8 @@ class Sort {
     SSymRef getSymRef() const { return symRef; }
 
     uint32_t getSize() const { return size; }
+
+    SRef operator[](uint32_t index) const { assert(index < size); return args[index]; }
 };
 
 struct SortKey {
