@@ -1,6 +1,9 @@
-//
-// Created by Antti on 21.10.21.
-//
+/*
+ * Copyright (c) 2021, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2021, Martin Blicha <martin.blicha@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_LATHANDLER_H
 #define OPENSMT_LATHANDLER_H
