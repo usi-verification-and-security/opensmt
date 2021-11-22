@@ -107,20 +107,8 @@ protected:
     SymRef              sym_Int_DISTINCT;
 
 public:
-    enum class ArithType {
-        LIA, LRA, NIA, NRA, LIRA, NIRA, RDL, IDL
-    };
-
-private:
-    ArithType           arithType;
-    static std::vector<std::string> const logicNames;
-    static vec<opensmt::Logic_t> const logicTypes;
-
-public:
-    ArithLogic(ArithType arithType);
+    ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
-    std::string const getName() const override { return logicNames[static_cast<int>(arithType)]; }
-    const opensmt::Logic_t getLogic() const override { return logicTypes[static_cast<int>(arithType)]; }
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }

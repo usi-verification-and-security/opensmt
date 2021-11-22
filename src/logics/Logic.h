@@ -59,6 +59,8 @@ class Logic {
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
+    opensmt::Logic_t const logicType;
+
     bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
 
@@ -151,13 +153,13 @@ class Logic {
     static const char*  s_framev_prefix;
     static const char*  s_abstract_value_prefix;
 
-    Logic();
+    Logic(opensmt::Logic_t type);
     virtual ~Logic();
 
     virtual PTRef conjoinExtras(PTRef root);
 
-    virtual std::string const getName() const { return "QF_UF"; }
-    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
+    virtual std::string const getName() const { return opensmt::QFLogicToProperties.at(logicType).name; }
+    const opensmt::Logic_t getLogic() const { return logicType; }
 
   protected:
     SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }

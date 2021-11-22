@@ -45,15 +45,8 @@ const std::string ArithLogic::s_sort_real   = "Real";
 const std::string ArithLogic::tk_val_int_default  = "0";
 const std::string ArithLogic::tk_val_real_default = "0.0";
 
-const std::vector<std::string> ArithLogic::logicNames({"LIA", "LRA", "NIA", "NRA", "LIRA", "NIRA", "DRL", "IDL"});
-
-const vec<opensmt::Logic_t> ArithLogic::logicTypes(
-        {opensmt::Logic_t::QF_LIA, opensmt::Logic_t::QF_LRA, opensmt::Logic_t::QF_NIA,
-         opensmt::Logic_t::QF_NRA, opensmt::Logic_t::QF_LIRA, opensmt::Logic_t::QF_NIRA,
-         opensmt::Logic_t::QF_RDL, opensmt::Logic_t::QF_IDL});
-
-ArithLogic::ArithLogic(ArithType arithType)
-    : Logic()
+ArithLogic::ArithLogic(opensmt::Logic_t type)
+    : Logic(type)
 
     , sort_REAL(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_real, 0, SortSymbol::INTERNAL)), {}))
     , term_Real_ZERO(mkConst(sort_REAL, tk_real_zero.c_str()))
@@ -93,36 +86,14 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INT, sort_INT}))
     , sym_Int_ITE(sortToIte[sort_INT])
     , sym_Int_DISTINCT(sortToDisequality[sort_INT])
-
-    , arithType(arithType)
-{
-    assert(static_cast<int>(logicNames.size()) == logicTypes.size());
-}
+{ }
 
 bool ArithLogic::hasIntegers() const {
-    switch (arithType) {
-        case ArithType::LIA:
-        case ArithType::NIA:
-        case ArithType::IDL:
-        case ArithType::LIRA:
-        case ArithType::NIRA:
-            return true;
-        default:
-            return false;
-    }
+    return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasInts;
 }
 
 bool ArithLogic::hasReals() const {
-    switch (arithType) {
-        case ArithType::LRA:
-        case ArithType::NRA:
-        case ArithType::RDL:
-        case ArithType::LIRA:
-        case ArithType::NIRA:
-            return true;
-        default:
-            return false;
-    }
+    return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasReals;
 }
 
 SymRef ArithLogic::getPlusForSort(SRef sort) const {
