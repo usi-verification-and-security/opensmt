@@ -70,7 +70,7 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
     PTRef leq3 = logic.mkGt(logic.mkNeg(logic.mkPlus(x3,x1)), minusOne);
 
     PTRef leq4 = logic.mkGt(logic.mkMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkGeq(logic.mkNeg(logic.mkPlus(vec<PTRef>{x4,x2})), zero);
+    PTRef leq5 = logic.mkGeq(logic.mkNeg(logic.mkPlus(x4,x2)), zero);
     PTRef leq6 = logic.mkGeq(x4, zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False),
                           PtAsgn(logic.mkNot(leq3), l_False),

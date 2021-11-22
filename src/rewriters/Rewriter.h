@@ -14,7 +14,7 @@ class Rewriter {
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
-    PTRef rewrite(PTRef root) {
+    virtual PTRef rewrite(PTRef root) {
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;
