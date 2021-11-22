@@ -68,7 +68,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
   std::vector< std::string > * str_list;
   ASTNode *                    snode;
   std::vector< ASTNode * > *   snode_list;
-  smt2token                    tok;
+  osmttokens::smt2token        tok;
 }
 
 

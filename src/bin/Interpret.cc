@@ -146,6 +146,7 @@ void Interpret::exit() {
 
 using opensmt::Logic_t;
 using opensmt::getLogicFromString;
+using namespace osmttokens;
 
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);
@@ -361,7 +362,7 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             default: {
-                notify_formatted(true, "Unknown command encountered!");
+                notify_formatted(true, "Unknown command encountered: %s", tokenToName.at(cmd.x).c_str());
             }
         }
     } catch (OsmtApiException const &e) {
