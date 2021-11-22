@@ -26,13 +26,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UFLRATHandler_H
 #define UFLRATHandler_H
 
-#include "LRATHandler.h"
+#include "LATHandler.h"
 #include "ArithLogic.h"
 
 class Egraph;
 class LASolver;
 
-class UFLRATHandler : public LRATHandler
+class UFLRATHandler : public LATHandler
 {
   private:
     ArithLogic      &logic;

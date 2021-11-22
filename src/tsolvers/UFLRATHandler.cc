@@ -5,7 +5,7 @@
 #include "Egraph.h"
 
 UFLRATHandler::UFLRATHandler(SMTConfig & c, ArithLogic & l)
-        : LRATHandler(c, l)
+        : LATHandler(c, l)
         , logic(l)
 {
     lasolver = new LASolver(config, logic);

@@ -32,12 +32,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "GhostSMTSolver.h"
 #include "UFLRATheory.h"
 #include "LATheory.h"
+#include "LATHandler.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
 #include "IteHandler.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
-#include "LIATHandler.h"
 
 #include <thread>
 #include <random>
@@ -420,13 +420,13 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_LRA:
         {
             ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LRATHandler>(config, lraLogic);
+            theory = new LATheory<ArithLogic,LATHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
         {
             ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LIATHandler>(config, liaLogic);
+            theory = new LATheory<ArithLogic,LATHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_RDL:
