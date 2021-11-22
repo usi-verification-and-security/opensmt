@@ -89,7 +89,7 @@ class DivModRewriter : Rewriter<DivModConfig> {
 public:
     DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
 
-    PTRef rewrite(PTRef term) {
+    PTRef rewrite(PTRef term) override {
         if (term == PTRef_Undef or not logic.hasSortBool(term)) {
             throw OsmtApiException("Div/Mod rewriting should only be called on formulas, not terms!");
         }
