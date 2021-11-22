@@ -64,7 +64,7 @@ const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 
 CUFLogic::CUFLogic() :
       Logic()
-    , sort_CUFNUM(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_cufnum, 0, SortSymbol::INTERNAL)), {}))
+    , sort_CUFNUM(declareUninterpretedSort(s_sort_cufnum))
     , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
     , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))
     , sym_CUF_ZERO(getSymRef(term_CUF_ZERO))

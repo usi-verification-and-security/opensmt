@@ -27,8 +27,6 @@ class BVLogic: public CUFLogic
 
   protected:
 
-    static const char*  tk_bv_zero;
-    static const char*  tk_bv_one;
     static const char*  tk_bv_neg;
     static const char*  tk_bv_eq;
     static const char*  tk_bv_minus;
@@ -59,6 +57,7 @@ class BVLogic: public CUFLogic
 
     static const char*  s_sort_bvnum;
 
+    int                 bitwidth;
     SRef                sort_BVNUM;
     PTRef               term_BV_ZERO;
     PTRef               term_BV_ONE;
@@ -96,8 +95,6 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_NEQ;    // !=
 
     static const int i_default_bitwidth;
-
-    int bitwidth;
 
   public:
     BVLogic(int width = i_default_bitwidth);
