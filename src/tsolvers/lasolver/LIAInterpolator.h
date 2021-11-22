@@ -17,18 +17,10 @@ struct LAExplanations {
                                              std::map<PTRef, icolor_t> const & labels);
 };
 
-class LIAInterpolator {
-
-    FarkasInterpolator farkasInterpolator;
+class LIAInterpolator : public FarkasInterpolator {
 
 public:
     LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations);
-
-    PTRef getFarkasInterpolant() { return farkasInterpolator.getFarkasInterpolant(); }
-    PTRef getDualFarkasInterpolant() { return farkasInterpolator.getDualFarkasInterpolant(); }
-    PTRef getFlexibleInterpolant(opensmt::Real alpha) { return farkasInterpolator.getFlexibleInterpolant(std::move(alpha)); }
-    PTRef getDecomposedInterpolant() { return farkasInterpolator.getDecomposedInterpolant(); }
-    PTRef getDualDecomposedInterpolant() { return farkasInterpolator.getDualFarkasInterpolant(); }
 };
 
 

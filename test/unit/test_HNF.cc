@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <Vec.h>
 #include <Sort.h>
-#include <liasolver/Matrix.h>
+#include <lasolver/Matrix.h>
 #include <ArithLogic.h>
 
 class HNF_test : public ::testing::Test {

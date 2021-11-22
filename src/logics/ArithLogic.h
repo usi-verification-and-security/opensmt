@@ -303,7 +303,6 @@ public:
     bool isIntOne(SymRef sr) const { return sr == sym_Int_ONE; }
     bool isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
 
-
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
 
@@ -384,7 +383,6 @@ public:
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
     PTRef sumToNormalizedEquality(PTRef sum);
-
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
     opensmt::pair<lbool,SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
