@@ -54,7 +54,7 @@ void usingWrapper() {
 }
 
 void creatingComponentsDirectly() {
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     SMTConfig config;
     MainSolver mainSolver(logic, config, "LIA solver");
 

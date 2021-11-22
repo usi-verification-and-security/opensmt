@@ -20,7 +20,7 @@ main(int argc, char** argv)
     int bw = atoi(argv[1]);
 
     SMTConfig c;
-    BVLogic* logic_ = new BVLogic(bw);
+    BVLogic* logic_ = new BVLogic(opensmt::Logic_t::QF_BV, bw);
     BVLogic& logic = *logic_;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
