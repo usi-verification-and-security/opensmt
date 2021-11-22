@@ -22,6 +22,7 @@ include(egraph/CMakeLists.txt)
 include(lasolver/CMakeLists.txt)
 include(bvsolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)
+include(axdiffsolver/CMakeLists.txt)
 
 install(FILES Deductions.h UFTHandler.h CUFTHandler.h LATHandler.h IDLTHandler.h RDLTHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h

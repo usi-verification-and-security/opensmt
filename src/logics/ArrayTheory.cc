@@ -45,6 +45,7 @@ PTRef instantiateReadOverStore(Logic & logic, PTRef fla) {
 
 bool ArrayTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
 {
+    // TODO: simplify select over store on the same index
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
         std::logic_error("Not suppported yet");

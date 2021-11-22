@@ -227,19 +227,22 @@ public:
         printStatistics(std::cerr);
 #endif // STATISTICS
     }
+    bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
     void clearSolver() override { clearModel(); } // Only clear the possible computed values
 
 protected:
     inline Enode & getEnode(ERef er) { return enode_store[er]; }
 
-private:
-    ERef termToERef(PTRef p) { return enode_store.getERef(p); }
-
 public:
     inline const Enode & getEnode(ERef er) const { return enode_store[er]; }
 
     PTRef ERefToTerm(ERef er) const { return getEnode(er).getTerm(); }
+
+    ERef termToERef(PTRef p) { return enode_store.getERef(p); }
+
+    ERef getRoot(ERef er) const { return getEnode(er).getRoot(); }
+
 
     bool isConstant(ERef er) const {
         return logic.isConstant(getEnode(er).getTerm());

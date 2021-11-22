@@ -7,10 +7,13 @@
 #ifndef OPENSMT_ARRAYTHANDLER_H
 #define OPENSMT_ARRAYTHANDLER_H
 
+#include "ArraySolver.h"
 #include "TSolverHandler.h"
 
 class ArrayTHandler : public TSolverHandler {
     Logic & logic;
+    Egraph * egraph;
+    ArraySolver * arraySolver;
 public:
     ArrayTHandler(SMTConfig & c, Logic & l);
 
