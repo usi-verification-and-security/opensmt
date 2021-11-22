@@ -7,7 +7,7 @@
 
 class SplitTest : public ::testing::Test {
 protected:
-    SplitTest() : logic{} {}
+    SplitTest() : logic{opensmt::Logic_t::QF_UF} {}
     Logic logic;
 };
 

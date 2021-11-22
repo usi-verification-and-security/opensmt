@@ -14,7 +14,7 @@
 
 class UFModelTest : public ::testing::Test {
 protected:
-    UFModelTest(): logic{} {}
+    UFModelTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         char* err;
         S = logic.declareUninterpretedSort("U");
@@ -64,7 +64,7 @@ protected:
 
 class UFModelBuilderTest : public ::testing::Test {
 protected:
-    UFModelBuilderTest(): logic{} {}
+    UFModelBuilderTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         char* err;
         S = logic.declareUninterpretedSort("U");
@@ -159,7 +159,7 @@ TEST_F(UFModelBuilderTest, test_functionModel) {
 
 class UFConstModelTest : public ::testing::Test {
 protected:
-    UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
+    UFConstModelTest() : logic(opensmt::Logic_t::QF_UF), ms(logic, c, "uf-solver") {
         char * msg;
         SRef U = logic.declareUninterpretedSort("U");
         fs = logic.declareFun("f", U, {U}, &msg, false);
@@ -202,7 +202,7 @@ TEST_F(UFConstModelTest, test_constModel) {
 
 class LAModelTest : public ::testing::Test {
 protected:
-    LAModelTest(): logic{ArithLogic::ArithType::LRA} {}
+    LAModelTest(): logic{opensmt::Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");

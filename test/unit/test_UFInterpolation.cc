@@ -13,7 +13,7 @@ bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t con
 
 class UFInterpolationTest : public ::testing::Test {
 protected:
-    UFInterpolationTest(): logic{} {}
+    UFInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -398,7 +398,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
      */
 
     // Note: this requires a set-up in specific order, different from the set-up we have in UFInterpolationTest
-    Logic logic;
+    Logic logic{opensmt::Logic_t::QF_UF};
     SRef ufsort = logic.declareUninterpretedSort("U");
     SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort}, nullptr);
     SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr);

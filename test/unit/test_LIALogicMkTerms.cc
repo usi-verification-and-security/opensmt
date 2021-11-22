@@ -7,7 +7,7 @@
 
 class LIALogicMkTermsTest: public ::testing::Test {
 protected:
-    LIALogicMkTermsTest() : logic(ArithLogic::ArithType::LIA) {}
+    LIALogicMkTermsTest() : logic(opensmt::Logic_t::QF_LIA) {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");

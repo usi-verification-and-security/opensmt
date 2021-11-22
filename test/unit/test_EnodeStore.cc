@@ -10,7 +10,7 @@
 class EnodeStoreTest : public ::testing::Test {
 protected:
     Logic logic;
-    EnodeStoreTest() {}
+    EnodeStoreTest() : logic(opensmt::Logic_t::QF_UF){}
 };
 
 TEST_F(EnodeStoreTest, testUP) {

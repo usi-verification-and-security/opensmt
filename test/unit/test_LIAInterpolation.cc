@@ -10,7 +10,7 @@
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
-    LIAInterpolationTest(): logic{ArithLogic::ArithType::LIA} {}
+    LIAInterpolationTest(): logic{opensmt::Logic_t::QF_LIA} {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
