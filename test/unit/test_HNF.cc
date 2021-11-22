@@ -8,7 +8,7 @@
 
 class HNF_test : public ::testing::Test {
 protected:
-    HNF_test() : logic{ArithLogic::ArithType::LIA}, vecStore(va, logic), ms(vecStore) {}
+    HNF_test() : logic{opensmt::Logic_t::QF_LIA}, vecStore(va, logic), ms(vecStore) {}
     virtual void SetUp() {
     }
     ArithLogic logic;

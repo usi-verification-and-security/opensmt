@@ -70,8 +70,9 @@ const char* Logic::s_abstract_value_prefix = "@";
 std::size_t Logic::abstractValueCount = 0;
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic() :
-      distinctClassCount(0)
+Logic::Logic(opensmt::Logic_t _logicType) :
+      logicType(_logicType)
+    , distinctClassCount(0)
     , sort_store()
     , term_store(sym_store)
     , sort_BOOL(sort_store.getOrCreateSort(sort_store.newSortSymbol(SortSymbol(s_sort_bool, 0, SortSymbol::INTERNAL)), {}).first)

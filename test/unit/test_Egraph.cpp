@@ -62,7 +62,7 @@ public:
     Logic logic;
     Egraph egraph;
     SMTConfig c;
-    EgraphTest() : logic{}, egraph(c, logic) {}
+    EgraphTest() : logic{opensmt::Logic_t::QF_UF}, egraph(c, logic) {}
 };
 
 TEST_F(EgraphTest, test_booleans) {

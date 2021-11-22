@@ -92,7 +92,7 @@ TEST(Matrix_test, floor_div)
 TEST(Matrix_test, vec_creation)
 {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     // INT32_MIN
     Real r {"-2147483648"};
@@ -163,7 +163,7 @@ TEST(Matrix_test, vec_creation)
 
 TEST(Matrix_test, smith_matrix1) {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(3, 3);
@@ -206,7 +206,7 @@ TEST(Matrix_test, smith_matrix1) {
 
 TEST(Matrix_test, smith_matrix111) {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(4, 4);
@@ -262,7 +262,7 @@ TEST(Matrix_test, smith_matrix2) {
     // [[-2561 1265 2517 -3732 1490 1769 1203 -4213 2948 -3189 129 -129 1475 4601 -1635 768 -3204 3619 337 657]
     // [0 0 0 0 0 0 0 -1 0 0 0 0 0 0 0 0 0 0 0 0]]
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId T = ms.getNewMatrix(20, 2);
@@ -321,7 +321,7 @@ TEST(Matrix_test, smith_matrix2) {
 TEST(Matrix_test, smith_matrix3) {
 
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId T3 = ms.getNewMatrix(21, 1);
@@ -359,7 +359,7 @@ TEST(Matrix_test, smith_matrix3) {
 TEST(Matrix_test, smith_matrix4) {
 
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     const int N = 20;
@@ -380,7 +380,7 @@ TEST(Matrix_test, smith_matrix4) {
 
 TEST(Matrix_test, matrix_mult) {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId A = ms.getNewMatrix(2, 2);
@@ -427,7 +427,7 @@ TEST(Matrix_test, matrix_mult) {
 TEST(Matrix_test, discretize)
 {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vs(va, logic);
     LAMatrixStore ms(vs);
     LAVecRef v = vs.getNewVec(13);
@@ -462,7 +462,7 @@ TEST(Matrix_test, discretize)
 TEST(Matrix_test, non_square)
 {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(2,3); // Should be 2 columns, 3 rows
@@ -546,7 +546,7 @@ TEST(lcm_test, lcm_list)
 
 TEST(Matrix_test, least_in_row) {
     LAVecAllocator va;
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     LAVecStore vecStore(va, logic);
     LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(4, 4);

@@ -9,7 +9,7 @@
 
 class LRAInterpolationTest : public ::testing::Test {
 protected:
-    LRAInterpolationTest(): logic{ArithLogic::ArithType::LRA} {}
+    LRAInterpolationTest(): logic{opensmt::Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");

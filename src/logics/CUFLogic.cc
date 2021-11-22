@@ -62,8 +62,8 @@ const char* CUFLogic::tk_cuf_cond   = "?";
 
 const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 
-CUFLogic::CUFLogic() :
-      Logic()
+CUFLogic::CUFLogic(opensmt::Logic_t logicType) :
+      Logic(logicType)
     , sort_CUFNUM(declareUninterpretedSort(s_sort_cufnum))
     , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
     , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))

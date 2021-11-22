@@ -11,14 +11,14 @@
 class LogicIteTest: public ::testing::Test {
 public:
     Logic logic;
-    LogicIteTest() : logic{} {}
+    LogicIteTest() : logic{opensmt::Logic_t::QF_BOOL} {}
 };
 
 class LRAIteTest: public ::testing::Test {
 public:
     ArithLogic logic;
     SRef lrasort;
-    LRAIteTest() : logic{ArithLogic::ArithType::LRA}, lrasort(logic.getSort_real()) {}
+    LRAIteTest() : logic{opensmt::Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
 };
 
 class IteManagerTest: public ::testing::Test {
@@ -31,7 +31,7 @@ public:
     ArithLogic logic;
     SRef lrasort;
 
-    IteManagerTest() : logic{ArithLogic::ArithType::LRA}, lrasort(logic.getSort_real()) {}
+    IteManagerTest() : logic{opensmt::Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
 
     void printTopLevelSwitches(IteToSwitch &iteManager) {
         PTRef tr = logic.getTerm_true();

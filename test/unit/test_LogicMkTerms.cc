@@ -10,7 +10,7 @@
 class LogicMkTermsTest: public ::testing::Test {
 public:
     Logic logic;
-    LogicMkTermsTest(): logic{} {}
+    LogicMkTermsTest(): logic{opensmt::Logic_t::QF_UF} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){

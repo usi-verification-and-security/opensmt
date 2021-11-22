@@ -93,7 +93,7 @@ TEST(ProofTest, test_mergeClauses_PivotAfterFirstEnd) {
 
 class ReductionTest : public ::testing::Test {
 protected:
-    ReductionTest(): logic{}, config{}, theory{config, logic}, partitionManager{logic}, termMapper{logic}, ca{}, proof{ca} {}
+    ReductionTest(): logic{opensmt::Logic_t::QF_BOOL}, config{}, theory{config, logic}, partitionManager{logic}, termMapper{logic}, ca{}, proof{ca} {}
     virtual void SetUp() {
         a_term = logic.mkBoolVar("a");
         b_term = logic.mkBoolVar("b");

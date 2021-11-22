@@ -97,11 +97,10 @@ class BVLogic: public CUFLogic
     static const int i_default_bitwidth;
 
   public:
-    BVLogic(int width = i_default_bitwidth);
+    BVLogic(opensmt::Logic_t type, int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
     virtual std::string const getName() const override { return "QF_BV"; }
-    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary

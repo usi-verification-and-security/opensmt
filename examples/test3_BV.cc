@@ -12,7 +12,7 @@
 int
 main(int argc, char** argv)
 {
-    BVLogic bvlogic;
+    BVLogic bvlogic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(bvlogic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;

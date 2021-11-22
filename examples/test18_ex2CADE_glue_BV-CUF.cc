@@ -28,7 +28,7 @@ void printValue(PTRef tr, std::unique_ptr<Model> & m, const Logic & l)
 
 int main(int argc, char** argv)
 {
-    BVLogic logic;
+    BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;

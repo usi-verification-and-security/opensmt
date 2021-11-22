@@ -9,7 +9,7 @@
 
 class IDLSolverTest : public ::testing::Test {
 protected:
-    IDLSolverTest() : logic{ArithLogic::ArithType::IDL} {}
+    IDLSolverTest() : logic{opensmt::Logic_t::QF_IDL} {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");

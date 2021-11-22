@@ -12,7 +12,7 @@
 class LIAStrengthening: public ::testing::Test {
 public:
     ArithLogic logic;
-    LIAStrengthening() : logic{ArithLogic::ArithType::LIA} {}
+    LIAStrengthening() : logic{opensmt::Logic_t::QF_LIA} {}
 };
 
 TEST_F(LIAStrengthening, test_LIAStrengthening) {

@@ -8,9 +8,13 @@
 
 typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
 
-TEST(SubstitutionBreaker, test_getVars) {
+class SubstitutionBreaker : public ::testing::Test {
+public:
     Logic logic;
+    SubstitutionBreaker() : logic{opensmt::Logic_t::QF_UF} {}
+};
 
+TEST_F(SubstitutionBreaker, test_getVars) {
 
     char *tmp;
     SRef U = logic.declareUninterpretedSort("U");
@@ -32,9 +36,7 @@ TEST(SubstitutionBreaker, test_getVars) {
     ASSERT_EQ(sna[snr].nChildren(), 3);
 }
 
-TEST(SubstitutionBreaker, test_Simple) {
-    Logic logic;
-
+TEST_F(SubstitutionBreaker, test_Simple) {
 
     PTRef a = logic.mkVar(logic.getSort_bool(), "a");
     MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
@@ -46,8 +48,7 @@ TEST(SubstitutionBreaker, test_Simple) {
     ASSERT_TRUE(subst_map.has(a));
 }
 
-TEST(SubstitutionBreaker, test_getLoops) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops) {
 
     char* tmp;
     SRef U = logic.declareUninterpretedSort("U");
@@ -74,8 +75,7 @@ TEST(SubstitutionBreaker, test_getLoops) {
     std::cerr << slb.printGraphAndLoops(startNodes, loops) << std::endl;
 }
 
-TEST(SubstitutionBreaker, test_getLoops2) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops2) {
 
     char* tmp;
     SRef U = logic.declareUninterpretedSort("U");
@@ -117,8 +117,7 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     ASSERT_EQ(loops.size(), 1);
 }
 
-TEST(SubstitutionBreaker, test_getLoops3) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops3) {
 
     char* tmp;
     SRef U = logic.declareUninterpretedSort("U");

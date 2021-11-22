@@ -8,7 +8,7 @@
 
 class GetFactsTest : public ::testing::Test {
 protected:
-    GetFactsTest(): logic{} {}
+    GetFactsTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -70,7 +70,7 @@ TEST_F(GetFactsTest, test_MultipleFacts){
 
 class RetrieveSubstitutionTest : public ::testing::Test {
 protected:
-    RetrieveSubstitutionTest(): logic{} {}
+    RetrieveSubstitutionTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -135,7 +135,7 @@ TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
 //========================== TEST for applying sustituitions ===========================================================
 class ApplySubstitutionTest : public ::testing::Test {
 protected:
-    ApplySubstitutionTest(): logic{} {}
+    ApplySubstitutionTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -188,7 +188,7 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
 
 //========================== TEST for transitive closure of substitutions ===========================================================
 TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
-    Logic logic;
+    Logic logic{opensmt::Logic_t::QF_UF};
     Logic::SubstMap substitutions;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");

@@ -14,7 +14,7 @@ main(int argc, char** argv)
     }
     int c1_int = atoi(argv[1]);
     int c2_int = atoi(argv[2]);
-    BVLogic* logic_ = new BVLogic();
+    BVLogic* logic_ = new BVLogic(opensmt::Logic_t::QF_BV);
     BVLogic& logic = *logic_;
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
