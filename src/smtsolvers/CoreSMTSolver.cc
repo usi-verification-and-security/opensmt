@@ -385,9 +385,9 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
         watches.smudge(~c[0]);
         watches.smudge(~c[1]);
-        if (c.size() > 2){
-            watches.smudge(~c[2]);
-        }
+//        if (c.size() > 2){
+//            watches.smudge(~c[2]);
+//        }
     }
 
     if (c.learnt()) learnts_literals -= c.size();
@@ -1206,44 +1206,60 @@ CRef CoreSMTSolver::propagate()
                 continue;
             }
 
-            if (c[0] == false_lit){
-                if(c_size > 2 && value(c[2]) != l_False){
-                    c[0] = c[2], c[2] = false_lit;
-                } else {
-                    c[0] = c[1], c[1] = false_lit;
-                }
-            } else {
-                if (c[1] == false_lit) {
-                    if(c_size > 2 && value(c[2]) != l_False){
-                        c[1] = c[2], c[2] = false_lit;
+            if(value(c[0]) == l_True || value(c[1]) == l_True){
+                *j++ = *i++;
+                continue;
+            }
+
+
+            printf("Literal 1 # %d ", c[0].x);
+            printf("Literal 2 # %d ", c[1].x);
+
+            if(c_size > 2 ){
+                printf("Literal 3 # %d \n", c[2].x);
+                if (c[0] == false_lit){
+                    if(value(c[2]) != l_False){
+                        c[0] = c[2], c[2] = false_lit;
+                    } else {
+                        c[0] = c[1], c[1] = false_lit;
                     }
+                }
+                if (c[1] == false_lit){
+                    c[1] = c[2], c[2] = false_lit;
+                }
+            }
+            else {
+                if (c[0] == false_lit) {
+                    c[0] = c[1], c[1] = false_lit;
                 }
             }
 
 
-            assert(c[1] == false_lit || (c_size > 2 && c[2] == false_lit));
+            if(c_size == 2){
+                assert(c[1] == false_lit);
+            } else {
+                assert(c[2] == false_lit);
+            }
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
             Lit first = c[0];
             Watcher w = Watcher(cr, first);
-            if (first != blocker && value(first) == l_True)
-            {
-                *j++ = w;
-                continue;
-            }
-
             // Look for new watch:
-            for (unsigned k = 3; k < c_size; k++)
-                if (value(c[k]) != l_False)
-                {
+            for (unsigned k = 3; k < c_size; k++) {
+                if (value(c[k]) != l_False) {
+//                    printf("Clause # %p ", &c);
+//                    printf("Literal 1 # %d ", c[0].x);
+//                    printf("Literal 2 # %d ", c[1].x);
+//                    printf("Literal 3 # %d \n", c[2].x);
+//                    printf("Propagated # %d \n", c[2].x);
                     c[2] = c[k];
                     c[k] = false_lit;
                     watches[~c[2]].push(w);
                     goto NextClause;
                 }
-
-            if(value(c[1]) == l_False || value(c[0]) == l_False){
+            }
+            if(value(c[1]) == l_False){
                 // Did not find watch
                 *j++ = w;
                 if (value(first) == l_False) // clause is falsified
