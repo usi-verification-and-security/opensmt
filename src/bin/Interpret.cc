@@ -190,7 +190,6 @@ void Interpret::interp(ASTNode& n) {
             }
             case t_declaresort: {
                 if (isInitialized()) {
-                    Logic &logic = main_solver->getLogic();
                     assert(n.children and n.children->size() == 2);
                     auto it = n.children->begin();
                     ASTNode & symbolNode = **it;
@@ -201,10 +200,10 @@ void Interpret::interp(ASTNode& n) {
                     int arity = atoi(numNode.getValue()); // MB: TODO: take care of out-of-range input
                     SortSymbol symbol(symbolNode.getValue(), arity);
                     SSymRef ssref;
-                    if (logic.peekSortSymbol(symbol, ssref)) {
+                    if (logic->peekSortSymbol(symbol, ssref)) {
                         notify_formatted(true, "sort %s already declared", symbolNode.getValue());
                     } else {
-                        logic.declareSortSymbol(std::move(symbol));
+                        logic->declareSortSymbol(std::move(symbol));
                         notify_success();
                     }
                 } else
@@ -768,19 +767,18 @@ void Interpret::writeSplits_smtlib2(const char* filename)
     main_solver->writeSolverSplits_smtlib2(filename, &msg);
 }
 
-bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& args)
+bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
 {
     auto it = n.children->begin();
-    ASTNode& name_node = **(it++);
-    ASTNode& args_node = **(it++);
-    ASTNode& ret_node  = **(it++);
+    ASTNode const & name_node = **(it++);
+    ASTNode const & args_node = **(it++);
+    ASTNode const & ret_node  = **(it++);
     assert(it == n.children->end());
 
     const char* fname = name_node.getValue();
 
     vec<SRef> args;
 
-    Logic & logic = main_solver->getLogic();
     SRef retSort = sortFromASTNode(ret_node);
     if (retSort != SRef_Undef) {
         args.push(retSort);
@@ -789,13 +787,12 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
         return false;
     }
 
-    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-        SRef argSort = sortFromASTNode(**it2);
+    for (auto childNode : *(args_node.children)) {
+        SRef argSort = sortFromASTNode(*childNode);
         if (argSort != SRef_Undef) {
             args.push(argSort);
-        }
-        else {
-            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(**it2).name.c_str(), fname);
+        } else {
+            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(*childNode).name.c_str(), fname);
             return false;
         }
     }
@@ -806,7 +803,7 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
     for (int i = 1; i < args.size(); i++)
         args2.push(args[i]);
 
-    SymRef rval = logic.declareFun(fname, rsort, args2, &msg);
+    SymRef rval = logic->declareFun(fname, rsort, args2, &msg);
 
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-fun %s: %s", fname, msg);
@@ -825,7 +822,6 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
     it++; // args_node
     ASTNode const & ret_node = **(it++);
     const char* fname = name_node.getValue();
-    Logic& logic = main_solver->getLogic();
     SRef ret_sort = sortFromASTNode(ret_node);
     if (ret_sort == SRef_Undef) {
         notify_formatted(true, "Failed to declare constant %s", fname);
@@ -833,9 +829,9 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
         return false;
     }
     char * msg;
-    SymRef rval = logic.declareFun(fname, ret_sort, {}, &msg, false);
+    SymRef rval = logic->declareFun(fname, ret_sort, {}, &msg, false);
     if (rval == SymRef_Undef) {
-        comment_formatted("While declare-const %s: %s", fname, "error");
+        comment_formatted("While declare-const %s: error", fname);
         return false;
     }
     user_declarations.push(rval);
@@ -846,30 +842,29 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
 bool Interpret::defineFun(const ASTNode& n)
 {
     auto it = n.children->begin();
-    ASTNode& name_node = **(it++);
-    ASTNode& args_node = **(it++);
-    ASTNode& ret_node  = **(it++);
-    ASTNode& term_node = **(it++);
+    ASTNode const & name_node = **(it++);
+    ASTNode const & args_node = **(it++);
+    ASTNode const & ret_node  = **(it++);
+    ASTNode const & term_node = **(it++);
     assert(it == n.children->end());
 
     const char* fname = name_node.getValue();
-    Logic& logic = main_solver->getLogic();
 
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
     for (auto childNodePtr : *args_node.children) {
-        ASTNode & childNode = *childNodePtr;
+        ASTNode const & childNode = *childNodePtr;
         assert(childNode.children->size() == 1);
         std::string varName = childNode.getValue();
-        ASTNode & sortNode = **(childNode.children->begin());
+        ASTNode const & sortNode = **(childNode.children->begin());
         SRef sortRef = sortFromASTNode(sortNode);
         if (sortRef == SRef_Undef) {
             notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname);
             return false;
         }
         arg_sorts.push(sortRef);
-        PTRef pvar = logic.mkVar(arg_sorts.last(), varName.c_str());
+        PTRef pvar = logic->mkVar(arg_sorts.last(), varName.c_str());
         arg_trs.push(pvar);
     }
 
@@ -886,11 +881,11 @@ bool Interpret::defineFun(const ASTNode& n)
         notify_formatted(true, "define-fun returns an unknown sort");
         return false;
     }
-    else if (logic.getSortRef(tr) != ret_sort) {
-        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic.getSortName(logic.getSortRef(tr)).c_str(), logic.getSortName(ret_sort).c_str());
+    else if (logic->getSortRef(tr) != ret_sort) {
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)).c_str(), logic->getSortName(ret_sort).c_str());
         return false;
     }
-    bool rval = logic.defineFun(fname, arg_trs, ret_sort, tr);
+    bool rval = logic->defineFun(fname, arg_trs, ret_sort, tr);
     if (rval) notify_success();
     else {
         notify_formatted(true, "define-fun failed");
@@ -1123,13 +1118,13 @@ int Interpret::interpPipe() {
     return 0;
 }
 
-SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) const {
+SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
     if (node.getType() == SYM_T) {
-        return SortSymbol(node.getValue(), 0);
+        return {node.getValue(), 0};
     } else {
         assert(node.getType() == LID_T and node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
-        return SortSymbol(name.getValue(), node.children->size() - 1);
+        return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
     }
 }
 
@@ -1155,6 +1150,19 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         }
         return logic->getSort(symRef, std::move(args));
     }
+    assert(node.getType() == LID_T and node.children and not node.children->empty());
+    ASTNode const & name = **(node.children->begin());
+    SortSymbol symbol(name.getValue(), node.children->size() - 1);
+    SSymRef symRef;
+    bool known = logic->peekSortSymbol(symbol, symRef);
+    if (not known) { return SRef_Undef; }
+    vec<SRef> args;
+    for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
+        SRef argSortRef = sortFromASTNode(**it);
+        if (argSortRef == SRef_Undef) { return SRef_Undef; }
+        args.push(argSortRef);
+    }
+    return logic->getSort(symRef, std::move(args));
 }
 
 void Interpret::getInterpolants(const ASTNode& n)
