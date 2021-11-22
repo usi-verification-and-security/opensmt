@@ -46,17 +46,15 @@ SSymRef SStore::newSortSymbol(SortSymbol symbol) {
     return res;
 }
 
-opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> const & rest)
+opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest)
 {
-    SortKey key;
-    key.sym = symbolRef;
-    rest.copyTo(key.args);
+    SortKey key(symbolRef, std::move(rest));
     auto it = sortTable.find(key);
     if (it != sortTable.end()) {
         return {it->second, false};
     }
 
-    SRef sr = sa.alloc(symbolRef, rest);
+    SRef sr = sa.alloc(key);
     sorts.push(sr);
     auto emplaceRes = sortTable.emplace(std::move(key), sr);
     assert(emplaceRes.second); (void)emplaceRes;

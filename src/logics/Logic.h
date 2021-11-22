@@ -268,7 +268,7 @@ public:
     bool        hasSortSymbol(SortSymbol const &);
     bool        peekSortSymbol(SortSymbol const &, SSymRef&);
     SSymRef     declareSortSymbol(SortSymbol symbol);
-    SRef        getSort(SSymRef, vec<SRef> const & args);
+    SRef        getSort(SSymRef, vec<SRef> && args);
 
     PTRef       mkBoolVar     (const char* name);
 

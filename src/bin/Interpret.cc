@@ -1153,7 +1153,7 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
             if (argSortRef == SRef_Undef) { return SRef_Undef; }
             args.push(argSortRef);
         }
-        return logic->getSort(symRef, args);
+        return logic->getSort(symRef, std::move(args));
     }
 }
 

@@ -97,6 +97,19 @@ class Sort {
     uint32_t getSize() const { return size; }
 };
 
+struct SortKey {
+    SSymRef sym;
+    vec<SRef> args;
+    SortKey(SSymRef _sym, vec<SRef> && _args) : sym(_sym), args(std::move(_args)) { }
+    friend bool operator== (SortKey const & k1, SortKey const & k2) {
+        if (k1.sym != k2.sym) return false;
+        if (k1.args.size() != k2.args.size()) return false;
+        for (int i = 0; i < k1.args.size(); i++)
+            if (k1.args[i] != k2.args[i]) return false;
+        return true;
+    }
+};
+
 class SortSymbolAllocator : public RegionAllocator<uint32_t>
 {
     static int SortSymbolWord32Size() {
@@ -131,12 +144,11 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
-    SRef alloc(SSymRef symRef, vec<SRef> const & rest)
+    SRef alloc(SortKey const & key)
     {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(rest.size()));
-        SRef sid;
-        sid.x = v;
-        new (lea(sid)) Sort(symRef, static_uniq_id++, rest);
+        uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(key.args.size()));
+        SRef sid = {v};
+        new (lea(sid)) Sort(key.sym, static_uniq_id++, key.args);
         return sid;
     }
     Sort&       operator[](SRef r)       { return (Sort&)RegionAllocator<uint32_t>::operator[](r.x); }

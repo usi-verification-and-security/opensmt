@@ -354,8 +354,8 @@ SSymRef Logic::declareSortSymbol(SortSymbol symbol) {
     return sort_store.newSortSymbol(std::move(symbol));
 }
 
-SRef Logic::getSort(SSymRef symbolRef, vec<SRef> const & args) {
-    auto [sr,created] = sort_store.getOrCreateSort(symbolRef, args);
+SRef Logic::getSort(SSymRef symbolRef, vec<SRef> && args) {
+    auto [sr,created] = sort_store.getOrCreateSort(symbolRef, std::move(args));
     if (created) {
         instantiateFunctions(sr);
         if (not isInternalSort(sr)) {
