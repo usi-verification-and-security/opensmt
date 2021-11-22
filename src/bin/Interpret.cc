@@ -146,6 +146,7 @@ void Interpret::exit() {
 
 using opensmt::Logic_t;
 using opensmt::getLogicFromString;
+using namespace osmttokens;
 
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);

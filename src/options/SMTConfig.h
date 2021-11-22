@@ -77,13 +77,13 @@ enum ASTType {
 class ASTNode {
   private:
     ASTType             type;
-    smt2token           tok;
+    osmttokens::smt2token   tok;
     char*               val;
     static const char*  typestr[];
   public:
     std::vector< ASTNode* >*children;
-    ASTNode(ASTType t, smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
-    ASTNode(ASTType t, char* v) : type(t), tok({t_none}), val(v), children(NULL) {}
+    ASTNode(ASTType t, osmttokens::smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
+    ASTNode(ASTType t, char* v) : type(t), tok({osmttokens::t_none}), val(v), children(NULL) {}
     ~ASTNode() {
         if (children) {
             for (auto ci = children->begin(); ci != children->end(); ci++) {
@@ -97,7 +97,7 @@ class ASTNode {
     inline const char      *typeToStr() const { return typestr[type]; }
     inline ASTType         getType()   const { return type; }
     inline const char      *getValue()  const { return val; }
-    inline const smt2token getToken()  const { return tok; }
+    inline const osmttokens::smt2token getToken()  const { return tok; }
 };
 
 
