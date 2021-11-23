@@ -148,7 +148,6 @@ public:
     const FastRational & getNumConst(PTRef tr) const;
 
     bool           isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
-    bool           isTheoryEquality(PTRef tr) const override { return isNumEq(tr); }
     bool           isAtom(PTRef tr) const override { return isNumEq(tr) || isLt(tr) || isGt(tr) || isLeq(tr) || isGeq(tr) || Logic::isAtom(tr); }
     const char*    getDefaultValue(PTRef tr) const override;
     PTRef          getDefaultValuePTRef(SRef sref) const override;
