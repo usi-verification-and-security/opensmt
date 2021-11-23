@@ -21,11 +21,11 @@ bool UFLRATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanage
 
 namespace {
     bool isArithmeticSymbol(ArithLogic const & logic, SymRef sym) {
-        return logic.isTheorySymbol(sym) and logic.getSym(sym).isInterpreted();
+        return logic.isIF(sym) and not logic.isEquality(sym) and not logic.isBooleanOperator(sym);
     }
 
     bool isUninterpreted(ArithLogic const & logic, SymRef sym) {
-        return logic.isUF(sym) and logic.getSym(sym).nargs() > 0 and not logic.isNumEq(sym);
+        return logic.isUF(sym);
     }
 
     class NeedsPurificationConfig : public DefaultVisitorConfig {
