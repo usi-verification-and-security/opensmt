@@ -274,7 +274,7 @@ public:
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
     bool isNumVarOrIte(SymRef sr) const { return isNumVar(sr) || isIte(sr); }
     bool isNumVarOrIte(PTRef tr) const { return isNumVarOrIte(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef tr) const { return isNumVarOrIte(tr) || isIntDiv(tr) || isMod(tr); }
+    bool isNumVarLike(SymRef tr) const { return isNumVarOrIte(tr) || isIntDiv(tr) || isMod(tr) || (hasUFs() and isUF(tr)); }
     bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
