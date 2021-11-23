@@ -173,7 +173,6 @@ class Logic {
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
     // Symbols
-    Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
     SymRef      getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
