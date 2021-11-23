@@ -1,5 +1,4 @@
 (set-logic QF_LIA)
-(set-option :use-extended-signature true)
 (set-info :status unsat)
 (declare-fun x () Int)
 (declare-fun b () Bool)

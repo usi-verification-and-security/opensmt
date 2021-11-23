@@ -401,7 +401,6 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
 
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
-    logic->enableExtendedSignature(config.useExtendedSignature());
     ASTType t = term.getType();
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();

@@ -656,12 +656,10 @@ PTRef ArithLogic::insertTerm(SymRef sym, vec<PTRef>&& terms)
         return mkGeq(terms);
     if (isGt(sym))
         return mkGt(terms);
-    if (extendedSignatureEnabled()) {
-        if (isMod(sym))
-            return mkMod(terms[0], terms[1]);
-        if (isIntDiv(sym))
-            return mkIntDiv(std::move(terms));
-    }
+    if (isMod(sym))
+        return mkMod(std::move(terms));
+    if (isIntDiv(sym))
+        return mkIntDiv(std::move(terms));
     return Logic::insertTerm(sym, std::move(terms));
 }
 

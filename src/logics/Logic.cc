@@ -90,7 +90,6 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     , sym_IMPLIES(declareFun_NoScoping(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_DISTINCT(declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_ITE(declareFun_NoScoping(tk_ite, sort_BOOL, {sort_BOOL, sort_BOOL, sort_BOOL}))
-    , use_extended_signature(false)
 {
     equalities.insert(sym_EQ, true);
     disequalities.insert(sym_DISTINCT, true);

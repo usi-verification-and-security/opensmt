@@ -1,6 +1,5 @@
 (set-logic QF_LIA)
 (set-info :status unsat)
-(set-option :use-extended-signature true)
 (declare-fun a () Int)
 (assert (>= a 0))
 (assert (< (div a 2) (div (div a 2) 2)))

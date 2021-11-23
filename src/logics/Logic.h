@@ -64,8 +64,6 @@ class Logic {
     bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
 
-    bool extendedSignatureEnabled() const { return use_extended_signature; }
-
     class DefinedFunctions {
         std::unordered_map<std::string,TemplateFunction> defined_functions;
         std::vector<std::string> defined_functions_names;
@@ -120,8 +118,6 @@ class Logic {
     void dumpFunction(std::ostream &, const TemplateFunction&);
 
   private:
-    bool use_extended_signature;
-
     enum class UFAppearanceStatus {
         unseen, removed, appears
     };
@@ -129,7 +125,6 @@ class Logic {
     void unsetAppearsInUF(PTRef tr);
 
   public:
-    void enableExtendedSignature(bool flag) { use_extended_signature = flag; }
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
     static const char*  tk_val_uf_default;
