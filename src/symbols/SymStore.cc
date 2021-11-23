@@ -38,7 +38,7 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args) {
+SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args, bool isInterpreted) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto* symrefs = getRefOrNull(fname);
 
@@ -68,6 +68,7 @@ SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args) {
     char* tmp_name = strdup(fname);
     idToName.push(tmp_name);            // Map the id to name, used in error reporting
     ta[tr].id = id;                     // Tell the term its id, used in error reporting, and checking whether two terms could be equal in future?
+    ta[tr].header.interpreted = isInterpreted ? 1 : 0;
     if (newsym) {
         vec<SymRef> trs;
         trs.push(tr);

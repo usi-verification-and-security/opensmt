@@ -96,7 +96,7 @@ ERef EnodeStore::addTerm(PTRef term) {
 bool EnodeStore::needsEnode(PTRef tr) const {
     if (logic.isTrue(tr) || logic.isFalse(tr)) {
         return true;
-    } else if (logic.isUFTerm(tr)) {
+    } else if (logic.yieldsSortUF(tr)) {
         return true;
     } else if (logic.isUFEquality(tr)) {
         return true;

@@ -765,15 +765,19 @@ void Logic::markConstant(SymId id) {
     constants[id] = true;
 }
 
+SymRef Logic::newSymb(const char * name, const vec<SRef> & sort_args, bool isInterpreted) {
+    return sym_store.newSymb(name, sort_args, isInterpreted);
+}
+
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
     if (f == SymRef_Undef) { return PTRef_Undef; }
-    PTRef tr = mkFun(f, std::move(args));
-    if (not isUFTerm(tr) and not isUP(tr)) {
+    if (isInterpreted(f)) {
         char * name = printSym(f);
-        std::string msg = "Unknown symbol: " + std::string(name);
+        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + std::string(name);
         free(name);
         throw OsmtApiException(msg);
     }
+    PTRef tr = mkFun(f, std::move(args));
     return tr;
 }
 
@@ -818,14 +822,7 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
         assert(args[i] != SRef_Undef);
         comb_args.push(args[i]);
     }
-    SymRef sr = sym_store.newSymb(fname, comb_args);
-    SymId id = getSym(sr).getId();
-    for (unsigned i = interpreted_functions.size(); i <= id; i++)
-        interpreted_functions.push(false);
-    interpreted_functions[id] = interpreted;
-    if (interpreted) {
-        sym_store.setInterpreted(sr);
-    }
+    SymRef sr = newSymb(fname, comb_args, interpreted);
     return sr;
 }
 
@@ -936,7 +933,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 bool
 Logic::isUF(SymRef sref) const
 {
-    return getSym(sref).nargs() > 0 && !interpreted_functions[getSym(sref).getId()];
+    return getSym(sref).nargs() > 0 and not isInterpreted(sref);
 }
 
 bool Logic::isUF(PTRef ptr) const {
@@ -946,7 +943,7 @@ bool Logic::isUF(PTRef ptr) const {
 bool
 Logic::isIF(SymRef sref) const
 {
-    return getSym(sref).nargs() > 0 && interpreted_functions[getSym(sref).getId()];
+    return getSym(sref).nargs() > 0 && isInterpreted(sref);
 }
 
 bool Logic::isIF(PTRef ptr) const {
@@ -955,21 +952,7 @@ bool Logic::isIF(PTRef ptr) const {
 
 // Uninterpreted predicate p : U U* -> Bool
 bool Logic::isUP(PTRef ptr) const {
-    const Pterm& t = term_store[ptr];
-    SymRef sr = t.symb();
-    // Should this really be an uninterpreted predicate?
-    // At least it falsely identifies (= true false) as an uninterpreted
-    // predicate without the extra condition
-    if (isEquality(sr) || isDisequality(sr)) {
-        return false;
-    }
-    if (sym_store[getPterm(ptr).symb()].isInterpreted()) return false;
-
-    const Symbol& sym = sym_store[sr];
-    if (sym.nargs() == 0) return false;
-    if (sym.rsort() != getSort_bool()) return false;
-    if (isBooleanOperator(sr)) return false;
-    return true;
+    return isUF(ptr) and hasSortBool(ptr);
 }
 
 // Check if the term store contains an equality over the given arguments
@@ -1572,7 +1555,7 @@ bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == so
 bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
 bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
 bool         Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
-bool         Logic::isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
+bool         Logic::yieldsSortUF       (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
 bool         Logic::isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
 
 

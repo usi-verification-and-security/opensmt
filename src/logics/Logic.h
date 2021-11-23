@@ -91,7 +91,6 @@ class Logic {
     DefinedFunctions defined_functions;
 
     vec<bool>           constants;
-    vec<bool>           interpreted_functions;
 
 
     SStore              sort_store;
@@ -157,7 +156,8 @@ class Logic {
     const opensmt::Logic_t getLogic() const { return logicType; }
 
   protected:
-    SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
+    SymRef      newSymb       (const char* name, vec<SRef> const & sort_args, bool isInterpreted = false);
+
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
@@ -324,9 +324,9 @@ public:
     bool         isBuiltinConstant  (const PTRef tr)  const;// { return isBuiltinConstant(getPterm(tr).symb()); }
     virtual bool isBuiltinFunction  (const SymRef sr) const;
     bool         isConstant         (const SymRef sr) const;
-    bool         isConstant         (PTRef tr)        const;// { return isConstant(getPterm(tr).symb()); }
-    bool         isUFTerm           (PTRef tr)        const;// { return isUFSort(getSortRef(tr)); }
-    bool         isUFSort           (const SRef sr)   const;// { return ufsorts.has(sr); }
+    bool         isConstant         (PTRef tr)        const;
+    bool         yieldsSortUF       (PTRef tr)        const;
+    bool         isUFSort           (const SRef sr)   const;
 
     bool         appearsInUF        (PTRef tr)        const;
     void         setAppearsInUF     (PTRef tr);
@@ -339,6 +339,7 @@ public:
     virtual bool isAtom            (PTRef tr)      const;
     bool        isBoolAtom         (PTRef tr)      const;// { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
+    bool        isInterpreted      (SymRef sr)     const { return sym_store.isInterpreted(sr); }
     virtual bool isUP              (PTRef)         const;
     virtual bool isUF              (PTRef)         const;
     virtual bool isUF              (SymRef)        const;

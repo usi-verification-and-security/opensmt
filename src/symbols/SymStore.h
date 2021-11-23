@@ -41,7 +41,7 @@ class SymStore {
     ~SymStore();
     // Construct a new symbol.  The first argument in args is the return
     // sort of the symbol
-    SymRef newSymb(const char * fname, vec<SRef> const & args);
+    SymRef newSymb(const char *fname, vec<SRef> const & args, bool isInterpreted = false);
     bool contains(const char* fname)            const { return symbolTable.has(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
@@ -55,7 +55,8 @@ class SymStore {
 
     const vec<SymRef>& getSymbols()             const { return symbols; }
 
-    void setInterpreted(SymRef sr)                    { ta[sr].header.interpreted = true; }
+    bool isInterpreted(SymRef sr)               const { return ta[sr].isInterpreted(); }
+
 #ifdef PEDANTIC_DEBUG
     void compare(SymStore&);
     void check() const;
