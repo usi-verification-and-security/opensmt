@@ -94,7 +94,7 @@ ERef EnodeStore::addTerm(PTRef term) {
  * @note Could be implemented in Logic as well.
  */
 bool EnodeStore::needsEnode(PTRef tr) const {
-    if (logic.isTrue(tr) || logic.isFalse(tr)) {
+    if (logic.isConstant(tr)) {
         return true;
     } else if (logic.isVar(tr) and not logic.hasSortBool(tr)) {
         return true;
