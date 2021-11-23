@@ -155,6 +155,8 @@ class Logic {
     virtual std::string const getName() const { return opensmt::QFLogicToProperties.at(logicType).name; }
     const opensmt::Logic_t getLogic() const { return logicType; }
 
+    bool hasUFs() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasUF; }
+
   protected:
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
