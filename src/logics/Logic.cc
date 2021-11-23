@@ -1542,7 +1542,7 @@ PTRef         Logic::getTerm_false    ()              const { return term_FALSE;
 bool          Logic::isEquality       (SymRef tr)     const { return equalities.has(tr);    }
 bool          Logic::isEquality       (PTRef tr)      const { return equalities.has(term_store[tr].symb());}
 bool          Logic::isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
-bool          Logic::isTheoryEquality (PTRef tr)      const { return isUFEquality(tr); }
+bool          Logic::isTheoryEquality (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
 bool          Logic::isDisequality    (SymRef tr)     const { return disequalities.has(tr); }
 bool          Logic::isDisequality    (PTRef tr)      const { return disequalities.has(term_store[tr].symb()); }
 bool          Logic::isIte            (SymRef tr)     const { return ites.has(tr);          }

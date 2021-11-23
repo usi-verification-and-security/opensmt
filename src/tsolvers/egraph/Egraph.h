@@ -189,7 +189,7 @@ private:
 
     EnodeStore enode_store;
 
-    bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
+    bool isValid(PTRef tr) override { return logic.isTheoryEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
     bool isEffectivelyEquality(PTRef tr) const;
     bool isEffectivelyUP(PTRef tr) const;
     bool isEffectivelyDisequality(PTRef tr) const;
