@@ -186,42 +186,49 @@ PTRef UFLRATheory::splitArithmeticEqualities(PTRef fla) {
     return rewriter.rewrite(fla);
 }
 
-class CollectEqsConfig : public DefaultVisitorConfig {
-    vec<PTRef> eqs;
+class CollectInterfaceVariablesConfig : public DefaultVisitorConfig {
+    std::unordered_set<PTRef, PTRefHash> varsInArithmeticTerms;
+    std::unordered_set<PTRef, PTRefHash> varsInUninterpretedTerms;
     ArithLogic & logic;
 
 public:
-    CollectEqsConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
-
-    bool previsit(PTRef ptref) override {
-        return logic.hasSortBool(ptref);
-    }
+    CollectInterfaceVariablesConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
 
     void visit(PTRef ptref) override {
-        if (logic.isEquality(ptref)) {
-            eqs.push(ptref);
+        SymRef symbolRef = logic.getSymRef(ptref);
+        if (isArithmeticSymbol(logic, symbolRef)) {
+            for (PTRef child : logic.getPterm(ptref)) {
+                if (logic.isVar(child)) {
+                    varsInArithmeticTerms.insert(child);
+                }
+            }
+        } else if (isUninterpreted(logic, symbolRef)) {
+            for (PTRef child : logic.getPterm(ptref)) {
+                if (logic.isNumVar(child)) {
+                    varsInUninterpretedTerms.insert(child);
+                }
+            }
         }
     }
 
-    vec<PTRef> const & getEqs() const { return eqs; }
+    vec<PTRef> getInterfaceVars() const {
+        vec<PTRef> interfaceVars;
+        for (PTRef var : varsInUninterpretedTerms) {
+            auto it = varsInArithmeticTerms.find(var);
+            if (it != varsInArithmeticTerms.end()) {
+                interfaceVars.push(var);
+            }
+        }
+        return interfaceVars;
+    }
 };
 
 PTRef UFLRATheory::addInterfaceClauses(PTRef fla) {
     if (not logic.isAnd(fla)) { return fla; }
     vec<PTRef> interfaceVars;
-    CollectEqsConfig config(logic);
+    CollectInterfaceVariablesConfig config(logic);
     TermVisitor(logic, config).visit(fla);
-    for (PTRef eq : config.getEqs()) {
-        MapWithKeys<PTRef,bool,PTRefHash> allVars;
-        getVars(eq, logic, allVars);
-        for (PTRef var : allVars.getKeys()) {
-            if (logic.isNumVar(var)) {
-                if (std::find(interfaceVars.begin(), interfaceVars.end(), var) == interfaceVars.end()) {
-                    interfaceVars.push(var);
-                }
-            }
-        }
-    }
+    interfaceVars = config.getInterfaceVars();
     // Add all interface clauses to the formula
     vec<PTRef> interfaceClauses;
     for (int i = 0; i < interfaceVars.size(); ++i) {
