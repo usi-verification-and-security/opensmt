@@ -42,9 +42,8 @@ class Symbol {
         unsigned type       : 3;
         unsigned commutes   : 1;
         unsigned noscoping  : 1;
-        unsigned constant   : 1;
         unsigned interpreted: 1;
-        unsigned size       : 25; }     header;
+        unsigned size       : 26; }     header;
     SymId                               id;
     // This has to be the last
     union { SRef sort; SymRef rel;  }   args[0];
@@ -56,7 +55,6 @@ class Symbol {
         header.type      = 0;
         header.commutes  = 0;
         header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
-        header.constant  = false;
         header.interpreted = false;
         header.size      = ps.size();
 
@@ -87,7 +85,6 @@ class Symbol {
     bool     pairwise    ()      const   { return header.type == 4; }
     bool     noScoping   ()      const   { return header.noscoping; }
     uint32_t nargs       ()      const   { return size() - 1; }
-    bool     isConstant  ()      const   { return nargs() == 0 && header.constant; }
 
     bool     setLeftAssoc ()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 1); }
     bool     setRightAssoc()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 2); }
