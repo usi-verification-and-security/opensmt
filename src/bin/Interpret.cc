@@ -803,7 +803,7 @@ bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<S
     for (int i = 1; i < args.size(); i++)
         args2.push(args[i]);
 
-    SymRef rval = logic->declareFun(fname, rsort, args2, &msg);
+    SymRef rval = logic->declareFun(fname, rsort, args2, SymConf::Default, &msg);
 
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-fun %s: %s", fname, msg);
@@ -829,7 +829,7 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
         return false;
     }
     char * msg;
-    SymRef rval = logic->declareFun(fname, ret_sort, {}, &msg, false);
+    SymRef rval = logic->declareFun(fname, ret_sort, {}, SymConf::Default, &msg);
     if (rval == SymRef_Undef) {
         comment_formatted("While declare-const %s: error", fname);
         return false;

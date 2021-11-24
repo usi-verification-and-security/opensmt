@@ -12,9 +12,8 @@ protected:
 };
 
 TEST_F(SplitTest, test_TermPrinting) {
-    char * msg;
     SRef U = logic.declareUninterpretedSort("U");
-    SymRef sr = logic.declareFun("f", U, {U, U}, &msg, false);
+    SymRef sr = logic.declareFun("f", U, {U, U});
     PTRef a = logic.mkVar(U, "a");
     PTRef f_a = logic.mkUninterpFun(sr, {a, a});
     char * str_p = logic.printTerm(f_a);

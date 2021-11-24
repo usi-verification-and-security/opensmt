@@ -36,14 +36,51 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 typedef uint32_t SymId; // Used as an array index
 
+enum class SymbolProperty : int {
+    None, LeftAssoc, RightAssoc, Chainable, Pairwise
+};
+
+struct SymbolConfig {
+    bool isInterpreted;
+    bool commutes;
+    bool noScoping;
+    SymbolProperty prop;
+};
+
+namespace SymConf {
+    constexpr auto Default = SymbolConfig{false, false, false, SymbolProperty::None};
+    constexpr auto LeftAssoc = SymbolConfig{false, false, false, SymbolProperty::LeftAssoc};
+    constexpr auto RightAssoc = SymbolConfig{false, false, false, SymbolProperty::RightAssoc};
+    constexpr auto Chainable = SymbolConfig{false, false, false, SymbolProperty::Chainable};
+    constexpr auto Pairwise = SymbolConfig{false, false, false, SymbolProperty::Pairwise};
+    constexpr auto NoScopingLeftAssoc = SymbolConfig{true, false, true, SymbolProperty::LeftAssoc};
+    constexpr auto NoScopingRightAssoc = SymbolConfig{true, false, true, SymbolProperty::RightAssoc};
+    constexpr auto NoScopingPairwise = SymbolConfig{true, false, true, SymbolProperty::Pairwise};
+    constexpr auto NoScopingChainable = SymbolConfig{true, false, true, SymbolProperty::Chainable};
+    constexpr auto NoScoping = SymbolConfig{true, false, true, SymbolProperty::None};
+    constexpr auto CommutativeNoScopingLeftAssoc = SymbolConfig{true, true, true, SymbolProperty::LeftAssoc};
+    constexpr auto CommutativeNoScopingChainable = SymbolConfig{true, true, true, SymbolProperty::Chainable};
+    constexpr auto CommutativeNoScopingPairwise = SymbolConfig{true, true, true, SymbolProperty::Pairwise};
+}
+
 // args[0].sort is the return sort, rest are arguments.
 class Symbol {
-    struct {
+    struct Header {
         unsigned type       : 3;
         unsigned commutes   : 1;
         unsigned noscoping  : 1;
         unsigned interpreted: 1;
-        unsigned size       : 26; }     header;
+        unsigned size       : 26;
+
+        Header(unsigned _size, SymbolConfig const & sc)
+            : type(static_cast<unsigned>(sc.prop))
+            , commutes(sc.commutes)
+            , noscoping(sc.noScoping)
+            , interpreted(sc.isInterpreted)
+            , size(_size)
+        { }
+    };
+    const Header header;
     SymId                               id;
     // This has to be the last
     union { SRef sort; SymRef rel;  }   args[0];
@@ -51,18 +88,17 @@ class Symbol {
     friend class SymbolAllocator;
     friend class SymStore;
     // Note: do not use directly (no memory allocation for args)
-    Symbol(vec<SRef> const & ps) {
-        header.type      = 0;
-        header.commutes  = 0;
-        header.noscoping = 0;           // This is an optimization to avoid expensive name lookup on logic operations
-        header.interpreted = false;
-        header.size      = ps.size();
 
+    Symbol(vec<SRef> const & ps, SymbolConfig const & config)
+        : header(ps.size(), config)
+    {
+        assert(config.prop != SymbolProperty::LeftAssoc or nargs() == 2);
+        assert(config.prop != SymbolProperty::RightAssoc or nargs() == 2);
         for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i];
     }
 
   public:
-    int      size        ()      const   { return header.size; }
+    int      size        ()      const   { return static_cast<int>(header.size); }
     SRef     operator [] (int i) const   { return args[i+1].sort; }
     /**
      * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new symbols in the same Symbol allocator
@@ -77,26 +113,17 @@ class Symbol {
     SRef     rsort       ()      const   { return args[0].sort; }
     bool     commutes    ()      const   { return header.commutes; }
     SymRef   relocation  ()      const   { return args[0].rel; }
-    uint32_t type        ()      const   { return header.type; }
-    void     type        (uint32_t m)    { header.type = m; }
-    bool     left_assoc  ()      const   { return header.type == 1; }
-    bool     right_assoc ()      const   { return header.type == 2; }
-    bool     chainable   ()      const   { return header.type == 3; }
-    bool     pairwise    ()      const   { return header.type == 4; }
+    SymbolProperty type  ()      const   { return static_cast<SymbolProperty>(header.type); }
+    bool     left_assoc  ()      const   { return static_cast<SymbolProperty>(header.type) == SymbolProperty::LeftAssoc; }
+    bool     right_assoc ()      const   { return static_cast<SymbolProperty>(header.type) == SymbolProperty::RightAssoc; }
+    bool     chainable   ()      const   { return static_cast<SymbolProperty>(header.type) == SymbolProperty::Chainable; }
+    bool     pairwise    ()      const   { return static_cast<SymbolProperty>(header.type) == SymbolProperty::Pairwise; }
     bool     noScoping   ()      const   { return header.noscoping; }
     uint32_t nargs       ()      const   { return size() - 1; }
-
-    bool     setLeftAssoc ()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 1); }
-    bool     setRightAssoc()             { if (header.type != 0) return false; assert(nargs() == 2); return (header.type = 2); }
-    bool     setChainable ()             { if (header.type != 0) return false; return (header.type = 3); }
-    bool     setPairwise  ()             { if (header.type != 0) return false; return (header.type = 4); }
-    void     setNoScoping ()             { header.noscoping = 1; }
-    void     setCommutes  ()             { header.commutes  = 1; }
 
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
     bool     isInterpreted() const       { return header.interpreted; }
-
 };
 
 
@@ -114,7 +141,7 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    SymRef alloc(vec<SRef> const & ps)
+    SymRef alloc(vec<SRef> const & ps, SymbolConfig const & sc)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
@@ -123,7 +150,7 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         SymRef symid;
         symid.x = v;
 
-        new (lea(symid)) Symbol(ps);
+        new (lea(symid)) Symbol(ps, sc);
         return symid;
     }
 

@@ -30,7 +30,7 @@ protected:
         c1 = makeAndStorePTRef(logic.mkVar(ufsort, "c1"));
         c2 = makeAndStorePTRef(logic.mkVar(ufsort, "c2"));
 
-        SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr, false);
+        SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort});
 
         f_c1_c0 = makeAndStorePTRef(logic.insertTerm(f, {c1.tr, c0.tr}));
 
