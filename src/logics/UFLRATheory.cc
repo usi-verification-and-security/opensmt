@@ -198,13 +198,13 @@ public:
         SymRef symbolRef = logic.getSymRef(ptref);
         if (isArithmeticSymbol(logic, symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
-                if (logic.isVar(child)) {
+                if (logic.isVar(child) or logic.isNumConst(child)) {
                     varsInArithmeticTerms.insert(child);
                 }
             }
-        } else if (isUninterpreted(logic, symbolRef)) {
+        } else if (isUninterpreted(logic, symbolRef) or logic.isEquality(symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
-                if (logic.isNumVar(child)) {
+                if (logic.isNumVar(child) or logic.isNumConst(child)) {
                     varsInUninterpretedTerms.insert(child);
                 }
             }
@@ -235,6 +235,7 @@ PTRef UFLRATheory::addInterfaceClauses(PTRef fla) {
         for (int j = 0; j < i; ++j) {
             PTRef lhs = interfaceVars[i];
             PTRef rhs = interfaceVars[j];
+            if (logic.isNumConst(lhs) and logic.isNumConst(rhs)) { continue; }
             PTRef eq = logic.mkEq(lhs, rhs);
             PTRef leq = logic.mkLeq(lhs, rhs);
             PTRef geq = logic.mkGeq(lhs, rhs);
