@@ -1555,7 +1555,7 @@ bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == so
 bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
 bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
 bool         Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
-bool         Logic::yieldsSortUF       (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
+bool         Logic::yieldsSortUninterpreted (PTRef tr)   const { return isUFSort(getSortRef(tr)); }
 bool         Logic::isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
 
 

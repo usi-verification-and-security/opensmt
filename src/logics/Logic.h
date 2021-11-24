@@ -324,7 +324,7 @@ public:
     virtual bool isBuiltinFunction  (const SymRef sr) const;
     bool         isConstant         (const SymRef sr) const;
     bool         isConstant         (PTRef tr)        const;
-    bool         yieldsSortUF       (PTRef tr)        const;
+    bool         yieldsSortUninterpreted (PTRef tr)   const;
     bool         isUFSort           (const SRef sr)   const;
 
     bool         appearsInUF        (PTRef tr)        const;
