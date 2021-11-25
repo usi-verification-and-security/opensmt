@@ -779,7 +779,6 @@ PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
 
 PTRef Logic::mkBoolVar(const char* name)
 {
-    char* msg;
     SymRef sr = declareFun(name, sort_BOOL, {});
     assert(sr != SymRef_Undef);
     return mkFun(sr, {});
@@ -806,7 +805,7 @@ void Logic::instantiateFunctions(SRef sr)
     sortToIte.insert(sr, tr);
 }
 
-SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig, char** msg)
+SymRef Logic::declareFun(std::string const & fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig)
 {
     vec<SRef> comb_args;
 
@@ -818,7 +817,7 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
         assert(sr != SRef_Undef);
         comb_args.push(sr);
     }
-    SymRef sr = sym_store.newSymb(fname, comb_args, symbolConfig);
+    SymRef sr = sym_store.newSymb(fname.c_str(), comb_args, symbolConfig);
     return sr;
 }
 

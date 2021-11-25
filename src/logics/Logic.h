@@ -240,9 +240,8 @@ public:
     virtual PTRef mkConst     (const char*);
     virtual PTRef mkConst     (SRef, const char*);
 
-    SymRef      declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig, char** msg);
-    SymRef      declareFun(const std::string & fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig) { char *msg; return declareFun(fname.data(), rsort, args, symbolConfig, &msg); };
-    SymRef      declareFun(const std::string & fname, const SRef sort, const vec<SRef>& args) { return declareFun(fname, sort, args, SymConf::Default); }
+    SymRef      declareFun(std::string const & fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig);
+    SymRef      declareFun(std::string const & fname, const SRef sort, vec<SRef> const & args) { return declareFun(fname.c_str(), sort, args, SymConf::Default); }
     SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScoping); }
     SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingLeftAssoc); }
     SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingRightAssoc); }

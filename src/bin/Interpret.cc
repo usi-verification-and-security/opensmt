@@ -796,18 +796,17 @@ bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<S
             return false;
         }
     }
-    char* msg;
+
     SRef rsort = args[0];
     vec<SRef> args2;
 
     for (int i = 1; i < args.size(); i++)
         args2.push(args[i]);
 
-    SymRef rval = logic->declareFun(fname, rsort, args2, SymConf::Default, &msg);
+    SymRef rval = logic->declareFun(fname, rsort, args2);
 
     if (rval == SymRef_Undef) {
-        comment_formatted("While declare-fun %s: %s", fname, msg);
-        free(msg);
+        comment_formatted("Error while declare-fun %s", fname);
         return false;
     }
     user_declarations.push(rval);
@@ -828,10 +827,10 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
         notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
         return false;
     }
-    char * msg;
-    SymRef rval = logic->declareFun(fname, ret_sort, {}, SymConf::Default, &msg);
+
+    SymRef rval = logic->declareFun(fname, ret_sort, {});
     if (rval == SymRef_Undef) {
-        comment_formatted("While declare-const %s: error", fname);
+        comment_formatted("Error while declare-const %s", fname);
         return false;
     }
     user_declarations.push(rval);
