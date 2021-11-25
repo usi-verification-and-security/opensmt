@@ -19,10 +19,13 @@ ArraySolver::~ArraySolver() {
 }
 
 void ArraySolver::clearSolver() {
+    clear();
     TSolver::clearSolver();
 }
 
 bool ArraySolver::assertLit(PtAsgn) {
+    // TODO: what should we remember from this?
+    assert(false);
     return true;
 }
 
@@ -31,10 +34,12 @@ void ArraySolver::pushBacktrackPoint() {
 }
 
 void ArraySolver::popBacktrackPoint() {
+    clear();
     TSolver::popBacktrackPoint();
 }
 
 void ArraySolver::popBacktrackPoints(unsigned int i) {
+    clear();
     TSolver::popBacktrackPoints(i);
 }
 
@@ -204,6 +209,12 @@ bool ArraySolver::checkReadOverWeakEq() {
         }
     }
     return true;
+}
+
+void ArraySolver::clear() {
+    nodes.clear();
+    rootsMap.clear();
+    valid = false;
 }
 
 void ArraySolver::print(ostream & out) {

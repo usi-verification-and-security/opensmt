@@ -80,6 +80,8 @@ private:
 
     void mergeSecondary(NodeRef, NodeRef, Map<ERef, bool, ERefHash> & forbiddenIndices);
 
+    void clear();
+
     ERef getArrayFromStore(ERef storeTerm) const {
         PTRef ptref = egraph.ERefToTerm(storeTerm);
         assert(logic.isArrayStore(logic.getSymRef(ptref)));
