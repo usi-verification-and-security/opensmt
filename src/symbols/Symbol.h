@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 typedef uint32_t SymId; // Used as an array index
 
-enum class SymbolProperty : int {
+enum class SymbolProperty : char {
     None, LeftAssoc, RightAssoc, Chainable, Pairwise
 };
 
