@@ -805,7 +805,8 @@ void Logic::instantiateFunctions(SRef sr)
     sortToIte.insert(sr, tr);
 }
 
-SymRef Logic::declareFun(std::string const & fname, const SRef rsort, const vec<SRef>& args, SymbolConfig const & symbolConfig)
+
+SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> & args, SymbolConfig const & symbolConfig)
 {
     vec<SRef> comb_args;
 
