@@ -717,7 +717,7 @@ PTRef Logic::mkConst(const char* name)
 
 
 PTRef Logic::mkVar(SRef s, const char* name) {
-    SymRef sr = newSymb(name, {s});
+    SymRef sr = sym_store.newSymb(name, {s});
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -765,10 +765,6 @@ void Logic::markConstant(SymId id) {
     constants[id] = true;
 }
 
-SymRef Logic::newSymb(const char * name, const vec<SRef> & sort_args, bool isInterpreted) {
-    return sym_store.newSymb(name, sort_args, isInterpreted);
-}
-
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
     if (f == SymRef_Undef) { return PTRef_Undef; }
     if (isInterpreted(f)) {
@@ -783,8 +779,7 @@ PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
 
 PTRef Logic::mkBoolVar(const char* name)
 {
-    char* msg;
-    SymRef sr = declareFun(name, sort_BOOL, {}, &msg);
+    SymRef sr = declareFun(name, sort_BOOL, {});
     assert(sr != SymRef_Undef);
     return mkFun(sr, {});
 }
@@ -810,7 +805,8 @@ void Logic::instantiateFunctions(SRef sr)
     sortToIte.insert(sr, tr);
 }
 
-SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
+
+SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> & args, SymbolConfig const & symbolConfig)
 {
     vec<SRef> comb_args;
 
@@ -818,11 +814,11 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
 
     comb_args.push(rsort);
 
-    for (int i = 0; i < args.size(); i++) {
-        assert(args[i] != SRef_Undef);
-        comb_args.push(args[i]);
+    for (SRef sr : args) {
+        assert(sr != SRef_Undef);
+        comb_args.push(sr);
     }
-    SymRef sr = newSymb(fname, comb_args, interpreted);
+    SymRef sr = sym_store.newSymb(fname.c_str(), comb_args, symbolConfig);
     return sr;
 }
 

@@ -68,7 +68,7 @@ public:
 TEST_F(EgraphTest, test_booleans) {
     PTRef v3 = logic.mkBoolVar("v3");
     PTRef v7 = logic.mkBoolVar("v7");
-    SymRef uf3 = logic.declareFun("uf3", logic.getSort_bool(), {logic.getSort_bool()}, nullptr);
+    SymRef uf3 = logic.declareFun("uf3", logic.getSort_bool(), {logic.getSort_bool()});
 
     PTRef uf3_v7 = logic.mkUninterpFun(uf3, {v7});
     PTRef uf3_v3 = logic.mkUninterpFun(uf3, {v3}); // Intentionally not declared to egraph

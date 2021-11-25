@@ -77,8 +77,7 @@ protected:
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
         c = logic.mkConst(ufsort, "c");
-        char* msg;
-        f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
+        f = logic.declareFun("f", ufsort, {ufsort});
     }
     Logic logic;
     SRef ufsort;
@@ -142,8 +141,7 @@ protected:
         y = logic.mkVar(ufsort, "y");
         z = logic.mkVar(ufsort, "z");
         c = logic.mkConst(ufsort, "c");
-        char* msg;
-        f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
+        f = logic.declareFun("f", ufsort, {ufsort});
     }
     Logic logic;
     SRef ufsort;
