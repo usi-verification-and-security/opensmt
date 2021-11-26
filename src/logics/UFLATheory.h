@@ -27,23 +27,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define UFLRATheory_h
 
 #include "Theory.h"
-#include "UFLRATHandler.h"
+#include "UFLATHandler.h"
 #include "ArithLogic.h"
 
-class UFLRATheory : public Theory
+class UFLATheory : public Theory
 {
   private:
     ArithLogic &  logic;
-    UFLRATHandler uflratshandler;
+    UFLATHandler uflatshandler;
   public:
-    UFLRATheory(SMTConfig& c, ArithLogic & logic)
+    UFLATheory(SMTConfig& c, ArithLogic & logic)
         : Theory(c)
         , logic(logic)
-        , uflratshandler(c, logic)
+        , uflatshandler(c, logic)
     { }
     virtual ArithLogic&       getLogic() override { return logic; }
     virtual const ArithLogic& getLogic() const override { return logic; }
-    virtual UFLRATHandler&  getTSolverHandler() override { return uflratshandler; }
+    virtual UFLATHandler&  getTSolverHandler() override { return uflatshandler; }
     virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
 
 protected:

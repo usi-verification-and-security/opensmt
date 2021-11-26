@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Interpret.h"
 #include "Theory.h"
-#include "UFLRATheory.h"
+#include "UFLATheory.h"
 #include "Global.h"
 #include "smt2tokens.h"
 #include "MainSolver.h"

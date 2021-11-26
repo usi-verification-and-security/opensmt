@@ -1,9 +1,9 @@
-#include "UFLRATHandler.h"
+#include "UFLATHandler.h"
 #include "lasolver/LASolver.h"
 #include "TreeOps.h"
 #include "Egraph.h"
 
-UFLRATHandler::UFLRATHandler(SMTConfig & c, ArithLogic & l)
+UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
         , logic(l)
 {
@@ -20,7 +20,7 @@ UFLRATHandler::UFLRATHandler(SMTConfig & c, ArithLogic & l)
 
 }
 
-PTRef UFLRATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
+PTRef UFLATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
     throw std::logic_error("Not implemented");
 }

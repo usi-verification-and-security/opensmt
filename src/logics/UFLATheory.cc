@@ -1,10 +1,10 @@
-#include "UFLRATheory.h"
+#include "UFLATheory.h"
 #include "OsmtInternalException.h"
 #include "TreeOps.h"
 #include "Substitutor.h"
 #include "ArithmeticEqualityRewriter.h"
 
-bool UFLRATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
+bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
@@ -123,7 +123,7 @@ namespace {
     };
 }
 
-PTRef UFLRATheory::purify(PTRef fla) {
+PTRef UFLATheory::purify(PTRef fla) {
     NeedsPurificationConfig conf(logic);
     TermVisitor<NeedsPurificationConfig>(logic, conf).visit(fla);
     Purifier purifier(logic, conf.getNeedsRenamingMap());
@@ -138,7 +138,7 @@ PTRef UFLRATheory::purify(PTRef fla) {
     return logic.mkAnd(equalities);
 }
 
-bool UFLRATheory::containsUF(PTRef term) const {
+bool UFLATheory::containsUF(PTRef term) const {
     class UFFinderConfig : public DefaultVisitorConfig {
         ArithLogic & logic;
     public:
@@ -179,7 +179,7 @@ public:
     }
 };
 
-PTRef UFLRATheory::splitArithmeticEqualities(PTRef fla) {
+PTRef UFLATheory::splitArithmeticEqualities(PTRef fla) {
     auto split = [this](PTRef term) { return not this->containsUF(term); };
     auto config = RewriterConfig(logic, split);
     auto rewriter = Rewriter(logic, config);
@@ -229,7 +229,7 @@ public:
     }
 };
 
-PTRef UFLRATheory::addInterfaceClauses(PTRef fla) {
+PTRef UFLATheory::addInterfaceClauses(PTRef fla) {
     if (not logic.isAnd(fla)) { return fla; }
     CollectInterfaceVariablesConfig config(logic);
     TermVisitor(logic, config).visit(fla);
