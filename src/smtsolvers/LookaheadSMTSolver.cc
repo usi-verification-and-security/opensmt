@@ -406,10 +406,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
-//            vec<Watcher>&  ws  = watches[l];
-//            for (int i = 0; i<ws.size(); i++) {
-//                watches[l].push(ws[i]);
-//            }
             uncheckedEnqueue(l);
             lbool res = laPropagateWrapper();
             if (res == l_False)
