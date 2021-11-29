@@ -1190,7 +1190,7 @@ CRef CoreSMTSolver::propagate()
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
 
-            int c_size = c.size();
+            unsigned c_size = c.size();
             Lit false_lit = ~p;
 
 
@@ -1205,10 +1205,6 @@ CRef CoreSMTSolver::propagate()
                 continue;
             }
 
-            for(int i=0; i < c.size() && i < 3; i++) {
-                if (value(c[i]) != l_False && watches[(~c[i])].size() == 0)
-                    watches[~c[i]].push(Watcher(cr, c[0]));
-            }
             if(c_size > 2 ){
                 if (c[0] == false_lit){
                     if(value(c[2]) != l_False){
