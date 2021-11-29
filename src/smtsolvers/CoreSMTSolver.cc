@@ -595,10 +595,6 @@ Lit CoreSMTSolver::pickBranchLit()
 
     vec<int> discarded;
 
-//    printf("Activity (%d)\n", activity.size());
-//    for (int i = 0; i < activity.size(); i++)
-//        printf("%f ", activity[i]);
-//    printf("\n");
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
     {
@@ -930,9 +926,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         }
     }
     cleanup.clear();
-//    for (int i = 0; i < out_learnt.size(); i++)
-//        printf("%d ", out_learnt[i]);
-//    printf("\n");
 }
 
 
@@ -1200,6 +1193,7 @@ CRef CoreSMTSolver::propagate()
             int c_size = c.size();
             Lit false_lit = ~p;
 
+
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 *j++ = *i++;
@@ -1211,12 +1205,11 @@ CRef CoreSMTSolver::propagate()
                 continue;
             }
 
-
-            printf("Literal 1 # %d ", c[0].x);
-            printf("Literal 2 # %d ", c[1].x);
-
+            for(int i=0; i < c.size() && i < 3; i++) {
+                if (value(c[i]) != l_False && watches[(~c[i])].size() == 0)
+                    watches[~c[i]].push(Watcher(cr, c[0]));
+            }
             if(c_size > 2 ){
-                printf("Literal 3 # %d \n", c[2].x);
                 if (c[0] == false_lit){
                     if(value(c[2]) != l_False){
                         c[0] = c[2], c[2] = false_lit;
@@ -1248,20 +1241,18 @@ CRef CoreSMTSolver::propagate()
             // Look for new watch:
             for (unsigned k = 3; k < c_size; k++) {
                 if (value(c[k]) != l_False) {
-//                    printf("Clause # %p ", &c);
-//                    printf("Literal 1 # %d ", c[0].x);
-//                    printf("Literal 2 # %d ", c[1].x);
-//                    printf("Literal 3 # %d \n", c[2].x);
-//                    printf("Propagated # %d \n", c[2].x);
                     c[2] = c[k];
                     c[k] = false_lit;
                     watches[~c[2]].push(w);
                     goto NextClause;
                 }
             }
+
+            *j++ = w;
             if(value(c[1]) == l_False){
-                // Did not find watch
-                *j++ = w;
+                for (unsigned k = 2; k < c_size; k++) {
+                    assert(value(c[k]) == l_False);
+                }
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1274,6 +1265,7 @@ CRef CoreSMTSolver::propagate()
                         this->finalizeProof(confl);
                     }
                 } else {  // clause is unit under assignment:
+
                     if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
                         // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
                         //     is not constructed correctly
