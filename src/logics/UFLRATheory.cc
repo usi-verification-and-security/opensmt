@@ -187,10 +187,23 @@ PTRef UFLRATheory::splitArithmeticEqualities(PTRef fla) {
 }
 
 class CollectInterfaceVariablesConfig : public DefaultVisitorConfig {
-    std::unordered_set<PTRef, PTRefHash> varsInArithmeticTerms;
-    std::unordered_set<PTRef, PTRefHash> varsInUninterpretedTerms;
+    vec<PTRef> interfaceVars;
     ArithLogic & logic;
 
+    enum class Type : char { Arith, Unint, Both };
+    MapWithKeys<PTRef,Type, PTRefHash> occurrences;
+
+    void updateOccurrenceUsingType(PTRef child, Type seenType) {
+        Type t;
+        if (not occurrences.peek(child, t)) {
+            occurrences.insert(child, seenType);
+        } else {
+            if (t != seenType and t != Type::Both) {
+                occurrences[child] = Type::Both;
+                interfaceVars.push(child);
+            }
+        }
+    }
 public:
     CollectInterfaceVariablesConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
 
@@ -199,36 +212,28 @@ public:
         if (isArithmeticSymbol(logic, symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
                 if (logic.isVar(child) or logic.isNumConst(child)) {
-                    varsInArithmeticTerms.insert(child);
+                    updateOccurrenceUsingType(child, Type::Arith);
                 }
             }
         } else if (isUninterpreted(logic, symbolRef) or logic.isEquality(symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
                 if (logic.isNumVar(child) or logic.isNumConst(child)) {
-                    varsInUninterpretedTerms.insert(child);
+                    updateOccurrenceUsingType(child, Type::Unint);
                 }
             }
         }
     }
 
-    vec<PTRef> getInterfaceVars() const {
-        vec<PTRef> interfaceVars;
-        for (PTRef var : varsInUninterpretedTerms) {
-            auto it = varsInArithmeticTerms.find(var);
-            if (it != varsInArithmeticTerms.end()) {
-                interfaceVars.push(var);
-            }
-        }
+    vec<PTRef> const & getInterfaceVars() const {
         return interfaceVars;
     }
 };
 
 PTRef UFLRATheory::addInterfaceClauses(PTRef fla) {
     if (not logic.isAnd(fla)) { return fla; }
-    vec<PTRef> interfaceVars;
     CollectInterfaceVariablesConfig config(logic);
     TermVisitor(logic, config).visit(fla);
-    interfaceVars = config.getInterfaceVars();
+    vec<PTRef> const & interfaceVars = config.getInterfaceVars();
     // Add all interface clauses to the formula
     vec<PTRef> interfaceClauses;
     for (int i = 0; i < interfaceVars.size(); ++i) {
