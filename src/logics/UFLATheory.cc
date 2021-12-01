@@ -28,6 +28,25 @@ namespace {
         return logic.isUF(sym);
     }
 
+    bool containsUF(PTRef term, ArithLogic & logic) {
+        class UFFinderConfig : public DefaultVisitorConfig {
+            ArithLogic & logic;
+        public:
+            UFFinderConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
+            bool previsit(PTRef term) override { return not ufFound; }
+
+            void visit(PTRef term) override {
+                if (isUninterpreted(logic, logic.getSymRef(term))) {
+                    ufFound = true;
+                }
+            }
+
+            bool ufFound = false;
+        } config(logic);
+        TermVisitor<UFFinderConfig>(logic, config).visit(term);
+        return config.ufFound;
+    }
+
     class PurifyConfig : public DefaultRewriterConfig {
         static std::string prefix;
         ArithLogic & logic;
@@ -73,6 +92,8 @@ namespace {
                 return rewriteInternal(ptref, [this](PTRef child) { return isUninterpreted(logic, logic.getSymRef(child)); });
             } else if (isUninterpreted(logic, term.symb())) {
                 return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
+            } else if (logic.isEquality(term.symb()) and containsUF(ptref, logic)) {
+                return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
             }
             return ptref;
         }
@@ -106,25 +127,6 @@ PTRef UFLATheory::purify(PTRef fla) {
     return logic.mkAnd(equalities);
 }
 
-bool UFLATheory::containsUF(PTRef term) const {
-    class UFFinderConfig : public DefaultVisitorConfig {
-        ArithLogic & logic;
-    public:
-        UFFinderConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
-        bool previsit(PTRef term) override { return not ufFound; }
-
-        void visit(PTRef term) override {
-            if (isUninterpreted(logic, logic.getSymRef(term))) {
-                ufFound = true;
-            }
-        }
-
-        bool ufFound = false;
-    } config(logic);
-    TermVisitor<UFFinderConfig>(logic, config).visit(term);
-    return config.ufFound;
-}
-
 template<typename Pred>
 class RewriterConfig : public DefaultRewriterConfig {
     ArithLogic & logic;
@@ -148,7 +150,7 @@ public:
 };
 
 PTRef UFLATheory::splitArithmeticEqualities(PTRef fla) {
-    auto split = [this](PTRef term) { return not this->containsUF(term); };
+    auto split = [this](PTRef term) { return not containsUF(term, logic); };
     auto config = RewriterConfig(logic, split);
     auto rewriter = Rewriter(logic, config);
     return rewriter.rewrite(fla);

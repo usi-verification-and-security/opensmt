@@ -50,7 +50,6 @@ protected:
     PTRef purify(PTRef fla);
     PTRef splitArithmeticEqualities(PTRef fla);
     PTRef addInterfaceClauses(PTRef fla);
-    bool containsUF(PTRef term) const;
 };
 
 #endif
