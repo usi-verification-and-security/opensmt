@@ -165,6 +165,9 @@ class CollectInterfaceVariablesConfig : public DefaultVisitorConfig {
         Type t;
         if (not occurrences.peek(child, t)) {
             occurrences.insert(child, seenType);
+            if (seenType == Type::Both) {
+                interfaceVars.push(child);
+            }
         } else {
             if (t != seenType and t != Type::Both) {
                 occurrences[child] = Type::Both;
@@ -186,7 +189,7 @@ public:
         } else if (isUninterpreted(logic, symbolRef) or logic.isEquality(symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
                 if (logic.isNumVar(child) or logic.isNumConst(child)) {
-                    updateOccurrenceUsingType(child, Type::Unint);
+                    updateOccurrenceUsingType(child, logic.isNumConst(child) ? Type::Both : Type::Unint);
                 }
             }
         }
