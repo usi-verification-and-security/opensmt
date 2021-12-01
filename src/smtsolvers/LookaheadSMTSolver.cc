@@ -173,9 +173,17 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #ifdef LADEBUG
             printf("I will propagate %d\n", path[i].x);
 #endif
+            printf("I will propagate %d\n", path[i].x);
             int curr_dl = decisionLevel();
             uncheckedEnqueue(path[i]);
+//            if (next_l.size() == 0) {
+//                next.shrink(0);
+//            } else {
+//                next.shrink(next_l[next_l.size() - 1]);
+//            }
             lbool res = laPropagateWrapper();
+//            next_l.push(next.size());
+//            printf("Latest next addition %d \n", next_l[next_l.size() - 1]);
             // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
             if (res == l_False) {
                 return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability

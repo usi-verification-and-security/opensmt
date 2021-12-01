@@ -1245,9 +1245,13 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
-                for (unsigned k = 2; k < c_size; k++) {
-                    assert(value(c[k]) == l_False);
-                }
+//                for(int j = 0; j < next.size(); j++){
+//                    if(cr == next[j]){
+//                        next[j] = next[next.size() - 1];
+//                        next.pop();
+//                        break;
+//                    }
+//                }
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1260,7 +1264,6 @@ CRef CoreSMTSolver::propagate()
                         this->finalizeProof(confl);
                     }
                 } else {  // clause is unit under assignment:
-
                     if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
                         // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
                         //     is not constructed correctly
@@ -1281,6 +1284,28 @@ CRef CoreSMTSolver::propagate()
                     }
                     uncheckedEnqueue(first, cr);
                 }
+            } else if (value(c[2]) == l_False) {
+//                next.push(cr);
+//                printf("----------------------------\n");
+//                printf("Clause # %d \n", cr);
+//                printf("Propagated # %d \n", c[2].x);
+//                printf("Next length %d \n", next.size());
+//
+//                printf("%d ", c[0].x);
+//                for(int i = 1; i < c.size(); i++){
+//                    printf("\\/ %d ", c[i].x);
+//                }
+//                printf("\n");
+//                printf("Clauses now:\n");
+//                for(int i = 0; i< next.size(); i++){
+//                    printf("Clause #%d : %p \n",i, next[i]);
+//                }
+//                printf("Clauses trail:\n");
+//                for(int i = 0; i< next_l.size(); i++){
+//                    printf("Level #%d : %d \n",i, next_l[i]);
+//                }
+//                printf("++++++++++++++++++++++++++++\n");
+
             }
 NextClause:
             ;
