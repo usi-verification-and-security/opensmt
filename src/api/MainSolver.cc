@@ -30,7 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
 #include "GhostSMTSolver.h"
-#include "UFLRATheory.h"
+#include "UFLATheory.h"
 #include "LATheory.h"
 #include "LATHandler.h"
 #include "OsmtApiException.h"
@@ -442,9 +442,10 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_UFLRA:
+        case Logic_t::QF_UFLIA:
         {
-            ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new UFLRATheory(config, lraLogic);
+            ArithLogic & laLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new UFLATheory(config, laLogic);
             break;
         }
         case Logic_t::UNDEF:
