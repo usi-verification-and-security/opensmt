@@ -1438,6 +1438,7 @@ PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTR
     if (args.size() != targs.size()) {
         throw OsmtApiException("Function instantiation argument count mismatch");
     }
+    if (args.size() == 0) { return tmplt.getBody(); }
     SubstMap substMap;
     for (int i = 0; i < args.size(); ++i) {
         if (getSortRef(targs[i]) != getSortRef(args[i])) {
