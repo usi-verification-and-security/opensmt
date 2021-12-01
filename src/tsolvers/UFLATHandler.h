@@ -32,15 +32,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class Egraph;
 class LASolver;
 
-class UFLRATHandler : public TSolverHandler
+class UFLATHandler : public TSolverHandler
 {
   private:
     ArithLogic      &logic;
     LASolver      *lasolver;
     Egraph        *ufsolver;
   public:
-    UFLRATHandler(SMTConfig & c, ArithLogic & l);
-    ~UFLRATHandler() override = default;
+    UFLATHandler(SMTConfig & c, ArithLogic & l);
+    ~UFLATHandler() override = default;
     Logic & getLogic() override { return logic; }
     Logic const & getLogic() const override { return logic; }
 
