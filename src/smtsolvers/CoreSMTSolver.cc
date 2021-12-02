@@ -761,18 +761,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 #ifdef STATISTICS
             const double start = cpuTime( );
 #endif
-#ifdef DEBUG_REASONS
-            if (theory_handler.getReason( p, r, assigns ) == false)
-            {
-                assert(debug_reason_map.has(var(p)));
-                int idx = debug_reason_map[var(p)];
-                CRef cr = debug_reasons[idx];
-                cerr << "Could not find reason " << theory_handler.printAsrtClause(c) << endl;
-                assert(false);
-            }
-#else
             theory_handler.getReason(p, r);
-#endif
             assert(r.size() > 0);
 #ifdef STATISTICS
             tsolvers_time += cpuTime( ) - start;
@@ -954,18 +943,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             // Temporairly backtracking
             cancelUntilVarTempInit( v );
             // Retrieving the reason
-#ifdef DEBUG_REASONS
-            if (theory_handler.getReason( p, r, assigns ) == false)
-            {
-                assert(debug_reason_map.has(var(p)));
-                int idx = debug_reason_map[var(p)];
-                Clause* c = debug_reasons[idx];
-                cerr << theory_handler.printAsrtClause(c) << endl;
-                assert(false);
-            }
-#else
             theory_handler.getReason(p, r);
-#endif
             // Restoring trail
             cancelUntilVarTempDone( );
             CRef ct = CRef_Undef;
@@ -1135,9 +1113,6 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 void CoreSMTSolver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(from != CRef_Fake || theory_handler.getLogic().isTheoryTerm(theory_handler.varToTerm(var(p))));
-#ifdef DEBUG_REASONS
-    assert(from == CRef_Fake || !debug_reason_map.has(var(p)));
-#endif
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
