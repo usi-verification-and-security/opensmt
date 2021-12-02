@@ -69,7 +69,18 @@ class SStore
     SortSymbol const & operator [](SSymRef sr)      const { return ssa[sr]; }
 
     opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
-    std::string const & getName (SRef sr) const { return ssa[sa[sr].getSymRef()].name; }
+    std::string getName (SRef sr) const {
+        std::string name = ssa[sa[sr].getSymRef()].name;
+        if (sa[sr].getSize() > 0) {
+            name = "(" + name + " ";
+            for (unsigned i = 0; i < sa[sr].getSize(); i++) {
+                name += getName(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+            }
+            name += ")";
+        }
+        return name;
+    }
+
     int  getSize(SRef sr) const { return sa[sr].getSize(); }
     const vec<SRef>& getSorts() const { return sorts; }
     int     numSorts() const { return sorts.size(); }

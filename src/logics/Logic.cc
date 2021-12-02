@@ -1501,7 +1501,7 @@ PTRef Logic::conjoinExtras(PTRef root) { return root; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 
-std::string const & Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
+std::string Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
 size_t Logic::getSortSize(const SRef s) const { return sort_store.getSize(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {

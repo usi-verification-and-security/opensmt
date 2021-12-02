@@ -166,7 +166,7 @@ class Logic {
   public:
     SRef                getSortRef (PTRef tr)  const;
     SRef                getSortRef (SymRef sr) const;
-    std::string const & getSortName(SRef s)    const;
+    std::string         getSortName(SRef s)    const;
     std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
 
