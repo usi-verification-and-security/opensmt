@@ -61,6 +61,7 @@ const char* Logic::tk_or       = "or";
 const char* Logic::tk_xor      = "xor";
 const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
+const char* Logic::tk_indexed  = "_";
 
 const char* Logic::s_sort_bool = "Bool";
 const char* Logic::s_ite_prefix = ".oite";
@@ -75,6 +76,7 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     , distinctClassCount(0)
     , sort_store()
     , term_store(sym_store)
+    , sym_IndexedSort(sort_store.newSortSymbol(SortSymbol(tk_indexed, 2, SortSymbol::INTERNAL)))
     , sort_BOOL(sort_store.getOrCreateSort(sort_store.newSortSymbol(SortSymbol(s_sort_bool, 0, SortSymbol::INTERNAL)), {}).first)
     , term_TRUE(mkConst(getSort_bool(), tk_true))
     , term_FALSE(mkConst(getSort_bool(), tk_false))

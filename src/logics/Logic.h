@@ -97,6 +97,8 @@ class Logic {
     SymStore            sym_store;
     PtStore             term_store;
 
+    SSymRef             sym_IndexedSort;
+
     SRef                sort_BOOL;
     PTRef               term_TRUE;
     PTRef               term_FALSE;
@@ -140,6 +142,7 @@ class Logic {
     static const char*  tk_xor;
     static const char*  tk_distinct;
     static const char*  tk_ite;
+    static const char*  tk_indexed;
 
 
     static const char*  s_sort_bool;
@@ -278,6 +281,7 @@ public:
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
     PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
 
+    SSymRef       getSortSymIndexed()              const { return sym_IndexedSort; }
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
