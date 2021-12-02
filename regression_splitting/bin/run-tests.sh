@@ -44,7 +44,6 @@ run_solver ./instances/small.smt2 sat
 run_solver ./instances/tta_startup_simple_startup_3nodes.synchro.base-deep.smt2 unsat
 run_solver ./instances/tta_startup_simple_startup_3nodes.synchro.base.smt2 unsat
 
-
 if [[ ${ok} == true ]]; then
     exit 0;
 else
