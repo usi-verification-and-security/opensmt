@@ -364,6 +364,11 @@ void CoreSMTSolver::attachClause(CRef cr)
     watches[~c[1]].push(Watcher(cr, c[0]));
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
+    else{
+        next.insert(cr);
+        next_l.insert(var(~c[0]));
+        next_l.insert(var(~c[1]));
+    }
 
     if (c.learnt()) learnts_literals += c.size();
     else            clauses_literals += c.size();
@@ -379,6 +384,11 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         remove(watches[~c[1]], Watcher(cr, c[0]));
         if(c.size() > 2 )
             remove(watches[~c[2]], Watcher(cr, c[0]));
+        else {
+            next.erase(cr);
+            next_l.erase(var(~c[0]));
+            next_l.erase(var(~c[1]));
+        }
     }
     else
     {
@@ -1245,13 +1255,6 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
-//                for(int j = 0; j < next.size(); j++){
-//                    if(cr == next[j]){
-//                        next[j] = next[next.size() - 1];
-//                        next.pop();
-//                        break;
-//                    }
-//                }
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1285,26 +1288,9 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-//                next.push(cr);
-//                printf("----------------------------\n");
-//                printf("Clause # %d \n", cr);
-//                printf("Propagated # %d \n", c[2].x);
-//                printf("Next length %d \n", next.size());
-//
-//                printf("%d ", c[0].x);
-//                for(int i = 1; i < c.size(); i++){
-//                    printf("\\/ %d ", c[i].x);
-//                }
-//                printf("\n");
-//                printf("Clauses now:\n");
-//                for(int i = 0; i< next.size(); i++){
-//                    printf("Clause #%d : %p \n",i, next[i]);
-//                }
-//                printf("Clauses trail:\n");
-//                for(int i = 0; i< next_l.size(); i++){
-//                    printf("Level #%d : %d \n",i, next_l[i]);
-//                }
-//                printf("++++++++++++++++++++++++++++\n");
+                next.insert(cr);
+                next_l.insert(var(~c[0]));
+                next_l.insert(var(~c[1]));
 
             }
 NextClause:
