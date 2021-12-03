@@ -186,7 +186,8 @@ public:
     inline string               getName             ( ) { return name; }         // The name of the solver
     virtual void fillTheoryFunctions(ModelBuilder &) const { throw std::logic_error{"Model computation not supported for the used theory yet!"}; }
     virtual void computeModel() = 0;                      // Compute model for variables
-    virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
+    virtual void getConflict(vec<PtAsgn> &) = 0;          // Return conflict
+    virtual vec<PtAsgn> getReasonFor(PtAsgn lit);
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state

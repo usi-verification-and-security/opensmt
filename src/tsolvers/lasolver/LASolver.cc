@@ -680,25 +680,10 @@ void LASolver::deduce(LABoundRef bound_prop) {
 }
 
 
-void LASolver::getConflict(bool, vec<PtAsgn>& e) {
-    for (int i = 0; i < explanation.size(); i++) {
-        e.push(explanation[i]);
-
+void LASolver::getConflict(vec<PtAsgn> & conflict) {
+    for (PtAsgn lit : explanation) {
+        conflict.push(lit);
     }
-//    printf(" => explanation: \n");
-//    for (int i = 0; i < e.size(); i++) {
-//        PtAsgn asgn = e[i];
-//        LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
-//        LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
-//        printf("(%s) ", boundStore.printBound(bound_ref));
-//    }
-//    printf("\n");
-//    vec<PTRef> check_me;
-//    for (int i = 0; i < e.size(); i++) {
-//        check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
-//    }
-////    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
-//    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
 // We may assume that the term is of the following forms

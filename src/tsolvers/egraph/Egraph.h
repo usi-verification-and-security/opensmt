@@ -274,7 +274,7 @@ public:
     void       popBacktrackPoint       () override;                 // Backtrack to last saved point
     PTRef      getSuggestion           ();                          // Return a suggested literal based on the current state
     lbool      getPolaritySuggestion   (PTRef);                     // Return a suggested polarity for a given literal
-    void       getConflict             (bool, vec<PtAsgn>&) override;// Get explanation
+    void       getConflict             (vec<PtAsgn> &) override;
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;

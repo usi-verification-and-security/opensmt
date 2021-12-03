@@ -1,5 +1,6 @@
 #include "TSolver.h"
 #include "Logic.h"
+#include "OsmtInternalException.h"
 
 void TSolver::clearSolver()
 {
@@ -81,4 +82,19 @@ PtAsgn_reason TSolver::getDeduction() {
         return PtAsgn_reason_Undef;
     }
     return th_deductions[deductions_next++];
+}
+
+vec<PtAsgn> TSolver::getReasonFor(PtAsgn lit) {
+    pushBacktrackPoint();
+    // assert with negated polarity
+    assert(lit.sgn != l_Undef);
+    bool sat = assertLit(PtAsgn(lit.tr, lit.sgn == l_True ? l_False : l_True));
+    if (sat) {
+        assert(false);
+        throw OsmtInternalException("Error in computing reason for theory-propagated literal");
+    }
+    vec<PtAsgn> conflict;
+    getConflict(conflict);
+    popBacktrackPoint();
+    return conflict;
 }

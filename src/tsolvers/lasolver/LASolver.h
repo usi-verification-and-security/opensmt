@@ -113,7 +113,7 @@ public:
     PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);
 
     // Return the conflicting bounds
-    void        getConflict(bool, vec<PtAsgn>& e) override;
+    void getConflict(vec<PtAsgn> &) override;
 
     ArithLogic& getLogic() override;
     bool        isValid(PTRef tr) override;

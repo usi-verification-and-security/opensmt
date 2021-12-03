@@ -88,7 +88,7 @@ TEST_F(EgraphTest, test_booleans) {
     ASSERT_FALSE(egraph.assertLit({eq, l_True}));
 
     vec<PtAsgn> expl;
-    egraph.getConflict(false, expl);
+    egraph.getConflict(expl);
 
     ASSERT_EQ(expl.size(), 3);
     for (auto pta : expl) {
