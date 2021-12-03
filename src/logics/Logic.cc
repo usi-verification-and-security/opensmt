@@ -1502,7 +1502,6 @@ SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortR
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 
 std::string Logic::printSort(SRef s) const { return sort_store.printSort(s); }
-size_t Logic::getSortSize(SRef s)    const { return sort_store.getSize(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
     SRef res = SRef_Undef;
