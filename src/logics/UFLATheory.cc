@@ -48,7 +48,7 @@ namespace {
     }
 
     class PurifyConfig : public DefaultRewriterConfig {
-        static std::string prefix;
+        static constexpr const char * prefix = ".purify_";
         ArithLogic & logic;
         Logic::SubstMap freshVarMap;
         vec<PTRef> auxArgs;
@@ -64,7 +64,7 @@ namespace {
         }
 
         template<typename TIsInterestingChild>
-        PTRef rewriteInternal(PTRef ptref, TIsInterestingChild isInteresting) {
+        PTRef rewriteInternal(PTRef ptref, TIsInterestingChild && isInteresting) {
             auxArgs.clear();
             bool needsRewriting = false;
             auto nargs = logic.getPterm(ptref).nargs();
@@ -101,8 +101,6 @@ namespace {
         Logic::SubstMap const & getPurificationMap() const { return freshVarMap; }
     };
 
-    std::string PurifyConfig::prefix = ".purify_";
-
     class Purifier : public Rewriter<PurifyConfig> {
         PurifyConfig config;
 
@@ -132,13 +130,13 @@ class RewriterConfig : public DefaultRewriterConfig {
     ArithLogic & logic;
     Pred pred;
 public:
-    RewriterConfig(ArithLogic & logic, Pred pred) : logic(logic), pred(pred) {}
+    RewriterConfig(ArithLogic & logic, Pred && pred) : logic(logic), pred(std::move(pred)) {}
 
     bool previsit(PTRef term) override { return logic.hasSortBool(term) and not logic.isIte(term); }
 
     PTRef rewrite(PTRef term) override {
-        if (logic.isNumEq(term) && pred(term)) {
-            Pterm const  & p = logic.getPterm(term);
+        if (logic.isNumEq(term) and pred(term)) {
+            Pterm const & p = logic.getPterm(term);
             PTRef a1 = p[0];
             PTRef a2 = p[1];
             PTRef i1 = logic.mkLeq(a1, a2);
@@ -150,8 +148,7 @@ public:
 };
 
 PTRef UFLATheory::splitArithmeticEqualities(PTRef fla) {
-    auto split = [this](PTRef term) { return not containsUF(term, logic); };
-    auto config = RewriterConfig(logic, split);
+    auto config = RewriterConfig(logic, [this](PTRef term) { return not containsUF(term, logic); } );
     auto rewriter = Rewriter(logic, config);
     return rewriter.rewrite(fla);
 }
