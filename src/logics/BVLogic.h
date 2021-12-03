@@ -107,7 +107,7 @@ class BVLogic: public CUFLogic
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
     virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)) || Logic::isBuiltinSortSym(ssr); }
     virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
-    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
+    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || CUFLogic::isBuiltinConstant(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
 

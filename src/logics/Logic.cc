@@ -1310,9 +1310,9 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         Symbol const & symb = sym_store[s];
         dump_out << "(";
         for (SRef sr : symb) {
-            dump_out << sort_store.printSort(sr) << " ";
+            dump_out << printSort(sr) << " ";
         }
-        dump_out << ") " << sort_store.printSort(symb.rsort()) << ")" << endl;
+        dump_out << ") " << printSort(symb.rsort()) << ")" << endl;
     }
 }
 
@@ -1420,10 +1420,10 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (PTRef arg : args) {
         char* arg_name = printTerm(arg);
-        dump_out << '(' << arg_name << ' ' <<  sort_store.printSort(getSortRef(arg)) << ") ";
+        dump_out << '(' << arg_name << ' ' <<  printSort(getSortRef(arg)) << ") ";
         free(arg_name);
     }
-    dump_out << ") " << sort_store.printSort(tpl_fun.getRetSort());
+    dump_out << ") " << printSort(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
@@ -1615,7 +1615,7 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
 
         std::string argSorts;
         for (PTRef tr : args) {
-            argSorts += std::string(printSort(getSortRef(tr))) + " ";
+            argSorts += printSort(getSortRef(tr)) + " ";
         }
         return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
     };
