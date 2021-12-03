@@ -140,7 +140,7 @@ class SortAllocator : public RegionAllocator<uint32_t>
 {
     sortid_t static_uniq_id = 0;
     static int SortWord32Size(int size) {
-        return (sizeof(Sort) + size) / sizeof(uint32_t); }
+        return (sizeof(Sort) + sizeof(SRef)*size) / sizeof(uint32_t); }
   public:
     SortAllocator() {}
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
