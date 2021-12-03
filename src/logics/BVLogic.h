@@ -105,8 +105,8 @@ class BVLogic: public CUFLogic
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
     PTRef         mkBVConst   (const char* c) { char* num; opensmt::wordToBinary(opensmt::Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
-    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)) || Logic::isBuiltinSortSym(ssr); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)) || CUFLogic::isBuiltinSortSym(ssr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || CUFLogic::isBuiltinSort(sr); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || CUFLogic::isBuiltinConstant(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }

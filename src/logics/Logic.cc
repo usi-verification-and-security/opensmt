@@ -1598,18 +1598,18 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
             for (int i = 0; i < args.size(); i++) {
-                symStr += " " + std::string(printSort(symbol[0]));
+                symStr += " " + printSort(symbol[0]);
             }
         } else if (symbol.left_assoc()) {
-            symStr += " " + std::string(printSort(symbol[0]));
+            symStr += " " + printSort(symbol[0]);
             for (int i = 1; i < args.size(); i++) {
-                symStr += " " + std::string(printSort(symbol[1]));
+                symStr += " " + printSort(symbol[1]);
             }
         } else if (symbol.right_assoc()) {
             for (int i = 0; i < args.size() - 1; i++) {
-                symStr += " " + std::string(printSort(symbol[0]));
+                symStr += " " + printSort(symbol[0]);
             }
-            symStr += " " + std::string(printSort(symbol[1]));
+            symStr += " " + printSort(symbol[1]);
         }
 
         std::string argSorts;
