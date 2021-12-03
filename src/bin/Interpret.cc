@@ -466,7 +466,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                     const Symbol& t = logic->getSym(ctr);
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]).c_str());
+                        comment_formatted("  arg %d: %s", k, logic->printSort(t[k]).c_str());
                     }
                 }
             }
@@ -725,7 +725,7 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
     const char *s = logic->protectName(logic->getSymName(tr));
     SRef sortRef = logic->getSym(tr).rsort();
-    ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
+    ss << "  (define-fun " << s << " () " << logic->printSort(sortRef) << '\n';
     char* val_string = logic->printTerm(val);
     ss << "    " << val_string << ")\n";
     free(val_string);
@@ -738,11 +738,11 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         char* tmp = logic->pp(args[i]);
-        auto sortString = logic->getSortName(logic->getSortRef(args[i]));
+        auto sortString = logic->printSort(logic->getSortRef(args[i]));
         ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
         free(tmp);
     }
-    ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
+    ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
     char* tmp = logic->pp(templateFun.getBody());
     ss << "    " << tmp << ")\n";
     free(tmp);
@@ -881,7 +881,7 @@ bool Interpret::defineFun(const ASTNode& n)
         return false;
     }
     else if (logic->getSortRef(tr) != ret_sort) {
-        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->getSortName(logic->getSortRef(tr)).c_str(), logic->getSortName(ret_sort).c_str());
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
         return false;
     }
     bool rval = logic->defineFun(fname, arg_trs, ret_sort, tr);

@@ -97,6 +97,8 @@ class Logic {
     SymStore            sym_store;
     PtStore             term_store;
 
+    SSymRef             sym_IndexedSort;
+
     SRef                sort_BOOL;
     PTRef               term_TRUE;
     PTRef               term_FALSE;
@@ -140,6 +142,7 @@ class Logic {
     static const char*  tk_xor;
     static const char*  tk_distinct;
     static const char*  tk_ite;
+    static const char*  tk_indexed;
 
 
     static const char*  s_sort_bool;
@@ -163,7 +166,7 @@ class Logic {
   public:
     SRef                getSortRef (PTRef tr)  const;
     SRef                getSortRef (SymRef sr) const;
-    std::string const & getSortName(SRef s)    const;
+    std::string         printSort  (SRef s)    const;
     std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
 
@@ -278,6 +281,7 @@ public:
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
     PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
 
+    SSymRef       getSortSymIndexed()              const { return sym_IndexedSort; }
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
@@ -318,6 +322,7 @@ public:
     bool         isBooleanOperator  (SymRef tr)       const;
     bool         isBooleanOperator  (PTRef tr)        const;// { return isBooleanOperator(term_store[tr].symb()); }
     virtual bool isBuiltinSort      (const SRef sr)   const;// { return sr == sort_BOOL; }
+    virtual bool isBuiltinSortSym   (const SSymRef ssr) const;
     virtual bool isBuiltinConstant  (const SymRef sr) const;// { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool         isBuiltinConstant  (const PTRef tr)  const;// { return isBuiltinConstant(getPterm(tr).symb()); }
     virtual bool isBuiltinFunction  (const SymRef sr) const;

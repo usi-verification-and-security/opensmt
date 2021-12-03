@@ -54,6 +54,7 @@ class SStore
     std::unordered_map<SortKey, SRef, SortHash> sortTable;
     std::unordered_map<std::string, SSymRef> sortSymbolTable;
     vec<SRef> sorts;
+    vec<SSymRef> sortSymbols;
   public:
 
     SStore() = default;
@@ -69,11 +70,26 @@ class SStore
     SortSymbol const & operator [](SSymRef sr)      const { return ssa[sr]; }
 
     opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
-    std::string const & getName (SRef sr) const { return ssa[sa[sr].getSymRef()].name; }
+    SSymRef getSortSym(SRef sr) const { return sa[sr].getSymRef(); }
+    std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
+    std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }
+    unsigned int getSortSymSize(SSymRef ssr) const { return ssa[ssr].arity; }
+    std::string printSort (SRef sr) const {
+        std::string name = getSortSymName(sr);
+        if (sa[sr].getSize() > 0) {
+            name = "(" + name + " ";
+            for (unsigned i = 0; i < sa[sr].getSize(); i++) {
+                name += printSort(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+            }
+            name += ")";
+        }
+        return name;
+    }
+
     int  getSize(SRef sr) const { return sa[sr].getSize(); }
     const vec<SRef>& getSorts() const { return sorts; }
+    const vec<SSymRef>& getSortSyms() const { return sortSymbols; }
     int     numSorts() const { return sorts.size(); }
-    void dumpSortsToFile(std::ostream&);
 };
 
 #endif

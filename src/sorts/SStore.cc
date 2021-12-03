@@ -43,6 +43,7 @@ SSymRef SStore::newSortSymbol(SortSymbol symbol) {
     assert(not peek(symbol, res));
     res = ssa.alloc(symbol);
     sortSymbolTable.insert({std::move(symbol.name), res});
+    sortSymbols.push(res);
     return res;
 }
 
@@ -59,13 +60,4 @@ opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> &&
     auto emplaceRes = sortTable.emplace(std::move(key), sr);
     assert(emplaceRes.second); (void)emplaceRes;
     return {sr, true};
-}
-
-void
-SStore::dumpSortsToFile ( std::ostream & dump_out )
-{
-    for(int i = 1; i < sorts.size(); ++i)
-	{
-		dump_out << "(declare-sort " << getName(sorts[i]) << " " << getSize(sorts[i]) << std::endl;
-	}
 }
