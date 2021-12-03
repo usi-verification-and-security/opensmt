@@ -195,7 +195,7 @@ Logic::pp(PTRef tr) const
         if (isKnownToUser(sr)) {
             ss << name_escaped;
         } else {
-            ss << "(as " << name_escaped << " " << getSortName(getSortRef(sr)) << ")";
+            ss << "(as " << name_escaped << " " << printSort(getSortRef(sr)) << ")";
         }
 #ifdef PARTITION_PRETTYPRINT
         ss << " [" << getIPartitions(tr) << ' ]';
@@ -240,7 +240,7 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
         if (isKnownToUser(sr)) {
             ss << name_escaped << (ext ? ext_string : "");
         } else {
-            ss << "(as " << name_escaped << ext_string << " " << getSortName(getSortRef(sr)) << ")";
+            ss << "(as " << name_escaped << ext_string << " " << printSort(getSortRef(sr)) << ")";
         }
         return strdup(ss.str().data());
     } else {
@@ -1286,9 +1286,9 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out) const
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-    for (SRef sr : sort_store.getSorts()) {
-        if (isBuiltinSort(sr)) continue;
-        dump_out << "(declare-sort " << getSortName(sr) << " " << getSortSize(sr) << ")" << endl;
+    for (SSymRef ssr : sort_store.getSortSyms()) {
+        if (isBuiltinSortSym(ssr)) continue;
+        dump_out << "(declare-sort " << sort_store.getSortSymName(ssr) << " " << sort_store.getSortSymSize(ssr) << ")" << endl;
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
@@ -1310,9 +1310,9 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         Symbol const & symb = sym_store[s];
         dump_out << "(";
         for (SRef sr : symb) {
-            dump_out << getSortName(sr) << " ";
+            dump_out << sort_store.printSort(sr) << " ";
         }
-        dump_out << ") " << getSortName(symb.rsort()) << ")" << endl;
+        dump_out << ") " << sort_store.printSort(symb.rsort()) << ")" << endl;
     }
 }
 
@@ -1420,10 +1420,10 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (PTRef arg : args) {
         char* arg_name = printTerm(arg);
-        dump_out << '(' << arg_name << ' ' <<  getSortName(getSortRef(arg)) << ") ";
+        dump_out << '(' << arg_name << ' ' <<  sort_store.printSort(getSortRef(arg)) << ") ";
         free(arg_name);
     }
-    dump_out << ") " << getSortName(tpl_fun.getRetSort());
+    dump_out << ") " << sort_store.printSort(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
@@ -1501,8 +1501,8 @@ PTRef Logic::conjoinExtras(PTRef root) { return root; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
 
-std::string Logic::getSortName(const SRef s) const { return sort_store.getName(s); }
-size_t Logic::getSortSize(const SRef s) const { return sort_store.getSize(s); }
+std::string Logic::printSort(SRef s) const { return sort_store.printSort(s); }
+size_t Logic::getSortSize(SRef s)    const { return sort_store.getSize(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
     SRef res = SRef_Undef;
@@ -1550,6 +1550,7 @@ bool          Logic::isIte            (PTRef tr)      const { return ites.has(te
 
 bool         Logic::isBooleanOperator  (PTRef tr)        const { return isBooleanOperator(term_store[tr].symb()); }
 bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
+bool         Logic::isBuiltinSortSym   (const SSymRef ssr) const { return ssr == sort_store.getSortSym(sort_BOOL); }
 bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
 bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
 bool         Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
@@ -1598,23 +1599,23 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
             for (int i = 0; i < args.size(); i++) {
-                symStr += " " + std::string(getSortName(symbol[0]));
+                symStr += " " + std::string(printSort(symbol[0]));
             }
         } else if (symbol.left_assoc()) {
-            symStr += " " + std::string(getSortName(symbol[0]));
+            symStr += " " + std::string(printSort(symbol[0]));
             for (int i = 1; i < args.size(); i++) {
-                symStr += " " + std::string(getSortName(symbol[1]));
+                symStr += " " + std::string(printSort(symbol[1]));
             }
         } else if (symbol.right_assoc()) {
             for (int i = 0; i < args.size() - 1; i++) {
-                symStr += " " + std::string(getSortName(symbol[0]));
+                symStr += " " + std::string(printSort(symbol[0]));
             }
-            symStr += " " + std::string(getSortName(symbol[1]));
+            symStr += " " + std::string(printSort(symbol[1]));
         }
 
         std::string argSorts;
         for (PTRef tr : args) {
-            argSorts += std::string(getSortName(getSortRef(tr))) + " ";
+            argSorts += std::string(printSort(getSortRef(tr))) + " ";
         }
         return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
     };

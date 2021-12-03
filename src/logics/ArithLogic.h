@@ -122,7 +122,8 @@ public:
     PTRef            mkIntVar         (const char* name) { if (not hasIntegers()) { throw OsmtApiException("Create Int var in non-integral logic"); } return mkVar(sort_INT, name); }
     PTRef            mkRealVar        (const char* name) { if (not hasReals()) { throw OsmtApiException("Create Real var in non-real logic"); } return mkVar(sort_REAL, name); }
 
-    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() ||sr == getSort_real() || Logic::isBuiltinSort(sr); }
+    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr); }
+    bool             isBuiltinSortSym (SSymRef ssr) const override { return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) || Logic::isBuiltinSortSym(ssr); }
     bool             isBuiltinConstant(SymRef sr) const override { return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
 
     bool isNumConst (SymRef sr) const { return Logic::isConstant(sr) && yieldsSortNum(sr); }

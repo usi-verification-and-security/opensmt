@@ -115,6 +115,7 @@ class CUFLogic: public Logic
     PTRef                 mkCUFConst   (const int c) { std::string num = std::to_string(c); PTRef tr = Logic::mkConst(sort_CUFNUM, num.c_str()); return tr; }
     virtual PTRef         mkCUFNumVar(const char* name) { return mkVar(sort_CUFNUM, name); }
     virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_CUFNUM) || Logic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_CUFNUM)) || Logic::isBuiltinSortSym(ssr); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isCUFNUMConst(sr) || Logic::isBuiltinConstant(sr); }
 
     PTRef conjoinExtras(PTRef root) override;

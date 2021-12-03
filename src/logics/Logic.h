@@ -166,7 +166,7 @@ class Logic {
   public:
     SRef                getSortRef (PTRef tr)  const;
     SRef                getSortRef (SymRef sr) const;
-    std::string         getSortName(SRef s)    const;
+    std::string         printSort  (SRef s)    const;
     std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
 
@@ -322,6 +322,7 @@ public:
     bool         isBooleanOperator  (SymRef tr)       const;
     bool         isBooleanOperator  (PTRef tr)        const;// { return isBooleanOperator(term_store[tr].symb()); }
     virtual bool isBuiltinSort      (const SRef sr)   const;// { return sr == sort_BOOL; }
+    virtual bool isBuiltinSortSym   (const SSymRef ssr) const;
     virtual bool isBuiltinConstant  (const SymRef sr) const;// { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool         isBuiltinConstant  (const PTRef tr)  const;// { return isBuiltinConstant(getPterm(tr).symb()); }
     virtual bool isBuiltinFunction  (const SymRef sr) const;
