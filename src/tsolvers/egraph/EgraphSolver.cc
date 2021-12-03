@@ -172,11 +172,10 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
 //
 // Communicate conflict
 //
-void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
+void Egraph::getConflict(vec<PtAsgn> & conflict)
 {
-    (void)deduction;
-    for (PtAsgn pta : explanation) {
-        cnfl.push(pta);
+    for (PtAsgn lit : explanation) {
+        conflict.push(lit);
     }
 #ifdef STATISTICS
     if (deduction) {

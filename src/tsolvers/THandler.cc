@@ -25,10 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "THandler.h"
-#include "CoreSMTSolver.h"
 #include "TSolver.h"
 #include "ModelBuilder.h"
-#include "OsmtInternalException.h"
 
 #include <sys/wait.h>
 #include <assert.h>
@@ -146,7 +144,7 @@ void THandler::getConflict (
         int i;
         for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
             if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasExplanation()) {
-                getSolverHandler().tsolvers[i]->getConflict(false, explanation);
+                getSolverHandler().tsolvers[i]->getConflict(explanation);
                 break;
             }
         }
@@ -241,19 +239,9 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
     assert(getLogic().isTheoryTerm(e));
     TSolver* solver = getSolverHandler().getReasoningSolverFor(e);
     assert(solver);
-    solver->pushBacktrackPoint();
-    // Assign temporarily opposite polarity
-    PtAsgn conflictingPolarity = PtAsgn(e, sign(~l) ? l_False : l_True);
-    lbool res = solver->assertLit(conflictingPolarity) == false ? l_False : l_Undef;
-
-    if (res != l_False) {
-        assert(false);
-        throw OsmtInternalException("Error in computing reason for theory-propagated literal");
-    }
 
     // Get Explanation
-    vec<PtAsgn> explanation;
-    solver->getConflict( true, explanation );
+    vec<PtAsgn> explanation = solver->getReasonFor(PtAsgn(e, sign(l) ? l_False : l_True));
     assert(explanation.size() > 0);
 
     // Reserve room for implied lit
@@ -277,7 +265,6 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
             reason.push(pa.sgn == l_True ? ~tmap.getLit(ei) : tmap.getLit(ei)); // Swap the sign for others
         }
     }
-    solver->popBacktrackPoint();
 
 }
 
