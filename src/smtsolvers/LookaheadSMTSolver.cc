@@ -420,6 +420,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
                 else if (res == l_Undef)
                 {
+                    next_l.clear();
                     cancelUntil(0);
                     return laresult::la_restart;
                 }
