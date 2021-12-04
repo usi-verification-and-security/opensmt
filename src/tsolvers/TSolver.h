@@ -178,7 +178,6 @@ public:
     // Called after every check-sat.
     virtual void clearSolver();
 
-    virtual void print(ostream& out) = 0;
     virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point

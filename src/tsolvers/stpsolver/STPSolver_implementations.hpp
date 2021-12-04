@@ -161,11 +161,6 @@ void STPSolver<T>::clearSolver() {
 }
 
 template<class T>
-void STPSolver<T>::print(ostream &out) {
-
-}
-
-template<class T>
 void STPSolver<T>::pushBacktrackPoint() {
     // Marks a checkpoint for the set of constraints in the solver
     // Important for backtracking

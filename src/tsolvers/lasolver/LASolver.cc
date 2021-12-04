@@ -679,46 +679,6 @@ void LASolver::deduce(LABoundRef bound_prop) {
     }
 }
 
-//
-// Prints the current state of the solver (terms, bounds, tableau)
-//
-void LASolver::print( ostream & )
-{
-    throw "Not implemented yet!";
-    // print current non-basic variables
-//    out << "Var:" << endl;
-//    for ( unsigned i = 0; i < columns.size(); i++ )
-//        out << logic.pp(lva[columns[i]].getPTRef()) << "\t";
-//    out << endl;
-//
-//    // print the terms IDs
-//    out << "Tableau:" << endl;
-//    for ( unsigned i = 0; i < columns.size(); i++)
-//        out << lva[columns[i]].ID() << "\t";
-//    out << endl;
-//
-//    // print the Basic/Nonbasic status of terms
-//    for ( unsigned i = 0; i < columns.size(); i++)
-//        out << ( lva[columns[i]].isBasic() ? "B" : "N" ) << "\t";
-//    out << endl;
-//
-//    // print the tableau cells (zeros are skipped)
-//    // iterate over Tableau rows
-//    for ( unsigned i = 0; i < rows.size( ); i++ ) {
-//        auto const & row_poly = row_polynomials.at(rows[i]);
-//        for (unsigned j = 0; j < columns.size(); j++) {
-////            if (polyStore.has(lva[rows[i]].getPolyRef(), columns[j]))
-////                out << pta[polyStore.find(lva[rows[i]].getPolyRef(), columns[j])].coef;
-//            auto it = row_poly.find(columns[j]);
-//            if (it != row_poly.end()){
-//               out << it->second;
-//            }
-//            out << "\t";
-//        }
-//        out << endl;
-//    }
-}
-
 
 void LASolver::getConflict(bool, vec<PtAsgn>& e) {
     for (int i = 0; i < explanation.size(); i++) {

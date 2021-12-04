@@ -232,8 +232,6 @@ public:
 
     void clearSolver() override { clearModel(); } // Only clear the possible computed values
 
-    void print(ostream &) override { return; }
-
 protected:
     inline Enode & getEnode(ERef er) { return enode_store[er]; }
 

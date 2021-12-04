@@ -161,28 +161,12 @@ private:
     void computeConcreteModel(LVRef v, const opensmt::Real& d);
     void computeModel() override;
 
-    void print( ostream & out ) override;                            // Prints terms, current bounds and the tableau
-
-
     std::vector<opensmt::Real> concrete_model;              // Save here the concrete model for the vars indexed by Id
 
     opensmt::Real evaluateTerm(PTRef tr);
 
     LASolverStatus status;                  // Internal status of the solver (different from bool)
 
-
-    // Two reloaded output operators
-    inline friend ostream & operator <<( ostream & out, LASolver & solver )
-    {
-        solver.print( out );
-        return out;
-    }
-
-    inline friend ostream & operator <<( ostream & out, LASolver * solver )
-    {
-        solver->print( out );
-        return out;
-    }
     void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
 
     PTRef interpolateUsingEngine(FarkasInterpolator &) const;
