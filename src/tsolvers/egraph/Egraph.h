@@ -225,7 +225,6 @@ public:
     Egraph(SMTConfig & c, Logic & l);
 
     virtual ~Egraph() {
-        backtrackToStackSize(0);
 #ifdef STATISTICS
         tsolver_stats.printStatistics(std::cerr);
 #endif // STATISTICS
