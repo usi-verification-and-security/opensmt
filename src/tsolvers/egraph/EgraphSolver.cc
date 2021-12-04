@@ -112,7 +112,7 @@ void Egraph::pushBacktrackPoint( )
 // Pops a backtrack point
 //
 void Egraph::popBacktrackPoint() {
-//    opensmt::StopWatch sw(tsolver_stats.egraph_backtrack_timer);
+//    opensmt::StopWatch sw(egraphStats.egraph_backtrack_timer);
     assert( backtrack_points.size( ) > 0 );
     size_t undo_stack_new_size = backtrack_points.last();
     backtrack_points.pop();
@@ -179,22 +179,12 @@ void Egraph::getConflict(vec<PtAsgn> & conflict)
         conflict.push(lit);
     }
 #ifdef STATISTICS
-    if (deduction) {
-        if (cnfl.size() > tsolver_stats.max_reas_size)
-            tsolver_stats.max_reas_size = cnfl.size();
-        if (cnfl.size() < tsolver_stats.min_reas_size)
-            tsolver_stats.min_reas_size = cnfl.size();
-        tsolver_stats.reasons_sent ++;
-        tsolver_stats.avg_reas_size += cnfl.size();
-    }
-    else {
-        if (cnfl.size() > tsolver_stats.max_conf_size)
-            tsolver_stats.max_conf_size = cnfl.size();
-        if (cnfl.size() < tsolver_stats.min_conf_size)
-            tsolver_stats.min_conf_size = cnfl.size();
-        tsolver_stats.conflicts_sent ++;
-        tsolver_stats.avg_conf_size += cnfl.size();
-    }
+    if (conflict.size() > generalTSolverStats.max_conf_size)
+        generalTSolverStats.max_conf_size = conflict.size();
+    if (conflict.size() < generalTSolverStats.min_conf_size)
+        generalTSolverStats.min_conf_size = conflict.size();
+    generalTSolverStats.conflicts_sent ++;
+    generalTSolverStats.avg_conf_size += conflict.size();
 #endif
 }
 
@@ -305,7 +295,7 @@ bool Egraph::addEquality(PtAsgn pa) {
 
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     // The sat_calls is increased already in addTrue
 #endif
 
@@ -338,7 +328,7 @@ bool Egraph::addDisequality(PtAsgn pa) {
     }
 #ifdef STATISTICS
     if (!res)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     // The sat_calls is increased already in addFalse
 #endif
 
@@ -354,9 +344,9 @@ bool Egraph::addTrue(PTRef term) {
     }
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     else {
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     }
 #endif
     return res;
@@ -371,9 +361,9 @@ bool Egraph::addFalse(PTRef term) {
     }
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     else {
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     }
 #endif
     return res;
@@ -861,7 +851,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                     ERef ded_eq = enode_store.termToERef[eq];
                     enode_store[ded_eq].setDeduced(l_False);
                     deductions.push(PtAsgn_reason(eq, l_False, reason.tr));
-                    tsolver_stats.deductions_done ++;
+                    egraphStats.deductions_done ++;
                 }
             }
             if (elr == next_elr) break;
@@ -882,7 +872,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef STATISTICS
-            tsolver_stats.deductions_done ++;
+            generalTSolverStats.deductions_done ++;
 #endif
         }
         v = getEnode(v).getEqNext();
@@ -1112,7 +1102,7 @@ bool Egraph::assertLit(PtAsgn pta)
         // MB: The deductions done by this TSolver are also marked using polarity.
         //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
         //     once it is marked for deduction, so the implementation must count with that.
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
 
@@ -1143,7 +1133,7 @@ bool Egraph::assertLit(PtAsgn pta)
         assert(false);
     }
 
-    !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
+    !res ? generalTSolverStats.unsat_calls ++ : generalTSolverStats.sat_calls ++;
     return res;
 }
 
@@ -1579,4 +1569,9 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
             }
         }
     }
+}
+
+void Egraph::printStatistics(std::ostream & os) {
+    TSolver::printStatistics(os);
+    egraphStats.printStatistics(os);
 }

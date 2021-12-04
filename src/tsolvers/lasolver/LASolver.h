@@ -20,24 +20,16 @@ class LAVarStore;
 class Delta;
 class PartitionManager;
 
-class LASolverStats: public TSolverStats
+class LASolverStats
 {
     public:
         int num_vars;
         opensmt::OSMTTimeVal timer;
 
-        LASolverStats()
-        : TSolverStats()
-        , num_vars(0)
-        {}
+        LASolverStats() : num_vars(0) {}
 
-        void printStatistics(ostream& os) override
-        {
-            os << "; -------------------------" << endl;
-            os << "; STATISTICS FOR LA SOLVER" << endl;
-            os << "; -------------------------" << endl;
-            TSolverStats::printStatistics(os);
-            os << "; Number of LA vars........: " << num_vars << endl;
+        void printStatistics(ostream& os) {
+            os << "; Number of LA vars........: " << num_vars << '\n';
             os << "; LA time..................: " << timer.getTime() << " s\n";
         }
 };
@@ -81,8 +73,8 @@ private:
         INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR
     } LASolverStatus;
 
-    //opensmt::Real delta; // The size of one delta.  Set through computeModel()
-    LASolverStats tsolver_stats;
+    LASolverStats laSolverStats;
+
     void setBound(PTRef leq);
     bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
 
@@ -96,6 +88,8 @@ public:
     LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l);
 
     virtual ~LASolver( );                                      // Destructor ;-)
+
+    virtual void printStatistics(std::ostream &) override;
 
     virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
 
