@@ -128,7 +128,7 @@ void LASolver::clearSolver()
     int_vars.clear();
     int_vars_map.clear();
     // TODO: clear statistics
-//    this->tsolver_stats.clear();
+//    this->egraphStats.clear();
 }
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
@@ -142,7 +142,7 @@ void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
 }
 
 bool LASolver::check_simplex(bool complete) {
-    // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
+    // opensmt::StopWatch check_timer(egraphStats.simplex_timer);
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
@@ -157,7 +157,7 @@ bool LASolver::check_simplex(bool complete) {
         setStatus(UNSAT);
     }
 
-    getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+    getStatus() ? generalTSolverStats.sat_calls ++ : generalTSolverStats.unsat_calls ++;
 //    printf(" - check ended\n");
 //    printf(" => %s\n", getStatus() ? "sat" : "unsat");
 //    if (getStatus())
@@ -435,19 +435,19 @@ bool LASolver::assertLit(PtAsgn asgn)
 
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
     if (logic.isFalse(asgn.tr) && asgn.sgn == l_False) {
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_False) {
-        tsolver_stats.unsat_calls ++;
+        generalTSolverStats.unsat_calls ++;
         return false;
     }
     if (logic.isFalse(asgn.tr) && asgn.sgn == l_True) {
-        tsolver_stats.unsat_calls ++;
+        generalTSolverStats.unsat_calls ++;
         return false;
     }
     // check if we stop reading constraints
@@ -461,7 +461,7 @@ bool LASolver::assertLit(PtAsgn asgn)
         //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
         //     once it is marked for deduction, so the implementation must count with that.
         assert(getStatus());
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return getStatus();
     }
 
@@ -483,9 +483,9 @@ bool LASolver::assertLit(PtAsgn asgn)
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
         getSimpleDeductions(it, bound_ref);
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     } else {
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     }
 
     return getStatus();
@@ -789,7 +789,7 @@ void LASolver::computeModel()
 LASolver::~LASolver( )
 {
 #ifdef STATISTICS
-     tsolver_stats.printStatistics(cerr);
+    printStatistics(std::cerr);
 #endif // STATISTICS
 }
 
@@ -897,4 +897,9 @@ PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
     return interpolateUsingEngine(interpolator);
+}
+
+void LASolver::printStatistics(std::ostream & out) {
+    TSolver::printStatistics(out);
+    laSolverStats.printStatistics(out);
 }

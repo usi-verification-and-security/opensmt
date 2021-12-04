@@ -45,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unordered_set>
 
-class UFSolverStats: public TSolverStats
+class UFSolverStats
 {
     public:
         opensmt::OSMTTimeVal egraph_asrt_timer;
@@ -53,12 +53,8 @@ class UFSolverStats: public TSolverStats
         opensmt::OSMTTimeVal egraph_explain_timer;
         int num_eq_classes;
         UFSolverStats() : num_eq_classes(0) {}
-        void printStatistics(ostream& os)
+        void printStatistics(std::ostream & os)
         {
-            os << "; -------------------------" << endl;
-            os << "; STATISTICS FOR EUF SOLVER" << endl;
-            os << "; -------------------------" << endl;
-            TSolverStats::printStatistics(os);
             os << "; egraph time..............: " << egraph_asrt_timer.getTime() << " s\n";
             os << "; backtrack time...........: " << egraph_backtrack_timer.getTime() << " s\n";
             os << "; explain time.............: " << egraph_explain_timer.getTime() << " s\n";
@@ -196,7 +192,7 @@ private:
 
     double fa_garbage_frac;
 
-    UFSolverStats tsolver_stats;
+    UFSolverStats egraphStats;
 
     class Values {
         Map<ERef, ERef, ERefHash> values;
@@ -226,7 +222,7 @@ public:
 
     virtual ~Egraph() {
 #ifdef STATISTICS
-        tsolver_stats.printStatistics(std::cerr);
+        printStatistics(std::cerr);
 #endif // STATISTICS
     }
 
@@ -282,8 +278,8 @@ public:
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
     PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
-    void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
+    void       printStatistics         (std::ostream &) override;
 
 #if MORE_DEDUCTIONS
   bool                deduceMore              ( vector< ERef > & );
@@ -407,10 +403,6 @@ private:
     void processParentsAfterMerge(ERef mergedRoot);
     void processParentsBeforeUnMerge(ERef oldroot);
     void processParentsAfterUnMerge(ERef oldroot);
-
-#ifdef STATISTICS
-    void printStatistics ( ofstream & );
-#endif
 };
 
 #endif

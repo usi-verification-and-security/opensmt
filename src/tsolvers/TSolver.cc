@@ -96,5 +96,20 @@ vec<PtAsgn> TSolver::getReasonFor(PtAsgn lit) {
     vec<PtAsgn> conflict;
     getConflict(conflict);
     popBacktrackPoint();
+#ifdef STATISTICS
+    if (conflict.size() > generalTSolverStats.max_reas_size)
+        generalTSolverStats.max_reas_size = conflict.size();
+    if (conflict.size() < generalTSolverStats.min_reas_size)
+        generalTSolverStats.min_reas_size = conflict.size();
+    generalTSolverStats.reasons_sent ++;
+    generalTSolverStats.avg_reas_size += conflict.size();
+#endif // STATISTICS
     return conflict;
+}
+
+void TSolver::printStatistics(std::ostream & os) {
+    os << "; -------------------------\n";
+    os << "; STATISTICS FOR " << getName() << '\n';
+    os << "; -------------------------\n";
+    generalTSolverStats.printStatistics(os);
 }
