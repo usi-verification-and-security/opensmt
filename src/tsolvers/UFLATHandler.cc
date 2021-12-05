@@ -25,3 +25,9 @@ PTRef UFLATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_
     throw std::logic_error("Not implemented");
 }
 
+lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
+    if (lasolver->isKnown(pt)) { return lasolver->getPolaritySuggestion(pt); }
+    if (ufsolver->isKnown(pt)) { return ufsolver->getPolaritySuggestion(pt); }
+    return l_Undef;
+}
+

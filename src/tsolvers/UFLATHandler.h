@@ -45,6 +45,8 @@ class UFLATHandler : public TSolverHandler
     Logic const & getLogic() const override { return logic; }
 
     PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
+
+    lbool getPolaritySuggestion(PTRef pt) const override;
 };
 
 #endif
