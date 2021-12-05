@@ -35,12 +35,12 @@ private:
     Logic & logic;
     const std::string formalArgDefaultPrefix;
 
-    inline bool hasVarVal(PTRef term) {
+    inline bool hasVarVal(PTRef term) const {
         assert(logic.isVar(term));
         return varEval.find(term) != varEval.end();
     }
 
-    inline PTRef getVarVal(PTRef term) {
+    inline PTRef getVarVal(PTRef term) const {
         assert(hasVarVal(term));
         return varEval.at(term);
     }

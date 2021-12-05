@@ -79,6 +79,16 @@ public:
         assert(res.second); (void)res;
     }
 
+    inline bool hasVarVal(PTRef term) const {
+        assert(logic.isVar(term));
+        return assignment.find(term) != assignment.end();
+    }
+
+    inline PTRef getVarVal(PTRef term) const {
+        assert(hasVarVal(term));
+        return assignment.at(term);
+    }
+
     template<typename TIt>
     void addVarValues(TIt begin, TIt end) {
         assignment.insert(begin, end);

@@ -211,6 +211,7 @@ private:
     };
 
     std::unique_ptr<Values> values;
+    mutable Map<ERef, PTRef, ERefHash> rootValues;
 
     static const char * s_val_prefix;
     static const char * s_const_prefix;
@@ -280,6 +281,7 @@ public:
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
     PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
+    Map<ERef, PTRef, ERefHash> computeNumericValues (ArithLogic & logic, ModelBuilder const &) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 

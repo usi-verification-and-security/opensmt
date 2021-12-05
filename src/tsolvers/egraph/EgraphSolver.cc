@@ -61,6 +61,7 @@ The algorithm and data structures are inspired by the following paper:
 #include "TreeOps.h"
 #include "Deductions.h"
 #include "ModelBuilder.h"
+#include "ArithLogic.h"
 
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
@@ -201,6 +202,7 @@ void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
 void Egraph::clearModel()
 {
     values.reset(nullptr);
+    rootValues.clear();
 }
 
 void Egraph::computeModel( )
@@ -219,7 +221,7 @@ void Egraph::computeModel( )
  * Get the abstract value (name of an element of the universe) corresponding to er.
  * If er is ERef_Undef, use the default element for the sort sr
  * @param er
- * @param sr the sort of er (used if er is ERef_Undef)
+ * @param sr the sort of er
  * @return
  */
 PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
@@ -230,18 +232,32 @@ PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
 
     ERef val_er = values->getValue(er);
     PTRef val_tr = enode_store.getPTRef(val_er);
+    assert(sr == logic.getSortRef(val_tr));
 
     if (isConstant(val_er)) {
         return val_tr;
     }
+    if (rootValues.has(val_er)) {
+        return rootValues[val_er];
+    }
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << values->getValueIndex(val_er);
-    return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
+    PTRef newVal = logic.mkConst(sr, ss.str().c_str());
+    rootValues.insert(val_er, newVal);
+    return newVal;
 }
 
 void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
 {
-    Map<PTRef,bool,PTRefHash> seen_substs;
+    if (ArithLogic* arithLogic = dynamic_cast<ArithLogic *>(&logic)) {
+        auto numericValues = computeNumericValues(*arithLogic, modelBuilder);
+        for (auto [key, val] : numericValues.getKeysAndVals()) {
+            if (val != PTRef_Undef) {
+                assert(not rootValues.has(key));
+                rootValues.insert(key, val);
+            }
+        }
+    }
     for (ERef er : enode_store.getTermEnodes()) {
         PTRef tr = enode_store.getPTRef(er);
 
@@ -252,14 +268,60 @@ void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
         // Check that enode_store's PTRef -> ERef conversion is consistent
         assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
 
-        if (logic.isVarOrIte(tr) or logic.isConstant(tr)) {
-            // Original is a theory variable
+        assert(not logic.isIte(tr));
+        if (((logic.isVar(tr) or logic.isConstant(tr))) and logic.yieldsSortUninterpreted(tr)) {
             PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
             modelBuilder.addVarValue(tr, val_tr);
-        } else {
+        } else if (logic.isVar(tr) and not modelBuilder.hasVarVal(tr)) {
+            PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
+            modelBuilder.addVarValue(tr, val_tr);
+        } else if (logic.isUF(tr)) {
             addTheoryFunctionEvaluation(modelBuilder, tr, er);
         }
     }
+}
+
+Map<ERef, PTRef, ERefHash> Egraph::computeNumericValues(ArithLogic & logic, ModelBuilder const & model) const {
+    Map<ERef, PTRef, ERefHash> updatedValues;
+    std::unordered_set<ERef, ERefHash> delayedNumericTerms;
+    FastRational maxModelValue = 0;
+    auto updateMaxValue = [&maxModelValue](FastRational const & newVal) {
+        if (newVal > maxModelValue) { maxModelValue = newVal; }
+    };
+    for (ERef eref : enode_store.getTermEnodes()) {
+        ERef root = values->getValue(eref);
+        PTRef ptref_root = enode_store.getPTRef(root);
+        if (not logic.yieldsSortNum(ptref_root)) {
+            continue;
+        }
+        if (updatedValues.has(root)) { continue; }
+        if (logic.isNumConst(ptref_root)) {
+            updatedValues.insert(root, ptref_root);
+            updateMaxValue(logic.getNumConst(ptref_root));
+            continue;
+        }
+        PTRef ptref = enode_store.getPTRef(eref);
+        if (logic.isVar(ptref) and model.hasVarVal(ptref)) {
+            PTRef value = model.getVarVal(ptref);
+            assert(logic.isNumConst(value));
+            updatedValues.insert(root, value);
+            updateMaxValue(logic.getNumConst(value));
+            delayedNumericTerms.erase(root);
+            continue;
+        }
+        delayedNumericTerms.insert(root);
+        // continue with next Enode
+    }
+    for (ERef delayedTerm : delayedNumericTerms) {
+        FastRational nextValue = maxModelValue + 1;
+        SRef sort = logic.getSortRef(getEnode(delayedTerm).getTerm());
+        if (logic.isSortInt(sort)) {
+            nextValue = nextValue.floor();
+        }
+        updatedValues.insert(delayedTerm, logic.mkConst(sort, nextValue));
+        maxModelValue = nextValue;
+    }
+    return updatedValues;
 }
 
 /**
