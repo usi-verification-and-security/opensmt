@@ -165,11 +165,12 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
-
+    if(path.size() > 0)
+        next_v.push_back(last_trail[path[0]]);
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
-        next_v.push_back(next_v[next_v.size() - 1]);
+
 
         if (value(path[i]) == l_Undef)
         {
@@ -185,6 +186,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
             }
             else if (res == l_Undef) {
                 cancelUntil(0);
+                next_v.resize(1);
                 return PathBuildResult::pathbuild_restart; // Do a restart
             }
             if (curr_dl != decisionLevel())
@@ -335,9 +337,13 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    if(next_v[next_v.size() - 1].size() != 0) {
-        for (int i = 0; i < next_v[next_v.size() - 1].size(); i++) {
-            Var v = next_v[next_v.size() - 1][i];
+    if(!next_v[next_v.size() - 1].empty()) {
+        set<Var> latest = next_v[next_v.size() - 1];
+        auto it = latest.begin();
+        Var v = *it;
+        while (it != latest.end()) {
+            v = *it;
+            it++;
             if (!decision[v]) {
                 score->setChecked(v);
 #ifdef LADEBUG
@@ -401,9 +407,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             }
             count++;
             int p0 = 0, p1 = 0;
-            int oldSize = next_v[next_v.size()-1].size();
             for (int p = 0; p < 2; p++)   // do for both polarities
             {
+                next_v.push_back(latest);
                 assert(decisionLevel() == d);
                 double ss = score->getSolverScore(this);
                 newDecisionLevel();
@@ -411,7 +417,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                 printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
-                //TODO: Remove litewrals in true case
+                //TODO: Remove literals in true case
 
                 uncheckedEnqueue(l);
                 lbool res = laPropagateWrapper();
@@ -423,7 +429,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
                 else if (res == l_Undef)
                 {
-//                    next_l.clear();
                     next_v.resize(1);
                     cancelUntil(0);
                     return laresult::la_restart;
@@ -456,8 +461,10 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 p == 0 ? p0 = ss : p1 = ss;
                 // Update also the clause deletion heuristic?
                 cancelUntil(decisionLevel() - 1);
+                // Trail game?
+                last_trail[l] = next_v[next_v.size() - 1];
+                next_v.pop_back();
             }
-            next_v[next_v.size() - 1].shrink(oldSize);
             if (value(v) == l_Undef)
             {
 #ifdef LADEBUG
@@ -594,6 +601,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     }
     }
     best = score->getBest();
+//    cancelUntil(decisionLevel() - 1);
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
     {
 #ifdef LADEBUG
@@ -609,7 +617,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 //           LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    if (!okToPartition(var(best))) { unadvised_splits++; }
+    if (!okToPartition(var(best))) {
+        unadvised_splits++;
+    }
     return laresult::la_ok;
 }
 

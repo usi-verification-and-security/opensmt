@@ -530,7 +530,8 @@ protected:
     vec<CRef>           learnts;          // List of learnt clauses.
     set<CRef>           next;             // List of clauses close to solution.
 //    set<Var>            next_l;           // Levels of clauses close to solution.
-    vector<uniqueVec<Var>>    next_v = {uniqueVec<Var>()};           // Levels of clauses close to solution.
+    vector<set<Var>>    next_v = {set<Var>()};           // Levels of clauses close to solution.
+    map<Lit, set<Var>>  last_trail;           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
 #ifdef PEDANTIC_DEBUG
     vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
