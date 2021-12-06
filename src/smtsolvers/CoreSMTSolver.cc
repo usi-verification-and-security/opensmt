@@ -279,6 +279,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
+//    next_v.emplace_back();
     inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
@@ -366,8 +367,10 @@ void CoreSMTSolver::attachClause(CRef cr)
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
         next.insert(cr);
-        next_l.insert(var(~c[0]));
-        next_l.insert(var(~c[1]));
+//        next_l.insert(var(~c[0]));
+//        next_l.insert(var(~c[1]));
+        next_v[next_v.size() - 1].push(var(~c[0]));
+        next_v[next_v.size() - 1].push(var(~c[1]));
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -386,8 +389,10 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
             remove(watches[~c[2]], Watcher(cr, c[0]));
         else {
             next.erase(cr);
-            next_l.erase(var(~c[0]));
-            next_l.erase(var(~c[1]));
+//            next_l.erase(var(~c[0]));
+//            next_l.erase(var(~c[1]));
+            next_v[next_v.size() - 1].erase(var(~c[0]));
+            next_v[next_v.size() - 1].erase(var(~c[1]));
         }
     }
     else
@@ -1289,9 +1294,10 @@ CRef CoreSMTSolver::propagate()
                 }
             } else if (value(c[2]) == l_False) {
                 next.insert(cr);
-                next_l.insert(var(~c[0]));
-                next_l.insert(var(~c[1]));
-
+//                next_l.insert(var(~c[0]));
+//                next_l.insert(var(~c[1]));
+                next_v[next_v.size() - 1].push(var(~c[0]));
+                next_v[next_v.size() - 1].push(var(~c[1]));
             }
 NextClause:
             ;

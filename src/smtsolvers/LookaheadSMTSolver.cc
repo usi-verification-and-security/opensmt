@@ -169,7 +169,8 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
-        next_l.erase(var(path[i]));
+        next_v.push_back(next_v[next_v.size() - 1]);
+
         if (value(path[i]) == l_Undef)
         {
 #ifdef LADEBUG
@@ -334,11 +335,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    if(next_l.size() > 0) {
-        auto it = next_l.begin();
-        while (it != next_l.end()) {
-            Var v = *it;
-            it++;
+    if(next_v[next_v.size() - 1].size() != 0) {
+        for (int i = 0; i < next_v[next_v.size() - 1].size(); i++) {
+            Var v = next_v[next_v.size() - 1][i];
             if (!decision[v]) {
                 score->setChecked(v);
 #ifdef LADEBUG
@@ -402,6 +401,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             }
             count++;
             int p0 = 0, p1 = 0;
+            int oldSize = next_v[next_v.size()-1].size();
             for (int p = 0; p < 2; p++)   // do for both polarities
             {
                 assert(decisionLevel() == d);
@@ -411,8 +411,11 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                 printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
+                //TODO: Remove litewrals in true case
+
                 uncheckedEnqueue(l);
                 lbool res = laPropagateWrapper();
+
                 if (res == l_False)
                 {
                     best = lit_Undef;
@@ -420,7 +423,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
                 else if (res == l_Undef)
                 {
-                    next_l.clear();
+//                    next_l.clear();
+                    next_v.resize(1);
                     cancelUntil(0);
                     return laresult::la_restart;
                 }
@@ -453,6 +457,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 // Update also the clause deletion heuristic?
                 cancelUntil(decisionLevel() - 1);
             }
+            next_v[next_v.size() - 1].shrink(oldSize);
             if (value(v) == l_Undef)
             {
 #ifdef LADEBUG
