@@ -33,8 +33,8 @@ run_solver ./instances/NEQ004_size4_smt2split_0-deep.smt2 unknown
 run_solver ./instances/NEQ004_size4_smt2split_0.smt2 unknown
 run_solver ./instances/init_unsat-deep.smt2 unsat
 run_solver ./instances/init_unsat.smt2 unsat
-run_solver ./instances/iso_brn164-deep.smt2 sat
-run_solver ./instances/iso_brn164.smt2 sat
+#run_solver ./instances/iso_brn164-deep.smt2 sat
+#run_solver ./instances/iso_brn164.smt2 sat
 run_solver ./instances/meti-tarski_sqrt_1mcosq_7_sqrt-1mcosq-7-chunk-0100-deep.smt2 sat
 run_solver ./instances/meti-tarski_sqrt_1mcosq_7_sqrt-1mcosq-7-chunk-0100.smt2 sat
 run_solver ./instances/p2-zenonumeric_s6-deep.smt2 unknown

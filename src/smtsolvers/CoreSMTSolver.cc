@@ -1195,15 +1195,19 @@ CRef CoreSMTSolver::propagate()
         {
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
-            if (value(blocker) == l_True)
-            {
-                *j++ = *i++;
-                continue;
-            }
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
+
+            if (value(blocker) == l_True)
+            {
+                *j++ = *i++;
+                next_v[next_v.size() - 1].erase(var(~c[0]));
+                next_v[next_v.size() - 1].erase(var(~c[1]));
+                continue;
+            }
+
 
             unsigned c_size = c.size();
             Lit false_lit = ~p;
@@ -1212,11 +1216,15 @@ CRef CoreSMTSolver::propagate()
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 *j++ = *i++;
+                next_v[next_v.size() - 1].erase(var(~c[0]));
+                next_v[next_v.size() - 1].erase(var(~c[1]));
                 continue;
             }
 
             if(value(c[0]) == l_True || value(c[1]) == l_True){
                 *j++ = *i++;
+                next_v[next_v.size() - 1].erase(var(~c[0]));
+                next_v[next_v.size() - 1].erase(var(~c[1]));
                 continue;
             }
 
