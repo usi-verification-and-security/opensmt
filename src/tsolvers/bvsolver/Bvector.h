@@ -82,6 +82,9 @@ class Bvector {
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
     }
+
+    Bvector(vec<NameAsgn> const & ps) : Bvector(ps, PTRef_Undef) {}
+
     Bvector() : actVar(PTRef_Undef) {
         header.is_signed = 0;
         header.has_extra = 0;

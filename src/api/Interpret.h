@@ -128,6 +128,14 @@ public:
     }
 };
 
+
+class OsmtAstException : public std::runtime_error {
+public:
+    OsmtAstException(const std::string & msg) : std::runtime_error(msg) {}
+    OsmtAstException(const char * msg) : std::runtime_error(msg) {}
+};
+
+
 class Interpret {
   protected:
     SMTConfig &     config;

@@ -1,14 +1,1 @@
-(error "unknown logic AB_CD")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: declare-fun")
-
+At line 22: syntax error, unexpected TK_NUM, expecting ')'

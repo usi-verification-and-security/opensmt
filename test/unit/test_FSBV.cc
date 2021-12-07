@@ -128,7 +128,7 @@ TEST_F(FSBVTest, test_mkUrem) {
 TEST_F(FSBVTest, test_mkSHL) {
     PTRef a = logic.mkBVVar(16, "a");
     PTRef b = logic.mkBVVar(16, "b");
-    PTRef shl = logic.mkBVSHL(a, b);
+    PTRef shl = logic.mkBVShl(a, b);
     ASSERT_NE(shl, PTRef_Undef);
     std::cout << logic.pp(shl) << std::endl;
 }
@@ -136,7 +136,7 @@ TEST_F(FSBVTest, test_mkSHL) {
 TEST_F(FSBVTest, test_mkLSHR) {
     PTRef a = logic.mkBVVar(16, "a");
     PTRef b = logic.mkBVVar(16, "b");
-    PTRef lshr = logic.mkBVLSHR(a, b);
+    PTRef lshr = logic.mkBVLshr(a, b);
     ASSERT_NE(lshr, PTRef_Undef);
     std::cout << logic.pp(lshr) << std::endl;
 }
@@ -144,7 +144,7 @@ TEST_F(FSBVTest, test_mkLSHR) {
 TEST_F(FSBVTest, test_mkULT) {
     PTRef a = logic.mkBVVar(16, "a");
     PTRef b = logic.mkBVVar(16, "b");
-    PTRef ult = logic.mkBVULT(a, b);
+    PTRef ult = logic.mkBVUlt(a, b);
     ASSERT_NE(ult, PTRef_Undef);
     std::cout << logic.pp(ult) << std::endl;
 }

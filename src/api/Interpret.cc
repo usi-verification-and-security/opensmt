@@ -1194,8 +1194,8 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         bool known = logic->peekSortSymbol(symbol, symRef);
         if (not known) { return SRef_Undef; }
         return logic->getSort(symRef, {});
-    } else {
-        assert(type == LID_T and node.children and not node.children->empty());
+    } else if (node.getType() == LID_T) {
+        assert(node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
         SortSymbol symbol(name.getValue(), node.children->size() - 1);
         SSymRef symRef;
@@ -1208,20 +1208,19 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
             args.push(argSortRef);
         }
         return logic->getSort(symRef, std::move(args));
+    } else if (node.getType() == IDX_T) {
+        assert(node.children and not node.children->empty());
+        assert(node.children->size() == 2);
+        ASTNode const * symNode = (*node.children)[0];
+        ASTNode const * idxNode = (*node.children)[1];
+        assert(symNode->getType() == SYM_T);
+        assert(idxNode->getType() == NUM_T);
+        SRef typeSort = sortFromASTNode(*symNode);
+        return logic->getIndexedSort(typeSort, idxNode->getValue());
     }
-    assert(type == LID_T and node.children and not node.children->empty());
-    ASTNode const & name = **(node.children->begin());
-    SortSymbol symbol(name.getValue(), node.children->size() - 1);
-    SSymRef symRef;
-    bool known = logic->peekSortSymbol(symbol, symRef);
-    if (not known) { return SRef_Undef; }
-    vec<SRef> args;
-    for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
-        SRef argSortRef = sortFromASTNode(**it);
-        if (argSortRef == SRef_Undef) { return SRef_Undef; }
-        args.push(argSortRef);
-    }
-    return logic->getSort(symRef, std::move(args));
+    assert(false);
+    throw OsmtAstException("Unknown node type");
+    return SRef_Undef;
 }
 
 void Interpret::getInterpolants(const ASTNode& n)

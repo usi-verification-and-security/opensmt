@@ -71,7 +71,8 @@ namespace osmttokens {
         t_readstate,
         t_simplify,
         t_let,
-        t_echo
+        t_echo,
+        t_idx,
     };
     inline const std::unordered_set<std::string> tokenNames = {
         "none",
@@ -148,7 +149,8 @@ namespace osmttokens {
         {t_readstate, "read-state"},
         {t_simplify, "simplify"},
         {t_let, "let"},
-        {t_echo, "echo"}
+        {t_echo, "echo"},
+        {t_idx, "_"},
     };
 
     struct smt2token {

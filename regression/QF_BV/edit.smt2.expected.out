@@ -1,8 +1,2 @@
-(error "unknown logic QF_BV")
-
-(error "Illegal command before set-logic: declare-fun")
-
-(error "Illegal command before set-logic: assert")
-
-(error "Illegal command before set-logic: check-sat")
+(error "Attempting to top-level BitBlast a non-predicate false")
 

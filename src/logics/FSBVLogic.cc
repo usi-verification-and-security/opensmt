@@ -19,7 +19,11 @@ SRef FSBVLogic::makeBitWidthSortForBW(BitWidth_t m) {
         return bwSort;
     }
     std::string const bw_string = std::to_string(m);
-    SSymRef bwSortSym = sort_store.newSortSymbol(SortSymbol(bw_string, 0, SortSymbol::INTERNAL));
+    SSymRef bwSortSym;
+    SortSymbol bw_sortSymbol(bw_string, 0, SortSymbol::INTERNAL);
+    if (not sort_store.peek(bw_sortSymbol, bwSortSym)) {
+        bwSortSym = sort_store.newSortSymbol(SortSymbol(bw_string, 0, SortSymbol::INTERNAL));
+    }
     // Do not create core predicates for bit width sorts
     bwSort = sort_store.getOrCreateSort(bwSortSym, {}).first;
     assert(not bitWidthToBitWidthSort.has(m));
@@ -43,13 +47,12 @@ SRef FSBVLogic::makeBitVectorSortForBW(BitWidth_t m) {
     return bvSort;
 }
 
-SRef FSBVLogic::getBitVectorSortForBW(BitWidth_t m) const {
-    SRef bwSort;
-    if (bitWidthToBitVectorSort.peek(m, bwSort)) {
-        return bwSort;
-    } else {
-        return SRef_Undef;
-    }
+PTRef FSBVLogic::mkBVConstFromHex(std::string const & hex) {
+    return mkConst(makeBitVectorSortForBW((hex.length()-2)*4), hex.c_str()); // TODO: convert hex to binary
+}
+
+PTRef FSBVLogic::mkBVConstFromBin(std::string const & bin) {
+    return mkConst(makeBitVectorSortForBW(bin.length()-2), bin.c_str());
 }
 
 PTRef FSBVLogic::mkBVConst(BitWidth_t m, unsigned c) {
@@ -59,15 +62,20 @@ PTRef FSBVLogic::mkBVConst(BitWidth_t m, unsigned c) {
     return tr;
 }
 
-PTRef FSBVLogic::mkBVAdd(PTRef a1, PTRef a2) {
-    if (not bitVectorSorts.has(getSortRef(a1))) {
-        throw OsmtApiException("mkBVAdd called for non-bitvector sort " + printSort(getSortRef(a1)));
+SymRef FSBVLogic::mkBVAddSym(SRef a) {
+
+    if (not isBitVectorSort(a)) {
+        throw OsmtApiException("mkBVAdd called for non-bitvector sort " + printSort(a));
     }
-    SRef sr = getSortRef(a1);
     SymRef addSym;
-    if (not add_syms.peek(sr, addSym)) {
-        addSym = declareFun_NoScoping_LeftAssoc(tk_bvadd, sr, {sr, sr});
+    if (not add_syms.peek(a, addSym)) {
+        addSym = declareFun_NoScoping_LeftAssoc(tk_bvadd, a, {a, a});
     }
+    return addSym;
+}
+
+PTRef FSBVLogic::mkBVAdd(PTRef a1, PTRef a2) {
+    SymRef addSym = mkBVAddSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(addSym, {a1, a2}, why)) {
         throw OsmtApiException(why);
@@ -75,10 +83,19 @@ PTRef FSBVLogic::mkBVAdd(PTRef a1, PTRef a2) {
     return mkFun(addSym, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVConcat(PTRef lhs, PTRef rhs) {
-    SRef lhsSort = getSortRef(lhs);
-    SRef rhsSort = getSortRef(rhs);
-    if (not bitVectorSorts.has(lhsSort) or not bitVectorSorts.has(rhsSort)) {
+PTRef FSBVLogic::mkBVAdd(vec<PTRef> const & args) {
+    if (args.size() < 2) {
+        throw OsmtApiException(std::string(tk_bvadd) + " requires at least two arguments");
+    }
+    PTRef tr = mkBVAdd(args[0], args[1]);
+    for (int i = 2; i < args.size(); i++) {
+        tr = mkBVAdd(tr, args[i]);
+    }
+    return tr;
+}
+
+SymRef FSBVLogic::mkBVConcatSym(SRef lhsSort, SRef rhsSort) {
+    if (not isBitVectorSort(lhsSort) or not isBitVectorSort(rhsSort)) {
         throw OsmtApiException("mkBVConcat called for incompatible sorts " + printSort(lhsSort) \
         + " and " + printSort(rhsSort));
     }
@@ -89,69 +106,101 @@ PTRef FSBVLogic::mkBVConcat(PTRef lhs, PTRef rhs) {
     BitWidth_t returnBitWidth = lhsbw + rhsbw;
 
     SRef returnBitVectorSort = makeBitVectorSortForBW(returnBitWidth);
-    SymRef BVConcatSym = declareFun_NoScoping(tk_bvconcat, returnBitVectorSort, {lhsSort, rhsSort});
+    return declareFun_NoScoping(tk_bvconcat, returnBitVectorSort, {lhsSort, rhsSort});
+}
+
+PTRef FSBVLogic::mkBVConcat(PTRef lhs, PTRef rhs) {
+    SymRef BVConcatSym = mkBVConcatSym(getSortRef(lhs), getSortRef(rhs));
     return mkFun(BVConcatSym, {lhs, rhs});
 }
 
-PTRef FSBVLogic::mkBVNeg(PTRef a) {
-    SRef sr = getSortRef(a);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVNegSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVNeg called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping(tk_bvneg, sr, {sr});
+}
 
-    SymRef BVNeg = declareFun_NoScoping(tk_bvneg, sr, {sr});
+PTRef FSBVLogic::mkBVNeg(PTRef a) {
+    SymRef BVNeg = mkBVNegSym(getSortRef(a));
     return mkFun(BVNeg, {a});
+}
 
+SymRef FSBVLogic::mkBVNotSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
+        throw OsmtApiException("mkBVNoot called for unrelated sort " + printSort(sr));
+    }
+    return declareFun_NoScoping(tk_bvnot, sr, {sr});
 }
 
 PTRef FSBVLogic::mkBVNot(PTRef a) {
-    SRef sr = getSortRef(a);
-    if (not bitVectorSorts.has(sr)) {
-        throw OsmtApiException("mkBVNoot called for unrelated sort " + printSort(sr));
-    }
-
-    SymRef BVNot = declareFun_NoScoping(tk_bvnot, sr, {sr});
-
+    SymRef BVNot = mkBVNotSym(getSortRef(a));
     return mkFun(BVNot, {a});
 }
 
-PTRef FSBVLogic::mkBVAnd(PTRef a1, PTRef a2) {
-    SRef sr = getSortRef(a1);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVAndSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVAnd called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvand, sr, {sr, sr});
+}
 
-    SymRef BVAnd = declareFun_NoScoping_LeftAssoc(tk_bvand, sr, {sr, sr});
+PTRef FSBVLogic::mkBVAnd(PTRef a1, PTRef a2) {
+    SymRef BVAnd = mkBVAndSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(BVAnd, {a1, a2}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVAnd, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVOr(PTRef a1, PTRef a2) {
-    SRef sr = getSortRef(a1);
-    if (not bitVectorSorts.has(sr)) {
+PTRef FSBVLogic::mkBVAnd(vec<PTRef> const & args) {
+    if (args.size() < 2) {
+        throw OsmtApiException(std::string(tk_bvand) + " requires at least two arguments");
+    }
+    PTRef tr = mkBVAnd(args[0], args[1]);
+    for (int i = 2; i < args.size(); i++) {
+        tr = mkBVAnd(tr, args[i]);
+    }
+    return tr;
+}
+
+SymRef FSBVLogic::mkBVOrSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVOr called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvor, sr, {sr, sr});
+}
 
-    SymRef BVOr = declareFun_NoScoping_LeftAssoc(tk_bvor, sr, {sr, sr});
+PTRef FSBVLogic::mkBVOr(PTRef a1, PTRef a2) {
+    SymRef BVOr = mkBVOrSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(BVOr, {a1, a2}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVOr, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVMul(PTRef a1, PTRef a2) {
-    SRef sr = getSortRef(a1);
-    if (not bitVectorSorts.has(sr)) {
+PTRef FSBVLogic::mkBVOr(vec<PTRef> const & args) {
+    if (args.size() < 2) {
+        throw OsmtApiException(std::string(tk_bvor) + " requires at least two arguments");
+    }
+    PTRef tr = mkBVOr(args[0], args[1]);
+    for (int i = 2; i < args.size(); i++) {
+        tr = mkBVOr(tr, args[i]);
+    }
+    return tr;
+}
+
+SymRef FSBVLogic::mkBVMulSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVMul called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvmul, sr, {sr, sr});
+}
 
-    SymRef BVMul = declareFun_NoScoping_LeftAssoc(tk_bvmul, sr, {sr, sr});
+PTRef FSBVLogic::mkBVMul(PTRef a1, PTRef a2) {
+    SymRef BVMul = mkBVMulSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(BVMul, {a1, a2}, why)) {
         throw OsmtApiException(why);
@@ -160,77 +209,152 @@ PTRef FSBVLogic::mkBVMul(PTRef a1, PTRef a2) {
     return mkFun(BVMul, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVUdiv(PTRef a1, PTRef a2) {
-    SRef sr = getSortRef(a1);
-    if (not bitVectorSorts.has(sr)) {
+PTRef FSBVLogic::mkBVMul(vec<PTRef> const & args) {
+    if (args.size() < 2) {
+        throw OsmtApiException(std::string(tk_bvmul) + " requires at least two arguments");
+    }
+    PTRef tr = mkBVMul(args[0], args[1]);
+    for (int i = 2; i < args.size(); i++) {
+        tr = mkBVMul(tr, args[i]);
+    }
+    return tr;
+}
+
+SymRef FSBVLogic::mkBVUdivSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVUdiv called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvudiv, sr, {sr, sr});
+}
 
-    SymRef BVUdiv = declareFun_NoScoping_LeftAssoc(tk_bvudiv, sr, {sr, sr});
+PTRef FSBVLogic::mkBVUdiv(PTRef a1, PTRef a2) {
+    SymRef BVUdiv = mkBVUdivSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(BVUdiv, {a1, a2}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVUdiv, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVUrem(PTRef a1, PTRef a2) {
-    SRef sr = getSortRef(a1);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVUremSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVUrem called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvurem, sr, {sr, sr});
+}
 
-    SymRef BVUrem = declareFun_NoScoping_LeftAssoc(tk_bvurem, sr, {sr, sr});
+PTRef FSBVLogic::mkBVUrem(PTRef a1, PTRef a2) {
+    SymRef BVUrem = mkBVUremSym(getSortRef(a1));
     std::string why;
     if (not typeCheck(BVUrem, {a1, a2}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVUrem, {a1, a2});
 }
 
-PTRef FSBVLogic::mkBVSHL(PTRef a, PTRef shift) {
-    SRef sr = getSortRef(a);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVShlSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVSHL called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvshl, sr, {sr, sr});
+}
 
-    SymRef BVSHL = declareFun_NoScoping_LeftAssoc(tk_bvshl, sr, {sr, sr});
+PTRef FSBVLogic::mkBVShl(PTRef a, PTRef shift) {
+    SymRef BVSHL = mkBVShlSym(getSortRef(a));
     std::string why;
     if (not typeCheck(BVSHL, {a, shift}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVSHL, {a, shift});
 }
 
-PTRef FSBVLogic::mkBVLSHR(PTRef a, PTRef shift) {
-    SRef sr = getSortRef(a);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVLshrSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVLSHR called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvlshr, sr, {sr, sr});
+}
 
-    SymRef BVLSHR = declareFun_NoScoping_LeftAssoc(tk_bvlshr, sr, {sr, sr});
+PTRef FSBVLogic::mkBVLshr(PTRef a, PTRef shift) {
+    SymRef BVLSHR = mkBVLshrSym(getSortRef(a));
     std::string why;
     if (not typeCheck(BVLSHR, {a, shift}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVLSHR, {a, shift});
 }
 
-PTRef FSBVLogic::mkBVULT(PTRef lhs, PTRef rhs) {
-    SRef sr = getSortRef(lhs);
-    if (not bitVectorSorts.has(sr)) {
+SymRef FSBVLogic::mkBVUltSym(SRef sr) {
+    if (not isBitVectorSort(sr)) {
         throw OsmtApiException("mkBVULT called for unrelated sort " + printSort(sr));
     }
+    return declareFun_NoScoping_LeftAssoc(tk_bvult, sort_BOOL, {sr, sr});
+}
 
-    SymRef BVULT = declareFun_NoScoping_LeftAssoc(tk_bvult, sr, {sr, sr});
+PTRef FSBVLogic::mkBVUlt(PTRef lhs, PTRef rhs) {
+    SymRef BVULT = mkBVUltSym(getSortRef(lhs));
     std::string why;
     if (not typeCheck(BVULT, {lhs, rhs}, why)) {
         throw OsmtApiException(why);
     }
-
     return mkFun(BVULT, {lhs, rhs});
+}
+
+PTRef FSBVLogic::resolveTerm(char const * s, vec<PTRef> && args, SRef, SymbolMatcher) {
+    if (s == std::string(tk_bvconcat)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvconcat) + " requires exactly two arguments");
+        }
+        return mkBVConcat(args[0], args[1]);
+    } else if (s == std::string(tk_bvadd)) {
+        return mkBVAdd(std::move(args));
+    } else if (s == std::string(tk_bvneg)) {
+        if (args.size() != 1) {
+            throw OsmtApiException(std::string(tk_bvneg) + " requires exactly one argument");
+        }
+        return mkBVNeg(args[0]);
+    } else if (s == std::string(tk_bvnot)) {
+        if (args.size() != 1) {
+            throw OsmtApiException(std::string(tk_bvnot) + " require exactly one argument");
+        }
+        return mkBVNot(args[0]);
+    } else if (s == std::string(tk_bvand)) {
+        return mkBVAnd(std::move(args));
+    } else if (s == std::string(tk_bvor)) {
+        return mkBVOr(std::move(args));
+    } else if (s == std::string(tk_bvmul)) {
+        return mkBVMul(std::move(args));
+    } else if (s == std::string(tk_bvudiv)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvudiv) + " requires exactly two arguments");
+        }
+        return mkBVUdiv(args[0], args[1]);
+    } else if (s == std::string(tk_bvurem)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvurem) + " requires exactly two arguments");
+        }
+        return mkBVUrem(args[0], args[1]);
+    } else if (s == std::string(tk_bvshl)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvshl) + " requires exactly two arguments");
+        }
+        return mkBVShl(args[0], args[1]);
+    } else if (s == std::string(tk_bvlshr)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvlshr) + " requires exactly two arguments");
+        }
+        return mkBVLshr(args[0], args[1]);
+    } else if (s == std::string(tk_bvult)) {
+        if (args.size() != 2) {
+            throw OsmtApiException(std::string(tk_bvult) + " requires exactly two arguments");
+        }
+        return mkBVUlt(args[0], args[1]);
+    } else if (std::string(s).rfind(BVHexPrefix, 0) == 0) {
+        return mkBVConstFromHex(s);
+    } else if (std::string(s).rfind(BVBinPrefix, 0) == 0) {
+        return mkBVConstFromBin(s);
+    }
+    else {
+        return Logic::resolveTerm(s, std::move(args));
+    }
 }

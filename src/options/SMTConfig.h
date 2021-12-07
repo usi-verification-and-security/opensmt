@@ -77,6 +77,7 @@ enum ASTType {
     , OPTION_T   , OPTIONL_T
     , INFO_T     , INFOL_T
     , CONST_T    , CONSTL_T
+    , IDX_T      , IDXL_T
 };
 
 class ASTNode {

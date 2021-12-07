@@ -43,6 +43,11 @@ public:
         bv_map.insert(tr, br);
         return br;
     }
+
+    BVRef newBvector(vec<PTRef> const & var_names, vec<PTRef> const & asgn, PTRef tr) {
+        return newBvector(var_names, asgn, PTRef_Undef, tr);
+    }
+
     void free(BVRef r) { bva.free(r); }
     Bvector& operator[] (BVRef br) { return bva[br]; }
     const Bvector& operator[] (BVRef br) const { return bva[br]; }

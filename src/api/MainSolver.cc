@@ -38,6 +38,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "IteHandler.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
+#include "FSBVTheory.h"
+
 #include <thread>
 #include <fcntl.h>
 
@@ -343,12 +345,18 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_CUF:
-        case Logic_t::QF_BV:
         {
             BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
             theory = new CUFTheory(config, bvLogic);
             break;
         }
+        case Logic_t::QF_BV:
+        {
+            FSBVLogic & bvLogic = dynamic_cast<FSBVLogic &>(logic);
+            theory = new FSBVTheory(config, bvLogic);
+            break;
+        }
+
         case Logic_t::QF_LRA:
         {
             ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);

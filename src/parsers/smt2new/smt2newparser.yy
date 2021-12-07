@@ -316,8 +316,13 @@ attribute_value: spec_const
 
 identifier: symbol
         { $$ = $1; }
-    | '(' '_' symbol numeral_list ')'
-        { $$ = $3; $$->children = $4; }
+    | '(' '_' symbol TK_NUM ')'
+        {
+          $$ = new ASTNode(IDX_T, NULL);
+          $$->children = new std::vector<ASTNode*>();
+          $$->children->insert($$->children->begin(), new ASTNode(NUM_T, $4));
+          $$->children->insert($$->children->begin(), $3);
+        }
     ;
 
 sort: identifier
