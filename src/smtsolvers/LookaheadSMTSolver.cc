@@ -484,7 +484,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #endif
             continue;
         }
-        // credential
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
             respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
         if (respect_logic_partitioning_hints && !okToPartition(v)) {
