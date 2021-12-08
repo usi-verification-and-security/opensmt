@@ -167,6 +167,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #endif
     if(path.size() > 0)
         next_v.push_back(last_trail[path[0]]);
+    last_trail.clear();
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();

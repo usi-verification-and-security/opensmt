@@ -366,7 +366,6 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-        next.insert(cr);
         next_v[next_v.size() - 1].insert(var(~c[0]));
         next_v[next_v.size() - 1].insert(var(~c[1]));
     }
@@ -386,7 +385,6 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         if(c.size() > 2 )
             remove(watches[~c[2]], Watcher(cr, c[0]));
         else {
-            next.erase(cr);
             next_v[next_v.size() - 1].erase(var(~c[0]));
             next_v[next_v.size() - 1].erase(var(~c[1]));
         }
@@ -1300,7 +1298,6 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-                next.insert(cr);
                 next_v[next_v.size() - 1].insert(var(~c[0]));
                 next_v[next_v.size() - 1].insert(var(~c[1]));
             }
