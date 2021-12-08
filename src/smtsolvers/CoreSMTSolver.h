@@ -217,82 +217,6 @@ inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vecto
 template<class A, class B>
 struct Pair { A first; B second; };
 
-template<class T>
-class uniqueVec {
-    protected:
-        vector<T> ordered_elements;
-        set<T> elements;
-
-    public:
-        uniqueVec() {
-        };
-//        ~uniqueVec() {
-//            ordered_elements.~vector();
-//            elements.~set();
-//        };
-
-        uniqueVec<T>& operator = (vec<T>&& o) { std::swap(ordered_elements, o.ordered_elements); std::swap(elements, o.elements); return *this; }
-
-        // Pointer to first element:
-        operator T*       (void)           { return &ordered_elements; }
-
-        // Size operations:
-        int      size     (void) const     { return ordered_elements.size(); }
-        uint32_t size_    (void) const     { assert(ordered_elements.size() >= 0); return ordered_elements.size(); }
-        void     shrink   (int nelems)     {
-            int size = ordered_elements.size();
-            assert(nelems <= size);
-            for (int i = nelems; i < size; i++)
-                elements.erase(ordered_elements[i]);
-            ordered_elements.resize(nelems);
-        }
-
-        // Stack interface:
-        void     push  (const T& elem)     {
-            if(elements.find(elem) == elements.end()){
-                ordered_elements.push_back(elem);
-                elements.insert(elem);
-            }
-        }
-        void     pop   (void)   {
-            elements.erase(ordered_elements[ordered_elements.size() - 1]);
-            ordered_elements.pop();
-        }
-        void     erase   (const T& elem)   {
-            if(elements.find(elem) != elements.end()){
-                for(auto i = ordered_elements.begin(); i != ordered_elements.end(); i++){
-                    if(*i == elem){
-                        ordered_elements.erase(i);
-                        break;
-                    }
-                }
-                elements.erase(elem);
-            }
-        }
-        // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
-        // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
-        // happen given the way capacities are calculated (below). Essentially, all capacities are
-        // even, but INT_MAX is odd.
-
-        const T& last  (void) const        { return ordered_elements[ordered_elements.size()-1]; }
-        T&       last  (void)              { return ordered_elements[ordered_elements.size()-1]; }
-
-        // Vector interface:
-        const T& operator [] (int index) const { return ordered_elements[index]; }
-        T&       operator [] (int index)       { return ordered_elements[index]; }
-
-    //    // Vector interface:
-    //    const T& operator [] (T index) const { return elements[index]; }
-    //    T&       operator [] (T index)       { return elements[index]; }
-
-        // methods for STL compatibility
-        T*          begin()       { return *ordered_elements; }
-        const T*    begin() const { return *ordered_elements; }
-        T*          end()         { return ordered_elements + ordered_elements.size(); }
-        const T*    end()   const { return ordered_elements + ordered_elements.size(); }
-
-};
-
 //=================================================================================================
 // Solver -- the main class:
 
@@ -529,7 +453,6 @@ protected:
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
     set<CRef>           next;             // List of clauses close to solution.
-//    set<Var>            next_l;           // Levels of clauses close to solution.
     vector<set<Var>>    next_v = {set<Var>()};           // Levels of clauses close to solution.
     map<Lit, set<Var>>  last_trail;           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2

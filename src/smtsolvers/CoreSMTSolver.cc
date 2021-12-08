@@ -367,8 +367,6 @@ void CoreSMTSolver::attachClause(CRef cr)
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
         next.insert(cr);
-//        next_l.insert(var(~c[0]));
-//        next_l.insert(var(~c[1]));
         next_v[next_v.size() - 1].insert(var(~c[0]));
         next_v[next_v.size() - 1].insert(var(~c[1]));
     }
@@ -389,8 +387,6 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
             remove(watches[~c[2]], Watcher(cr, c[0]));
         else {
             next.erase(cr);
-//            next_l.erase(var(~c[0]));
-//            next_l.erase(var(~c[1]));
             next_v[next_v.size() - 1].erase(var(~c[0]));
             next_v[next_v.size() - 1].erase(var(~c[1]));
         }
