@@ -38,8 +38,8 @@ def getTree(lines):
     return root, max_depth
 
 def checkNode(node, depth, max_depth):
-    # if not (len(node[0]) == 2 or len(node[0]) == 0):
-    #     die("Not a binary tree")
+    if not (len(node[0]) == 2 or len(node[0]) == 0):
+        die("Not a binary tree")
 
     children = list(node[0])
     if len(children) == 2:
@@ -49,12 +49,12 @@ def checkNode(node, depth, max_depth):
     if (depth != max_depth) and (node[2] == 0):
         die("Not a balanced tree")
 
-    # if (max_depth > depth):
-    #     if (node[2] != 2**(max_depth-depth)):
-    #         die("Incorrect descendant count on node %s" % node)
-    # else:
-    #     if (node[2] != 0):
-    #         die("Incorrect descendant count on node %s" % node)
+    if (max_depth > depth):
+        if (node[2] != 2**(max_depth-depth)):
+            die("Incorrect descendant count on node %s" % node)
+    else:
+        if (node[2] != 0):
+            die("Incorrect descendant count on node %s" % node)
 
 def checkTree(root, max_depth):
     queue = [[root, 0]]
