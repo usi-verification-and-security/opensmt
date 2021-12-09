@@ -28,23 +28,16 @@ namespace {
         return logic.isUF(sym);
     }
 
-    bool containsUF(PTRef term, ArithLogic & logic) {
-        class UFFinderConfig : public DefaultVisitorConfig {
-            ArithLogic & logic;
-        public:
-            UFFinderConfig(ArithLogic & logic) : DefaultVisitorConfig(), logic(logic) {}
-            bool previsit(PTRef term) override { return not ufFound; }
-
-            void visit(PTRef term) override {
-                if (isUninterpreted(logic, logic.getSymRef(term))) {
-                    ufFound = true;
-                }
-            }
-
-            bool ufFound = false;
-        } config(logic);
-        TermVisitor<UFFinderConfig>(logic, config).visit(term);
-        return config.ufFound;
+    /*
+     * Helper function to determine if an arithmetic equality is pure or not
+     * // NOTE: This is correct only under the condition that children have been purified
+     */
+    bool isPureArithmeticEquality(PTRef ptref, ArithLogic & logic) {
+        assert(logic.isNumEq(ptref));
+        auto const & term = logic.getPterm(ptref);
+        PTRef lhs = term[0];
+        PTRef rhs = term[1];
+        return not (isUninterpreted(logic, logic.getSymRef(lhs)) or isUninterpreted(logic, logic.getSymRef(rhs)));
     }
 
     class PurifyConfig : public DefaultRewriterConfig {
@@ -92,8 +85,10 @@ namespace {
                 return rewriteInternal(ptref, [this](PTRef child) { return isUninterpreted(logic, logic.getSymRef(child)); });
             } else if (isUninterpreted(logic, term.symb())) {
                 return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
-            } else if (logic.isEquality(term.symb()) and containsUF(ptref, logic)) {
-                return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
+            } else if (logic.isNumEq(term.symb())) {
+                if (not isPureArithmeticEquality(ptref, logic)) {
+                    return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
+                }
             }
             return ptref;
         }
@@ -148,7 +143,7 @@ public:
 };
 
 PTRef UFLATheory::splitArithmeticEqualities(PTRef fla) {
-    auto config = RewriterConfig(logic, [this](PTRef term) { return not containsUF(term, logic); } );
+    auto config = RewriterConfig(logic, [this](PTRef term) { return isPureArithmeticEquality(term, logic); } );
     auto rewriter = Rewriter(logic, config);
     return rewriter.rewrite(fla);
 }
