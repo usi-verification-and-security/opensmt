@@ -338,8 +338,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    set<Var> latest = next_v[next_v.size() - 1];
-    if(!next_v[next_v.size() - 1].empty()) {
+    set<Var> latest = next_v.back();
+    if(!next_v.back().empty()) {
         auto it = latest.begin();
         Var v = *it;
         while (it != latest.end()) {
@@ -463,7 +463,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 // Update also the clause deletion heuristic?
                 cancelUntil(decisionLevel() - 1);
                 // Trail game?
-                last_trail[l] = next_v[next_v.size() - 1];
+                last_trail[l] = next_v.back();
                 next_v.pop_back();
             }
             if (value(v) == l_Undef)
@@ -591,7 +591,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             p == 0 ? p0 = ss : p1 = ss;
             // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
-            last_trail[l] = next_v[next_v.size() - 1];
+            last_trail[l] = next_v.back();
             next_v.pop_back();
         }
         if (value(v) == l_Undef)
