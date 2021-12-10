@@ -17,10 +17,10 @@ void TSolverHandler::computeModel()
 }
 
 void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
-    for (auto solver : tsolvers) {
-        if (solver != nullptr) {
-            solver->fillTheoryFunctions(modelBuilder);
-        }
+    for (auto index : solverSchedule) {
+        auto * solver = tsolvers[index];
+        assert(solver);
+        solver->fillTheoryFunctions(modelBuilder);
     }
 }
 
