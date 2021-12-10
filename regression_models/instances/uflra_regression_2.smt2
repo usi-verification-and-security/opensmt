@@ -1,0 +1,6 @@
+(set-logic QF_UFLRA)
+(declare-fun f (Real) Real)
+(declare-fun x () Real)
+(assert (< 0 (f x)))
+(check-sat)
+(get-model)
