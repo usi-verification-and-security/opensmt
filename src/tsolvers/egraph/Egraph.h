@@ -162,6 +162,8 @@ protected:
         CLASSIC, INTERPOLATING
     };
     std::unique_ptr<Explainer> explainer;
+
+    friend class EgraphModelBuilder;
 private:
     /*
      * fields and methods related to parent vectors
@@ -211,7 +213,6 @@ private:
     };
 
     std::unique_ptr<Values> values;
-    mutable Map<ERef, PTRef, ERefHash> rootValues;
 
     static const char * s_val_prefix;
     static const char * s_const_prefix;
@@ -263,8 +264,6 @@ public:
     ERef    canonizeDTC              (ERef, bool = false);
 
     Logic& getLogic() override { return logic; }
-
-    void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er) const;
 public:
 
   //===========================================================================
@@ -280,8 +279,6 @@ public:
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
-    PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
-    Map<ERef, PTRef, ERefHash> computeNumericValues (ArithLogic & logic, ModelBuilder const &) const;
     void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
 
