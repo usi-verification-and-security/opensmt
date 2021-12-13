@@ -165,13 +165,11 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
-    if(path.size() > 0)
-        next_v.push_back(last_trail[path[0]]);
-    last_trail.clear();
+    next_v.resize(1);
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
-
+        next_v.push_back(next_v[next_v.size() - 1]);
 
         if (value(path[i]) == l_Undef)
         {
@@ -462,8 +460,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 p == 0 ? p0 = ss : p1 = ss;
                 // Update also the clause deletion heuristic?
                 cancelUntil(decisionLevel() - 1);
-                // Trail game?
-                last_trail[l] = next_v.back();
                 next_v.pop_back();
             }
             if (value(v) == l_Undef)
@@ -591,7 +587,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             p == 0 ? p0 = ss : p1 = ss;
             // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
-            last_trail[l] = next_v.back();
             next_v.pop_back();
         }
         if (value(v) == l_Undef)
