@@ -239,7 +239,6 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
 bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
-//    next_v.emplace_back();
     inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
@@ -316,7 +315,6 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     return true;
 }
 
-
 void CoreSMTSolver::attachClause(CRef cr)
 {
     const Clause& c = ca[cr];
@@ -327,8 +325,9 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-        next_v.back().insert(var(~c[0]));
-        next_v.back().insert(var(~c[1]));
+        next_init.insert(var(~c[0]));
+        next_init.insert(var(~c[1]));
+//        close_to_prop = next_init.size();
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -345,10 +344,6 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         remove(watches[~c[1]], Watcher(cr, c[0]));
         if(c.size() > 2 )
             remove(watches[~c[2]], Watcher(cr, c[0]));
-        else {
-            next_v.back().erase(var(~c[0]));
-            next_v.back().erase(var(~c[1]));
-        }
     }
     else
     {
@@ -1060,8 +1055,8 @@ CRef CoreSMTSolver::propagate()
 
     while (qhead < trail.size())
     {
+//        props++;
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
-        next_v.back().erase(var(p));
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
@@ -1075,28 +1070,32 @@ CRef CoreSMTSolver::propagate()
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
 
-            if (value(blocker) == l_True)
-            {
-                *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
-                continue;
-            }
 
 
             // Try to avoid inspecting the clause:
-            if (c.size() > 2 && (value(c[2]) == l_True || value(c[1]) == l_True || value(c[0]) == l_True))
-            {
+            if(c_size > 2 && value(c[2]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                }
                 *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
                 continue;
             }
 
             if(value(c[0]) == l_True || value(c[1]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                }
                 *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
                 continue;
             }
 
@@ -1144,8 +1143,21 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
+                if(!tested){
+                    if(next_arr[var(~c[0])]){
+                        close_to_prop--;
+                    }
+                    if(next_arr[var(~c[1])]){
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                } else {
+                    if(before_lookahead){
+                        next_init.erase(var(~c[0]));
+                        next_init.erase(var(~c[1]));
+                    }
+                }
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1177,8 +1189,21 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-                next_v.back().insert(var(~c[0]));
-                next_v.back().insert(var(~c[1]));
+                if(!tested){
+                    if(!next_arr[var(~c[0])]){
+                        close_to_prop += 1;
+                    }
+                    if(!next_arr[var(~c[1])]){
+                        close_to_prop += 1;
+                    }
+                    next_arr[var(~c[0])] = true;
+                    next_arr[var(~c[1])] = true;
+                } else {
+                    if(before_lookahead){
+                        next_init.insert(var(~c[0]));
+                        next_init.insert(var(~c[1]));
+                    }
+                }
             }
 NextClause:
             ;
@@ -1754,6 +1779,7 @@ lbool CoreSMTSolver::solve_()
         this->addVar_(var(l));
     }
 
+    next_arr = new bool[nVars()]();
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();

@@ -302,8 +302,8 @@ protected:
     uint32_t            n_clauses;        // number of clauses in the problem
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
-    vector<set<Var>>    next_v = {set<Var>()};           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
+    int props = 0;
 #ifdef PEDANTIC_DEBUG
     vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
     Map<Var,int,VarHash> debug_reason_map; // Maps the deduced lit to the clause used to deduce it
@@ -320,6 +320,9 @@ protected:
     bool                flipState = false;
     vec<bool>           var_seen;
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+    bool*               next_arr;
+    set<Var>            next_init;
+    int                 close_to_prop = 0;
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
@@ -340,6 +343,7 @@ protected:
     double              random_seed;      // Used by the random variable selection.
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+    bool                before_lookahead = true;
 
     ClauseAllocator     ca{512*1024};
 
@@ -484,7 +488,7 @@ protected:
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
-
+    bool tested = true;
     //
     // Proof production
     //
