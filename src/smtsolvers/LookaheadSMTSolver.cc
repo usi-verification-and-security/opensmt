@@ -338,10 +338,10 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #endif
     set<Var> latest = next_v.back();
     int counter = 0;
+    next_v.push_back(latest);
     if(!next_v.back().empty()) {
         auto it = latest.begin();
         Var v = *it;
-//        printf("Next_v is useful\n");
         while (it != latest.end()) {
             counter++;
             v = *it;
@@ -411,7 +411,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             int p0 = 0, p1 = 0;
             for (int p = 0; p < 2; p++)   // do for both polarities
             {
-                next_v.push_back(latest);
                 assert(decisionLevel() == d);
                 double ss = score->getSolverScore(this);
                 newDecisionLevel();
@@ -463,7 +462,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 p == 0 ? p0 = ss : p1 = ss;
                 // Update also the clause deletion heuristic?
                 cancelUntil(decisionLevel() - 1);
-                next_v.pop_back();
             }
             if (value(v) == l_Undef)
             {
@@ -475,7 +473,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             }
         }
     } else {
-//        printf("Next_v is not useful\n");
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
         if (!decision[v]) {
@@ -543,7 +540,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         int p0 = 0, p1 = 0;
         for (int p = 0; p < 2; p++)   // do for both polarities
         {
-            next_v.push_back(latest);
             assert(decisionLevel() == d);
             double ss = score->getSolverScore(this);
             newDecisionLevel();
@@ -591,7 +587,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             p == 0 ? p0 = ss : p1 = ss;
             // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
-            next_v.pop_back();
         }
         if (value(v) == l_Undef)
         {
@@ -603,8 +598,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         }
     }
     }
+    next_v.pop_back();
     best = score->getBest();
-//    cancelUntil(decisionLevel() - 1);
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
     {
 #ifdef LADEBUG
