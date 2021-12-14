@@ -3,4 +3,3 @@
 (declare-fun x () Real)
 (assert (< 0 (f x)))
 (check-sat)
-(get-model)

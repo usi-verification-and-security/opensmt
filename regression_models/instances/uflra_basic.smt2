@@ -4,4 +4,3 @@
 (declare-fun f (Real) Real)
 (assert (>= x (f x)))
 (check-sat)
-(get-model)

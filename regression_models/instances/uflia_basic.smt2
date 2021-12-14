@@ -4,4 +4,3 @@
 (declare-fun f (Int) Int)
 (assert (> x (f x)))
 (check-sat)
-(get-model)
