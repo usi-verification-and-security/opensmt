@@ -7,6 +7,8 @@ fi
 
 opensmt=$1;
 
+echo "Running model validation tests"
+
 scriptdir=$(cd $(dirname "$0"); pwd)
 scrambler=${scriptdir}/../env/bin/scrambler
 validator=${scriptdir}/../env/bin/ModelValidator
