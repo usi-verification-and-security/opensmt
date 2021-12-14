@@ -337,10 +337,13 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     set<Var> latest = next_v.back();
+    int counter = 0;
     if(!next_v.back().empty()) {
         auto it = latest.begin();
         Var v = *it;
+//        printf("Next_v is useful\n");
         while (it != latest.end()) {
+            counter++;
             v = *it;
             it++;
             if (!decision[v]) {
@@ -472,6 +475,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             }
         }
     } else {
+//        printf("Next_v is not useful\n");
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
         if (!decision[v]) {
