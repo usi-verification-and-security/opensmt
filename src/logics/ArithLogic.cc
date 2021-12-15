@@ -88,14 +88,6 @@ ArithLogic::ArithLogic(opensmt::Logic_t type)
     , sym_Int_DISTINCT(sortToDisequality[sort_INT])
 { }
 
-bool ArithLogic::hasIntegers() const {
-    return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasInts;
-}
-
-bool ArithLogic::hasReals() const {
-    return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasReals;
-}
-
 SymRef ArithLogic::getPlusForSort(SRef sort) const {
     assert (sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? get_sym_Int_PLUS() : get_sym_Real_PLUS();

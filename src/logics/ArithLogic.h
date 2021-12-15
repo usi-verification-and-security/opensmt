@@ -182,9 +182,6 @@ public:
     SymRef get_sym_Int_ITE() const { return sym_Int_ITE;}
     SymRef get_sym_Real_ITE() const { return sym_Real_ITE; }
 
-    bool hasIntegers() const;
-    bool hasReals() const;
-
     void checkArithSortCompatible(vec<PTRef> const & args, SRef numSort) const {
         for (auto tr : args) {
             if (getSortRef(tr) != numSort) throw OsmtApiException("Argument sorts disagree"); }
