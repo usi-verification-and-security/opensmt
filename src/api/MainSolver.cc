@@ -322,7 +322,7 @@ std::unique_ptr<SMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THa
     } else if (config.sat_picky()) {
     return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else if (config.print_clauses_only()) {
-        return std::make_unique<ClausePrinter>(config, thandler);
+        return std::make_unique<ModelCounter>(config, thandler);
     } else {
         return std::make_unique<SimpSMTSolver>(config, thandler);
     }

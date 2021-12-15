@@ -35,12 +35,14 @@ class BVStore
     vec<BVRef>  idToBVRef;
     Map<PTRef,BVRef,PTRefHash> bv_map;  // Mapping of a BV variable to the bit vector (automatic)
     Map<PTRef,PTRef,PTRefHash> carryonly; // A cache mapping sum PTRefs to their carry bit
+    vec<PTRef> bitVectorTerms;
 
 public:
     BVStore();
     BVRef newBvector(const vec<PTRef>& var_names, const vec<PTRef>& asgn, PTRef act_var, PTRef tr) {
         BVRef br = bva.alloc(var_names, asgn, act_var); idToBVRef.push(br);
         bv_map.insert(tr, br);
+        bitVectorTerms.push(tr);
         return br;
     }
 
@@ -57,11 +59,12 @@ public:
     bool  has_carryonly(PTRef tr) { return carryonly.has(tr); }
     PTRef getCarryOnly(PTRef tr)  { return carryonly[tr]; }
     void  insertCarryOnly(PTRef tr_sum, PTRef tr_carry) { carryonly.insert(tr_sum, tr_carry); }
-    BVRef getFromPTRef(PTRef r) { assert(bv_map.has(r)); return bv_map[r]; }
+    BVRef getFromPTRef(PTRef r) const { assert(bv_map.has(r)); return bv_map[r]; }
     void  copyAsgnTo(BVRef bv, vec<PTRef>& tr_vec)  { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv)[i]); }
     void  copyNamesTo(BVRef bv, vec<PTRef>& tr_vec) { for (int i = 0; i < operator[](bv).size(); i++) tr_vec.push(operator[](bv).namebit(i)); }
     void  copyBVTo(BVRef bv, vec<NameAsgn>& na_vec) { for (int i = 0; i < operator[](bv).size(); i++) na_vec.push(operator[](bv).nameasgn(i)); }
 
+    vec<PTRef> const & getBitVectorTerms() const { return bitVectorTerms; }
     int   size() const { return idToBVRef.size(); }
 };
 

@@ -21,8 +21,8 @@ public:
     Logic & getLogic() override { return logic; }
     Logic const & getLogic() const override { return logic; }
 
-    PTRef getInterpolant(const ipartitions_t & mask, map<PTRef, icolor_t> * labels, PartitionManager & pmanager) override { throw OsmtInternalException("Operation not supported for FSBVLoogic"); };
+    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) override { throw OsmtInternalException("Operation not supported for FSBVLoogic"); };
 
-    lbool getPolaritySuggestion(PTRef pt) const override { return l_True; };
+    lbool getPolaritySuggestion(PTRef) const override { return l_True; };
 };
 #endif //OPENSMT_FSBVTHANDLER_H

@@ -94,6 +94,7 @@ using namespace osmttokens;
 "set-info"         { yyget_lval(yyscanner)->tok = { t_setinfo }; return TK_SETINFO;       }
 "set-option"       { yyget_lval(yyscanner)->tok = { t_setoption }; return TK_SETOPTION;     }
 "get-interpolants" { yyget_lval(yyscanner)->tok = { t_getinterpolants }; return TK_GETITPS;       }
+"count-models"     { yyget_lval(yyscanner)->tok = { t_countmodels }; return TK_COUNTMODELS;       }
 "theory"           { yyget_lval(yyscanner)->tok = { t_theory }; return TK_THEORY;        }
 "write-state"      { yyget_lval(yyscanner)->tok = { t_writestate }; return TK_WRSTATE;       }
 "read-state"       { yyget_lval(yyscanner)->tok = { t_readstate }; return TK_RDSTATE;       }

@@ -215,7 +215,7 @@ class MainSolver
     sstat     insertFormula(PTRef root, char** msg);
     void      insertFormula(PTRef fla);
 
-    void      initialize() { ts.solver.initialize(); ts.initialize(); }
+    void      initialize() { smt_solver->initialize(); ts.initialize(); }
 
     virtual sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
@@ -232,7 +232,7 @@ class MainSolver
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
-    void stop() { ts.solver.stop = true; }
+    void stop() { smt_solver->setStop(); }
 
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();

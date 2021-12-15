@@ -80,9 +80,6 @@ class FSBVLogic : public Logic {
 public:
     FSBVLogic(opensmt::Logic_t type);
 
-    PTRef mkBVConstFromHex(std::string const & hexString);
-    PTRef mkBVConstFromBin(std::string const & binString);
-
 
     virtual bool isBuiltinSort(SRef sr) const override { return (sort_store[sr].getSymRef() == sym_IndexedSort and sort_store[sr][0] == BVBaseSort) or Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const override { return isBVConst(sr) || Logic::isBuiltinConstant(sr); }
@@ -94,7 +91,10 @@ public:
     bool yieldsSortBV(SymRef sr) const { return bitVectorSorts.has(getSortRef(sr)); }
     bool yieldsSortBV(PTRef tr) const { return yieldsSortBV(getSymRef(tr)); }
 
+    PTRef mkBVConstFromHex(std::string const & hexString);
+    PTRef mkBVConstFromBin(std::string const & binString);
     PTRef mkBVConst(BitWidth_t m, unsigned c);
+    PTRef mkBVConst(SymRef sym);
     PTRef mkBVVar(BitWidth_t m, std::string const & name) { return mkVar(makeBitVectorSortForBW(m), name.c_str()); }
 
     PTRef mkBVConcat(PTRef lhs, PTRef rhs);
@@ -137,6 +137,7 @@ public:
     bool isBVUlt(SymRef sr) const { return isEqualAsString(tk_bvult, getSymName(sr)); }
 
     PTRef resolveTerm(char const * s, vec<PTRef> && args, SRef, SymbolMatcher) override;
+    PTRef insertTerm (SymRef sym, vec<PTRef> && args) override;
     std::string printSym(SymRef sr) const override { return isBVConst(sr) ? getSymName(sr) : Logic::printSym(sr); }
 };
 

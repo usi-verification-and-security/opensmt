@@ -171,8 +171,6 @@ public:
 
     // External support incremental and backtrackable APIs
     // MB: This is used (and needed) by BitBlaster; can be removed if BitBlaster is re-worked
-    void        pushBacktrackPoint ( );
-    void        popBacktrackPoint  ( );
     void        reset              ( );
     inline void restoreOK          ( ) override { ok = true; conflict_frame = 0; }
     inline bool isOK               ( ) const override { return ok; } // FALSE means solver is in a conflicting state
@@ -457,7 +455,7 @@ public:
 protected:
 
 #ifdef STATISTICS
-    void   printStatistics        ( ostream & );   // Prints statistics
+    void   printStatistics        ( std::ostream & );   // Prints statistics
 #endif
     void   printTrail             ( );             // Prints the trail (debugging)
     TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC

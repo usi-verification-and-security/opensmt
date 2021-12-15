@@ -44,5 +44,7 @@ public:
     PTRef bbPredicate(PTRef);
 
     BVRef bbTerm(PTRef);
+
+    std::unordered_map<PTRef, PTRef, PTRefHash> getBitBlastedTermToBitVectorTermMap() const;
 };
 #endif //OPENSMT_FSBVBITBLASTER_H

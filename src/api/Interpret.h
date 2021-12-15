@@ -182,6 +182,8 @@ class Interpret {
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
 
+    void                        countModels(ASTNode const & n);
+
     void                        notify_formatted(bool error, const char* s, ...);
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;

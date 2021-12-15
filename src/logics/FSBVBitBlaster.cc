@@ -16,6 +16,18 @@ vec<PTRef> FSBVBitBlaster::getBVVars(std::string const & base, BitWidth_t width)
     return vars;
 }
 
+std::unordered_map<PTRef, PTRef, PTRefHash> FSBVBitBlaster::getBitBlastedTermToBitVectorTermMap() const {
+    std::unordered_map<PTRef, PTRef, PTRefHash> map;
+    for (PTRef tr : bs.getBitVectorTerms()) {
+        BVRef br = bs.getFromPTRef(tr);
+        for (int i = 0; i < bs[br].size(); i++) {
+            PTRef bitBlastedTerm = bs[br][i];
+            map.insert({bitBlastedTerm, tr});
+        }
+    }
+    return map;
+}
+
 PTRef FSBVBitBlaster::bbPredicate(PTRef tr)  {
     SymRef sr = logic.getSymRef(tr);
 
@@ -61,11 +73,7 @@ BVRef FSBVBitBlaster::bbTerm(PTRef tr) {
     if (logic.isBVLshr(sr)) return bbLshr(tr);
     if (logic.isBVVar(sr)) return bbVar(tr);
 
-    char * name = logic.pp(tr);
-    std::string name_s(name);
-    free(name);
-    throw OsmtInternalException("Unknown bit-vector operation " + name_s);
-    // Unreachable
+    throw OsmtInternalException("Unknown bit-vector operation " + logic.pp(tr));
 }
 
 BVRef FSBVBitBlaster::bbAdd(PTRef tr) {

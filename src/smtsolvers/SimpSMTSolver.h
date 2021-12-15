@@ -75,8 +75,8 @@ public:
 
     // Solving:
     //
-    lbool    solve       (const vec<Lit>& assumps) override;
-    lbool    solveLimited(const vec<Lit>& assumps);
+    lbool    solve       (vec<Lit> const & assumps) override;
+    lbool    solveLimited(vec<Lit> const & assumps);
 
     bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification. 
 

@@ -16,6 +16,7 @@ class FSBVTheory : public Theory
 private:
     FSBVLogic & logic;
     FSBVTHandler fsbvtshandler;
+    std::unordered_map<PTRef,PTRef,PTRefHash> bbTermToBVTerm;
 public:
     FSBVTheory(SMTConfig & c, FSBVLogic & logic)
         : Theory(c)
@@ -26,6 +27,7 @@ public:
     virtual const FSBVLogic & getLogic() const override { return logic; }
     virtual FSBVTHandler & getTSolverHandler() override { return fsbvtshandler; }
     virtual bool simplify(const vec<PFRef>&, PartitionManager&, int) override;
+    const std::unordered_map<PTRef, PTRef, PTRefHash> & getBBTermToBVTerm() const { return bbTermToBVTerm; }
 };
 
 #endif //OPENSMT_FSBVTHEORY_H
