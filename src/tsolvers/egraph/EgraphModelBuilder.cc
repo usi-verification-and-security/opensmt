@@ -94,7 +94,7 @@ void EgraphModelBuilder::fill(ModelBuilder & modelBuilder) && {
         assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
 
         assert(not logic.isIte(tr));
-        if (((logic.isVar(tr) or logic.isConstant(tr))) and logic.yieldsSortUninterpreted(tr)) {
+        if ((logic.isVar(tr) or logic.isConstant(tr)) and logic.yieldsSortUninterpreted(tr)) {
             PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
             modelBuilder.addVarValue(tr, val_tr);
         } else if (logic.isVar(tr) and not modelBuilder.hasVarVal(tr)) {
