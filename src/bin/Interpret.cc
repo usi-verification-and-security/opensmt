@@ -23,26 +23,16 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#include <assert.h>
-#include <stdarg.h>
-#include <string>
-#include <sstream>
-#include <ctime>
-#include <cstdlib>
-#include <cassert>
-#include <cstdio>
 
 #include "Interpret.h"
-#include "Theory.h"
-#include "UFLATheory.h"
-#include "Global.h"
 #include "smt2tokens.h"
 #include "MainSolver.h"
+#include "ArithLogic.h"
 #include "LogicFactory.h"
 
-#ifdef ITP_DEBUG
-#include "TreeOps.h"
-#endif // ITP_DEBUG
+#include <string>
+#include <sstream>
+#include <cstdarg>
 
 /***********************************************************
  * Class defining interpreter

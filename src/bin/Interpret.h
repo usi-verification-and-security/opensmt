@@ -31,7 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "SymRef.h"
 #include "Logic.h"
-#include "LogicFactory.h"
 #include "MainSolver.h"
 
 #include <unordered_map>
