@@ -22,9 +22,11 @@ public:
     void fill(ModelBuilder & modelBuilder) &&;
 
 private:
+    bool hasArithmetic() const { return logic.hasIntegers() or logic.hasReals(); }
+
     void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er);
 
-    Map<ERef, PTRef, ERefHash> computeNumericValues (ArithLogic & logic, ModelBuilder const &) const;
+    Map<ERef, PTRef, ERefHash> computeNumericValues (ModelBuilder const &) const;
 
     PTRef getAbstractValueForERef (ERef er, SRef sr);
 

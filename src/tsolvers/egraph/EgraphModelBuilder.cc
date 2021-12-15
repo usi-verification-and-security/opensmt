@@ -10,7 +10,8 @@
 #include "ArithLogic.h"
 #include "ModelBuilder.h"
 
-Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ArithLogic & logic, ModelBuilder const & model) const {
+Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder const & model) const {
+    ArithLogic & arithLogic = dynamic_cast<ArithLogic &>(logic);
     Map<ERef, PTRef, ERefHash> updatedValues;
     std::unordered_set<ERef, ERefHash> delayedNumericTerms;
     FastRational maxModelValue = 0;
@@ -20,21 +21,21 @@ Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ArithLogic &
     for (ERef eref : enode_store.getTermEnodes()) {
         ERef root = values.getValue(eref);
         PTRef ptref_root = enode_store.getPTRef(root);
-        if (not logic.yieldsSortNum(ptref_root)) {
+        if (not arithLogic.yieldsSortNum(ptref_root)) {
             continue;
         }
         if (updatedValues.has(root)) { continue; }
-        if (logic.isNumConst(ptref_root)) {
+        if (arithLogic.isNumConst(ptref_root)) {
             updatedValues.insert(root, ptref_root);
-            updateMaxValue(logic.getNumConst(ptref_root));
+            updateMaxValue(arithLogic.getNumConst(ptref_root));
             continue;
         }
         PTRef ptref = enode_store.getPTRef(eref);
         if (logic.isVar(ptref) and model.hasVarVal(ptref)) {
             PTRef value = model.getVarVal(ptref);
-            assert(logic.isNumConst(value));
+            assert(arithLogic.isNumConst(value));
             updatedValues.insert(root, value);
-            updateMaxValue(logic.getNumConst(value));
+            updateMaxValue(arithLogic.getNumConst(value));
             delayedNumericTerms.erase(root);
             continue;
         }
@@ -44,10 +45,10 @@ Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ArithLogic &
     for (ERef delayedTerm : delayedNumericTerms) {
         FastRational nextValue = maxModelValue + 1;
         SRef sort = logic.getSortRef(getEnode(delayedTerm).getTerm());
-        if (logic.isSortInt(sort)) {
+        if (arithLogic.isSortInt(sort)) {
             nextValue = nextValue.floor();
         }
-        updatedValues.insert(delayedTerm, logic.mkConst(sort, nextValue));
+        updatedValues.insert(delayedTerm, arithLogic.mkConst(sort, nextValue));
         maxModelValue = nextValue;
     }
     return updatedValues;
@@ -73,8 +74,8 @@ void EgraphModelBuilder::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder
 }
 
 void EgraphModelBuilder::fill(ModelBuilder & modelBuilder) && {
-    if (ArithLogic* arithLogic = dynamic_cast<ArithLogic *>(&logic)) {
-        auto numericValues = computeNumericValues(*arithLogic, modelBuilder);
+    if (hasArithmetic()) {
+        auto numericValues = computeNumericValues(modelBuilder);
         for (auto [key, val] : numericValues.getKeysAndVals()) {
             if (val != PTRef_Undef) {
                 assert(not rootValues.has(key));
