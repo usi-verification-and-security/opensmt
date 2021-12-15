@@ -87,7 +87,10 @@ trap "[ ${preserve} == "true" ] && (\
 
 mkdir -p ${outdir}
 
-${scrambler} -seed "0" -gen-model-val true < $1 > ${tmpin}
+${scrambler} -seed "0" -gen-model-val true < $1 2>&1 > ${tmpin} \
+    | grep "ERROR: " >/dev/null && \
+      echo "Error parsing input file $1" && \
+      exit 1
 
 sh -c "\
     ulimit -St 10;
