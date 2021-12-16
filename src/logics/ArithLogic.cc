@@ -225,6 +225,9 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
         PTRef var = sub.first;
         assert(var != PTRef_Undef and isNumVarLike(var) and sub.second != PTRef_Undef);
         if (substitutions.has(var)) {
+            if (logic.isConstant(sub.second)) {
+                substitutions[var] = sub.second;
+            }
             // Already has substitution for this var, let the main substitution code deal with this situation
             continue;
         } else {
