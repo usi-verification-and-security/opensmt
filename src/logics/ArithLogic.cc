@@ -375,10 +375,11 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     args.clear();
     SymRef s_new;
     simp.simplify(plusSym, flattened_args, s_new, args);
-    if (args.size() == 1)
-        return args[0];
     if (s_new != getPlusForSort(returnSort)) {
         return mkFun(s_new, std::move(args));
+    }
+    if (args.size() == 1) {
+        return args[0];
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
