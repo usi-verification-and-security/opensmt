@@ -10,7 +10,9 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager
     if (this->keepPartitions()) {
         throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
     } else {
-        PTRef fla = logic.mkAnd(currentFrame.formulas);
+        PTRef coll_f = getCollateFunction(formulas, curr);
+        auto subs_res = computeSubstitutions(coll_f);
+        PTRef fla = flaFromSubstitutionResult(subs_res);
         PTRef purified = purify(fla);
         PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
         PTRef enriched = addInterfaceClauses(noArithmeticEqualities);
