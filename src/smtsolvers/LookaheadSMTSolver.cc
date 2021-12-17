@@ -72,7 +72,6 @@ lbool LookaheadSMTSolver::solve_()
 
 lbool LookaheadSMTSolver::laPropagateWrapper()
 {
-    props++;
     CRef cr;
     bool diff;
     do
@@ -170,6 +169,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
+        printf("This is decision level: %d\n", path.size());
 
         if (value(path[i]) == l_Undef)
         {
