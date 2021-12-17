@@ -165,11 +165,11 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
-    next_v.resize(1);
+//    next_v.push_back(next_v[0]);
+    next_s = next_initial;
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
-        next_v.push_back(next_v[next_v.size() - 1]);
 
         if (value(path[i]) == l_Undef)
         {
@@ -185,7 +185,8 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
             }
             else if (res == l_Undef) {
                 cancelUntil(0);
-                next_v.resize(1);
+                next_s = next_initial;
+//                next_v.resize(1);
                 return PathBuildResult::pathbuild_restart; // Do a restart
             }
             if (curr_dl != decisionLevel())
@@ -336,10 +337,12 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    set<Var> latest = next_v.back();
+//    set<Var> latest = next_v.back();
+    set<Var> latest = next_s;
     int counter = 0;
-    next_v.push_back(latest);
-    if(!next_v.back().empty()) {
+//    next_v.push_back(latest);
+//    if(!next_v.back().empty()) {
+    if(!next_s.empty()) {
         auto it = latest.begin();
         Var v = *it;
         while (it != latest.end()) {
@@ -430,7 +433,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
                 else if (res == l_Undef)
                 {
-                    next_v.resize(1);
+//                    next_v.resize(1);
+                    next_s = next_initial;
                     cancelUntil(0);
                     return laresult::la_restart;
                 }
@@ -598,7 +602,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         }
     }
     }
-    next_v.pop_back();
+//    next_v.pop_back();
+    next_s = latest;
     best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
     {

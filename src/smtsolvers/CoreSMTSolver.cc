@@ -366,8 +366,12 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-        next_v.back().insert(var(~c[0]));
-        next_v.back().insert(var(~c[1]));
+        next_initial.insert(var(~c[0]));
+        next_initial.insert(var(~c[1]));
+        next_s.insert(var(~c[0]));
+        next_s.insert(var(~c[1]));
+//        next_v.back().insert(var(~c[0]));
+//        next_v.back().insert(var(~c[1]));
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -385,8 +389,10 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         if(c.size() > 2 )
             remove(watches[~c[2]], Watcher(cr, c[0]));
         else {
-            next_v.back().erase(var(~c[0]));
-            next_v.back().erase(var(~c[1]));
+            next_s.erase(var(~c[0]));
+            next_s.erase(var(~c[1]));
+//            next_v.back().erase(var(~c[0]));
+//            next_v.back().erase(var(~c[1]));
         }
     }
     else
@@ -1180,7 +1186,8 @@ CRef CoreSMTSolver::propagate()
     while (qhead < trail.size())
     {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
-        next_v.back().erase(var(p));
+//        next_v.back().erase(var(p));
+        next_s.erase(var(p));
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
@@ -1197,8 +1204,10 @@ CRef CoreSMTSolver::propagate()
             if (value(blocker) == l_True)
             {
                 *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
+//                next_v.back().erase(var(~c[0]));
+//                next_v.back().erase(var(~c[1]));
+                next_s.erase(var(~c[0]));
+                next_s.erase(var(~c[1]));
                 continue;
             }
 
@@ -1210,15 +1219,19 @@ CRef CoreSMTSolver::propagate()
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
+                next_s.erase(var(~c[0]));
+                next_s.erase(var(~c[1]));
+//                next_v.back().erase(var(~c[0]));
+//                next_v.back().erase(var(~c[1]));
                 continue;
             }
 
             if(value(c[0]) == l_True || value(c[1]) == l_True){
                 *j++ = *i++;
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
+                next_s.erase(var(~c[0]));
+                next_s.erase(var(~c[1]));
+//                next_v.back().erase(var(~c[0]));
+//                next_v.back().erase(var(~c[1]));
                 continue;
             }
 
@@ -1263,8 +1276,10 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
-                next_v.back().erase(var(~c[0]));
-                next_v.back().erase(var(~c[1]));
+                next_s.erase(var(~c[0]));
+                next_s.erase(var(~c[1]));
+//                next_v.back().erase(var(~c[0]));
+//                next_v.back().erase(var(~c[1]));
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1298,8 +1313,10 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-                next_v.back().insert(var(~c[0]));
-                next_v.back().insert(var(~c[1]));
+                next_s.insert(var(~c[0]));
+                next_s.insert(var(~c[1]));
+//                next_v.back().insert(var(~c[0]));
+//                next_v.back().insert(var(~c[1]));
             }
 NextClause:
             ;

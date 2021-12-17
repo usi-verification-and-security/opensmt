@@ -452,6 +452,8 @@ protected:
     uint32_t            n_clauses;        // number of clauses in the problem
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
+    set<Var>    next_initial;           // Levels of clauses close to solution.
+    set<Var>    next_s;           // Levels of clauses close to solution.
     vector<set<Var>>    next_v = {set<Var>()};           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
 #ifdef PEDANTIC_DEBUG
