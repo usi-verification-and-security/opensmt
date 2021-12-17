@@ -1184,10 +1184,10 @@ CRef CoreSMTSolver::propagate()
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
-        props++;
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
+            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
 
@@ -1258,6 +1258,8 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
+//                next_s.erase(var(~c[0]));
+//                next_s.erase(var(~c[1]));
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;

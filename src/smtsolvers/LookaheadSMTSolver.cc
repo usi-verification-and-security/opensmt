@@ -342,6 +342,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         auto it = latest.begin();
         Var v = *it;
         while (it != latest.end()) {
+//            props++;
             counter++;
             v = *it;
             it++;
@@ -474,6 +475,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     } else {
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
+        props++;
         if (!decision[v]) {
             score->setChecked(v);
 #ifdef LADEBUG
