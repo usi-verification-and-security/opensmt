@@ -455,6 +455,7 @@ protected:
     set<Var>    next_initial;           // Levels of clauses close to solution.
     set<Var>    next_s;           // Levels of clauses close to solution.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
+    int props = 0;
 #ifdef PEDANTIC_DEBUG
     vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
     Map<Var,int,VarHash> debug_reason_map; // Maps the deduced lit to the clause used to deduce it
