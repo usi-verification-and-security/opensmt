@@ -72,6 +72,7 @@ lbool LookaheadSMTSolver::solve_()
 
 lbool LookaheadSMTSolver::laPropagateWrapper()
 {
+    props++;
     CRef cr;
     bool diff;
     do
@@ -475,7 +476,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     } else {
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
-        props++;
         if (!decision[v]) {
             score->setChecked(v);
 #ifdef LADEBUG

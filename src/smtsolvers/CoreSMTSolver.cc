@@ -1187,7 +1187,6 @@ CRef CoreSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
-            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
 
