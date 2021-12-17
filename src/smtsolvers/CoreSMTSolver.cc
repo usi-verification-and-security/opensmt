@@ -1185,6 +1185,7 @@ CRef CoreSMTSolver::propagate()
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
+        next_s.erase(var(p));
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
