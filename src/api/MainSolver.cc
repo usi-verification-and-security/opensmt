@@ -137,7 +137,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(char** err_msg)
+sstat MainSolver::simplifyFormulas()
 {
     if (binary_init)
         return s_Undef;
