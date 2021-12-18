@@ -6,7 +6,7 @@
 // present.  If partitions cannot mix, do no simplifications but just
 // update the root.
 //
-bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
+bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {

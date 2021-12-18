@@ -4,7 +4,7 @@
 #include "Substitutor.h"
 #include "ArithmeticEqualityRewriter.h"
 
-bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
+bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
