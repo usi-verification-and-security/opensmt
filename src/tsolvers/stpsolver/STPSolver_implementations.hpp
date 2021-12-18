@@ -144,7 +144,7 @@ bool STPSolver<T>::assertLit(PtAsgn asgn) {
 }
 
 template<class T>
-TRes STPSolver<T>::check(bool b) {
+TRes STPSolver<T>::check(bool) {
     // The main method checking the consistency of the current set of constraints
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
 
