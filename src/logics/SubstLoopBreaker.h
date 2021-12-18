@@ -86,7 +86,7 @@ private:
     SNRef   parent;
     TVLRef  children;
 
-    SubstNode(PTRef tr, PTRef target, TargetVarListAllocator& tvla)
+    SubstNode(PTRef tr, PTRef, TargetVarListAllocator& tvla)
     : tvla(tvla)
     , procChild(0)
     , index(-1)
