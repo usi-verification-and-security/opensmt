@@ -2112,7 +2112,7 @@ bool CoreSMTSolver::scatterLevel()
 }
 
 
-bool CoreSMTSolver::createSplit_scatter(bool last)
+bool CoreSMTSolver::createSplit_scatter(bool)
 {
     assert(splits.size() == split_assumptions.size());
     splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
