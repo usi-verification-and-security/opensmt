@@ -494,7 +494,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
 
-            labelLeaf (n, A_mask, 0, PSFunction);
+            labelLeaf (n, 0, PSFunction);
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
@@ -1024,7 +1024,7 @@ void ProofGraph::checkInterAlgo()
 
 
 void
-ProofGraph::labelLeaf (ProofNode *n, const ipartitions_t &A_mask, unsigned num_config, map<Var, icolor_t> *PSFunction)
+ProofGraph::labelLeaf(ProofNode * n, unsigned num_config, std::map<Var, icolor_t> * PSFunction)
 {
     // Proof Sensitive
     if (usingPSInterpolation()) setLeafPSLabeling (n, PSFunction);

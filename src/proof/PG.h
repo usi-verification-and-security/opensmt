@@ -413,7 +413,7 @@ public:
 
     PTRef           compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode *);
-    void            labelLeaf                                (ProofNode *, const ipartitions_t&, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
+    void            labelLeaf                                (ProofNode *, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
     void            setLeafRandomLabeling                    (ProofNode *);
     void            setLeafMcMillanLabeling                  (ProofNode *);
     void            setLeafPudlakLabeling                    (ProofNode *);
