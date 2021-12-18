@@ -79,7 +79,7 @@ public:
     LAVec*       lea       (LAVecRef r)       { return (LAVec*)RegionAllocator<uint32_t>::lea(r.x); }
     const LAVec* lea       (LAVecRef r) const { return (LAVec*)RegionAllocator<uint32_t>::lea(r.x); }
     LAVecRef     ael       (const LAVec* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LAVecRef rf; rf.x = r; return rf; }
-    void         free      (LAVecRef r)       {}
+    void         free      (LAVecRef)         {}
     // Debug stuff
     char*        printVec (LAVecRef r)  const;
 };
