@@ -408,6 +408,7 @@ char* THandler::printAsrtClause(Clause* c) {
 }
 
 bool THandler::checkTrailConsistency(vec<Lit>& trail) {
+    (void)trail;
     assert(trail.size() >= stack.size()); // There might be extra stuff
                                           // because of conflicting assignments
     for (int i = 0; i < stack.size(); i++) {
