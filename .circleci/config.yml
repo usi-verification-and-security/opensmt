@@ -8,7 +8,7 @@ jobs:
                 password: $DOCKERHUB_PASSWORD
             environment:
                 CMAKE_BUILD_TYPE: Release
-                FLAGS: -Wall -Werror
+                FLAGS: -Wall -Wunused-parameter -Werror
                 INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
@@ -57,7 +57,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Debug
-                    FLAGS: -Wall -Werror -Werror=sign-compare -Wunused-lambda-capture -fsanitize=signed-integer-overflow
+                    FLAGS: -Wall -Wunused-parameter -Werror -Werror=sign-compare -Wunused-lambda-capture -fsanitize=signed-integer-overflow
 
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-7 gmp-devel libedit-devel
@@ -79,7 +79,7 @@ jobs:
                 password: $DOCKERHUB_PASSWORD
               environment:
                 CMAKE_BUILD_TYPE: Release
-                FLAGS: -Wall -Werror
+                FLAGS: -Wall -Wunused-parameter -Werror
                 INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
@@ -144,7 +144,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Release
-                    FLAGS: -Wall -Werror
+                    FLAGS: -Wall -Wunused-parameter -Werror
                     INSTALL: ~/osmt-install
 
 workflows:
