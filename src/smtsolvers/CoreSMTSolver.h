@@ -46,6 +46,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef MINISATSMTSOLVER_H
 #define MINISATSMTSOLVER_H
 
+#define CACHE_POLARITY     0
+
+#include "SMTSolver.h"
 #include "THandler.h"
 
 #include <cstdio>
@@ -62,9 +65,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SolverTypes.h"
 
 #include "Timer.h"
+#include "Proof.h"
 
-class Proof;
-class ModelBuilder;
 
 // Helper method to print Literal to a stream
 std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
@@ -78,26 +80,24 @@ struct Pair { A first; B second; };
 //=================================================================================================
 // Solver -- the main class:
 
-class CoreSMTSolver
+class CoreSMTSolver : public SMTSolver
 {
     friend class LookaheadScoreClassic;
     friend class LookaheadScoreDeep;
 protected:
     SMTConfig & config;         // Stores Config
-    THandler  & theory_handler; // Handles theory
-    bool      verbosity;
-    bool      init;
+    bool        verbosity;
+    bool        init;
     enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
     int search_counter;
 public:
-    bool stop = false;
 
     // Constructor/Destructor:
     //
     CoreSMTSolver(SMTConfig&, THandler&);
-    virtual ~CoreSMTSolver();
-    void     initialize       ( );
-    void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
+    ~CoreSMTSolver() override;
+    void     initialize       () override;
+    void     clearSearch      () override;  // Backtrack SAT solver and theories to decision level 0
 
     // Problem specification:
     //
@@ -105,7 +105,7 @@ protected:
     void  addVar_    (Var v); // Ensure that var v exists in the solver
     virtual Var newVar(bool dvar); // Add a new variable with parameters specifying variable mode.
 public:
-    void    addVar(Var v); // Anounce the existence of a variable to the solver
+    void    addVar(Var v) override; // Anounce the existence of a variable to the solver
     bool    addOriginalClause(const vec<Lit> & ps);
     bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
     bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.
@@ -119,7 +119,8 @@ public:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
     void    declareVarsToTheories();                 // Declare the seen variables to the theories
-    bool    solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
+    lbool   solve        (const vec< Lit > & assumps) override; // Search for a model that respects a given set of assumptions.
+
     void    crashTest    (int, Var, Var);           // Stress test the theory solver
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
@@ -143,16 +144,16 @@ public:
     lbool   safeValue  (Var x) const;       // The current value of a variable.  l_Undef if the variable does not exist.
     lbool   safeValue  (Lit p) const;       // The current value of a literal.  l_Undef if the literal does not exist.
 
-    lbool   modelValue (Lit p) const;       // The value of a literal in the last model. The last call to solve must have been satisfiable.
+    lbool   modelValue (Lit p) const override; // The value of a literal in the last model. The last call to solve must have been satisfiable.
     int     nAssigns   ()      const;       // The current number of assigned literals.
-    int     nClauses   ()      const;       // The current number of original clauses.
+    int     nClauses   ()      const override; // The current number of original clauses.
     int     nLearnts   ()      const;       // The current number of learnt clauses.
-    int     nVars      ()      const;       // The current number of variables.
+    int     nVars      ()      const override; // The current number of variables.
     int     nFreeVars  ()      const;
 
-    void fillBooleanVars(ModelBuilder & modelBuilder);
+    void fillBooleanVars(ModelBuilder & modelBuilder) override;
 
-    Proof const & getProof() const { assert(proof); return *proof; }
+    Proof const & getProof() const override { assert(proof); return *proof; }
 
     // Resource contraints:
     //
@@ -173,9 +174,9 @@ public:
     void        pushBacktrackPoint ( );
     void        popBacktrackPoint  ( );
     void        reset              ( );
-    inline void restoreOK          ( )       { ok = true; conflict_frame = 0; }
-    inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
-    inline int  getConflictFrame   ( ) const { assert(not isOK()); return conflict_frame; }
+    inline void restoreOK          ( ) override { ok = true; conflict_frame = 0; }
+    inline bool isOK               ( ) const override { return ok; } // FALSE means solver is in a conflicting state
+    inline int  getConflictFrame   ( ) const override { assert(not isOK()); return conflict_frame; }
 
     template<class C>
     void     printSMTClause   (std::ostream &, const C& );
@@ -763,11 +764,11 @@ uint32_t CoreSMTSolver::computeGlue(T const & ps) {
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
 
-inline bool     CoreSMTSolver::solve  (const vec<Lit>& assumps)
+inline lbool CoreSMTSolver::solve  (const vec<Lit>& assumps)
 {
     budgetOff();
     setAssumptions(assumps);
-    return solve_() == l_True;
+    return solve_();
 }
 
 inline void     CoreSMTSolver::toDimacs(const char* file)

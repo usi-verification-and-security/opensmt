@@ -100,7 +100,7 @@ class MainSolver
     std::unique_ptr<Theory>         theory;
     std::unique_ptr<TermMapper>     term_mapper;
     std::unique_ptr<THandler>       thandler;
-    std::unique_ptr<SimpSMTSolver>  smt_solver;
+    std::unique_ptr<SMTSolver>      smt_solver;
     Logic&                          logic;
     PartitionManager                pmanager;
     SMTConfig&                      config;
@@ -149,8 +149,7 @@ class MainSolver
         }
     }
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
-
+    static std::unique_ptr<SMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
   public:
 
@@ -164,7 +163,7 @@ class MainSolver
             pmanager(logic),
             config(conf),
             pfstore(getTheory().pfstore),
-            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
+            ts(config, logic, pmanager, *term_mapper, *smt_solver),
             solver_name {std::move(name)},
             check_called(0),
             status(s_Undef),
@@ -177,7 +176,7 @@ class MainSolver
     }
 
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
-               std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
+               std::unique_ptr<SMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
             :
             theory(std::move(th)),
             term_mapper(std::move(tm)),
@@ -187,7 +186,7 @@ class MainSolver
             pmanager(logic),
             config(conf),
             pfstore(getTheory().pfstore),
-            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
+            ts(config, logic, pmanager, *term_mapper, *smt_solver),
             solver_name {std::move(name)},
             check_called(0),
             status(s_Undef),
@@ -202,8 +201,8 @@ class MainSolver
     virtual ~MainSolver() = default;
 
     SMTConfig& getConfig() { return config; }
-    SimpSMTSolver& getSMTSolver() { return *smt_solver; }
-    SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
+    SMTSolver& getSMTSolver() { return *smt_solver; }
+    SMTSolver const & getSMTSolver() const { return *smt_solver; }
 
     THandler &getTHandler() { return *thandler; }
     Logic    &getLogic()    { return logic; }

@@ -3,6 +3,7 @@ add_library(smtsolvers OBJECT "")
 
 list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/TheoryIF.cc"
@@ -21,6 +22,23 @@ list(APPEND PUBLIC_SOURCES_TO_ADD
 
 target_sources(smtsolvers PRIVATE ${PRIVATE_SOURCES_TO_ADD}  PUBLIC ${PUBLIC_SOURCES_TO_ADD} )
 
+add_library(smtsolvers OBJECT ""
+		LookaheadSMTSolver.cc
+		LookaheadSMTSolver.h
+		LookaheadSplitter.cc
+		LookaheadSplitter.h
+		ScatterSplitter.cc
+		ScatterSplitter.h
+		ClausePrinter.cc
+		ClausePrinter.h
+		SplitContext.h
+		SplitData.cc
+		SplitData.h
+		LAScore.h
+		LAScore.cc
+		)
+
+
 if(VERBOSE_SAT)
 	target_compile_definitions(smtsolvers PRIVATE -DVERBOSE_SAT)
 endif()
@@ -37,7 +55,7 @@ target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc")
 
-install(FILES TheoryInterpolator.h
+install(FILES TheoryInterpolator.h Proof.h
 	 DESTINATION ${INSTALL_HEADERS_DIR})
 
 

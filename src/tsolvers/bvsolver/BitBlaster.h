@@ -78,7 +78,7 @@ private:
     MainSolver&    mainSolver;
     BVLogic&       logic;                         // Egraph store
     THandler&      thandler;
-    SimpSMTSolver& solverP;                       // Solver with proof logger
+    SMTSolver&     solverP;                       // Solver with proof logger
 
     bool addClause(vec<Lit> & c);
 

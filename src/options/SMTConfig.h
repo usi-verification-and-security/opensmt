@@ -312,6 +312,7 @@ public:
   static const char* o_ghost_vars;
   static const char* o_sat_solver_limit;
   static const char* o_global_declarations;
+  static const char* o_print_clauses_only;
 
   static const char* o_sat_split_mode;
 private:
@@ -808,6 +809,13 @@ public:
   bool use_ghost_vars() const {
       if (optionTable.has(o_ghost_vars)) {
           return optionTable[o_ghost_vars]->getValue().numval != 0;
+      }
+      return false;
+  }
+
+  bool print_clauses_only() const {
+      if (optionTable.has(o_print_clauses_only)) {
+          return optionTable[o_print_clauses_only]->getValue().numval != 0;
       }
       return false;
   }

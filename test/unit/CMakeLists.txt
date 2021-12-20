@@ -245,3 +245,11 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SATSolverTypes.cc"
 
 target_link_libraries(SATSolverTypesTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SATSolverTypesTest)
+
+add_executable(FSBVTest)
+target_sources(FSBVTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_FSBV.cc"
+        )
+
+target_link_libraries(FSBVTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET FSBVTest)

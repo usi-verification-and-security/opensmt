@@ -57,13 +57,13 @@ class SimpSMTSolver : public CoreSMTSolver
     SimpSMTSolver (SMTConfig &, THandler&);
     ~SimpSMTSolver( );
 
-    void         initialize           ( );
+    void initialize() override;
 
     // Problem specification:
     //
     Var     newVar    (bool dvar = true) override;
 
-    bool addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs);
+    bool addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs) override;
 public:
 
     bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
@@ -75,12 +75,9 @@ public:
 
     // Solving:
     //
-    lbool    solve       (const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool    solveLimited(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
-    lbool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);
-    lbool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
-    lbool    solve       (Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
+    lbool    solve       (const vec<Lit>& assumps) override;
+    lbool    solveLimited(const vec<Lit>& assumps);
+
     bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification. 
 
     // Memory managment:
@@ -160,7 +157,6 @@ public:
     // Main internal methods:
     //
     using CoreSMTSolver::solve_;
-    lbool         solve_                   (bool do_simp, bool turn_off_simp);
     bool          asymm                    (Var v, CRef cr);
     bool          asymmVar                 (Var v);
     void          updateElimHeap           (Var v);
@@ -196,15 +192,10 @@ inline void SimpSMTSolver::updateElimHeap(Var v) {
         elim_heap.update(v); }
 
 inline void  SimpSMTSolver::setFrozen    (Var v, bool b) { if ( !use_simplification ) return; frozen[v] = (char)b; if (b) { updateElimHeap(v); } }
-inline lbool SimpSMTSolver::solve        (                     bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{}, do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solve        (Lit p       ,        bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p}, do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p,q}, do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p,q,r}, do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solve        (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){ 
-    budgetOff(); setAssumptions(assumps); return solve_(do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solveLimited (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){
-    setAssumptions(assumps); return solve_(do_simp, turn_off_simp); }
-//inline bool CoreSMTSolver::smtSolve     () { return solve(); }
+inline lbool SimpSMTSolver::solve        (const vec<Lit>& assumps) {
+    budgetOff(); setAssumptions(assumps); return solve_(); }
+inline lbool SimpSMTSolver::solveLimited (const vec<Lit>& assumps) {
+    setAssumptions(assumps); return solve_(); }
 
 //=================================================================================================
 #endif

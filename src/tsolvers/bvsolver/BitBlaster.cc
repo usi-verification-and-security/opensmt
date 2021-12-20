@@ -163,7 +163,7 @@ BitBlaster::assertLit (PtAsgn pta)
 lbool
 BitBlaster::check( )
 {
-    const lbool res = solverP.solve( );
+    const lbool res = solverP.solve({});
 //    assert( res || (explanation.size() != 0) );
     return res;
 }
@@ -171,14 +171,12 @@ BitBlaster::check( )
 void
 BitBlaster::pushBacktrackPoint ( )
 {
-    solverP.pushBacktrackPoint( );
 }
 
 void 
 BitBlaster::popBacktrackPoint ( )
 {
     // Pop solver
-    solverP.popBacktrackPoint( );
     solverP.restoreOK( );
     has_model = false;
 }
@@ -1464,7 +1462,8 @@ BitBlaster::bbDistinct(PTRef tr)
 bool
 BitBlaster::addClause(vec<Lit> & c)
 {
-    return solverP.addOriginalClause(c);
+    opensmt::pair<CRef,CRef> tmp;
+    return solverP.addOriginalSMTClause(c, tmp);
 }
 
 //=============================================================================
