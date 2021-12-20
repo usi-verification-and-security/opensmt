@@ -355,6 +355,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     return true;
 }
 
+int counter = 0;
 
 void CoreSMTSolver::attachClause(CRef cr)
 {
@@ -369,6 +370,8 @@ void CoreSMTSolver::attachClause(CRef cr)
         next_initial.insert(var(~c[1]));
         next_s.insert(var(~c[0]));
         next_s.insert(var(~c[1]));
+        counter++;
+        printf("Counter: %d\n", counter);
     }
 
     if (c.learnt()) learnts_literals += c.size();
