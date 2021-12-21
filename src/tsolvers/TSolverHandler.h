@@ -66,9 +66,6 @@ public:
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
-    // DEPRECATED
-    ValPair getValue          (PTRef tr) const;
-
     void    fillTheoryFunctions(ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
