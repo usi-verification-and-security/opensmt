@@ -49,7 +49,7 @@ class UFLATheory : public Theory
 protected:
     PTRef purify(PTRef fla);
     PTRef splitArithmeticEqualities(PTRef fla);
-    PTRef addInterfaceClauses(PTRef fla);
+    vec<PTRef> getInterfaceVars(PTRef fla);
 };
 
 #endif

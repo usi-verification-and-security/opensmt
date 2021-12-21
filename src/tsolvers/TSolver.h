@@ -175,6 +175,7 @@ public:
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state
+    virtual void collectEqualitiesFor(vec<PTRef> const &, vec<PTRef> &) {}
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }

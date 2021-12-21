@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TSolverHandler.h"
 #include "ArithLogic.h"
 
+#include <unordered_set>
+
 class Egraph;
 class LASolver;
 
@@ -38,6 +40,9 @@ class UFLATHandler : public TSolverHandler
     ArithLogic      &logic;
     LASolver      *lasolver;
     Egraph        *ufsolver;
+    vec<PTRef> interfaceVars;
+    vec<PTRef> equalitiesToPropagate;
+    std::unordered_set<PTRef, PTRefHash> knownEqualities;
   public:
     UFLATHandler(SMTConfig & c, ArithLogic & l);
     ~UFLATHandler() override = default;
@@ -47,6 +52,14 @@ class UFLATHandler : public TSolverHandler
     PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 
     lbool getPolaritySuggestion(PTRef pt) const override;
+
+    void declareAtom(PTRef atom) override;
+
+    TRes check(bool complete) override;
+
+    void setInterfaceVars(vec<PTRef> && vars) { vars.moveTo(interfaceVars); }
+
+    vec<PTRef> getSplitClauses() override;
 };
 
 #endif
