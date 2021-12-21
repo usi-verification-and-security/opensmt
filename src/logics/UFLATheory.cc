@@ -15,8 +15,8 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int cu
         PTRef fla = flaFromSubstitutionResult(subs_res);
         PTRef purified = purify(fla);
         PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
-        PTRef enriched = addInterfaceClauses(noArithmeticEqualities);
-        currentFrame.root = enriched;
+        this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
+        currentFrame.root = noArithmeticEqualities;
     }
     return true;
 }
@@ -196,27 +196,13 @@ public:
     }
 };
 
-PTRef UFLATheory::addInterfaceClauses(PTRef fla) {
-    if (not logic.isAnd(fla)) { return fla; }
+
+
+vec<PTRef> UFLATheory::getInterfaceVars(PTRef fla) {
     CollectInterfaceVariablesConfig config(logic);
     TermVisitor(logic, config).visit(fla);
     vec<PTRef> const & interfaceVars = config.getInterfaceVars();
-    // Add all interface clauses to the formula
-    vec<PTRef> interfaceClauses;
-    for (int i = 0; i < interfaceVars.size(); ++i) {
-        for (int j = 0; j < i; ++j) {
-            PTRef lhs = interfaceVars[i];
-            PTRef rhs = interfaceVars[j];
-            if (logic.isNumConst(lhs) and logic.isNumConst(rhs)) { continue; }
-            PTRef eq = logic.mkEq(lhs, rhs);
-            PTRef leq = logic.mkLeq(lhs, rhs);
-            PTRef geq = logic.mkGeq(lhs, rhs);
-            // x = y <=> x <= y && x >= y
-            interfaceClauses.push(logic.mkOr({logic.mkNot(eq), leq}));
-            interfaceClauses.push(logic.mkOr({logic.mkNot(eq), geq}));
-            interfaceClauses.push(logic.mkOr({logic.mkNot(leq), logic.mkNot(geq), eq}));
-        }
-    }
-    interfaceClauses.push(fla);
-    return logic.mkAnd(std::move(interfaceClauses));
+    vec<PTRef> ret;
+    interfaceVars.copyTo(ret);
+    return ret;
 }
