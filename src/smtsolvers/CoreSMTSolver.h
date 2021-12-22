@@ -754,6 +754,9 @@ public:
 protected:
     virtual inline void clausesPublish() {};
     virtual inline void clausesUpdate() {};
+
+    using SplitClauses = std::vector<vec<Lit>>;
+    TPropRes handleNewSplitClauses(SplitClauses & clauses);
 };
 
 //=================================================================================================

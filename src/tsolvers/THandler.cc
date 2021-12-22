@@ -97,32 +97,28 @@ TRes THandler::check(bool complete) {
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
 }
 
-void THandler::getNewSplits(vec<Lit> &splits) {
-    vec<PTRef> split_terms;
-    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
-            getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
-            break;
+std::vector<vec<Lit>> THandler::getNewSplits() {
+    vec<PTRef> newSplits = getSolverHandler().getSplitClauses();
+
+    std::vector<vec<Lit>> splitClauses;
+    if (newSplits.size() == 0) {
+        return splitClauses;
+    }
+    for (PTRef clause : newSplits) {
+        splitClauses.emplace_back();
+        Logic & logic = getLogic();
+        assert(logic.isOr(clause));
+        for (int i = 0; i < logic.getPterm(clause).size(); i++) {
+            PTRef litTerm = logic.getPterm(clause)[i];
+            Lit l = tmap.getOrCreateLit(litTerm);
+            PTRef atomTerm = logic.isNot(litTerm) ? logic.getPterm(litTerm)[0] : litTerm;
+            assert(getLogic().isAtom(atomTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
+            declareAtom(atomTerm);
+            informNewSplit(atomTerm);
+            splitClauses.back().push(l);
         }
     }
-
-    if ( split_terms.size() == 0 ) {
-        return;
-    }
-
-    assert(split_terms.size() == 1);
-    PTRef tr = split_terms[0];
-    split_terms.pop();
-    Logic & logic = getLogic();
-    assert(logic.isOr(tr));
-    for (int i = 0; i < logic.getPterm(tr).size(); i++) {
-        PTRef arg = logic.getPterm(tr)[i];
-        Lit l = tmap.getOrCreateLit(arg);
-        assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
-        declareAtom(arg);
-        informNewSplit(arg);
-        splits.push(l);
-    }
+    return splitClauses;
 }
 
 //
