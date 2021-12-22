@@ -126,7 +126,7 @@ inline const std::unordered_map<Logic_t, LogicProperty> QFLogicToProperties  {
                         no_bv}},
     {Logic_t::QF_AX, {"QF_AX",
                       no_arith,
-                      UFProperty{true, false},
+                      UFProperty{true, false, false},
                       no_bv}},
     {Logic_t::QF_AXDIFF, {"QF_AXDIFF",
                       no_arith,
