@@ -86,7 +86,7 @@ private:
     SNRef   parent;
     TVLRef  children;
 
-    SubstNode(PTRef tr, PTRef, TargetVarListAllocator& tvla)
+    SubstNode(PTRef tr, TargetVarListAllocator& tvla)
     : tvla(tvla)
     , procChild(0)
     , index(-1)
@@ -96,12 +96,12 @@ private:
     , parent(SNRef_Undef)
     {}
 
-    SubstNode(PTRef tr, PTRef target, vec<PTRef>&& children, TargetVarListAllocator& tvla)
-    : SubstNode(tr, target, tvla)
+    SubstNode(PTRef tr, vec<PTRef>&& children, TargetVarListAllocator& tvla)
+    : SubstNode(tr, tvla)
     { this->children = tvla.alloc(std::move(children)); }
 
-    SubstNode(PTRef tr, PTRef target, TVLRef children, TargetVarListAllocator& tvla)
-    : SubstNode(tr, target, tvla)
+    SubstNode(PTRef tr, TVLRef children, TargetVarListAllocator& tvla)
+    : SubstNode(tr, tvla)
     { this->children = children; }
 
 public:

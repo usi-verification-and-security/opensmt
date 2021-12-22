@@ -52,13 +52,13 @@ SNRef SubstNodeAllocator::alloc(PTRef tr, PTRef target)
     SNRef sid = {v};
     TVLRef tvr;
     if (target == PTRef_Undef) {
-        new (lea(sid)) SubstNode(tr, PTRef_Undef, vec<PTRef>(), tla);
+        new (lea(sid)) SubstNode(tr, vec<PTRef>(), tla);
     }
     else if (TargetToTargetVarListRef.peek(target, tvr)) {
-        new (lea(sid)) SubstNode(tr, target, tvr, tla);
+        new (lea(sid)) SubstNode(tr, tvr, tla);
     }
     else {
-        new (lea(sid)) SubstNode(tr, target, getVars(target), tla);
+        new (lea(sid)) SubstNode(tr, getVars(target), tla);
     }
     SourceToSNRef.insert(tr, sid);
     SNRefs.push(sid);
