@@ -1689,7 +1689,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                 updateSplitState();
                 if (!split_start && split_on && scatterLevel())
                 {
-                    if (!createSplit_scatter(false))   // Rest is unsat
+                    if (!createSplit_scatter())   // Rest is unsat
                     {
                         opensmt::stop = true;
                         return l_Undef;
@@ -1751,7 +1751,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
         }
     }
     cancelUntil(0);
-    createSplit_scatter(true);
+    createSplit_scatter();
     opensmt::stop = true;
     return l_Undef;
 }
@@ -2112,7 +2112,7 @@ bool CoreSMTSolver::scatterLevel()
 }
 
 
-bool CoreSMTSolver::createSplit_scatter(bool)
+bool CoreSMTSolver::createSplit_scatter()
 {
     assert(splits.size() == split_assumptions.size());
     splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
