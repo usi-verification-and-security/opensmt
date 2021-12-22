@@ -31,3 +31,13 @@ lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
     return l_Undef;
 }
 
+TRes UFLATHandler::check(bool full) {
+    auto res = TSolverHandler::check(full);
+    if (full and res == TRes::SAT) {
+        equalitiesToPropagate.clear();
+        ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate);
+        lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate);
+    }
+    return res;
+}
+

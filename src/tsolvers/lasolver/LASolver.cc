@@ -859,3 +859,40 @@ void LASolver::printStatistics(std::ostream & out) {
     TSolver::printStatistics(out);
     laSolverStats.printStatistics(out);
 }
+
+void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities) {
+    struct DeltaHash {
+        std::size_t operator()(Delta const & d) const {
+            FastRationalHash hasher;
+            return (hasher(d.R()) ^ hasher(d.D()));
+        }
+    };
+
+    std::unordered_map<Delta, vec<PTRef>, DeltaHash> eqClasses;
+    for (PTRef var : vars) {
+        if (logic.isNumConst(var)) {
+            eqClasses[logic.getNumConst(var)].push(var);
+        } else {
+            assert(logic.isNumVar(var));
+            if (not laVarMapper.hasVar(var)) { // LASolver does not have any constraints on this LA var
+                continue;
+            }
+            LVRef v = laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+            auto value = simplex.getValuation(v);
+            eqClasses[value].push(var);
+        }
+    }
+
+    for (auto const & entry : eqClasses) {
+        auto const & equivalentVars = entry.second;
+        for (int i = 0; i < equivalentVars.size(); ++i) {
+            for (int j = i + 1; j < equivalentVars.size(); ++j) {
+                PTRef eq = logic.mkEq(equivalentVars[i], equivalentVars[j]);
+                if (propagatedEqualities.count(eq) == 0) {
+                    equalities.push(eq);
+                    propagatedEqualities.insert(eq);
+                }
+            }
+        }
+    }
+}

@@ -38,7 +38,8 @@ class UFLATHandler : public TSolverHandler
     ArithLogic      &logic;
     LASolver      *lasolver;
     Egraph        *ufsolver;
-    vec<PTRef>      interfaceVars;
+    vec<PTRef> interfaceVars;
+    vec<PTRef> equalitiesToPropagate;
   public:
     UFLATHandler(SMTConfig & c, ArithLogic & l);
     ~UFLATHandler() override = default;
@@ -48,6 +49,10 @@ class UFLATHandler : public TSolverHandler
     PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
 
     lbool getPolaritySuggestion(PTRef pt) const override;
+
+//    void declareAtom(PTRef atom) override;
+
+    TRes check(bool complete) override;
 
     void setInterfaceVars(vec<PTRef> && vars) { vars.moveTo(interfaceVars); }
 };
