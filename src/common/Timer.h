@@ -90,10 +90,7 @@ public:
         out.systime = systime - subst.systime;
         return out;
     }
-    void operator= (const OSMTTimeVal& from) {
-        usrtime = from.usrtime;
-        systime = from.systime;
-    }
+
     OSMTTimeVal& operator+= (const OSMTTimeVal& from) {
         usrtime += from.usrtime;
         systime += from.systime;
