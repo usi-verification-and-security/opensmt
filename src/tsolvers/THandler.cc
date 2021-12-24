@@ -111,9 +111,10 @@ std::vector<vec<Lit>> THandler::getNewSplits() {
         for (int i = 0; i < logic.getPterm(clause).size(); i++) {
             PTRef litTerm = logic.getPterm(clause)[i];
             Lit l = tmap.getOrCreateLit(litTerm);
-            assert(getLogic().isAtom(litTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
-            declareAtom(litTerm);
-            informNewSplit(litTerm);
+            PTRef atomTerm = logic.isNot(litTerm) ? logic.getPterm(litTerm)[0] : litTerm;
+            assert(getLogic().isAtom(atomTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
+            declareAtom(atomTerm);
+            informNewSplit(atomTerm);
             splitClauses.back().push(l);
         }
     }

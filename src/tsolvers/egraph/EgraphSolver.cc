@@ -1611,7 +1611,7 @@ void Egraph::reanalyze(ERef eref) {
 void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities) {
     MapWithKeys<ERef, PTRef, ERefHash> enodes;
     for (PTRef var : vars) {
-        assert(logic.isVar(var));
+        assert(logic.isVar(var) or logic.isConstant(var));
         assert(enode_store.has(var));
         ERef eref = termToERef(var);
         assert(not enodes.has(eref));
