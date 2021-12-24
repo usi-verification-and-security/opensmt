@@ -254,7 +254,16 @@ void Egraph::declareTerm(PTRef tr) {
     }
 
     for (auto [term, eref] : PTRefERefPairVec) {
-        updateUseVectors(term); (void)eref;
+        if (logic.getPterm(term).size() > 0) { // MB: No need to insert signatures of terms who cannot be parents
+            if (backtrack_points.size() > 0) {
+                undo_stack_main.push(Undo(REANALYZE, eref));
+            }
+            ensureUseVectorFor(eref);
+            if (not enode_store.containsSig(eref)) { // Check needed to allow dynamic addition of new terms
+                enode_store.insertSig(eref);
+                addToUseVectors(eref);
+            }
+        }
     }
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr) and PTRefERefPairVec.size() == 2) {
@@ -682,6 +691,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // (might be empty, though, if boolean backtracking happens)
     explanation.clear();
     has_explanation = false;
+    vec<ERef> toReanalyze;
 
     //
     // Restore state at previous backtrack point
@@ -726,11 +736,24 @@ void Egraph::backtrackToStackSize ( size_t size ) {
                 clearPolarity(u.arg.ptr);
                 break;
             }
+            case REANALYZE: {
+                ERef term = u.arg.er;
+                assert(enode_store.lookupSig(term) != ERef_Undef);
+                if (enode_store.lookupSig(term) == term) {
+                    enode_store.removeSig(term);
+                    removeFromUseVectors(term);
+                }
+                toReanalyze.push(term);
+                break;
+            }
             default: {
                 opensmt_error("unknown action");
                 break;
             }
         }
+    }
+    for (ERef eref : toReanalyze) {
+        reanalyze(eref);
     }
 }
 
@@ -1485,13 +1508,11 @@ uint32_t UseVector::getFreeSlotIndex() {
     return ret;
 }
 
-void Egraph::updateUseVectors(PTRef term) {
-    ERef eref = termToERef(term);
+void Egraph::ensureUseVectorFor(ERef eref) {
     auto cid = getEnode(eref).getCid();
     while (cid >= parents.size()) {
         parents.emplace_back();
     }
-    addToUseVectors(eref);
 }
 
 /**
@@ -1574,4 +1595,15 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
 void Egraph::printStatistics(std::ostream & os) {
     TSolver::printStatistics(os);
     egraphStats.printStatistics(os);
+}
+
+void Egraph::reanalyze(ERef eref) {
+    // FIXME: This will probably never be false, we need to find a different condition
+    if (backtrack_points.size() > 0) {
+        undo_stack_main.push(Undo(REANALYZE, eref));
+    }
+    if (not enode_store.containsSig(eref)) {
+        enode_store.insertSig(eref);
+        addToUseVectors(eref);
+    }
 }

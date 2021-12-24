@@ -168,7 +168,7 @@ private:
     std::vector<UseVector> parents;
 
     void addToUseVectors(ERef);
-    void updateUseVectors(PTRef);
+    void ensureUseVectorFor(ERef);
 
     void removeFromUseVectorsExcept(ERef parent, CgId cgid);
     void removeFromUseVectors(ERef parent);
@@ -293,7 +293,7 @@ private:
     , DISEQ           // A negated equality is asserted
     , DIST            // A distinction is asserted
     , EXPL            // Explanation added
-    , SET_DYNAMIC     // Dynamic info was set
+    , REANALYZE       // A term added after init need to be reanalyzed
     , SET_POLARITY    // A polarity of a PTRef was set
     , UNDEF_OP        // A dummy value for default constructor
     #if MORE_DEDUCTIONS
@@ -360,6 +360,8 @@ private:
 
     vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
+
+    void reanalyze(ERef);
 
     void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
     void explainConstants(ERef, ERef);
