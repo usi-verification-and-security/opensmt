@@ -40,9 +40,11 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef
         std::string formalArgPrefix(Model::getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix));
 
         for (PTRef v : vals) {
-            std::stringstream ss;
-            ss << formalArgPrefix << uniqueNum++;
-            formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
+            std::string name;
+            do {
+                name = formalArgPrefix + std::to_string(uniqueNum++);
+            } while (logic.hasSym(name.c_str()));
+            formalArgs.push(logic.mkVar(logic.getSortRef(v), name.c_str()));
         }
         FunctionSignature templateSig(logic.protectName(logic.getSymName(sr)), std::move(formalArgs), logic.getSortRef(sr));
         definitions.insert({sr,opensmt::pair<FunctionSignature,ValuationNode*>{std::move(templateSig), nullptr}});
