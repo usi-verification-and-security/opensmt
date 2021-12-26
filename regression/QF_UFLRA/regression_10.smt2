@@ -1,0 +1,7 @@
+(set-logic QF_UFLRA)
+(declare-const x Bool)
+(declare-fun D () Real)
+(declare-fun A () Real)
+(declare-fun s (Real) Real)
+(assert (or x (and (= D A) (and (distinct D A) (= 0.0 (s 0.0))))))
+(check-sat)
