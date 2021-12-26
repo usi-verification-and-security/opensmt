@@ -1591,7 +1591,6 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
         }
     }
 }
-
 void Egraph::printStatistics(std::ostream & os) {
     TSolver::printStatistics(os);
     egraphStats.printStatistics(os);
@@ -1612,7 +1611,7 @@ void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equaliti
     MapWithKeys<ERef, PTRef, ERefHash> enodes;
     for (PTRef var : vars) {
         assert(logic.isVar(var) or logic.isConstant(var));
-        assert(enode_store.has(var));
+        if (not enode_store.has(var)) { continue; }
         ERef eref = termToERef(var);
         assert(not enodes.has(eref));
         enodes.insert(eref, var);
