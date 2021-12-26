@@ -1,0 +1,8 @@
+(set-logic QF_UFLRA)
+(declare-const x Bool)
+(declare-fun x1 () Real)
+(declare-fun x2 () Real)
+(declare-fun f (Real) Real)
+(declare-fun P () Bool)
+(assert (let ((?v_75 (= (f 1.0) (f 1.0)))) (and (< x1 1) (or x P) (= (f x2) (f 0.0)) (or (= 0.0 x2) (= x1 (f 1.0))))))
+(check-sat)
