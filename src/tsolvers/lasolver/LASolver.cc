@@ -1022,4 +1022,40 @@ void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equali
             }
         }
     }
+
+    // Hack to ensure that when model is computed, delta is not picked so that it merges some of the equivalence
+    // classes that are different at this point
+    if (equalities.size() == 0 and not eqClasses.empty()) {
+        std::vector<Delta> valuesWithDelta;
+        for (auto const & entry : eqClasses) {
+            if (entry.first.hasDelta()) {
+                valuesWithDelta.push_back(entry.first);
+            }
+        }
+        if (valuesWithDelta.empty()) { return; }
+        for (auto const & val : valuesWithDelta) {
+            for (auto const & entry : eqClasses) {
+                // check if entry.first - val could be 0 for some value of delta, with 0 < delta <= 1
+                auto diff = entry.first - val;
+                if (not diff.hasDelta()) { continue; } // MB: This takes care also of the case where val == entry.first
+                if (isNonNegative(diff.R()) and isPositive(diff.D())) { continue; }
+                if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
+                // They could be equal for the right value of delta, add equalities for cross-product
+                vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);
+                vec<PTRef> const & varsOfSecondVal = entry.second;
+
+                for (PTRef var1 : varsOfFirstVal) {
+                    for (PTRef var2 : varsOfSecondVal) {
+                        PTRef eq = logic.mkEq(var1, var2);
+                        if (propagatedEqualities.count(eq) == 0) {
+                            equalities.push(eq);
+                            propagatedEqualities.insert(eq);
+                            // MB: It should be OK to decide one such equality, we do not have to add whole cross-product at once
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
