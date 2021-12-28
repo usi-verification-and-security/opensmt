@@ -23,10 +23,10 @@ protected:
     Real bigmax = rmax*rmax*rmax;
 
 public:
-    void SetUp(const ::benchmark::State& state) {
+    void SetUp(const ::benchmark::State&) {
     }
 
-    void TearDown(const ::benchmark::State& state) {
+    void TearDown(const ::benchmark::State&) {
     }
 };
 
