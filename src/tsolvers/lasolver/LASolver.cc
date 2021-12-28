@@ -860,7 +860,7 @@ void LASolver::printStatistics(std::ostream & out) {
     laSolverStats.printStatistics(out);
 }
 
-void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities) {
+void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
             FastRationalHash hasher;
@@ -888,9 +888,8 @@ void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equali
         for (int i = 0; i < equivalentVars.size(); ++i) {
             for (int j = i + 1; j < equivalentVars.size(); ++j) {
                 PTRef eq = logic.mkEq(equivalentVars[i], equivalentVars[j]);
-                if (propagatedEqualities.count(eq) == 0) {
+                if (knownEqualities.count(eq) == 0) {
                     equalities.push(eq);
-                    propagatedEqualities.insert(eq);
                 }
             }
         }
@@ -920,9 +919,8 @@ void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equali
                 for (PTRef var1 : varsOfFirstVal) {
                     for (PTRef var2 : varsOfSecondVal) {
                         PTRef eq = logic.mkEq(var1, var2);
-                        if (propagatedEqualities.count(eq) == 0) {
+                        if (knownEqualities.count(eq) == 0) {
                             equalities.push(eq);
-                            propagatedEqualities.insert(eq);
                             // MB: It should be OK to decide one such equality, we do not have to add whole cross-product at once
                             return;
                         }

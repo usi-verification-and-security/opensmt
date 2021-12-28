@@ -35,8 +35,8 @@ TRes UFLATHandler::check(bool full) {
     auto res = TSolverHandler::check(full);
     if (full and res == TRes::SAT) {
         equalitiesToPropagate.clear();
-        ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate);
-        lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate);
+        ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
+        lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
     }
     return res;
 }

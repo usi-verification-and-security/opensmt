@@ -1,0 +1,8 @@
+(set-logic QF_UFLRA)
+(declare-const x7 Bool)
+(declare-fun f (Real) Real)
+(declare-fun g (Real Real) Real)
+(declare-fun x2 () Real)
+(declare-fun x () Real)
+(assert (and (= 0 (f x2)) (= 1 (f 1.0)) (or x7 (< 0 (g 1 0.0))) (or (= x2 0) (= x (g 0.0 0.0))) (= (f 1.0) (f 0.0)) (or x7 (= (g 1.0 0.0) (- (f 1.0)))) (or x7 (= 0 x))))
+(check-sat)
