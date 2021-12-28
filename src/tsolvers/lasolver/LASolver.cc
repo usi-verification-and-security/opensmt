@@ -1039,6 +1039,10 @@ void LASolver::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equali
                 if (not diff.hasDelta()) { continue; } // MB: This takes care also of the case where val == entry.first
                 if (isNonNegative(diff.R()) and isPositive(diff.D())) { continue; }
                 if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
+                auto ratio = diff.R() / diff.D();
+                assert(isNegative(ratio));
+                if (ratio < FastRational(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+
                 // They could be equal for the right value of delta, add equalities for cross-product
                 vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);
                 vec<PTRef> const & varsOfSecondVal = entry.second;
