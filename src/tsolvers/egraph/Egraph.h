@@ -275,7 +275,7 @@ public:
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
-    void       collectEqualitiesFor    (vec<PTRef> const & vars, vec<PTRef> & equalities) override;
+    void       collectEqualitiesFor    (vec<PTRef> const & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
     void       printStatistics         (std::ostream &) override;
 

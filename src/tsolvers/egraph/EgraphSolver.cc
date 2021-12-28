@@ -1608,7 +1608,7 @@ void Egraph::reanalyze(ERef eref) {
     }
 }
 
-void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities) {
+void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     MapWithKeys<ERef, PTRef, ERefHash> enodes;
     for (PTRef var : vars) {
         assert(logic.isVar(var) or logic.isConstant(var));
@@ -1636,6 +1636,9 @@ void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equaliti
             for (int j = i + 1; j < equivalentVars.size(); ++j) {
                 PTRef eq = logic.mkEq(ERefToTerm(equivalentVars[i]), ERefToTerm(equivalentVars[j]));
                 if (not enode_store.has(eq)) {
+                    if (knownEqualities.find(eq) != knownEqualities.end()) {
+                        throw OsmtInternalException("Internal error in computing interface equalities in Egraph");
+                    }
                     equalities.push(eq);
                 }
             }
