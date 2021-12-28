@@ -118,7 +118,7 @@ class BVLogic: public CUFLogic
 
     SRef declareSort_BVNUM(char** msg);
     SRef getSort_BVNUM() const { return sort_BVNUM; }
-    const int getBVNUMConst(PTRef tr) const;
+    int getBVNUMConst(PTRef tr) const;
 
 
     bool isBVPlus(SymRef sr)   const { return sr == sym_BV_PLUS; }

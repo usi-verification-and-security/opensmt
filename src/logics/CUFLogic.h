@@ -127,7 +127,7 @@ class CUFLogic: public Logic
 
     SRef declareSort_CUFNUM(char** msg);
     SRef getSort_CUFNUM() const { return sort_CUFNUM; }
-    const int getCUFNUMConst(PTRef tr) const;
+    int getCUFNUMConst(PTRef tr) const;
 
 
     bool isCUFPlus(SymRef sr)   const { return sr == sym_CUF_PLUS; }

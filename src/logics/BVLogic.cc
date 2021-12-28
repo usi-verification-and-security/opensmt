@@ -391,7 +391,7 @@ PTRef BVLogic::mkBVNeq(const PTRef a1, const PTRef a2)
     return mkBVNot(mkBVEq(args));
 }
 
-const int BVLogic::getBVNUMConst(PTRef tr) const
+int BVLogic::getBVNUMConst(PTRef tr) const
 {
     return atoi(getSymName(tr));
 }

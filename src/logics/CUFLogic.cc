@@ -357,7 +357,7 @@ PTRef CUFLogic::mkCUFNeq(const PTRef a1, const PTRef a2)
     return Logic::mkNot(Logic::mkEq(a1, a2));
 }
 
-const int CUFLogic::getCUFNUMConst(PTRef tr) const
+int CUFLogic::getCUFNUMConst(PTRef tr) const
 {
     return atoi(getSymName(tr));
 }

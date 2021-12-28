@@ -156,7 +156,7 @@ class Logic {
     virtual PTRef conjoinExtras(PTRef root);
 
     virtual std::string const getName() const { return opensmt::QFLogicToProperties.at(logicType).name; }
-    const opensmt::Logic_t getLogic() const { return logicType; }
+    opensmt::Logic_t getLogic() const { return logicType; }
 
     bool hasUFs() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasUF; }
     bool hasIntegers() const { return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasInts; }
