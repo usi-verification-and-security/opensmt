@@ -20,8 +20,7 @@ namespace {
 }
 
 void Tableau::nonbasicVar(LVRef v) {
-    if(isNonBasic(v)) {return;}
-    assert(!isProcessed(v));
+    if (isProcessed(v)) { return; }
     newNonbasicVar(v);
 }
 
@@ -38,6 +37,7 @@ void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
     ensureTableauReadyFor(v);
     addRow(v, std::move(poly));
     varTypes[getVarId(v)] = VarType::QUASIBASIC;
+    normalizeRow(v);
 
 }
 

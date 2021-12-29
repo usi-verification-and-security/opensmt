@@ -64,8 +64,11 @@ private:
     vec<PtAsgn>          LABoundRefToLeqAsgn;
     PtAsgn getAsgnByBound(LABoundRef br) const;
     vec<LABoundRefPair>  LeqToLABoundRefPair;
-    LABoundRefPair getBoundRefPair(const PTRef leq) const
-        { return LeqToLABoundRefPair[Idx(logic.getPterm(leq).getId())]; }
+    LABoundRefPair getBoundRefPair(const PTRef leq) const {
+        auto index = Idx(logic.getPterm(leq).getId());
+        assert(index < LeqToLABoundRefPair.size_());
+        return LeqToLABoundRefPair[index];
+    }
 
     // Possible internal states of the solver
     typedef enum
@@ -95,7 +98,6 @@ public:
 
     void getNewSplits(vec<PTRef>& splits) override;
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom
-    void  informNewSplit     (PTRef tr) override;                // Update bounds for the split variable
     TRes  check              (bool) override;                    // Checks the satisfiability of current constraints
     bool  check_simplex      (bool);
     bool  assertLit          ( PtAsgn ) override;                // Push the constraint into Solver

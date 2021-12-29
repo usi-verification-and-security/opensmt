@@ -98,6 +98,7 @@ public:
     vec<LABoundRef> & getBounds(LVRef v) { return bounds.at(getVarId(v)); }
     LABoundRef getBoundByIdx(LVRef v, int it) const;
     bool isUnbounded(LVRef v) const;
+    void ensureReadyFor(LVRef v);
 
     // Debug
     char* printBound(LABoundRef br) const; // Print the bound br
@@ -106,6 +107,7 @@ public:
 
     // Allocates lower and upper bound for LA var with the given values
     BoundInfo allocBoundPair(LVRef v, BoundValuePair boundPair) {
+        ensureReadyFor(v);
         LABoundRef ub = ba.alloc(bound_u, v, std::move(boundPair.upper));
         LABoundRef lb = ba.alloc(bound_l, v, std::move(boundPair.lower));
         in_bounds.push(BoundInfo{v, ub, lb});

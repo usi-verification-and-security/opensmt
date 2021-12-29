@@ -337,19 +337,15 @@ void LASolver::declareAtom(PTRef leq_tr)
         // Treat the PTRef as it is pushed on-the-fly
         //    status = INCREMENT;
         assert( status == SAT );
+        PTRef term = logic.getPterm(leq_tr)[1];
+        LVRef v = exprToLVar(term);
+        laVarMapper.addLeqVar(leq_tr, v);
+        updateBound(leq_tr);
     }
     // DEBUG check
     isProperLeq(leq_tr);
 
     setKnown(leq_tr);
-}
-
-void LASolver::informNewSplit(PTRef tr)
-{
-    PTRef term = logic.getPterm(tr)[1];
-    LVRef v = exprToLVar(term);
-    laVarMapper.addLeqVar(tr, v);
-    updateBound(tr);
 }
 
 TRes LASolver::checkIntegersAndSplit() {
