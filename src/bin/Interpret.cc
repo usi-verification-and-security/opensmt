@@ -689,12 +689,12 @@ public:
 
     std::vector<TemplateFunction> getSafeTemplates(Model const & model) {
         std::vector<TemplateFunction> res;
+        unsigned num = 0;
         for (SymRef symRef : functionsToCheck) {
             auto const & modelTemplate = model.getDefinition(symRef);
             if (hasClash(modelTemplate)) {
                 auto const & oldArgs = modelTemplate.getArgs();
                 vec<PTRef> newArgs; newArgs.capacity(oldArgs.size());
-                unsigned num = 0;
                 Logic::SubstMap substMap;
                 for (PTRef oldArg : oldArgs) {
                     std::string name;
