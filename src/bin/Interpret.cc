@@ -700,7 +700,7 @@ public:
                     std::string name;
                     PTRef var = PTRef_Undef;
                     do {
-                        name = "x!" + std::to_string(num++);
+                        name = getSafePrefix(symRef) + std::to_string(num++);
                         var = logic.mkVar(logic.getSortRef(oldArg), name.c_str());
                     } while (forbiddenVars.find(var) != forbiddenVars.end());
                     newArgs.push(var);
@@ -728,6 +728,9 @@ private:
         });
     }
 
+    std::string getSafePrefix(SymRef symref) {
+        return logic.getSymName(symref)[0] == 'x' ? "y!" : "x!";
+    }
 };
 }
 
