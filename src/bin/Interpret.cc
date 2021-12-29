@@ -737,8 +737,7 @@ void Interpret::getModel() {
     NameClashResolver resolver(*logic);
     std::stringstream ss;
     ss << "(\n";
-    for (int i = 0; i < user_declarations.size(); ++i) {
-        SymRef symref = user_declarations[i];
+    for (SymRef symref : user_declarations) {
         const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
@@ -752,7 +751,7 @@ void Interpret::getModel() {
         else {
             // function
             resolver.addFunction(symref);
-        };
+        }
     }
     for (auto const & safeTempl : resolver.getSafeTemplates(*model)) {
         ss << printDefinitionSmtlib(safeTempl);
