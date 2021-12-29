@@ -1,0 +1,5 @@
+(set-logic QF_UFLRA)
+(declare-fun x0 () Real)
+(declare-fun f (Real Real) Real)
+(assert (distinct 0.0 (f 1.0 0.0)))
+(check-sat)

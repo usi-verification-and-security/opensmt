@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "ArithLogic.h"
 #include "LogicFactory.h"
+#include "Substitutor.h"
 
 #include <string>
 #include <sstream>
@@ -668,9 +669,72 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
     printf(")\n");
 }
 
+namespace {
+/*
+ * This is a helper class to work around the limitation of ModelValidator
+ * which does not like formal parameter with the same name as a variable already defined in the model previously.
+ */
+class NameClashResolver {
+public:
+    NameClashResolver(Logic & logic) : logic(logic) {}
+
+    void addForbiddenVar(PTRef var) {
+        assert(logic.isVar(var));
+        forbiddenVars.insert(var);
+    }
+
+    void addFunction(SymRef sym) {
+        functionsToCheck.insert(sym);
+    }
+
+    std::vector<TemplateFunction> getSafeTemplates(Model const & model) {
+        std::vector<TemplateFunction> res;
+        for (SymRef symRef : functionsToCheck) {
+            auto const & modelTemplate = model.getDefinition(symRef);
+            if (hasClash(modelTemplate)) {
+                auto const & oldArgs = modelTemplate.getArgs();
+                vec<PTRef> newArgs; newArgs.capacity(oldArgs.size());
+                unsigned num = 0;
+                Logic::SubstMap substMap;
+                for (PTRef oldArg : oldArgs) {
+                    std::string name;
+                    PTRef var = PTRef_Undef;
+                    do {
+                        name = "x!" + std::to_string(num++);
+                        var = logic.mkVar(logic.getSortRef(oldArg), name.c_str());
+                    } while (forbiddenVars.find(var) != forbiddenVars.end());
+                    newArgs.push(var);
+                    substMap.insert(oldArg, var);
+                }
+                FunctionSignature templateSig(logic.protectName(logic.getSymName(symRef)), std::move(newArgs), logic.getSortRef(symRef));
+                PTRef newBody = Substitutor(logic, substMap).rewrite(modelTemplate.getBody());
+                res.emplace_back(std::move(templateSig), newBody);
+
+            } else {
+                res.push_back(modelTemplate);
+            }
+        }
+        return res;
+    }
+private:
+    Logic & logic;
+    std::unordered_set<PTRef, PTRefHash> forbiddenVars;
+    std::unordered_set<SymRef, SymRefHash> functionsToCheck;
+
+    bool hasClash(TemplateFunction const & templateFunction) {
+        auto const & args = templateFunction.getArgs();
+        return std::any_of(args.begin(), args.end(), [this](PTRef arg) {
+            return forbiddenVars.find(arg) != forbiddenVars.end();
+        });
+    }
+
+};
+}
+
 void Interpret::getModel() {
 
     auto model = main_solver->getModel();
+    NameClashResolver resolver(*logic);
     std::stringstream ss;
     ss << "(\n";
     for (int i = 0; i < user_declarations.size(); ++i) {
@@ -681,14 +745,17 @@ void Interpret::getModel() {
             const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
+            resolver.addForbiddenVar(term);
             PTRef val = model->evaluate(term);
             ss << printDefinitionSmtlib(term, val);
         }
         else {
             // function
-            const TemplateFunction & templ = model->getDefinition(symref);
-            ss << printDefinitionSmtlib(templ);
+            resolver.addFunction(symref);
         };
+    }
+    for (auto const & safeTempl : resolver.getSafeTemplates(*model)) {
+        ss << printDefinitionSmtlib(safeTempl);
     }
     ss << ')';
     std::cout << ss.str() << std::endl;
