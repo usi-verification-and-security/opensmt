@@ -219,3 +219,11 @@ target_sources(SortsTest
 
 target_link_libraries(SortsTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SortsTest)
+
+add_executable(LASolverIncrementalityTest)
+target_sources(LASolverIncrementalityTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LASolverIncrementality.cc"
+        )
+
+target_link_libraries(LASolverIncrementalityTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET LASolverIncrementalityTest)
