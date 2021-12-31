@@ -1,6 +1,8 @@
-//
-// Created by Martin Blicha on 2018-12-31.
-//
+/*
+ * Copyright (c) 2018-2021, Martin Blicha <martin.blicha@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <gtest/gtest.h>
 #include "Egraph.h"
@@ -98,4 +100,42 @@ TEST_F(EgraphTest, test_booleans) {
         }
         ASSERT_TRUE(pta_found);
     }
+}
+
+TEST_F(EgraphTest, test_IncrementalAddition) {
+    SRef sref = logic.declareUninterpretedSort("U");
+    PTRef x = logic.mkVar(sref, "x");
+    PTRef y = logic.mkVar(sref, "y");
+    PTRef z = logic.mkVar(sref, "z");
+    SymRef f = logic.declareFun("f", sref, {sref});
+    PTRef fx = logic.mkUninterpFun(f, {x});
+    PTRef fy = logic.mkUninterpFun(f, {y});
+
+    PTRef eq1 = logic.mkEq(fx,fy);
+
+    egraph.declareAtom(eq1);
+    egraph.pushBacktrackPoint();
+    ASSERT_TRUE(egraph.assertLit({eq1, l_False}));
+    ASSERT_EQ(egraph.check(true), TRes::SAT);
+
+    PTRef eq2 = logic.mkEq(x,z);
+    egraph.declareAtom(eq2);
+    egraph.pushBacktrackPoint();
+    ASSERT_TRUE(egraph.assertLit({eq2, l_True}));
+    ASSERT_EQ(egraph.check(true), TRes::SAT);
+
+    PTRef eq3 = logic.mkEq(y,z);
+    egraph.declareAtom(eq3);
+    egraph.pushBacktrackPoint();
+    ASSERT_FALSE(egraph.assertLit({eq3, l_True}));
+
+    egraph.popBacktrackPoint();
+    egraph.popBacktrackPoint();
+
+    egraph.pushBacktrackPoint();
+    ASSERT_TRUE(egraph.assertLit({eq2, l_False}));
+
+    egraph.pushBacktrackPoint();
+    ASSERT_TRUE(egraph.assertLit({eq3, l_True}));
+    ASSERT_EQ(egraph.check(true), TRes::SAT);
 }

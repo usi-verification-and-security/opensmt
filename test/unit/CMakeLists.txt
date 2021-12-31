@@ -33,7 +33,7 @@ gtest_add_tests(TARGET TheorySimplificationsTest)
 
 add_executable(EGraphTest)
 target_sources(EGraphTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Egraph.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Egraph.cc"
     )
 
 target_link_libraries(EGraphTest OpenSMT gtest gtest_main)
