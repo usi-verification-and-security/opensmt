@@ -371,7 +371,7 @@ void CoreSMTSolver::attachClause(CRef cr)
         next_s.insert(var(~c[0]));
         next_s.insert(var(~c[1]));
         counter++;
-        printf("Counter: %d\n", counter);
+//        printf("Counter: %d\n", counter);
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -1183,7 +1183,7 @@ CRef CoreSMTSolver::propagate()
 
     while (qhead < trail.size())
     {
-//        props++;
+        props++;
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
@@ -1261,8 +1261,8 @@ CRef CoreSMTSolver::propagate()
 
             *j++ = w;
             if(value(c[1]) == l_False){
-//                next_s.erase(var(~c[0]));
-//                next_s.erase(var(~c[1]));
+                next_s.erase(var(~c[0]));
+                next_s.erase(var(~c[1]));
                 if (value(first) == l_False) // clause is falsified
                 {
                     confl = cr;
@@ -1296,8 +1296,8 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-                next_s.insert(var(~c[0]));
-                next_s.insert(var(~c[1]));
+//                next_s.insert(var(~c[0]));
+//                next_s.insert(var(~c[1]));
             }
 NextClause:
             ;
