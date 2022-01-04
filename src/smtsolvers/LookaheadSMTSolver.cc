@@ -180,7 +180,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
             uncheckedEnqueue(path[i]);
             lbool res = laPropagateWrapper();
 //            printf("Amount of literals close to propagation: %lu\n", next_s.size());
-//            printf("Number of overall props: %d\n", props);
+            printf("Number of overall props: %d\n", props);
             // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
             if (res == l_False) {
                 return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
@@ -338,13 +338,13 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    set<Var> latest = next_s;
     int counter = 0;
+    tested = true;
     if(!next_s.empty()) {
-        auto it = latest.begin();
+        auto it = next_s.begin();
         Var v = *it;
-        while (it != latest.end()) {
-//            props++;
+        while (it != next_s.end()) {
+            props++;
             counter++;
             v = *it;
             it++;
@@ -475,6 +475,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
             }
         }
     } else {
+//        printf("Unexpectted\n");
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
         if (!decision[v]) {
@@ -600,7 +601,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
         }
     }
     }
-    next_s = latest;
+    tested = false;
     best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
     {

@@ -669,7 +669,7 @@ protected:
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
-
+    bool tested;
     //
     // Proof production
     //
