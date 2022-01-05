@@ -468,6 +468,8 @@ protected:
     vec<bool>           var_seen;
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+    bool*               next_arr;
+    vec<Var>            next_init;
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
@@ -669,7 +671,7 @@ protected:
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
-    bool tested;
+    bool tested = true;
     //
     // Proof production
     //

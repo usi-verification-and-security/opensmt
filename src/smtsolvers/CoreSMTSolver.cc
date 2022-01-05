@@ -366,10 +366,12 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-        next_initial.insert(var(~c[0]));
-        next_initial.insert(var(~c[1]));
-        next_s.insert(var(~c[0]));
-        next_s.insert(var(~c[1]));
+//        next_initial.insert(var(~c[0]));
+//        next_initial.insert(var(~c[1]));
+        next_init.push(var(~c[0]));
+        next_init.push(var(~c[1]));
+//        next_s.insert(var(~c[0]));
+//        next_s.insert(var(~c[1]));
 //        counter++;
 //        printf("Counter: %d\n", counter);
     }
@@ -1262,8 +1264,11 @@ CRef CoreSMTSolver::propagate()
             *j++ = w;
             if(value(c[1]) == l_False){
                 if(!tested){
-                    next_s.erase(var(~c[0]));
-                    next_s.erase(var(~c[1]));
+//                    next_s.erase(var(~c[0]));
+//                    next_s.erase(var(~c[1]));
+
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
                 }
                 if (value(first) == l_False) // clause is falsified
                 {
@@ -1298,8 +1303,10 @@ CRef CoreSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False && !tested) {
-                next_s.insert(var(~c[0]));
-                next_s.insert(var(~c[1]));
+//                next_s.insert(var(~c[0]));
+//                next_s.insert(var(~c[1]));
+                next_arr[var(~c[0])] = true;
+                next_arr[var(~c[1])] = true;
             }
 NextClause:
             ;
@@ -1937,6 +1944,7 @@ lbool CoreSMTSolver::solve_()
     }
     this->clausesUpdate();
 
+    next_arr = new bool[nVars()]();
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
