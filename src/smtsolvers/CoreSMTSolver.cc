@@ -366,14 +366,8 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-//        next_initial.insert(var(~c[0]));
-//        next_initial.insert(var(~c[1]));
         next_init.push(var(~c[0]));
         next_init.push(var(~c[1]));
-//        next_s.insert(var(~c[0]));
-//        next_s.insert(var(~c[1]));
-//        counter++;
-//        printf("Counter: %d\n", counter);
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -390,10 +384,6 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
         remove(watches[~c[1]], Watcher(cr, c[0]));
         if(c.size() > 2 )
             remove(watches[~c[2]], Watcher(cr, c[0]));
-        else {
-            next_s.erase(var(~c[0]));
-            next_s.erase(var(~c[1]));
-        }
     }
     else
     {
@@ -1264,9 +1254,6 @@ CRef CoreSMTSolver::propagate()
             *j++ = w;
             if(value(c[1]) == l_False){
                 if(!tested){
-//                    next_s.erase(var(~c[0]));
-//                    next_s.erase(var(~c[1]));
-
                     next_arr[var(~c[0])] = false;
                     next_arr[var(~c[1])] = false;
                 }
@@ -1302,11 +1289,14 @@ CRef CoreSMTSolver::propagate()
                     }
                     uncheckedEnqueue(first, cr);
                 }
-            } else if (value(c[2]) == l_False && !tested) {
-//                next_s.insert(var(~c[0]));
-//                next_s.insert(var(~c[1]));
-                next_arr[var(~c[0])] = true;
-                next_arr[var(~c[1])] = true;
+            } else if (value(c[2]) == l_False) {
+                if(!tested){
+                    next_arr[var(~c[0])] = true;
+                    next_arr[var(~c[1])] = true;
+                } else {
+                    next_init.push(var(~c[0]));
+                    next_init.push(var(~c[1]));
+                }
             }
 NextClause:
             ;
