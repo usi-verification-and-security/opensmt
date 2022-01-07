@@ -355,8 +355,6 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     return true;
 }
 
-int counter = 0;
-
 void CoreSMTSolver::attachClause(CRef cr)
 {
     const Clause& c = ca[cr];
