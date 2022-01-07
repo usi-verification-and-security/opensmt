@@ -2,6 +2,7 @@
 #include "lasolver/LASolver.h"
 #include "TreeOps.h"
 #include "Egraph.h"
+#include "InterpolatingEgraph.h"
 
 UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
@@ -12,7 +13,8 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
     tsolvers[lra_id.id] = lasolver;
     solverSchedule.push(lra_id.id);
 
-    ufsolver = new Egraph(config, logic);
+    ufsolver = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic)
+                                          : new Egraph(config, logic);
 
     SolverId uf_id = ufsolver->getId();
     tsolvers[uf_id.id] = ufsolver;
@@ -20,9 +22,27 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
 
 }
 
-PTRef UFLATHandler::getInterpolant(const ipartitions_t&, map<PTRef, icolor_t> *, PartitionManager &)
+PTRef UFLATHandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> * labels, PartitionManager & pmanager)
 {
-    throw std::logic_error("Not implemented");
+    assert(lasolver->hasExplanation() or ufsolver->hasExplanation());
+    if (lasolver->hasExplanation()) {
+        if (logic.hasReals() and not logic.hasIntegers()) {
+            return lasolver->getRealInterpolant(mask, labels, pmanager);
+        } else if (logic.hasIntegers() and not logic.hasReals()) {
+            if (labels == nullptr) {
+                throw OsmtInternalException("LIA interpolation requires partitioning map, but no map was provided");
+            }
+            return lasolver->getIntegerInterpolant(*labels);
+        } else {
+            throw OsmtInternalException("Mixed arithmetic interpolation not supported yet");
+        }
+    }
+    if (ufsolver->hasExplanation()) {
+        InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(ufsolver);
+        assert(iegraph);
+        return iegraph->getInterpolant(mask, labels, pmanager);
+    }
+    throw OsmtInternalException("Unexpected situation in UFLATHandler::getInterpolant");
 }
 
 lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
