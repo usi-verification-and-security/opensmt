@@ -4,20 +4,27 @@
 #include "Substitutor.h"
 #include "ArithmeticEqualityRewriter.h"
 
-bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
+bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager & pmanager, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {
-        throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
+        vec<PTRef> & flas = currentFrame.formulas;
+        for (PTRef & fla : flas) {
+            PTRef old = fla;
+            fla = purify(fla);
+            fla = splitArithmeticEqualities(fla);
+            pmanager.transferPartitionMembership(old, fla);
+        }
+        currentFrame.root = getLogic().mkAnd(flas);
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
         auto subs_res = computeSubstitutions(coll_f);
         PTRef fla = flaFromSubstitutionResult(subs_res);
         PTRef purified = purify(fla);
         PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
-        this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
         currentFrame.root = noArithmeticEqualities;
     }
+    this->getTSolverHandler().setInterfaceVars(getInterfaceVars(currentFrame.root));
     return true;
 }
 
