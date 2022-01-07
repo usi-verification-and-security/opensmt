@@ -125,6 +125,22 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             if (logsProofForInterpolation()) {
                 // MB: the proof needs to know about the new clause
                 proof->newSplitClause(cr);
+                if (decisionLevel() == 0) { // TODO: Unify this with the patch in CoreSMTSolver::propagate
+                    proof->beginChain(cr);
+                    Clause const & c = ca[cr];
+                    for (unsigned k = 1; k < c.size(); k++)
+                    {
+                        assert(level(var(c[k])) == 0);
+                        assert(reason(var(c[k])) != CRef_Fake);
+                        assert(reason(var(c[k])) != CRef_Undef);
+                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                    }
+                    CRef unitClause = ca.alloc(vec<Lit>{implied});
+                    proof->endChain(unitClause);
+                    // Replace the reason for enqueing the literal with the unit clause.
+                    // Necessary for correct functioning of proof logging in analyze()
+                    cr = unitClause;
+                }
             }
             toPropagate = implied;
             propagationReason = cr;
