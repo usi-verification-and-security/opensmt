@@ -21,7 +21,11 @@ lbool LookaheadSMTSolver::solve_()
 {
     declareVarsToTheories();
     next_arr = new bool[nVars()]();
-
+    auto it = next_init.begin();
+    while(it!=next_init.end()){
+        next_arr[*it] = true;
+        it++;
+    }
     double nof_conflicts = restart_first;
 
     LALoopRes res = LALoopRes::unknown;
@@ -257,9 +261,6 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
     score->updateRound();
     vec<LANode*> queue;
     LANode *root = new LANode();
-    for(int i = 0; i<next_init.size(); i++){
-        next_arr[next_init[i]] = true;
-    }
     root->p  = root;
     queue.push(root);
 
@@ -343,7 +344,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     tested = true;
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
-            if(next_arr[v]) {
+            if(next_arr[v] || close_to_prop <= 0) {
                 props++;
                 if (!decision[v]) {
                     score->setChecked(v);

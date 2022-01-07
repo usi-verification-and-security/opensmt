@@ -467,7 +467,8 @@ protected:
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     bool*               next_arr;
-    vec<Var>            next_init;
+    set<Var>            next_init;
+    int                 close_to_prop = 0;
 protected:
 #ifdef PEDANTIC_DEBUG
 public:

@@ -364,8 +364,9 @@ void CoreSMTSolver::attachClause(CRef cr)
     if(c.size() > 2 )
         watches[~c[2]].push(Watcher(cr, c[0]));
     else{
-        next_init.push(var(~c[0]));
-        next_init.push(var(~c[1]));
+        next_init.insert(var(~c[0]));
+        next_init.insert(var(~c[1]));
+        close_to_prop = next_init.size();
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -1252,6 +1253,12 @@ CRef CoreSMTSolver::propagate()
             *j++ = w;
             if(value(c[1]) == l_False){
                 if(!tested){
+                    if(next_arr[var(~c[0])]){
+                        close_to_prop -= 1;
+                    }
+                    if(next_arr[var(~c[1])]){
+                        close_to_prop -= 1;
+                    }
                     next_arr[var(~c[0])] = false;
                     next_arr[var(~c[1])] = false;
                 }
@@ -1289,11 +1296,18 @@ CRef CoreSMTSolver::propagate()
                 }
             } else if (value(c[2]) == l_False) {
                 if(!tested){
+                    if(!next_arr[var(~c[0])]){
+                        close_to_prop += 1;
+                    }
+                    if(!next_arr[var(~c[1])]){
+                        close_to_prop += 1;
+                    }
                     next_arr[var(~c[0])] = true;
                     next_arr[var(~c[1])] = true;
                 } else {
-                    next_init.push(var(~c[0]));
-                    next_init.push(var(~c[1]));
+                    next_init.insert(var(~c[0]));
+                    next_init.insert(var(~c[1]));
+                    close_to_prop = next_init.size();
                 }
             }
 NextClause:
