@@ -340,7 +340,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    int counter = 0;
     tested = true;
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
