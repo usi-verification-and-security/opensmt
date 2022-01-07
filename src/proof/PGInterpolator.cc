@@ -547,9 +547,11 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             }
             else if (n->getType() == clause_type::CLA_SPLIT) {
                 auto const & clause = n->getClause();
-                assert(clause.size() == 2); // only binary splits at the moment
+                assert(clause.size() >= 2);
                 auto color = getVarColor(n, var(clause[0]));
-                assert(color == getVarColor(n, var(clause[1]))); // same theory variables in the atoms of the split => same color
+                assert(std::all_of(clause.begin() + 1, clause.end(), [&](Lit l) {
+                    return color == getVarColor(n, var(l));
+                })); // same theory variables in the atoms of the split => same color
                 assert(color == I_A || color == I_B || color == I_AB);
                 // If split on A-local (B-local) term, then return False (True). This is the same as in purely propoositional case.
                 // If split on AB-shared term, we can choose if we treat it as A-clause (resulting in False) or B-clause (resulting in True). We arbitrarily choose A now.
