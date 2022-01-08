@@ -79,7 +79,7 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     vec<LitLev> deds;
     deduceTheory(deds); // To remove possible theory deductions
     TPropRes res = TPropRes::Undef;
-    Lit toPropagate;
+    Lit toPropagate = lit_Undef;
     CRef propagationReason = CRef_Undef;
     for (auto & splitClause : splitClauses) {
         unsigned satisfied = 0;
@@ -106,7 +106,8 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             if (!this->logsProofForInterpolation()) {
                 if (decisionLevel() == 0) {
                     // MB: do not allocate, we can directly enqueue the implied literal
-                    toPropagate = splitClause[impliedIndex];
+                    uncheckedEnqueue(splitClause[impliedIndex], CRef_Undef);
+                    toPropagate = lit_Undef;
                     propagationReason = CRef_Undef;
                     res = TPropRes::Propagate;
                     continue;
@@ -148,8 +149,10 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     }
     assert(res != TPropRes::Undef);
     if (res == TPropRes::Propagate) {
-        uncheckedEnqueue(toPropagate, propagationReason);
         forced_split = lit_Undef;
+        if (toPropagate != lit_Undef) {
+            uncheckedEnqueue(toPropagate, propagationReason);
+        }
     }
     return res;
 }
