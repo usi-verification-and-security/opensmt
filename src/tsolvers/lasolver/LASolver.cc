@@ -346,61 +346,46 @@ void LASolver::declareAtom(PTRef leq_tr)
 
 TRes LASolver::checkIntegersAndSplit() {
 
-    bool nonint_models = false;  // Keep track whether non-integer models are seen
+    vec<LVRef> varsToFix;
+    varsToFix.capacity(int_vars.size());
 
     for (LVRef x : int_vars) {
-
-        if (!isModelInteger(x)) {
-            nonint_models = true;
-            //Prepare the variable to store a splitting value
-            opensmt::Real c;
-
-            // if val of int variable is not int, set it to integer by getting floor (c) and ceiling (c+1)
-            // if real part of int var is int, then delta must be non-zero
-            Delta x_val = simplex.getValuation(x);
-            if (!x_val.R().isInteger()) {
-                c = x_val.R().floor();
-            } else { //but if the value from LRA solver returned is integer(which is here subset of real), then we consider delta part
-                assert(x_val.D() != 0);
-                if (x_val.D() < 0) {
-                    c = x_val.R() - 1;
-                } else {
-                    c = x_val.R();
-                }
-            }
-
-            // Check if integer splitting is possible for the current variable
-            if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
-
-                explanation.push(getAsgnByBound(simplex.readLBoundRef(x)));
-                explanation.push(getAsgnByBound(simplex.readUBoundRef(x)));
-                //explanation = {model.readLBound(x).getPtAsgn(), model.readUBound(x).getPtAsgn()};
-                setStatus(UNSAT);
-                return TRes::UNSAT;
-            }
-
-            //constructing new constraint
-            //x <= c || x >= c+1;
-            PTRef varPTRef = getVarPTRef(x);
-            PTRef upperBound = logic.mkLeq(varPTRef, logic.mkIntConst(c));
-            PTRef lowerBound = logic.mkGeq(varPTRef, logic.mkIntConst(c + 1));
-            PTRef constr = logic.mkOr(upperBound, lowerBound);
-            //printf("LIA solver constraint %s\n", logic.pp(constr));
-
-            splitondemand.push(constr);
-            setStatus(NEWSPLIT);
-            return TRes::SAT;
+        if (not isModelInteger(x)) {
+            assert(not simplex.hasLBound(x) or not simplex.hasUBound(x) or simplex.Ub(x) - simplex.Lb(x) >= 1);
+            varsToFix.push(x);
         }
+    }
 
-    }
-    if (nonint_models) {// We could not block these, so we tell the solver that we don't know the satisfiability.
-        setStatus(UNKNOWN);
-        return TRes::UNKNOWN;
-    }
-    else {
+    if (varsToFix.size() == 0) {
         setStatus(SAT);
         return TRes::SAT;
     }
+
+    // Most-infeasible branching heuristic
+    opensmt::Real maxDistance = 0;
+    LVRef chosen = LVRef_Undef;
+
+    for (LVRef x : varsToFix) {
+        Delta val = simplex.getValuation(x);
+        assert(not val.hasDelta());
+        assert(not val.R().isInteger());
+        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
+        if (distance > maxDistance) {
+            maxDistance = std::move(distance);
+            chosen = x;
+        }
+    }
+    assert(chosen != LVRef_Undef);
+    auto splitLowerVal = simplex.getValuation(chosen).R().floor();
+    //x <= c || x >= c+1;
+    PTRef varPTRef = getVarPTRef(chosen);
+    PTRef upperBound = logic.mkLeq(varPTRef, logic.mkIntConst(splitLowerVal));
+    PTRef lowerBound = logic.mkGeq(varPTRef, logic.mkIntConst(splitLowerVal + 1));
+    PTRef constr = logic.mkOr(upperBound, lowerBound);
+
+    splitondemand.push(constr);
+    setStatus(NEWSPLIT);
+    return TRes::SAT;
 }
 
 void LASolver::getNewSplits(vec<PTRef>& splits) {
