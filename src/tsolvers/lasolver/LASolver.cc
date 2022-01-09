@@ -124,7 +124,6 @@ void LASolver::clearSolver()
     LABoundRefToLeqAsgn.clear();
     LeqToLABoundRefPair.clear();
 
-    cuts.clear();
     int_vars.clear();
     int_vars_map.clear();
     // TODO: clear statistics
@@ -223,9 +222,6 @@ void LASolver::markVarAsInt(LVRef v) {
     if (!int_vars_map.has(v)) {
         int_vars_map.insert(v, true);
         int_vars.push(v);
-    }
-    while (static_cast<unsigned>(cuts.size()) <= getVarId(v)) {
-        cuts.emplace_back(0);
     }
 }
 
@@ -372,12 +368,6 @@ TRes LASolver::checkIntegersAndSplit() {
                     c = x_val.R();
                 }
             }
-
-            // We might have this blocked already, and then the solver should essentially return "I don't know, please go ahead".
-            if (cuts[getVarId(x)].find(c) != cuts[getVarId(x)].end()) {
-                continue;
-            }
-            cuts[getVarId(x)][c] = true;
 
             // Check if integer splitting is possible for the current variable
             if (simplex.hasLBound(x) && simplex.hasUBound(x) && c < simplex.Lb(x) && c + 1 > simplex.Ub(x)) { //then splitting not possible, and we create explanation
