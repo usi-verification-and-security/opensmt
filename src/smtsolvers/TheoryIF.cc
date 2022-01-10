@@ -28,6 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CoreSMTSolver.h"
 #include "Proof.h"
 
+#include <algorithm>
+#include <numeric>
+
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 {
@@ -75,6 +78,33 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
     }
 }
 
+namespace {
+std::vector<int> sortByLastAssignedLevel(std::vector<vec<Lit>> & splitClauses, std::function<int(Var)> getVarLevel) {
+    if (splitClauses.size() == 1) {
+        return {0};
+    }
+    std::vector<int> lastAssignedLevels;
+    lastAssignedLevels.resize(splitClauses.size(), 0);
+    std::transform(splitClauses.begin(), splitClauses.end(), lastAssignedLevels.begin(), [&](auto const & clause) {
+        auto maxLevel = 0;
+        for (Lit l : clause) {
+            auto level = getVarLevel(var(l));
+            if (level > maxLevel) {
+                maxLevel = level;
+            }
+        }
+        return maxLevel;
+    });
+
+    std::vector<int> indices(splitClauses.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&lastAssignedLevels](int first, int second) {
+        return lastAssignedLevels[first] < lastAssignedLevels[second];
+    });
+    return indices;
+}
+}
+
 TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     vec<LitLev> deds;
     deduceTheory(deds); // To remove possible theory deductions
@@ -96,7 +126,10 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
         return cr;
     };
 
-    for (auto & splitClause : splitClauses) {
+    auto sortedIndices = sortByLastAssignedLevel(splitClauses, [this](Var v) { return vardata[v].level; });
+
+    for (int index : sortedIndices) {
+        auto & splitClause = splitClauses[index];
         unsigned satisfied = 0;
         unsigned falsified = 0;
         unsigned unknown = 0;
@@ -119,7 +152,8 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
                 }
             }
             if (backtrackLevel < decisionLevel()) {
-                propData.clear();
+                assert(propData.empty()); // This should hold when clauses are sorted according to last assigned level
+                propData.clear();         // But let's make sure
                 cancelUntil(backtrackLevel);
             }
             if (!this->logsProofForInterpolation()) {
