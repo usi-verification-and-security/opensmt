@@ -79,8 +79,23 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     vec<LitLev> deds;
     deduceTheory(deds); // To remove possible theory deductions
     TPropRes res = TPropRes::Undef;
-    Lit toPropagate = lit_Undef;
-    CRef propagationReason = CRef_Undef;
+    struct PropagationData {
+        Lit lit;
+        CRef reason;
+    };
+    std::vector<PropagationData> propData;
+
+    auto processNewClause = [&] (auto const & clause) {
+        CRef cr = ca.alloc(clause, false);
+        attachClause(cr);
+        clauses.push(cr);
+        if (logsProofForInterpolation()) {
+            // MB: the proof needs to know about the new clause
+            proof->newSplitClause(cr);
+        }
+        return cr;
+    };
+
     for (auto & splitClause : splitClauses) {
         unsigned satisfied = 0;
         unsigned falsified = 0;
@@ -94,6 +109,7 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             else if (value(l) == l_False) { ++falsified; }
             else { ++unknown; impliedIndex = i; }
         }
+        assert(satisfied != 0 or unknown != 0); // The clause cannot be falsified
         if (satisfied == 0 and unknown == 1) { // propagate
             // Find the lowest level where all the falsified literals are still falsified
             int backtrackLevel = 0;
@@ -102,43 +118,26 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
                     backtrackLevel = vardata[var(l)].level;
                 }
             }
-            cancelUntil(backtrackLevel);
+            if (backtrackLevel < decisionLevel()) {
+                propData.clear();
+                cancelUntil(backtrackLevel);
+            }
             if (!this->logsProofForInterpolation()) {
                 if (decisionLevel() == 0) {
                     // MB: do not allocate, we can directly enqueue the implied literal
                     uncheckedEnqueue(splitClause[impliedIndex], CRef_Undef);
-                    toPropagate = lit_Undef;
-                    propagationReason = CRef_Undef;
                     res = TPropRes::Propagate;
                     continue;
                 }
             }
             // MB: we are going to propagate, make sure the implied literal is the first one
             Lit implied = splitClause[impliedIndex];
-            if (impliedIndex != 0) {
-                splitClause[impliedIndex] = splitClause[0];
-                splitClause[0] = implied;
-            }
-            CRef cr = ca.alloc(splitClause, false);
-            attachClause(cr);
-            clauses.push(cr);
-            if (logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new clause
-                proof->newSplitClause(cr);
-            }
-            toPropagate = implied;
-            propagationReason = cr;
+            std::swap(splitClause[0],splitClause[impliedIndex]);
+            CRef cr = processNewClause(splitClause);
+            propData.push_back(PropagationData{.lit = implied, .reason = cr});
             res = TPropRes::Propagate;
         } else {
-            // MB: allocate, attach and remember the clause - treated as original
-            // MB: TODO: why not theory clause?
-            CRef cr = ca.alloc(splitClause, false);
-            attachClause(cr);
-            clauses.push(cr);
-            if (this->logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new clause
-                proof->newSplitClause(cr);
-            }
+            processNewClause(splitClause);
             if (satisfied == 0) {
                 forced_split = ~splitClause[0];
                 if (res != TPropRes::Propagate) {
@@ -150,8 +149,8 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     assert(res != TPropRes::Undef);
     if (res == TPropRes::Propagate) {
         forced_split = lit_Undef;
-        if (toPropagate != lit_Undef) {
-            uncheckedEnqueue(toPropagate, propagationReason);
+        for (auto [litToPropogate, reason] : propData) {
+            uncheckedEnqueue(litToPropogate, reason);
         }
     }
     return res;
