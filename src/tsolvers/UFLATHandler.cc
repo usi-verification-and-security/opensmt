@@ -33,7 +33,7 @@ lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
 
 TRes UFLATHandler::check(bool full) {
     auto res = TSolverHandler::check(full);
-    if (full and res == TRes::SAT) {
+    if (full and res == TRes::SAT and not lasolver->hasNewSplits()) {
         equalitiesToPropagate.clear();
         ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
         lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
@@ -49,10 +49,15 @@ void UFLATHandler::declareAtom(PTRef atom) {
 }
 
 vec<PTRef> UFLATHandler::getSplitClauses() {
-    if (equalitiesToPropagate.size() == 0) {
-        return {};
-    }
+    assert(not ufsolver->hasNewSplits());
     vec<PTRef> res;
+    if (lasolver->hasNewSplits()) {
+        lasolver->getNewSplits(res);
+        return res;
+    }
+    if (equalitiesToPropagate.size() == 0) {
+        return res;
+    }
     for (PTRef eq : equalitiesToPropagate) {
         if (knownEqualities.count(eq) != 0) {
             continue;
