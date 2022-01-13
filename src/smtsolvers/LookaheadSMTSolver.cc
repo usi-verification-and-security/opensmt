@@ -344,12 +344,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     tested = true;
-    int count_pr=0;
-    int predicted=close_to_prop;
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
-                count_pr++;
                 props++;
                 if (!decision[v]) {
                     score->setChecked(v);
@@ -465,7 +462,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
             }
     }
-    printf("Actual props %d vs predicted %d \n", count_pr, predicted);
 //    }
     tested = false;
     best = score->getBest();
