@@ -143,6 +143,8 @@ private:
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 
+    // Most-infeasible branching heuristic
+    LVRef splitOnMostInfeasible(vec<LVRef> const &) const;
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
 

@@ -344,6 +344,22 @@ void LASolver::declareAtom(PTRef leq_tr)
     setKnown(leq_tr);
 }
 
+LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
+    opensmt::Real maxDistance = 0;
+    LVRef chosen;
+    for (LVRef x : varsToFix) {
+        Delta val = simplex.getValuation(x);
+        assert(not val.hasDelta());
+        assert(not val.R().isInteger());
+        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
+        if (distance > maxDistance) {
+            maxDistance = std::move(distance);
+            chosen = x;
+        }
+    }
+    return chosen;
+}
+
 TRes LASolver::checkIntegersAndSplit() {
 
     vec<LVRef> varsToFix;
@@ -361,20 +377,8 @@ TRes LASolver::checkIntegersAndSplit() {
         return TRes::SAT;
     }
 
-    // Most-infeasible branching heuristic
-    opensmt::Real maxDistance = 0;
-    LVRef chosen = LVRef_Undef;
+    LVRef chosen = splitOnMostInfeasible(varsToFix);
 
-    for (LVRef x : varsToFix) {
-        Delta val = simplex.getValuation(x);
-        assert(not val.hasDelta());
-        assert(not val.R().isInteger());
-        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
-        if (distance > maxDistance) {
-            maxDistance = std::move(distance);
-            chosen = x;
-        }
-    }
     assert(chosen != LVRef_Undef);
     auto splitLowerVal = simplex.getValuation(chosen).R().floor();
     //x <= c || x >= c+1;
