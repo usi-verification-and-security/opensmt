@@ -346,7 +346,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 
 LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
     opensmt::Real maxDistance = 0;
-    LVRef chosen;
+    LVRef chosen = LVRef_Undef;
     for (LVRef x : varsToFix) {
         Delta val = simplex.getValuation(x);
         assert(not val.hasDelta());
