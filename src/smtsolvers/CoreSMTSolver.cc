@@ -366,7 +366,7 @@ void CoreSMTSolver::attachClause(CRef cr)
     else{
         next_init.insert(var(~c[0]));
         next_init.insert(var(~c[1]));
-        close_to_prop = next_init.size();
+//        close_to_prop = next_init.size();
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -1179,6 +1179,9 @@ CRef CoreSMTSolver::propagate()
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
+        if(!tested){
+            close_to_prop--;
+        }
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
@@ -1254,13 +1257,18 @@ CRef CoreSMTSolver::propagate()
             if(value(c[1]) == l_False){
                 if(!tested){
                     if(next_arr[var(~c[0])]){
-                        close_to_prop -= 1;
+                        close_to_prop--;
                     }
                     if(next_arr[var(~c[1])]){
-                        close_to_prop -= 1;
+                        close_to_prop--;
                     }
                     next_arr[var(~c[0])] = false;
                     next_arr[var(~c[1])] = false;
+                } else {
+                    if(before_lookahead){
+                        next_init.erase(var(~c[0]));
+                        next_init.erase(var(~c[1]));
+                    }
                 }
                 if (value(first) == l_False) // clause is falsified
                 {
@@ -1305,9 +1313,10 @@ CRef CoreSMTSolver::propagate()
                     next_arr[var(~c[0])] = true;
                     next_arr[var(~c[1])] = true;
                 } else {
-                    next_init.insert(var(~c[0]));
-                    next_init.insert(var(~c[1]));
-                    close_to_prop = next_init.size();
+                    if(before_lookahead){
+                        next_init.insert(var(~c[0]));
+                        next_init.insert(var(~c[1]));
+                    }
                 }
             }
 NextClause:

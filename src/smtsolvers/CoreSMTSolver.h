@@ -489,6 +489,7 @@ protected:
     double              random_seed;      // Used by the random variable selection.
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+    bool                before_lookahead = true;
 
     ClauseAllocator     ca{512*1024};
 #ifdef CACHE_POLARITY

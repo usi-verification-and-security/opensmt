@@ -20,12 +20,14 @@ Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
 lbool LookaheadSMTSolver::solve_()
 {
     declareVarsToTheories();
+    before_lookahead = false;
     next_arr = new bool[nVars()]();
     auto it = next_init.begin();
     while(it!=next_init.end()){
         next_arr[*it] = true;
         it++;
     }
+    close_to_prop = next_init.size();
     double nof_conflicts = restart_first;
 
     LALoopRes res = LALoopRes::unknown;
@@ -342,9 +344,14 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     tested = true;
+    printf("NEW\n");
+    int count_pr=0;
+    int predicted=close_to_prop;
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
+                count_pr++;
+                printf("Got in\n");
                 props++;
                 if (!decision[v]) {
                     score->setChecked(v);
@@ -369,6 +376,10 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                     printf("  Var is safe to skip due to %s\n",
                            value(v) != l_Undef ? "being assigned" : "having low upper bound");
+                    if(value(v) != l_Undef){
+                        next_arr[v] = false;
+                        close_to_prop--;
+                    }
 #endif
                     score->setChecked(v);
                     // It is possible that all variables are assigned here.
@@ -456,6 +467,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
             }
     }
+    printf("Actual props %d vs predicted %d \n", count_pr, predicted);
 //    }
     tested = false;
     best = score->getBest();
