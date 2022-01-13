@@ -1189,11 +1189,6 @@ CRef CoreSMTSolver::propagate()
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
 
-            if (value(blocker) == l_True)
-            {
-                *j++ = *i++;
-                continue;
-            }
 
 
             unsigned c_size = c.size();
@@ -1202,11 +1197,27 @@ CRef CoreSMTSolver::propagate()
 
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                }
                 *j++ = *i++;
                 continue;
             }
 
             if(value(c[0]) == l_True || value(c[1]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                }
                 *j++ = *i++;
                 continue;
             }
