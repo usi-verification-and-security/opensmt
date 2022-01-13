@@ -344,14 +344,12 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     tested = true;
-    printf("NEW\n");
     int count_pr=0;
     int predicted=close_to_prop;
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
                 count_pr++;
-                printf("Got in\n");
                 props++;
                 if (!decision[v]) {
                     score->setChecked(v);
