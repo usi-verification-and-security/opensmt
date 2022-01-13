@@ -362,6 +362,7 @@ LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
 
 TRes LASolver::checkIntegersAndSplit() {
 
+    static unsigned long counter = 0;
     vec<LVRef> varsToFix;
     varsToFix.capacity(int_vars.size());
 
@@ -377,6 +378,30 @@ TRes LASolver::checkIntegersAndSplit() {
         return TRes::SAT;
     }
 
+    ++counter;
+
+    if (counter % 100 == 0) {
+        opensmt::Real maxDistance = 0;
+        LVRef chosen = LVRef_Undef;
+        for (LVRef x : varsToFix) {
+            if (not simplex.isBasicVar(x)) { continue; }
+            Delta val = simplex.getValuation(x);
+            assert(not val.hasDelta());
+            assert(not val.R().isInteger());
+            opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
+            if (distance > maxDistance and simplex.hasGomoryCut(x)) {
+                maxDistance = std::move(distance);
+                chosen = x;
+            }
+        }
+        if (chosen != LVRef_Undef) {
+            PTRef gomoryClause = computeGomoryCutFor(chosen);
+            splitondemand.push(gomoryClause);
+            setStatus(NEWSPLIT);
+            return TRes::SAT;
+        }
+    }
+    
     LVRef chosen = splitOnMostInfeasible(varsToFix);
 
     assert(chosen != LVRef_Undef);
@@ -837,4 +862,29 @@ PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
 void LASolver::printStatistics(std::ostream & out) {
     TSolver::printStatistics(out);
     laSolverStats.printStatistics(out);
+}
+
+PTRef LASolver::computeGomoryCutFor(LVRef v) const {
+    auto [lhsPoly, rhs] = simplex.computeGomoryCutFor(v);
+    vec<PTRef> terms;
+    // TODO: Should we normalize the coefficients?
+    for (auto const & term : lhsPoly) {
+        terms.push(logic.mkTimes(laVarMapper.getVarPTRef(term.var), logic.mkIntConst(term.coeff)));
+    }
+//    std::cout << "LHS: " << logic.pp(logic.mkPlus(terms)) << std::endl;
+    PTRef gomoryAtom = logic.mkGeq(logic.mkPlus(std::move(terms)), logic.mkIntConst(rhs));
+//    std::cout << logic.pp(gomoryAtom) << std::endl;
+    // Now add the premises to return tautology
+    auto bounds = simplex.getBoundsForRow(v);
+    // conjunction of bounds implies gomory cut atom
+    vec<PTRef> literals;
+    for (auto boundRef : bounds) {
+        PtAsgn asgn = getAsgnByBound(boundRef);
+        assert(asgn.sgn != l_Undef);
+        literals.push(asgn.sgn == l_False ? asgn.tr : logic.mkNot(asgn.tr));
+    }
+    literals.push(gomoryAtom);
+    PTRef clause = logic.mkOr(std::move(literals));
+//    std::cout << logic.pp(clause) << std::endl;
+    return clause;
 }

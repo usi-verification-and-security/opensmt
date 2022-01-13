@@ -147,6 +147,7 @@ private:
     LVRef splitOnMostInfeasible(vec<LVRef> const &) const;
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
+    PTRef computeGomoryCutFor(LVRef v) const;
 
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
     void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position

@@ -512,3 +512,83 @@ void Simplex::processBufferOfActivatedBounds() {
     }
 }
 
+bool Simplex::hasGomoryCut(LVRef v) const {
+    assert(tableau.isBasic(v));
+    assert(not getValuation(v).hasDelta() and not getValuation(v).R().isInteger());
+    auto const & poly = tableau.getRowPoly(v);
+    for (auto const & term : poly) {
+        LVRef nonBasicVar = term.var;
+        assert(tableau.isNonBasic(nonBasicVar));
+        Delta currentVal = model->read(nonBasicVar);
+        bool isTight = (model->hasLBound(nonBasicVar) and currentVal == model->Lb(nonBasicVar)) or
+                (model->hasUBound(nonBasicVar) and currentVal == model->Ub(nonBasicVar));
+        if (not isTight) {
+            return false;
+        }
+    }
+    return true;
+}
+
+opensmt::pair<Polynomial, opensmt::Real> Simplex::computeGomoryCutFor(LVRef bv) const {
+    assert(hasGomoryCut(bv));
+    opensmt::Real val = model->read(bv).R();
+    opensmt::Real toFloor = val - val.floor();
+    opensmt::Real toCeiling = opensmt::Real(1) - toFloor;
+    auto const & row = tableau.getRowPoly(bv);
+    opensmt::Real constantVal = 0;
+    Polynomial gomoryPoly;
+    for (auto const & term : row) {
+        LVRef var = term.var;
+        bool isAtLowerBound = model->hasLBound(var) and model->Lb(var) == model->read(var);
+        if (isAtLowerBound) {
+            assert(not model->Lb(var).hasDelta());
+            auto lowerBound = model->Lb(var).R();
+            lowerBound.negate();
+            auto const gomoryCoeff = [&](){
+                if (isPositive(term.coeff)) {
+                    return term.coeff / toCeiling;
+                } else {
+                    auto res = term.coeff / toFloor;
+                    res.negate();
+                    return res;
+                }
+            }();
+            gomoryPoly.addTerm(var, gomoryCoeff);
+            constantVal += gomoryCoeff * lowerBound;
+        } else {
+            assert(model->hasUBound(var) and model->Ub(var) == model->read(var));
+            assert(not model->Ub(var).hasDelta());
+            auto upperBound = model->Ub(var).R();
+            upperBound.negate();
+            auto const gomoryCoeff = [&](){
+                if (isNegative(term.coeff)) {
+                    return term.coeff / toCeiling;
+                } else {
+                    auto res = term.coeff / toFloor;
+                    res.negate();
+                    return res;
+                }
+            }();
+            gomoryPoly.addTerm(var, gomoryCoeff);
+            constantVal += gomoryCoeff * upperBound;
+        }
+    }
+//    std::cout << "Gomory poly:\n";
+//    gomoryPoly.print();
+//    std::cout << std::endl;
+    // Gomory cut <=> gomoryPoly + constantVal >= 1 <=> gomoryPoly >= 1 - constantVal
+    return {gomoryPoly, opensmt::Real(1) - constantVal};
+}
+
+vec<LABoundRef> Simplex::getBoundsForRow(LVRef x) const {
+    auto const & row = tableau.getRowPoly(x);
+    vec<LABoundRef> res;
+    res.capacity(row.size());
+    // add all bounds for polynomial elements which limit the given bound
+    for (auto const & term : row) {
+        auto const var = term.var;
+        bool isAtLowerBound = model->hasLBound(var) and model->Lb(var) == model->read(var);
+        res.push(isAtLowerBound ? model->readLBoundRef(var) : model->readUBoundRef(var));
+    }
+    return res;
+}

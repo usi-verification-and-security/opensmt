@@ -10,6 +10,8 @@
 #include "lasolver/LAVar.h"
 #include "LRAModel.h"
 #include "SMTConfig.h"
+#include "TypeUtils.h"
+
 
 class SimplexStats {
 public:
@@ -109,6 +111,13 @@ public:
     const Delta& Ub(LVRef v) const { return model->Ub(v); }
     bool hasLBound(LVRef v) const {return model->hasLBound(v); }
     bool hasUBound(LVRef v) const {return model->hasUBound(v); }
+
+    bool isBasicVar(LVRef v) const { return tableau.isBasic(v); }
+    bool isNonBasicVar(LVRef v) const { return tableau.isNonBasic(v); }
+
+    bool hasGomoryCut(LVRef v) const;
+    opensmt::pair<Polynomial, opensmt::Real> computeGomoryCutFor(LVRef v) const;
+    vec<LABoundRef> getBoundsForRow(LVRef x) const;
 
     // Keeping track of activated bounds
 private:
