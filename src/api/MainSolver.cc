@@ -37,6 +37,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "IteHandler.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
+#include "LIATHandler.h"
+#include "CounterRewriter.h"
+
 #include <thread>
 #include <fcntl.h>
 
@@ -112,6 +115,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
     root = logic.conjoinExtras(root);
     root = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(root);
+
 
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,

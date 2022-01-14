@@ -3,6 +3,7 @@
 //
 
 #include "LookaheadSMTSolver.h"
+#include "Proof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver(c, thandler)
@@ -97,12 +98,27 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
 #endif
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
-            if (out_learnt.size() == 1) {
-                uncheckedEnqueue(out_learnt[0]);
-            } else {
-                CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+            if (out_learnt.size() == 1)
+            {
+                CRef reason = CRef_Undef;
+                if (logsProofForInterpolation())
+                {
+                    CRef crd = ca.alloc(out_learnt, false);
+                    proof->endChain(crd);
+                    reason = crd;
+                }
+                uncheckedEnqueue(out_learnt[0], reason);
+            }
+            else
+            {
+
+                CRef crd = ca.alloc(out_learnt, true);
+                if (logsProofForInterpolation()) {
+                    proof->endChain(crd);
+                }
                 learnts.push(crd);
                 attachClause(crd);
+                claBumpActivity(ca[crd]);
                 uncheckedEnqueue(out_learnt[0], crd);
             }
             diff = true;
@@ -154,13 +170,13 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         curr = parent;
         parent = curr->p;
     }
+
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
     for (int i = path.size() - 1; i >= 0; i--)
     {
         newDecisionLevel();
-//        printf("This is decision level: %d\n", path.size());
 
         if (value(path[i]) == l_Undef)
         {
@@ -198,6 +214,10 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             }
         }
     }
+//    if(path.size() > 0) {
+//        printf("Propagating: %d\n", path[0]);
+//    }
+//    printf("This is decision level: %d\n", decisionLevel());
     return PathBuildResult::pathbuild_success;
 }
 
@@ -308,11 +328,14 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     tested = true;
 //    int count_pr=0;
 //    int predicted=close_to_prop;
+//    if(close_to_prop==1){
+//        printf("fun");
+//    }
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
 //                count_pr++;
-                props++;
+//                props++;
                 if (!decision[v]) {
                     score->setChecked(v);
 #ifdef LADEBUG
@@ -336,12 +359,12 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #ifdef LADEBUG
                     printf("  Var is safe to skip due to %s\n",
                            value(v) != l_Undef ? "being assigned" : "having low upper bound");
-                    if(value(v) != l_Undef){
+#endif
+                    if(value(v) != l_Undef && next_arr[v]){
                         next_arr[v] = false;
                         close_to_prop--;
                     }
-#endif
-                    score->setChecked(v);
+//                    score->setChecked(v);
                     // It is possible that all variables are assigned here.
                     // In this case it seems that we have a satisfying assignment.
                     // This is in fact a debug check
@@ -386,6 +409,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                     printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
                     uncheckedEnqueue(l);
+//                    printf("Propagating the literal: %d \n", l.x);
                     lbool res = laPropagateWrapper();
                     if (res == l_False) {
                         best = lit_Undef;
@@ -427,8 +451,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                 }
             }
     }
-//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
 //    }
+//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
     tested = false;
     Lit best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)

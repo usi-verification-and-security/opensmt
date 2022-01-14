@@ -322,12 +322,19 @@ void CoreSMTSolver::attachClause(CRef cr)
     assert(value(c[0]) != l_False or value(c[1]) != l_False);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
-    if(c.size() > 2 )
+    if(c.size() > 2 ){
+//        if(c[2].x == 176){
+//            cout << "Here";
+//        }
         watches[~c[2]].push(Watcher(cr, c[0]));
+    }
     else{
         next_init.insert(var(~c[0]));
         next_init.insert(var(~c[1]));
 //        close_to_prop = next_init.size();
+//    if(c[0].x == 176 || c[1].x == 176){
+//        printf("Hi\n");
+//    }
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -1055,7 +1062,6 @@ CRef CoreSMTSolver::propagate()
 
     while (qhead < trail.size())
     {
-//        props++;
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
@@ -1063,15 +1069,25 @@ CRef CoreSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
+//            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
+//            if(cr == 497){
+//                printf("Here\n");
+//            }
 
 
 
+            unsigned c_size = c.size();
+            Lit false_lit = ~p;
+
+            if(!tested){
+                props++;
+            }
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 if(!tested) {
@@ -1081,6 +1097,8 @@ CRef CoreSMTSolver::propagate()
                     if (next_arr[var(~c[1])]) {
                         close_to_prop--;
                     }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
                 }
                 *j++ = *i++;
                 continue;
@@ -1094,25 +1112,27 @@ CRef CoreSMTSolver::propagate()
                     if (next_arr[var(~c[1])]) {
                         close_to_prop--;
                     }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
                 }
                 *j++ = *i++;
                 continue;
             }
 
-            // Depending on the clause length reassign clauses, so the last one watched is defined:
-            Lit false_lit = ~p;
-            if (c[0] == false_lit) {
-                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
-                    c[0] = c[2], c[2] = false_lit;
-                } else {
+            if(c_size > 2 ){
+                if (c[0] == false_lit){
+//                    if(value(c[2]) != l_False){
+//                        c[0] = c[1], c[1] = c[2], c[2] = false_lit;
+//                    } else {
                     c[0] = c[1], c[1] = false_lit;
-                }
-            } else if (c[1] == false_lit) {
-                if (c.size() > 2 && value(var(c[2])) == l_Undef) {
-                    c[1] = c[2], c[2] = false_lit;
+//                    }
                 }
                 if (c[1] == false_lit){
                     c[1] = c[2], c[2] = false_lit;
+                }
+                if (value(c[0]) == l_False) {
+                    Lit temp = c[0];
+                    c[0] = c[1], c[1] = temp;
                 }
             }
             else {
@@ -1124,7 +1144,7 @@ CRef CoreSMTSolver::propagate()
             if (c.size() > 2) {
                 assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
             } else {
-                assert(c[1] == false_lit);
+                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
             }
             i++;
 
@@ -1140,6 +1160,13 @@ CRef CoreSMTSolver::propagate()
                     watches[~c[2]].push(w);
                     goto NextClause;
                 }
+<<<<<<< HEAD
+=======
+            }
+//            if(c[2].x == 176){
+//                cout << "Here";
+//            }
+>>>>>>> 2b8a6b7f (seems there is a bug)
 
             *j++ = w;
             if(value(c[1]) == l_False){
@@ -1160,6 +1187,9 @@ CRef CoreSMTSolver::propagate()
                 }
                 if (value(first) == l_False) // clause is falsified
                 {
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -1178,6 +1208,7 @@ CRef CoreSMTSolver::propagate()
                             assert(level(var(c[k])) == 0);
                             assert(reason(var(c[k])) != CRef_Fake);
                             assert(reason(var(c[k])) != CRef_Undef);
+//                            printf("Enqueued: %d\n", var(first));
                             proof->addResolutionStep(reason(var(c[k])), var(c[k]));
                         }
                         CRef unitClause = ca.alloc(vec<Lit>{first});
@@ -1186,6 +1217,10 @@ CRef CoreSMTSolver::propagate()
                         // Necessary for correct functioning of proof logging in analyze()
                         cr = unitClause;
                     }
+//                    printf("Enqueued: %d\n", var(first));
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
@@ -1915,7 +1950,7 @@ void CoreSMTSolver::garbageCollect()
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
     ClauseAllocator to(ca.size() - ca.wasted());
-
+    printf("Garbage collect\n");
     relocAll(to);
 //    if (verbosity >= 2)
 //        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",

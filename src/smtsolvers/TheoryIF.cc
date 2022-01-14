@@ -30,7 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <algorithm>
 #include <numeric>
-
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 {
@@ -271,7 +270,11 @@ CoreSMTSolver::handleUnsat()
     int        backtrack_level;
 
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
-    assert(std::none_of(conflicting.begin(), conflicting.end(), [this](Lit l) { return value(l) == l_Undef; }));
+    for(Lit l: conflicting){
+        Var v = var(l);
+        PTRef atom = theory_handler.getTMap().varToPTRef(v);;
+        assert(theory_handler.getLogic().isTheoryTerm(atom));
+    }
 
     assert( max_decision_level <= decisionLevel( ) );
     cancelUntil( max_decision_level );
