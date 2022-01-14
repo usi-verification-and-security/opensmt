@@ -346,6 +346,9 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     tested = true;
 //    int count_pr=0;
 //    int predicted=close_to_prop;
+    if(close_to_prop==1){
+        printf("fun");
+    }
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
@@ -374,12 +377,12 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 #ifdef LADEBUG
                     printf("  Var is safe to skip due to %s\n",
                            value(v) != l_Undef ? "being assigned" : "having low upper bound");
-                    if(value(v) != l_Undef){
+#endif
+                    if(value(v) != l_Undef && next_arr[v]){
                         next_arr[v] = false;
                         close_to_prop--;
                     }
-#endif
-                    score->setChecked(v);
+//                    score->setChecked(v);
                     // It is possible that all variables are assigned here.
                     // In this case it seems that we have a satisfying assignment.
                     // This is in fact a debug check
@@ -465,8 +468,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                 }
             }
     }
-//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
 //    }
+//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
     tested = false;
     best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)

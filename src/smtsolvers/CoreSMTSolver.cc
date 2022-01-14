@@ -1204,6 +1204,8 @@ CRef CoreSMTSolver::propagate()
                     if (next_arr[var(~c[1])]) {
                         close_to_prop--;
                     }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
                 }
                 *j++ = *i++;
                 continue;
@@ -1217,6 +1219,8 @@ CRef CoreSMTSolver::propagate()
                     if (next_arr[var(~c[1])]) {
                         close_to_prop--;
                     }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
                 }
                 *j++ = *i++;
                 continue;
