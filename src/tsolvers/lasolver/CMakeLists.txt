@@ -24,6 +24,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Matrix.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LIAInterpolator.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/CutCreator.cc"
     )
 
 option(SIMPLEX_DEBUG "Deeper debugging of Simplex" OFF)

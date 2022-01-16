@@ -4,6 +4,9 @@
 #include "LA.h"
 #include "ModelBuilder.h"
 #include "LIAInterpolator.h"
+#include "CutCreator.h"
+
+#include <unordered_set>
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
@@ -370,6 +373,14 @@ TRes LASolver::checkIntegersAndSplit() {
     if (varsToFix.size() == 0) {
         setStatus(SAT);
         return TRes::SAT;
+    }
+
+    static unsigned long counter = 0;
+    if (++counter % 3 == 0) {
+        auto res = cutFromProof();
+        if (res != TRes::UNKNOWN) {
+            return res;
+        }
     }
 
     LVRef chosen = splitOnMostInfeasible(varsToFix);
@@ -830,4 +841,38 @@ PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
 void LASolver::printStatistics(std::ostream & out) {
     TSolver::printStatistics(out);
     laSolverStats.printStatistics(out);
+}
+
+TRes LASolver::cutFromProof() {
+    auto isOnLowerBound = [this](LVRef var) { return simplex.hasLBound(var) and not simplex.isModelStrictlyOverLowerBound(var); };
+    auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
+    // Step 1: Gather defining constraints
+    using DefiningConstraint = CutCreator::DefiningConstaint;
+    std::vector<DefiningConstraint> constraints;
+    for (LVRef var : int_vars) {
+        bool isOnLower = isOnLowerBound(var);
+        bool isOnUpper = isOnUpperBound(var);
+        if (not isOnLower and not isOnUpper) { continue; }
+
+        PTRef term = laVarMapper.getVarPTRef(var);
+        auto val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
+        assert(not val.hasDelta());
+        auto rhs = val.R();
+        assert(rhs.isInteger());
+        constraints.push_back(DefiningConstraint{term, rhs});
+//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
+    }
+    CutCreator cutCreator(logic, [this](PTRef var) {
+        LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+        Delta val = this->simplex.getValuation(lvar);
+        assert(not val.hasDelta());
+        return val.R();
+    });
+    PTRef split = cutCreator.cut(std::move(constraints));
+    if (split == PTRef_Undef) {
+        return TRes::UNKNOWN;
+    }
+    splitondemand.push(split);
+    setStatus(NEWSPLIT);
+    return TRes::SAT;
 }
