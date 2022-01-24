@@ -113,6 +113,12 @@ jobs:
                 name: Create the build directory
                 command: mkdir build
             - run:
+                name: Debug build gcc under devtoolset-8
+                command: |
+                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
+                environment:
+                    CMAKE_BUILD_TYPE: Debug
+            - run:
                 name: Release build gcc under devtoolset-8
                 command: |
                     cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
