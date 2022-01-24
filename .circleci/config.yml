@@ -92,8 +92,8 @@ jobs:
                     yum -y install gmp-devel
                     yum -y install libedit-devel
                     yum -y install bison
-                    yum -y install flex
                     yum -y install git
+                    yum -y install wget
                     yum -y install rh-python38
                     yum -y install python3-pip
                     yum -y install zlib-devel
@@ -110,6 +110,17 @@ jobs:
                 name: Compile cmake-3.12.3 under devtoolset-8
                 command: |
                     echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-8 bash
+            - run:
+                name: Set up newer version of flex
+                command: |
+                    cd ~
+                    wget --no-verbose "https://github.com/westes/flex/files/981163/flex-2.6.4.tar.gz"
+                    tar -xvzf flex-2.6.4.tar.gz
+                    cd flex-2.6.4
+                    echo "./configure --prefix=/usr/local; make -j4; make install" | scl enable devtoolset-8 bash
+                    cd ..
+                    rm -rf flex-*
+                    flex --version
             - checkout
             - run:
                 name: Set up model validation environment
