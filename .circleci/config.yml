@@ -60,8 +60,8 @@ jobs:
                     FLAGS: -Wall -Wextra -Werror
 
     # To set up the centos-7 environment:
-    #  - yum install centos-release-scl devtoolset-7 gmp-devel libedit-devel
-    #  - scl enable devtoolset-7 bash
+    #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
+    #  - scl enable devtoolset-8 bash
     #  - curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
     #  - tar zxf cmake-3.12.3.tar.gz
     #  - cd cmake-3.12.3
@@ -88,7 +88,7 @@ jobs:
                 name: Install the environment
                 command: |
                     yum -y install centos-release-scl
-                    yum -y install devtoolset-7
+                    yum -y install devtoolset-8
                     yum -y install gmp-devel
                     yum -y install libedit-devel
                     yum -y install bison
@@ -98,7 +98,7 @@ jobs:
                     yum -y install python3-pip
                     yum -y install zlib-devel
                     pip3 install wheel
-                    echo "pip3 install pyinstaller" |scl enable devtoolset-7 bash
+                    echo "pip3 install pyinstaller" |scl enable devtoolset-8 bash
                     yum -y install Cython
             - run:
                 name: Fetch cmake-3.12.3
@@ -107,20 +107,20 @@ jobs:
                     curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
                     tar zxf cmake-3.12.3.tar.gz
             - run:
-                name: Compile cmake-3.12.3 under devtoolset-7
+                name: Compile cmake-3.12.3 under devtoolset-8
                 command: |
-                    echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-7 bash
+                    echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-8 bash
             - checkout
             - run:
                 name: Set up model validation environment
-                command: echo 'bash ./regression_models/bin/setup-env.sh' |scl enable devtoolset-7 bash
+                command: echo 'bash ./regression_models/bin/setup-env.sh' |scl enable devtoolset-8 bash
             - run:
                 name: Create the build directory
                 command: mkdir build
             - run:
-                name: Release build gcc under devtoolset-7
+                name: Release build gcc under devtoolset-8
                 command: |
-                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-7 bash
+                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
 
