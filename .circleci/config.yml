@@ -62,15 +62,6 @@ jobs:
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
     #  - scl enable devtoolset-8 bash
-    #  - curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
-    #  - tar zxf cmake-3.12.3.tar.gz
-    #  - cd cmake-3.12.3
-    #  - ./bootstrap --prefix=/usr/local
-    #  - gmake -j4
-    #  - make install
-    #  - yum install gmp-devel
-    #  - yum install libedit-devel
-    #  - make -j4
     build-starexec:
         docker:
             - image: centos:7
@@ -101,15 +92,8 @@ jobs:
                     echo "pip3 install pyinstaller" |scl enable devtoolset-8 bash
                     yum -y install Cython
             - run:
-                name: Fetch cmake-3.12.3
-                command: |
-                    cd
-                    curl https://cmake.org/files/v3.12/cmake-3.12.3.tar.gz > cmake-3.12.3.tar.gz
-                    tar zxf cmake-3.12.3.tar.gz
-            - run:
-                name: Compile cmake-3.12.3 under devtoolset-8
-                command: |
-                    echo "cd ~/cmake-3.12.3; ./bootstrap --prefix=/usr/local; gmake -j4; make install" |scl enable devtoolset-8 bash
+                name: Set up newer version of cmake
+                command: pip3 install cmake
             - run:
                 name: Set up newer version of flex
                 command: |
