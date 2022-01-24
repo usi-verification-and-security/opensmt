@@ -29,18 +29,10 @@ if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
 fi
 
 cd ../examples && rm -rf build && mkdir -p build && cd build
-if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
-    cmake \
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-        -DOpenSMT_DIR=${OSMT_INSTALL} \
-        -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined \
-        ..
-else
-    cmake \
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-        -DOpenSMT_DIR=${OSMT_INSTALL} \
-        ..
-fi
+cmake \
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+    -DOpenSMT_DIR=${OSMT_INSTALL} \
+    ..
 
 make -j4
 
