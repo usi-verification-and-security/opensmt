@@ -9,7 +9,7 @@ jobs:
             environment:
                 CMAKE_BUILD_TYPE: Release
                 FLAGS: -Wall -Wextra -Werror
-                INSTALL: ~/osmt-install
+                OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
         steps:
@@ -80,7 +80,7 @@ jobs:
               environment:
                 CMAKE_BUILD_TYPE: Release
                 FLAGS: -Wall -Wextra -Werror
-                INSTALL: ~/osmt-install
+                OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
         steps:
@@ -145,7 +145,7 @@ jobs:
                 environment:
                     CMAKE_BUILD_TYPE: Release
                     FLAGS: -Wall -Wextra -Werror
-                    INSTALL: ~/osmt-install
+                    OSMT_INSTALL: ~/osmt-install
 
 workflows:
   build-test:
