@@ -10,7 +10,7 @@ if [ ! -z ${CMAKE_CXX_COMPILER} ]; then
 fi
 
 cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-      -DCMAKE_CXX_FLAGS="$FLAGS" \
+      -DCMAKE_CXX_FLAGS="${FLAGS}" \
       -DUSE_READLINE:BOOL=${USE_READLINE} \
       -DENABLE_LINE_EDITING:BOOL=${ENABLE_LINE_EDITING} \
       -DCMAKE_INSTALL_PREFIX=${OSMT_INSTALL} \
@@ -32,6 +32,7 @@ fi
 cd ../examples && rm -rf build && mkdir -p build && cd build
 cmake \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+    -DCMAKE_CXX_FLAGS="${FLAGS}" \
     -DOpenSMT_DIR=${OSMT_INSTALL} \
     ..
 
