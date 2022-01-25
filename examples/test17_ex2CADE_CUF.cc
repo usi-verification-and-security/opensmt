@@ -17,7 +17,7 @@ The result is SAT, manifesting spurious counter-example
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
 
-int main(int argc, char** argv)
+int main()
 {
     BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
@@ -60,14 +60,8 @@ int main(int argc, char** argv)
     PTRef mul4 = logic.mkCUFTimes(mul3, h);
     PTRef eq4= logic.mkEq(mul4, d_p);
 
-    PTRef NotEq = logic.mkCUFNeq(d, d_p); //?
+    PTRef NotEq = logic.mkCUFNeq(d, d_p);
 
-//    PTRef constOne = logic.getTerm_CUFOne();
-//
-//    PTRef assert = logic.mkEq(constOne , NotEq);
-
-
-    SolverId id = { 5 };
 	vec<PtAsgn> asgns;
 	vec<PTRef> foo;
 

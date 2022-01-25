@@ -2,10 +2,8 @@
 #include <opensmt/BitBlaster.h>
 #include <stdio.h>
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-
     if (argc != 5)
     {
         printf("Computes a <op> b on bit width <bw>\n");

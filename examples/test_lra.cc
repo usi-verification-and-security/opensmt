@@ -8,18 +8,12 @@ pre()
     return osmt;
 }
 
-int
-main(int argc, char** argv)
+int main()
 {
 
     Opensmt* osmt = pre();
-    SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
-    SimpSMTSolver& solver = osmt->getSolver();
     auto & logic = osmt->getLRALogic();
-
-    const char* msg;
-//    c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
 
     // Create the constant
     PTRef cons = logic.mkRealConst(-1);

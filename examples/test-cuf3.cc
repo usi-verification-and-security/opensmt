@@ -2,8 +2,7 @@
 #include <opensmt/BitBlaster.h>
 #include <stdio.h>
 
-int
-main(int argc, char** argv)
+int main()
 {
     BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
@@ -22,6 +21,7 @@ main(int argc, char** argv)
 
     PTRef eq = logic.mkBVEq(ab,ba);
     PTRef eq_neg = logic.mkBVNot(eq);
+    (void)eq_neg;
 
     vec<PtAsgn> asgns;
     vec<PTRef> foo;

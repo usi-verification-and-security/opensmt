@@ -9,8 +9,7 @@
 #include <opensmt/BitBlaster.h>
 
 
-int
-main(int argc, char** argv)
+int main()
 {
     BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;

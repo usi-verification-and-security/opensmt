@@ -26,7 +26,7 @@ void printValue(PTRef tr, std::unique_ptr<Model> & m, const Logic & l)
     free(value);
 }
 
-int main(int argc, char** argv)
+int main()
 {
     BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
