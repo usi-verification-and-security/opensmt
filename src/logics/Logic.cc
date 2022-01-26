@@ -165,18 +165,17 @@ bool Logic::hasQuotableChars(const char* name) const
 //
 // Quote the name if it contains illegal characters
 //
-char*
-Logic::protectName(const char* name) const
+std::string Logic::protectName(const char* name) const
 {
-    char *name_escaped;
-    int printed_chars = hasQuotableChars(name) ? asprintf(&name_escaped, "|%s|", name)
-                                               : asprintf(&name_escaped, "%s", name);
-    (void)printed_chars;
-    return name_escaped;
+    if (hasQuotableChars(name)) {
+        std::stringstream ss;
+        ss << '|' << name << '|';
+        return ss.str();
+    }
+    return name;
 }
 
-char*
-Logic::printSym(SymRef sr) const
+std::string Logic::printSym(SymRef sr) const
 {
     return protectName(sym_store.getName(sr));
 }
@@ -185,9 +184,7 @@ Logic::printSym(SymRef sr) const
 std::string Logic::pp(PTRef tr) const {
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    char * tmp = printSym(sr);
-    std::string name_escaped = tmp;
-    free(tmp);
+    std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
         std::stringstream ss;
@@ -227,10 +224,7 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
 
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    char* name_escaped_c = printSym(sr);
-
-    std::string name_escaped = name_escaped_c;
-    free(name_escaped_c);
+    std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
         std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
@@ -767,9 +761,7 @@ void Logic::markConstant(SymId id) {
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
     if (f == SymRef_Undef) { return PTRef_Undef; }
     if (isInterpreted(f)) {
-        char * name = printSym(f);
-        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + std::string(name);
-        free(name);
+        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + printSym(f);
         throw OsmtApiException(msg);
     }
     PTRef tr = mkFun(f, std::move(args));
@@ -1301,9 +1293,8 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         else {
             dump_out << "(declare-fun ";
         }
-        char* sym = printSym(s);
+        auto sym = printSym(s);
         dump_out << sym << " ";
-        free(sym);
         Symbol const & symb = sym_store[s];
         dump_out << "(";
         for (SRef sr : symb) {
@@ -1370,9 +1361,7 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
         dump_out << "((" << buf << " ";
 
         if (term.size() > 0 ) dump_out << "(";
-        char* sym = printSym(term.symb());
         dump_out << printSym(term.symb());
-        free(sym);
         for (int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
@@ -1410,10 +1399,9 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    char *quoted_name = protectName(name);
+    auto quoted_name = protectName(name);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
-    free(quoted_name);
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (PTRef arg : args) {
         char* arg_name = printTerm(arg);

@@ -396,15 +396,15 @@ public:
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
 
-    bool       hasQuotableChars(const char* name) const;
-    char*      protectName(const char* name) const;
-    char*      protectName(const std::string& name) const { return protectName(name.c_str()); };
+    bool          hasQuotableChars(const char* name) const;
+    std::string   protectName(const char* name) const;
+    std::string   protectName(const std::string& name) const { return protectName(name.c_str()); };
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }
     std::string pp(PTRef tr) const; // A pretty printer
 
-    char*       printSym           (SymRef sr) const;
+    std::string   printSym          (SymRef sr) const;
     virtual void termSort(vec<PTRef>& v) const;// { sort(v, LessThan_PTRef()); }
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const;//{p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
