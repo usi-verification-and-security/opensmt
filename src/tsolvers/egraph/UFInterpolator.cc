@@ -75,6 +75,7 @@ CGraph::removeCEdge(CEdge * e) {
     if (e == nullptr) return;
     for (std::size_t i = 0; i < cedges.size(); ++i) {
         if (cedges[i] == e) {
+            delete e;
             cedges.erase(cedges.begin() + i);
             break;
         }
