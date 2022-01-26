@@ -443,7 +443,8 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args)
     if (isNumTerm(tr) || isPlus(tr) || isUF(tr) || isIte(tr))
         return tr;
     else {
-        throw LANonLinearException(printTerm(tr));
+        auto termStr = pp(tr);
+        throw LANonLinearException(termStr.c_str());
     }
 }
 

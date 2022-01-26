@@ -45,13 +45,13 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothNonstrict){
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-//    std::cout << logic.printTerm(farkasItp) << std::endl;
+//    std::cout << logic.pp(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
-//    std::cout << logic.printTerm(dualFarkasItp) << std::endl;
+//    std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), dualFarkasItp));
     PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(FastRational(1,2));
-//    std::cout << logic.printTerm(halfFarkasItp) << std::endl;
+//    std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), halfFarkasItp));
 }
 
@@ -73,13 +73,13 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Astrict){
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-//    std::cout << logic.printTerm(farkasItp) << std::endl;
+//    std::cout << logic.pp(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
-//    std::cout << logic.printTerm(dualFarkasItp) << std::endl;
+//    std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), dualFarkasItp));
     PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(FastRational(1,2));
-//    std::cout << logic.printTerm(halfFarkasItp) << std::endl;
+//    std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), halfFarkasItp));
 }
 
@@ -101,13 +101,13 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Bstrict){
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-//    std::cout << logic.printTerm(farkasItp) << std::endl;
+//    std::cout << logic.pp(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
-//    std::cout << logic.printTerm(dualFarkasItp) << std::endl;
+//    std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), dualFarkasItp));
     PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(FastRational(1,2));
-//    std::cout << logic.printTerm(halfFarkasItp) << std::endl;
+//    std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), halfFarkasItp));
 }
 
@@ -129,13 +129,13 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothStrict){
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-    std::cout << logic.printTerm(farkasItp) << std::endl;
+    std::cout << logic.pp(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), farkasItp));
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
-    std::cout << logic.printTerm(dualFarkasItp) << std::endl;
+    std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), dualFarkasItp));
     PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(FastRational(1,2));
-    std::cout << logic.printTerm(halfFarkasItp) << std::endl;
+    std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), logic.mkAnd(leq3, leq4), halfFarkasItp));
 }
 
@@ -267,5 +267,5 @@ TEST_F(LRAInterpolationTest, test_Decomposition_Strict){
     EXPECT_EQ(decomposedFarkasItp, logic.mkAnd(logic.mkLt(zero, x2), logic.mkLeq(zero, logic.mkNeg(x3))));
     PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
-//    std::cout << logic.printTerm(dualDecomposedFarkasItp) << std::endl;
+//    std::cout << logic.pp(dualDecomposedFarkasItp) << std::endl;
 }
