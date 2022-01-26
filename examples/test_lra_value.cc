@@ -70,29 +70,21 @@ int main()
         printf("sat\n");
         auto m = mainSolver.getModel();
         PTRef v1 = m->evaluate(x1);
-        char* name = logic.pp(x1);
-        char* value = logic.pp(v1);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        auto name = logic.pp(x1);
+        auto value = logic.pp(v1);
+        std::cout << name << ": " << value << '\n';
         PTRef v2 = m->evaluate(x2);
         name = logic.pp(x2);
         value = logic.pp(v2);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        std::cout << name << ": " << value << '\n';
         PTRef v3 = m->evaluate(x3);
         name = logic.pp(x3);
         value = logic.pp(v3);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        std::cout << name << ": " << value << '\n';
         PTRef v4 = m->evaluate(x4);
         name = logic.printTerm(x4);
         value = logic.printTerm(v4);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        std::cout << name << ": " << value << '\n';
     }
     else if (r == s_False)
     {

@@ -796,15 +796,11 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     ss << "  (define-fun " << templateFun.getName() << " (";
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
-        char* tmp = logic->pp(args[i]);
         auto sortString = logic->printSort(logic->getSortRef(args[i]));
-        ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
-        free(tmp);
+        ss << "(" << logic->pp(args[i]) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
-    char* tmp = logic->pp(templateFun.getBody());
-    ss << "    " << tmp << ")\n";
-    free(tmp);
+    ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
     return ss.str();
 }
 
@@ -1292,10 +1288,9 @@ void Interpret::getInterpolants(const ASTNode& n)
     }
 
     for (int j = 0; j < itps.size(); j++) {
-        char * itp = logic->pp(itps[j]);
+        auto itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
-                         (j == 0 ? "(" : " "), itp, (j == itps.size() - 1 ? ")" : ""));
-        free(itp);
+                         (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
     }
 }
 

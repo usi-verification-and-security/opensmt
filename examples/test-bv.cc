@@ -106,11 +106,10 @@ int main(int argc, char** argv)
         printf("sat\n");
         bbb.computeModel();
         PTRef v = bbb.getValue(d);
-        char * val = logic.pp(v);
+        auto val = logic.pp(v);
         char* bin;
-        opensmt::wordToBinary(atoi(val), bin, bw);
-        printf("%s (%s)\n", val, bin);
-        free(val);
+        opensmt::wordToBinary(atoi(val.c_str()), bin, bw);
+        printf("%s (%s)\n", val.c_str(), bin);
         free(bin);
     }
     else if (r == s_False)

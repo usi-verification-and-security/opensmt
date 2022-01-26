@@ -28,9 +28,7 @@ TEST_F(SubstitutionBreaker, test_getVars) {
     SubstNodeAllocator sna(tvl, logic, 1024);
     SNRef snr = sna.alloc(a, f1);
     for (int i = 0; i < sna[snr].nChildren(); i++) {
-        char *n = logic.pp(sna[snr].getChildTerm(i));
-        std::cerr << n << " \n";
-        free(n);
+        std::cerr << logic.pp(sna[snr].getChildTerm(i)) << " \n";
     }
     ASSERT_EQ(sna[snr].nChildren(), 3);
 }

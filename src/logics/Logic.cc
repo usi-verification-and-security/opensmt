@@ -181,14 +181,13 @@ Logic::printSym(SymRef sr) const
     return protectName(sym_store.getName(sr));
 }
 
-char*
-Logic::pp(PTRef tr) const
-{
-    char* out;
 
+std::string Logic::pp(PTRef tr) const {
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    std::string name_escaped = printSym(sr);
+    char * tmp = printSym(sr);
+    std::string name_escaped = tmp;
+    free(tmp);
 
     if (t.size() == 0) {
         std::stringstream ss;
@@ -200,8 +199,7 @@ Logic::pp(PTRef tr) const
 #ifdef PARTITION_PRETTYPRINT
         ss << " [" << getIPartitions(tr) << ' ]';
 #endif
-        out = strdup(ss.str().c_str());
-        return out;
+        return ss.str();
     }
 
     // Here we know that t.size() > 0
@@ -219,8 +217,7 @@ Logic::pp(PTRef tr) const
 #ifdef PARTITION_PRETTYPRINT
     ss << " [" << getIPartitions(tr) << ']';
 #endif
-    out = strdup(ss.str().c_str());
-    return out;
+    return ss.str();
 }
 
 char*

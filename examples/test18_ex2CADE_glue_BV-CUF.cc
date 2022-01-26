@@ -19,11 +19,9 @@ assert(d == d_p);                           //assert ((d != d_p ) = 1)
 
 void printValue(PTRef tr, std::unique_ptr<Model> & m, const Logic & l)
 {
-    char* name = l.pp(tr);
-    char* value = l.pp(m->evaluate(tr));
+    auto name = l.pp(tr);
+    auto value = l.pp(m->evaluate(tr));
     std::cout << name << " "  << value << "\n";
-    free(name);
-    free(value);
 }
 
 int main()

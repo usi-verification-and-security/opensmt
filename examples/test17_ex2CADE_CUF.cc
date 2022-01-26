@@ -122,29 +122,17 @@ int main()
 
     auto m = mainSolver.getModel();
 
-    char * v_a = logic.pp(m->evaluate(a));
-    std::cout << v_a << "\n";
-    free(v_a);
+    std::cout << logic.pp(m->evaluate(a)) << "\n";
 
-    char * v_b = logic.pp(m->evaluate(b));
-    std::cout << v_b << "\n";
-    free(v_b);
+    std::cout << logic.pp(m->evaluate(b)) << "\n";
 
-    char * v_c1 = logic.pp(m->evaluate(c1));
-    std::cout << v_c1 << "\n";
-    free(v_c1);
+    std::cout << logic.pp(m->evaluate(c1)) << "\n";
 
-    char * v_c2 = logic.pp(m->evaluate(c2));
-	std::cout << v_c2 << "\n";
-    free(v_c2);
+	std::cout << logic.pp(m->evaluate(c2)) << "\n";
 
-	char * v_d = logic.pp(m->evaluate(d));
-	std::cout << v_d << "\n";
-	free(v_d);
+	std::cout << logic.pp(m->evaluate(d)) << "\n";
 
-	char * v_dp = logic.pp(m->evaluate(d_p));
-	std::cout << v_dp << "\n";
-	free(v_dp);
+	std::cout << logic.pp(m->evaluate(d_p)) << "\n";
 
     if (r == s_True)
         printf("sat\n");

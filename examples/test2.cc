@@ -31,17 +31,13 @@ int main()
     if (r == s_True) {
         printf("sat\n");
         auto m = mainSolver.getModel();
-        char * v1_p = logic.pp(m->evaluate(v1));
-        char * v2_p = logic.pp(m->evaluate(v2));
-        char* var_a_s = logic.pp(v1);
-        char* var_b_s = logic.pp(v2);
+        auto v1_p = logic.pp(m->evaluate(v1));
+        auto v2_p = logic.pp(m->evaluate(v2));
+        auto var_a_s = logic.pp(v1);
+        auto var_b_s = logic.pp(v2);
 
-        printf("var %s has value %s\n", var_a_s, v1_p);
-        printf("var %s has value %s\n", var_b_s, v2_p);
-        free(var_a_s);
-        free(var_b_s);
-        free(v1_p);
-        free(v2_p);
+        printf("var %s has value %s\n", var_a_s.c_str(), v1_p.c_str());
+        printf("var %s has value %s\n", var_b_s.c_str(), v2_p.c_str());
     }
     else if (r == s_False)
         printf("unsat\n");

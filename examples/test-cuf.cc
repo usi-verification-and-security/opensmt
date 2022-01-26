@@ -54,12 +54,7 @@ int main(int argc, char** argv)
     if (r == s_True) {
         printf("sat\n");
         bbb.computeModel();
-        char * val = logic.pp(bbb.getValue(a_bv));
-        printf("%s\n", val);
-        free(val);
-        val = logic.pp(bbb.getValue(a));
-        printf("%s\n", val);
-        free(val);
+        std::cout << logic.pp(bbb.getValue(a_bv)) << '\n' << logic.pp(bbb.getValue(a)) << std::endl;
     }
     else if (r == s_False)
         printf("unsat\n");
