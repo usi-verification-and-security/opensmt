@@ -1026,8 +1026,7 @@ LAMatrixStore::discretize(const LAVecRef v)
     return v_r;
 }
 
-char*
-LAMatrixStore::print(MId A)
+std::string LAMatrixStore::print(MId A)
 {
     int nRows = operator[](A).nRows();
     int nCols = operator[](A).nCols();
@@ -1053,5 +1052,7 @@ LAMatrixStore::print(MId A)
     int res = asprintf(&buf_new, "[%s]", buf);
     assert(res >= 0); (void)res;
     free(buf);
-    return buf_new;
+    std::string ret = buf_new;
+    free(buf_new);
+    return ret;
 }

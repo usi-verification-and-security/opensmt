@@ -194,7 +194,7 @@ public:
     MId mul_matrix        (MId A, MId B);
     LAVecRef discretize   (LAVecRef v); // compute [v], i.e., round up or down to closest integer
 
-    char* print(MId A);
+    std::string print(MId A);
 };
 
 

@@ -192,7 +192,7 @@ TEST(Matrix_test, smith_matrix1) {
     int dim;
 
     ms.compute_snf(U, S, dim, L, Li, R, Ri);
-    printf("The snf matrix:\n%s\n", ms.print(S));
+    printf("The snf matrix:\n%s\n", ms.print(S).c_str());
     int diag[] = {2, 6, 12};
      for (int i = 1; i <= 3; i++) {
          for (int j = 1; j <= 3; j++) {
@@ -246,7 +246,7 @@ TEST(Matrix_test, smith_matrix111) {
     int dim;
 
     ms.compute_snf(U, S, dim, L, Li, R, Ri);
-    printf("The snf matrix:\n%s\n", ms.print(S));
+    printf("The snf matrix:\n%s\n", ms.print(S).c_str());
     int diag[] = {1, 3, 21, 0};
      for (int i = 1; i <= 4; i++) {
          for (int j = 1; j <= 4; j++) {
@@ -315,7 +315,7 @@ TEST(Matrix_test, smith_matrix2) {
     MId R2i = ms.getNewMatrix(2, 2);
     int dim;
     ms.compute_snf(T, S2, dim, L2, L2i, R2, R2i);
-    printf("snf matrix:\n%s\n", ms.print(S2));
+    printf("snf matrix:\n%s\n", ms.print(S2).c_str());
 }
 
 TEST(Matrix_test, smith_matrix3) {
@@ -353,7 +353,7 @@ TEST(Matrix_test, smith_matrix3) {
     MId R3i = ms.getNewMatrix(1, 1);
     int dim;
     ms.compute_snf(T3, S3, dim, L3, L3i, R3, R3i);
-    printf("snf matrix:\n%s\n", ms.print(S3));
+    printf("snf matrix:\n%s\n", ms.print(S3).c_str());
 }
 
 TEST(Matrix_test, smith_matrix4) {
@@ -375,7 +375,7 @@ TEST(Matrix_test, smith_matrix4) {
     MId R3i = ms.getNewMatrix(1, 1);
     int dim;
     ms.compute_snf(T3, S3, dim, L3, L3i, R3, R3i);
-    printf("snf matrix:\n%s\n", ms.print(S3));
+    printf("snf matrix:\n%s\n", ms.print(S3).c_str());
 }
 
 TEST(Matrix_test, matrix_mult) {
@@ -410,9 +410,7 @@ TEST(Matrix_test, matrix_mult) {
     ms.MM(C, 2, 2) = 5;
     ms.MM(C, 3, 2) = 6;
     MId R2 = ms.mul_matrix(B, C);
-    char* R2_str = ms.print(R2);
-    printf("The matrix:\n%s\n", R2_str);
-    free(R2_str);
+    printf("The matrix:\n%s\n", ms.print(R2).c_str());
     ASSERT_EQ(ms.MM(R2, 1, 1), 22);
     ASSERT_EQ(ms.MM(R2, 2, 1), 28);
     ASSERT_EQ(ms.MM(R2, 1, 2), 49);
@@ -472,9 +470,7 @@ TEST(Matrix_test, non_square)
     ms.MM(U, 2, 2) = 22;
     ms.MM(U, 1, 3) = 13;
     ms.MM(U, 2, 3) = 23;
-    char* m_str = ms.print(U);
-    printf("The matrix:\n%s\n", m_str);
-    free(m_str);
+    printf("The matrix:\n%s\n", ms.print(U).c_str());
 }
 
 TEST(gcd_test, gcd)

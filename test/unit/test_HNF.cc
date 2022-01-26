@@ -44,7 +44,7 @@ TEST_F(HNF_test, test_hnf1)
     MId V1 = MId_Undef;
 
     ms.compute_hnf_v1(U, H, dim, U1, V1);
-    printf("The hnf matrix:\n%s\n", ms.print(H));
+    printf("The hnf matrix:\n%s\n", ms.print(H).c_str());
 
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
