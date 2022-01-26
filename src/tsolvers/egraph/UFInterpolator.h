@@ -58,7 +58,6 @@ struct CNode {
     PTRef e;
     icolor_t color;
     CEdge * next;
-    std::set<CEdge *> prev;
 };
 
 typedef std::pair<CNode *, CNode *> path_t;
@@ -99,14 +98,14 @@ public:
     void removeCEdge(CEdge *);
 
     CNode* getConflictStart() const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf1); }
-    CNode* getConflictEnd()   const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf2); }
+    CNode* getConflictEnd()   const { assert(conf2 != PTRef_Undef); return cnodes_store.at(conf2); }
 
-    inline void setConf( PTRef c1, PTRef c2) {
+    inline void setConf(PTRef c1, PTRef c2) {
 //      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
-        assert( conf1 == PTRef_Undef );
-        assert( conf2 == PTRef_Undef );
-        assert( c1 != PTRef_Undef);
-        assert( c2 != PTRef_Undef);
+        assert(conf1 == PTRef_Undef);
+        assert(conf2 == PTRef_Undef);
+        assert(c1 != PTRef_Undef);
+        assert(c2 != PTRef_Undef);
         conf1 = c1;
         conf2 = c2;
     }

@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sys/wait.h>
 #include "UFInterpolator.h"
 #include "Logic.h"
+#include "OsmtInternalException.h"
 
 //#define ITP_DEBUG
 //#define COLOR_DEBUG
@@ -98,7 +99,6 @@ void CGraph::addCEdge(CNode * from, CNode * to, PTRef reason) {
     // Storing edge in cs and ct
     assert (from->next == nullptr);
     from->next = edge;
-    to->prev.insert(edge);
     cedges.push_back(edge);
 }
 
@@ -120,27 +120,20 @@ void UFInterpolator::colorCGraph() {
 
 
 bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
-    std::set<std::pair<CNode *, CNode *>> cache_nodes;
+    std::set<path_t> cache_nodes;
     std::set<CEdge *> cache_edges;
-    std::vector<CNode *> unprocessed_nodes;
-    unprocessed_nodes.push_back(c1);
-    unprocessed_nodes.push_back(c2);
+    std::vector<path_t> unprocessed_nodes;
+    unprocessed_nodes.push_back({c1, c2});
     bool no_mixed = true;
     while (!unprocessed_nodes.empty() && no_mixed) {
-        assert (unprocessed_nodes.size() % 2 == 0);
-        CNode * n1 = unprocessed_nodes[unprocessed_nodes.size() - 2];
-        CNode * n2 = unprocessed_nodes[unprocessed_nodes.size() - 1];
-        //
+        auto node_pair = unprocessed_nodes.back();
         // Skip if path already seen
-        //
-        if (cache_nodes.find(std::make_pair(n1, n2)) != cache_nodes.end()) {
-            unprocessed_nodes.pop_back();
+        if (cache_nodes.find(node_pair) != cache_nodes.end()) {
             unprocessed_nodes.pop_back();
             continue;
         }
-        //
+
         // Push congruence children otherwise
-        //
         bool unprocessed_children = false;
         auto processPathFromNode = [&](CNode * x) {
             while (x->next != nullptr) {
@@ -150,8 +143,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                 //
                 if (x->next->reason == PTRef_Undef && cache_edges.insert(x->next).second) {
                     CNode * n = x->next->target;
-                    assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
-                    // getArity = pterm->size
+                    assert(logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
                     Pterm const & px = logic.getPterm(x->e);
                     Pterm const & pn = logic.getPterm(n->e);
 
@@ -165,9 +157,9 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                         CNode * arg_n1 = cgraph.getNode(arg_x);
                         CNode * arg_n2 = cgraph.getNode(arg_n);
                         // Push only unprocessed paths
-                        if (cache_nodes.find(std::make_pair(arg_n1, arg_n2)) == cache_nodes.end()) {
-                            unprocessed_nodes.push_back(arg_n1);
-                            unprocessed_nodes.push_back(arg_n2);
+                        path_t next_pair {arg_n1, arg_n2};
+                        if (cache_nodes.find(next_pair) == cache_nodes.end()) {
+                            unprocessed_nodes.push_back(next_pair);
                             unprocessed_children = true;
                         }
                     }
@@ -175,6 +167,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                 x = x->next->target;
             }
         };
+        auto [n1,n2] = node_pair;
         // Direction n1 ----> n2
         processPathFromNode(n1);
         // Direction n1 <--- n2
@@ -187,7 +180,6 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
         // Otherwise remove this pair
         //
         unprocessed_nodes.pop_back();
-        unprocessed_nodes.pop_back();
         //
         // Color this path
         //
@@ -195,7 +187,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
         //
         // Remember this path is done
         //
-        cache_nodes.insert(std::make_pair(n1, n2));
+        cache_nodes.insert({n1, n2});
     }
     return no_mixed;
 }
@@ -210,8 +202,15 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
     CNode * n = nullptr;
     while (x->next != nullptr && x->next->color == I_UNDEF) {
         n = x->next->target;
-        // Congruence edge, recurse on arguments
-        if (x->next->reason == PTRef_Undef) {
+        // Color basic edge with proper color
+        if (x->next->reason != PTRef_Undef) {
+            x->next->color = getLitColor(x->next->reason);
+            assert(x->next->color != I_AB);
+            if (x->next->color == I_AB) {
+                throw OsmtInternalException("Error in coloring information");
+            }
+        }
+        else { // Congruence edge, recurse on arguments
             assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
             // Incompatible colors: this is possible
             // for effect of congruence nodes: adjust
@@ -241,9 +240,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                             abcommon = cn_arg_x->e;
                         } else if (cn_arg_n->color == I_AB) {
                             abcommon = cn_arg_n->e;
-                        }
-                            // If argument of x is incompatible with n
-                        else {
+                        } else { // If argument of x is incompatible with n
                             //std::cerr << "; Edges from X to N" << std::endl;
                             std::vector<CEdge *> sorted;
                             size_t xnl = getSortedEdges(cn_arg_x, cn_arg_n, sorted);
@@ -252,7 +249,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                                 CNode * from = edge->source;
                                 CNode * to = edge->target;
                                 assert(from->color != I_UNDEF and to->color != I_UNDEF);
-                                if (from->color == I_AB || to->color == I_AB) {
+                                if (from->color == I_AB or to->color == I_AB) {
                                     abcommon = from->color == I_AB ? from->e : to->e;
                                     break;
                                 }
@@ -278,14 +275,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
             // Now all the children are colored, we can decide how to color this
             colorCongruenceEdge(x->next);
         }
-            // Color basic edge with proper color
-        else {
-            x->next->color = getLitColor(x->next->reason);
-            assert(x->next->color != I_AB);
-            if (x->next->color == I_AB) {
-                throw std::logic_error("Error in coloring information");
-            }
-        }
+
         // This edge has been colored
         colored_edges.insert(x->next);
         assert (x->next->color == I_A || x->next->color == I_B);
@@ -1251,7 +1241,6 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
     from->next->color = from->color == I_AB ? resolveABColor() : from->color;
 
     cgraph.addCEdge(intermediate, to, PTRef_Undef);
-//    intermediate->next->color = to->color;
     if (intermediate_next) {
         // MB: It looks like it is possible that there has already been an edge n -> cnn
         // In that case a self-loop edge would be added here and that causes trouble later
