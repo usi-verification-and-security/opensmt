@@ -71,16 +71,17 @@ icolor_t UFInterpolator::colorNode(CNode * c) {
     return c->color = color;
 }
 
-void
-CGraph::removeCEdge(CEdge * e) {
+void CGraph::removeCEdge(CEdge * e) {
     if (e == nullptr) return;
     for (std::size_t i = 0; i < cedges.size(); ++i) {
         if (cedges[i] == e) {
             delete e;
+            e = nullptr;
             cedges.erase(cedges.begin() + i);
             break;
         }
     }
+    assert(e == nullptr);
 }
 
 void CGraph::addCEdge(PTRef s, PTRef t, PTRef r) {
@@ -123,7 +124,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
     std::set<path_t> cache_nodes;
     std::set<CEdge *> cache_edges;
     std::vector<path_t> unprocessed_nodes;
-    unprocessed_nodes.push_back({c1, c2});
+    unprocessed_nodes.emplace_back(path_t{c1, c2});
     bool no_mixed = true;
     while (!unprocessed_nodes.empty() && no_mixed) {
         auto node_pair = unprocessed_nodes.back();
@@ -159,7 +160,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                         // Push only unprocessed paths
                         path_t next_pair {arg_n1, arg_n2};
                         if (cache_nodes.find(next_pair) == cache_nodes.end()) {
-                            unprocessed_nodes.push_back(next_pair);
+                            unprocessed_nodes.emplace_back(next_pair);
                             unprocessed_children = true;
                         }
                     }
@@ -378,7 +379,7 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolo
         else if (usingRandom())
             result = (rand() % 2) ? I(pi) : logic.mkNot(IprimeSwap(pi));
     } else {
-        opensmt_error ("something went wrong");
+        throw OsmtInternalException("something went wrong");
     }
 
     assert (result != PTRef_Undef);
@@ -1035,7 +1036,7 @@ icolor_t UFInterpolator::resolveABColor() const {
 // Return the set of factors
 bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & factors, vector<path_t> & parents) {
     assert (factors.size() == 1);
-    assert (parents.size() == 0);
+    assert (parents.empty());
     CNode * x = p.first;
     CNode * y = p.second;
     assert (x);
@@ -1057,8 +1058,8 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         CNode * tn = x;
         assert (logic.getPterm(tx->e).size() == logic.getPterm(tn->e).size());
         // Examine children of the congruence edge
-        const Pterm & px = logic.getPterm(tx->e);
-        const Pterm & pn = logic.getPterm(tn->e);
+        Pterm const & px = logic.getPterm(tx->e);
+        Pterm const & pn = logic.getPterm(tn->e);
 
         for (int j = 0; j < px.size(); ++j) {
             PTRef arg_tx = px[j];
@@ -1081,8 +1082,8 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         if (sorted_edges[i]->reason == PTRef_Undef) {
             assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
             // Examine children of the congruence edge
-            const Pterm & px = logic.getPterm(x->e);
-            const Pterm & pn = logic.getPterm(n->e);
+            Pterm const & px = logic.getPterm(x->e);
+            Pterm const & pn = logic.getPterm(n->e);
 
             for (int j = 0; j < px.size(); ++j) {
                 PTRef arg_x = px[j];
