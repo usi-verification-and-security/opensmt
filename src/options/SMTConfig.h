@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 
 #include <libgen.h>
+#include <string>
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -117,7 +118,7 @@ class ConfValue {
     ConfValue(const char* s);
     ConfValue(const ConfValue& other);
     ConfValue& operator=(const ConfValue& other);
-    char* toString() const;
+    std::string toString() const;
     double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
     ~ConfValue();
 };
@@ -130,7 +131,7 @@ class Info {
     Info(Info const & other);
     Info() {};
     bool isEmpty() const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); };
+    inline std::string toString() const { return value.toString(); }
 };
 
 class SMTOption {
@@ -142,8 +143,8 @@ class SMTOption {
     SMTOption(int i)   : value(i) {}
     SMTOption(double i): value(i) {}
     SMTOption(const char* s) : value(s) {}
-    inline bool  isEmpty()  const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); }
+    inline bool isEmpty() const { return value.type == O_EMPTY; }
+    inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
 };
 

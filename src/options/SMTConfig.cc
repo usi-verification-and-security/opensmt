@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "SMTConfig.h"
+#include "OsmtInternalException.h"
 
 void ASTNode::print(std::ostream& o, int indent) {
         for (int i = 0; i < indent; i++)
@@ -207,52 +208,42 @@ ConfValue::~ConfValue()
         free(strval);
 }
 
-char* ConfValue::toString() const {
+std::string ConfValue::toString() const {
     if (type == O_BOOL)
-        return numval == 1 ? strdup("true") : strdup("false");
+        return numval == 1 ? "true" : "false";
     if (type == O_STR)
-        return strdup(strval);
+        return strval;
     if (type == O_NUM) {
-        stringstream ss;
-        ss << numval;
-        return strdup(ss.str().c_str());
+        return std::to_string(numval);
     }
     if (type == O_EMPTY) {
-        return strdup("");
+        return "";
     }
     if (type == O_ATTR) {
-        return strdup(strval);
+        return strval;
     }
     if (type == O_DEC) {
-        stringstream ss;
+        std::stringstream ss;
         ss << decval;
-        return strdup(ss.str().c_str());
+        return ss.str();
     }
-    if (type == O_HEX) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_BIN) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
+    if (type == O_HEX or type == O_BIN) {
+        return std::to_string(unumval);
     }
     if (type == O_SYM) {
-        return strdup(strval);
+        return strval;
     }
     if (type == O_LIST) {
+        assert(configs);
         stringstream ss;
         ss << "( ";
-        for (list<ConfValue*>::iterator it = configs->begin(); it != configs->end(); it++) {
-            char* conf_str = (*it)->toString();
-            ss << conf_str; ss << " ";
-            free(conf_str);
+        for (ConfValue * val : *configs) {
+            ss << val->toString() << " ";
         }
         ss << ")";
-        return strdup(ss.str().c_str());
+        return ss.str();
     }
-    return strdup("not implemented");
+    throw OsmtInternalException("Not implemented");
 }
 
 

@@ -87,9 +87,8 @@ void Interpret::getInfo(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "no value for info %s", name);
     else {
-        char* val_str = value.toString();
-        notify_formatted(false, "%s %s", name, val_str);
-        free(val_str);
+        auto val_str = value.toString();
+        notify_formatted(false, "%s %s", name, val_str.c_str());
     }
 }
 
@@ -125,9 +124,8 @@ void Interpret::getOption(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
     else {
-        char* str_val = value.toString();
-        notify_formatted(false, "%s",str_val);
-        free(str_val);
+        auto str_val = value.toString();
+        notify_formatted(false, "%s",str_val.c_str());
     }
 }
 
@@ -560,7 +558,7 @@ bool Interpret::checkSat() {
 
         const Info& status = config.getInfo(":status");
         if (!status.isEmpty()) {
-            std::string statusString(std::move(status.toString()));
+            std::string statusString = status.toString();
             if ((statusString.compare("sat") == 0) && (res == s_False)) {
                 notify_formatted(false, "(error \"check status which says sat\")");
 
