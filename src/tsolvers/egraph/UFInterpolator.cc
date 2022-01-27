@@ -311,7 +311,7 @@ PTRef
 UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) {
     assert(labels);
     if (labels) {
-        colorInfo.reset(new GlobalTermColorInfo(pmanager, mask));
+        colorInfo = std::make_unique<GlobalTermColorInfo>(pmanager, mask);
         litColors = *labels;
     } else {
         throw OsmtInternalException("Error in UFInterpolator::getInterpolant! No labels passed");
