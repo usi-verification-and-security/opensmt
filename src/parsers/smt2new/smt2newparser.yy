@@ -486,12 +486,12 @@ symbol_list:
 
 b_value: TK_SYM
         {
-            if (strcmp($1, "true") == 0)
-                $$ = new ASTNode(BOOL_T, strdup("true"));
-            else if (strcmp($1, "false") == 0)
-                $$ = new ASTNode(BOOL_T, strdup("false"));
+            if (strcmp($1, "true") == 0 or strcmp($1, "false") == 0) {
+                $$ = new ASTNode(BOOL_T, $1);
+            }
             else {
                 printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", $1);
+                free($1);
                 YYERROR;
             }
         }
