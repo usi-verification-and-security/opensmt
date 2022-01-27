@@ -114,7 +114,7 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
 //
-bool Logic::hasQuotableChars(const char* name) const
+bool Logic::hasQuotableChars(std::string const & name) const
 {
     // Entry is 1 if the corresponding ascii character requires quoting
     const bool quotable[256] =
@@ -165,7 +165,7 @@ bool Logic::hasQuotableChars(const char* name) const
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(const char* name) const
+std::string Logic::protectName(std::string const & name) const
 {
     if (hasQuotableChars(name)) {
         std::stringstream ss;

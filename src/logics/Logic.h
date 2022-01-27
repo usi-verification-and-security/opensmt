@@ -396,9 +396,8 @@ public:
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
 
-    bool          hasQuotableChars(const char* name) const;
-    std::string   protectName(const char* name) const;
-    std::string   protectName(const std::string& name) const { return protectName(name.c_str()); };
+    bool          hasQuotableChars(std::string const & name) const;
+    std::string   protectName(const std::string& name) const;
     virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
     virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
     virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }
