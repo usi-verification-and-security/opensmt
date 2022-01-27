@@ -1181,7 +1181,7 @@ CRef CoreSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
-            props++;
+//            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
 
@@ -1194,7 +1194,9 @@ CRef CoreSMTSolver::propagate()
             unsigned c_size = c.size();
             Lit false_lit = ~p;
 
-
+            if(!tested){
+                props++;
+            }
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 if(!tested) {

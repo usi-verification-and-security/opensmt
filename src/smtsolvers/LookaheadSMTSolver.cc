@@ -353,7 +353,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     {
             if(next_arr[v] || close_to_prop <= 0) {
 //                count_pr++;
-                props++;
+//                props++;
                 if (!decision[v]) {
                     score->setChecked(v);
 #ifdef LADEBUG
