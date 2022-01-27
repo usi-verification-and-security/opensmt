@@ -260,26 +260,22 @@ char* ConfValue::toString() const {
  * Class defining the information, configured with set-info
  ***********************************************************/
 
-Info::Info(ASTNode& n) {
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+Info::Info(ASTNode const & n) {
+    assert(n.getType() == UATTR_T or n.getType() == PATTR_T);
     if (n.children == NULL) {
         value.type = O_EMPTY;
         return;
     }
     else {
-        // n is now attribute_value
-        n = **(n.children->begin());
+        // child is attribute_value
+        ASTNode const & child = **(n.children->begin());
 
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
+        if (child.getType() == SPECC_T or child.getType() == SEXPRL_T) {
+            value = ConfValue(child);
         }
-        else if (n.getType() == SYM_T) {
-            value.strval = strdup(n.getValue());
+        else if (child.getType() == SYM_T) {
+            value.strval = strdup(child.getValue());
             value.type = O_STR;
-            return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
         }
         else assert(false);
     }
@@ -294,64 +290,59 @@ Info::Info(const Info& other)
  * Class defining the options, configured with set-config
  ***********************************************************/
 
-SMTOption::SMTOption(ASTNode& n) {
-    assert(n.children != NULL);
+SMTOption::SMTOption(ASTNode const & n) {
+    assert(n.children);
 
-    n = **(n.children->begin());
+    ASTNode const & child = **(n.children->begin());
 
-    if (n.getType() == BOOL_T) {
+    if (child.getType() == BOOL_T) {
         value.type   = O_BOOL;
-        value.numval = strcmp(n.getValue(), "true") == 0 ? 1 : 0;
+        value.numval = strcmp(child.getValue(), "true") == 0 ? 1 : 0;
         return;
     }
-    if (n.getType() == STR_T) {
+    if (child.getType() == STR_T) {
         value.type   = O_STR;
-        value.strval = strdup(n.getValue());
+        value.strval = strdup(child.getValue());
         return;
     }
-    if (n.getType() == NUM_T) {
+    if (child.getType() == NUM_T) {
         value.type   = O_NUM;
-        value.numval = atoi(n.getValue());
+        value.numval = atoi(child.getValue());
         return;
     }
 
-    if (n.getType() == DEC_T) {
+    if (child.getType() == DEC_T) {
         value.type   = O_DEC;
-        sscanf(n.getValue(), "%lf", &value.decval);
+        sscanf(child.getValue(), "%lf", &value.decval);
     }
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+    assert(child.getType() == UATTR_T or child.getType() == PATTR_T);
     // The option is an attribute
 
-    if (n.children == NULL) {
+    if (not child.children) {
         value.type = O_EMPTY;
         return;
     }
     else {
         // n is now attribute_value
-        n = **(n.children->begin());
+        ASTNode const & attributeValue = **(child.children->begin());
 
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
+        if (attributeValue.getType() == SPECC_T or attributeValue.getType() == SEXPRL_T) {
+            value = ConfValue(attributeValue);
         }
-        else if (n.getType() == SYM_T) {
-            if (strcmp(n.getValue(), "true") == 0) {
+        else if (attributeValue.getType() == SYM_T) {
+            if (strcmp(attributeValue.getValue(), "true") == 0) {
                 value.type = O_BOOL;
                 value.numval = 1;
             }
-            else if (strcmp(n.getValue(), "false") == 0) {
+            else if (strcmp(attributeValue.getValue(), "false") == 0) {
                 value.type = O_BOOL;
                 value.numval = 0;
             }
             else {
-                value.strval = strdup(n.getValue());
+                value.strval = strdup(attributeValue.getValue());
                 value.type = O_STR;
             }
             return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
-            /*
-            */
         }
         else assert(false);
     }
