@@ -65,11 +65,14 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 %union
 {
   char  *                      str;
-  std::vector< std::string > * str_list;
   ASTNode *                    snode;
   std::vector< ASTNode * > *   snode_list;
   osmttokens::smt2token        tok;
 }
+
+%destructor { free($$); } <str>
+%destructor { delete $$; } <snode>
+%destructor { if ($$) { for (auto node : *$$) { delete node; } delete $$; }} <snode_list>
 
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
