@@ -96,7 +96,7 @@ void CGraph::addCEdge(PTRef s, PTRef t, PTRef r) {
 }
 
 void CGraph::addCEdge(CNode * from, CNode * to, PTRef reason) {
-    CEdge * edge = new CEdge(from, to, reason);
+    auto edge = new CEdge(from, to, reason);
     // Storing edge in cs and ct
     assert (from->next == nullptr);
     from->next = edge;
@@ -142,7 +142,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                 // Consider only sub-paths with congruence edges
                 // Congruence edge is the first time we see
                 //
-                if (x->next->reason == PTRef_Undef && cache_edges.insert(x->next).second) {
+                if (x->next->reason == PTRef_Undef and cache_edges.insert(x->next).second) {
                     CNode * n = x->next->target;
                     assert(logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
                     Pterm const & px = logic.getPterm(x->e);
@@ -201,7 +201,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
     assert (x);
     // Color from x
     CNode * n = nullptr;
-    while (x->next != nullptr && x->next->color == I_UNDEF) {
+    while (x->next and x->next->color == I_UNDEF) {
         n = x->next->target;
         // Color basic edge with proper color
         if (x->next->reason != PTRef_Undef) {
@@ -210,8 +210,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
             if (x->next->color == I_AB) {
                 throw OsmtInternalException("Error in coloring information");
             }
-        }
-        else { // Congruence edge, recurse on arguments
+        } else { // Congruence edge, recurse on arguments
             assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
             // Incompatible colors: this is possible
             // for effect of congruence nodes: adjust
@@ -235,7 +234,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
                         CNode * cn_arg_n = cgraph.getNode(arg_n);
                         // There is either a path from arg_x to ABcommon
                         // or a path from arg_n to ABcommon (or both)
-                        assert(cn_arg_x->next != nullptr || cn_arg_n->next != nullptr);
+                        assert(cn_arg_x->next or cn_arg_n->next);
                         PTRef abcommon = PTRef_Undef;
                         if (cn_arg_x->color == I_AB) {
                             abcommon = cn_arg_x->e;
@@ -430,7 +429,7 @@ bool UFInterpolator::getSubpaths(const path_t & pi, path_t & pi_1, path_t & thet
         }
     }
 
-    if (not lnode || not rnode || lnode == rnode) {
+    if (not lnode or not rnode or lnode == rnode) {
         //theta empty
         pi_1.first = pi.first;
         pi_1.second = pi.first;
@@ -537,7 +536,7 @@ UFInterpolator::Iprime(const path_t & pi) {
     // Compute largest subpath of c1 -- c2
     // with B-colorable endpoints
     path_t pi_1, pi_2, theta;
-    bool empty_theta = !getSubpaths(pi, pi_1, theta, pi_2);
+    bool empty_theta = not getSubpaths(pi, pi_1, theta, pi_2);
     // Compute B( pi_1 ) U B( pi_2 )
     vector<path_t> b_paths;
     B(pi_1, b_paths);
@@ -703,30 +702,27 @@ UFInterpolator::Irec(const path_t & p, std::map<path_t, PTRef> & cache) {
                 else if (r->color == I_B) rb = true;
                 else rab = true;
 
-                assert (!((la && rb) || (lb && ra)));
+                assert (not ((la and rb) or (lb and ra)));
                 bool b = true;//rand() % 2;
 
-                if (la || ra) // conflict in A, call I' or not S
-                {
-                    assert (i == 0 || j == (factors.size() - 1));
+                if (la or ra) { // conflict in A, call I' or not S
+                    assert (i == 0 or j == (factors.size() - 1));
 
-                    if (b && config.itp_euf_alg() == 4) {
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(Irec(pf, cache));
                     } else {
                         conj.push(logic.mkNot(IprimeSwap(pf)));
                     }
-                } else if (lb || rb) // conflict in B, call I or not S'
-                {
-                    assert (i == 0 || j == (factors.size() - 1));
+                } else if (lb or rb) { // conflict in B, call I or not S'
+                    assert (i == 0 or j == (factors.size() - 1));
 
-                    if (b && config.itp_euf_alg() == 4) {
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(Irec(pf, cache));
                     } else {
                         conj.push(logic.mkNot(IprimeSwap(pf)));
                     }
-                } else // conflict has global endpoints
-                {
-                    if (b && config.itp_euf_alg() == 4) {
+                } else { // conflict has global endpoints
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(Irec(pf, cache));
                     } else {
                         conj.push(logic.mkNot(IprimeSwap(pf)));
@@ -779,9 +775,8 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
             if (conj_swap.size() > 0) {
                 conj.push(logic.mkAnd(conj_swap));
             }
-        }
-            // It's an A-path
-        else {
+        } else { // It's an A-path
+
             // Recurse on parents
             for (const auto & parent : parents) {
                 conj.push(IrecSwap(parent, cache));
@@ -789,7 +784,7 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
         }
     } else {
         // Recurse on factors
-        if (factors.size() > 3 && config.itp_euf_alg() > 3) {
+        if (factors.size() > 3 and config.itp_euf_alg() > 3) {
             bool la, lb, lab, ra, rb, rab;
             for (std::size_t i = 0; i < factors.size(); i += 3) {
                 std::size_t j = i + 2;
@@ -826,28 +821,27 @@ UFInterpolator::IrecSwap(const path_t & p, map<path_t, PTRef> & cache) {
                 else if (r->color == I_B) rb = true;
                 else rab = true;
 
-                assert (!((la && rb) || (lb && ra)));
+                assert (not ((la and rb) or (lb and ra)));
                 bool b = true;//rand() % 2;
 
-                if (la || ra) {
-                    assert (i == 0 || j == (factors.size() - 1));
+                if (la or ra) {
+                    assert (i == 0 or j == (factors.size() - 1));
 
-                    if (b && config.itp_euf_alg() == 4) {
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(logic.mkNot(Iprime(pf)));
                     } else {
                         conj.push(IrecSwap(pf, cache));
                     }
-                } else if (lb || rb) {
-                    assert (i == 0 || j == (factors.size() - 1));
+                } else if (lb or rb) {
+                    assert (i == 0 or j == (factors.size() - 1));
 
-                    if (b && config.itp_euf_alg() == 4) {
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(logic.mkNot(Iprime(pf)));
                     } else {
                         conj.push(IrecSwap(pf, cache));
                     }
-                } else // conflict has global endpoints
-                {
-                    if (b && config.itp_euf_alg() == 4) {
+                } else { // conflict has global endpoints
+                    if (b and config.itp_euf_alg() == 4) {
                         conj.push(logic.mkNot(Iprime(pf)));
                     } else {
                         conj.push(IrecSwap(pf, cache));
@@ -896,10 +890,9 @@ void UFInterpolator::Brec(const path_t & p, vector<path_t> & b_premise_set, set<
         if (a_factor) {
             for (const auto & parent : parents)
                 Brec(parent, b_premise_set, cache);
-        }
-            // It's a B-path
-        else
+        } else { // It's a B-path
             b_premise_set.push_back(p);
+        }
     } else {
         // Recurse on factors
         for (const auto & factor : factors)
@@ -924,13 +917,12 @@ void UFInterpolator::BrecSwap(const path_t & p, vector<path_t> & a_premise_set, 
 
     if (factors.size() == 1) {
         // It's an A-path
-        if (!a_factor) {
+        if (not a_factor) {
             for (const auto & parent : parents)
                 BrecSwap(parent, a_premise_set, cache);
-        }
-            // It's a B-path
-        else
+        } else { // It's a B-path
             a_premise_set.push_back(p);
+        }
     } else {
         // Recurse on factors
         for (const auto & factor : factors)
@@ -961,7 +953,7 @@ size_t UFInterpolator::getSortedEdges(CNode * x, CNode * y, std::vector<CEdge *>
 
     bool done = false;
 
-    while (!done) {
+    while (not done) {
         // Advance x by 1
         if (x->next != nullptr) {
             CEdge * candidate = x->next;
@@ -970,8 +962,8 @@ size_t UFInterpolator::getSortedEdges(CNode * x, CNode * y, std::vector<CEdge *>
             // Touching an already seen node (by y)
             // x is the nearest common ancestor
             // Clear y vector until x is found
-            if (!visited.insert(x).second) {
-                while (!tmp.empty() && tmp.back()->target != x) {
+            if (not visited.insert(x).second) {
+                while (not tmp.empty() and tmp.back()->target != x) {
                     tmp.pop_back();
                 }
                 done = true;
@@ -983,14 +975,14 @@ size_t UFInterpolator::getSortedEdges(CNode * x, CNode * y, std::vector<CEdge *>
         if (done) break;
 
         // Advance y by 1
-        if (y->next != nullptr) {
+        if (y->next) {
             CEdge * candidate = y->next;
             y = y->next->target;
             // Touching an already seen node (by x)
             // y is the nearest common ancestor
             // Clear x vector until y is found
-            if (!visited.insert(y).second) {
-                while (!from_x.empty() && from_x.back()->target != y) {
+            if (not visited.insert(y).second) {
+                while (not from_x.empty() && from_x.back()->target != y) {
                     from_x.pop_back();
                 }
                 done = true;
@@ -1004,14 +996,14 @@ size_t UFInterpolator::getSortedEdges(CNode * x, CNode * y, std::vector<CEdge *>
     const size_t x_path_length = sorted_edges.size();
 
     // The two paths must collide
-    assert (!tmp.empty() || sorted_edges.back()->target == y);
-    assert (!sorted_edges.empty() || tmp.back()->target == x);
+    assert (not tmp.empty() or sorted_edges.back()->target == y);
+    assert (not sorted_edges.empty() or tmp.back()->target == x);
     assert (sorted_edges.empty()
-            || tmp.empty()
-            || sorted_edges.back()->target == tmp.back()->target);
+            or tmp.empty()
+            or sorted_edges.back()->target == tmp.back()->target);
 
     // Now load edges from y in the correct order
-    while (!tmp.empty()) {
+    while (not tmp.empty()) {
         sorted_edges.push_back(tmp.back());
         tmp.pop_back();
     }
@@ -1097,7 +1089,7 @@ bool UFInterpolator::getFactorsAndParents(const path_t & p, vector<path_t> & fac
         }
 
         // New factor
-        if (i < sorted_edges.size() && sorted_edges[i]->color != last_color) {
+        if (i < sorted_edges.size() and sorted_edges[i]->color != last_color) {
             factors.back().second = x;
             factors.push_back(path(x, y));
             last_color = sorted_edges[i]->color;
@@ -1192,7 +1184,7 @@ bool UFInterpolator::checkColors() {
             continue;
 
         // Check color is A or B
-        if (edge->color != I_A && edge->color != I_B)
+        if (edge->color != I_A and edge->color != I_B)
             return false;
 
         // Check color is consistent with nodes

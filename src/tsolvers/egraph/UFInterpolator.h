@@ -131,7 +131,7 @@ private:
         return litColors.at(term);
     }
 
-    icolor_t getTermColor (PTRef term) const {
+    icolor_t getTermColor(PTRef term) const {
         assert(colorInfo);
         return colorInfo->getColorFor(term);
     }
