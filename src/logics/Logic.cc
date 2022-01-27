@@ -145,21 +145,14 @@ bool Logic::hasQuotableChars(std::string const & name) const
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     };
-    bool quoted = false;
-    bool escape = false;
-    char first = name[0];
-    char last;
-    for (int i = 0; name[i] != '\0'; i++)
-    {
-        if (quotable[(int)name[i]])
-            escape = true;
-        last = name[i];
+
+    if (name.front() == '|' and name.back() == '|') return false; // Already quoted
+
+    for (auto c : name) {
+        if (quotable[(int)c])
+            return true;
     }
-    quoted = (first == '|') && (last == '|');
-    if (!quoted && escape)
-        return true;
-    else
-        return false;
+    return false;
 }
 
 //
