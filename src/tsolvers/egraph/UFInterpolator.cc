@@ -124,7 +124,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
     std::set<path_t> cache_nodes;
     std::set<CEdge *> cache_edges;
     std::vector<path_t> unprocessed_nodes;
-    unprocessed_nodes.emplace_back(path_t{c1, c2});
+    unprocessed_nodes.emplace_back(c1, c2);
     bool no_mixed = true;
     while (!unprocessed_nodes.empty() && no_mixed) {
         auto node_pair = unprocessed_nodes.back();
@@ -160,7 +160,7 @@ bool UFInterpolator::colorEdges(CNode * c1, CNode * c2) {
                         // Push only unprocessed paths
                         path_t next_pair {arg_n1, arg_n2};
                         if (cache_nodes.find(next_pair) == cache_nodes.end()) {
-                            unprocessed_nodes.emplace_back(next_pair);
+                            unprocessed_nodes.push_back(next_pair);
                             unprocessed_children = true;
                         }
                     }
