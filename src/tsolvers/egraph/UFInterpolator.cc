@@ -352,7 +352,7 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolo
     assert (conf_color == I_A || conf_color == I_B);
 
     PTRef result = PTRef_Undef;
-    path_t pi = path(c1, c2);
+    const path_t pi = path(c1, c2);
 
     //
     // Compute interpolant as described in Fuchs et al. paper
@@ -1177,7 +1177,7 @@ void UFInterpolator::printAsDotty(ostream & os) {
     os << "}" << endl;
 }
 
-bool UFInterpolator::checkColors() {
+bool UFInterpolator::checkColors() const {
     for (CEdge * edge : cgraph.getEdges()) {
         // Edge that is not involved
         if (edge->color == I_UNDEF)

@@ -86,8 +86,8 @@ class CGraph {
     void clear();
 
 public:
-    std::vector<CNode *> const & getNodes() { return cnodes; }
-    std::vector<CEdge *> const & getEdges() { return cedges; }
+    std::vector<CNode *> const & getNodes() const { return cnodes; }
+    std::vector<CEdge *> const & getEdges() const { return cedges; }
     bool hasNode(PTRef term) const { return cnodes_store.find(term) != cnodes_store.end(); }
     CNode * getNode(PTRef term) const { return cnodes_store.at(term); }
 
@@ -121,7 +121,7 @@ public:
 
     inline int verbose() const { return config.verbosity(); }
 
-    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &);
+    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) override;
 
     void printAsDotty(ostream &);
 
@@ -177,7 +177,7 @@ private:
 
     inline path_t path(CNode * c1, CNode * c2) { return make_pair(c1, c2); }
 
-    bool checkColors();
+    bool checkColors() const;
 
     SMTConfig & config;
     Logic & logic;
