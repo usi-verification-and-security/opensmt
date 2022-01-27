@@ -445,7 +445,7 @@ PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v)
 Pterm&  THandler::varToPterm         ( Var v)        { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
-void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+std::string THandler::getVarName( Var v) const { return getLogic().printTerm(tmap.varToPTRef(v)); }
 
 Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 

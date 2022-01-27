@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     PTRef eq2 = logic.mkBVEq(b, c2);
 
     //printf("Computing %d (%s) %s %d (%s)\n", c1_int, logic.printTerm(c1), op, c2_int, logic.printTerm(c2));
-    printf("Computing %s (%s) %s %s (%s)\n", c1_str, logic.printTerm(c1), op, c2_str, logic.printTerm(c2));
+    printf("Computing %s (%s) %s %s (%s)\n", c1_str, logic.printTerm(c1).c_str(), op, c2_str, logic.printTerm(c2).c_str());
 
 
     PTRef op_tr;

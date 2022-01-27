@@ -75,7 +75,7 @@ public:
     Pterm&  varToPterm         ( Var v) ;// { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
     Lit     PTRefToLit         ( PTRef tr);// { return tmap.getLit(tr); }
 
-    void    getVarName         ( Var v, char** name );// { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+    std::string getVarName     ( Var v) const;
 
     void    pushDeduction      ();// { getSolverHandler().deductions.push({SolverId_Undef, l_Undef}); }  // Add the deduction entry for a variable
     Var     ptrefToVar         ( PTRef r );// { return tmap.getVar(r); }

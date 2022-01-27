@@ -40,40 +40,24 @@ class SimpSMTSolver;
 // Printing Routines
 
 
-char* Egraph::printEqClass(PTRef tr) const {
-    char* out;
-    char* old;
-
+std::string Egraph::printEqClass(PTRef tr) const {
+    std::stringstream out;
     const ERef er = enode_store.getERef(tr);
     ERef c_er = er;
-    char* tmp = logic.printTerm(tr);
-    int written = asprintf(&out, "In the same eq class with %s are:\n[ ",
-             tmp);
-    assert(written >= 0);
-    ::free(tmp);
+    out << "In the same eq class with " << logic.printTerm(tr) << " are:\n[ ";
 
     while (true) {
         Enode const & en = getEnode(c_er);
         ERef next_er = en.getEqNext();
         if (next_er == er) break;
         Enode const & en_o = getEnode(next_er);
-        old = out;
-        tmp = logic.printTerm(en_o.getTerm());
-        written = asprintf(&out, "%s%s ", old, tmp);
-        assert(written >= 0);
-        ::free(tmp);
-        ::free(old);
-        c_er = next_er;
+        out << logic.printTerm(en_o.getTerm()) << ' ';
     }
-    old = out;
-    written = asprintf(&out, "%s]", old);
-    assert(written >= 0); (void)written;
-    ::free(old);
-    return out;
+    out << "]";
+    return out.str();
 }
 
-std::string Egraph::printExplanationTreeDotty(ERef x)
-{
+std::string Egraph::printExplanationTreeDotty(ERef x) const {
     stringstream os;
     os << "digraph expl" << endl;
     os << "{" << endl;
@@ -90,31 +74,22 @@ std::string Egraph::printExplanationTreeDotty(ERef x)
     return os.str();
 }
 
-char* Egraph::printDistinctions(PTRef x) const
+std::string Egraph::printDistinctions(PTRef x) const
 {
-    char* out;
-    char* old;
-
     if (x == PTRef_Undef) {
         assert(false);
-        return NULL;
+        return "";
     }
 
-    char* tmp = logic.printTerm(x);
-    int written = asprintf(&out, "In different eq class with %s are:\n[ ", tmp);
-    assert(written >= 0); (void)written;
-    ::free(tmp);
-
+    std::stringstream out;
+    out << "In different eq class with " << logic.printTerm(x) << " are:\n[ ";
 
     const ERef er = enode_store[enode_store.getERef(x)].getRoot();
 
     ELRef elr = enode_store[er].getForbid();
     if (elr == ELRef_Undef) {
-        tmp = out;
-        written = asprintf(&out, "%s]", tmp);
-        assert(written >= 0);
-        free(tmp);
-        return out;
+        out << ']';
+        return out.str();
     }
     ELRef c_elr = elr;
 
@@ -122,20 +97,12 @@ char* Egraph::printDistinctions(PTRef x) const
         const Elist& el = forbid_allocator[c_elr];
         ELRef next_elr = el.link;
         const Elist& el_o = forbid_allocator[next_elr];
-        old = out;
-        tmp = logic.printTerm(enode_store[el_o.e].getTerm());
-        written = asprintf(&out, "%s%s ", old, tmp);
-        assert(written >= 0);
-        ::free(tmp);
-        ::free(old);
+        out << logic.printTerm(enode_store[el_o.e].getTerm()) << ' ';
         if (next_elr == elr) break;
         c_elr = next_elr;
     }
-    old = out;
-    written = asprintf(&out, "%s]", old);
-    assert(written >= 0);
-    ::free(old);
-    return out;
+    out << ']';
+    return out.str();
 }
 
 const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detailed )

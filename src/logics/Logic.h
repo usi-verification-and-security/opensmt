@@ -398,9 +398,9 @@ public:
 
     bool          hasQuotableChars(std::string const & name) const;
     std::string   protectName(const std::string& name) const;
-    virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
-    virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
-    virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }
+    virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
+    std::string printTerm          (PTRef tr)                 const { return printTerm_(tr, false, false); }
+    std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     std::string pp(PTRef tr) const; // A pretty printer
 
     std::string   printSym          (SymRef sr) const;
