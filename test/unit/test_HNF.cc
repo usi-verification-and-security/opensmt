@@ -1,20 +1,14 @@
 #include <gtest/gtest.h>
-#include <Real.h>
-#include <stdlib.h>
 #include <Vec.h>
-#include <Sort.h>
 #include <lasolver/Matrix.h>
-#include <ArithLogic.h>
 
 class HNF_test : public ::testing::Test {
 protected:
-    HNF_test() : logic{opensmt::Logic_t::QF_LIA}, vecStore(va, logic), ms(vecStore) {}
     virtual void SetUp() {
     }
-    ArithLogic logic;
     LAVecAllocator va;
-    LAVecStore vecStore;
-    LAMatrixStore ms;
+    LAVecStore vecStore {va};
+    LAMatrixStore ms {vecStore};
 
 };
 

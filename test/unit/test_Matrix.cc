@@ -3,13 +3,17 @@
 //
 #include <gtest/gtest.h>
 #include <Real.h>
-#include <stdlib.h>
 #include <Vec.h>
-#include <Sort.h>
 #include <lasolver/Matrix.h>
-#include <ArithLogic.h>
 
 using Real = opensmt::Real;
+
+class MatrixTest : public ::testing::Test {
+protected:
+    LAVecAllocator va;
+    LAVecStore vecStore {va};
+    LAMatrixStore ms {vecStore};
+};
 
 TEST(Matrix_test, cmpabs_test)
 {
@@ -89,11 +93,8 @@ TEST(Matrix_test, floor_div)
     ASSERT_EQ(fastrat_fdiv_q(INT_MAX, -1), -INT_MAX);
 }
 
-TEST(Matrix_test, vec_creation)
+TEST_F(MatrixTest, vec_creation)
 {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
     // INT32_MIN
     Real r {"-2147483648"};
     std::vector<Real> reals;
@@ -112,7 +113,6 @@ TEST(Matrix_test, vec_creation)
     for (int i = 1; i <= va[vr2].size(); i++)
         ASSERT_EQ(va[vr2][i], va[vr][i]);
 
-    LAMatrixStore ms(vecStore);
     MId m = ms.getNewMatrix(2,2);
     ASSERT_EQ(ms[m].nRows(), 2);
     ASSERT_EQ(ms[m].nCols(), 2);
@@ -161,11 +161,7 @@ TEST(Matrix_test, vec_creation)
     ASSERT_EQ(ms.MM(diag, 2, 2), 1);
 }
 
-TEST(Matrix_test, smith_matrix1) {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
+TEST_F(MatrixTest, smith_matrix1) {
     MId U = ms.getNewMatrix(3, 3);
     //  2  4   4
     // -6  6  12
@@ -204,11 +200,7 @@ TEST(Matrix_test, smith_matrix1) {
      }
 }
 
-TEST(Matrix_test, smith_matrix111) {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
+TEST_F(MatrixTest, smith_matrix111) {
     MId U = ms.getNewMatrix(4, 4);
     //  -6 111 -36 6
     // 5 -672 210 74
@@ -258,13 +250,9 @@ TEST(Matrix_test, smith_matrix111) {
      }
 }
 
-TEST(Matrix_test, smith_matrix2) {
+TEST_F(MatrixTest, smith_matrix2) {
     // [[-2561 1265 2517 -3732 1490 1769 1203 -4213 2948 -3189 129 -129 1475 4601 -1635 768 -3204 3619 337 657]
     // [0 0 0 0 0 0 0 -1 0 0 0 0 0 0 0 0 0 0 0 0]]
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
     MId T = ms.getNewMatrix(20, 2);
     ms.MM(T, 1, 1) = -2561;
     ms.MM(T, 2, 1) = 1265;
@@ -318,12 +306,7 @@ TEST(Matrix_test, smith_matrix2) {
     printf("snf matrix:\n%s\n", ms.print(S2).c_str());
 }
 
-TEST(Matrix_test, smith_matrix3) {
-
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
+TEST_F(MatrixTest, smith_matrix3) {
     MId T3 = ms.getNewMatrix(21, 1);
     ms.MM(T3, 1, 1)  = -2936;
     ms.MM(T3, 2, 1)  = 768;
@@ -356,12 +339,8 @@ TEST(Matrix_test, smith_matrix3) {
     printf("snf matrix:\n%s\n", ms.print(S3).c_str());
 }
 
-TEST(Matrix_test, smith_matrix4) {
+TEST_F(MatrixTest, smith_matrix4) {
 
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
     const int N = 20;
     MId T3 = ms.getNewMatrix(N, 1);
     int vals[N] = {-3480, -1956, -768, -1732, 1700, 15748, 800, 4280, 5276, -963, -3576, 5324, 23800, -5324, -2820, 1732, 3532, -1796, -868, 3269};
@@ -378,11 +357,7 @@ TEST(Matrix_test, smith_matrix4) {
     printf("snf matrix:\n%s\n", ms.print(S3).c_str());
 }
 
-TEST(Matrix_test, matrix_mult) {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
+TEST_F(MatrixTest, matrix_mult) {
     MId A = ms.getNewMatrix(2, 2);
     ms.MM(A, 1, 1) = 1;
     ms.MM(A, 2, 1) = 2;
@@ -422,47 +397,39 @@ TEST(Matrix_test, matrix_mult) {
     ASSERT_EQ(vecStore[v][2], 28);
 }
 
-TEST(Matrix_test, discretize)
+TEST_F(MatrixTest, discretize)
 {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vs(va, logic);
-    LAMatrixStore ms(vs);
-    LAVecRef v = vs.getNewVec(13);
-    vs[v][1] = 0;
-    vs[v][2] = FastRational("1/10");
-    vs[v][3] = FastRational("-1/10");
-    vs[v][4] = FastRational("-1/2");
-    vs[v][5] = FastRational("-7/10");
-    vs[v][6] = FastRational("7/10");
-    vs[v][7] = FastRational("11/10");
-    vs[v][8] = FastRational("-11/10");
-    vs[v][9] = FastRational("2147483648/2147483647");
-    vs[v][10] = FastRational("-2147483649/2147483648");
-    vs[v][11] = FastRational("1/2147483648");
-    vs[v][12] = FastRational("-1/2147483649");
+    LAVecRef v = vecStore.getNewVec(13);
+    vecStore[v][1] = 0;
+    vecStore[v][2] = FastRational("1/10");
+    vecStore[v][3] = FastRational("-1/10");
+    vecStore[v][4] = FastRational("-1/2");
+    vecStore[v][5] = FastRational("-7/10");
+    vecStore[v][6] = FastRational("7/10");
+    vecStore[v][7] = FastRational("11/10");
+    vecStore[v][8] = FastRational("-11/10");
+    vecStore[v][9] = FastRational("2147483648/2147483647");
+    vecStore[v][10] = FastRational("-2147483649/2147483648");
+    vecStore[v][11] = FastRational("1/2147483648");
+    vecStore[v][12] = FastRational("-1/2147483649");
 
     LAVecRef u = ms.discretize(v);
-    ASSERT_EQ(vs[u][1], 0);
-    ASSERT_EQ(vs[u][2], 0);
-    ASSERT_EQ(vs[u][3], 0);
-    ASSERT_EQ(vs[u][4], 0);
-    ASSERT_EQ(vs[u][5], -1);
-    ASSERT_EQ(vs[u][6], 1);
-    ASSERT_EQ(vs[u][7], 1);
-    ASSERT_EQ(vs[u][8], -1);
-    ASSERT_EQ(vs[u][9], 1);
-    ASSERT_EQ(vs[u][10], -1);
-    ASSERT_EQ(vs[u][11], 0);
-    ASSERT_EQ(vs[u][12], 0);
+    ASSERT_EQ(vecStore[u][1], 0);
+    ASSERT_EQ(vecStore[u][2], 0);
+    ASSERT_EQ(vecStore[u][3], 0);
+    ASSERT_EQ(vecStore[u][4], 0);
+    ASSERT_EQ(vecStore[u][5], -1);
+    ASSERT_EQ(vecStore[u][6], 1);
+    ASSERT_EQ(vecStore[u][7], 1);
+    ASSERT_EQ(vecStore[u][8], -1);
+    ASSERT_EQ(vecStore[u][9], 1);
+    ASSERT_EQ(vecStore[u][10], -1);
+    ASSERT_EQ(vecStore[u][11], 0);
+    ASSERT_EQ(vecStore[u][12], 0);
 }
 
-TEST(Matrix_test, non_square)
+TEST_F(MatrixTest, non_square)
 {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
     MId U = ms.getNewMatrix(2,3); // Should be 2 columns, 3 rows
     ms.MM(U, 1, 1) = 11;
     ms.MM(U, 2, 1) = 21;
@@ -540,11 +507,7 @@ TEST(lcm_test, lcm_list)
     ASSERT_EQ(r, 385);
 }
 
-TEST(Matrix_test, least_in_row) {
-    LAVecAllocator va;
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
-    LAVecStore vecStore(va, logic);
-    LAMatrixStore ms(vecStore);
+TEST_F(MatrixTest, least_in_row) {
     MId U = ms.getNewMatrix(4, 4);
     int u[4][4] = {{2, 3, 6, 2},
                    {5, -6, -1, 6},

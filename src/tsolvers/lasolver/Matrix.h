@@ -89,9 +89,8 @@ class LAVecStore
 private:
     vec<LAVecRef>   lavecs;
     LAVecAllocator& lva;
-    ArithLogic&     logic;
 public:
-    LAVecStore(LAVecAllocator& lva, ArithLogic & logic) : lva(lva), logic(logic) {}
+    LAVecStore(LAVecAllocator& lva) : lva(lva) {}
     inline void   clear() { lavecs.clear(); };
     LAVecRef getNewVec(std::vector<opensmt::Real>&& ps, const opensmt::Real& den);
     LAVecRef getNewVec(std::vector<opensmt::Real>&& ps) { return getNewVec(std::move(ps), 1); }
