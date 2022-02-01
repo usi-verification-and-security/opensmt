@@ -172,7 +172,7 @@ HNFOperationsResult toHNFOperations(ColMatrix && A) {
         // DO NOT FORGET TO INCREMENT PIVOT!
         ++pivotCol;
     }
-    return {U, pivotCol};
+    return {std::move(U), pivotCol};
 }
 }
 
@@ -230,7 +230,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
     for (auto [var, index] : varIndices) {
         columnMapping[index] = var;
     }
-    return {matrixA, rhs, columnMapping};
+    return {std::move(matrixA), std::move(rhs), std::move(columnMapping)};
 }
 }
 

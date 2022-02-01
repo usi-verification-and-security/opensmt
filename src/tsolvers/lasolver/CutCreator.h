@@ -58,6 +58,9 @@ public:
         std::iota(rowPermutation.begin(), rowPermutation.end(), 0);
     }
 
+    RowMatrix(RowMatrix const &) = delete;
+    RowMatrix(RowMatrix &&) = default;
+
     RowView       operator[](std::size_t index)       { return RowView(*this, RowIndex{rowPermutation[index]}, cols); }
 //    RowView const operator[](std::size_t index) const { return RowView(*this, RowIndex{index}, cols); }
 
@@ -99,6 +102,9 @@ public:
         colPermutation.resize(rowCount);
         std::iota(colPermutation.begin(), colPermutation.end(), 0);
     }
+
+    ColMatrix(ColMatrix const &) = delete;
+    ColMatrix(ColMatrix &&) = default;
 
     ColView       operator[](std::size_t index)       { return ColView(*this, ColIndex{colPermutation[index]}, rows); }
 //    ColView const operator[](std::size_t index) const { return ColView(*this, ColIndex{index}, rows); }
