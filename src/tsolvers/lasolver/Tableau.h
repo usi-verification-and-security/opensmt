@@ -16,46 +16,46 @@
 #include <functional>
 #include <memory>
 
-class Column{
-    std::vector<LVRef> rows;
-
-    using iterator_t = std::vector<LVRef>::iterator;
-    using const_iterator_t = std::vector<LVRef>::const_iterator;
-
-public:
-    void addRow(LVRef row) {
-        rows.push_back(row);
-    }
-    void removeRow(LVRef row) {
-        auto beg = rows.rbegin();
-        auto it = std::find(beg, rows.rend(), row);
-        assert(it != rows.rend());
-        std::iter_swap(it, beg);
-        rows.pop_back();
-    }
-
-    void clear() {
-        rows.clear();
-    }
-
-    bool empty() const {
-        return rows.empty();
-    }
-
-    unsigned int size() const {
-        return rows.size();
-    }
-
-    iterator_t begin() { return rows.begin(); }
-    iterator_t end() { return rows.end(); }
-
-    const_iterator_t begin() const { return rows.cbegin(); }
-    const_iterator_t end() const { return rows.cend(); }
-
-    const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
-};
-
 class Tableau{
+
+    class Column{
+        std::vector<LVRef> rows;
+
+        using iterator_t = std::vector<LVRef>::iterator;
+        using const_iterator_t = std::vector<LVRef>::const_iterator;
+
+    public:
+        void addRow(LVRef row) {
+            rows.push_back(row);
+        }
+        void removeRow(LVRef row) {
+            auto beg = rows.rbegin();
+            auto it = std::find(beg, rows.rend(), row);
+            assert(it != rows.rend());
+            std::iter_swap(it, beg);
+            rows.pop_back();
+        }
+
+        void clear() {
+            rows.clear();
+        }
+
+        bool empty() const {
+            return rows.empty();
+        }
+
+        unsigned int size() const {
+            return rows.size();
+        }
+
+        iterator_t begin() { return rows.begin(); }
+        iterator_t end() { return rows.end(); }
+
+        const_iterator_t begin() const { return rows.cbegin(); }
+        const_iterator_t end() const { return rows.cend(); }
+
+        const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
+    };
 
 protected:
 
