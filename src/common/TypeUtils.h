@@ -31,6 +31,12 @@ public:
     T const *begin() const { return _beg; }
 
     T const *end() const { return _beg + _size; }
+
+    T & operator[](uint32_t index) { return *(_beg + index); }
+
+    T * begin() { return _beg; }
+
+    T * end() { return _beg + _size; }
 };
 }
 

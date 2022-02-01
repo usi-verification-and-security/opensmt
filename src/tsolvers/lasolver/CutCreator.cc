@@ -9,7 +9,7 @@
 #include "CutCreator.h"
 
 namespace{
-    void negate(std::vector<opensmt::Real> & elements) {
+    void negate(opensmt::span<opensmt::Real> elements) {
         for (auto & val : elements) {
             if (not val.isZero()) {
                 val.negate();
@@ -17,7 +17,7 @@ namespace{
         }
     }
 
-    void add(std::vector<opensmt::Real> & res, std::vector<opensmt::Real> const & what, opensmt::Real const & multiple) {
+    void add(opensmt::span<opensmt::Real> res, opensmt::span<const opensmt::Real> what, opensmt::Real const & multiple) {
         assert(res.size() == what.size());
         for (std::size_t i = 0; i < what.size(); ++i) {
             if (what[i].isZero()) { continue; }
@@ -26,20 +26,36 @@ namespace{
     }
 }
 
-void Row::negate() {
-    ::negate(this->elements);
+opensmt::span<FastRational> RowMatrix::RowView::toSpan() {
+    return opensmt::span<FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
 }
 
-void Column::negate() {
-    ::negate(this->elements);
+opensmt::span<const FastRational> RowMatrix::RowView::toSpan() const {
+    return opensmt::span<const FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
 }
 
-void Row::add(const Row & other, opensmt::Real const & multiple) {
-    ::add(this->elements, other.elements, multiple);
+opensmt::span<FastRational> ColMatrix::ColView::toSpan() {
+    return opensmt::span<FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
 }
 
-void Column::add(const Column & other, opensmt::Real const & multiple) {
-    ::add(this->elements, other.elements, multiple);
+opensmt::span<const FastRational> ColMatrix::ColView::toSpan() const {
+    return opensmt::span<const FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
+}
+
+void RowMatrix::RowView::negate() {
+    ::negate(toSpan());
+}
+
+void ColMatrix::ColView::negate() {
+    ::negate(toSpan());
+}
+
+void RowMatrix::RowView::add(RowView const & other, opensmt::Real const & multiple) {
+    ::add(this->toSpan(), other.toSpan(), multiple);
+}
+
+void ColMatrix::ColView::add(ColView const & other, opensmt::Real const & multiple) {
+    ::add(this->toSpan(), other.toSpan(), multiple);
 }
 
 namespace {
@@ -57,7 +73,7 @@ RowMatrix rowIdentityMatrix(std::size_t size) {
     return id;
 }
 
-std::size_t findSmallestNonzeroElementInRow(ColMatrix const & A, RowIndex rowIndex, ColIndex colToStart) {
+std::size_t findSmallestNonzeroElementInRow(ColMatrix & A, RowIndex rowIndex, ColIndex colToStart) {
     auto size = A.colCount();
     // find first non-zero element
     std::size_t smallestNonZeroIndex;
@@ -83,8 +99,8 @@ std::size_t findSmallestNonzeroElementInRow(ColMatrix const & A, RowIndex rowInd
 
 void swapColumns(ColMatrix & A, ColIndex pivotIndex, ColIndex otherIndex, RowMatrix & U) {
     assert(pivotIndex != otherIndex);
-    std::swap(A[pivotIndex], A[otherIndex]);
-    std::swap(U[pivotIndex], U[otherIndex]);
+    A.swapCols(pivotIndex, otherIndex);
+    U.swapRows(pivotIndex, otherIndex);
 }
 
 void ensurePositivePivot(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, RowMatrix & U) {
@@ -163,7 +179,7 @@ HNFOperationsResult toHNFOperations(ColMatrix && A) {
 namespace { // Initialization
 struct Representation {
     ColMatrix A;
-    Column rhs;
+    std::vector<FastRational> rhs;
     std::vector<PTRef> columnIndexToVarMap;
 };
 Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> const & constraints, ArithLogic & logic) {
@@ -195,7 +211,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
 
     unsigned rows = constraints.size();
     ColMatrix matrixA(ColumnCount{columns}, RowCount{rows});
-    Column rhs(RowCount{rows});
+    std::vector<FastRational> rhs(RowCount{rows});
 
     // Second pass to build the actual matrix
     for (unsigned row = 0; row < constraints.size(); ++row) {
@@ -219,7 +235,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
 }
 
 namespace { // check feasibility
-    FastRational crossProduct(Row const & row, std::vector<FastRational> const & values) {
+    FastRational crossProduct(RowMatrix::RowView const & row, std::vector<FastRational> const & values) {
         assert(row.size() == values.size());
         FastRational sum = 0;
         for (std::size_t i = 0; i < values.size(); ++i) {
@@ -228,7 +244,7 @@ namespace { // check feasibility
         return sum;
     }
 
-    PTRef buildCutConstraint(Row const & row, std::vector<PTRef> const & colMapping, ArithLogic & logic) {
+    PTRef buildCutConstraint(RowMatrix::RowView const & row, std::vector<PTRef> const & colMapping, ArithLogic & logic) {
         assert(row.size() == colMapping.size());
         vec<PTRef> args; args.capacity(row.size());
         for (std::size_t col = 0; col < row.size(); ++col) {

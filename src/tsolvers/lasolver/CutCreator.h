@@ -25,67 +25,88 @@ struct RowCount {
 
 using RowIndex = RowCount;
 
-class Row {
-    std::vector<FastRational> elements;
-public:
-    explicit Row(ColumnCount cols) {
-        elements.resize(cols);
-    }
-
-    FastRational &       operator[](std::size_t index)       { return elements[index]; }
-    FastRational const & operator[](std::size_t index) const { return elements[index]; }
-
-    std::size_t size() const { return elements.size(); }
-
-    void negate();
-    void add(Row const & other, FastRational const & multiple);
-};
-
 class RowMatrix {
-    std::vector<Row> rows;
-public:
-    explicit RowMatrix(RowCount rowCount, ColumnCount colCount) {
-        rows.reserve(rowCount);
-        for (std::size_t i = 0; i < rowCount; ++i) {
-            rows.emplace_back(colCount);
-        }
-    }
-
-    Row &       operator[](std::size_t index)       { return rows[index]; }
-    Row const & operator[](std::size_t index) const { return rows[index]; }
-};
-
-class Column {
+    RowCount rows;
+    ColumnCount cols;
     std::vector<FastRational> elements;
+    std::vector<std::size_t> rowPermutation;
 public:
-    explicit Column(RowCount rows) {
-        elements.resize(rows);
+    class RowView {
+        RowMatrix * matrix;
+        RowIndex rowIndex;
+        ColumnCount colCount;
+    public:
+        explicit RowView(RowMatrix & matrix, RowIndex rowIndex, ColumnCount colCount) :
+                matrix(&matrix), rowIndex(rowIndex), colCount(colCount) {}
+
+        FastRational &       operator[](std::size_t index)       { return matrix->elements[rowIndex * colCount + index]; }
+        FastRational const & operator[](std::size_t index) const { return matrix->elements[rowIndex * colCount + index]; }
+
+        std::size_t size() const { return colCount; }
+
+        opensmt::span<FastRational> toSpan();
+        opensmt::span<const FastRational> toSpan() const;
+
+        void negate();
+        void add(RowView const & other, FastRational const & multiple);
+    };
+
+
+    explicit RowMatrix(RowCount rowCount, ColumnCount colCount) : rows(rowCount), cols{colCount} {
+        elements.resize(rowCount * colCount, 0);
+        rowPermutation.resize(rowCount);
+        std::iota(rowPermutation.begin(), rowPermutation.end(), 0);
     }
 
-    FastRational &       operator[](std::size_t index)       { return elements[index]; }
-    FastRational const & operator[](std::size_t index) const { return elements[index]; }
+    RowView       operator[](std::size_t index)       { return RowView(*this, RowIndex{rowPermutation[index]}, cols); }
+//    RowView const operator[](std::size_t index) const { return RowView(*this, RowIndex{index}, cols); }
 
-    std::size_t size() const { return elements.size(); }
+    void swapRows(std::size_t first, std::size_t second) { std::swap(rowPermutation[first], rowPermutation[second]); }
 
-    void negate();
-    void add(Column const & other, FastRational const & multiple);
+    std::size_t colCount() const { return cols; }
+    std::size_t rowCount() const { return rows; }
 };
+
 
 class ColMatrix {
-    std::vector<Column> columns;
+    RowCount rows;
+    ColumnCount cols;
+    std::vector<FastRational> elements;
+    std::vector<std::size_t> colPermutation;
 public:
-    explicit ColMatrix(ColumnCount cols, RowCount rows) {
-        columns.reserve(cols);
-        for (std::size_t i = 0; i < cols; ++i) {
-            columns.emplace_back(rows);
-        }
+    class ColView {
+        ColMatrix * matrix;
+        ColIndex colIndex;
+        RowCount rowCount;
+    public:
+        explicit ColView(ColMatrix & matrix, ColIndex colIndex, RowCount rowCount) :
+        matrix(&matrix), colIndex(colIndex), rowCount(rowCount) {}
+
+        FastRational &       operator[](std::size_t index)       { return matrix->elements[colIndex * rowCount + index]; }
+        FastRational const & operator[](std::size_t index) const { return matrix->elements[colIndex * rowCount + index]; }
+
+        std::size_t size() const { return rowCount; }
+
+        opensmt::span<FastRational> toSpan();
+        opensmt::span<const FastRational> toSpan() const;
+
+        void negate();
+        void add(ColView const & other, FastRational const & multiple);
+    };
+
+    explicit ColMatrix(ColumnCount colCount, RowCount rowCount) : rows(rowCount), cols(colCount) {
+        elements.resize(rowCount * colCount, 0);
+        colPermutation.resize(rowCount);
+        std::iota(colPermutation.begin(), colPermutation.end(), 0);
     }
 
-    Column &       operator[](std::size_t index)       { return columns[index]; }
-    Column const & operator[](std::size_t index) const { return columns[index]; }
+    ColView       operator[](std::size_t index)       { return ColView(*this, ColIndex{colPermutation[index]}, rows); }
+//    ColView const operator[](std::size_t index) const { return ColView(*this, ColIndex{index}, rows); }
 
-    std::size_t colCount() const { return columns.size(); }
-    std::size_t rowCount() const { assert(columns.size()); return columns[0].size(); }
+    void swapCols(std::size_t first, std::size_t second) { std::swap(colPermutation[first], colPermutation[second]); }
+
+    std::size_t colCount() const { return cols; }
+    std::size_t rowCount() const { return rows; }
 
 };
 
