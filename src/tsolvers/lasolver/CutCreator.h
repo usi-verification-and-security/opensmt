@@ -10,6 +10,7 @@
 
 #include "ArithLogic.h"
 #include "Real.h"
+#include "Polynomial.h"
 
 struct ColumnCount {
     std::size_t count;
@@ -25,95 +26,61 @@ struct RowCount {
 
 using RowIndex = RowCount;
 
-class RowMatrix {
-    RowCount rows;
-    ColumnCount cols;
-    std::vector<FastRational> elements;
-    std::vector<std::size_t> rowPermutation;
-public:
-    class RowView {
-        RowMatrix * matrix;
-        RowIndex rowIndex;
-        ColumnCount colCount;
-    public:
-        explicit RowView(RowMatrix & matrix, RowIndex rowIndex, ColumnCount colCount) :
-                matrix(&matrix), rowIndex(rowIndex), colCount(colCount) {}
-
-        FastRational &       operator[](std::size_t index)       { return matrix->elements[rowIndex * colCount + index]; }
-        FastRational const & operator[](std::size_t index) const { return matrix->elements[rowIndex * colCount + index]; }
-
-        std::size_t size() const { return colCount; }
-
-        opensmt::span<FastRational> toSpan();
-        opensmt::span<const FastRational> toSpan() const;
-
-        void negate();
-        void add(RowView const & other, FastRational const & multiple);
-    };
-
-
-    explicit RowMatrix(RowCount rowCount, ColumnCount colCount) : rows(rowCount), cols{colCount} {
-        elements.resize(rowCount * colCount, 0);
-        rowPermutation.resize(rowCount);
-        std::iota(rowPermutation.begin(), rowPermutation.end(), 0);
-    }
-
-    RowMatrix(RowMatrix const &) = delete;
-    RowMatrix(RowMatrix &&) = default;
-
-    RowView       operator[](std::size_t index)       { return RowView(*this, RowIndex{rowPermutation[index]}, cols); }
-//    RowView const operator[](std::size_t index) const { return RowView(*this, RowIndex{index}, cols); }
-
-    void swapRows(std::size_t first, std::size_t second) { std::swap(rowPermutation[first], rowPermutation[second]); }
-
-    std::size_t colCount() const { return cols; }
-    std::size_t rowCount() const { return rows; }
-};
-
-
 class ColMatrix {
-    RowCount rows;
-    ColumnCount cols;
-    std::vector<FastRational> elements;
-    std::vector<std::size_t> colPermutation;
 public:
-    class ColView {
-        ColMatrix * matrix;
-        ColIndex colIndex;
-        RowCount rowCount;
+    class Col {
+        Polynomial poly;
     public:
-        explicit ColView(ColMatrix & matrix, ColIndex colIndex, RowCount rowCount) :
-        matrix(&matrix), colIndex(colIndex), rowCount(rowCount) {}
+        Col() = default;
+        Col(Col const &) = delete;
+        Col(Col &&) = default;
+        void setPolynomial(Polynomial && _poly)  {
+            assert(this->poly.size() == 0);
+            this->poly = std::move(_poly);
+        }
 
-        FastRational &       operator[](std::size_t index)       { return matrix->elements[colIndex * rowCount + index]; }
-        FastRational const & operator[](std::size_t index) const { return matrix->elements[colIndex * rowCount + index]; }
-
-        std::size_t size() const { return rowCount; }
-
-        opensmt::span<FastRational> toSpan();
-        opensmt::span<const FastRational> toSpan() const;
+        std::size_t size() const { return poly.size(); }
 
         void negate();
-        void add(ColView const & other, FastRational const & multiple);
+        void add(Col const & other, FastRational const & multiple);
+
+        bool isFirst(RowIndex row) const { return poly.size() > 0 and poly.begin()->var.x == row.count; }
+        FastRational const * tryGetFirstCoeff() const { return poly.size() > 0 ? &poly.begin()->coeff : nullptr; }
+        FastRational const & getFirstCoeff() const { assert(poly.size() > 0); return poly.begin()->coeff; }
+        FastRational const * tryGetCoeffFor(RowIndex rowIndex) const;
+
+        FastRational product(std::vector<FastRational> const & values) const;
+        PTRef buildCutConstraint(std::vector<PTRef> const & toVarMap, ArithLogic & logic) const;
     };
 
-    explicit ColMatrix(ColumnCount colCount, RowCount rowCount) : rows(rowCount), cols(colCount) {
-        elements.resize(rowCount * colCount, 0);
-        colPermutation.resize(rowCount);
+private:
+    RowCount _rowCount;
+    ColumnCount _colCount;
+    std::vector<Col> cols;
+    std::vector<std::size_t> colPermutation;
+
+public:
+    explicit ColMatrix(RowCount rowCount, ColumnCount colCount) : _rowCount(rowCount), _colCount{colCount} {
+        cols.resize(colCount.count);
+        colPermutation.resize(colCount);
         std::iota(colPermutation.begin(), colPermutation.end(), 0);
     }
 
     ColMatrix(ColMatrix const &) = delete;
     ColMatrix(ColMatrix &&) = default;
 
-    ColView       operator[](std::size_t index)       { return ColView(*this, ColIndex{colPermutation[index]}, rows); }
-//    ColView const operator[](std::size_t index) const { return ColView(*this, ColIndex{index}, rows); }
+    Col &       operator[](std::size_t index)       { return cols[colPermutation[index]]; }
+    Col const & operator[](std::size_t index) const { return cols[colPermutation[index]]; }
 
     void swapCols(std::size_t first, std::size_t second) { std::swap(colPermutation[first], colPermutation[second]); }
 
-    std::size_t colCount() const { return cols; }
-    std::size_t rowCount() const { return rows; }
+    std::size_t colCount() const { return _colCount; }
+    std::size_t rowCount() const { return _rowCount; }
 
+    void setColumn(ColIndex colIndex, Polynomial && poly) {
+        assert(colIndex < _colCount);
+        cols[colIndex].setPolynomial(std::move(poly));
+    }
 };
 
 class CutCreator {

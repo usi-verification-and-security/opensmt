@@ -8,136 +8,137 @@
 
 #include "CutCreator.h"
 
-namespace{
-    void negate(opensmt::span<opensmt::Real> elements) {
-        for (auto & val : elements) {
-            if (not val.isZero()) {
-                val.negate();
-            }
-        }
+
+void ColMatrix::Col::negate() {
+    this->poly.negate();
+}
+
+void ColMatrix::Col::add(Col const & other, opensmt::Real const & multiple) {
+    this->poly.merge(other.poly, multiple, [](LVRef){}, [](LVRef){});
+}
+
+opensmt::Real ColMatrix::Col::product(const std::vector<FastRational> & values) const {
+    opensmt::Real sum = 0;
+    for (auto const & term : poly) {
+        std::size_t index = term.var.x;
+        assert(index < values.size());
+        sum += term.coeff * values[index];
     }
+    return sum;
+}
 
-    void add(opensmt::span<opensmt::Real> res, opensmt::span<const opensmt::Real> what, opensmt::Real const & multiple) {
-        assert(res.size() == what.size());
-        for (std::size_t i = 0; i < what.size(); ++i) {
-            if (what[i].isZero()) { continue; }
-            res[i] += what[i] * multiple;
-        }
+PTRef ColMatrix::Col::buildCutConstraint(const std::vector<PTRef> & toVarMap, ArithLogic & logic) const {
+    vec<PTRef> args; args.capacity(poly.size());
+    for (auto const & term : poly) {
+        args.push(logic.mkTimes(toVarMap[term.var.x], logic.mkIntConst(term.coeff)));
     }
+    return logic.mkPlus(std::move(args));
 }
 
-opensmt::span<FastRational> RowMatrix::RowView::toSpan() {
-    return opensmt::span<FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
-}
-
-opensmt::span<const FastRational> RowMatrix::RowView::toSpan() const {
-    return opensmt::span<const FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
-}
-
-opensmt::span<FastRational> ColMatrix::ColView::toSpan() {
-    return opensmt::span<FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
-}
-
-opensmt::span<const FastRational> ColMatrix::ColView::toSpan() const {
-    return opensmt::span<const FastRational>{&this->operator[](0), static_cast<unsigned>(size())};
-}
-
-void RowMatrix::RowView::negate() {
-    ::negate(toSpan());
-}
-
-void ColMatrix::ColView::negate() {
-    ::negate(toSpan());
-}
-
-void RowMatrix::RowView::add(RowView const & other, opensmt::Real const & multiple) {
-    ::add(this->toSpan(), other.toSpan(), multiple);
-}
-
-void ColMatrix::ColView::add(ColView const & other, opensmt::Real const & multiple) {
-    ::add(this->toSpan(), other.toSpan(), multiple);
+const FastRational * ColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
+    LVRef bound {static_cast<uint32_t>(rowIndex.count)};
+    auto it = std::lower_bound(poly.begin(), poly.end(), bound, [](auto const & term, LVRef val) {
+       return term.var.x < val.x;
+    });
+    if (it == poly.end()) { return nullptr; }
+    return it->var == bound ? &it->coeff : nullptr;
 }
 
 namespace {
 
 struct HNFOperationsResult {
-    RowMatrix operations;
+    ColMatrix operations;
     std::size_t HNFdimension;
 };
 
-RowMatrix rowIdentityMatrix(std::size_t size) {
-    RowMatrix id(RowCount{size}, ColumnCount{size});
+ColMatrix identityMatrix(std::size_t size) {
+    ColMatrix id(RowCount{size}, ColumnCount{size});
     for (std::size_t i = 0; i < size; ++i) {
-        id[i][i] = 1;
+        Polynomial poly;
+        poly.addTerm(LVRef{static_cast<unsigned>(i)}, 1);
+        id.setColumn(ColIndex{i}, std::move(poly));
     }
     return id;
 }
 
-std::size_t findSmallestNonzeroElementInRow(ColMatrix & A, RowIndex rowIndex, ColIndex colToStart) {
-    auto size = A.colCount();
-    // find first non-zero element
-    std::size_t smallestNonZeroIndex;
-    for (smallestNonZeroIndex = colToStart; smallestNonZeroIndex < size; ++smallestNonZeroIndex) {
-        if (not A[smallestNonZeroIndex][rowIndex].isZero()) {
-            break;
-        }
-    }
-    if (smallestNonZeroIndex == size) {
-        return smallestNonZeroIndex;
-    }
-    auto smallestVal = A[smallestNonZeroIndex][rowIndex];
-    // find smallest element (in absolute value)
-    for (std::size_t col = smallestNonZeroIndex + 1; col < size; ++col) {
-        auto const & val = A[col][rowIndex];
-        if (not val.isZero() and cmpabs(val, smallestVal) < 0) {
-            smallestVal = val;
-            smallestNonZeroIndex = col;
-        }
-    }
-    return smallestNonZeroIndex;
+void negateColumn(ColMatrix & A, ColIndex colIndex, ColMatrix & U) {
+        A[colIndex].negate();
+        U[colIndex].negate();
 }
 
-void swapColumns(ColMatrix & A, ColIndex pivotIndex, ColIndex otherIndex, RowMatrix & U) {
+void swapColumns(ColMatrix & A, ColIndex pivotIndex, ColIndex otherIndex, ColMatrix & U) {
     assert(pivotIndex != otherIndex);
     A.swapCols(pivotIndex, otherIndex);
-    U.swapRows(pivotIndex, otherIndex);
+    U.swapCols(pivotIndex, otherIndex);
 }
 
-void ensurePositivePivot(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, RowMatrix & U) {
-    auto & val = A[pivotIndex][rowIndex];
-    assert(not val.isZero());
-    if (val.sign() < 0) {
-        A[pivotIndex].negate();
-        U[pivotIndex].negate();
-    }
-}
-
-void addColumnMultiple(ColMatrix & A, std::size_t colFrom, opensmt::Real multiple, std::size_t colTo, RowMatrix & U) {
+void addColumnMultiple(ColMatrix & A, ColIndex colFrom, opensmt::Real multiple, ColIndex colTo, ColMatrix & U) {
     A[colTo].add(A[colFrom], multiple);
     // For U we do the inverse operation: colFrom += -multiple * colTo
     U[colFrom].add(U[colTo], -multiple);
 }
 
-void reduceToTheRight(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, RowMatrix & U) {
-    auto pivotVal = A[pivotIndex][rowIndex];
+// normalizes row so all entries to the right of pivot are zero
+// returns true if the pivot is non-zero
+bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex colToStart, ColMatrix & U) {
+    // Collect all columns with non-zero entry at given row; ensure they are positive
+    std::vector<ColIndex> activeColumns;
     auto size = A.colCount();
-    for (std::size_t col = pivotIndex + 1; col < size; ++col) {
-        auto otherVal = A[col][rowIndex];
-        if (otherVal.isZero()) { continue; }
-        auto quotient = -fastrat_fdiv_q(otherVal, pivotVal);
-        assert(not quotient.isZero());
-        addColumnMultiple(A, pivotIndex, quotient, col, U);
+    activeColumns.reserve(size - colToStart);
+    for (std::size_t col = colToStart; col < size; ++col) {
+        if (A[col].isFirst(rowIndex)) {
+            activeColumns.push_back(ColIndex{col});
+            if (A[col].getFirstCoeff().sign() < 0) {
+                negateColumn(A, ColIndex{col}, U);
+            }
+        }
     }
+    if (activeColumns.empty()) { return false; }
+
+    // Reduce the set of active columns until there is only a single one.
+    // Current implementation: Find minimal value, reduce others, and repeat
+    // Alternative possiblity: Rosser's algorithm (see Yices), which uses largest values to for reductions
+    while (activeColumns.size() > 1) {
+        auto it = std::min_element(activeColumns.begin(), activeColumns.end(), [&A](ColIndex first, ColIndex second) {
+            assert(A[first].getFirstCoeff().sign() > 0 and A[second].getFirstCoeff().sign() > 0);
+            return A[first].getFirstCoeff() < A[second].getFirstCoeff();
+        });
+        std::iter_swap(it, activeColumns.begin());
+        // Now the index of column with smallest value is first in activeColumns
+        auto smallestValue = A[activeColumns[0]].getFirstCoeff();
+        std::size_t nextColIndex = 1;
+        while(nextColIndex < activeColumns.size()) {
+            auto const & nextCol = A[activeColumns[nextColIndex]];
+            auto quotient = -fastrat_fdiv_q(nextCol.getFirstCoeff(), smallestValue);
+            assert(not quotient.isZero());
+            addColumnMultiple(A, activeColumns[0], quotient, activeColumns[nextColIndex], U);
+            if (not nextCol.isFirst(rowIndex)) { // the entry in this column is zero now, remove the column from active set
+                std::swap(activeColumns[nextColIndex], activeColumns.back());
+                activeColumns.pop_back();
+                // do not advance index!
+            } else { // the entry in this column is not zero yet, just continue with next column
+                ++nextColIndex;
+            }
+        }
+    }
+    // Single active column left, move it to the pivot's position
+    assert(activeColumns.size() == 1);
+    if (activeColumns[0] != colToStart) {
+        swapColumns(A, activeColumns[0], colToStart, U);
+    }
+    return true;
 }
 
-void reduceToTheLeft(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, RowMatrix & U) {
-    auto pivotVal = A[pivotIndex][rowIndex];
+void reduceToTheLeft(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatrix & U) {
+    auto const & pivotCol = A[pivotIndex];
+    assert(pivotCol.isFirst(rowIndex));
+    auto const & pivotVal = pivotCol.getFirstCoeff();
     for (std::size_t col = 0; col < pivotIndex; ++col) {
-        auto otherVal = A[col][rowIndex];
-        if (otherVal.isZero()) { continue; }
-        auto quotient = -fastrat_fdiv_q(otherVal, pivotVal);
+        auto const * otherVal = A[col].tryGetCoeffFor(rowIndex);
+        if (not otherVal) { continue; }
+        auto quotient = -fastrat_fdiv_q(*otherVal, pivotVal);
         if (not quotient.isZero()) {
-            addColumnMultiple(A, pivotIndex, quotient, col, U);
+            addColumnMultiple(A, pivotIndex, quotient, ColIndex{col}, U);
         }
     }
 }
@@ -146,33 +147,26 @@ HNFOperationsResult toHNFOperations(ColMatrix && A) {
     // We perform column operations on A to transform it to HNF
     // At the same time we record the inverse operations in U
     // We maintain the invariant that A'*U' = A; starting with U=I, the identity matrix
+    // We actually maintain the transpose the U as column matrix and not U as row matrix
     std::size_t cols = A.colCount();
     std::size_t rows = A.rowCount();
-    RowMatrix U = rowIdentityMatrix(cols);
+    ColMatrix UT = identityMatrix(cols);
 
     std::size_t pivotCol = 0;
     for (std::size_t currRow = 0; currRow < rows and pivotCol < cols; ++currRow) {
         // First make sure the current row conforms to the lower triangular form
-        while (true) {
-            auto colIndex = findSmallestNonzeroElementInRow(A, RowIndex{currRow}, ColIndex{pivotCol + 1});
-            if (colIndex == cols) { break; }
-            if (A[pivotCol][currRow].isZero() or cmpabs(A[colIndex][currRow], A[pivotCol][currRow]) < 0) {
-                swapColumns(A, ColIndex{pivotCol}, ColIndex{colIndex}, U);
-            }
-            ensurePositivePivot(A, RowIndex{currRow}, ColIndex{pivotCol}, U);
-            reduceToTheRight(A, RowIndex{currRow}, ColIndex{pivotCol}, U);
-        }
-        if (A[pivotCol][currRow].isZero()) {
+        bool hasPivot = normalizeRow(A, RowIndex{currRow}, ColIndex{pivotCol}, UT);
+        if (not hasPivot) {
             // a row that is linearly dependent on rows above it; skip it and continue with the next row
             // DO NOT INCREMENT PIVOT!
             continue;
         }
         // Now make sure it conforms to HNF rule that elements to the left of pivot are smaller and positive
-        reduceToTheLeft(A, RowIndex{currRow}, ColIndex{pivotCol}, U);
+        reduceToTheLeft(A, RowIndex{currRow}, ColIndex{pivotCol}, UT);
         // DO NOT FORGET TO INCREMENT PIVOT!
         ++pivotCol;
     }
-    return {std::move(U), pivotCol};
+    return {std::move(UT), pivotCol};
 }
 }
 
@@ -210,8 +204,10 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
     }
 
     unsigned rows = constraints.size();
-    ColMatrix matrixA(ColumnCount{columns}, RowCount{rows});
+    ColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
     std::vector<FastRational> rhs(RowCount{rows});
+    std::vector<Polynomial> columnPolynomials;
+    columnPolynomials.resize(columns);
 
     // Second pass to build the actual matrix
     for (unsigned row = 0; row < constraints.size(); ++row) {
@@ -221,8 +217,11 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         for (PTRef arg : terms) {
             auto [var, constant] = logic.splitTermToVarAndConst(arg);
             auto col = varIndices[var];
-            matrixA[col][row] = logic.getNumConst(constant);
+            columnPolynomials[col].addTerm(LVRef{row}, logic.getNumConst(constant));
         }
+    }
+    for (std::size_t i = 0; i < columnPolynomials.size(); ++i) {
+        matrixA.setColumn(ColIndex{i}, std::move(columnPolynomials[i]));
     }
     // compute the inverse map from column indices to variables
     std::vector<PTRef> columnMapping;
@@ -235,23 +234,12 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
 }
 
 namespace { // check feasibility
-    FastRational crossProduct(RowMatrix::RowView const & row, std::vector<FastRational> const & values) {
-        assert(row.size() == values.size());
-        FastRational sum = 0;
-        for (std::size_t i = 0; i < values.size(); ++i) {
-            sum += row[i] * values[i];
-        }
-        return sum;
+    FastRational crossProduct(ColMatrix::Col const & col, std::vector<FastRational> const & values) {
+        return col.product(values);
     }
 
-    PTRef buildCutConstraint(RowMatrix::RowView const & row, std::vector<PTRef> const & colMapping, ArithLogic & logic) {
-        assert(row.size() == colMapping.size());
-        vec<PTRef> args; args.capacity(row.size());
-        for (std::size_t col = 0; col < row.size(); ++col) {
-            if (row[col].isZero()) { continue; }
-            args.push(logic.mkTimes(colMapping[col], logic.mkIntConst(row[col])));
-        }
-        return logic.mkPlus(std::move(args));
+    PTRef buildCutConstraint(ColMatrix::Col const & constraintCol, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
+        return constraintCol.buildCutConstraint(toVarMap, logic);
     }
 }
 
@@ -263,8 +251,9 @@ PTRef CutCreator::cut(std::vector<DefiningConstaint> constraints) {
 
     auto [operations, dim] = toHNFOperations(std::move(matrixA));
 
-    // Now examime the rows of U':=operations; multiple it with vector of current values of the variables;
-    // Note that each column of U' corresponds to an original variable and we need to remember which one
+    // Now examime the rows of U':=operations; multiply it with vector of current values of the variables;
+    // Since we actually represented the transpose of U', each row of 'operations' corresponds to an original variable
+    // and we need to remember which one
     std::vector<opensmt::Real> varValues;
     varValues.reserve(varCount);
     for (std::size_t col = 0; col < varCount; ++col) {
