@@ -811,8 +811,12 @@ void Interpret::writeState(const char* filename)
 
 void Interpret::writeSplits_smtlib2(const char* filename)
 {
-    char* msg;
-    main_solver->writeSolverSplits_smtlib2(filename, &msg);
+    char* msg = nullptr;
+    bool ok = main_solver->writeSolverSplits_smtlib2(filename, &msg);
+    if (not ok) {
+        std::cout << "While writing splits to " << filename << ": " << msg << std::endl;
+    }
+    free(msg);
 }
 
 bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
