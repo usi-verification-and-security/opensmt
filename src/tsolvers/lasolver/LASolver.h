@@ -148,6 +148,7 @@ private:
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
     TRes cutFromProof();
+    bool shouldTryCutFromProof() const;
 
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
     void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position

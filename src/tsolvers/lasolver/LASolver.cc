@@ -375,8 +375,7 @@ TRes LASolver::checkIntegersAndSplit() {
         return TRes::SAT;
     }
 
-    static unsigned long counter = 0;
-    if (++counter % 3 == 0) {
+    if (shouldTryCutFromProof()) {
         auto res = cutFromProof();
         if (res != TRes::UNKNOWN) {
             return res;
@@ -841,6 +840,12 @@ PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
 void LASolver::printStatistics(std::ostream & out) {
     TSolver::printStatistics(out);
     laSolverStats.printStatistics(out);
+}
+
+bool LASolver::shouldTryCutFromProof() const {
+    if (this->config.produce_inter()) { return false; }
+    static unsigned long counter = 0;
+    return ++counter % 10 == 0;
 }
 
 TRes LASolver::cutFromProof() {
