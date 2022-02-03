@@ -36,7 +36,11 @@ TRes UFLATHandler::check(bool full) {
     if (full and res == TRes::SAT and not lasolver->hasNewSplits()) {
         equalitiesToPropagate.clear();
         ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
-        lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
+        // MB: Only collect equalities from LASolver if there are none from UF solver.
+        //  This prevents duplication of equalities
+        if (equalitiesToPropagate.size() == 0) {
+            lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
+        }
     }
     return res;
 }
