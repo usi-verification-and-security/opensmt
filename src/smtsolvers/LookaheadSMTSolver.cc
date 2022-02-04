@@ -186,7 +186,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
             }
             if (curr_dl != decisionLevel())
             {
-                n->v = l_False;
                 return PathBuildResult::pathbuild_unsat;
             }
         }
@@ -197,7 +196,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
 #endif
             if (value(path[i]) == l_False)
             {
-                n->v = l_False;
 #ifdef LADEBUG
                 printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
                 printf("Marking the subtree false:\n");
@@ -214,8 +212,10 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode* 
     return PathBuildResult::pathbuild_success;
 }
 
-LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c1, LANode *c2)
+LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode * const n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2)
 {
+    assert(c1);
+    assert(c2);
     // Do the lookahead
     assert(decisionLevel() == n->d);
     Lit best;
@@ -229,84 +229,22 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode* n, LANode* c
     c1->p = n;
     c1->d = n->d+1;
     c1->l = best;
-    c1->v = l_Undef;
     c2->p = n;
     c2->d = n->d+1;
     c2->l = ~best;
-    c2->v = l_Undef;
-    n->c1 = c1;
-    n->c2 = c2;
+    n->c1 = std::move(c1);
+    n->c2 = std::move(c2);
 
     return laresult::la_ok;
 }
 
-// The new try for the lookahead with backjumping:
-// Do not write this as a recursive function but instead maintain the
-// tree explicitly.  Each internal node should have the info whether its
-// both children have been constructed and whether any of its two
-// children has been shown unsatisfiable either directly or with a
-// backjump.
-LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead()
-{
-
-    score->updateRound();
-    vec<LANode*> queue;
-    LANode *root = new LANode();
-    root->p  = root;
-    queue.push(root);
-
-    while (queue.size() != 0)
-    {
-        LANode* n = queue.last();
-        queue.pop();
-#ifdef LADEBUG
-        printf("main loop: dl %d -> %d\n", decisionLevel(), 0);
-#endif
-
-        if (n->v == l_False) {
-            deallocTree(n);
-            continue;
-        }
-        switch (setSolverToNode(n)) {
-            case PathBuildResult::pathbuild_tlunsat: {
-                return LALoopRes::unsat;
-            }
-            case PathBuildResult::pathbuild_restart: {
-                return LALoopRes::restart;
-            }
-            case PathBuildResult::pathbuild_unsat: {
-                deallocTree(n);
-                continue;
-            }
-            case PathBuildResult::pathbuild_success: {
-                ;
-            }
-        }
-
-        auto *c1 = new LANode();
-        auto *c2 = new LANode();
-        switch (expandTree(n, c1, c2)) {
-            case laresult::la_tl_unsat:
-                return LALoopRes::unsat;
-            case laresult::la_restart:
-                return LALoopRes::restart;
-            case laresult::la_unsat:
-                queue.push(n);
-                continue;
-            case laresult::la_sat:
-                return LALoopRes::sat;
-            case laresult::la_ok:
-                ;
-        }
-
-        queue.push(c1);
-        queue.push(c2);
-    }
-#ifdef LADEBUG
-    root->print();
-#endif
-    return LALoopRes::unknown;
-}
+LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
+    struct PlainBuildConfig {
+        bool stopCondition(LANode &, int) { return false; }
+        LALoopRes exitState() const { return LALoopRes::unknown; }
+    };
+    return buildAndTraverse<LANode, PlainBuildConfig>(PlainBuildConfig()).first;
+};
 
 LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
 {
@@ -475,26 +413,3 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
     if (!okToPartition(var(best))) { unadvised_splits++; }
     return laresult::la_ok;
 }
-
-void LookaheadSMTSolver::deallocTree(LANode *root)
-{
-    vec<LANode*> queue;
-    Map<LANode*, bool, LANode::Hash> seen;
-    queue.push(root);
-    while (queue.size() != 0) {
-        LANode *n = queue.last();
-        if (!seen.has(n)) {
-            seen.insert(n, true);
-            if (n->c1 != nullptr) {
-                assert(n->c2 != nullptr);
-                queue.push(n->c1);
-                queue.push(n->c2);
-                continue;
-            }
-        }
-
-        queue.pop();
-        delete n;
-    }
-}
-
