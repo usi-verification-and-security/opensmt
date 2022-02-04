@@ -106,8 +106,9 @@ void CoreSMTSolver::printTrail( )
 {
   for (int i = 0; i < trail.size(); i++)
   {
-    printLit( trail[i] );
-    printf(" %s%s\n", (sign(trail[i]) ? "not " : ""), theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i]))));
+    printLit(trail[i]);
+    std::cerr << ' ' << (sign(trail[i]) ? "not " : "")
+        << theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(trail[i]))) << '\n';
   }
 }
 

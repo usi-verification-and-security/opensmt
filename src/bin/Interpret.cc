@@ -87,9 +87,8 @@ void Interpret::getInfo(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "no value for info %s", name);
     else {
-        char* val_str = value.toString();
-        notify_formatted(false, "%s %s", name, val_str);
-        free(val_str);
+        auto val_str = value.toString();
+        notify_formatted(false, "%s %s", name, val_str.c_str());
     }
 }
 
@@ -125,9 +124,8 @@ void Interpret::getOption(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
     else {
-        char* str_val = value.toString();
-        notify_formatted(false, "%s",str_val);
-        free(str_val);
+        auto str_val = value.toString();
+        notify_formatted(false, "%s",str_val.c_str());
     }
 }
 
@@ -560,7 +558,7 @@ bool Interpret::checkSat() {
 
         const Info& status = config.getInfo(":status");
         if (!status.isEmpty()) {
-            std::string statusString(std::move(status.toString()));
+            std::string statusString = status.toString();
             if ((statusString.compare("sat") == 0) && (res == s_False)) {
                 notify_formatted(false, "(error \"check status which says sat\")");
 
@@ -652,19 +650,16 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
             values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
-            char* pt_str = logic.printTerm(tr);
-            comment_formatted("Found the term %s", pt_str);
-            free(pt_str);
+            auto pt_str = logic.printTerm(tr);
+            comment_formatted("Found the term %s", pt_str.c_str());
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
     for (auto const & valPair : values) {
-        char* name = logic.printTerm(valPair.first);
-        char* value = logic.printTerm(valPair.second);
-        printf("(%s %s)", name, value);
-        free(name);
-        free(value);
+        auto name = logic.printTerm(valPair.first);
+        auto value = logic.printTerm(valPair.second);
+        printf("(%s %s)", name.c_str(), value.c_str());
     }
     printf(")\n");
 }
@@ -785,9 +780,7 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     auto s = logic->protectName(logic->getSymName(tr));
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->printSort(sortRef) << '\n';
-    char* val_string = logic->printTerm(val);
-    ss << "    " << val_string << ")\n";
-    free(val_string);
+    ss << "    " << logic->printTerm(val) << ")\n";
     return ss.str();
 }
 

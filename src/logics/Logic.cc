@@ -210,9 +210,7 @@ std::string Logic::pp(PTRef tr) const {
     return ss.str();
 }
 
-char*
-Logic::printTerm_(PTRef tr, bool ext, bool safe) const
-{
+std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
     std::stringstream ss;
 
     const Pterm& t = getPterm(tr);
@@ -226,18 +224,16 @@ Logic::printTerm_(PTRef tr, bool ext, bool safe) const
         } else {
             ss << "(as " << name_escaped << ext_string << " " << printSort(getSortRef(sr)) << ")";
         }
-        return strdup(ss.str().data());
+        return ss.str();
     } else {
         // Here we know that t.size() > 0
         ss << "(" << name_escaped;
         for (auto arg : t) {
-            char *current_term_p = printTerm_(arg, ext, safe);
-            ss << " " << current_term_p;
-            free(current_term_p);
+            ss << " " << printTerm_(arg, ext, safe);
         }
         ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
     }
-    return strdup(ss.str().data());
+    return ss.str();
 }
 
 bool Logic::isTheoryTerm(PTRef ptr) const {
@@ -1397,9 +1393,7 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();
     for (PTRef arg : args) {
-        char* arg_name = printTerm(arg);
-        dump_out << '(' << arg_name << ' ' <<  printSort(getSortRef(arg)) << ") ";
-        free(arg_name);
+        dump_out << '(' << printTerm(arg) << ' ' <<  printSort(getSortRef(arg)) << ") ";
     }
     dump_out << ") " << printSort(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
@@ -1562,9 +1556,6 @@ bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 
 bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
-
-char* Logic::printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
-char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 

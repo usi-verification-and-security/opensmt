@@ -177,7 +177,6 @@ int Smt2newContext::init_scanner()
         yyset_in(is, scanner);
     }
     else if (ib != NULL) {
-        yylex_init(&scanner);
         yylex_init_extra(this, &scanner);
         yy_scan_string(ib, scanner);
     }

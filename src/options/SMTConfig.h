@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 
 #include <libgen.h>
+#include <string>
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -84,6 +85,8 @@ class ASTNode {
     std::vector< ASTNode* >*children;
     ASTNode(ASTType t, osmttokens::smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
     ASTNode(ASTType t, char* v) : type(t), tok({osmttokens::t_none}), val(v), children(NULL) {}
+    ASTNode(ASTNode const &) = delete;
+    ASTNode & operator=(ASTNode const &) = delete;
     ~ASTNode() {
         if (children) {
             for (auto ci = children->begin(); ci != children->end(); ci++) {
@@ -93,6 +96,7 @@ class ASTNode {
         }
         free(val);
     }
+
     void                   print(std::ostream& o, int indent);
     inline const char      *typeToStr() const { return typestr[type]; }
     inline ASTType         getType()   const { return type; }
@@ -114,7 +118,7 @@ class ConfValue {
     ConfValue(const char* s);
     ConfValue(const ConfValue& other);
     ConfValue& operator=(const ConfValue& other);
-    char* toString() const;
+    std::string toString() const;
     double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
     ~ConfValue();
 };
@@ -123,24 +127,24 @@ class Info {
   private:
     ConfValue   value;
   public:
-    Info(ASTNode& n);
-    Info(const Info& other);
+    Info(ASTNode const & n);
+    Info(Info const & other);
     Info() {};
     bool isEmpty() const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); };
+    inline std::string toString() const { return value.toString(); }
 };
 
 class SMTOption {
   private:
     ConfValue   value;
   public:
-    SMTOption(ASTNode& n);
+    SMTOption(ASTNode const & n);
     SMTOption() {}
     SMTOption(int i)   : value(i) {}
     SMTOption(double i): value(i) {}
     SMTOption(const char* s) : value(s) {}
-    inline bool  isEmpty()  const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); }
+    inline bool isEmpty() const { return value.type == O_EMPTY; }
+    inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
 };
 

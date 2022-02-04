@@ -372,9 +372,8 @@ public:
 
     opensmt::pair<lbool,SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
     void termSort(vec<PTRef> &v) const override;
-    char *printTerm_(PTRef tr, bool ext, bool s) const override;
-    char *printTerm(PTRef tr) const override;
-    char *printTerm(PTRef tr, bool l, bool s) const override;
+
+    std::string printTerm_(PTRef tr, bool ext, bool s) const override;
 
     // Helper methods
 

@@ -380,13 +380,13 @@ private:
     //===========================================================================
     // Debugging routines - Implemented in EgraphDebug.C
 public:
-    char* printEqClass               ( PTRef tr ) const;
-    char* printDistinctions          ( PTRef tr ) const;
-    char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.getERef(tr)).c_str()); return tmp; }
+    std::string printEqClass         (PTRef tr) const;
+    std::string printDistinctions    (PTRef tr) const;
+    std::string printExplanation     (PTRef tr) const { return printExplanationTreeDotty(enode_store.getERef(tr)); }
 private:
     std::string toString                 (ERef er) const;
 public:
-    string printExplanationTreeDotty(ERef);
+    std::string printExplanationTreeDotty(ERef) const;
 private:
     const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
     void checkForbidReferences       ( ERef );

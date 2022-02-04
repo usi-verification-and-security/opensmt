@@ -633,8 +633,8 @@ public:
 
 	void   populateClauses  (vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit = std::numeric_limits<unsigned int>::max());
 	void   populateClauses  (vec<PTRef> & clauses, const vec<Lit> & lits);
-	char * printCnfClauses  ();
-	char * printCnfLearnts  ();
+	std::string printCnfClauses  ();
+	std::string printCnfLearnts  ();
 
     void   printProofSMT2          ( ostream & ); // Print proof
 protected:
@@ -1016,9 +1016,8 @@ inline void CoreSMTSolver::printClause(const C& c)
         args.push(tr);
     }
     PTRef tr = logic.mkOr(std::move(args));
-    char* clause = logic.printTerm(tr);
-    fprintf(stderr, "; %s", clause);
-    free(clause);
+    auto clause = logic.printTerm(tr);
+    fprintf(stderr, "; %s", clause.c_str());
 }
 
 inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef> & crefs, unsigned int limit)
@@ -1041,7 +1040,7 @@ inline void CoreSMTSolver::populateClauses(vec<PTRef> & clauses, const vec<CRef>
 	}
 }
 
-inline char * CoreSMTSolver::printCnfClauses()
+inline std::string CoreSMTSolver::printCnfClauses()
 {
 	vec<PTRef> cnf_clauses;
 	this->populateClauses(cnf_clauses, clauses);
@@ -1050,7 +1049,7 @@ inline char * CoreSMTSolver::printCnfClauses()
 	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
 }
 
-inline char * CoreSMTSolver::printCnfLearnts()
+inline std::string CoreSMTSolver::printCnfLearnts()
 {
 	vec<PTRef> cnf_clauses;
 	this->populateClauses(cnf_clauses, learnts, 2);
@@ -1073,10 +1072,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
-        char* term_name;
-        theory_handler.getVarName(v, &term_name);
-        os << (sign(c[i])?"(not ":"") << term_name << (sign(c[i])?") ":" ");
-        free(term_name);
+        os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
     }
     if ( c.size( ) > 1 ) os << ")";
 }
@@ -1093,10 +1089,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, vec< Lit > & c, bool id
             os << (sign(c[i])?"-":" ") << v << " ";
         else
         {
-            char* term_name;
-            theory_handler.getVarName(v, &term_name);
-            os << (sign(c[i])?"(not ":"") << term_name << (sign(c[i])?") ":" ");
-            free(term_name);
+            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -1114,10 +1107,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, vector< Lit > & c, bool
             os << (sign(c[i])?"-":" ") << v << " ";
         else
         {
-            char* term_name;
-            theory_handler.getVarName(v, &term_name);
-            os << (sign(c[i])?"(not ":"") << term_name << (sign(c[i])?") ":" ");
-            free(term_name);
+            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -1130,10 +1120,7 @@ inline void CoreSMTSolver::printSMTLit( ostream & os, const Lit l )
     else if ( v == 1 ) os << "false";
     else
     {
-        char* term_name;
-        theory_handler.getVarName(v, &term_name);
-        os << (sign(l)?"(not ":"") << term_name << (sign(l)?") ":" ");
-        free(term_name);
+        os << (sign(l)?"(not ":"") << theory_handler.getVarName(v) << (sign(l)?") ":" ");
     }
 }
 

@@ -8,6 +8,7 @@
 #include "OsmtInternalException.h"
 #include "OsmtApiException.h"
 #include <memory>
+#include <sstream>
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 /***********************************************************
@@ -329,9 +330,6 @@ PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
     markConstant(id);
     return ptr;
 }
-
-char* ArithLogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
-char* ArithLogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
 
 PTRef ArithLogic::mkMinus(vec<PTRef> && args)
 {
@@ -915,10 +913,8 @@ ArithLogic::getDefaultValuePTRef(const SRef sref) const
 
 // Handle the printing of real constants that are negative and the
 // rational constants
-char*
-ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
+std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
-    char* out;
     if (isNumConst(tr)) {
         bool is_neg = false;
         char* tmp_str;
@@ -928,51 +924,55 @@ ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
             v.negate();
             is_neg = true;
         }
-        char* rat_str = strdup(v.get_str().c_str());
+        std::string rat_str = v.get_str();
         free(tmp_str);
         bool is_div = false;
-        int i = 0;
-        for (; rat_str[i] != '\0'; i++) {
+        unsigned i = 0;
+        unsigned rat_size = rat_str.size();
+        for (; i != rat_size; i++) {
             if (rat_str[i] == '/') {
                 is_div = true;
                 break;
             }
         }
         if (is_div) {
-            int j = 0;
+            unsigned j = 0;
             char* nom = (char*) malloc(i+1);
             for (; j < i; j++)
                 nom[j] = rat_str[j];
             nom[i] = '\0';
-            int len = strlen(rat_str);
-            char* den = (char*) malloc(len-i);
+            char* den = (char*) malloc(rat_size-i);
             i++;
             j = 0;
-            for (; i < len; i++)
+            for (; i < rat_size; i++)
                 den[j++] = rat_str[i];
             den[j] = '\0';
+            char * tmp;
+            std::stringstream str;
+            int written = is_neg ? asprintf(&tmp, "(/ (- %s) %s)", nom, den)
+                                 : asprintf(&tmp, "(/ %s %s)", nom, den);
+            assert(written >= 0); (void)written;
+            str << tmp;
             if (ext) {
-                int written = is_neg ? asprintf(&out, "(/ (- %s) %s) <%d>", nom, den, tr.x)
-                        : asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
-                assert(written >= 0); (void)written;
-            } else {
-                int written = is_neg ? asprintf(&out, "(/ (- %s) %s)", nom, den)
-                    : asprintf(&out, "(/ %s %s)", nom, den);
-                assert(written >= 0); (void)written;
+                str << " <" << tr.x << ">";
             }
             free(nom);
             free(den);
+            free(tmp);
+            return str.str();
         }
         else if (is_neg) {
-            int written = ext ? asprintf(&out, "(- %s) <%d>", rat_str, tr.x)
-                    : asprintf(&out, "(- %s)", rat_str);
-            assert(written >= 0); (void) written;
-        } else
-            out = rat_str;
+            std::stringstream str;
+            str << "(- " << rat_str << ')';
+            if (ext) {
+                str << " <" << tr.x << ">";
+            }
+            return str.str();
+        } else {
+            return rat_str;
+        }
     }
-    else
-        out = Logic::printTerm_(tr, ext, safe);
-    return out;
+    return Logic::printTerm_(tr, ext, safe);
 }
 
 /**
