@@ -97,18 +97,18 @@ public:
     Var newVar(bool sign, bool dvar) override;
 };
 
-// Maintain the
-// tree explicitly.  Each internal node should have the info whether its
+// Maintain the tree explicitly.  Each internal node should have the info whether its
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
 template<typename Node, typename BuildConfig>
-std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>> LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
+std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>>
+LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     score->updateRound();
     vec<Node *> queue;
     auto * root_raw = new Node();
     auto root = std::unique_ptr<Node>(root_raw);
-    root->p  = root_raw;
+    root->p = root_raw;
     queue.push(root_raw);
 
     while (queue.size() != 0) {
@@ -124,14 +124,14 @@ std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>> LookaheadSMTSolv
             case PathBuildResult::pathbuild_unsat: {
                 // Reinsert the parent to the queue
                 assert(n != root_raw); // Unsatisfiability in root should be tlunsat
-                Node *parent = n->getParent();
+                Node * parent = n->getParent();
                 if (queue.size() > 0 and queue.last()->p == parent) {
                     // This is the second child (searched first).  Pop the other child as well
                     queue.pop();
                     // Now queue does not have children of the parent
                     assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
                 }
-                queue.push(n->getParent());
+                queue.push(parent);
                 parent->c1.reset(nullptr);
                 parent->c2.reset(nullptr);
                 continue;

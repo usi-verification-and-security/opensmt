@@ -5,25 +5,24 @@
 #include "LookaheadSMTSolver.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
-	: SimpSMTSolver (c, thandler)
-    , idx           (0)
-	, score         (c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
+	: SimpSMTSolver(c, thandler)
+    , idx(0)
+	, score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
 {}
 
-Var LookaheadSMTSolver::newVar(bool sign, bool dvar)
-{
+Var LookaheadSMTSolver::newVar(bool sign, bool dvar) {
     Var v = SimpSMTSolver::newVar(sign, dvar);
     score->newVar();
     return v;
 }
 
-lbool LookaheadSMTSolver::solve_()
-{
+lbool LookaheadSMTSolver::solve_() {
     declareVarsToTheories();
 
     double nof_conflicts = restart_first;
 
     LALoopRes res = LALoopRes::unknown;
+
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         ConflQuota conflict_quota;
@@ -35,8 +34,7 @@ lbool LookaheadSMTSolver::solve_()
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
 
-    if (res == LALoopRes::sat)
-    {
+    if (res == LALoopRes::sat) {
         model.growTo(nVars());
         for (unsigned int i = 0; i < dec_vars; i++) {
             Var p = var(trail[i]);
@@ -48,8 +46,7 @@ lbool LookaheadSMTSolver::solve_()
             return l_Undef;
         case LALoopRes::sat:
             return l_True;
-        case LALoopRes::unsat:
-        {
+        case LALoopRes::unsat: {
             ok = false;
             return l_False;
         }
@@ -70,15 +67,12 @@ lbool LookaheadSMTSolver::solve_()
 // new conflicts or propagations are available in theory or in unit propagation
 //
 
-lbool LookaheadSMTSolver::laPropagateWrapper()
-{
+lbool LookaheadSMTSolver::laPropagateWrapper() {
     CRef cr;
     bool diff;
-    do
-    {
+    do {
         diff = false;
-        while ((cr = propagate()) != CRef_Undef)
-        {
+        while ((cr = propagate()) != CRef_Undef) {
             if (decisionLevel() == 0)
                 return l_False; // Unsat
             -- confl_quota;
@@ -96,32 +90,25 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
 #endif
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
-            if (out_learnt.size() == 1)
-            {
+            if (out_learnt.size() == 1) {
                 uncheckedEnqueue(out_learnt[0]);
-            }
-            else
-            {
+            } else {
                 CRef crd = ca.alloc(out_learnt, true);
                 learnts.push(crd);
                 attachClause(crd);
                 uncheckedEnqueue(out_learnt[0], crd);
-
             }
             diff = true;
         }
-        if (!diff)
-        {
+        if (!diff) {
             TPropRes res = checkTheory(true);
-            if (res == TPropRes::Unsat)
-            {
+            if (res == TPropRes::Unsat) {
 #ifdef LADEBUG
                 printf("Theory unsatisfiability\n");
 #endif
                 return l_False; // Unsat
             }
-            else if (res == TPropRes::Propagate)
-            {
+            else if (res == TPropRes::Propagate) {
 #ifdef LADEBUG
                 printf("Theory propagation / conflict\n");
 #endif
@@ -148,8 +135,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
  * In case (ii), either @return pathbuild_tlunsat or @return pathbuild_unsat
  *
  */
-LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode const & n)
-{
+LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode const & n) {
     cancelUntil(0);
 
     vec<Lit> path;
@@ -176,8 +162,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
             if (res == l_False) {
                 return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-            }
-            else if (res == l_Undef) {
+            } else if (res == l_Undef) {
                 cancelUntil(0);
                 return PathBuildResult::pathbuild_restart; // Do a restart
             }
