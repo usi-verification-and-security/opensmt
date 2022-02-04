@@ -29,45 +29,35 @@ protected:
         Lit l;
         int d;
         LANode() : l(lit_Undef), d(0) {}
-//        LANode(LANode* par, Lit li, int dl) :
-//            c1(nullptr), c2(nullptr), p(par), l(li), d(dl) {}
         virtual ~LANode() = default;
-        virtual void print_local() {
+        virtual void print_local() const {
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
             dprintf(STDERR_FILENO, "%s%d [%d]", sign(l) ? "-" : "", var(l), d);
 
-            if (c1 != nullptr)
-            {
+            if (c1 != nullptr) {
                 dprintf(STDERR_FILENO, " c1");
             }
-            if (c2 != nullptr)
-            {
+            if (c2 != nullptr) {
                 dprintf(STDERR_FILENO, " c2");
             }
             dprintf(STDERR_FILENO, "\n");
         }
 
-        void print()
-        {
+        void print() const {
             print_local();
-
             if (c1 != nullptr)
                 c1->print();
             if (c2 != nullptr)
                 c2->print();
         }
-        struct Hash {
-            uint32_t operator ()(const LANode *p) const { return (uint32_t)(unsigned int long)p/sizeof(unsigned int long); }
-        };
     };
-    lbool    laPropagateWrapper();
 
+    lbool    laPropagateWrapper();
 
 protected:
     // The result from the lookahead loop
-    enum class LALoopRes
-    {
+    enum class LALoopRes {
         sat,
         unsat,
         unknown,
@@ -75,20 +65,20 @@ protected:
         restart
     };
 
-    enum class laresult
-    {
+    enum class laresult {
         la_tl_unsat,
         la_sat,
         la_restart,
         la_unsat,
         la_ok
     };
-    template<typename Node, typename BuildConfig>
-    std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig && stopCondition);
 
+    template<typename Node, typename BuildConfig>
+
+    std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
     virtual LALoopRes solveLookahead();
-    laresult lookaheadLoop   (Lit& best);
+    std::pair<laresult,Lit> lookaheadLoop();
     lbool solve_() override; // Does not change the formula
 
     enum class PathBuildResult {
@@ -98,8 +88,8 @@ protected:
         pathbuild_restart
     };
 
-    PathBuildResult setSolverToNode(LANode *n);                                         // Set solver dl stack according to the path from root to n
-    laresult expandTree(LANode * n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    PathBuildResult setSolverToNode(LANode const &);                                         // Set solver dl stack according to the path from root to n
+    laresult expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
     std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
@@ -122,11 +112,11 @@ std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>> LookaheadSMTSolv
     queue.push(root_raw);
 
     while (queue.size() != 0) {
-        Node * const n = queue.last();
+        Node * n = queue.last();
         queue.pop();
         assert(n);
 
-        switch (setSolverToNode(n)) {
+        switch (setSolverToNode(*n)) {
             case PathBuildResult::pathbuild_tlunsat:
                 return { LALoopRes::unsat, nullptr };
             case PathBuildResult::pathbuild_restart:
@@ -161,7 +151,7 @@ std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>> LookaheadSMTSolv
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
 
-        switch (expandTree(n, std::move(c1), std::move(c2))) {
+        switch (expandTree(*n, std::move(c1), std::move(c2))) {
             case laresult::la_tl_unsat:
                 return { LALoopRes::unsat, nullptr };
             case laresult::la_restart:
