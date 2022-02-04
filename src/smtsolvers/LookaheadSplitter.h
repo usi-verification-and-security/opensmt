@@ -10,15 +10,16 @@
 class LookaheadSplitter : public LookaheadSMTSolver {
 protected:
     LALoopRes solveLookahead() override;
-    class LASplitNode : public LookaheadSMTSolver::LANode
-    {
+    class LASplitNode : public LookaheadSMTSolver::LANode {
+        static inline unsigned numNodes = 0;
+        unsigned id;
     public:
-        // The children
+        LASplitNode() : id(numNodes++) {}
         std::unique_ptr<SplitData> sd;
-
         LASplitNode * getParent() override { return (LASplitNode*)p; }
+        unsigned getId() const { return id; }
 
-        void print_local() override {
+        void print_local() const override {
             LANode::print_local();
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
@@ -26,7 +27,11 @@ protected:
         }
         LASplitNode const * getC1() const { return (LASplitNode*) c1.get(); }
         LASplitNode const * getC2() const { return (LASplitNode*) c2.get(); }
+        struct Hash {
+            uint32_t operator ()(LASplitNode const * p) const { return (uint32_t)p->getId(); }
+        };
     };
+
     void copySplits(LASplitNode const & root);
 
     bool createSplitLookahead(LASplitNode &);
