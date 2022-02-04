@@ -241,6 +241,16 @@ namespace { // check feasibility
     PTRef buildCutConstraint(ColMatrix::Col const & constraintCol, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
         return constraintCol.buildCutConstraint(toVarMap, logic);
     }
+
+    PTRef infeasibleRowToCut(ColMatrix::Col const & constraintCol, std::vector<PTRef> const & toVarMap, ArithLogic & logic,
+                             FastRational const & rhs) {
+        PTRef constraint = buildCutConstraint(constraintCol, toVarMap, logic);
+        auto lowerBoundValue = rhs.ceil();
+        auto upperBoundValue = rhs.floor();
+        PTRef upperBound = logic.mkLeq(constraint, logic.mkIntConst(upperBoundValue));
+        PTRef lowerBound = logic.mkGeq(constraint, logic.mkIntConst(lowerBoundValue));
+        return logic.mkOr(upperBound, lowerBound);
+    }
 }
 
 PTRef CutCreator::cut(std::vector<DefiningConstaint> constraints) {
@@ -261,18 +271,28 @@ PTRef CutCreator::cut(std::vector<DefiningConstaint> constraints) {
         varValues.push_back(evaluate(var));
     }
     // Check every row of U' for feasibility
+    struct InfeasibleRow{
+        std::size_t rowIndex;
+        FastRational rhs;
+    };
+    std::vector<InfeasibleRow> infeasibleRows;
     for (std::size_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
         auto const & row = operations[rowIndex];
         auto product = crossProduct(row, varValues);
         if (not product.isInteger()) {
-            PTRef constraint = buildCutConstraint(row, columnMapping, logic);
-            auto lowerBoundValue = product.ceil();
-            auto upperBoundValue = product.floor();
-            PTRef upperBound = logic.mkLeq(constraint, logic.mkIntConst(upperBoundValue));
-            PTRef lowerBound = logic.mkGeq(constraint, logic.mkIntConst(lowerBoundValue));
-            return logic.mkOr(upperBound, lowerBound);
+            infeasibleRows.push_back({rowIndex, product});
         }
     }
-    return PTRef_Undef;
+    if (infeasibleRows.empty()) { return PTRef_Undef; }
+    if (infeasibleRows.size() == 1) {
+        return infeasibleRowToCut(operations[infeasibleRows[0].rowIndex], columnMapping, logic, infeasibleRows[0].rhs);
+    }
+    // pick row with less terms
+    auto const & matrix = operations;
+    auto it = std::min_element(infeasibleRows.begin(), infeasibleRows.end(), [&](auto const & first, auto const & second){
+        return matrix[first.rowIndex].size() < matrix[second.rowIndex].size();
+    });
+    assert(it != infeasibleRows.end());
+    return infeasibleRowToCut(matrix[it->rowIndex], columnMapping, logic, it->rhs);
 }
 
