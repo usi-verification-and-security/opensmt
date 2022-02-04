@@ -24,32 +24,32 @@ jobs:
                 name: install model validation environment
                 command: ./regression_models/bin/setup-env.sh
             - run:
-                name: Release build gcc
-                command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Release
-            - run:
                 name: Debug build gcc
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Debug
                     ENABLE_LINE_EDITING: ON
             - run:
+                name: Release build gcc
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
+            - run:
                 name: Install clang
                 command: |
                     sudo apt-get install clang
                     sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
-            - run:
-                name: Release build llvm
-                command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Release
             - run:
                 name: Debug build llvm
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Debug
                     FLAGS: -Wall -Wextra -Werror -fsanitize=signed-integer-overflow,address,undefined
+            - run:
+                name: Release build llvm
+                command: ./ci/run_travis_commands.sh
+                environment:
+                    CMAKE_BUILD_TYPE: Release
 
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
