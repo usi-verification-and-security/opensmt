@@ -45,12 +45,6 @@ const FastRational * ColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
 }
 
 namespace {
-
-struct HNFOperationsResult {
-    ColMatrix operations;
-    std::size_t HNFdimension;
-};
-
 ColMatrix identityMatrix(std::size_t size) {
     ColMatrix id(RowCount{size}, ColumnCount{size});
     for (std::size_t i = 0; i < size; ++i) {
@@ -78,14 +72,16 @@ void addColumnMultiple(ColMatrix & A, ColIndex colFrom, opensmt::Real multiple, 
     U[colFrom].add(U[colTo], -multiple);
 }
 
-// normalizes row so all entries to the right of pivot are zero
-// returns true if the pivot is non-zero
-bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex colToStart, ColMatrix & U) {
+/*
+ * Normalizes row so that all entries to the right of pivot are zero.
+ * Returns true if the pivot is non-zero.
+ */
+bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatrix & U) {
     // Collect all columns with non-zero entry at given row; ensure they are positive
     std::vector<ColIndex> activeColumns;
     auto size = A.colCount();
-    activeColumns.reserve(size - colToStart);
-    for (std::size_t col = colToStart; col < size; ++col) {
+    activeColumns.reserve(size - pivotIndex);
+    for (std::size_t col = pivotIndex; col < size; ++col) {
         if (A[col].isFirst(rowIndex)) {
             activeColumns.push_back(ColIndex{col});
             if (A[col].getFirstCoeff().sign() < 0) {
@@ -123,8 +119,8 @@ bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex colToStart, ColMatr
     }
     // Single active column left, move it to the pivot's position
     assert(activeColumns.size() == 1);
-    if (activeColumns[0] != colToStart) {
-        swapColumns(A, activeColumns[0], colToStart, U);
+    if (activeColumns[0] != pivotIndex) {
+        swapColumns(A, activeColumns[0], pivotIndex, U);
     }
     return true;
 }
@@ -143,11 +139,16 @@ void reduceToTheLeft(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColM
     }
 }
 
+struct HNFOperationsResult {
+    ColMatrix operations;
+    std::size_t HNFdimension;
+};
+
 HNFOperationsResult toHNFOperations(ColMatrix && A) {
     // We perform column operations on A to transform it to HNF
     // At the same time we record the inverse operations in U
-    // We maintain the invariant that A'*U' = A; starting with U=I, the identity matrix
-    // We actually maintain the transpose the U as column matrix and not U as row matrix
+    // We maintain the invariant that A'*U' = A; starting with U:=I, the identity matrix
+    // We actually maintain the transpose of U' as column matrix and not U' as row matrix
     std::size_t cols = A.colCount();
     std::size_t rows = A.rowCount();
     ColMatrix UT = identityMatrix(cols);
@@ -176,11 +177,15 @@ struct Representation {
     std::vector<FastRational> rhs;
     std::vector<PTRef> columnIndexToVarMap;
 };
+/*
+ * Translates the set of defining constraints (linear equalities) into a suitable inner representation:
+ * - Matrix A of coefficients
+ * - a vector with right-hand-side values (as Rationals)
+ * - a map from column index to the corresponding variable
+ */
 Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> const & constraints, ArithLogic & logic) {
-    std::unordered_map<PTRef, unsigned, PTRefHash> varIndices;
-    unsigned columns = 0;
     vec<PTRef> terms;
-    auto fillTerms = [&](PTRef poly) {
+    auto fillTerms = [&](PTRef poly) {// reduces linear polynomial to a vector of the polynomial's terms
         terms.clear();
         if (logic.isPlus(poly)) {
             for (PTRef arg : logic.getPterm(poly)) {
@@ -190,6 +195,8 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
             terms.push(poly);
         }
     };
+    std::unordered_map<PTRef, unsigned, PTRefHash> varIndices;
+    std::size_t columns = 0;
     // First pass to assign indices and find out number of columns
     for (auto defConstraint : constraints) {
         PTRef poly = defConstraint.lhs;
@@ -203,11 +210,10 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         }
     }
 
-    unsigned rows = constraints.size();
+    auto rows = constraints.size();
     ColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
-    std::vector<FastRational> rhs(RowCount{rows});
-    std::vector<Polynomial> columnPolynomials;
-    columnPolynomials.resize(columns);
+    std::vector<FastRational> rhs(rows);
+    std::vector<Polynomial> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
     for (unsigned row = 0; row < constraints.size(); ++row) {
@@ -224,8 +230,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         matrixA.setColumn(ColIndex{i}, std::move(columnPolynomials[i]));
     }
     // compute the inverse map from column indices to variables
-    std::vector<PTRef> columnMapping;
-    columnMapping.resize(matrixA.colCount(), PTRef_Undef);
+    std::vector<PTRef> columnMapping(matrixA.colCount(), PTRef_Undef);
     for (auto [var, index] : varIndices) {
         columnMapping[index] = var;
     }
@@ -238,13 +243,9 @@ namespace { // check feasibility
         return col.product(values);
     }
 
-    PTRef buildCutConstraint(ColMatrix::Col const & constraintCol, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
-        return constraintCol.buildCutConstraint(toVarMap, logic);
-    }
-
     PTRef infeasibleRowToCut(ColMatrix::Col const & constraintCol, std::vector<PTRef> const & toVarMap, ArithLogic & logic,
                              FastRational const & rhs) {
-        PTRef constraint = buildCutConstraint(constraintCol, toVarMap, logic);
+        PTRef constraint = constraintCol.buildCutConstraint(toVarMap, logic);
         auto lowerBoundValue = rhs.ceil();
         auto upperBoundValue = rhs.floor();
         PTRef upperBound = logic.mkLeq(constraint, logic.mkIntConst(upperBoundValue));
@@ -253,31 +254,31 @@ namespace { // check feasibility
     }
 }
 
-PTRef CutCreator::cut(std::vector<DefiningConstaint> constraints) {
+PTRef CutCreator::cut(std::vector<DefiningConstaint> const & constraints) {
     auto [matrixA, rhs, columnMapping] = initFromConstraints(constraints, logic);
+    // MB: 'rhs' is not really used, as it is implicit in the variable assignment; maybe we don't have to compute it
 
     assert(matrixA.colCount() == columnMapping.size());
     std::size_t varCount = matrixA.colCount();
 
-    auto [operations, dim] = toHNFOperations(std::move(matrixA));
+    auto [matrixU, dim] = toHNFOperations(std::move(matrixA));
 
-    // Now examime the rows of U':=operations; multiply it with vector of current values of the variables;
-    // Since we actually represented the transpose of U', each row of 'operations' corresponds to an original variable
-    // and we need to remember which one
+    // Get the values of the variables
     std::vector<opensmt::Real> varValues;
     varValues.reserve(varCount);
     for (std::size_t col = 0; col < varCount; ++col) {
         PTRef var = columnMapping[col];
         varValues.push_back(evaluate(var));
     }
-    // Check every row of U' for feasibility
-    struct InfeasibleRow{
+    // Now check every row of U for infeasibility: if the cross product of the row and vector of variable values is not
+    // an integer, the row represents an infeasible constraint
+    struct InfeasibleRow {
         std::size_t rowIndex;
         FastRational rhs;
     };
     std::vector<InfeasibleRow> infeasibleRows;
     for (std::size_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
-        auto const & row = operations[rowIndex];
+        auto const & row = matrixU[rowIndex];
         auto product = crossProduct(row, varValues);
         if (not product.isInteger()) {
             infeasibleRows.push_back({rowIndex, product});
@@ -285,10 +286,10 @@ PTRef CutCreator::cut(std::vector<DefiningConstaint> constraints) {
     }
     if (infeasibleRows.empty()) { return PTRef_Undef; }
     if (infeasibleRows.size() == 1) {
-        return infeasibleRowToCut(operations[infeasibleRows[0].rowIndex], columnMapping, logic, infeasibleRows[0].rhs);
+        return infeasibleRowToCut(matrixU[infeasibleRows[0].rowIndex], columnMapping, logic, infeasibleRows[0].rhs);
     }
-    // pick row with less terms
-    auto const & matrix = operations;
+    // pick row with fewer terms
+    auto const & matrix = matrixU;
     auto it = std::min_element(infeasibleRows.begin(), infeasibleRows.end(), [&](auto const & first, auto const & second){
         return matrix[first.rowIndex].size() < matrix[second.rowIndex].size();
     });

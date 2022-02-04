@@ -1,3 +1,10 @@
+/*
+ *  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2019-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
+
 #include "LASolver.h"
 
 #include "FarkasInterpolator.h"
@@ -867,12 +874,13 @@ TRes LASolver::cutFromProof() {
         constraints.push_back(DefiningConstraint{term, rhs});
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
-    CutCreator cutCreator(logic, [this](PTRef var) {
+    auto getVarValue = [this](PTRef var) {
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
         Delta val = this->simplex.getValuation(lvar);
         assert(not val.hasDelta());
         return val.R();
-    });
+    };
+    CutCreator cutCreator(logic, getVarValue);
     PTRef split = cutCreator.cut(std::move(constraints));
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;

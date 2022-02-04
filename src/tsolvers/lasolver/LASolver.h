@@ -1,7 +1,12 @@
+/*
+ *  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2019-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
+
 #ifndef LASOLVER_H
 #define LASOLVER_H
-
-//#define GAUSSIAN_DEBUG
 
 #include "Timer.h"
 #include "ArithLogic.h"

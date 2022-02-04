@@ -97,7 +97,7 @@ public:
         opensmt::Real rhs;
     };
 
-    PTRef cut(std::vector<DefiningConstaint> constraints);
+    PTRef cut(std::vector<DefiningConstaint> const & constraints);
 };
 
 
