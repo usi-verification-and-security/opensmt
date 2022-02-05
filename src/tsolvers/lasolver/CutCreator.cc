@@ -272,28 +272,13 @@ PTRef CutCreator::cut(std::vector<DefiningConstaint> const & constraints) {
     }
     // Now check every row of U for infeasibility: if the cross product of the row and vector of variable values is not
     // an integer, the row represents an infeasible constraint
-    struct InfeasibleRow {
-        std::size_t rowIndex;
-        FastRational rhs;
-    };
-    std::vector<InfeasibleRow> infeasibleRows;
     for (std::size_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
         auto const & row = matrixU[rowIndex];
         auto product = crossProduct(row, varValues);
         if (not product.isInteger()) {
-            infeasibleRows.push_back({rowIndex, product});
+            return infeasibleRowToCut(row, columnMapping, logic, product);
         }
     }
-    if (infeasibleRows.empty()) { return PTRef_Undef; }
-    if (infeasibleRows.size() == 1) {
-        return infeasibleRowToCut(matrixU[infeasibleRows[0].rowIndex], columnMapping, logic, infeasibleRows[0].rhs);
-    }
-    // pick row with fewer terms
-    auto const & matrix = matrixU;
-    auto it = std::min_element(infeasibleRows.begin(), infeasibleRows.end(), [&](auto const & first, auto const & second){
-        return matrix[first.rowIndex].size() < matrix[second.rowIndex].size();
-    });
-    assert(it != infeasibleRows.end());
-    return infeasibleRowToCut(matrix[it->rowIndex], columnMapping, logic, it->rhs);
+    return PTRef_Undef;
 }
 
