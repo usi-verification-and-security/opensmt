@@ -363,7 +363,7 @@ public:
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
     opensmt::pair<opensmt::Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
-    void splitTermToVarAndConst(PTRef term, PTRef &var, PTRef &fac) const;
+    opensmt::pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);

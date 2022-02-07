@@ -167,27 +167,27 @@ opensmt::pair<opensmt::Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTR
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-void ArithLogic::splitTermToVarAndConst(PTRef term, PTRef& var, PTRef& fac) const
+opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const
 {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
     if (isTimes(term)) {
         assert(getPterm(term).size() == 2);
-        fac = getPterm(term)[0];
-        var = getPterm(term)[1];
-        if (!isConstant(fac)) {
-            PTRef t = var;
-            var = fac;
-            fac = t;
+        PTRef fac = getPterm(term)[0];
+        PTRef var = getPterm(term)[1];
+        if (not isConstant(fac)) {
+            std::swap(fac, var);
         }
         assert(isConstant(fac));
         assert(isNumVarLike(var));
+        return {var, fac};
     } else if (isNumVarLike(term)) {
-        var = term;
         assert(yieldsSortInt(term) or yieldsSortReal(term));
-        fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+        PTRef var = term;
+        PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+        return {var, fac};
     } else {
-        var = PTRef_Undef; // MB: no variable
-        fac = term;
+        assert(isConstant(term));
+        return {PTRef_Undef, term};
     }
 }
 
@@ -195,9 +195,7 @@ void ArithLogic::splitTermToVarAndConst(PTRef term, PTRef& var, PTRef& fac) cons
 PTRef ArithLogic::normalizeMul(PTRef mul)
 {
     assert(isTimes(mul));
-    PTRef v = PTRef_Undef;
-    PTRef c = PTRef_Undef;
-    splitTermToVarAndConst(mul, v, c);
+    auto [v,c] = splitTermToVarAndConst(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
     } else {
@@ -256,10 +254,8 @@ opensmt::pair<lbool,Logic::SubstMap> ArithLogic::retrieveSubstitutions(const vec
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
     assert(l.isTimes(tr));
-    PTRef c_t;
-    PTRef v_t;
-    l.splitTermToVarAndConst(tr, v_t, c_t);
-    return v_t.x;
+    auto [v,c] = l.splitTermToVarAndConst(tr);
+    return v.x;
 }
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
@@ -383,9 +379,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
     for (PTRef arg : args) {
-        PTRef v;
-        PTRef c;
-        splitTermToVarAndConst(arg, v, c);
+        auto [v,c] = splitTermToVarAndConst(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (!s2t.has(v)) {
@@ -552,8 +546,7 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
         opensmt::Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
     } else if (isNumVarLike(diff) || isTimes(diff)) {
-        PTRef var, constant;
-        splitTermToVarAndConst(diff, var, constant);
+        auto [var, constant] = splitTermToVarAndConst(diff);
         return Logic::mkBinaryEq(getZeroForSort(eqSort), var); // Avoid anything that calls Logic::mkEq as this would create a loop
     } else if (isPlus(diff)) {
         return sumToNormalizedEquality(diff);
@@ -991,9 +984,7 @@ opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum)
     vec<PTRef> vars; vars.capacity(varFactors.size());
     std::vector<opensmt::Number> coeffs; coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
-        PTRef var;
-        PTRef coeff;
-        splitTermToVarAndConst(factor, var, coeff);
+        auto [var, coeff] = splitTermToVarAndConst(factor);
         assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
@@ -1070,8 +1061,7 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef 
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
-    PTRef var, coeff;
-    splitTermToVarAndConst(leadingFactor, var, coeff);
+    auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
     opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));

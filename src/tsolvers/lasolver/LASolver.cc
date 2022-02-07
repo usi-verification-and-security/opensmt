@@ -250,9 +250,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
     auto poly = std::make_unique<Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        PTRef v;
-        PTRef c;
-        logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
+        auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
         LVRef var = getLAVar_single(v);
         Real coeff = getNum(c);
         if (negated) {
@@ -286,10 +284,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
 
     if (logic.isNumVarOrIte(expr) || logic.isTimes(expr)) {
         // Case (1), (2a), and (2b)
-        PTRef v;
-        PTRef c;
-
-        logic.splitTermToVarAndConst(expr, v, c);
+        auto [v,c] = logic.splitTermToVarAndConst(expr);
         assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
@@ -673,15 +668,13 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
         return logic.getNumConst(tr);
 
     // Cases (1) & (2)
-    PTRef coef;
-    PTRef var;
-    logic.splitTermToVarAndConst(tr, var, coef);
+    auto [var, coeff] = logic.splitTermToVarAndConst(tr);
     if (!hasVar(var)) {
         // MB: This variable is not known to the LASolver. Most probably it was not part of the query.
         // We can assign it any value.
         return 0;
     }
-    val += logic.getNumConst(coef) * concrete_model[getVarId(getVarForTerm(var))];
+    val += logic.getNumConst(coeff) * concrete_model[getVarId(getVarForTerm(var))];
 
     return val;
 }
