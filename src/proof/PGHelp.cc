@@ -592,25 +592,25 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 				for(unsigned i = 0; i < c1.size(); i++)
 				{
 					icolor_t v_class = getVarClass( var(c1[i]), A_mask );
-					if( v_class == I_A ){ clause_has_A_local = true; }
-					else if( v_class == I_B ){ clause_has_B_local = true; }
-					else if( v_class == I_AB ){}
+					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
+					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
+					else if( v_class == icolor_t::I_AB ){}
 					else opensmt_error_();
 				}
 				for(unsigned i = 0; i < c2.size(); i++)
 				{
 					icolor_t v_class = getVarClass( var(c2[i]), A_mask );
-					if( v_class == I_A ){ clause_has_A_local = true; }
-					else if( v_class == I_B ){ clause_has_B_local = true; }
-					else if( v_class == I_AB ){}
+					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
+					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
+					else if( v_class == icolor_t::I_AB ){}
 					else opensmt_error_();
 				}
 				for(unsigned i = 0; i < c.size(); i++)
 				{
 					icolor_t v_class = getVarClass( var(c[i]), A_mask );
-					if( v_class == I_A ){ clause_has_A_local = true; resolvent_is_clean = false; }
-					else if( v_class == I_B ){ clause_has_B_local = true; resolvent_is_clean = false; }
-					else if( v_class == I_AB ){}
+					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; resolvent_is_clean = false; }
+					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; resolvent_is_clean = false; }
+					else if( v_class == icolor_t::I_AB ){}
 					else opensmt_error_();
 				}
 				if (!clause_has_A_local && !clause_has_B_local)     num_AB_common++;
@@ -630,9 +630,9 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 				for(unsigned i = 0; i < c.size(); i++)
 				{
 					icolor_t v_class = getVarClass( var(c[i]), A_mask );
-					if( v_class == I_A ){ clause_has_A_local = true; }
-					else if( v_class == I_B ){ clause_has_B_local = true; }
-					else if( v_class == I_AB ){}
+					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
+					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
+					else if( v_class == icolor_t::I_AB ){}
 					else opensmt_error_();
 				}
 				if (!clause_has_A_local && !clause_has_B_local) num_sym_elim++;

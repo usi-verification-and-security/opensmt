@@ -7,9 +7,9 @@
 
 #include <unordered_map>
 
+#include "InterpolationUtils.h"
 #include "PTRef.h"
 #include "SymRef.h"
-#include "Global.h" // TODO: move the definition of ipartitions_t here
 #include "SolverTypes.h"
 #include "FlaPartitionMap.h"
 

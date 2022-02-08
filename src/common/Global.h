@@ -33,8 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
 // to 5.1.3 (see https://gcc.gnu.org/gcc-4.9/porting_to.html)
 #include <cstddef>
-#include <gmp.h>
-#include <gmpxx.h>
 #include <cassert>
 #include <string>
 #include <vector>
@@ -145,68 +143,7 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
     // For interpolation. When only 2 partitions
 // are considered, these shorthands simplify
 // readability
-typedef enum
-{
-   I_UNDEF = 0
- , I_A     = 1
- , I_B     = 2
- , I_AB    = I_A | I_B
- , I_S     = 4
-} icolor_t;
-// For interpolation. Type that has to
-// be used to store multiple partitions for
-// a term
-typedef mpz_class ipartitions_t;
-// Set-bit
-inline void setbit( ipartitions_t & p, const unsigned b ) { mpz_setbit( p.get_mpz_t( ), b ); }
-inline void clrbit( ipartitions_t & p, const unsigned b ) { mpz_clrbit( p.get_mpz_t( ), b ); }
-inline int tstbit( const ipartitions_t & p, const unsigned b ) { return mpz_tstbit( p.get_mpz_t( ), b ); }
-// Function: void mpz_and (mpz_t rop, mpz_t op1, mpz_t op2)
-// Set rop to op1 bitwise-and op2.
-inline void andbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipartitions_t & ip2)
-{ mpz_and( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
-// Function: void mpz_or (mpz_t rop, mpz_t op1, mpz_t op2)
-// Set rop to op1 bitwise inclusive-or op2.
-inline void orbit( ipartitions_t & ipres, const ipartitions_t & ip1, const ipartitions_t & ip2)
-{ mpz_ior( ipres.get_mpz_t( ), ip1.get_mpz_t( ), ip2.get_mpz_t( ) ); }
-// Or-bit
-// And-bit
-// Basic operations
-inline bool isAlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & mask) != 0; }
-inline bool isBlocal ( const ipartitions_t & p, const ipartitions_t & mask ) { return (p & ~mask) != 0; }
-inline bool isAstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) && !isBlocal( p, mask ); }
-inline bool isBstrict( const ipartitions_t & p, const ipartitions_t & mask ) { return isBlocal( p, mask ) && !isAlocal( p, mask ); }
-inline bool isAB     ( const ipartitions_t & p, const ipartitions_t & mask ) { return isAlocal( p, mask ) &&  isBlocal( p, mask ); }
 
-    // To specify the tree structure of a collection of partitions
-// NOTE Partitions should be tagged with consecutive ids >=1
-class InterpolationTree
-{
-public:
-    InterpolationTree(int _partition_id):
-        partition_id(_partition_id),
-        parent(NULL)
-{}
-
-void addChild (InterpolationTree* _tree){
-        children.insert(_tree);
-        (*_tree).setParent(this);
-    }
-
-    void setParent(InterpolationTree* _parent){
-        parent = _parent;
-    }
-
-    int getPartitionId() { return partition_id; }
-    set<InterpolationTree*>& getChildren() { return children; }
-    InterpolationTree* getParent() {return parent; }
-
-private:
-    // NOTE if the tree has N nodes, the partition ids go from 1 to N
-    int partition_id;                         // The integer corresponding to the partition id
-    set<InterpolationTree*>  children;        // The children of the node in the tree
-    InterpolationTree* parent;
-};
 } // namespace opensmt
 
 static inline int getLog2Ceil(int i)
@@ -222,20 +159,6 @@ static inline int getLog2Ceil(int i)
 
 using opensmt::cpuTime;
 using opensmt::memUsed;
-using opensmt::icolor_t;
-using opensmt::I_UNDEF;
-using opensmt::I_A;
-using opensmt::I_B;
-using opensmt::I_AB;
-using opensmt::ipartitions_t;
-using opensmt::setbit;
-using opensmt::clrbit;
-using opensmt::ipartitions_t;
-using opensmt::isAlocal;
-using opensmt::isBlocal;
-using opensmt::isAstrict;
-using opensmt::isBstrict;
-using opensmt::isAB;
 
 #ifndef INT32_MAX
 #define INT32_MAX 0x7fffffffL

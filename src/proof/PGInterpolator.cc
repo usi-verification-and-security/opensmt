@@ -469,7 +469,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             {
                 //unit clause False exists, return degenerate interpolant
                 icolor_t cc = getClauseColor (n->getInterpPartitionMask(), A_mask);
-                interpolants.push( cc == I_A ? logic.getTerm_false() : logic.getTerm_true());
+                interpolants.push( cc == icolor_t::I_A ? logic.getTerm_false() : logic.getTerm_true());
 
                 if (verbose()) {
                     std::cout << "; Degenerate interpolant" << std::endl;
@@ -550,10 +550,10 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 assert(clause.size() == 2); // only binary splits at the moment
                 auto color = getVarColor(n, var(clause[0]));
                 assert(color == getVarColor(n, var(clause[1]))); // same theory variables in the atoms of the split => same color
-                assert(color == I_A || color == I_B || color == I_AB);
+                assert(color == icolor_t::I_A || color == icolor_t::I_B || color == icolor_t::I_AB);
                 // If split on A-local (B-local) term, then return False (True). This is the same as in purely propoositional case.
                 // If split on AB-shared term, we can choose if we treat it as A-clause (resulting in False) or B-clause (resulting in True). We arbitrarily choose A now.
-                partial_interp = color == I_A ? logic_.getTerm_false() : (color == I_B ? logic_.getTerm_true() : logic_.getTerm_false());
+                partial_interp = color == icolor_t::I_A ? logic_.getTerm_false() : (color == icolor_t::I_B ? logic_.getTerm_true() : logic_.getTerm_false());
             }
             else {
                 assert(n->getType() == clause_type::CLA_ASSUMPTION);
@@ -765,12 +765,12 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
 
     icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
     // Original leaves can be only of class A or B
-    assert ( clause_color == I_A || clause_color == I_B );
+    assert ( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
 
     PTRef partial_interp = PTRef_Undef;
 
     // Leaf belongs to A
-    if ( clause_color == I_A )
+    if ( clause_color == icolor_t::I_A )
     {
         // McMillan: compute clause restricted to AB
         if ( usingMcMillanInterpolation( ) )
@@ -784,7 +784,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
             {
                 var_class = getVarClass ( var (cl[i]), A_mask );
 
-                if ( var_class == I_AB ) restricted_clause.push_back ( cl[i] );
+                if ( var_class == icolor_t::I_AB ) restricted_clause.push_back ( cl[i] );
             }
 
             size_t clause_size = restricted_clause.size( );
@@ -823,7 +823,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
         }
     }
     // Leaf belongs to B
-    else if ( clause_color == I_B )
+    else if ( clause_color == icolor_t::I_B )
     {
         //  McMillan': compute clause restricted to a
         if ( usingMcMillanPrimeInterpolation( ) )
@@ -837,7 +837,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
             {
                 var_class = getVarClass ( var (cl[i]), A_mask );
 
-                if ( var_class == I_AB ) restricted_clause.push_back ( cl[i] );
+                if ( var_class == icolor_t::I_AB ) restricted_clause.push_back ( cl[i] );
             }
 
             size_t clause_size = restricted_clause.size( );
@@ -900,14 +900,14 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
     icolor_t pivot_class = getVarClass ( n->getPivot(), A_mask );
 
     // Pivot class A -> interpolant = interpolant of ant1 OR interpolant of ant2
-    if ( pivot_class == I_A )
+    if ( pivot_class == icolor_t::I_A )
     {
         partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
 //        cout << "Class A inner" << endl;
     }
     // Pivot class B -> interpolant = interpolant of ant1 AND interpolant of ant2
-    else if ( pivot_class == I_B )
+    else if ( pivot_class == icolor_t::I_B )
     {
         partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
@@ -918,7 +918,7 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
     // 1) Alternative interpolant = ((NOT pivot) AND interpolant of ant1) OR (pivot AND interpolant of ant2)
     // 2) McMillan interpolant  = interpolant of ant1 AND interpolant of ant2
     // 3) McMillan' interpolant = interpolant of ant1 OR interpolant of ant2
-    else if ( pivot_class == I_AB)
+    else if ( pivot_class == icolor_t::I_AB)
     {
         if ( usingPudlakInterpolation( ) )
         {
@@ -1053,20 +1053,20 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
     cout << "Clause has color " << clause_color << endl;
 #endif
 
-    if (clause_color == I_AB)
+    if (clause_color == icolor_t::I_AB)
     {
         // Think of a heuristic for choosing the partition?
-        clause_color = I_A;
+        clause_color = icolor_t::I_A;
     }
 
     // Original leaves can be only of class A or B
-    assert ( clause_color == I_A || clause_color == I_B );
+    assert ( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
 
     PTRef partial_interp = PTRef_Undef;
 
     // MB: TODO unite the cases in one function
     // Leaf belongs to A -> interpolant = leaf clause restricted to b
-    if ( clause_color == I_A )
+    if ( clause_color == icolor_t::I_A )
     {
         //Compute clause restricted to b
 
@@ -1086,19 +1086,19 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
             }
             Var v = var (cl[i]);
             var_class = getVarClass2 ( v );
-            assert ( var_class == I_B || var_class == I_A || var_class == I_AB );
+            assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
 
-            if ( var_class == I_B || var_class == I_A ) var_color = var_class;
+            if ( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
             else
             {
                 // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = I_A;
-                else if ( isColoredB ( n, v )  ) var_color = I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = I_AB;
+                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
+                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
+                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
                 else opensmt_error ( "Variable " << v << " has no color in clause " << n->getId() );
             }
 
-            if ( var_color == I_B ) restricted_clause.push_back ( cl[i] );
+            if ( var_color == icolor_t::I_B ) restricted_clause.push_back ( cl[i] );
         }
 
         size_t clause_size = restricted_clause.size( );
@@ -1126,7 +1126,7 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
         }
     }
     // Leaf belongs to B -> interpolant = negation of leaf clause restricted to a
-    else if ( clause_color == I_B )
+    else if ( clause_color == icolor_t::I_B )
     {
         //Compute clause restricted to a
 
@@ -1146,19 +1146,19 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
             }
             Var v = var (cl[i]);
             var_class = getVarClass2 ( v );
-            assert ( var_class == I_B || var_class == I_A || var_class == I_AB );
+            assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
 
-            if ( var_class == I_B || var_class == I_A ) var_color = var_class;
+            if ( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
             else
             {
                 // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = I_A;
-                else if ( isColoredB ( n, v )  ) var_color = I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = I_AB;
+                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
+                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
+                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
                 else opensmt_error ( "Variable " << v << " has no color in clause " << n->getId() );
             }
 
-            if ( var_color == I_A ) restricted_clause.push_back ( cl[i] );
+            if ( var_color == icolor_t::I_A ) restricted_clause.push_back ( cl[i] );
         }
 
         size_t clause_size = restricted_clause.size( );
@@ -1205,7 +1205,7 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     PTRef partial_interp = PTRef_Undef;
     // Determine color pivot, depending on its color in the two antecedents
     icolor_t pivot_color = getPivotColor ( n );
-    if (pivot_color == I_S) {
+    if (pivot_color == icolor_t::I_S) {
         Var v = n->getPivot();
         Lit pos = mkLit(v);
         if(isAssumedLiteral(pos)) {
@@ -1220,18 +1220,18 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     }
 
     // Pivot colored a -> interpolant = interpolant of ant1 OR interpolant of ant2
-    if ( pivot_color == I_A)
+    if ( pivot_color == icolor_t::I_A)
     {
         partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
     }
     // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
-    else if ( pivot_color == I_B )
+    else if ( pivot_color == icolor_t::I_B )
     {
         partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
     }
     // Pivot colored ab -> interpolant = (pivot OR interpolant of ant1) AND ((NOT pivot) OR interpolant of ant2)
     // Alternative interpolant = ((NOT pivot) AND interpolant of ant1) OR (pivot AND interpolant of ant2)
-    else if ( pivot_color == I_AB)
+    else if ( pivot_color == icolor_t::I_AB)
     {
         // Find pivot occurrences in ant1 and ant2 and create enodes
         Var piv_ = n->getPivot();
@@ -1295,17 +1295,17 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         icolor_t var_class = getVarClass2 (v);
 
         // Color AB class variables based on the map "labels"
-        if (var_class == I_AB)
+        if (var_class == icolor_t::I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
-            if (it->second == I_A)
+            if (it->second == icolor_t::I_A)
                 colorA (n, v);
             else
                 colorB (n, v);
         }
-        else if (var_class == I_A || var_class == I_B);
+        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else opensmt_error ("Variable has no class");
     }
 }
@@ -1325,17 +1325,17 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         icolor_t var_class = getVarClass2 (v);
 
         // Color AB class variables based on the map "labels"
-        if (var_class == I_AB)
+        if (var_class == icolor_t::I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
-            if (it->second == I_A)
+            if (it->second == icolor_t::I_A)
                 colorA (n, v);
             else
                 colorAB (n, v);
         }
-        else if (var_class == I_A || var_class == I_B);
+        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else opensmt_error ("Variable has no class");
     }
 }
@@ -1355,17 +1355,17 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         icolor_t var_class = getVarClass2 (v);
 
         // Color AB class variables based on the map "labels"
-        if (var_class == I_AB)
+        if (var_class == icolor_t::I_AB)
         {
             map<Var, icolor_t>::iterator it = labels->find (v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
-            if (it->second == I_A)
+            if (it->second == icolor_t::I_A)
                 colorAB (n, v);
             else
                 colorB (n, v);
         }
-        else if (var_class == I_A || var_class == I_B);
+        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else opensmt_error ("Variable has no class");
     }
 }
@@ -1382,8 +1382,8 @@ void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
         icolor_t var_class = getVarClass2 ( v );
 
         // Color AB class variables as ab
-        if ( var_class == I_AB ) colorAB (n, v);
-        else if ( var_class == I_A || var_class == I_B );
+        if ( var_class == icolor_t::I_AB ) colorAB (n, v);
+        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else opensmt_error ( "Variable has no class" );
     }
 }
@@ -1400,8 +1400,8 @@ void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
         icolor_t var_class = getVarClass2 ( v );
 
         // Color AB class variables as b
-        if ( var_class == I_AB ) colorB (n, v);
-        else if ( var_class == I_A || var_class == I_B );
+        if ( var_class == icolor_t::I_AB ) colorB (n, v);
+        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else opensmt_error ( "Variable has no class" );
     }
 }
@@ -1419,9 +1419,9 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
         icolor_t var_class = getVarClass2 ( v );
 
         // Color AB class variables a if clause is in A
-        if ( var_class == I_AB ) colorA (n, v);
+        if ( var_class == icolor_t::I_AB ) colorA (n, v);
         // Color AB class variables b if clause is in B
-        else if ( var_class == I_A || var_class == I_B );
+        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else opensmt_error ( "Variable has no class" );
     }
 }
@@ -1440,7 +1440,7 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
         icolor_t var_class = getVarClass2 ( v );
 
         // Color AB class variables as a
-        if ( var_class == I_AB )
+        if ( var_class == icolor_t::I_AB )
         {
             // Retrieve correspondent Enode
             PTRef en = varToPTRef (v);
@@ -1457,15 +1457,20 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
             {
                 icolor_t color = it->second;
 
-                if (color == I_A) colorA (n, v);
-                else if (color == I_B) colorB (n, v);
-                else if (color == I_AB) colorAB (n, v);
+                if (color == icolor_t::I_A) colorA (n, v);
+                else if (color == icolor_t::I_B) colorB (n, v);
+                else if (color == icolor_t::I_AB) colorAB (n, v);
                 else opensmt_error_();
             }
         }
-        else if ( var_class == I_A || var_class == I_B );
+        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else opensmt_error ( "Variable has no class" );
     }
+}
+
+icolor_t ProofGraph::getVarClass2(Var v) {
+    int c = getVarInfoFromMapping(v); assert(c>=-2);
+    return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
 }
 
 // HELPER methods for theory solver

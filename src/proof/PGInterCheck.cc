@@ -61,17 +61,17 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     {
         Var v = var(cl[i]);
         var_class = getVarClass2( v );
-        assert( var_class == I_B || var_class == I_A || var_class == I_AB );
-        if( var_class == I_B || var_class == I_A ) var_color = var_class;
+        assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
+        if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
         else
         {
             // Determine color of AB variable
-            if( isColoredA( n,v ) ) var_color = I_A;
-            else if ( isColoredB( n,v )  ) var_color = I_B;
-            else if ( isColoredAB( n,v ) ) var_color = I_AB;
+            if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+            else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+            else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
             else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
         }
-        if( var_color == I_A || var_color == I_AB )
+        if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
         {
             PTRef ptaux = varToPTRef(var(cl[i]));
             if(sign(cl[i]))
@@ -110,17 +110,17 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     {
         Var v = var(cl[i]);
         var_class = getVarClass2( v );
-        assert( var_class == I_B || var_class == I_A || var_class == I_AB );
-        if( var_class == I_B || var_class == I_A ) var_color = var_class;
+        assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
+        if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
         else
         {
             // Determine color of AB variable
-            if( isColoredA( n,v ) ) var_color = I_A;
-            else if ( isColoredB( n,v )  ) var_color = I_B;
-            else if ( isColoredAB( n,v ) ) var_color = I_AB;
+            if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+            else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+            else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
             else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
         }
-        if( var_color == I_B || var_color == I_AB )
+        if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
         {
             PTRef ptaux = varToPTRef(var(cl[i]));
             if(sign(cl[i]))
@@ -163,7 +163,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     {
         // Skip true and false
         if((*it) == logic_.getTerm_true() || (*it) == logic_.getTerm_false()) continue;
-        assert( getVarClass(PTRefToVar(*it), A_mask) == I_AB );
+        assert( getVarClass(PTRefToVar(*it), A_mask) == icolor_t::I_AB );
     }
     if( verbose() > 0 ) { cerr << "# The interpolant is on the shared signature" << endl; }
 
@@ -188,8 +188,8 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     {
         ProofNode* n = getNode(*it);
         icolor_t clause_color = getClauseColor( n->getInterpPartitionMask(), A_mask );
-        assert( clause_color == I_A || clause_color == I_B );
-        if ( clause_color == I_A )
+        assert( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
+        if ( clause_color == icolor_t::I_A )
         {
             if(A_added == 0)
             {
@@ -219,17 +219,17 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
             {
                 Var v = var(cl[i]);
                 var_class = getVarClass2( v );
-                assert( var_class == I_B || var_class == I_A || var_class == I_AB );
-                if( var_class == I_B || var_class == I_A ) var_color = var_class;
+                assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
+                if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
                 else
                 {
                     // Determine color of AB variable
-                    if( isColoredA( n,v ) ) var_color = I_A;
-                    else if ( isColoredB( n,v )  ) var_color = I_B;
-                    else if ( isColoredAB( n,v ) ) var_color = I_AB;
+                    if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+                    else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+                    else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
                     else opensmt_error( "Variable has no color" );
                 }
-                if( var_color == I_A || var_color == I_AB )
+                if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
                 {
                     if(num_added==0)
                     {
@@ -300,8 +300,8 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     {
         ProofNode* n = getNode(*it);
         icolor_t clause_color = getClauseColor( n->getInterpPartitionMask(), A_mask );
-        assert( clause_color == I_A || clause_color == I_B );
-        if ( clause_color == I_B )
+        assert( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
+        if ( clause_color == icolor_t::I_B )
         {
             if(B_added == 0)
             {
@@ -330,17 +330,17 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
             {
                 Var v = var(cl[i]);
                 var_class = getVarClass2( v );
-                assert( var_class == I_B || var_class == I_A || var_class == I_AB );
-                if( var_class == I_B || var_class == I_A ) var_color = var_class;
+                assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
+                if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
                 else
                 {
                     // Determine color of AB variable
-                    if( isColoredA( n,v ) ) var_color = I_A;
-                    else if ( isColoredB( n,v )  ) var_color = I_B;
-                    else if ( isColoredAB( n,v ) ) var_color = I_AB;
+                    if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+                    else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+                    else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
                     else opensmt_error( "Variable has no color" );
                 }
-                if( var_color == I_B || var_color == I_AB )
+                if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
                 {
                     if(num_added==0)
                     {

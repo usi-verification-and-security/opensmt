@@ -23,7 +23,7 @@ public:
     icolor_t getColorFor(PTRef term) override {
         auto const & termMask = pmanager.getIPartitions(term);
         auto res = getColorForMask(termMask);
-        if (res == I_UNDEF) {
+        if (res == icolor_t::I_UNDEF) {
             throw OsmtInternalException("No color detected for term");
         }
         return res;
@@ -36,10 +36,10 @@ private:
     icolor_t getColorForMask(ipartitions_t const & otherMask) {
         bool isInA = (otherMask & mask) != 0;
         bool isInB = (otherMask & ~mask) != 0;
-        if (isInA and not isInB) { return I_A; }
-        if (isInB and not isInA) { return I_B; }
-        if (isInA and isInB) { return I_AB; }
-        return I_UNDEF;
+        if (isInA and not isInB) { return icolor_t::I_A; }
+        if (isInB and not isInA) { return icolor_t::I_B; }
+        if (isInA and isInB) { return icolor_t::I_AB; }
+        return icolor_t::I_UNDEF;
     }
 };
 
@@ -55,8 +55,8 @@ public:
 
     template<typename TMap>
     LocalTermColorInfo(TMap const & topLevelMap, Logic const & logic) {
-        termColors[logic.getTerm_true()] = I_AB;
-        termColors[logic.getTerm_false()] = I_AB;
+        termColors[logic.getTerm_true()] = icolor_t::I_AB;
+        termColors[logic.getTerm_false()] = icolor_t::I_AB;
         computeColorsForAllSubterms(topLevelMap, logic);
     }
 
@@ -75,7 +75,7 @@ private:
     void computeColorsForAllSubterms(TMap const & topLevelColors, Logic const & logic) {
         // MB: NOTE! If P(a) is A-local, but both symbols P and a are shared, than P(a) should be shared and not A-local
         using entry_t = std::pair<const PTRef, icolor_t>;
-        auto colorUnion = [](icolor_t f, icolor_t s) { return static_cast<opensmt::icolor_t>(f | s); };
+        auto colorUnion = [](icolor_t f, icolor_t s) { return f | s; };
         std::vector<entry_t> queue;
         for (auto entry : topLevelColors) {
             queue.push_back(entry);
@@ -89,12 +89,12 @@ private:
             auto it = termColors.find(term);
             if (it != termColors.end()) {
                 icolor_t assignedColor = it->second;
-                if (assignedColor == colorToAssign || assignedColor == I_AB) { // already processed, color does not change
+                if (assignedColor == colorToAssign || assignedColor == icolor_t::I_AB) { // already processed, color does not change
                     continue;
                 } else { // assigning new color
-                    assert(assignedColor == I_A or assignedColor == I_B);
+                    assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B);
                     colorToAssign = colorUnion(colorToAssign, assignedColor);
-                    assert(colorToAssign == I_AB);
+                    assert(colorToAssign == icolor_t::I_AB);
                 }
             }
             // if we reach here, we need to propagate colorToAssign to the whole term subtree of `term`
@@ -113,8 +113,8 @@ private:
         vec<PTRef> terms;
         for (auto const & entry : termColors) {
             PTRef term = entry.first;
-            if (entry.second != I_AB and (logic.isUF(term) or logic.isUP(term)) and
-                symbolColors.at(logic.getSymRef(term)) == I_AB) {
+            if (entry.second != icolor_t::I_AB and (logic.isUF(term) or logic.isUP(term)) and
+                symbolColors.at(logic.getSymRef(term)) == icolor_t::I_AB) {
                 terms.push(term);
             }
         }
@@ -123,15 +123,15 @@ private:
 
         for (PTRef term : terms) {
             auto & color = termColors.at(term);
-            assert(color != I_AB and (logic.isUF(term) or logic.isUP(term)));
-            assert(symbolColors.at(logic.getSymRef(term)) == I_AB);
+            assert(color != icolor_t::I_AB and (logic.isUF(term) or logic.isUP(term)));
+            assert(symbolColors.at(logic.getSymRef(term)) == icolor_t::I_AB);
             // if symbol is AB and all children are AB, this term should also be AB
             Pterm const & pterm = logic.getPterm(term);
             bool hasLocalChild = std::any_of(pterm.begin(), pterm.end(),
-                                             [this](PTRef child) { return termColors.at(child) != I_AB; });
+                                             [this](PTRef child) { return termColors.at(child) != icolor_t::I_AB; });
             if (not hasLocalChild) {
                 // everything is AB -> update
-                color = I_AB;
+                color = icolor_t::I_AB;
             }
         }
     }

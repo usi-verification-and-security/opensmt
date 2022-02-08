@@ -7,7 +7,7 @@ void
 PartitionInfo::assignTopLevelPartitionIndex(unsigned int n, PTRef tr) {
     flaPartitionMap.store_top_level_fla_index(tr, n);
     ipartitions_t p = 0;
-    setbit(p, n);
+    opensmt::setbit(p, n);
     addIPartitions(tr, p);
 }
 

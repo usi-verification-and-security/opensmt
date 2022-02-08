@@ -20,7 +20,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-#include "Global.h"
+#include "InterpolationUtils.h"
 #include "Proof.h"
 #include "PTRef.h"
 #include "Theory.h"
@@ -432,11 +432,7 @@ public:
     	return(AB_vars_mapping[v]);
     }
     // Translation from var info obtained through above function
-    inline icolor_t getVarClass2                            ( Var v )
-    {
-    	int c = getVarInfoFromMapping(v); assert(c>=-2);
-    	if(c==-1) return I_A; else if(c==-2) return I_B; else return I_AB;
-    }
+    icolor_t getVarClass2(Var);
     inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
     inline bool    isColoredA             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredA( AB_vars_mapping[v] ); }
     inline bool    isColoredB             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredB( AB_vars_mapping[v] ); }

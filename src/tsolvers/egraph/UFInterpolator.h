@@ -52,7 +52,7 @@ class Logic;
 struct CNode {
     CNode(PTRef e_)
         :
-        e(e_), color(I_UNDEF), next(nullptr)
+        e(e_), color(icolor_t::I_UNDEF), next(nullptr)
         { }
 
     PTRef e;
@@ -64,7 +64,7 @@ typedef std::pair<CNode *, CNode *> path_t;
 
 struct CEdge {
     CEdge(CNode * s, CNode * t, PTRef r)
-        : source(s), target(t), reason(r), color(I_UNDEF) {
+        : source(s), target(t), reason(r), color(icolor_t::I_UNDEF) {
         assert(source);
         assert(target);
     }

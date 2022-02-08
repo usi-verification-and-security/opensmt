@@ -51,9 +51,9 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                         // FIXME out << "\\\\n" << node->getPartialInterpolant( );
                         if (produceInterpolants()) {
                             icolor_t col = getClauseColor(node->getInterpPartitionMask(), A_mask);
-                            if (col == I_A) out << "\", color=\"lightblue\",";
-                            if (col == I_B) out << "\", color=\"red\",";
-                            if (col == I_AB) out << "\", color=\"violet\",";
+                            if (col == icolor_t::I_A) out << "\", color=\"lightblue\",";
+                            if (col == icolor_t::I_B) out << "\", color=\"red\",";
+                            if (col == icolor_t::I_AB) out << "\", color=\"violet\",";
                         }
                     } else {
                         out << "\", color=\"lightblue\",";

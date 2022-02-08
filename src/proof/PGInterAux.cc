@@ -54,9 +54,9 @@ void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 	for( Var v : proof_variables )
 	{
 		icolor_t v_class = getVarClass( v, A_mask );
-		if( v_class == I_A ){ AB_vars_mapping[v] = -1; }
-		else if( v_class == I_B ){ AB_vars_mapping[v] = -2; }
-		else if( v_class == I_AB ){ AB_vars_mapping[v] = AB_bit_index; AB_bit_index++; }
+		if( v_class == icolor_t::I_A ){ AB_vars_mapping[v] = -1; }
+		else if( v_class == icolor_t::I_B ){ AB_vars_mapping[v] = -2; }
+		else if( v_class == icolor_t::I_AB ){ AB_vars_mapping[v] = AB_bit_index; AB_bit_index++; }
 		else opensmt_error_();
 	}
 }
@@ -67,26 +67,26 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
     assert( n->isLeaf() );
     // In labeling, classes and colors are distinct
     icolor_t var_class = getVarClass2( v );
-    icolor_t var_color = I_UNDEF;
+    icolor_t var_color = icolor_t::I_UNDEF;
     // Determine if variable A-local, B-local or AB-common
-    if ( var_class == I_A || var_class == I_B ) var_color = var_class;
-    else if (  var_class == I_AB )
+    if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
+    else if (  var_class == icolor_t::I_AB )
     {
-        if ( isColoredA( n,v ) ) var_color = I_A;
-        else if ( isColoredB( n,v )  ) var_color = I_B;
-        else if ( isColoredAB( n,v ) ) var_color = I_AB;
+        if ( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+        else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+        else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
         else
         {
             /*
-            icolor_t var_color_1=I_UNDEF;
-            if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
-            else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
-            else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
+            icolor_t var_color_1=icolor_t::I_UNDEF;
+            if( isColoredA( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_A;
+            else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = icolor_t::I_B;
+            else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_AB;
 
-            icolor_t var_color_2=I_UNDEF;
-            if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
-            else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
-            else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
+            icolor_t var_color_2=icolor_t::I_UNDEF;
+            if( isColoredA( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_A;
+            else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = icolor_t::I_B;
+            else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
 
             cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
                     " in antecedents but no color in resolvent" << endl;
@@ -115,27 +115,27 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 	// Update AB vars color vectors from antecedents
 	updateColoringfromAnts(n);
 
-	icolor_t var_color = I_UNDEF;
+	icolor_t var_color = icolor_t::I_UNDEF;
 	// Determine if variable A-local, B-local or AB-common
-	if ( var_class == I_A || var_class == I_B ) var_color = var_class;
-	else if (  var_class == I_AB )
+	if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
+	else if (  var_class == icolor_t::I_AB )
 	{
-		if( isColoredA( n,v ) ) var_color = I_A;
-		else if ( isColoredB( n,v )  ) var_color = I_B;
-		else if ( isColoredAB( n,v ) ) var_color = I_AB;
+		if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
+		else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
+		else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
 		else
 		{
-			icolor_t var_color_1=I_UNDEF;
-			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = I_A;
-			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = I_B;
-			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = I_AB;
+			icolor_t var_color_1=icolor_t::I_UNDEF;
+			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_A;
+			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = icolor_t::I_B;
+			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_AB;
 
-			icolor_t var_color_2=I_UNDEF;
-			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = I_A;
-			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = I_B;
-			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = I_AB;
+			icolor_t var_color_2=icolor_t::I_UNDEF;
+			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_A;
+			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = icolor_t::I_B;
+			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
 
-			cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
+			std::cerr << "Pivot " << v << " has colors " << colorToString(var_color_1) << " " << colorToString(var_color_2) <<
 					" in antecedents but no color in resolvent" << endl;
 			opensmt_error_();
 		}
@@ -147,7 +147,7 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 	Lit pos = mkLit(v);
 	Lit neg = ~pos;
 	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
-	    return I_S;
+	    return icolor_t::I_S;
 	}
 
 	return var_color;
@@ -168,16 +168,16 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
     // MB: In incremental solving it might be that this is theory literal that has been popped.
     //      Determine its class based on the classes of variables it contains
     if (!var_in_A && !var_in_B) {
-        if (this->isAssumedVar(v)) { return I_AB; } // MB: Does not matter for assumed literals
+        if (this->isAssumedVar(v)) { return icolor_t::I_AB; } // MB: Does not matter for assumed literals
         // Literals with no partition are handled during proof building, so no other variable except assumed ones should have no partition.
     }
     assert(var_in_A || var_in_B);
 
     icolor_t var_class;
     // Determine if variable A-local, B-local or AB-common
-    if (var_in_A && !var_in_B) var_class = I_A;
-    else if (!var_in_A && var_in_B) var_class = I_B;
-    else if (var_in_A && var_in_B) var_class = I_AB;
+    if (var_in_A && !var_in_B) var_class = icolor_t::I_A;
+    else if (!var_in_A && var_in_B) var_class = icolor_t::I_B;
+    else if (var_in_A && var_in_B) var_class = icolor_t::I_AB;
     else opensmt_error("Variable has no class");
 
     return var_class;
@@ -205,12 +205,12 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
     const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
     assert( clause_in_A || clause_in_B );
 
-    icolor_t clause_color = I_A;
+    icolor_t clause_color = icolor_t::I_A;
 
     // Determine if clause belongs to A or B
-    if( clause_in_A && !clause_in_B ) clause_color = I_A;
-    else if( !clause_in_A && clause_in_B ) clause_color = I_B;
-    else if( clause_in_A && clause_in_B ) clause_color = I_AB;
+    if( clause_in_A && !clause_in_B ) clause_color = icolor_t::I_A;
+    else if( !clause_in_A && clause_in_B ) clause_color = icolor_t::I_B;
+    else if( clause_in_A && clause_in_B ) clause_color = icolor_t::I_AB;
     else opensmt_error( "Clause has no color" );
 
     return clause_color;
@@ -268,14 +268,14 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
                         theory_only.erase(theory_only.find(v));
 
 					icolor_t vclass = getVarClass2(v);
-					if(vclass != I_AB) continue;
-					if(col == I_A)
+					if(vclass != icolor_t::I_AB) continue;
+					if(col == icolor_t::I_A)
 					{
 						++occ_a[v];
 						if(occ_b.find(v) == occ_b.end())
 							occ_b[v] = 0;
 					}
-					else if(col == I_B)
+					else if(col == icolor_t::I_B)
 					{
 						++occ_b[v];
 						if(occ_a.find(v) == occ_a.end())
@@ -306,12 +306,12 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 			if(fa)
 			{
 				if(qtta > qttb) ++avars; else ++aevars;
-				labels->insert(std::pair<Var, icolor_t>(v, I_A));
+				labels->insert(std::pair<Var, icolor_t>(v, icolor_t::I_A));
 			}
 			else
 			{
 				if(qttb > qtta) ++bvars; else ++bevars;
-				labels->insert(std::pair<Var, icolor_t>(v, I_B));
+				labels->insert(std::pair<Var, icolor_t>(v, icolor_t::I_B));
 			}
 		}
 		//cout << avars << " A> " << aevars << " A=\n" << bvars << " B> " << bevars << " B=" << endl;
