@@ -21,7 +21,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 
 short ProofNode::hasOccurrenceBin(Var v) {
-    vector< Lit >& cla = getClause();
+    std::vector<Lit>& cla = getClause();
     int first=0;
     int last=cla.size()-1;
 
@@ -94,31 +94,11 @@ void ProofGraph::getGraphInfo()
         }
     var_cla_size/=(num_nodes-1);
     resetVisited1();
-    //Calculate sample variance for clause size
-
-    /*  if(verbose())
-    {
-        cerr << "#" << endl;
-        cerr << "# ------------------------------------" << endl;
-        cerr << "# PROOF GRAPH STATISTICS    " << endl;
-        cerr << "# ------------------------------------" << endl;
-        cerr << "# Actual num proof variables.: "; fprintf( stderr, "%-10d\n", proof_variables.size() );
-        cerr << "# Nodes......................: "; fprintf( stderr, "%-10d\n", num_nodes );
-        cerr << "# Leaves.....................: "; fprintf( stderr, "%-10d\n", num_leaves );
-        cerr << "# Edges......................: "; fprintf( stderr, "%-10d\n", num_edges );
-        cerr << "# Graph vector size..........: "; fprintf( stderr, "%-10ld\n", graph.size( ) );
-        cerr << "# Average degree.............: "; fprintf( stderr, "%-10.2f\n", (double)num_edges / (double)num_nodes );
-        cerr << "# Unary clauses..............: "; fprintf( stderr, "%-10d\n", num_unary );
-        cerr << "# Max clause size............: "; fprintf( stderr, "%-10d\n", max_cla_size );
-        cerr << "# Average clause size........: "; fprintf( stderr, "%-10.2f\n", av_cla_size );
-        cerr << "# Variance clause size.......: "; fprintf( stderr, "%-10.2f\n", var_cla_size );
-        cerr << "# ---------------------------" << endl;
-    }*/
 }
 
 //Input: a vector which will contain the topological sorting of nodes
 //Output: a topological sorting antecedents-resolvents
-void ProofGraph::topolSortingTopDown(vector<clauseid_t>& DFS)
+void ProofGraph::topolSortingTopDown(std::vector<clauseid_t>& DFS)
 {
     std::deque<clauseid_t>q;
     ProofNode* n;
@@ -145,8 +125,9 @@ void ProofGraph::topolSortingTopDown(vector<clauseid_t>& DFS)
             else
             {
                 // Enqueue resolvents
-                for (set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ )
-                    if (getNode(*it) != NULL) q.push_back(*it);
+                for (clauseid_t resolvent_id : n->getResolvents()) {
+                    if (getNode(resolvent_id)) q.push_back(resolvent_id);
+                }
                 setVisited1(id);
                 DFS.push_back(id);
             }
@@ -158,13 +139,12 @@ void ProofGraph::topolSortingTopDown(vector<clauseid_t>& DFS)
 
 //Input: a vector which will contain the topological sorting of nodes
 //Output: a topological sorting antecedents-resolvents
-void ProofGraph::topolSortingBotUp(vector<clauseid_t>& DFS)
+void ProofGraph::topolSortingBotUp(std::vector<clauseid_t>& DFS)
 {
     clauseid_t id,id1,id2;
-    vector<clauseid_t> q;
-    ProofNode * node = NULL;
-    std::vector<unsigned>* visited_count_ = new vector<unsigned>(getGraphSize(),0);
-    std::vector<unsigned>& visited_count = *visited_count_;
+    std::vector<clauseid_t> q;
+    ProofNode * node = nullptr;
+    std::vector<unsigned> visited_count(getGraphSize(),0);
     DFS.clear();
     DFS.reserve(getGraphSize());
 
@@ -194,7 +174,6 @@ void ProofGraph::topolSortingBotUp(vector<clauseid_t>& DFS)
         }
     }
     while(!q.empty());
-    delete visited_count_;
 }
 
 /*
@@ -266,14 +245,11 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
     // Computation embedded in topological visit enode
     assert( int_e != PTRef_Undef );
 
-    vector<PTRef>q;
+    std::vector<PTRef>q;
     PTRef e_curr;
-    set<PTRef>* visited_= new set<PTRef>;
-    set<PTRef>& visited = *visited_;
-    set<Var>* predicates_ = new set<Var>();
-    set<Var>& predicates = *predicates_;
-    map< PTRef, unsigned long >* complexity_map_ = new map< PTRef, unsigned long >();
-    map< PTRef, unsigned long >& complexity_map = *complexity_map_;
+    std::set<PTRef> visited;
+    std::set<Var> predicates;
+    std::map< PTRef, unsigned long > complexity_map;
     unsigned num_connectives_dag = 0;
     unsigned num_and_or_dag = 0;
 
@@ -291,9 +267,6 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
             {
                 // Complexity of atom is 0
                 complexity_map.insert( std::make_pair( e_curr, 0 ) );
-#ifdef PEDANTIC_DEBUG
-                cerr << "; Adding complexity of " << logic.printTerm(e_curr) << " = 0" << endl;
-#endif
                 // Add predicate to set
                 if ( e_curr != logic_.getTerm_true() && e_curr != logic_.getTerm_false() ) predicates.insert(PTRefToVar( e_curr ));
                 visited.insert(e_curr);
@@ -310,48 +283,31 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
                 unsigned long comp_curr=0;
                 unsigned long num_args=0;
                 // Scan arguments of connective
-//                      for ( PTRef alist = args ; !alist->isEnil( ) && all_visited; alist = alist->getCdr( ) )
-#ifdef PEDANTIC_DEBUG
-                cerr << "; Checking if all the children of " << logic.printTerm(e_curr) << " are visited" << endl;                
-#endif
                 Pterm& t = logic_.getPterm(e_curr);
                 for (int i = 0; i < t.size(); i++)
                 {
-//                          PTRef sub_e = alist->getCar( );
                     PTRef sub_e = t[i];
                     assert( logic_.isBooleanOperator(sub_e) || logic_.isAtom(sub_e) );
                     if(visited.find(sub_e) == visited.end())
                     {
                         q.push_back(sub_e);
                         all_visited=false;
-#ifdef PEDANATIC_DEBUG
-                        cerr << "; Pushing " << logic.printTerm(sub_e) << endl;
-#endif
                     }
                     else
                     {
                         // Calculate complexity
                         comp_curr += complexity_map.find(sub_e)->second;
-#ifdef PEDANTIC_DEBUG
-                        cerr << "; Child " << logic.printTerm(sub_e) << " already visited, complexity " << complexity_map.find(sub_e)->second << endl;
-#endif
                         num_args++;
                     }
                 }
                 if(all_visited)
                 {
-#ifdef PEDANTIC_DEBUG
-                    cerr << "; All children of " << logic.printTerm(e_curr) << " are visited" << endl;
-#endif
                     unsigned additional_compl = 0;
 
                     // Formula tree representation
                     if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) additional_compl = num_args - 1;
                     else if( logic_.isNot(e_curr) ) { assert(num_args==1); additional_compl = 1; }
                     complexity_map.insert(std::make_pair(e_curr, comp_curr + additional_compl));
-#ifdef PEDANTIC_DEBUG
-                    cerr << "; Complexity of " << logic.printTerm(e_curr) << " = " << complexity_map.find(e_curr)->second << endl;
-#endif
 
                     // Formula dag representation
                     if( logic_.isAnd(e_curr) || logic_.isOr(e_curr) ) { additional_compl = num_args - 1; num_and_or_dag = num_and_or_dag + additional_compl; }
@@ -370,12 +326,9 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
     while(!q.empty());
     unsigned long int_size = complexity_map.find(int_e)->second;
     unsigned pred_num = predicates.size();
-    cerr << "# Interpolant number of connectives (dag  representation): " << num_connectives_dag << endl;
-    cerr << "# Interpolant number of connectives (tree representation): " << int_size << endl;
-    cerr << "# Interpolant number of distinct variables: " << pred_num << endl;
-    delete( complexity_map_ );
-    delete( predicates_ );
-    delete( visited_ );
+    std::cerr << "# Interpolant number of connectives (dag  representation): " << num_connectives_dag << '\n';
+    std::cerr << "# Interpolant number of connectives (tree representation): " << int_size << '\n';
+    std::cerr << "# Interpolant number of distinct variables: " << pred_num << std::endl;
 }
 
 
@@ -386,10 +339,10 @@ unsigned long ProofGraph::getComplexityInterpolantIterative(PTRef int_e, bool fl
 {
 	assert( int_e != PTRef_Undef );
 
-	vector< PTRef > DFS_enode;
+	std::vector< PTRef > DFS_enode;
 	topolSortingEnode( DFS_enode, int_e );
 
-	map< PTRef, unsigned long > complexity_map;
+	std::map< PTRef, unsigned long > complexity_map;
 	PTRef curr_enode;
 
 	for( size_t i = 0; i < DFS_enode.size( ) ; i++ )
@@ -441,15 +394,13 @@ unsigned long ProofGraph::getComplexityInterpolantIterative(PTRef int_e, bool fl
 // Input: an interpolant
 // Output: the set of predicates contained in the interpolant
 // Better iterative version
-void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRef >& pred_set)
-{
+void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, std::set<PTRef> & pred_set) {
 	assert( int_e != PTRef_Undef );
 
-	vector< PTRef > DFS_enode;
+	std::vector< PTRef > DFS_enode;
 	topolSortingEnode( DFS_enode, int_e );
 
-	map< PTRef, set< PTRef > > predicate_map;
-	set< PTRef >::iterator it;
+	std::map<PTRef, std::set<PTRef>> predicate_map;
 	PTRef curr_enode;
 
 	for( size_t i = 0 ; i < DFS_enode.size( ) ; i++ )
@@ -457,7 +408,7 @@ void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRe
 		curr_enode = DFS_enode[i];
 		assert( curr_enode != PTRef_Undef );
 
-		set< PTRef > pred_set_curr;
+		std::set< PTRef > pred_set_curr;
 
 		// Case atom
 		if( logic_.isAtom(curr_enode) )
@@ -468,21 +419,17 @@ void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRe
 		// Case boolean connective: and, or not, iff, xor, implies
 		else if( logic_.isBooleanOperator(curr_enode) )
 		{
-//			PTRef args = curr_enode->getCdr();
-//			assert( args->isList( ) );
-
 			// Scan arguments of connective
-//			for ( PTRef alist = args ; !alist->isEnil( ) ; alist = alist->getCdr( ) )
-			Pterm& t = logic_.getPterm(curr_enode);
+			Pterm const & t = logic_.getPterm(curr_enode);
 			for ( int i = 0; i < t.size(); i++ )
 			{
-//				PTRef e = alist->getCar( );
 				PTRef e = t[i];
 				assert( logic_.hasSortBool(e) );
 				// Add predicates
-				set<PTRef> sub_pred_set = predicate_map.find(e)->second;
-				for(it = sub_pred_set.begin(); it!=sub_pred_set.end(); it++ )
-					pred_set_curr.insert((*it));
+				std::set<PTRef> sub_pred_set = predicate_map.find(e)->second;
+				for (PTRef pred : sub_pred_set) {
+                    pred_set_curr.insert(pred);
+                }
 			}
 			predicate_map.insert(std::make_pair(curr_enode,pred_set_curr));
 		}
@@ -492,15 +439,15 @@ void ProofGraph::getPredicatesSetFromInterpolantIterative(PTRef int_e, set< PTRe
 
 // Input: an empty vector, an enode representing a boolean formula
 // Output: a topological sorting of the enode subexpressions
-void ProofGraph::topolSortingEnode(vector<PTRef>& DFS, PTRef int_e)
+void ProofGraph::topolSortingEnode(std::vector<PTRef>& DFS, PTRef int_e)
 {
 	assert( int_e != PTRef_Undef );
 	assert( DFS.empty() );
 
-	vector<PTRef>q;
+	std::vector<PTRef>q;
 	PTRef e_curr;
 	DFS.clear();
-	set<PTRef> visited;
+	std::set<PTRef> visited;
 	bool all_visited;
 
 	q.push_back(int_e);
@@ -555,7 +502,7 @@ void ProofGraph::topolSortingEnode(vector<PTRef>& DFS, PTRef int_e)
 
 void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 {
-	cerr << "# Analyzing proof locality" << endl;
+	std::cerr << "# Analyzing proof locality" << '\n';
 	unsigned num_A_local = 0, num_B_local = 0, num_AB_common = 0, num_AB_mixed = 0, num_sym_elim = 0;
 	//Visit graph from sink keeping track of edges and nodes
 	std::deque<ProofNode*> q;
@@ -642,9 +589,9 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 		}
 	}
 	while(!q.empty());
-	cerr << "# AB common steps  :" << num_AB_common << endl;
-	cerr << "# A local steps    :" << num_A_local << endl;
-	cerr << "# B local steps    :" << num_B_local << endl;
-	cerr << "# A B mixed steps  :" << num_AB_mixed << endl;
-	cerr << "# Sym elim steps   :" << num_sym_elim << endl;
+	std::cerr << "# AB common steps  :" << num_AB_common << '\n';
+	std::cerr << "# A local steps    :" << num_A_local << '\n';
+	std::cerr << "# B local steps    :" << num_B_local << '\n';
+	std::cerr << "# A B mixed steps  :" << num_AB_mixed << '\n';
+	std::cerr << "# Sym elim steps   :" << num_sym_elim << '\n';
 }

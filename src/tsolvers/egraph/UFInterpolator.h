@@ -123,7 +123,7 @@ public:
 
     PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) override;
 
-    void printAsDotty(ostream &);
+    void printAsDotty(std::ostream &);
 
 private:
     icolor_t getLitColor(PTRef term) const {
@@ -145,7 +145,7 @@ private:
 
     void splitEdge(CEdge * edge, PTRef intermediateTerm);
 
-    size_t getSortedEdges(CNode *, CNode *, vector<CEdge *> &);
+    size_t getSortedEdges(CNode *, CNode *, std::vector<CEdge *> &);
 
     icolor_t resolveABColor() const;
 
@@ -161,21 +161,21 @@ private:
     PTRef Iprime(const path_t &);
     PTRef ISwap(const path_t &);
     PTRef IprimeSwap(const path_t &);
-    PTRef Irec(const path_t & p, map<path_t, PTRef> & cache);
-    PTRef IrecSwap(const path_t & p, map<path_t, PTRef> & cache);
-    PTRef J(const path_t &, vector<path_t> &);
-    PTRef JSwap(const path_t &, vector<path_t> &);
+    PTRef Irec(const path_t & p, std::map<path_t, PTRef> & cache);
+    PTRef IrecSwap(const path_t & p, std::map<path_t, PTRef> & cache);
+    PTRef J(const path_t &, std::vector<path_t> &);
+    PTRef JSwap(const path_t &, std::vector<path_t> &);
 
-    void B(const path_t &, vector<path_t> &);
-    void BSwap(const path_t &, vector<path_t> &);
-    void Brec(const path_t &, vector<path_t> &, set<path_t> &);
-    void BrecSwap(const path_t &, vector<path_t> &, set<path_t> &);
+    void B(const path_t &, std::vector<path_t> &);
+    void BSwap(const path_t &, std::vector<path_t> &);
+    void Brec(const path_t &, std::vector<path_t> &, std::set<path_t> &);
+    void BrecSwap(const path_t &, std::vector<path_t> &, std::set<path_t> &);
 
-    bool getFactorsAndParents(const path_t &, vector<path_t> &, vector<path_t> &);
+    bool getFactorsAndParents(const path_t &, std::vector<path_t> &, std::vector<path_t> &);
 
-    void labelFactors(vector<path_t> &);
+    void labelFactors(std::vector<path_t> &);
 
-    inline path_t path(CNode * c1, CNode * c2) { return make_pair(c1, c2); }
+    inline path_t path(CNode * c1, CNode * c2) { return {c1, c2}; }
 
     bool checkColors() const;
 

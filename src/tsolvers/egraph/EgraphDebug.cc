@@ -58,9 +58,9 @@ std::string Egraph::printEqClass(PTRef tr) const {
 }
 
 std::string Egraph::printExplanationTreeDotty(ERef x) const {
-    stringstream os;
-    os << "digraph expl" << endl;
-    os << "{" << endl;
+    std::stringstream os;
+    os << "digraph expl" << '\n';
+    os << "{" << '\n';
 
     while ( x != ERef_Undef ) {
         std::string name = toString(x);
@@ -70,7 +70,7 @@ std::string Egraph::printExplanationTreeDotty(ERef x) const {
         x = getEnode(x).getExpParent();
     }
 
-    os << endl << "}" << endl;
+    os << '\n' << "}" << '\n';
     return os.str();
 }
 
@@ -105,7 +105,7 @@ std::string Egraph::printDistinctions(PTRef x) const
     return out.str();
 }
 
-const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detailed )
+const std::string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detailed )
 {
     if ( x == ELRef_Undef )
         return "(undef)";
@@ -115,31 +115,31 @@ const string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool detai
     ELRef start = x;
     do {
        if (detailed) {
-           os << "+-----------------------------------------------------------+" << endl
-              << "| Forbid list node                                          |" << endl
-              << "+-----------------------------------------------------------+" << endl
-              << "| ELRef: " << x.x << endl
-              << "| id: " << ela[x].getId() << endl
-              << "| dirty: " << ela[x].isDirty() << endl
-              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
+           os << "+-----------------------------------------------------------+" << '\n'
+              << "| Forbid list node                                          |" << '\n'
+              << "+-----------------------------------------------------------+" << '\n'
+              << "| ELRef: " << x.x << '\n'
+              << "| id: " << ela[x].getId() << '\n'
+              << "| dirty: " << ela[x].isDirty() << '\n'
+              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << '\n';
 
             if (ela[x].reloced())
-                os << "| reloced to: " << ela[x].rel_e.x << endl;
+                os << "| reloced to: " << ela[x].rel_e.x << '\n';
             else {
-                os << "| different from enode " << ela[x].e.x << endl;
-                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+                os << "| different from enode " << ela[x].e.x << '\n';
+                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << '\n';
             }
-            os << "| link: " << ela[x].link.x << endl;
+            os << "| link: " << ela[x].link.x << '\n';
         } else {
-            os << "+-----------------------------------------------------------+" << endl
-               << "| Forbid list node                                          |" << endl
-               << "+-----------------------------------------------------------+" << endl
-               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << endl;
+            os << "+-----------------------------------------------------------+" << '\n'
+               << "| Forbid list node                                          |" << '\n'
+               << "+-----------------------------------------------------------+" << '\n'
+               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << '\n';
 
-            os << "| different from enode " << ela[x].e.x << endl;
-            os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << endl;
+            os << "| different from enode " << ela[x].e.x << '\n';
+            os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << '\n';
         }
-        os << "+-----------------------------------------------------------+" << endl;
+        os << "+-----------------------------------------------------------+" << '\n';
 
         x = ela[x].link;
     } while( x != start );

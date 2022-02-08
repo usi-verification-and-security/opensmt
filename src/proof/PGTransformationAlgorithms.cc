@@ -47,7 +47,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
     mpz_init(safe_lit_set[getRoot()->getId()]);
 
     //DFS vector
-    vector<clauseid_t> DFSvec;
+    std::vector<clauseid_t> DFSvec;
     topolSortingBotUp(DFSvec);
 
     assert(isResetVisited1());
@@ -326,7 +326,7 @@ double ProofGraph::recyclePivotsIter() {
 
 void ProofGraph::recycleUnits() {
     assert(mpz_cmp_ui(visited_1, 0) == 0 and mpz_cmp_ui(visited_2, 0) == 0);
-    if (verbose() > 1) { cerr << "# " << "Recycle units begin" << endl; }
+    if (verbose() > 1) { std::cerr << "# " << "Recycle units begin" << '\n'; }
     if (verbose() > 1) {
         uint64_t mem_used = memUsed();
         reportf("# Memory used before recycling: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
@@ -486,7 +486,6 @@ void ProofGraph::recycleUnits() {
         // NOTE is it possible to have multiple unit clauses containing the same literal?
         // If so, which one should be readded?
         if (oldroot->getClauseSize() == 0) {
-            //cerr << "Clause not useful: "; printClause(unit);
         } else {
             assert(oldroot->hasOccurrenceBin(var(unit->getClause()[0])) != -1);
             //printClause(unit);
@@ -510,7 +509,7 @@ void ProofGraph::recycleUnits() {
 
     if (proofCheck()) {
         unsigned rem = cleanProofGraph();
-        if (rem > 0) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+        if (rem > 0) std::cerr << "# Cleaned " << rem << " residual nodes" << '\n';
         assert(rem == 0);
         checkProof(true);
     }
@@ -533,11 +532,11 @@ void ProofGraph::recycleUnits() {
             }
         }
 
-        cerr << "# LU\t";
-        cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes) << "%)\t";
-        cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges) << "%)\t";
-        cerr << "Traversals: " << curr_num_loops << "\t";
-        cerr << "Time: " << (endTime - initTime) << " s" << endl;
+        std::cerr << "# LU\t";
+        std::cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes) << "%)\t";
+        std::cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges) << "%)\t";
+        std::cerr << "Traversals: " << curr_num_loops << "\t";
+        std::cerr << "Time: " << (endTime - initTime) << " s" << '\n';
     }
     //////////////////////////////////////////////////////////////////
 }
@@ -634,7 +633,6 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                                 }
                                 clauseid_t A1_new_id = ruleApply(chosen_ra);
                                 some_transf_done = true;
-                                // if(dupl_id != 0 && A1_new_id != 0) cerr << "A1 double on " << dupl_id << " " << A1_new_id << endl;
 
                                 // NOTE see ProofGraphRules B3
                                 // Mark v as modified
@@ -786,12 +784,11 @@ void ProofGraph::proofPostStructuralHashing()
 	}
 
 	double initTime = cpuTime();
-	vector<clauseid_t>q;
+	std::vector<clauseid_t> q;
 	clauseid_t id;
-	ProofNode* n=NULL;
+	ProofNode* n = nullptr;
 	// Map to associate node to its antecedents
-	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >* ants_map_ = new map< std::pair<clauseid_t,clauseid_t>, clauseid_t >;
-	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >& ants_map = *ants_map_;
+	std::map< std::pair<clauseid_t,clauseid_t>, clauseid_t> ants_map;
 
 	// NOTE Topological visit and node replacement on the fly
 	// Guarantees that both replacing and replaced node subproofs have been visited
@@ -825,7 +822,7 @@ void ProofGraph::proofPostStructuralHashing()
 					{ c2 = n->getAnt1()->getId(); c1 = n->getAnt2()->getId(); }
 					// Look for pair <ant1,ant2>
 					std::pair<clauseid_t, clauseid_t> ant_pair (c1,c2);
-					map< std::pair<clauseid_t,clauseid_t>, clauseid_t >::iterator it = ants_map.find( ant_pair );
+					auto it = ants_map.find(ant_pair);
 					found = ( it != ants_map.end() );
 					// If pairs not found, add node to the map
 					if( !found ) ants_map[ ant_pair ] = id ;
@@ -835,15 +832,15 @@ void ProofGraph::proofPostStructuralHashing()
 						ProofNode* replacing = getNode( it->second );
 						assert( replacing );
 						// Move n children to replacing node
-						for( set<clauseid_t>::iterator itt = n->getResolvents().begin(); itt != n->getResolvents().end(); itt++ )
+						for(clauseid_t resolvent_id : n->getResolvents())
 						{
-							assert((*itt)<getGraphSize());
-							ProofNode* res = getNode((*itt));
+							assert(resolvent_id < getGraphSize());
+							ProofNode* res = getNode(resolvent_id);
 							assert( res );
 							if(res->getAnt1() == n) res->setAnt1( replacing );
 							else if (res->getAnt2() == n) res->setAnt2( replacing );
 							else opensmt_error_();
-							replacing->addRes((*itt));
+							replacing->addRes(resolvent_id);
 						}
 						n->getAnt1()->remRes(id);
 						n->getAnt2()->remRes(id);
@@ -855,7 +852,6 @@ void ProofGraph::proofPostStructuralHashing()
 		else q.pop_back();
 	}
 	while(!q.empty());
-	delete(ants_map_);
 	resetVisited1();
 
 	if( proofCheck() )

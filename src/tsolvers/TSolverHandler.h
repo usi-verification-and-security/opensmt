@@ -64,7 +64,7 @@ public:
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
     void    fillTheoryFunctions(ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary

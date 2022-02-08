@@ -952,7 +952,7 @@ void Interpret::comment_formatted(const char* fmt_str, ...) const {
     int d;
     char c1, *t;
     if (config.verbosity() < 2) return;
-    cout << "; ";
+    std::cout << "; ";
 
     va_start(ap, fmt_str);
     while (true) {
@@ -961,23 +961,23 @@ void Interpret::comment_formatted(const char* fmt_str, ...) const {
             switch (*fmt_str++) {
             case 's':
                 t = va_arg(ap, char *);
-                cout << t;
+                std::cout << t;
                 break;
             case 'd':
                 d = va_arg(ap, int);
-                cout << d;
+                std::cout << d;
                 break;
             case '%':
-                cout << '%';
+                std::cout << '%';
                 break;
             }
         }
         else if (c1 != '\0')
-            cout << c1;
+            std::cout << c1;
         else break;
     }
     va_end(ap);
-    cout << endl;
+    std::cout << std::endl;
 }
 
 
@@ -986,7 +986,7 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
     int d;
     char c1, *t;
     if (error)
-        cout << "(error \"";
+        std::cout << "(error \"";
 
     va_start(ap, fmt_str);
     while (true) {
@@ -995,27 +995,25 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
             switch (*fmt_str++) {
             case 's':
                 t = va_arg(ap, char *);
-                cout << t;
+                std::cout << t;
                 break;
             case 'd':
                 d = va_arg(ap, int);
-                cout << d;
+                std::cout << d;
                 break;
             case '%':
-                cout << '%';
+                std::cout << '%';
                 break;
             }
         }
         else if (c1 != '\0')
-            cout << c1;
+            std::cout << c1;
         else break;
     }
     va_end(ap);
     if (error)
-        cout << "\")" << endl;
-//    else
-//        cout << ")" << endl;
-    cout << endl;
+        std::cout << "\")" << '\n';
+    std::cout << std::endl;
 }
 
 void Interpret::notify_success() {

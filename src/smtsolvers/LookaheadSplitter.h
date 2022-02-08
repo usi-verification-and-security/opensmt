@@ -7,6 +7,17 @@
 
 #include "LookaheadSMTSolver.h"
 
+static inline int getLog2Ceil(int i)
+{
+    if (i == 0 || i == 1) return 0;
+    int r = 0;
+    int j = i;
+    while (i >>= 1) r++;
+
+    if ((1 << r) ^ j) r++;
+    return r;
+}
+
 class LookaheadSplitter : public LookaheadSMTSolver {
 protected:
     LALoopRes solveLookahead() override;

@@ -79,7 +79,7 @@ int main( int argc, char * argv[] )
 #endif
 
 #ifndef NDEBUG
-    cerr << "; this binary is compiled in debug mode (slow)" << endl;
+    std::cerr << "; this binary is compiled in debug mode (slow)" << std::endl;
 #endif
 
   // Accepts file from stdin if nothing specified

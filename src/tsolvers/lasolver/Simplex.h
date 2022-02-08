@@ -16,13 +16,13 @@ public:
     int num_bland_ops;
     int num_pivot_ops;
     SimplexStats() : num_bland_ops(0), num_pivot_ops(0) {}
-    void printStatistics(ostream& os)
+    void printStatistics(std::ostream& os)
     {
-        os << "; -------------------------" << endl;
-        os << "; STATISTICS FOR SIMPLEX   " << endl;
-        os << "; -------------------------" << endl;
-        os << "; Pivot operations.........: " << num_pivot_ops << endl;
-        os << "; Bland operations.........: " << num_bland_ops << endl;
+        os << "; -------------------------" << '\n';
+        os << "; STATISTICS FOR SIMPLEX   " << '\n';
+        os << "; -------------------------" << '\n';
+        os << "; Pivot operations.........: " << num_pivot_ops << '\n';
+        os << "; Bland operations.........: " << num_bland_ops << '\n';
     }
 };
 

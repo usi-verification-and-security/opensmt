@@ -28,7 +28,7 @@ bool
 ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
 {
     if(verbose())
-        cout << "; Verifying partial interpolant" << endl;
+        std::cout << "; Verifying partial interpolant" << '\n';
     bool res = verifyPartialInterpolantA(n, mask);
     if(!res)
     {
@@ -42,7 +42,7 @@ ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
         assert(false);
     }
     if(verbose())
-        cout << "; Partial interpolant is sound" << endl;
+        std::cout << "; Partial interpolant is sound" << '\n';
     return res;
 }
 
@@ -53,7 +53,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
-    vector< Lit > & cl = n->getClause();
+    std::vector< Lit > & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
@@ -102,7 +102,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
-    vector< Lit > & cl = n->getClause();
+    std::vector< Lit > & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
@@ -148,7 +148,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
 
 void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartitions_t& A_mask )
 {
-    if( verbose() > 0 ) { cerr << "# Checking soundness of the interpolant" << endl; }
+    if( verbose() > 0 ) { std::cerr << "# Checking soundness of the interpolant" << '\n'; }
     // NOTE no reason at the moment to verify partial interpolants besides those
     // at the leaves and the global one at the root
     assert(n->isLeaf() || isRoot(n));
@@ -157,51 +157,49 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     assert(partial_interp != PTRef_Undef);
 
     // Check that the interpolant is on the shared signature
-    set<PTRef> pred_set;
+    std::set<PTRef> pred_set;
     getPredicatesSetFromInterpolantIterative( partial_interp, pred_set );
-    for( set<PTRef>::iterator it = pred_set.begin(); it != pred_set.end(); it++ )
-    {
+    for (PTRef pred : pred_set) {
         // Skip true and false
-        if((*it) == logic_.getTerm_true() || (*it) == logic_.getTerm_false()) continue;
-        assert( getVarClass(PTRefToVar(*it), A_mask) == icolor_t::I_AB );
+        if (pred == logic_.getTerm_true() or pred == logic_.getTerm_false()) continue;
+        assert(getVarClass(PTRefToVar(pred), A_mask) == icolor_t::I_AB);
     }
-    if( verbose() > 0 ) { cerr << "# The interpolant is on the shared signature" << endl; }
+    if( verbose() > 0 ) { std::cerr << "# The interpolant is on the shared signature" << '\n'; }
 
 
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
 
     // First stage: print declarations
     const char * name = "verifyinterp_A.smt2";
-    ofstream dump_out( name );
+    std::ofstream dump_out( name );
     logic_.dumpHeaderToFile( dump_out );
 
-    string varsDecl("");
+    std::string varsDecl("");
     for(int i = 2; i <= static_cast<int>(getMaxIdVar()); ++i)
     {
-        varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
+        varsDecl += "(declare-fun " + logic_.printTerm(varToPTRef(i)) + " () Bool)\n";
     }
-    dump_out << varsDecl << endl;
+    dump_out << varsDecl << '\n';
 
     // Print only A atoms
     unsigned A_added = 0;
-    for ( set<clauseid_t>::iterator it = leaves_ids.begin(); it != leaves_ids.end(); it++ )
-    {
-        ProofNode* n = getNode(*it);
+    for (clauseid_t leave_id : leaves_ids) {
+        ProofNode* n = getNode(leave_id);
         icolor_t clause_color = getClauseColor( n->getInterpPartitionMask(), A_mask );
         assert( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
         if ( clause_color == icolor_t::I_A )
         {
             if(A_added == 0)
             {
-                dump_out << "(assert " << endl;
-                dump_out << "(and" << endl;
+                dump_out << "(assert " << '\n';
+                dump_out << "(and" << '\n';
                 A_added++;
             }
             printClause( dump_out, n->getClause() );
-            dump_out << endl;
+            dump_out << '\n';
         }
     }
-    if(A_added > 0) dump_out << "))" << endl;
+    if(A_added > 0) dump_out << "))" << '\n';
 
     if(n->isLeaf())
     {
@@ -209,7 +207,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
         // In labeling, classes and colors are distinct
         icolor_t var_class;
         icolor_t var_color;
-        vector< Lit > & cl = n->getClause();
+        std::vector<Lit> & cl = n->getClause();
         const size_t size = cl.size( );
 
         if( cl.size() > 0 )
@@ -233,26 +231,26 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
                 {
                     if(num_added==0)
                     {
-                        dump_out << "(assert" << endl;
-                        dump_out << "(and" << endl;
+                        dump_out << "(assert" << '\n';
+                        dump_out << "(and" << '\n';
                         num_added++;
                     }
                     // Add negated literal
                     if( sign(cl[i]) )
-                        dump_out << logic_.printTerm(varToPTRef( v )) << endl;
+                        dump_out << logic_.printTerm(varToPTRef( v )) << '\n';
                     else
-                        dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << endl;
+                        dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << '\n';
                 }
             }
-            if(num_added>0) dump_out << "))" << endl;
+            if(num_added>0) dump_out << "))" << '\n';
         }
     }
 
     // Add partial interpolant
-    //dump_out << "(assert (not " << partial_interp << ") )" << endl;
+    //dump_out << "(assert (not " << partial_interp << ") )" << '\n';
     logic_.dumpFormulaToFile( dump_out, partial_interp, true );
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+    dump_out << "(check-sat)" << '\n';
+    dump_out << "(exit)" << '\n';
     dump_out.close( );
 
     // Check !
@@ -276,8 +274,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     }
     else
     {
-        //if( verbose() > 0 ) { cerr << "# Solving A /\\ ~(C|a,ab) /\\ ~I" << endl; }
-        if( verbose() > 0 ) { cerr << "# Checking A -> I" << endl; }
+        if( verbose() > 0 ) { std::cerr << "# Checking A -> I" << '\n'; }
         execlp( config.certifying_solver, config.certifying_solver, name, NULL );
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( EXIT_FAILURE );
@@ -292,34 +289,33 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     dump_out.open( name2 );
     logic_.dumpHeaderToFile( dump_out );
 
-    dump_out << varsDecl << endl;
+    dump_out << varsDecl << '\n';
 
     // Print only B atoms
     unsigned B_added = 0;
-    for ( set<clauseid_t>::iterator it = leaves_ids.begin(); it != leaves_ids.end(); it++ )
-    {
-        ProofNode* n = getNode(*it);
+    for (clauseid_t leave_id : leaves_ids) {
+        ProofNode* n = getNode(leave_id);
         icolor_t clause_color = getClauseColor( n->getInterpPartitionMask(), A_mask );
         assert( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
         if ( clause_color == icolor_t::I_B )
         {
             if(B_added == 0)
             {
-                dump_out << "(assert " << endl;
-                dump_out << "(and" << endl;
+                dump_out << "(assert " << '\n';
+                dump_out << "(and" << '\n';
                 B_added++;
             }
             printClause( dump_out, n->getClause() );
-            dump_out << endl;
+            dump_out << '\n';
         }
     }
-    if(B_added > 0) dump_out << "))" << endl;
+    if(B_added > 0) dump_out << "))" << '\n';
 
     if(n->isLeaf())
     {
         icolor_t var_class;
         icolor_t var_color;
-        vector< Lit > & cl = n->getClause();
+        std::vector<Lit> & cl = n->getClause();
         const size_t size = cl.size( );
         // Add negation of clause restriction
         // In labeling, classes and colors are distinct
@@ -344,26 +340,26 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
                 {
                     if(num_added==0)
                     {
-                        dump_out << "(assert" << endl;
-                        dump_out << "(and" << endl;
+                        dump_out << "(assert" << '\n';
+                        dump_out << "(and" << '\n';
                         num_added++;
                     }
                     // Add negated literal
                     if( sign(cl[i]) )
-                        dump_out << logic_.printTerm(varToPTRef( v )) << endl;
+                        dump_out << logic_.printTerm(varToPTRef( v )) << '\n';
                     else
-                        dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << endl;
+                        dump_out << "(not " << logic_.printTerm(varToPTRef( v )) << " )" << '\n';
                 }
             }
-            if(num_added>0) dump_out << "))" << endl;
+            if(num_added>0) dump_out << "))" << '\n';
         }
     }
 
     // Add partial interpolant
-    //dump_out << "(assert " << partial_interp << " )" << endl;
+    //dump_out << "(assert " << partial_interp << " )" << '\n';
     logic_.dumpFormulaToFile( dump_out, partial_interp, false );
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+    dump_out << "(check-sat)" << '\n';
+    dump_out << "(exit)" << '\n';
     dump_out.close( );
     // Check !
     if ( int pid = fork() )
@@ -385,8 +381,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     }
     else
     {
-        //if ( verbose() > 0 ) { cerr << "# Solving B /\\ ~(C|b,ab) /\\ I" << endl; }
-        if ( verbose() > 0 ) { cerr << "# Checking B /\\ I -> false" << endl; }
+        if ( verbose() > 0 ) { std::cerr << "# Checking B /\\ I -> false" << '\n'; }
         execlp( config.certifying_solver, config.certifying_solver, name2, NULL );
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( 1 );
@@ -398,7 +393,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
     remove(name);
     remove(name2);
 
-    if( verbose() > 0 ) { cerr << "# The interpolant is sound" << endl; }
+    if( verbose() > 0 ) { std::cerr << "# The interpolant is sound" << '\n'; }
 }
 
 
@@ -409,16 +404,16 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
 // Requirement  I_i /\ phi_{i+1} -> I_{i+1}
 bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 {
-    if( verbose() ) cerr << "# Verifying the path interpolation property " << endl;
+    if( verbose() ) std::cerr << "# Verifying the path interpolation property " << '\n';
     unsigned no_part = pmanager.getNofPartitions();
 
     // m partitions, m+1 interpolants
     assert( (no_part + 1) == static_cast<unsigned>(interps.size()) );
 
-    string varsDecl("");
+    std::string varsDecl("");
     for(int i = 2; i <= static_cast<int>(getMaxIdVar()); ++i)
     {
-        varsDecl += "(declare-fun " + string(logic_.printTerm(varToPTRef(i))) + " () Bool)\n";
+        varsDecl += "(declare-fun " + logic_.printTerm(varToPTRef(i)) + " () Bool)\n";
     }
 
     // Try ith constraint I_i /\ phi_i -> I_{i+1}
@@ -427,34 +422,33 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
     {
         // First stage: print declarations
         const char * name = "interpolationproperty.smt2";
-        ofstream dump_out( name );
+        std::ofstream dump_out( name );
         logic_.dumpHeaderToFile( dump_out );
 
-        dump_out << varsDecl << endl;
+        dump_out << varsDecl << '\n';
 
         // Print I_i /\ ~I_{i+1}
         logic_.dumpFormulaToFile( dump_out, interps[j], false );
         logic_.dumpFormulaToFile( dump_out, interps[j+1], true );
         // Print phi_i
-        dump_out << "(assert (and " << endl;
+        dump_out << "(assert (and " << '\n';
         // NOTE adding constant true in case of empty partition
         // remember that we are working on leaves only
-        dump_out << "true " << endl;
-        for ( set<clauseid_t>::iterator it = leaves_ids.begin(); it != leaves_ids.end(); it++ )
-        {
-            ProofNode* n = getNode(*it);
+        dump_out << "true " << '\n';
+        for (clauseid_t leave_id : leaves_ids) {
+            ProofNode* n = getNode(leave_id);
             const ipartitions_t & part = n->getInterpPartitionMask();
             // Clause is in partition 1<= jp <=m if bit jp is set
             int in_j = opensmt::tstbit( part, j+1 );
             if ( in_j )
             {
                 printClause( dump_out, n->getClause() );
-                dump_out << endl;
+                dump_out << '\n';
             }
         }
-        dump_out << "))" << endl;
-        dump_out << "(check-sat)" << endl;
-        dump_out << "(exit)" << endl;
+        dump_out << "))" << '\n';
+        dump_out << "(check-sat)" << '\n';
+        dump_out << "(exit)" << '\n';
         dump_out.close( );
 
         // Check !
@@ -478,22 +472,22 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
         }
         else
         {
-            if( verbose() > 0 ) { cerr << "# Checking I_"<< j <<" /\\ phi_"<< j+1 <<" -> I_"<<j+1  << endl; }
+            if( verbose() > 0 ) { std::cerr << "# Checking I_"<< j <<" /\\ phi_"<< j+1 <<" -> I_"<<j+1  << '\n'; }
             execlp( config.certifying_solver, config.certifying_solver, name, NULL );
             perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
             exit( EXIT_FAILURE );
         }
         if ( tool_res == true )
         {
-            if( verbose() > 0 ) cerr << "# External tool says inductiveness does not hold" << endl;
+            if( verbose() > 0 ) std::cerr << "# External tool says inductiveness does not hold" << '\n';
             property_holds = false;
         }
         else remove(name);
     }
     if( verbose() )
     {
-        if(property_holds) cerr << "# The path interpolation property is satisfied" << endl;
-        else cerr << "# The path interpolation property is NOT satisfied" << endl;
+        if(property_holds) std::cerr << "# The path interpolation property is satisfied" << '\n';
+        else std::cerr << "# The path interpolation property is NOT satisfied" << '\n';
     }
     return property_holds;
 }
@@ -505,19 +499,19 @@ bool ProofGraph::verifyPathInterpolantsFromLeaves ( vec< PTRef > & interps)
 // Requirement  I_i /\ ... /\ I_n -> false
 bool ProofGraph::verifySimultaneousAbstraction( vec< PTRef > & interps)
 {
-    if( verbose() ) cerr << "# Verifying the simultaneous abstraction property " << endl;
+    if( verbose() ) std::cerr << "# Verifying the simultaneous abstraction property " << '\n';
 
     // First stage: print declarations
     const char * name = "verifysymmetric.smt2";
-    ofstream dump_out( name );
+    std::ofstream dump_out( name );
     logic_.dumpHeaderToFile( dump_out );
 
     // Add conjunction interpolants
     for( int i = 0; i < interps.size(); i++ ) {
         logic_.dumpFormulaToFile(dump_out, interps[i], false);
     }
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+    dump_out << "(check-sat)" << '\n';
+    dump_out << "(exit)" << '\n';
     dump_out.close( );
 
     // Check !
@@ -542,22 +536,22 @@ bool ProofGraph::verifySimultaneousAbstraction( vec< PTRef > & interps)
     }
     else
     {
-        if( verbose() > 0 ) { cerr << "# Checking I_1 /\\ ... /\\ I_" << interps.size() <<" -> false" << endl; }
+        if( verbose() > 0 ) { std::cerr << "# Checking I_1 /\\ ... /\\ I_" << interps.size() <<" -> false" << '\n'; }
         execlp( config.certifying_solver, config.certifying_solver, name, NULL );
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( EXIT_FAILURE );
     }
     if ( tool_res == true )
     {
-        if(verbose()) cerr << "# External tool says  I_1 /\\ ... /\\ I_"<< interps.size() << " -> false  does not hold" << endl;
+        if(verbose()) std::cerr << "# External tool says  I_1 /\\ ... /\\ I_"<< interps.size() << " -> false  does not hold" << '\n';
         property_holds = false;
     }
     else remove(name);
 
     if( verbose() )
     {
-        if(property_holds) cerr << "# The simultaneous abstraction property is satisfied" << endl;
-        else cerr << "# The simultaneous abstraction property is NOT satisfied" << endl;
+        if(property_holds) std::cerr << "# The simultaneous abstraction property is satisfied" << '\n';
+        else std::cerr << "# The simultaneous abstraction property is NOT satisfied" << '\n';
     }
     return property_holds;
 }
@@ -570,11 +564,11 @@ bool ProofGraph::verifySimultaneousAbstraction( vec< PTRef > & interps)
 // Requirement  I_i /\ ... /\ I_{n-1} -> I_n
 bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
 {
-    if( verbose() ) cerr << "# Verifying the generalized simultaneous abstraction property " << endl;
+    if( verbose() ) std::cerr << "# Verifying the generalized simultaneous abstraction property " << '\n';
 
     // First stage: print declarations
     const char * name = "verifysymmetric.smt2";
-    ofstream dump_out( name );
+    std::ofstream dump_out( name );
     logic_.dumpHeaderToFile( dump_out );
 
     // Add conjunction interpolants
@@ -583,8 +577,8 @@ bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
     }
     // Add negation last interpolant
     logic_.dumpFormulaToFile( dump_out, interps[interps.size()-1], true );
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+    dump_out << "(check-sat)" << '\n';
+    dump_out << "(exit)" << '\n';
     dump_out.close( );
 
     // Check !
@@ -609,21 +603,21 @@ bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
     }
     else
     {
-        if( verbose() > 0 ) { cerr << "# Checking I_1 /\\ ... /\\ I_"<< interps.size()-1 <<" -> I_" << interps.size() << endl; }
+        if( verbose() > 0 ) { std::cerr << "# Checking I_1 /\\ ... /\\ I_"<< interps.size()-1 <<" -> I_" << interps.size() << '\n'; }
         execlp( config.certifying_solver, config.certifying_solver, name, NULL );
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( EXIT_FAILURE );
     }
     if ( tool_res == true )
     {
-        if(verbose()) cerr << "# External tool says  I_1 /\\ ... /\\ I_"<< interps.size()-1 <<" -> I_" << interps.size() << " does not hold" << endl;
+        if(verbose()) std::cerr << "# External tool says  I_1 /\\ ... /\\ I_"<< interps.size()-1 <<" -> I_" << interps.size() << " does not hold" << '\n';
         property_holds = false;
     }
     else remove(name);
     if( verbose() )
     {
-        if(property_holds) cerr << "# The generalized simultaneous abstraction property is satisfied" << endl;
-        else cerr << "# The generalized simultaneous abstraction property is NOT satisfied" << endl;
+        if(property_holds) std::cerr << "# The generalized simultaneous abstraction property is satisfied" << '\n';
+        else std::cerr << "# The generalized simultaneous abstraction property is NOT satisfied" << '\n';
     }
     return property_holds;
 }
@@ -637,7 +631,7 @@ bool ProofGraph::verifyGenSimultaneousAbstraction( vec< PTRef > & interps)
 // NOTE the vector contains first all the path interpolants and then all the symmetric interpolants
 bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
 {
-    if( verbose() ) cerr << "# Verifying the state-transition interpolation property " << endl;
+    if( verbose() ) std::cerr << "# Verifying the state-transition interpolation property " << '\n';
 
     // m partitions, 2m+1 interpolants
     unsigned no_part = pmanager.getNofPartitions();
@@ -649,15 +643,15 @@ bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
     {
         // First stage: print declarations
         const char * name = "interpolationproperty.smt2";
-        ofstream dump_out( name );
+        std::ofstream dump_out( name );
         logic_.dumpHeaderToFile( dump_out );
 
         // Print I_i /\ J_{i+1} /\ ~I_{i+1}
         logic_.dumpFormulaToFile( dump_out, interps[j], false );
         logic_.dumpFormulaToFile( dump_out, interps[j+(no_part+1)], false );
         logic_.dumpFormulaToFile( dump_out, interps[j+1], true );
-        dump_out << "(check-sat)" << endl;
-        dump_out << "(exit)" << endl;
+        dump_out << "(check-sat)" << '\n';
+        dump_out << "(exit)" << '\n';
         dump_out.close( );
 
         // Check !
@@ -681,144 +675,26 @@ bool ProofGraph::verifyStateTransitionInterpolants ( vec< PTRef > & interps)
         }
         else
         {
-            if( verbose() > 0 ) { cerr << "# Checking I_"<< j <<" /\\ J_"<< j+1 <<" -> I_"<< j+1 << endl; }
+            if( verbose() > 0 ) { std::cerr << "# Checking I_"<< j <<" /\\ J_"<< j+1 <<" -> I_"<< j+1 << '\n'; }
             execlp( config.certifying_solver, config.certifying_solver, name, NULL );
             perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
             exit( EXIT_FAILURE );
         }
         if ( tool_res == true )
         {
-            if(verbose()) cerr << "# External tool says inductiveness does not hold" << endl;
+            if(verbose()) std::cerr << "# External tool says inductiveness does not hold" << '\n';
             property_holds = false;
         }
         else remove(name);
     }
     if( verbose() )
     {
-        if(property_holds) cerr << "# The state-transition interpolation property is satisfied" << endl;
-        else cerr << "# The state-transition interpolation property is NOT satisfied" << endl;
+        if(property_holds) std::cerr << "# The state-transition interpolation property is satisfied" << '\n';
+        else std::cerr << "# The state-transition interpolation property is NOT satisfied" << '\n';
     }
     return property_holds;
 }
 
-
-/*// Tree interpolation
-// Partitions   phi_1 ... phi_n
-// Subtrees		F_1   ... F_n
-// Interpolants I_1 ... I_n
-// Generation 	I_j = Itp(F_j | all other formulae)
-// Requirement  ( /\_(j,k) I_k /\ phi_j ) -> I_j
-void ProofGraph::verifyTreeInterpolants( opensmt::InterpolationTree* itree, vector< PTRef > & interps)
-{
-	if( verbose() ) cerr << "# Verifying the tree interpolation property" << endl;
-
-	vec<CRef>&  clauses = solver.getClauses();
-	vector< pair< CRef, ipartitions_t > >& units_to_partition = solver.getUnits();
-	unsigned no_part = logic_.getNofPartitions();
-
-	// m partitions, one for each node of the tree
-	// TODO m or less interpolants - not necessarily all nodes are approximated
-	// for nodes non approximated, interpolants are the original formulae
-	assert( no_part == interps.size() );
-
-	// NOTE partition ids start from 1, interpolants vector from 0
-	// interpolants[i] contains interpolant for node with partition id i+1
-	std::deque< opensmt::InterpolationTree* > que;
-	que.push_back( itree );
-	do
-	{
-		opensmt::InterpolationTree* itr = que.front();
-		que.pop_front();
-		int j = itr->getPartitionId();
-
-		// Visit j_th node and verify constraint ( /\_(j,k) I_k /\ phi_j ) -> I_j
-		// NOTE partition_ids are numbered from 1
-
-		// First stage: print declarations
-		const char * name = "interpolationproperty.smt2";
-		ofstream dump_out( name );
-		logic_.dumpHeaderToFile( dump_out );
-
-		dump_out << "(assert" << endl << "(and " << endl;
-		// Print /\_(j,k) I_k and add children to queue
-		for( set<opensmt::InterpolationTree*>::iterator tt = itr->getChildren().begin(); tt != itr->getChildren().end(); tt++ )
-		{
-			int k = (*tt)->getPartitionId();
-			dump_out << interps[k-1] << endl;
-			que.push_back(*tt);
-		}
-
-		// Print phi_j
-		int jp = itr->getPartitionId();
-		dump_out << "(and" << endl;
-		for ( unsigned i = 0 ; i < clauses.size( ) ; i ++ )
-		{
-			ipartitions_t & part = solver.getIPartitions( clauses[ i ] );
-			// Clause is in partition 1<= jp <=m if bit jp is set
-			int in_jp = tstbit( part, jp );
-			if ( in_jp )
-			{
-				solver.printClause( dump_out, clauses[ i ] );
-				dump_out << endl;
-			}
-		}
-		for ( size_t i = 0 ; i < units_to_partition.size( ) ; i ++ )
-		{
-			ipartitions_t & part = units_to_partition[ i ].second;
-			// Unit is in partition 1<= jp <=m if bit jp is set
-			int in_jp = tstbit( part, jp );
-			if ( in_jp )
-			{
-				solver.printClause( dump_out, units_to_partition[ i ].first );
-				dump_out << endl;
-			}
-		}
-		dump_out << ")" << endl;
-
-		// Print ~I_j
-		dump_out << "(not " << interps[j-1] << " )" << endl;
-
-		dump_out << "))" << endl;
-		dump_out << "(check-sat)" << endl;
-		dump_out << "(exit)" << endl;
-		dump_out.close( );
-
-		// Check !
-		bool tool_res;
-		if ( int pid = fork() )
-		{
-			int status;
-			waitpid(pid, &status, 0);
-			switch ( WEXITSTATUS( status ) )
-			{
-			case 0:
-				tool_res = false;
-				break;
-			case 1:
-				tool_res = true;
-				break;
-			default:
-				perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
-				exit( EXIT_FAILURE );
-			}
-		}
-		else
-		{
-			//( /\_(j,k) I_k /\ phi_j ) -> I_j
-			if( verbose() > 0 ) { cerr << "# Checking /\\_("<< j <<",k) I_k /\\ phi_"<< j << " -> I_"<< j << endl; }
-			execlp( config.certifying_solver, config.certifying_solver, name, NULL );
-			perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
-			exit( EXIT_FAILURE );
-		}
-		if ( tool_res == true )
-			opensmt_error( "External tool says inductiveness does not hold" );
-
-		remove(name);
-	}
-	while( !que.empty() );
-
-	if( verbose() ) cerr << "# The tree interpolation property is satisfied" << endl;
-}*/
 
 // Tree interpolation
 // Partitions   phi_1 ... phi_n
@@ -828,7 +704,7 @@ void ProofGraph::verifyTreeInterpolants( opensmt::InterpolationTree* itree, vect
 // Requirement  ( /\_(j,k) I_k /\ phi_j ) -> I_j
 bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* itree, vec< PTRef > & interps)
 {
-    if( verbose() ) std::cerr << "# Verifying the tree interpolation property" << std::endl;
+    if( verbose() ) std::cerr << "# Verifying the tree interpolation property" << '\n';
 
     // m partitions, one for each node of the tree
     // TODO m or less interpolants - not necessarily all nodes are approximated
@@ -851,40 +727,38 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
 
         // First stage: print declarations
         const char * name = "interpolationproperty.smt2";
-        ofstream dump_out( name );
+        std::ofstream dump_out( name );
         logic_.dumpHeaderToFile( dump_out );
 
         // Print /\_(j,k) I_k and add children to queue
-        for( set<opensmt::InterpolationTree*>::iterator tt = itr->getChildren().begin(); tt != itr->getChildren().end(); tt++ )
-        {
-            int k = (*tt)->getPartitionId();
-            logic_.dumpFormulaToFile( dump_out, interps[k-1], false );
-            que.push_back(*tt);
+        for (opensmt::InterpolationTree * tree : itr->getChildren()) {
+            int k = tree->getPartitionId();
+            logic_.dumpFormulaToFile(dump_out, interps[k-1], false);
+            que.push_back(tree);
         }
         // Print phi_j
         int jp = itr->getPartitionId();
-        dump_out << "(assert (and" << endl;
+        dump_out << "(assert (and" << '\n';
         // NOTE adding constant true in case of empty partition
         // remember that we are working on leaves only
-        dump_out << "true " << endl;
-        for ( set<clauseid_t>::iterator it = leaves_ids.begin(); it != leaves_ids.end(); it++ )
-        {
-            ProofNode* n = getNode(*it);
+        dump_out << "true " << '\n';
+        for (clauseid_t leave_id : leaves_ids) {
+            ProofNode* n = getNode(leave_id);
             const ipartitions_t & part = n->getInterpPartitionMask();
             // Clause is in partition 1<= jp <=m if bit jp is set
             int in_jp = opensmt::tstbit( part, jp );
             if ( in_jp )
             {
                 printClause( dump_out, n->getClause() );
-                dump_out << endl;
+                dump_out << '\n';
             }
         }
-        dump_out << "))" << endl;
+        dump_out << "))" << '\n';
         // Print ~I_j
         logic_.dumpFormulaToFile( dump_out, interps[j-1], true );
 
-        dump_out << "(check-sat)" << endl;
-        dump_out << "(exit)" << endl;
+        dump_out << "(check-sat)" << '\n';
+        dump_out << "(exit)" << '\n';
         dump_out.close( );
 
         // Check !
@@ -909,14 +783,14 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
         else
         {
             //( /\_(j,k) I_k /\ phi_j ) -> I_j
-            if( verbose() > 0 ) { cerr << "# Checking /\\_("<< j <<",k) I_k /\\ phi_"<< j << " -> I_"<< j << endl; }
+            if( verbose() > 0 ) { std::cerr << "# Checking /\\_("<< j <<",k) I_k /\\ phi_"<< j << " -> I_"<< j << '\n'; }
             execlp( config.certifying_solver, config.certifying_solver, name, NULL );
             perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
             exit( EXIT_FAILURE );
         }
         if ( tool_res == true )
         {
-            cerr << "# External tool says inductiveness does not hold" << endl;
+            std::cerr << "# External tool says inductiveness does not hold" << '\n';
             property_holds = false;
         }
         else remove(name);
@@ -925,8 +799,8 @@ bool ProofGraph::verifyTreeInterpolantsFromLeaves( opensmt::InterpolationTree* i
 
     if( verbose() )
     {
-        if(property_holds) cerr << "# The tree interpolation property is satisfied" << endl;
-        else cerr << "# The tree interpolation property is NOT satisfied" << endl;
+        if(property_holds) std::cerr << "# The tree interpolation property is satisfied" << '\n';
+        else std::cerr << "# The tree interpolation property is NOT satisfied" << '\n';
     }
     return property_holds;
 }

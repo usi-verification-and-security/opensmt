@@ -110,7 +110,7 @@ ConfValue::ConfValue(const ASTNode& s_expr_n) {
         }
         else if (spn.getType() == HEX_T) {
             type = O_HEX;
-            string tmp(spn.getValue());
+            std::string tmp(spn.getValue());
             tmp.erase(0,2);
             char* end;
             unumval = strtoul(tmp.c_str(), &end, 16);
@@ -118,7 +118,7 @@ ConfValue::ConfValue(const ASTNode& s_expr_n) {
         }
         else if (spn.getType() == BIN_T) {
             type = O_BIN;
-            string tmp(spn.getValue());
+            std::string tmp(spn.getValue());
             tmp.erase(0,2);
             char* end;
             unumval = strtoul(tmp.c_str(), &end, 2);
@@ -143,9 +143,9 @@ ConfValue::ConfValue(const ConfValue& other) {
     else if (type == O_STR) strval = strdup(other.strval);
     else if (type == O_DEC) decval = other.decval;
     else if (type == O_LIST) {
-        configs = new list<ConfValue*>;
-        for (list<ConfValue*>::iterator i = other.configs->begin(); i != other.configs->end(); i++)
-            configs->push_back(new ConfValue(**i));
+        configs = new std::list<ConfValue*>;
+        for (ConfValue * value : *other.configs)
+            configs->push_back(new ConfValue(*value));
     }
     else if (type == O_SYM)
         strval = strdup(other.strval);
@@ -169,9 +169,9 @@ ConfValue& ConfValue::operator=(const ConfValue& other)
     else if (type == O_STR) strval = strdup(other.strval);
     else if (type == O_DEC) decval = other.decval;
     else if (type == O_LIST) {
-        configs = new list<ConfValue*>;
-        for (list<ConfValue*>::iterator i = other.configs->begin(); i != other.configs->end(); i++)
-            configs->push_back(new ConfValue(**i));
+        configs = new std::list<ConfValue*>;
+        for (ConfValue * value : *other.configs)
+            configs->push_back(new ConfValue(*value));
     }
     else if (type == O_SYM)
         strval = strdup(other.strval);
@@ -198,8 +198,8 @@ ConfValue::~ConfValue()
     else if (type == O_EMPTY)
         free(strval);
     else if (type == O_LIST) {
-        for (list<ConfValue*>::iterator i = configs->begin(); i != configs->end(); i++)
-            delete *i;
+        for (auto * value : *configs)
+            delete value;
         delete configs;
     }
     else if (type == O_SYM)
@@ -235,7 +235,7 @@ std::string ConfValue::toString() const {
     }
     if (type == O_LIST) {
         assert(configs);
-        stringstream ss;
+        std::stringstream ss;
         ss << "( ";
         for (ConfValue * val : *configs) {
             ss << val->toString() << " ";
@@ -626,5 +626,5 @@ void SMTConfig::printHelp( )
       "where OPTION can be\n"
       "  --help [-h]              print this help\n"
       "  --config=<filename>      use configuration file <filename>\n";
-  cerr << help_string;
+  std::cerr << help_string;
 }

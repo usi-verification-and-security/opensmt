@@ -40,7 +40,7 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
     PTRef leq2 = logic.mkLt(x, one);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1,1}, labels));
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     std::cout << logic.pp(farkasItp) << std::endl;
@@ -76,8 +76,8 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
                           PtAsgn(logic.mkNot(leq3), l_False),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
-                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A},
+                                      {conflict[3].tr, icolor_t::I_B}, {conflict[4].tr, icolor_t::I_B}, {conflict[5].tr, icolor_t::I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, std::move(conflict), {2,1,1,1,1,2}, labels));
     PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
@@ -116,7 +116,7 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
@@ -150,7 +150,7 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
@@ -184,7 +184,7 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));

@@ -77,21 +77,7 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
         else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
         else
         {
-            /*
-            icolor_t var_color_1=icolor_t::I_UNDEF;
-            if( isColoredA( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_A;
-            else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = icolor_t::I_B;
-            else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_AB;
-
-            icolor_t var_color_2=icolor_t::I_UNDEF;
-            if( isColoredA( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_A;
-            else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = icolor_t::I_B;
-            else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
-
-            cerr << "Pivot " << v << " has colors " << var_color_1 << " " << var_color_2 <<
-                    " in antecedents but no color in resolvent" << endl;
-                    */
-            cerr << "Var has no label" << endl;
+            std::cerr << "Var has no label" << '\n';
             opensmt_error_();
         }
     }
@@ -136,7 +122,7 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
 
 			std::cerr << "Pivot " << v << " has colors " << colorToString(var_color_1) << " " << colorToString(var_color_2) <<
-					" in antecedents but no color in resolvent" << endl;
+					" in antecedents but no color in resolvent" << '\n';
 			opensmt_error_();
 		}
 
@@ -194,11 +180,6 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
     // TODO look at isAB methods in egraph
     //Determine mask corresponding to B
     ipartitions_t B_mask = ~A_mask;
-    //Reset bit 0 to 0
-//    clrbit( B_mask, 0 );
-    //cout << "Clause has mask " << clause_mask << endl;
-    //cout << "A Mask " << A_mask << endl;
-    //cout << "B Mask " << B_mask << endl;
 
     // Check if belongs to A or B
     const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
@@ -216,22 +197,22 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
     return clause_color;
 }
 
-map<Var, icolor_t>*
-ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A_mask)
+std::map<Var, icolor_t>*
+ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions_t& A_mask)
 {
 	size_t proof_size = DFSv.size();
 
-	map<Var, icolor_t> *labels = NULL;
+	std::map<Var, icolor_t> * labels = nullptr;
 	ProofNode *n;
     theory_only.clear();
 	if(needProofStatistics())
 	{
-		labels = new map<Var, icolor_t>();
+		labels = new std::map<Var, icolor_t>();
 
 		time_t after, before;
 		time(&before);
 		
-		map<Var, int> occ_a, occ_b;
+		std::map<Var, int> occ_a, occ_b;
 
 		for(size_t i = 0; i < proof_size; ++i)
 		{
@@ -239,7 +220,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 			if(!n->isLeaf()) continue;
             if(n->getType() == clause_type::CLA_THEORY)
             {
-                vector<Lit>& tlits = n->getClause();
+                std::vector<Lit>& tlits = n->getClause();
                 if(!tlits.empty())
                 {
                     for(int i = 0; i < int(tlits.size()); ++i)
@@ -257,7 +238,7 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 			}
 
 			icolor_t col = getClauseColor(n->getInterpPartitionMask(), A_mask);
-			vector<Lit>& lits = n->getClause();
+			std::vector<Lit>& lits = n->getClause();
 			if(!lits.empty())
 			{
 				for(int i = 0; i < int(lits.size()); ++i)
@@ -287,9 +268,8 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 		assert(occ_a.size() == occ_b.size());
 		int avars, bvars, aevars, bevars;
 		avars = bvars = aevars = bevars = 0;
-		map<Var, int>::iterator it;
-		srand(time(NULL));
-		for(it = occ_a.begin(); it != occ_a.end(); ++it)
+		srand(time(nullptr));
+		for(auto it = occ_a.begin(); it != occ_a.end(); ++it)
 		{
 			Var v = it->first;
 			int qtta = it->second;
@@ -314,11 +294,10 @@ ProofGraph::computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t& A
 				labels->insert(std::pair<Var, icolor_t>(v, icolor_t::I_B));
 			}
 		}
-		//cout << avars << " A> " << aevars << " A=\n" << bvars << " B> " << bevars << " B=" << endl;
 		///////////////////////////////////////////////////////////
 		time(&after);
         if(verbose())
-    		cout << "; Time spent computing PS labeling function: " << difftime(after, before) << "s" << endl;
+    		std::cout << "; Time spent computing PS labeling function: " << difftime(after, before) << "s" << '\n';
 	}
 
 	return labels;

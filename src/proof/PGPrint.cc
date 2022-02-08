@@ -29,7 +29,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
     std::vector<ProofNode *> q;
     q.push_back(getRoot());
 
-    out << "digraph proof {" << endl;
+    out << "digraph proof {" << '\n';
 
     while (!q.empty()) {
         ProofNode * node = q.back();
@@ -40,8 +40,8 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
             //Clean
             //clauseSort(node->clause);
             // Print node
-            string typ;
-            string color = "";
+            std::string typ;
+            std::string color = "";
             switch (node->getType()) {
                 case clause_type::CLA_ORIG:
                     typ = "cls_";
@@ -58,7 +58,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     } else {
                         out << "\", color=\"lightblue\",";
                     }
-                    out << " fontcolor=\"black\", style=\"filled\"]" << endl;
+                    out << " fontcolor=\"black\", style=\"filled\"]" << '\n';
                     break;
                 case clause_type::CLA_THEORY:
                     typ = "the_";
@@ -69,7 +69,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                         //FIXME out << "\\\\n" << node->getPartialInterpolant( );
                     }
                     out << "\", color=\"grey\"";
-                    out << ", style=\"filled\"]" << endl;
+                    out << ", style=\"filled\"]" << '\n';
                     break;
                 case clause_type::CLA_LEARNT:
                     typ = "lea_";
@@ -80,7 +80,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                         //FIXME out << "\\\\n" << node->getPartialInterpolant( );
                     }
                     out << "\", color=\"orange\"";
-                    out << ", style=\"filled\"]" << endl;
+                    out << ", style=\"filled\"]" << '\n';
                     break;
                 case clause_type::CLA_DERIVED:
                     typ = "der_";
@@ -91,7 +91,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                         //FIXME out << "\\\\n" << node->getPartialInterpolant( );
                     }
                     out << "\", color=\"green\"";
-                    out << ", style=\"filled\"]" << endl;
+                    out << ", style=\"filled\"]" << '\n';
                     break;
                 case clause_type::CLA_ASSUMPTION:
                     typ = "ass_";
@@ -99,7 +99,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     assert(!node->getClause().empty());
                     printClause(node, out);
                     out << "\", color=\"yellow\"";
-                    out << ", style=\"filled\"]" << endl;
+                    out << ", style=\"filled\"]" << '\n';
                     break;
                 default:
                     assert(false);
@@ -149,29 +149,29 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
             visited_dotty[node->getId()] = true;
         }
     }
-    out << "}" << endl;
+    out << "}" << '\n';
 }
 
 void ProofGraph::printClause(ProofNode* n)
 {
 	assert(n);
-	vector<Lit>& cl=n->getClause();
-	cerr << n->getId();
-	if(!n->isLeaf()) cerr << "(" << n->getAnt1()->getId() << "," << n->getAnt2()->getId() << ")";
-	cerr << ": ";
+	std::vector<Lit>& cl=n->getClause();
+	std::cerr << n->getId();
+	if(!n->isLeaf()) std::cerr << "(" << n->getAnt1()->getId() << "," << n->getAnt2()->getId() << ")";
+	std::cerr << ": ";
 	for(size_t k=0;k<cl.size();k++)
 	{
-		if(sign(cl[k])) cerr << "-";
-		cerr << var(cl[k]) << " ";
+		if(sign(cl[k])) std::cerr << "-";
+		std::cerr << var(cl[k]) << " ";
 	}
-	cerr << endl;
+	std::cerr << '\n';
 }
 
-void ProofGraph::printClause(ProofNode* n, ostream & os)
+void ProofGraph::printClause(ProofNode* n, std::ostream & os)
 {
 	assert(n);
-	vector<Lit>& cl=n->getClause();
-	for(size_t k=0;k<cl.size();k++)
+	std::vector<Lit> & cl = n->getClause();
+	for (size_t k = 0 ; k < cl.size(); k++)
 	{
 		if(sign(cl[k])) { os << "-"; }
 		os << var(cl[k]) << " ";
@@ -195,39 +195,39 @@ void ProofGraph::printProofNode(clauseid_t vid)
 	ProofNode* v=getNode(vid);
 	if(v==NULL)
 	{
-		cerr << vid << " removed"<< endl<<endl;
+		std::cerr << vid << " removed"<< '\n'<<'\n';
 		return;
 	}
-	cerr << "Node id: " << v->getId() << "   Type: " << v->getType();
+	std::cerr << "Node id: " << v->getId() << "   Type: " << v->getType();
 	if(v->getAnt1()!=NULL && v->getAnt2()!=NULL)
 	{
-		cerr << "   Parents: " << v->getAnt1()->getId() << " " << v->getAnt2()->getId() << "   Pivot: " << v->getPivot();
+		std::cerr << "   Parents: " << v->getAnt1()->getId() << " " << v->getAnt2()->getId() << "   Pivot: " << v->getPivot();
 	}
-	cerr << "   Clause: ";
+	std::cerr << "   Clause: ";
 	for(size_t i=0;i<v->getClauseSize();i++)
 	{
-		if(sign(v->getClause()[i])) cerr << "~";
-		//FIXME cerr << thandler.varToEnode( var(v->getClause()[i]) ) << " ";
+		if(sign(v->getClause()[i])) std::cerr << "~";
+		//FIXME std::cerr << thandler.varToEnode( var(v->getClause()[i]) ) << " ";
 	}
-	cerr << endl;
+	std::cerr << '\n';
 
 }
 
 void ProofGraph::printRuleApplicationStatus()
 {
-	cerr << "# Rules application status " << endl;
-	cerr << "# A1:           " << A1 << endl;
-	cerr << "# A1prime:      " << A1prime << endl;
-	cerr << "# A1B:          " << A1B << endl;
-	cerr << "# A2:           " << A2 << endl;
-	cerr << "# A2B:          " << A2B << endl;
-	cerr << "# A2U:          " << A2U << endl;
-	cerr << "# B1:           " << B1 << endl;
-	cerr << "# B2prime:      " << B2prime << endl;
-	cerr << "# B2:           " << B2 << endl;
-	cerr << "# B3:           " << B3 << endl;
-	cerr << "# duplications: " << duplications << endl;
-	cerr << "# swap_ties:    " << swap_ties << endl;
+	std::cerr << "# Rules application status " << '\n';
+	std::cerr << "# A1:           " << A1 << '\n';
+	std::cerr << "# A1prime:      " << A1prime << '\n';
+	std::cerr << "# A1B:          " << A1B << '\n';
+	std::cerr << "# A2:           " << A2 << '\n';
+	std::cerr << "# A2B:          " << A2B << '\n';
+	std::cerr << "# A2U:          " << A2U << '\n';
+	std::cerr << "# B1:           " << B1 << '\n';
+	std::cerr << "# B2prime:      " << B2prime << '\n';
+	std::cerr << "# B2:           " << B2 << '\n';
+	std::cerr << "# B3:           " << B3 << '\n';
+	std::cerr << "# duplications: " << duplications << '\n';
+	std::cerr << "# swap_ties:    " << swap_ties << '\n';
 }
 
 

@@ -102,7 +102,7 @@ public:
 	clauseid_t cv3;
 	clauseid_t cv;
 
-	friend ostream& operator<< (ostream &out, RuleContext &ra);
+	friend std::ostream& operator<< (std::ostream &out, RuleContext &ra);
 };
 
 // Interpolation data for resolution proof element
@@ -161,18 +161,18 @@ struct ProofNode
     void                        initClause(Clause& cla)
     {
         assert(clause == NULL);
-        clause = new vector<Lit>(cla.size());
+        clause = new std::vector<Lit>(cla.size());
         for(size_t k = 0; k < cla.size(); ++k) (*clause)[k] = cla[k];
     }
 
-    void                        initClause(vector<Lit>& cla)
+    void                        initClause(std::vector<Lit>& cla)
     {
         assert(clause == NULL);
-        clause = new vector<Lit>(cla.size());
+        clause = new std::vector<Lit>(cla.size());
         for(size_t k = 0; k < cla.size(); ++k) (*clause)[k] = cla[k];
     }
 
-    void                        setClause(vector<Lit>& cla)
+    void                        setClause(std::vector<Lit>& cla)
     {
         assert(clause);
         clause->resize(cla.size());
@@ -182,15 +182,15 @@ struct ProofNode
     void initClause()
     {
         assert(clause == NULL);
-        clause = new vector<Lit>;
+        clause = new std::vector<Lit>;
     }
 
     //
     // Getty methods
     //
     inline clauseid_t            getId                  ( ) const { return id; }
-    inline vector<Lit>&          getClause              ( )       { assert(clause); return *clause; }
-    inline vector<Lit>*          getPClause             ( )       { return clause; }
+    inline std::vector<Lit>&          getClause              ( )       { assert(clause); return *clause; }
+    inline std::vector<Lit>*          getPClause             ( )       { return clause; }
     inline size_t                getClauseSize          ( ) const { return clause->size( ); }
     inline Var                   getPivot               ( ) const { return pivot; }
     inline ProofNode *           getAnt1                ( ) const { return ant1; }
@@ -199,7 +199,7 @@ struct ProofNode
     inline PTRef                 getPartialInterpolant  ( ) const { assert(i_data); return i_data->partial_interp; }
     inline const ipartitions_t & getInterpPartitionMask ( ) const { assert(i_data); return i_data->partition_mask; }
     unsigned                     getNumResolvents       ( ) const { return resolvents.size(); }
-    set<clauseid_t>&             getResolvents            ( ) { return resolvents; }
+    std::set<clauseid_t>&        getResolvents          ( ) { return resolvents; }
     //
     // Setty methods
     //
@@ -247,12 +247,12 @@ struct ProofNode
 private:
     Logic&             logic;
     clauseid_t         id;                 // id
-    vector<Lit>*     clause;             // Clause
+    std::vector<Lit>*     clause;             // Clause
     CRef clause_ref;
     Var                pivot;              // Non-leaf node pivot
     ProofNode *        ant1;               // Edges to antecedents
     ProofNode *        ant2;               // Edges to antecedents
-    set< clauseid_t  > resolvents;         // Resolvents
+    std::set<clauseid_t> resolvents;       // Resolvents
     clause_type        type;               // Node type
     InterpolData*      i_data;             // Data for interpolants computation
 };
@@ -273,7 +273,7 @@ public:
 , logic_ ( th.getLogic() )
 , pmanager (pmanager)
 , thandler {new THandler(th, termMapper)}
-, graph_   ( new vector<ProofNode*> )
+, graph_   ( new std::vector<ProofNode*> )
 , graph    ( *graph_ )
 , vars_suggested_color_map ( NULL )
 {
@@ -312,7 +312,7 @@ public:
     void produceMultipleInterpolants        ( const std::vector< ipartitions_t >&, vec<PTRef> &);
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
-    void printProofAsDotty                  ( ostream &, ipartitions_t ip = 0);
+    void printProofAsDotty                  ( std::ostream &, ipartitions_t ip = 0);
     //
     // Config
     //
@@ -384,12 +384,12 @@ public:
 
     unsigned          getMaxIdVar           ( ) { return max_id_variable; }
     void              getGraphInfo          ( );
-    void              topolSortingTopDown   ( vector< clauseid_t > & );
-    void              topolSortingBotUp     ( vector< clauseid_t > & );
+    void              topolSortingTopDown   ( std::vector< clauseid_t > & );
+    void              topolSortingBotUp     ( std::vector< clauseid_t > & );
     void              printProofNode        ( clauseid_t );
     void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
-    void              printClause           ( ProofNode *, ostream & );
+    void              printClause           ( ProofNode *, std::ostream & );
     inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
     static bool       mergeClauses          (std::vector<Lit> const &, std::vector<Lit> const &, std::vector<Lit>&, Var);
     inline bool       isRoot                ( ProofNode* n ) { assert(n); return( n->getId() == root ); }
@@ -402,12 +402,12 @@ public:
     //
     icolor_t       getVarClass                              ( Var, const ipartitions_t & );
     icolor_t       getClauseColor                           ( const ipartitions_t &, const ipartitions_t & );
-    map<Var, icolor_t>* computePSFunction(vector< clauseid_t >& DFSv, const ipartitions_t &);
-    void           getPredicatesSetFromInterpolantIterative ( PTRef, set<PTRef>& );
+    std::map<Var, icolor_t>* computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions_t &);
+    void           getPredicatesSetFromInterpolantIterative ( PTRef, std::set<PTRef>& );
     unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
     // Get formula complexity as number of connectives, number of distinct boolean variables
     void           getComplexityInterpolant( PTRef int_e );
-    void           topolSortingEnode                        ( vector< PTRef > &, PTRef );
+    void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
     PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
     PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
@@ -455,7 +455,7 @@ public:
     bool		   decideOnAlternativeInterpolation(ProofNode*);
     // For a given partition mask try to generate interpolants with few predicates
     // Return a vector of interpolants, and for each the set of predicates which was removed
-    void 		   removeUnnecessaryPredicates( ipartitions_t & A_mask, vector<PTRef>&, vector< set<PTRef> >& );
+    void 		   removeUnnecessaryPredicates(ipartitions_t & A_mask, std::vector<PTRef>&, std::vector<std::set<PTRef>>&);
 
     //
     // Trasformation
@@ -539,11 +539,11 @@ private:
     PartitionManager &          pmanager;
     std::unique_ptr<THandler>   thandler;
 
-    vector< ProofNode * >*         graph_;                       // Graph
-    vector< ProofNode * >&         graph;
-    double                        building_time;               // Time spent building graph
+    std::vector< ProofNode * >*    graph_;                      // Graph
+    std::vector< ProofNode * >&    graph;
+    double                         building_time;               // Time spent building graph
     clauseid_t                     root;                        // Proof root
-    set<clauseid_t>				   leaves_ids;					// Proof leaves, for top-down visits
+    std::set<clauseid_t>		   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
     unsigned                       max_id_variable;             // Highest value for a variable
     std::set<Var> theory_only;

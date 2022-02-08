@@ -26,7 +26,7 @@ ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
     i_data->partition_mask = mask;
 }
 
-ostream& operator<< (ostream &out, RuleContext &ra)
+std::ostream& operator<< (std::ostream &out, RuleContext &ra)
 {
     out << "Context: v1(" << ra.getV1() << ") v2(" << ra.getV2() << ") w("
         << ra.getW() << ") v3(" << ra.getV3() << ") v("
@@ -54,7 +54,7 @@ void ProofGraph::initTSolver() {
 // Resolution proof builder
 void ProofGraph::buildProofGraph( int nVars )
 {
-    if ( verbose() ) { cerr << "# " << "Proof graph building begin" << endl; }
+    if ( verbose() ) { std::cerr << "# " << "Proof graph building begin" << '\n'; }
     if ( verbose() > 0 )
     {
         uint64_t mem_used = memUsed();
@@ -152,7 +152,7 @@ void ProofGraph::buildProofGraph( int nVars )
     // Map to associate node to its antecedents
     std::map< std::pair<int,int>, int > ants_map;
     if ( verbose() && enabledStructuralHashingWhileBuilding() )
-    { cerr << "; " << "Performing structural hashing while building the proof" << endl; }
+    { std::cerr << "; " << "Performing structural hashing while building the proof" << '\n'; }
     //Start from empty clause
     q.push_back(CRef_Undef);
     do {
@@ -171,7 +171,7 @@ void ProofGraph::buildProofGraph( int nVars )
                 int currId = (int)graph.size();
                 n->setId(currId);
                 n->setType(clause_type::CLA_ORIG);
-                vector<Lit> false_clause;
+                std::vector<Lit> false_clause;
                 Lit lit_false = PTRefToLit(logic_.getTerm_false());
                 false_clause.push_back(lit_false);
                 n->initClause(false_clause);
@@ -365,7 +365,7 @@ void ProofGraph::buildProofGraph( int nVars )
                                 { c2 = last_seen_id; c1 = id__i; }
                                 // Look for pair <ant1,ant2>
                                 std::pair<int, int> ant_pair (c1,c2);
-                                map< std::pair<int,int>, int >::iterator it = ants_map.find( ant_pair );
+                                auto it = ants_map.find(ant_pair);
                                 bool found = ( it != ants_map.end() );
                                 // If pairs not found, add id of the next node to the map
                                 if( !found ) ants_map[ ant_pair ] = currId ;
@@ -468,9 +468,9 @@ void ProofGraph::buildProofGraph( int nVars )
             if(getNode(i)->getPClause() != NULL) cl_non_null++;
         }
 #ifdef PEDANTIC_DEBUG
-        cout << "Graph size: " << getGraphSize() << endl;
-        cout << "Non null nodes: " << num_non_null << endl;
-        cout << "Non null clauses: " << cl_non_null << endl;
+        cout << "Graph size: " << getGraphSize() << '\n';
+        cout << "Non null nodes: " << num_non_null << '\n';
+        cout << "Non null clauses: " << cl_non_null << '\n';
 #endif
         if(graph.size() > 1)
             assert( num_non_null == (counters.num_leaf + counters.num_learnt + counters.num_derived + counters.num_theory + counters.num_assump) );
@@ -513,7 +513,7 @@ void ProofGraph::fillProofGraph()
         reportf( "; Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
     }
 
-    vector<clauseid_t>q;
+    std::vector<clauseid_t> q;
     clauseid_t id;
     ProofNode* n=NULL;
     q.push_back(getRoot()->getId());
@@ -631,7 +631,6 @@ int ProofGraph::cleanProofGraph()
             {
                 done = false;
                 removed += removeTree(i);
-                //cerr << "Detached tree starting at " << i << endl;
             }
         }
     }
@@ -666,45 +665,6 @@ unsigned ProofGraph::removeTree( clauseid_t vid )
     // Better a set than a boolean vector to avoid wasting memory
     std::set<clauseid_t> visit;
 
-
-    /*
-     // For some reason this code leaves some hanging nodes with RecyclePivots
-     q.push_back( vid );
-    do
-    {
-        c = q.front( );
-        q.pop_front( );
-        assert( c < getGraphSize() );
-
-        //Node not visited yet
-        if(visit.find(c) == visit.end())
-        {
-            n = getNode(c);
-            assert( n );
-            //Mark node as visited
-            visit.insert(c);
-            //Remove node if no more resolvents present
-            if( n->getNumResolvents() == 0 )
-            {
-                if( n->getAnt1()!=NULL )
-                {
-                    assert(getNode(n->getAnt1()->getId())==n->getAnt1());
-                    q.push_back( n->getAnt1()->getId() );
-                    n->getAnt1()->remRes( c );
-                }
-                if( n->getAnt2()!=NULL )
-                {
-                    assert(getNode(n->getAnt2()->getId())==n->getAnt2());
-                    q.push_back( n->getAnt2()->getId() );
-                    n->getAnt2()->remRes( c );
-                }
-                removeNode( c );
-                removed++;
-            }
-        }
-    }
-    while( !q.empty( ) );*/
-
     q.push_back( vid );
     do
     {
@@ -738,15 +698,13 @@ unsigned ProofGraph::removeTree( clauseid_t vid )
 
 clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 {
-    //cerr << "Duplicating " << ra.getW() << " in rule " << ra.getType() << endl;
     clauseid_t v_id = ra.getV();
     ProofNode* w = getNode( ra.getW() );
     assert(w);
     unsigned num_old_res = w->getNumResolvents(); (void)num_old_res;
     assert( num_old_res > 1);
-    for( set<clauseid_t>::iterator it = w->getResolvents().begin(); it!=w->getResolvents().end(); it++)
-    {
-        ProofNode* res = getNode( (*it) ); assert(res); (void)res;
+    for (clauseid_t resolvent_id : w->getResolvents()) {
+        ProofNode* res = getNode(resolvent_id); assert(res); (void)res;
         assert(res->getAnt1()==w || res->getAnt2()==w);
     }
 

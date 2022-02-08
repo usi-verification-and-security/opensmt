@@ -49,7 +49,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
         return true;
     }
 
-    if ( verbose() ) cerr << "; Path interpolation " << endl;
+    if ( verbose() ) std::cerr << "; Path interpolation " << '\n';
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -93,7 +93,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
         return true;
     }
 
-    if ( verbose() ) cerr << "; Simultaneous abstraction " << endl;
+    if ( verbose() ) std::cerr << "; Simultaneous abstraction " << '\n';
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -136,7 +136,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
         return true;
     }
 
-    if ( verbose() ) cerr << "; Generalized simultaneous abstraction " << endl;
+    if ( verbose() ) std::cerr << "; Generalized simultaneous abstraction " << '\n';
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -181,7 +181,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
         return true;
     }
 
-    if ( verbose() ) cerr << "; State-transition interpolation " << endl;
+    if ( verbose() ) std::cerr << "; State-transition interpolation " << '\n';
 
     // Generate appropriate masks
     std::vector< ipartitions_t > configs;
@@ -214,7 +214,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
 
 void ProofGraph::produceConfigMatrixInterpolants (const std::vector< vec<int> > &configs, vec<PTRef> &interpolants)
 {
-    if ( verbose() ) cerr << "; General interpolation via configuration matrix " << endl;
+    if ( verbose() ) std::cerr << "; General interpolation via configuration matrix " << '\n';
 
     // Generate appropriate masks
     std::vector< ipartitions_t > parts;
@@ -242,7 +242,7 @@ void ProofGraph::produceConfigMatrixInterpolants (const std::vector< vec<int> > 
 // Requirement  ( /\_(i,j) I_j /\ phi_i ) -> I_i
 bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PTRef> &interpolants)
 {
-    if ( verbose() ) cerr << "; Tree interpolation " << endl;
+    if ( verbose() ) std::cerr << "; Tree interpolation " << '\n';
 
     // NOTE some configurations might be empty,
     // if the corresponding nodes in the tree are not approximated
@@ -256,7 +256,7 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
 
     // Visit the tree in topological order bottom up and compute the configurations
     std::deque<opensmt::InterpolationTree *> q;
-    set<int> visited;
+    std::set<int> visited;
 
     q.push_back (it);
 
@@ -266,46 +266,37 @@ bool ProofGraph::produceTreeInterpolants (opensmt::InterpolationTree *it, vec<PT
         q.pop_front();
         int pid = node->getPartitionId();
 
-        //cerr << "Trying parent " << pid << endl;
         if (visited.find (pid) == visited.end())
         {
             bool children_visited = true;
 
             // Make sure all children have been visited, otherwise push them in the queue
-            for ( set< opensmt::InterpolationTree * >::iterator it = node->getChildren().begin(); it != node->getChildren().end(); it++)
-            {
-                int cid =  (*it)->getPartitionId();
+            for (opensmt::InterpolationTree * tree : node->getChildren()) {
+                int cid = tree->getPartitionId();
 
                 if (visited.find (cid) == visited.end())
                 {
                     children_visited = false;
-                    q.push_back ((*it));
-                    //cerr << "Enqueuing " << cid << endl;
+                    q.push_back (tree);
                 }
             }
 
             // All children have been visited
             if (children_visited)
             {
-                //cerr << "Visiting " << pid << endl;
                 visited.insert (pid);
 
                 // Compute configuration for this node: A should include the node and the subtree rooted in it
                 // In practice the mask is the logical or of the children masks plus the current node
-                for ( set< opensmt::InterpolationTree * >::iterator it = node->getChildren().begin(); it != node->getChildren().end(); it++)
-                {
-                    int cid = (*it)->getPartitionId();
-                    opensmt::orbit ( parts[pid - 1], parts[pid - 1], parts[cid - 1] );
+                for (opensmt::InterpolationTree * tree : node->getChildren()) {
+                    int cid = tree->getPartitionId();
+                    opensmt::orbit(parts[pid - 1], parts[pid - 1], parts[cid - 1]);
                 }
 
                 setbit ( parts[pid - 1], pid );
-                //cerr << "Partition ids in A for configuration " << pid-1 << ": ";
-                //cerr << parts[pid-1].get_str(2) << " ";
-                //cerr << endl;
             }
             else
             {
-                //cerr << "Enqueuing " << pid << endl;
                 q.push_back (node);
             }
         }
@@ -330,10 +321,6 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const std::
 #endif // NDEBUG
     for (int i = 0; i < static_cast<int>(A_masks.size()); ++i) {
         produceSingleInterpolant(interpolants, A_masks[i]);
-//        if(verbose() > 1){
-//            std::cerr << "; Interpolant for mask: " << A_masks[i] << " is: "
-//                      << logic_.printTerm(interpolants[interpolants.size() - 1]);
-//        }
         if(i > 0 && enabledInterpVerif()){
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() -1];
@@ -364,22 +351,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
 
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
-    if ( verbose() ) cerr << "; Single interpolant " << endl;
-
-#ifdef ITP_DEBUG
-    PTRef tr_a = logic_.getPartitionA(A_mask);
-    PTRef tr_b = logic_.getPartitionB(A_mask);
-
-    char* fname;
-    asprintf(&fname, "itp_problem_%s.smt2", A_mask.get_str(10).c_str());
-    std::ofstream f;
-    f.open(fname);
-    logic_.dumpHeaderToFile(f);
-    logic_.dumpFormulaToFile(f, tr_a);
-    logic_.dumpFormulaToFile(f, tr_b);
-    logic_.dumpChecksatToFile(f);
-    f.close();
-#endif
+    if ( verbose() ) std::cerr << "; Single interpolant " << '\n';
 
     // Check
     checkInterAlgo();
@@ -393,7 +365,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if ( usingMcMillanInterpolation() )
         {
-            if ( verbose() > 0 ) cerr << "; Proof transformation for interpolants (partially) in CNF" << endl;
+            if ( verbose() > 0 ) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
 
             fillProofGraph();
             proofTransformAndRestructure (-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2 )
@@ -417,9 +389,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     // TODO enable proof reduction
     else if (0)
     {
-        if ( verbose() > 0 && restructuringForStrongerInterpolant() ) cerr << "; Preliminary A2 rules application to strengthen interpolants" << endl;
+        if ( verbose() > 0 && restructuringForStrongerInterpolant() ) std::cerr << "; Preliminary A2 rules application to strengthen interpolants" << '\n';
 
-        if ( verbose() > 0 && restructuringForWeakerInterpolant() ) cerr << "; Preliminary A2 rules application to weaken interpolants" << endl;
+        if ( verbose() > 0 && restructuringForWeakerInterpolant() ) std::cerr << "; Preliminary A2 rules application to weaken interpolants" << '\n';
 
         fillProofGraph();
         // NOTE Only a couple of loops to avoid too much overhead
@@ -436,7 +408,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef partial_interp = PTRef_Undef;
 
     // Vector for topological ordering
-    vector< clauseid_t > DFSv;
+    std::vector< clauseid_t > DFSv;
     // Compute topological sorting of graph
     topolSortingTopDown ( DFSv );
     size_t proof_size = DFSv.size();
@@ -453,7 +425,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
 
-            vector<Lit> &cl = n->getClause();
+            std::vector<Lit> &cl = n->getClause();
             bool fal = false;
 
             if (cl.size() == 0) {
@@ -498,14 +470,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
-#ifdef ITP_DEBUG
-                /*
-                vector<Lit>& cl = n->getClause();
-                for(int i = 0; i < cl.size(); ++i)
-                    cerr << logic_.printTerm(thandler.varToTerm(var(cl[i]))) << "(" << cl[i].x << ") ";
-                cerr << endl;
-                */
-#endif
                 partial_interp = compInterpLabelingOriginal(n, A_mask);
             }
             else if (n->getType() == clause_type::CLA_THEORY) // Theory lemma
@@ -519,7 +483,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 }
 
 #ifdef ITP_DEBUG
-                cout << "; ASSERTING LITS" << endl;
+                std::cout << "; ASSERTING LITS" << '\n';
                 vec<PTRef> tr_vec;
                 Logic& logic = thandler->getLogic();
                 for (int i = 0; i < newvec.size(); ++i) {
@@ -588,10 +552,10 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         
         int nbool, neq, nuf, nif;
         this->logic_.collectStats(partial_interp, nbool, neq, nuf, nif);
-        cerr << "; Number of boolean connectives: " << nbool << endl;
-        cerr << "; Number of equalities: " << neq << endl;
-        cerr << "; Number of uninterpreted functions: " << nuf << endl;
-        cerr << "; Number of interpreted functions: " << nif << endl;
+        std::cerr << "; Number of boolean connectives: " << nbool << '\n';
+        std::cerr << "; Number of equalities: " << neq << '\n';
+        std::cerr << "; Number of uninterpreted functions: " << nuf << '\n';
+        std::cerr << "; Number of interpreted functions: " << nif << '\n';
         
     }
 
@@ -604,8 +568,8 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if(verbose())
         {
-            if (sound) cout << "; Final interpolant is sound" << endl;
-            else cout << "; Final interpolant is NOT sound" << endl;
+            if (sound) std::cout << "; Final interpolant is sound" << '\n';
+            else std::cout << "; Final interpolant is NOT sound" << '\n';
         }
     }
 
@@ -646,36 +610,18 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if(verbose() > 1)
     {
-        cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << endl;
+        std::cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << '\n';
     }
 }
 
 void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t > &configs, vec<PTRef> &sequence_of_interpolants )
 {
-    /*  if( verbose() > 1 )
-        {
-            // Check configurations
-            for(unsigned u = 0; u < configs.size(); u++)
-            {
-                cerr << "Partition ids in A for configuration " << u << ": ";
-                cerr << configs[u].get_str(2) << " ";
-                cerr << endl;
-            }
-        }*/
     // Check
     checkInterAlgo();
 
     if ( needProofStatistics() )
     {
     }
-
-//    uint64_t mem_used = 0;
-//
-//    if ( verbose() )
-//    {
-//        mem_used = memUsed();
-//        //reportff( "# Memory used before generating interpolants: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-//    }
 
     assert ( sequence_of_interpolants.size( ) == 0 );
 
@@ -684,7 +630,7 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
     PTRef partial_interp;
 
     // Vector for topological ordering
-    vector< clauseid_t > DFSv;
+    std::vector< clauseid_t > DFSv;
     // Compute topological sorting of graph
     topolSortingTopDown ( DFSv );
     size_t proof_size = DFSv.size();
@@ -694,14 +640,14 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 
     for ( unsigned curr_interp = 0; curr_interp < configs.size(); curr_interp ++ )
     {
-        if ( verbose() > 0 ) cerr << "# Generating interpolant " << curr_interp << endl;
+        if ( verbose() > 0 ) std::cerr << "# Generating interpolant " << curr_interp << '\n';
 
         const ipartitions_t &A_mask = configs[curr_interp];
 
         // Track AB class variables and associate index to them in nodes bit masks
         computeABVariablesMapping ( A_mask );
 
-        map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
+        std::map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
 
         // Traverse proof and compute current interpolant
         for ( size_t i = 0 ; i < proof_size ; i++ )
@@ -737,18 +683,11 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 
         if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves ( getRoot(), A_mask );
 
-//        if ( verbose() )
-//        {
-//            mem_used = memUsed();
-//            //cerr << "# Interpolant: " << partial_interp << endl;
-//            //reportff( "# Memory used after generating %d interpolants: %.3f MB\n", curr_interp+1,  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-//        }
-
         if ( printProofDotty( ) == 1 )
         {
             char buf[ 32 ];
             sprintf ( buf, "proof_interp_%d.dot", curr_interp );
-            ofstream dotty ( buf );
+            std::ofstream dotty ( buf );
             printProofAsDotty ( dotty, A_mask );
         }
     }
@@ -775,9 +714,9 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
         // McMillan: compute clause restricted to AB
         if ( usingMcMillanInterpolation( ) )
         {
-            vector< Lit > restricted_clause;
+            std::vector< Lit > restricted_clause;
             icolor_t var_class;
-            vector< Lit > &cl = n->getClause();
+            std::vector< Lit > &cl = n->getClause();
             const size_t size = cl.size( );
 
             for ( size_t i = 0 ; i < size ; i ++ )
@@ -812,14 +751,11 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
                 partial_interp = logic_.mkOr (std::move(or_args));
                 assert (partial_interp != PTRef_Undef);
             }
-
-//            cout << "McMillan leaf" << endl;
         }
         // Pudlak or McMillan': false
         else
         {
             partial_interp = logic_.getTerm_false(); //logic_.mkFalse( );
-//          cout << "Pudlak or McMillan' leaf" << endl;
         }
     }
     // Leaf belongs to B
@@ -828,9 +764,9 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
         //  McMillan': compute clause restricted to a
         if ( usingMcMillanPrimeInterpolation( ) )
         {
-            vector< Lit > restricted_clause;
+            std::vector< Lit > restricted_clause;
             icolor_t var_class;
-            vector< Lit > &cl = n->getClause();
+            std::vector< Lit > &cl = n->getClause();
             const size_t size = cl.size( );
 
             for ( size_t i = 0 ; i < size ; i ++ )
@@ -867,14 +803,11 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
                 partial_interp = logic_.mkAnd (std::move(and_args));
                 assert (partial_interp != PTRef_Undef);
             }
-
-//          cout << "McMillan' leaf" << endl;
         }
         // Pudlak or McMillan': true
         else
         {
             partial_interp = logic_.getTerm_true();
-//          cout << "Pudlak or McMillan leaf" << endl;
         }
     }
     else opensmt_error ( "Clause has no color" );
@@ -904,14 +837,12 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
     {
         partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
-//        cout << "Class A inner" << endl;
     }
     // Pivot class B -> interpolant = interpolant of ant1 AND interpolant of ant2
     else if ( pivot_class == icolor_t::I_B )
     {
         partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
         assert (partial_interp != PTRef_Undef);
-//        cout << "Class B inner" << endl;
     }
     // Pivot class AB ->
     // 1) Pudlak interpolant = (pivot OR interpolant of ant1) AND ((NOT pivot) OR interpolant of ant2)
@@ -924,8 +855,6 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
         {
             // Find pivot occurrences in ant1 and ant2 and create enodes
             Var piv_ = n->getPivot();
-            //cerr << "Inserting: " << thandler.varToEnode(piv_) << " " << piv_ << endl;
-//          PTRef piv = thandler.varToEnode( piv_ );
             PTRef piv = varToPTRef ( piv_ );
             bool choose_alternative = false;
 
@@ -944,8 +873,6 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
                 // TODO ~piv \/ piv is not simplified, but should be!
                 assert (partial_interp != logic_.getTerm_true());
                 assert (partial_interp != PTRef_Undef);
-//                cout << "Class AB Pudlak inner alternative" << endl;
-//              assert(partial_interp != logic_.mkTrue());
             }
             // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
             else
@@ -960,20 +887,17 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
                 // TODO piv /\ ~piv is not simplified, but should be!
                 assert (partial_interp != logic_.getTerm_false());
                 assert (partial_interp != PTRef_Undef);
-//              cout << "Class AB Pudlak inner" << endl;
             }
         }
         else if ( usingMcMillanInterpolation( ) )
         {
             partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
             assert (partial_interp != PTRef_Undef);
-//            cout << "Class AB McMillan inner" << endl;
         }
         else if ( usingMcMillanPrimeInterpolation( ) )
         {
             partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
             assert (partial_interp != PTRef_Undef);
-//            cout << "Class AB McMillan' inner" << endl;
         }
         else opensmt_error ( "No interpolation algorithm");
     }
@@ -984,8 +908,6 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
 
 void ProofGraph::checkInterAlgo()
 {
-//    if(!usingPudlakInterpolation())
-//        opensmt_error("Please use Pudlak (1) for boolean interpolation for now");
     if ( ! ( usingMcMillanInterpolation()
              || usingPudlakInterpolation()
              || usingMcMillanPrimeInterpolation()
@@ -997,24 +919,24 @@ void ProofGraph::checkInterAlgo()
 
     if ( verbose() > 0 )
     {
-        cerr << "# Using ";
+        std::cerr << "# Using ";
 
         if ( usingPudlakInterpolation() )
-            cerr << "Pudlak";
+            std::cerr << "Pudlak";
         else if ( usingMcMillanInterpolation() )
-            cerr << "McMillan";
+            std::cerr << "McMillan";
         else if ( usingMcMillanPrimeInterpolation() )
-            cerr << "McMillan'";
+            std::cerr << "McMillan'";
         else if (  usingPSInterpolation() )
-            cerr << "Proof-Sensitive";
+            std::cerr << "Proof-Sensitive";
         else if (  usingPSWInterpolation() )
-            cerr << "Weak Proof-Sensitive";
+            std::cerr << "Weak Proof-Sensitive";
         else if (  usingPSSInterpolation() )
-            cerr << "Strong Proof-Sensitive";
+            std::cerr << "Strong Proof-Sensitive";
         else if ( usingLabelingSuggestions() )
-            cerr << "labeling suggestions";
+            std::cerr << "labeling suggestions";
 
-        cerr << " for propositional interpolation" << endl;
+        std::cerr << " for propositional interpolation" << '\n';
     }
 }
 
@@ -1049,8 +971,8 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
     // Then calculate interpolant
     icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
 #ifdef ITP_DEBUG
-    cout << "Clause has mask " << n->getInterpPartitionMask() << ". Mask " << A_mask << endl;
-    cout << "Clause has color " << clause_color << endl;
+    std::cout << "Clause has mask " << n->getInterpPartitionMask() << ". Mask " << A_mask << '\n';
+    std::cout << "Clause has color " << clause_color << '\n';
 #endif
 
     if (clause_color == icolor_t::I_AB)
@@ -1070,11 +992,11 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
     {
         //Compute clause restricted to b
 
-        vector< Lit > restricted_clause;
+        std::vector< Lit > restricted_clause;
         // In labeling, classes and colors are distinct
         icolor_t var_class;
         icolor_t var_color;
-        vector< Lit > &cl = n->getClause();
+        std::vector< Lit > &cl = n->getClause();
 
         const size_t size = cl.size( );
 
@@ -1130,11 +1052,11 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
     {
         //Compute clause restricted to a
 
-        vector< Lit > restricted_clause;
+        std::vector< Lit > restricted_clause;
         // In labeling, classes and colors are distinct
         icolor_t var_class;
         icolor_t var_color;
-        vector< Lit > &cl = n->getClause();
+        std::vector< Lit > &cl = n->getClause();
 
         const size_t size = cl.size( );
 
@@ -1235,7 +1157,6 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     {
         // Find pivot occurrences in ant1 and ant2 and create enodes
         Var piv_ = n->getPivot();
-        //cerr << "Inserting: " << thandler.varToEnode(piv_) << " " << piv_ << endl;
         PTRef piv = varToPTRef ( piv_ );
         bool choose_alternative = false;
 
@@ -1281,13 +1202,13 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
 }
 
 void
-ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
+ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
 {
     assert (labels != NULL);
     //Reset labeling
     resetLabeling (n);
 
-    vector<Lit> &cl = n->getClause();
+    std::vector<Lit> &cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -1297,7 +1218,7 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
         {
-            map<Var, icolor_t>::iterator it = labels->find (v);
+            auto it = labels->find(v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
@@ -1311,13 +1232,13 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
 }
 
 void
-ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
+ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
 {
     assert (labels != NULL);
     //Reset labeling
     resetLabeling (n);
 
-    vector<Lit> &cl = n->getClause();
+    std::vector<Lit> &cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -1327,7 +1248,7 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
         {
-            map<Var, icolor_t>::iterator it = labels->find (v);
+            auto it = labels->find (v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
@@ -1341,13 +1262,13 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, map<Var, icolor_t> *labels)
 }
 
 void
-ProofGraph::setLeafPSSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
+ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
 {
     assert (labels != NULL);
     //Reset labeling
     resetLabeling (n);
 
-    vector<Lit> &cl = n->getClause();
+    std::vector<Lit> &cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -1357,7 +1278,7 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, map<Var, icolor_t> *labels)
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
         {
-            map<Var, icolor_t>::iterator it = labels->find (v);
+            auto it = labels->find(v);
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
@@ -1374,7 +1295,7 @@ void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
     // Reset labeling
     resetLabeling ( n );
 
-    vector< Lit > &cl = n->getClause();
+    std::vector< Lit > &cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -1392,7 +1313,7 @@ void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
 {
     // Reset labeling
     resetLabeling (n);
-    vector< Lit > &cl = n->getClause();
+    std::vector< Lit > &cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -1411,7 +1332,7 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
     // Reset labeling
     resetLabeling (n);
 
-    vector< Lit > &cl = n->getClause();
+    std::vector< Lit > &cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -1432,7 +1353,7 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
     // Reset labeling
     resetLabeling (n);
 
-    vector< Lit > &cl = n->getClause();
+    std::vector< Lit > &cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -1450,7 +1371,7 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
 
             if ( it == col_map->end() )
             {
-                cerr << "Color suggestion for " << v << " not found; using Pudlak" << endl;
+                std::cerr << "Color suggestion for " << v << " not found; using Pudlak" << '\n';
                 colorAB (n, v);
             }
             else

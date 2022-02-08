@@ -132,19 +132,19 @@ bool Proof::deleted( CRef cr )
   return true;
 }
 
-void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
+void Proof::print( std::ostream & out, CoreSMTSolver & s, THandler & t )
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
     opensmt_error( "there is no proof of false" );
 
-  out << "(proof " << endl;
+  out << "(proof " << '\n';
 
   int nof_lets = 0;
 
-  vector< CRef > unprocessed;
+  std::vector< CRef > unprocessed;
   unprocessed.push_back( CRef_Undef );
-  set< CRef > cache;
-  set< CRef > core;
+  std::set< CRef > cache;
+  std::set< CRef > core;
 
   while( !unprocessed.empty( ) )
   {
@@ -195,12 +195,12 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 	out << "-";
       else
 	s.printSMTClause( out, cl_al[cr] );
-      out << endl;
+      out << '\n';
       out << "(let (cls_" << cr;
       nof_lets ++;
 
-      vector< CRef > & chain_cla = d->chain_cla;
-      vector< Var > & chain_var = d->chain_var;
+      std::vector< CRef > & chain_cla = d->chain_cla;
+      std::vector< Var > & chain_var = d->chain_var;
 
       assert( chain_cla.size( ) == chain_var.size( ) + 1 );
 
@@ -223,7 +223,7 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 	    << ")";
 	}
       }
-      out << ")" << endl;
+      out << ")" << '\n';
     }
     else
     {
@@ -233,29 +233,26 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
       else { }
       out << "(let (cls_" << cr << " ";
       s.printSMTClause( out, cl_al[cr] );
-      out << ")" << endl;
+      out << ")" << '\n';
       nof_lets ++;
     }
 
     cache.insert( cr );
   }
 
-  out << "cls_0"  << endl;
+  out << "cls_0"  << '\n';
 
   for ( int i = 0 ; i < nof_lets ; i ++ )
     out << ")";
-  out << endl;
+  out << '\n';
 
-  out << ":core" << endl;
+  out << ":core" << '\n';
   out << "( ";
-  for ( set< CRef >::iterator it = core.begin( )
-      ; it != core.end( )
-      ; it ++ )
-  {
-    out << "cls_" << *it << " ";
+  for (CRef cref : core) {
+    out << "cls_" << cref << " ";
   }
-  out << ")" << endl;
-  out << ")" << endl;
+  out << ")" << '\n';
+  out << ")" << '\n';
 }
 
 void Proof::cleanAssumedLiteral(Lit l) {
@@ -268,7 +265,7 @@ void Proof::cleanAssumedLiteral(Lit l) {
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
-void CoreSMTSolver::printProofSMT2( ostream & out )
+void CoreSMTSolver::printProofSMT2( std::ostream & out )
 { proof->print( out, *this, theory_handler ); }
 
 std::ostream & operator<<(std::ostream & os, clause_type val) {

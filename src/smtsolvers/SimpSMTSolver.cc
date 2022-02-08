@@ -209,8 +209,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::p
             && smt_clause.size( ) == 1   // Consider unit clauses
             && var(smt_clause[0]) >= 2 ) // Don't consider true/false
     {
-//        Var v = var( smt_clause[0] );
-        cerr << "XXX skipped handling of unary theory literal?" << endl;
+        std::cerr << "XXX skipped handling of unary theory literal?" << '\n';
     }
     int nclauses = clauses.size();
     if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))

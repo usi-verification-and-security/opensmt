@@ -62,32 +62,33 @@ class TSolverStats
     {}
 
     // Statistics for theory solvers
-    void printStatistics ( ostream & os )
+    void printStatistics ( std::ostream & os )
     {
-        os << "; Satisfiable calls........: " << sat_calls << endl;
-        os << "; Unsatisfiable calls......: " << unsat_calls << endl;
+        os << "; Satisfiable calls........: " << sat_calls << '\n';
+        os << "; Unsatisfiable calls......: " << unsat_calls << '\n';
         if ( unsat_calls > 0 )
         {
-            os << "; Conflicts sent...........: " << conflicts_sent << endl;
+            os << "; Conflicts sent...........: " << conflicts_sent << '\n';
             if ( conflicts_sent > 0 )
             {
-                os << "; Average conflict size....: " << avg_conf_size / (float)conflicts_sent << endl;
-                os << "; Max conflict size........: " << max_conf_size << endl;
-                os << "; Min conflict size........: " << min_conf_size << endl;
+                os << "; Average conflict size....: " << avg_conf_size / (float)conflicts_sent << '\n';
+                os << "; Max conflict size........: " << max_conf_size << '\n';
+                os << "; Min conflict size........: " << min_conf_size << '\n';
             }
         }
         if ( sat_calls > 0 )
         {
-            os << "; Deductions done..........: " << deductions_done << endl;
-            os << "; Deductions sent..........: " << deductions_sent << endl;
-            os << "; Reasons sent.............: " << reasons_sent << endl;
+            os << "; Deductions done..........: " << deductions_done << '\n';
+            os << "; Deductions sent..........: " << deductions_sent << '\n';
+            os << "; Reasons sent.............: " << reasons_sent << '\n';
             if ( reasons_sent > 0 )
             {
-                os << "; Average reason size......: " << avg_reas_size / (float)reasons_sent << endl;
-                os << "; Max reason size..........: " << max_reas_size << endl;
-                os << "; Min reason size..........: " << min_reas_size << endl;
+                os << "; Average reason size......: " << avg_reas_size / (float)reasons_sent << '\n';
+                os << "; Max reason size..........: " << max_reas_size << '\n';
+                os << "; Min reason size..........: " << min_reas_size << '\n';
             }
         }
+        os << std::flush;
     }
 
     // Calls statistics
@@ -166,7 +167,7 @@ public:
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points
     virtual TRes                check               ( bool ) = 0              ;  // Check satisfiability
-    inline string               getName             ( ) { return name; }         // The name of the solver
+    inline std::string          getName             ( ) { return name; }         // The name of the solver
     virtual void fillTheoryFunctions(ModelBuilder &) const { throw std::logic_error{"Model computation not supported for the used theory yet!"}; }
     virtual void computeModel() = 0;                      // Compute model for variables
     virtual void getConflict(vec<PtAsgn> &) = 0;          // Return conflict
@@ -191,7 +192,7 @@ protected:
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
     const vec<PTRef> &          getInformed() { return informed_PTRefs.getKeys(); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
-    string                      name;             // Name of the solver
+    std::string                 name;             // Name of the solver
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 

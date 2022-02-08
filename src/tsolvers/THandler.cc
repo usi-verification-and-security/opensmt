@@ -151,7 +151,7 @@ void THandler::getConflict (
 
 
 PTRef
-THandler::getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
+THandler::getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
 {
     return getSolverHandler().getInterpolant(mask, labels, pmanager);
 }
@@ -176,23 +176,12 @@ Lit THandler::getDeduction() {
         //assert(e.sgn != l_Undef);
 #ifdef PEDANTIC_DEBUG
         if (!tmap.hasLit(e.tr))
-            cerr << "Missing (optimized) deduced literal ignored: " << getLogic().printTerm(e.tr) << endl;
+            cerr << "Missing (optimized) deduced literal ignored: " << getLogic().printTerm(e.tr) << '\n';
 #endif
         if (!tmap.hasLit(e.tr)) continue;
         break;
     }
     return e.sgn == l_True ? tmap.getLit(e.tr) : ~tmap.getLit(e.tr);
-
-//  if ( config.certification_level > 1 )
-//    verifyDeductionWithExternalTool( e );
-
-//  assert( e->isDeduced( ) );
-//  assert( e->getDeduced( ) == l_False
-//       || e->getDeduced( ) == l_True );
-//  bool negate = e->getDeduced( ) == l_False;
-//  Var v = enodeToVar( e );
-//  return Lit( v, negate );
-
 }
 
 Lit THandler::getSuggestion( ) {
@@ -259,16 +248,16 @@ bool THandler::isOnTrail( Lit l, vec<Lit>& trail ) {
 
 
 void
-THandler::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
+THandler::dumpFormulaToFile( std::ostream & dump_out, PTRef formula, bool negate )
 {
-	vector< PTRef > unprocessed_enodes;
-	map< PTRef, string > enode_to_def;
+	std::vector< PTRef > unprocessed_enodes;
+	std::map< PTRef, std::string > enode_to_def;
 	unsigned num_lets = 0;
     Logic& logic = getLogic();
 
 	unprocessed_enodes.push_back( formula );
 	// Open assert
-	dump_out << "(assert" << endl;
+	dump_out << "(assert" << '\n';
 	//
 	// Visit the DAG of the formula from the leaves to the root
 	//
@@ -324,52 +313,52 @@ THandler::dumpFormulaToFile( ostream & dump_out, PTRef formula, bool negate )
 			else
 			{
 				dump_out << " " << logic.printTerm(pref);
-				if ( logic.isAnd(e) ) dump_out << endl;
+				if ( logic.isAnd(e) ) dump_out << '\n';
 			}
 		}
 		if ( term.size() > 0 ) dump_out << ")";
 
 		// Closes binding
-		dump_out << "))" << endl;
+		dump_out << "))" << '\n';
 		// Keep track of number of lets to close
 		num_lets++;
 
 		assert( enode_to_def.find( e ) == enode_to_def.end( ) );
 		enode_to_def[ e ] = buf;
 	}
-	dump_out << endl;
+	dump_out << '\n';
 	// Formula
 	if ( negate ) dump_out << "(not ";
-	dump_out << enode_to_def[ formula ] << endl;
+	dump_out << enode_to_def[ formula ] << '\n';
 	if ( negate ) dump_out << ")";
 	// Close all lets
 	for( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
 	// Closes assert
-	dump_out << ")" << endl;
+	dump_out << ")" << '\n';
 }
 
 void
-THandler::dumpHeaderToFile(ostream& dump_out)
+THandler::dumpHeaderToFile(std::ostream& dump_out)
 {
     Logic& logic = getLogic();
-    dump_out << "(set-logic QF_UF)" << endl;
+    dump_out << "(set-logic QF_UF)" << '\n';
 
     /*
-	dump_out << "(set-info :source |" << endl
+	dump_out << "(set-info :source |" << '\n'
 			<< "Dumped with "
 			<< PACKAGE_STRING
 			<< " on "
-			<< __DATE__ << "." << endl
+			<< __DATE__ << "." << '\n'
 			<< "|)"
-			<< endl;
-	dump_out << "(set-info :smt-lib-version 2.0)" << endl;
+			<< '\n';
+	dump_out << "(set-info :smt-lib-version 2.0)" << '\n';
     */
 
     logic.dumpHeaderToFile(dump_out);
 }
 
 char* THandler::printAsrtClause(vec<Lit>& r) {
-    stringstream os;
+    std::stringstream os;
     for (int i = 0; i < r.size(); i++) {
         Var v = var(r[i]);
         bool sgn = sign(r[i]);
@@ -406,7 +395,7 @@ std::string THandler::printAssertion(Lit assertion) {
     PTRef pt_r = tmap.varToPTRef(v);
     if (sign(assertion))
         os << "!";
-    os << getLogic().term_store.printTerm(pt_r, true) << "[var " << v << "] " << endl;
+    os << getLogic().term_store.printTerm(pt_r, true) << "[var " << v << "] " << '\n';
     return os.str();
 }
 
@@ -425,7 +414,7 @@ std::string THandler::printAssertion(Lit assertion) {
 //        os << getLogic().term_store.printTerm(explanation[i].tr);
 //        os << "[var " << v << "]";
 //    }
-//    os << endl;
+//    os << '\n';
 //    return os.str();
 //}
 #endif

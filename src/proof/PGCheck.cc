@@ -24,13 +24,13 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 void ProofGraph::verifyLeavesInconsistency( )
 {
-	if( verbose() > 0 ) { cerr << "# Verifying unsatisfiability of the set of proof leaves" << endl; }
+	if( verbose() > 0 ) { std::cerr << "# Verifying unsatisfiability of the set of proof leaves" << std::endl; }
 
-	vector<clauseid_t> proofleaves;
+	std::vector<clauseid_t> proofleaves;
 	clauseid_t id,id1,id2;
-	vector<clauseid_t> q;
+	std::vector<clauseid_t> q;
 	ProofNode * node = NULL;
-	std::vector<unsigned>* visited_count_ = new vector<unsigned>(getGraphSize(),0);
+	std::vector<unsigned>* visited_count_ = new std::vector<unsigned>(getGraphSize(),0);
 	std::vector<unsigned>& visited_count = *visited_count_;
 	// Building DFS vector
 	q.push_back(getRoot()->getId());
@@ -62,7 +62,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 
 	// First stage: print declarations
 	const char * name = "verifyinconsistency_leaves.smt2";
-	ofstream dump_out( name );
+	std::ofstream dump_out( name );
 	logic_.dumpHeaderToFile( dump_out );
 
 	unsigned added = 0;
@@ -70,17 +70,17 @@ void ProofGraph::verifyLeavesInconsistency( )
 	{
 		if(added == 0)
 		{
-			dump_out << "(assert " << endl;
-			dump_out << "(and" << endl;
+			dump_out << "(assert " << '\n';
+			dump_out << "(and" << '\n';
 			added++;
 		}
 		printClause( dump_out, getNode(proofleaves[ i ])->getClause());
-		dump_out << endl;
+		dump_out << '\n';
 	}
-	if(added > 0) dump_out << "))" << endl;
+	if(added > 0) dump_out << "))" << '\n';
 
-	dump_out << "(check-sat)" << endl;
-	dump_out << "(exit)" << endl;
+	dump_out << "(check-sat)" << '\n';
+	dump_out << "(exit)" << '\n';
 	dump_out.close( );
 
 	// Check !
@@ -118,7 +118,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 bool ProofNode::checkPolarityAnt()
 {
 	assert(getAnt1()); assert(getAnt2());
-	vector<Lit>& cla = getAnt1()->getClause();
+	std::vector<Lit>& cla = getAnt1()->getClause();
 	for(size_t i=0; i<cla.size() ;i++)
 		if(var(cla[i])==getPivot())
 		{
@@ -140,19 +140,19 @@ void ProofGraph::checkClauseSorting(clauseid_t nid)
 	{
 		if(var(n->getClause()[i]) > var(n->getClause()[i+1]))
 		{
-			cerr << "Bad clause sorting for clause " << n->getId() << " of type " << n->getType() << endl;
+			std::cerr << "Bad clause sorting for clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
 			opensmt_error_();
 		}
 		if(var(n->getClause()[i])==var(n->getClause()[i+1]) && sign(n->getClause()[i])==sign(n->getClause()[i+1]))
 		{
-			cerr << "Repetition of var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << endl;
+			std::cerr << "Repetition of var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
 			opensmt_error_();
 		}
 		if(var(n->getClause()[i])==var(n->getClause()[i+1]) && sign(n->getClause()[i])!=sign(n->getClause()[i+1]))
 		{
-			cerr << "Inconsistency on var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << endl;
+			std::cerr << "Inconsistency on var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
 			opensmt_error_();
 		}
@@ -170,7 +170,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 	{
 		if(n->getClauseSize()!=0)
 		{
-			cerr << n->getId() << " is the sink but not an empty clause" << endl;
+			std::cerr << n->getId() << " is the sink but not an empty clause" << '\n';
 			printClause(n);
 			opensmt_error_();
 		}
@@ -179,7 +179,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 	{
 		if(n->getType()==clause_type::CLA_ORIG)
 		{
-			cerr << n->getId() << " is an empty original clause" << endl;
+			std::cerr << n->getId() << " is an empty original clause" << '\n';
 			opensmt_error_();
 		}
 	}
@@ -193,12 +193,12 @@ void ProofGraph::checkClause(clauseid_t nid)
 
 		if(n->getClauseSize()!=0)
 		{
-			vector<Lit>* v_ = new vector<Lit>();
-			vector<Lit>& v = *v_;
+			std::vector<Lit> v;
 			mergeClauses(n->getAnt1()->getClause(),n->getAnt2()->getClause(),v,n->getPivot());
 			if(v.size()!=n->getClauseSize())
 			{
-				cerr << "Clause : "; printClause(n); cerr << " does not correctly derive from antecedents " << endl;
+				std::cerr << "Clause : "; printClause(n);
+				std::cerr << " does not correctly derive from antecedents " << '\n';
 				printClause(getNode(n->getAnt1()->getId()));
 				printClause(getNode(n->getAnt2()->getId()));
 				opensmt_error_();
@@ -206,18 +206,19 @@ void ProofGraph::checkClause(clauseid_t nid)
 			for(size_t i=0;i<n->getClauseSize();i++)
 				if(n->getClause()[i]!=v[i])
 				{
-					cerr << "Clause : "; printClause(n); cerr << " does not correctly derive from antecedents " << endl;
+					std::cerr << "Clause : "; printClause(n);
+					std::cerr << " does not correctly derive from antecedents " << '\n';
 					printClause(getNode(n->getAnt1()->getId()));
 					printClause(getNode(n->getAnt2()->getId()));
 					opensmt_error_();
 				}
-			delete(v_);
 			// Checks whether clause is tautological
-			vector<Lit>& cl = n->getClause();
+			std::vector<Lit>& cl = n->getClause();
 			for(unsigned u = 0; u < cl.size()-1; u ++)
 				if(var(cl[u])==var(cl[u+1]))
 				{
-					cerr << "Clause : "; printClause(n); cerr << " is tautological " << endl;
+					std::cerr << "Clause : "; printClause(n);
+					std::cerr << " is tautological " << '\n';
 				}
 			// Checks whether both antecedents have the pivot
 			short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
@@ -226,13 +227,12 @@ void ProofGraph::checkClause(clauseid_t nid)
 		}
 	}
 	// Check that every resolvent has this node as its antecedent
-	set<clauseid_t>& resolvents = n->getResolvents();
-	for(set<clauseid_t>::iterator it = resolvents.begin(); it!=resolvents.end(); it++)
-	{
-		assert((*it)<getGraphSize());
-		ProofNode* res = getNode((*it));
+	std::set<clauseid_t>& resolvents = n->getResolvents();
+	for (clauseid_t id : resolvents)	{
+		assert(id < getGraphSize());
+		ProofNode* res = getNode(id);
 		if(res==NULL) {
-			cerr << "Node " << n->getId() << " has resolvent " << (*it) << " null" << endl;
+			std::cerr << "Node " << n->getId() << " has resolvent " << id << " null" << '\n';
 			opensmt_error_();
 		}
 		else
@@ -242,12 +242,13 @@ void ProofGraph::checkClause(clauseid_t nid)
 
 void ProofGraph::checkProof( bool check_clauses )
 {
-	if( verbose() ) cerr << "# Checking proof" << endl;
+	if (verbose()) {
+		std::cerr << "# Checking proof" << '\n';
+	}
 
 	// Visit top down
 	std::deque<clauseid_t> q;
-	std::vector<unsigned>* visit_level_ = new vector<unsigned>(getGraphSize());
-	std::vector<unsigned>& visit_level = *visit_level_;
+	std::vector<unsigned> visit_level(getGraphSize());
 	q.assign(leaves_ids.begin(),leaves_ids.end());
 	do
 	{
@@ -262,7 +263,9 @@ void ProofGraph::checkProof( bool check_clauses )
 			if(n->isLeaf())
 			{
 				visit_level[id] = 1;
-				for(set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ ) q.push_back(*it);
+				for (clauseid_t resolvent_id : n->getResolvents()) {
+					q.push_back(resolvent_id);
+				}
 			}
 		}
 		else
@@ -270,8 +273,8 @@ void ProofGraph::checkProof( bool check_clauses )
 			assert(! n->isLeaf() );
 			assert(visit_level[id] == 0);
 			// Inner should be seen twice
-			for(set<clauseid_t>::iterator it = n->getResolvents().begin(); it != n->getResolvents().end(); it++ )
-				{ assert(visit_level[*it] == 0); q.push_back(*it); }
+			for (clauseid_t resolvent_id : n->getResolvents())
+				{ assert(visit_level[resolvent_id] == 0); q.push_back(resolvent_id); }
 
 			clauseid_t id1 = n->getAnt1()->getId();
 			clauseid_t id2 = n->getAnt2()->getId();
@@ -281,7 +284,6 @@ void ProofGraph::checkProof( bool check_clauses )
 		}
 	}
 	while(!q.empty());
-	delete(visit_level_);
 
 	// Visit bottom up
 	q.push_back(getRoot()->getId());
@@ -309,15 +311,14 @@ void ProofGraph::checkProof( bool check_clauses )
 	for(unsigned u = 0; u < getGraphSize(); u ++)
 	{
 		if( isSetVisited1(u) && !isSetVisited2(u)) {
-			cerr << "Node " << u << " is unreachable going top-down" << endl; opensmt_error_();}
+			std::cerr << "Node " << u << " is unreachable going top-down" << '\n'; opensmt_error_();}
 		if( !isSetVisited1(u) && isSetVisited2(u)) {
-			cerr << "Node " << u << " is unreachable going bottom-up" << endl; opensmt_error_();}
+			std::cerr << "Node " << u << " is unreachable going bottom-up" << '\n'; opensmt_error_();}
 	}
 
 	// Ensure that there are no useless leaves
-	for(set<clauseid_t>::iterator it = leaves_ids.begin(); it != leaves_ids.end(); it++)
-	{
-		if(!isSetVisited1(*it)) { cerr << "Detached leaf" << (*it) << endl; opensmt_error_();}
+	for (clauseid_t leave_id : leaves_ids) {
+		if (not isSetVisited1(leave_id)) { std::cerr << "Detached leaf" << leave_id << '\n'; opensmt_error_();}
 	}
 
 	resetVisited1();

@@ -95,9 +95,9 @@ public:
         ss << "[ ";
         for (int i = 0; i < size; i++)
             ss << "(" << buf[i].first.str() << "," << buf[i].second.x << ") ";
-        ss << "]" << endl;
+        ss << "]" << '\n';
 
-        ss << "Worst is " << heur_worst.str() << " at location " << heur_worst_loc << endl;
+        ss << "Worst is " << heur_worst.str() << " at location " << heur_worst_loc << '\n';
         return ss.str();
     }
 };

@@ -388,7 +388,7 @@ private:
 public:
     std::string printExplanationTreeDotty(ERef) const;
 private:
-    const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
+    const std::string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
     void checkForbidReferences       ( ERef );
     void checkRefConsistency         ( );
     // Helper methods
