@@ -867,7 +867,7 @@ TRes LASolver::cutFromProof() {
         if (not isOnLower and not isOnUpper) { continue; }
 
         PTRef term = laVarMapper.getVarPTRef(var);
-        auto val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
+        auto const & val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
         assert(not val.hasDelta());
         auto const & rhs = val.R();
         assert(rhs.isInteger());
@@ -882,7 +882,7 @@ TRes LASolver::cutFromProof() {
         return val.R();
     };
     CutCreator cutCreator(logic, getVarValue);
-    PTRef split = cutCreator.cut(std::move(constraints));
+    PTRef split = cutCreator.cut(constraints);
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;
     }
