@@ -855,11 +855,105 @@ bool LASolver::shouldTryCutFromProof() const {
     return ++counter % 10 == 0;
 }
 
+namespace {
+
+struct DefiningConstraint {
+    PTRef lhs;
+    opensmt::Real rhs;
+};
+
+/*
+ * Translates the set of defining constraints (linear equalities) into a suitable inner representation:
+ * - Matrix A of coefficients
+ * - a vector with right-hand-side values (as Rationals)
+ * - a map from column index to the corresponding variable
+ */
+std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std::vector<DefiningConstraint> const & constraints, ArithLogic & logic) {
+    vec<PTRef> terms;
+    auto fillTerms = [&logic](PTRef poly, vec<PTRef> & terms) {// reduces linear polynomial to a vector of the polynomial's terms
+        terms.clear();
+        if (logic.isPlus(poly)) {
+            for (PTRef arg : logic.getPterm(poly)) {
+                terms.push(arg);
+            }
+        } else {
+            terms.push(poly);
+        }
+    };
+    std::unordered_map<PTRef, unsigned, PTRefHash> varIndices;
+    uint32_t columns = 0;
+    // First pass to assign indices and find out number of columns
+    for (auto const & defConstraint : constraints) {
+        PTRef poly = defConstraint.lhs;
+        fillTerms(poly, terms);
+        for (PTRef arg : terms) {
+            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            assert(var != PTRef_Undef);
+            if (varIndices.find(var) == varIndices.end()) {
+                varIndices.insert({var, columns++});
+            }
+        }
+    }
+
+    uint32_t rows = constraints.size();
+    SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
+    std::vector<FastRational> rhs(rows);
+    std::vector<Polynomial> columnPolynomials(columns);
+
+    // Second pass to build the actual matrix
+    for (unsigned row = 0; row < constraints.size(); ++row) {
+        rhs[row] = constraints[row].rhs;
+        PTRef poly = constraints[row].lhs;
+        fillTerms(poly, terms);
+        for (PTRef arg : terms) {
+            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto col = varIndices[var];
+            columnPolynomials[col].addTerm(LVRef{row}, logic.getNumConst(constant));
+        }
+    }
+    for (uint32_t i = 0; i < columnPolynomials.size(); ++i) {
+        matrixA.setColumn(ColIndex{i}, std::move(columnPolynomials[i]));
+    }
+    // compute the inverse map from column indices to variables
+    std::vector<PTRef> columnMapping(matrixA.colCount(), PTRef_Undef);
+    for (auto [var, index] : varIndices) {
+        columnMapping[index] = var;
+    }
+
+    assert(matrixA.colCount() == columnMapping.size());
+
+    return {SparseLinearSystem{std::move(matrixA), std::move(rhs)}, std::move(columnMapping)};
+}
+
+PTRef getSumFromTermVec(SparseColMatrix::TermVec const & termVec, vec<PTRef> const & toVarMap, ArithLogic & logic) {
+    vec<PTRef> args;
+    for (auto const & term : termVec) {
+        LVRef var = term.first;
+        auto const & coeff = term.second;
+        args.push(logic.mkTimes(toVarMap[var.x], logic.mkIntConst(coeff)));
+    }
+    return logic.mkPlus(std::move(args));
+}
+
+PTRef cutToSplit(CutCreator::Cut && cut, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
+    auto termVec = cut.first;
+    auto rhs = cut.second;
+    if (termVec.empty()) {
+        return PTRef_Undef;
+    }
+    PTRef constraint = getSumFromTermVec(termVec, toVarMap, logic);
+    auto lowerBoundValue = rhs.ceil();
+    auto upperBoundValue = rhs.floor();
+    PTRef upperBound = logic.mkLeq(constraint, logic.mkIntConst(upperBoundValue));
+    PTRef lowerBound = logic.mkGeq(constraint, logic.mkIntConst(lowerBoundValue));
+    return logic.mkOr(upperBound, lowerBound);
+}
+}
+
 TRes LASolver::cutFromProof() {
     auto isOnLowerBound = [this](LVRef var) { return simplex.hasLBound(var) and not simplex.isModelStrictlyOverLowerBound(var); };
     auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
     // Step 1: Gather defining constraints
-    using DefiningConstraint = CutCreator::DefiningConstaint;
     std::vector<DefiningConstraint> constraints;
     for (LVRef var : int_vars) {
         bool isOnLower = isOnLowerBound(var);
@@ -881,8 +975,10 @@ TRes LASolver::cutFromProof() {
         assert(not val.hasDelta());
         return val.R();
     };
-    CutCreator cutCreator(logic, getVarValue);
-    PTRef split = cutCreator.cut(constraints);
+    CutCreator cutCreator(getVarValue);
+    auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
+    auto cut = cutCreator.makeCut(std::move(system), toVarMap);
+    PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;
     }
