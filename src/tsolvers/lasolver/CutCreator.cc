@@ -210,7 +210,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         }
     }
 
-    auto rows = static_cast<uint32_t>(constraints.size());
+    uint32_t rows = constraints.size();
     ColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
     std::vector<FastRational> rhs(rows);
     std::vector<Polynomial> columnPolynomials(columns);
