@@ -66,7 +66,7 @@ void swapColumns(ColMatrix & A, ColIndex pivotIndex, ColIndex otherIndex, ColMat
     U.swapCols(pivotIndex, otherIndex);
 }
 
-void addColumnMultiple(ColMatrix & A, ColIndex colFrom, opensmt::Real multiple, ColIndex colTo, ColMatrix & U) {
+void addColumnMultiple(ColMatrix & A, ColIndex colFrom, opensmt::Real const & multiple, ColIndex colTo, ColMatrix & U) {
     A[colTo].add(A[colFrom], multiple);
     // For U we do the inverse operation: colFrom += -multiple * colTo
     U[colFrom].add(U[colTo], -multiple);
@@ -100,10 +100,10 @@ bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatr
             return A[first].getFirstCoeff() < A[second].getFirstCoeff();
         });
         std::iter_swap(it, activeColumns.begin());
-        // Now the index of column with smallest value is first in activeColumns
+        // Now the index of column with smallest first non-zero value is first in activeColumns
         auto smallestValue = A[activeColumns[0]].getFirstCoeff();
         std::size_t nextColIndex = 1;
-        while(nextColIndex < activeColumns.size()) {
+        while (nextColIndex < activeColumns.size()) {
             auto const & nextCol = A[activeColumns[nextColIndex]];
             auto quotient = -fastrat_fdiv_q(nextCol.getFirstCoeff(), smallestValue);
             assert(not quotient.isZero());

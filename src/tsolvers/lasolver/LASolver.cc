@@ -869,12 +869,13 @@ TRes LASolver::cutFromProof() {
         PTRef term = laVarMapper.getVarPTRef(var);
         auto val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
         assert(not val.hasDelta());
-        auto rhs = val.R();
+        auto const & rhs = val.R();
         assert(rhs.isInteger());
         constraints.push_back(DefiningConstraint{term, rhs});
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
+        assert(this->logic.isVar(var));
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
         Delta val = this->simplex.getValuation(lvar);
         assert(not val.hasDelta());
