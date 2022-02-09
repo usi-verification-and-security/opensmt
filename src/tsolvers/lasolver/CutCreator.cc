@@ -20,7 +20,7 @@ void ColMatrix::Col::add(Col const & other, opensmt::Real const & multiple) {
 opensmt::Real ColMatrix::Col::product(const std::vector<FastRational> & values) const {
     opensmt::Real sum = 0;
     for (auto const & term : poly) {
-        std::size_t index = term.var.x;
+        uint32_t index = term.var.x;
         assert(index < values.size());
         sum += term.coeff * values[index];
     }
@@ -45,9 +45,9 @@ const FastRational * ColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
 }
 
 namespace {
-ColMatrix identityMatrix(std::size_t size) {
+ColMatrix identityMatrix(uint32_t size) {
     ColMatrix id(RowCount{size}, ColumnCount{size});
-    for (std::size_t i = 0; i < size; ++i) {
+    for (uint32_t i = 0; i < size; ++i) {
         Polynomial poly;
         poly.addTerm(LVRef{static_cast<unsigned>(i)}, 1);
         id.setColumn(ColIndex{i}, std::move(poly));
@@ -81,7 +81,7 @@ bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatr
     std::vector<ColIndex> activeColumns;
     auto size = A.colCount();
     activeColumns.reserve(size - pivotIndex);
-    for (std::size_t col = pivotIndex; col < size; ++col) {
+    for (uint32_t col = pivotIndex; col < size; ++col) {
         if (A[col].isFirst(rowIndex)) {
             activeColumns.push_back(ColIndex{col});
             if (A[col].getFirstCoeff().sign() < 0) {
@@ -102,7 +102,7 @@ bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatr
         std::iter_swap(it, activeColumns.begin());
         // Now the index of column with smallest value is first in activeColumns
         auto smallestValue = A[activeColumns[0]].getFirstCoeff();
-        std::size_t nextColIndex = 1;
+        uint32_t nextColIndex = 1;
         while (nextColIndex < activeColumns.size()) {
             auto const & nextCol = A[activeColumns[nextColIndex]];
             auto quotient = -fastrat_fdiv_q(nextCol.getFirstCoeff(), smallestValue);
@@ -129,7 +129,7 @@ void reduceToTheLeft(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColM
     auto const & pivotCol = A[pivotIndex];
     assert(pivotCol.isFirst(rowIndex));
     auto const & pivotVal = pivotCol.getFirstCoeff();
-    for (std::size_t col = 0; col < pivotIndex; ++col) {
+    for (uint32_t col = 0; col < pivotIndex; ++col) {
         auto const * otherVal = A[col].tryGetCoeffFor(rowIndex);
         if (not otherVal) { continue; }
         auto quotient = -fastrat_fdiv_q(*otherVal, pivotVal);
@@ -141,7 +141,7 @@ void reduceToTheLeft(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColM
 
 struct HNFOperationsResult {
     ColMatrix operations;
-    std::size_t HNFdimension;
+    uint32_t HNFdimension;
 };
 
 HNFOperationsResult toHNFOperations(ColMatrix && A) {
@@ -149,12 +149,12 @@ HNFOperationsResult toHNFOperations(ColMatrix && A) {
     // At the same time we record the inverse operations in U
     // We maintain the invariant that A'*U' = A; starting with U:=I, the identity matrix
     // We actually maintain the transpose of U' as column matrix and not U' as row matrix
-    std::size_t cols = A.colCount();
-    std::size_t rows = A.rowCount();
+    uint32_t cols = A.colCount();
+    uint32_t rows = A.rowCount();
     ColMatrix UT = identityMatrix(cols);
 
-    std::size_t pivotCol = 0;
-    for (std::size_t currRow = 0; currRow < rows and pivotCol < cols; ++currRow) {
+    uint32_t pivotCol = 0;
+    for (uint32_t currRow = 0; currRow < rows and pivotCol < cols; ++currRow) {
         // First make sure the current row conforms to the lower triangular form
         bool hasPivot = normalizeRow(A, RowIndex{currRow}, ColIndex{pivotCol}, UT);
         if (not hasPivot) {
@@ -259,20 +259,20 @@ PTRef CutCreator::cut(std::vector<DefiningConstaint> const & constraints) {
     // MB: 'rhs' is not really used, as it is implicit in the variable assignment; maybe we don't have to compute it
 
     assert(matrixA.colCount() == columnMapping.size());
-    std::size_t varCount = matrixA.colCount();
+    uint32_t varCount = matrixA.colCount();
 
     auto [matrixU, dim] = toHNFOperations(std::move(matrixA));
 
     // Get the values of the variables
     std::vector<opensmt::Real> varValues;
     varValues.reserve(varCount);
-    for (std::size_t col = 0; col < varCount; ++col) {
+    for (uint32_t col = 0; col < varCount; ++col) {
         PTRef var = columnMapping[col];
         varValues.push_back(evaluate(var));
     }
     // Now check every row of U for infeasibility: if the cross product of the row and vector of variable values is not
     // an integer, the row represents an infeasible constraint
-    for (std::size_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
+    for (uint32_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
         auto const & row = matrixU[rowIndex];
         auto product = crossProduct(row, varValues);
         if (not product.isInteger()) {

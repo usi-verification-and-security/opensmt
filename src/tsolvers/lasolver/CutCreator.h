@@ -13,15 +13,15 @@
 #include "Polynomial.h"
 
 struct ColumnCount {
-    std::size_t count;
-    operator std::size_t() const { return count; }
+    uint32_t count;
+    operator uint32_t () const { return count; }
 };
 
 using ColIndex = ColumnCount;
 
 struct RowCount {
-    std::size_t count;
-    operator std::size_t() const { return count; }
+    uint32_t count;
+    operator uint32_t () const { return count; }
 };
 
 using RowIndex = RowCount;
@@ -39,7 +39,7 @@ public:
             this->poly = std::move(_poly);
         }
 
-        std::size_t size() const { return poly.size(); }
+        uint32_t size() const { return poly.size(); }
 
         void negate();
         void add(Col const & other, FastRational const & multiple);
@@ -57,7 +57,7 @@ private:
     RowCount _rowCount;
     ColumnCount _colCount;
     std::vector<Col> cols;
-    std::vector<std::size_t> colPermutation;
+    std::vector<uint32_t> colPermutation;
 
 public:
     explicit ColMatrix(RowCount rowCount, ColumnCount colCount) : _rowCount(rowCount), _colCount{colCount} {
@@ -69,13 +69,13 @@ public:
     ColMatrix(ColMatrix const &) = delete;
     ColMatrix(ColMatrix &&) = default;
 
-    Col &       operator[](std::size_t index)       { return cols[colPermutation[index]]; }
-    Col const & operator[](std::size_t index) const { return cols[colPermutation[index]]; }
+    Col &       operator[](uint32_t index)       { return cols[colPermutation[index]]; }
+    Col const & operator[](uint32_t index) const { return cols[colPermutation[index]]; }
 
-    void swapCols(std::size_t first, std::size_t second) { std::swap(colPermutation[first], colPermutation[second]); }
+    void swapCols(uint32_t first, uint32_t second) { std::swap(colPermutation[first], colPermutation[second]); }
 
-    std::size_t colCount() const { return _colCount; }
-    std::size_t rowCount() const { return _rowCount; }
+    uint32_t colCount() const { return _colCount; }
+    uint32_t rowCount() const { return _rowCount; }
 
     void setColumn(ColIndex colIndex, Polynomial && poly) {
         assert(colIndex < _colCount);
