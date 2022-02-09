@@ -30,10 +30,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
-#include "Global.h"
 
 #include <libgen.h>
+#include <iostream>
+#include <list>
 #include <string>
+#include <fstream>
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -475,7 +477,7 @@ public:
     {
       out.open( attr );
       if( !out )
-        opensmt_error2( "can't open ", attr );
+        throw std::ifstream::failure("can't open " + std::string(attr));
       rocset = true;
     }
   }
@@ -486,7 +488,7 @@ public:
     {
       err.open( attr );
       if( !err )
-        opensmt_error2( "can't open ", attr );
+          throw std::ifstream::failure("can't open " + std::string(attr));
       rocset = true;
     }
   }

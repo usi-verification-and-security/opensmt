@@ -25,7 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "SMTConfig.h"
+
 #include "OsmtInternalException.h"
+
+#include <sstream>
 
 void ASTNode::print(std::ostream& o, int indent) {
         for (int i = 0; i < indent; i++)
@@ -614,7 +617,8 @@ SMTConfig::parseCMDLine( int argc
     else
     {
       printHelp( );
-      opensmt_error2( "unrecognized option", buf );
+      std::cerr << "unrecognized option" << buf << std::endl;
+      exit(1);
     }
   }
 }

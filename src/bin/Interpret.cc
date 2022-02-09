@@ -34,6 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 #include <cstdarg>
+#include <unistd.h>
 
 /***********************************************************
  * Class defining interpreter
@@ -1233,7 +1234,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     letRecords.popFrame();
 
     if (!(config.produce_inter() > 0))
-        opensmt_error("Cannot interpolate");
+        throw OsmtApiException("Cannot interpolate");
 
     assert(grouping.size() >= 2);
     std::vector<ipartitions_t> partitionings;

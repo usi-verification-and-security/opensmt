@@ -4,6 +4,8 @@
 
 #include "Simplex.h"
 
+#include "OsmtInternalException.h"
+
 #include <limits>
 #include <algorithm>
 
@@ -175,8 +177,9 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
             }
         }
     }
-    else{
-        opensmt_error( "Error in bounds comparison" );
+    else {
+        assert(false);
+        throw OsmtInternalException("Examined basic var is not out of bounds, but it should be!");
     }
     return v_found;
 }
@@ -220,7 +223,8 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             }
         }
     } else {
-        opensmt_error("Error in bounds comparison");
+        assert(false);
+        throw OsmtInternalException("Examined basic var is not out of bounds, but it should be!");
     }
     return y_found;
 }

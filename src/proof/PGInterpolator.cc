@@ -19,8 +19,9 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
-#include "VerificationUtils.h"
 #include "BoolRewriting.h"
+#include "OsmtInternalException.h"
+#include "VerificationUtils.h"
 
 #include <cstdio>
 #include <iostream>
@@ -39,8 +40,7 @@ bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants )
 
     if (nparts < 2)
     {
-        opensmt_error ("; Interpolation requires at least 2 partitions.");
-        return false;
+        throw OsmtApiException("; Interpolation requires at least 2 partitions.");
     }
 
     if (nparts == 2)
@@ -83,8 +83,7 @@ bool ProofGraph::produceSimultaneousAbstraction ( vec< PTRef > &interpolants )
 
     if (nparts < 2)
     {
-        opensmt_error ("; Interpolation requires at least 2 partitions.");
-        return false;
+        throw OsmtApiException("; Interpolation requires at least 2 partitions.");
     }
 
     if (nparts == 2)
@@ -126,8 +125,7 @@ bool ProofGraph::produceGenSimultaneousAbstraction ( vec< PTRef > &interpolants 
 
     if (nparts < 2)
     {
-        opensmt_error ("; Interpolation requires at least 2 partitions.");
-        return false;
+        throw OsmtApiException("; Interpolation requires at least 2 partitions.");
     }
 
     if (nparts == 2)
@@ -171,8 +169,7 @@ bool ProofGraph::produceStateTransitionInterpolants ( vec< PTRef > &interpolants
 
     if (npart < 2)
     {
-        opensmt_error ("; Interpolation requires at least 2 partitions.");
-        return false;
+        throw OsmtApiException("; Interpolation requires at least 2 partitions.");
     }
 
     if (npart == 2)
@@ -378,7 +375,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
         else
         {
-            opensmt_warning ("; Please set McMillan interpolation algorithm to generate interpolants in CNF");
+            std::cerr << "; Warning!\n" << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
         }
 
 
@@ -423,14 +420,14 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
         if (n->isLeaf())
         {
-            if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
+            if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
 
             std::vector<Lit> &cl = n->getClause();
             bool fal = false;
 
             if (cl.size() == 0) {
-                opensmt_error("; Empty clause found in interpolation\n");
                 assert(false);
+                throw OsmtInternalException("; Empty clause found in interpolation\n");
             }
             Logic &logic = this->logic_;
             if (cl.size() == 1 && varToPTRef(var(cl[0])) == logic.getTerm_false() && !sign(cl[0])) {
@@ -464,7 +461,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         // Generate partial interpolant for clause i
         if (n->isLeaf())
         {
-            if (!isLeafClauseType(n->getType())) opensmt_error ( "; Leaf node with non-leaf clause type" );
+            if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
 
             labelLeaf (n, 0, PSFunction);
 
@@ -636,7 +633,7 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
     size_t proof_size = DFSv.size();
 
     // Degenerate proof
-    if (proof_size == 1) opensmt_error ("Degenerate proof, only empty clause - Cannot calculate interpolants");
+    if (proof_size == 1) throw OsmtInternalException("Degenerate proof, only empty clause - Cannot calculate interpolants");
 
     for ( unsigned curr_interp = 0; curr_interp < configs.size(); curr_interp ++ )
     {
@@ -658,7 +655,8 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
             // Generate partial interpolant for clause i
             if (n->isLeaf())
             {
-                if (n->getType() != clause_type::CLA_ORIG) opensmt_error ( "Clause is not original" );
+                // FIXME: This check is outdated
+                if (n->getType() != clause_type::CLA_ORIG) throw OsmtInternalException ( "Leaf clause is not original" );
 
                 partial_interp = compInterpLabelingOriginal(n, A_mask);
                 //if ( enabledPedInterpVerif() ) verifyPartialInterpolantFromLeaves( n, A_mask );
@@ -700,7 +698,7 @@ void ProofGraph::produceMultipleInterpolants ( const std::vector< ipartitions_t 
 PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartitions_t &A_mask )
 {
     if (! ( usingMcMillanInterpolation( ) || usingPudlakInterpolation( ) || usingMcMillanPrimeInterpolation( ) ) )
-        opensmt_error_();
+        throw OsmtApiException("Incorrect interpolation algorithm set for labeling-based interpolation");
 
     icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
     // Original leaves can be only of class A or B
@@ -810,7 +808,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
             partial_interp = logic_.getTerm_true();
         }
     }
-    else opensmt_error ( "Clause has no color" );
+    else throw OsmtInternalException("Clause has no color" );
 
     return partial_interp;
 }
@@ -820,7 +818,7 @@ PTRef ProofGraph::compInterpLabelingOriginalSimple ( ProofNode *n, const ipartit
 PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartitions_t &A_mask )
 {
     if (! ( usingMcMillanInterpolation( ) || usingPudlakInterpolation( ) || usingMcMillanPrimeInterpolation( ) ) )
-        opensmt_error_();
+        throw OsmtApiException("Incorrect interpolation algorithm set for labeling-based interpolation");
 
     // Get antecedents partial interpolants
     PTRef partial_interp_ant1 = n->getAnt1()->getPartialInterpolant();
@@ -899,9 +897,9 @@ PTRef ProofGraph::compInterpLabelingInnerSimple ( ProofNode *n, const ipartition
             partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
             assert (partial_interp != PTRef_Undef);
         }
-        else opensmt_error ( "No interpolation algorithm");
+        else throw OsmtApiException("No interpolation algorithm");
     }
-    else opensmt_error ( "Pivot has no class" );
+    else throw OsmtInternalException("Pivot has no class");
 
     return partial_interp;
 }
@@ -915,7 +913,7 @@ void ProofGraph::checkInterAlgo()
              || usingPSWInterpolation()
              || usingPSSInterpolation()
              || usingLabelingSuggestions()))
-        opensmt_error ( "Please choose 0/1/2/3/4/5/6 as values for itp_bool_algo");
+        throw OsmtApiException("Please choose 0/1/2/3/4/5/6 as values for itp_bool_algo");
 
     if ( verbose() > 0 )
     {
@@ -961,7 +959,7 @@ ProofGraph::labelLeaf(ProofNode * n, unsigned num_config, std::map<Var, icolor_t
     // Labeling suggestions enabled
     else if ( usingLabelingSuggestions( ) ) setLabelingFromMap ( n, num_config );
     // Error
-    else opensmt_error ( "No interpolation algorithm chosen" );
+    else throw OsmtApiException("No interpolation algorithm chosen");
 }
 
 // Input: leaf clause, current interpolant partition masks for A and B
@@ -1017,7 +1015,7 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
                 if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
                 else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
                 else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
-                else opensmt_error ( "Variable " << v << " has no color in clause " << n->getId() );
+                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
 
             if ( var_color == icolor_t::I_B ) restricted_clause.push_back ( cl[i] );
@@ -1077,7 +1075,7 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
                 if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
                 else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
                 else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
-                else opensmt_error ( "Variable " << v << " has no color in clause " << n->getId() );
+                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
 
             if ( var_color == icolor_t::I_A ) restricted_clause.push_back ( cl[i] );
@@ -1108,7 +1106,7 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
             partial_interp = logic_.mkAnd (std::move(and_args));
         }
     }
-    else opensmt_error ( "Clause has no color" );
+    else throw OsmtInternalException("Clause has no color");
 
     assert (partial_interp != PTRef_Undef);
     return partial_interp;
@@ -1196,7 +1194,7 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
 
         }
     }
-    else opensmt_error ( "Pivot has no color" );
+    else throw OsmtInternalException("Pivot has no color");
 
     return partial_interp;
 }
@@ -1227,7 +1225,7 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
                 colorB (n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else opensmt_error ("Variable has no class");
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 
@@ -1257,7 +1255,7 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
                 colorAB (n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else opensmt_error ("Variable has no class");
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 
@@ -1287,7 +1285,7 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
                 colorB (n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else opensmt_error ("Variable has no class");
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
@@ -1305,7 +1303,7 @@ void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
         // Color AB class variables as ab
         if ( var_class == icolor_t::I_AB ) colorAB (n, v);
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else opensmt_error ( "Variable has no class" );
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 
@@ -1323,7 +1321,7 @@ void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
         // Color AB class variables as b
         if ( var_class == icolor_t::I_AB ) colorB (n, v);
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else opensmt_error ( "Variable has no class" );
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 
@@ -1343,7 +1341,7 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
         if ( var_class == icolor_t::I_AB ) colorA (n, v);
         // Color AB class variables b if clause is in B
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else opensmt_error ( "Variable has no class" );
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 
@@ -1381,11 +1379,11 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
                 if (color == icolor_t::I_A) colorA (n, v);
                 else if (color == icolor_t::I_B) colorB (n, v);
                 else if (color == icolor_t::I_AB) colorAB (n, v);
-                else opensmt_error_();
+                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
         }
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else opensmt_error ( "Variable has no class" );
+        else throw OsmtInternalException("Variable has no class");
     }
 }
 

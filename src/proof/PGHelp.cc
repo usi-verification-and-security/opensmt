@@ -18,7 +18,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
  *********************************************************************/
 
 #include "PG.h"
-#include <math.h>
+
+#include "OsmtInternalException.h"
 
 short ProofNode::hasOccurrenceBin(Var v) {
     std::vector<Lit>& cla = getClause();
@@ -318,7 +319,7 @@ void ProofGraph::getComplexityInterpolant( PTRef int_e )
                     q.pop_back();
                 }
             }
-            else opensmt_error_();
+            else throw OsmtInternalException();
         }
         else
             q.pop_back();
@@ -542,7 +543,7 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
 					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
 					else if( v_class == icolor_t::I_AB ){}
-					else opensmt_error_();
+                    else throw OsmtInternalException();
 				}
 				for(unsigned i = 0; i < c2.size(); i++)
 				{
@@ -550,7 +551,7 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
 					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
 					else if( v_class == icolor_t::I_AB ){}
-					else opensmt_error_();
+                    else throw OsmtInternalException();
 				}
 				for(unsigned i = 0; i < c.size(); i++)
 				{
@@ -558,7 +559,7 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; resolvent_is_clean = false; }
 					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; resolvent_is_clean = false; }
 					else if( v_class == icolor_t::I_AB ){}
-					else opensmt_error_();
+                    else throw OsmtInternalException();
 				}
 				if (!clause_has_A_local && !clause_has_B_local)     num_AB_common++;
 				else if (clause_has_A_local && !clause_has_B_local) num_A_local++;
@@ -580,7 +581,7 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 					if( v_class == icolor_t::I_A ){ clause_has_A_local = true; }
 					else if( v_class == icolor_t::I_B ){ clause_has_B_local = true; }
 					else if( v_class == icolor_t::I_AB ){}
-					else opensmt_error_();
+					else throw OsmtInternalException();
 				}
 				if (!clause_has_A_local && !clause_has_B_local) num_sym_elim++;
 			}

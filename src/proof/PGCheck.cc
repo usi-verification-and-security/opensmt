@@ -19,7 +19,11 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "PG.h"
+
+#include "OsmtInternalException.h"
+
 #include <sys/wait.h>
+#include <unistd.h>
 
 
 void ProofGraph::verifyLeavesInconsistency( )
@@ -109,7 +113,7 @@ void ProofGraph::verifyLeavesInconsistency( )
 		exit( EXIT_FAILURE );
 	}
 	if ( tool_res == true )
-		opensmt_error( "External tool says the set of proof leaves is satisfiable" );
+		throw std::logic_error("External tool says the set of proof leaves is satisfiable");
 
 	remove(name);
 }
@@ -122,10 +126,9 @@ bool ProofNode::checkPolarityAnt()
 	for(size_t i=0; i<cla.size() ;i++)
 		if(var(cla[i])==getPivot())
 		{
-			if(sign(cla[i])) return false;
-			else return true;
+            return not sign(cla[i]);
 		}
-	opensmt_error_();
+	throw OsmtInternalException("Pivot not found in node's clause");
 }
 
 void ProofGraph::checkClauseSorting(clauseid_t nid)
@@ -142,19 +145,19 @@ void ProofGraph::checkClauseSorting(clauseid_t nid)
 		{
 			std::cerr << "Bad clause sorting for clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
-			opensmt_error_();
+			throw OsmtInternalException();
 		}
 		if(var(n->getClause()[i])==var(n->getClause()[i+1]) && sign(n->getClause()[i])==sign(n->getClause()[i+1]))
 		{
 			std::cerr << "Repetition of var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
-			opensmt_error_();
+            throw OsmtInternalException();
 		}
 		if(var(n->getClause()[i])==var(n->getClause()[i+1]) && sign(n->getClause()[i])!=sign(n->getClause()[i+1]))
 		{
 			std::cerr << "Inconsistency on var " << var(n->getClause()[i]) << " in clause " << n->getId() << " of type " << n->getType() << '\n';
 			printClause(n);
-			opensmt_error_();
+            throw OsmtInternalException();
 		}
 	}
 }
@@ -172,7 +175,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 		{
 			std::cerr << n->getId() << " is the sink but not an empty clause" << '\n';
 			printClause(n);
-			opensmt_error_();
+            throw OsmtInternalException();
 		}
 	}
 	if(n->getClauseSize()==0)
@@ -180,7 +183,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 		if(n->getType()==clause_type::CLA_ORIG)
 		{
 			std::cerr << n->getId() << " is an empty original clause" << '\n';
-			opensmt_error_();
+            throw OsmtInternalException();
 		}
 	}
 	else checkClauseSorting(n->getId());
@@ -201,7 +204,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 				std::cerr << " does not correctly derive from antecedents " << '\n';
 				printClause(getNode(n->getAnt1()->getId()));
 				printClause(getNode(n->getAnt2()->getId()));
-				opensmt_error_();
+                throw OsmtInternalException();
 			}
 			for(size_t i=0;i<n->getClauseSize();i++)
 				if(n->getClause()[i]!=v[i])
@@ -210,7 +213,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 					std::cerr << " does not correctly derive from antecedents " << '\n';
 					printClause(getNode(n->getAnt1()->getId()));
 					printClause(getNode(n->getAnt2()->getId()));
-					opensmt_error_();
+                    throw OsmtInternalException();
 				}
 			// Checks whether clause is tautological
 			std::vector<Lit>& cl = n->getClause();
@@ -233,7 +236,7 @@ void ProofGraph::checkClause(clauseid_t nid)
 		ProofNode* res = getNode(id);
 		if(res==NULL) {
 			std::cerr << "Node " << n->getId() << " has resolvent " << id << " null" << '\n';
-			opensmt_error_();
+            throw OsmtInternalException();
 		}
 		else
 			assert(res->getAnt1() == n || res->getAnt2() == n);
@@ -311,14 +314,14 @@ void ProofGraph::checkProof( bool check_clauses )
 	for(unsigned u = 0; u < getGraphSize(); u ++)
 	{
 		if( isSetVisited1(u) && !isSetVisited2(u)) {
-			std::cerr << "Node " << u << " is unreachable going top-down" << '\n'; opensmt_error_();}
+			std::cerr << "Node " << u << " is unreachable going top-down" << '\n'; throw OsmtInternalException();;}
 		if( !isSetVisited1(u) && isSetVisited2(u)) {
-			std::cerr << "Node " << u << " is unreachable going bottom-up" << '\n'; opensmt_error_();}
+			std::cerr << "Node " << u << " is unreachable going bottom-up" << '\n'; throw OsmtInternalException();;}
 	}
 
 	// Ensure that there are no useless leaves
 	for (clauseid_t leave_id : leaves_ids) {
-		if (not isSetVisited1(leave_id)) { std::cerr << "Detached leaf" << leave_id << '\n'; opensmt_error_();}
+		if (not isSetVisited1(leave_id)) { std::cerr << "Detached leaf" << leave_id << '\n'; throw OsmtInternalException();;}
 	}
 
 	resetVisited1();

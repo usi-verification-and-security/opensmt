@@ -12,6 +12,7 @@
 
 #include <sys/wait.h>
 #include <assert.h>
+#include <sstream>
 
 void THandler::backtrack(int lev)
 {

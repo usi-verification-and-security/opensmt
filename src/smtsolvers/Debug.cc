@@ -27,6 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
+#include "ReportUtils.h"
+
 void CoreSMTSolver::dumpCNF( )
 {
   const char * name = "cnf.smt2";

@@ -8,6 +8,7 @@
 #include "TreeOps.h"
 
 #include <sys/wait.h>
+#include <unistd.h>
 
 bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
     const char * implies = "implies.smt2";

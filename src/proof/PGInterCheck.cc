@@ -19,10 +19,12 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "OsmtInternalException.h"
 #include "VerificationUtils.h"
 
 #include <fstream>
 #include <sys/wait.h>
+#include <unistd.h>
 
 bool
 ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
@@ -32,14 +34,14 @@ ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
     bool res = verifyPartialInterpolantA(n, mask);
     if(!res)
     {
-        opensmt_error("Partial interpolant soundness does not hold for A");
         assert(false);
+        throw OsmtInternalException("Partial interpolant soundness does not hold for A");
     }
     res = verifyPartialInterpolantB(n, mask);
     if(!res)
     {
-        opensmt_error("Partial interpolant soundness does not hold for B");
         assert(false);
+        throw OsmtInternalException("Partial interpolant soundness does not hold for B");
     }
     if(verbose())
         std::cout << "; Partial interpolant is sound" << '\n';
@@ -69,7 +71,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
             if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
             else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
             else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
+            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
         }
         if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
         {
@@ -118,7 +120,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
             if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
             else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
             else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else opensmt_error( "Variable " << v << " has no color in clause " << n->getId() );
+            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
         }
         if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
         {
@@ -225,7 +227,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
                     if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
                     else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
                     else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-                    else opensmt_error( "Variable has no color" );
+                    else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
                 }
                 if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
                 {
@@ -279,9 +281,10 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( EXIT_FAILURE );
     }
-    if ( tool_res == true )
-        //opensmt_error( "External tool says A /\\ ~(C|a,ab) -> I does not hold" );
-    opensmt_error( "External tool says A -> I does not hold" );
+    if (tool_res) {
+        throw std::logic_error("External tool says A -> I does not hold");
+    }
+
 
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat
 
@@ -334,7 +337,7 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
                     if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
                     else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
                     else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-                    else opensmt_error( "Variable has no color" );
+                    else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
                 }
                 if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
                 {
@@ -386,9 +389,9 @@ void ProofGraph::verifyPartialInterpolantFromLeaves( ProofNode* n, const ipartit
         perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
         exit( 1 );
     }
-    if ( tool_res == true )
-        //opensmt_error( "External tool says B /\\ ~(C|b,ab) -> ~I does not hold" );
-    opensmt_error( "External tool says B /\\ I -> false does not hold" );
+    if (tool_res == true) {
+        throw std::logic_error("External tool says B /\\ I -> false does not hold");
+    }
 
     remove(name);
     remove(name2);

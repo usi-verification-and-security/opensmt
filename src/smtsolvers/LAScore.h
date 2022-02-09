@@ -11,6 +11,7 @@
 
 #include <limits>
 #include <string>
+#include <sstream>
 
 class LookaheadSMTSolver;
 

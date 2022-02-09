@@ -585,8 +585,9 @@ void LASolver::initSolver()
 
         status = SAT;
     }
-    else
-    opensmt_error( "Solver can not be initialized in the state different from INIT" );
+    else {
+        throw OsmtInternalException("Solver can not be initialized in the state different from INIT");
+    }
 }
 
 //
@@ -617,8 +618,7 @@ inline bool LASolver::getStatus( )
         case INIT:
         case ERROR:
         default:
-        opensmt_error( "Status is undef!" );
-            return false;
+            throw OsmtApiException("Status is undef!");
     }
 }
 

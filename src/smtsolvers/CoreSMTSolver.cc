@@ -45,8 +45,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "CoreSMTSolver.h"
-#include "Sort.h"
+
+#include "Global.h"
 #include "ModelBuilder.h"
+#include "OsmtInternalException.h"
+#include "ReportUtils.h"
+#include "Sort.h"
 
 #include <cmath>
 #include <iostream>
@@ -1417,7 +1421,7 @@ void CoreSMTSolver::popBacktrackPoint()
         }
         else
         {
-            opensmt_error2( "unknown undo operation in CoreSMTSolver", op.getType() );
+            throw OsmtInternalException("unknown undo operation in CoreSMTSolver" + std::to_string(op.getType()));
         }
 
         undo_stack.pop();

@@ -19,6 +19,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "Global.h"
 
 // Manipulates proofs
 void ProofGraph::printProofGraph( )
@@ -174,10 +175,12 @@ double ProofGraph::doReduction(double solving_time) {
         if ((ratioReductionSolvingTime() > 0 && reductionTime() > 0) ||
             (ratioReductionSolvingTime() > 0 && numGraphTraversals() > 0) ||
             (reductionTime() > 0 && numGraphTraversals() > 0) ||
-            (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) opensmt_error(
-                "Please set either ratio or time for reduction or number of proof traversals");
+            (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) {
+                throw OsmtApiException("Please set either ratio or time for reduction or number of proof traversals");
+        }
+
     }
-    if (reductionLoops() == 0) opensmt_error("Please set number of global reduction loops to at least 1");
+    if (reductionLoops() == 0) throw OsmtApiException("Please set number of global reduction loops to at least 1");
 
     //Transformation time calculation
     double time_init = 0;

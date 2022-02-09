@@ -447,7 +447,7 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
                 std::cerr << u << " detached" << '\n';
-                opensmt_error_();
+                throw OsmtInternalException("Unexpected situation in rule application");
             }
     }
 
@@ -461,7 +461,7 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
         assert(res);
         if(res->getAnt1() == v) res->setAnt1( v2 );
         else if (res->getAnt2() == v) res->setAnt2( v2 );
-        else opensmt_error_();
+        else throw OsmtInternalException("Unexpected situation in rule application");
         v2->addRes(resolvent_id);
     }
     assert(v->getNumResolvents()>0);
@@ -487,7 +487,7 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
                 std::cerr << u << " detached" << '\n';
-                opensmt_error_();
+                throw OsmtInternalException("Unexpected situation in rule application");
             }
     }
 

@@ -3,6 +3,9 @@
 //
 
 #include "GhostSMTSolver.h"
+
+#include "ReportUtils.h"
+
 #include <utility>
 
 bool GhostSMTSolver::isGhost(Lit l)

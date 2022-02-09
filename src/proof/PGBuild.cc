@@ -19,6 +19,10 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "Global.h"
+#include "OsmtInternalException.h"
+#include "ReportUtils.h"
+
 void
 ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
 {
@@ -734,7 +738,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
     n->addRes(v_id);
     if(v->getAnt1() == w) v->setAnt1(n);
     else if(v->getAnt2() == w) v->setAnt2(n);
-    else opensmt_error_();
+    else throw OsmtInternalException("Error in node duplication");
     assert( w->getResolvents().find(v_id) == w->getResolvents().end());
     assert( w->getNumResolvents() == num_old_res - 1);
     // Remember to modify context

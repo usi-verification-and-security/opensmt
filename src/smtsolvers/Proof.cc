@@ -25,6 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "CoreSMTSolver.h"
+
+#include "OsmtInternalException.h"
 #include "Proof.h"
 
 #include <unordered_map>
@@ -135,7 +137,7 @@ bool Proof::deleted( CRef cr )
 void Proof::print( std::ostream & out, CoreSMTSolver & s, THandler & t )
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
-    opensmt_error( "there is no proof of false" );
+    throw OsmtInternalException("there is no proof of false");
 
   out << "(proof " << '\n';
 

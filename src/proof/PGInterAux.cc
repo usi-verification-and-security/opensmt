@@ -19,6 +19,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "OsmtInternalException.h"
+
 
 /************************* HELPERS ******************************/
 
@@ -57,7 +59,7 @@ void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
 		if( v_class == icolor_t::I_A ){ AB_vars_mapping[v] = -1; }
 		else if( v_class == icolor_t::I_B ){ AB_vars_mapping[v] = -2; }
 		else if( v_class == icolor_t::I_AB ){ AB_vars_mapping[v] = AB_bit_index; AB_bit_index++; }
-		else opensmt_error_();
+		else throw OsmtInternalException("Error in computing variable colors");
 	}
 }
 
@@ -77,11 +79,10 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
         else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
         else
         {
-            std::cerr << "Var has no label" << '\n';
-            opensmt_error_();
+            throw OsmtInternalException("Var has no label");
         }
     }
-    else opensmt_error( "Var " << v << " has no class" );
+    else throw OsmtInternalException("Var " + std::to_string(v) + " has no class");
 
     return var_color;
 }
@@ -123,13 +124,13 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 
 			std::cerr << "Pivot " << v << " has colors " << colorToString(var_color_1) << " " << colorToString(var_color_2) <<
 					" in antecedents but no color in resolvent" << '\n';
-			opensmt_error_();
+			throw OsmtInternalException();
 		}
 
 		// Remove pivot from resolvent if class AB
 		updateColoringAfterRes(n);
 	}
-	else opensmt_error( "Pivot " << v << " has no class" );
+	else throw OsmtInternalException("Pivot " + std::to_string(v) + " has no class");
 	Lit pos = mkLit(v);
 	Lit neg = ~pos;
 	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
@@ -164,7 +165,7 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
     if (var_in_A && !var_in_B) var_class = icolor_t::I_A;
     else if (!var_in_A && var_in_B) var_class = icolor_t::I_B;
     else if (var_in_A && var_in_B) var_class = icolor_t::I_AB;
-    else opensmt_error("Variable has no class");
+    else throw OsmtInternalException("Variable has no class");
 
     return var_class;
 }
@@ -192,7 +193,7 @@ icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ip
     if( clause_in_A && !clause_in_B ) clause_color = icolor_t::I_A;
     else if( !clause_in_A && clause_in_B ) clause_color = icolor_t::I_B;
     else if( clause_in_A && clause_in_B ) clause_color = icolor_t::I_AB;
-    else opensmt_error( "Clause has no color" );
+    else throw OsmtInternalException("Clause has no color");
 
     return clause_color;
 }
@@ -234,7 +235,8 @@ ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions
             }
 			if(n->getType() != clause_type::CLA_ORIG)
 			{
-                opensmt_error( "Clause is not original" );
+                // FIXME: This check is outdated
+                throw OsmtInternalException( "Clause is not original" );
 			}
 
 			icolor_t col = getClauseColor(n->getInterpPartitionMask(), A_mask);

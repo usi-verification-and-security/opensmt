@@ -19,8 +19,10 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "PG.h"
-#include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
+
+#include "Global.h"
 #include "OsmtInternalException.h"
+#include "ReportUtils.h"
 
 #include <unordered_set>
 
@@ -410,7 +412,7 @@ void ProofGraph::recycleUnits() {
                                     assert(res);
                                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                    else opensmt_error_();
+                                    else throw OsmtInternalException("Unexpected situation in recycleUnits");
                                     assert(res->getAnt1() != res->getAnt2());
                                     replacing->addRes(clauseid);
                                 }
@@ -452,7 +454,7 @@ void ProofGraph::recycleUnits() {
                                 assert(res);
                                 if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                 else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                else opensmt_error_();
+                                else throw OsmtInternalException("Unexpected situation in recycleUnits");
                                 assert(res->getAnt1() != res->getAnt2());
                                 replacing->addRes(clauseid);
                             }
@@ -839,7 +841,7 @@ void ProofGraph::proofPostStructuralHashing()
 							assert( res );
 							if(res->getAnt1() == n) res->setAnt1( replacing );
 							else if (res->getAnt2() == n) res->setAnt2( replacing );
-							else opensmt_error_();
+							else throw OsmtInternalException("Unexpected situation in proofPostStructuralHashing");
 							replacing->addRes(resolvent_id);
 						}
 						n->getAnt1()->remRes(id);
@@ -978,7 +980,7 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
             assert(resolvent);
             assert(mustBeEliminated(resolvent->getPivot())); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
             if (!mustBeEliminated(resolvent->getPivot())) {
-                opensmt_error("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
+                throw OsmtInternalException("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
             }
             // resolvent must be theory valid lemma, make it new leaf
             ProofNode * ant1 = resolvent->getAnt1();

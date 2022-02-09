@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef CNFIZER_H
 #define CNFIZER_H
 
-#include "Global.h"
 #include "Theory.h"
 #include "Logic.h"
 #include "PartitionManager.h"
