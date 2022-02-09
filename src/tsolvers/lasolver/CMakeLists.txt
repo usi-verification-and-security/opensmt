@@ -23,6 +23,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Matrix.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/SparseMatrix.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LIAInterpolator.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/CutCreator.cc"
     )
