@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ModelBuilder.h"
 #include "BitBlaster.h"
 #include "BVStore.h"
-#include "Global.h"
 #include "MainSolver.h"
 #include "Real.h"
 

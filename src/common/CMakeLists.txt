@@ -6,7 +6,7 @@ target_sources(common
     PRIVATE	
     "${CMAKE_CURRENT_LIST_DIR}/Alloc.h"
     "${CMAKE_CURRENT_LIST_DIR}/XAlloc.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Global.h"
+    "${CMAKE_CURRENT_LIST_DIR}/SystemQueries.h"
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"
     "${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h"
@@ -20,8 +20,8 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/VerificationUtils.cc"
 )
 
-install(FILES 
-    Global.h Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h Timer.h osmtinttypes.h
+install(FILES
+        Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h Timer.h osmtinttypes.h
     TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h NumberUtils.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 

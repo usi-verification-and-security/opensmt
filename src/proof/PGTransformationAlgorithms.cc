@@ -20,7 +20,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
-#include "Global.h"
+#include "SystemQueries.h"
 #include "OsmtInternalException.h"
 #include "ReportUtils.h"
 

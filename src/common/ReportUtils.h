@@ -1,7 +1,7 @@
 /*
  *  Copyright (c) 2008-2012, Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
- *                2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
- *                2022, Martin Blicha <martin.blicha@gmail.com>
+ *  Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
  *
  *  SPDX-License-Identifier: MIT
  *

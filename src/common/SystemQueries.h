@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#ifndef SYSTEMQUERIES_H
+#define SYSTEMQUERIES_H
 
 
 #include <sys/time.h>
@@ -73,4 +73,4 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
 using opensmt::cpuTime;
 using opensmt::memUsed;
 
-#endif
+#endif // SYSTEMQUERIES_H

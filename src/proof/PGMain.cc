@@ -19,7 +19,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
-#include "Global.h"
+#include "SystemQueries.h"
 
 // Manipulates proofs
 void ProofGraph::printProofGraph( )
