@@ -1,7 +1,6 @@
 #ifndef THEORY_INTERPOLATOR_H
 #define THEORY_INTERPOLATOR_H
 
-#include "Global.h"
 #include "PtStore.h"
 #include "PartitionManager.h"
 #include "OsmtInternalException.h"
