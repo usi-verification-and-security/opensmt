@@ -100,7 +100,7 @@ bool normalizeRow(ColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, ColMatr
             return A[first].getFirstCoeff() < A[second].getFirstCoeff();
         });
         std::iter_swap(it, activeColumns.begin());
-        // Now the index of column with smallest first non-zero value is first in activeColumns
+        // Now the index of column with smallest value is first in activeColumns
         auto smallestValue = A[activeColumns[0]].getFirstCoeff();
         std::size_t nextColIndex = 1;
         while (nextColIndex < activeColumns.size()) {
