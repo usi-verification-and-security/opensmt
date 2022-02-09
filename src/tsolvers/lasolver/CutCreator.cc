@@ -196,7 +196,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         }
     };
     std::unordered_map<PTRef, unsigned, PTRefHash> varIndices;
-    std::size_t columns = 0;
+    uint32_t columns = 0;
     // First pass to assign indices and find out number of columns
     for (auto defConstraint : constraints) {
         PTRef poly = defConstraint.lhs;
@@ -210,7 +210,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
         }
     }
 
-    auto rows = constraints.size();
+    auto rows = static_cast<uint32_t>(constraints.size());
     ColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
     std::vector<FastRational> rhs(rows);
     std::vector<Polynomial> columnPolynomials(columns);
@@ -226,7 +226,7 @@ Representation initFromConstraints(std::vector<CutCreator::DefiningConstaint> co
             columnPolynomials[col].addTerm(LVRef{row}, logic.getNumConst(constant));
         }
     }
-    for (std::size_t i = 0; i < columnPolynomials.size(); ++i) {
+    for (uint32_t i = 0; i < columnPolynomials.size(); ++i) {
         matrixA.setColumn(ColIndex{i}, std::move(columnPolynomials[i]));
     }
     // compute the inverse map from column indices to variables
