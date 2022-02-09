@@ -27,15 +27,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "Logic.h"
 #include "TreeOps.h"
-#include "Global.h"
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
 #include "Substitutor.h"
 
+#include <iostream>
+#include <map>
 #include <queue>
 #include <set>
+#include <sstream>
 
 using namespace std;
 
@@ -1296,8 +1298,8 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
 void
 Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
-    vector< PTRef > unprocessed_enodes;
-    map< PTRef, string > enode_to_def;
+    std::vector<PTRef> unprocessed_enodes;
+    std::map<PTRef, std::string> enode_to_def;
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back( formula );

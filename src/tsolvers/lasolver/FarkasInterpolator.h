@@ -7,9 +7,10 @@
 
 
 #include <PtStructs.h>
-#include <Global.h>
 #include <Real.h>
 #include <TheoryInterpolator.h>
+
+#include <iostream>
 
 class ArithLogic;
 

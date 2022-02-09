@@ -10,6 +10,8 @@
 #include "ArithLogic.h"
 #include "ModelBuilder.h"
 
+#include <sstream>
+
 Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder const & model) const {
     ArithLogic & arithLogic = dynamic_cast<ArithLogic &>(logic);
     Map<ERef, PTRef, ERefHash> updatedValues;

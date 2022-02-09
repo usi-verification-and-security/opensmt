@@ -21,6 +21,9 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "OsmtInternalException.h"
 
+#include <cmath>
+#include <deque>
+
 short ProofNode::hasOccurrenceBin(Var v) {
     std::vector<Lit>& cla = getClause();
     int first=0;

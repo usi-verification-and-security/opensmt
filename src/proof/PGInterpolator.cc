@@ -24,6 +24,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "VerificationUtils.h"
 
 #include <cstdio>
+#include <deque>
 #include <iostream>
 #include <fstream>
 

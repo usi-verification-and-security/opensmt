@@ -24,6 +24,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "OsmtInternalException.h"
 #include "ReportUtils.h"
 
+#include <deque>
 #include <unordered_set>
 
 //************************* RECYCLE PIVOTS AND RECYCLE UNITS ***************************

@@ -22,6 +22,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "OsmtInternalException.h"
 #include "VerificationUtils.h"
 
+#include <deque>
 #include <fstream>
 #include <sys/wait.h>
 #include <unistd.h>

@@ -1,61 +1,19 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-        Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2017, Antti Hyvarinen
-                          2008 - 2012, Roberto Bruttomesso
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+/*
+ *  Copyright (c) 2008-2012, Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+ *  Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
 
-#include <cstring>
-// Workaround to allow compiling with gcc 4.9.0 and versions of gmp up
-// to 5.1.3 (see https://gcc.gnu.org/gcc-4.9/porting_to.html)
-#include <cstddef>
-#include <cassert>
-#include <string>
-#include <vector>
-#include <map>
-#include <set>
-#include <list>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <queue>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#include <stdint.h>
-#include <limits.h>
-#include <cstdlib>
-
-
-#include "Map.h"
-
-#if ( __WORDSIZE == 64 )
-#define BUILD_64
-#endif
 
 namespace opensmt {
 
@@ -114,9 +72,5 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
 
 using opensmt::cpuTime;
 using opensmt::memUsed;
-
-#ifndef INT32_MAX
-#define INT32_MAX 0x7fffffffL
-#endif
 
 #endif
