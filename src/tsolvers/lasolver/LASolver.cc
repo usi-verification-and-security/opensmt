@@ -256,8 +256,8 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
     return x;
 }
 
-std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
-    auto poly = std::make_unique<Polynomial>();
+std::unique_ptr<Polynomial<LVRef>> LASolver::expressionToLVarPoly(PTRef term) {
+    auto poly = std::make_unique<Polynomial<LVRef>>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
@@ -284,7 +284,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 // (4b) (* -1 x) + p_1 + ... + p_n
 //
 LVRef LASolver::exprToLVar(PTRef expr) {
-    LVRef x = LVRef_Undef;
+    LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
         if (simplex.isProcessedByTableau(x)){
@@ -318,7 +318,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
             markVarAsInt(x);
         }
     }
-    assert(x != LVRef_Undef);
+    assert(x != LVRef::Undef);
     return x;
 }
 
@@ -351,7 +351,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 
 LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
     opensmt::Real maxDistance = 0;
-    LVRef chosen = LVRef_Undef;
+    LVRef chosen = LVRef::Undef;
     for (LVRef x : varsToFix) {
         Delta val = simplex.getValuation(x);
         assert(not val.hasDelta());
@@ -391,7 +391,7 @@ TRes LASolver::checkIntegersAndSplit() {
 
     LVRef chosen = splitOnMostInfeasible(varsToFix);
 
-    assert(chosen != LVRef_Undef);
+    assert(chosen != LVRef::Undef);
     auto splitLowerVal = simplex.getValuation(chosen).R().floor();
     //x <= c || x >= c+1;
     PTRef varPTRef = getVarPTRef(chosen);
@@ -462,7 +462,7 @@ bool LASolver::assertLit(PtAsgn asgn)
 
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
-    assert(it != LVRef_Undef);
+    assert(it != LVRef::Undef);
 
     if (assertBoundOnVar( it, bound_ref))
     {
@@ -482,7 +482,7 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
 
     assert(status == SAT);
-    assert(it != LVRef_Undef);
+    assert(it != LVRef::Undef);
     storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
 
     if (explanation.size() > 0) {
@@ -898,7 +898,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
     uint32_t rows = constraints.size();
     SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
     std::vector<FastRational> rhs(rows);
-    std::vector<Polynomial> columnPolynomials(columns);
+    std::vector<Polynomial<IndexType>> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
     for (unsigned row = 0; row < constraints.size(); ++row) {
@@ -908,7 +908,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         for (PTRef arg : terms) {
             auto [var, constant] = logic.splitTermToVarAndConst(arg);
             auto col = varIndices[var];
-            columnPolynomials[col].addTerm(LVRef{row}, logic.getNumConst(constant));
+            columnPolynomials[col].addTerm(IndexType{row}, logic.getNumConst(constant));
         }
     }
     for (uint32_t i = 0; i < columnPolynomials.size(); ++i) {
@@ -928,7 +928,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
 PTRef getSumFromTermVec(SparseColMatrix::TermVec const & termVec, vec<PTRef> const & toVarMap, ArithLogic & logic) {
     vec<PTRef> args;
     for (auto const & term : termVec) {
-        LVRef var = term.first;
+        IndexType var = term.first;
         auto const & coeff = term.second;
         args.push(logic.mkTimes(toVarMap[var.x], logic.mkIntConst(coeff)));
     }

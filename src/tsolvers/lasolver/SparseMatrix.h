@@ -28,18 +28,24 @@ struct RowCount {
 
 using RowIndex = RowCount;
 
+struct IndexType {
+    uint32_t x;
+    bool operator==(IndexType const o) const { return x == o.x; }
+    static const IndexType Undef;
+};
 
+inline constexpr IndexType IndexType::Undef = IndexType { INT32_MAX };
 
 class SparseColMatrix {
 public:
-    using TermVec = std::vector<std::pair<LVRef, FastRational>>;
+    using TermVec = std::vector<std::pair<IndexType, FastRational>>;
     class Col {
-        Polynomial poly;
+        Polynomial<IndexType> poly;
     public:
         Col() = default;
         Col(Col const &) = delete;
         Col(Col &&) = default;
-        void setPolynomial(Polynomial && _poly)  {
+        void setPolynomial(Polynomial<IndexType> && _poly)  {
             assert(this->poly.size() == 0);
             this->poly = std::move(_poly);
         }
@@ -82,7 +88,7 @@ public:
     uint32_t colCount() const { return _colCount; }
     uint32_t rowCount() const { return _rowCount; }
 
-    void setColumn(ColIndex colIndex, Polynomial && poly) {
+    void setColumn(ColIndex colIndex, Polynomial<IndexType> && poly) {
         assert(colIndex < _colCount);
         cols[colIndex].setPolynomial(std::move(poly));
     }

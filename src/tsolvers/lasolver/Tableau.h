@@ -61,20 +61,20 @@ protected:
 
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
     using column_t = Column;
-    using rows_t = std::vector<std::unique_ptr<Polynomial>>;
+    using rows_t = std::vector<std::unique_ptr<Polynomial<LVRef>>>;
 //    using vars_t = std::unordered_set<LVRef, LVRefHash>;
     using vars_t = std::set<LVRef, LVRefComp>;
 
 public:
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
-    void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
+    void newRow(LVRef v, std::unique_ptr<Polynomial<LVRef>> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
     const opensmt::Real & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
     const column_t & getColumn(LVRef nonBasicVar) const;
-    const Polynomial & getRowPoly(LVRef basicVar) const;
-    Polynomial & getRowPoly(LVRef basicVar);
+    const Polynomial<LVRef> & getRowPoly(LVRef basicVar) const;
+    Polynomial<LVRef> & getRowPoly(LVRef basicVar);
     const rows_t & getRows() const;
 
     void clear();
@@ -102,12 +102,12 @@ private:
     };
     std::vector<VarType> varTypes;
 
-    std::vector<Polynomial::Term> tmp_storage;
+    std::vector<Polynomial<LVRef>::Term> tmp_storage;
 
     void ensureTableauReadyFor(LVRef v);
 
-    void addRow(LVRef v, std::unique_ptr<Polynomial> p);
-    std::unique_ptr<Polynomial> removeRow(LVRef v);
+    void addRow(LVRef v, std::unique_ptr<Polynomial<LVRef>> p);
+    std::unique_ptr<Polynomial<LVRef>> removeRow(LVRef v);
     void moveRowFromTo(LVRef from, LVRef to);
     void moveColFromTo(LVRef from, LVRef to);
     void addRowToColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->addRow(row); }

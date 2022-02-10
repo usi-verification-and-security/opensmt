@@ -10,7 +10,6 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Delta.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVar.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Polynomial.h"
-    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Polynomial.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Tableau.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LARefs.h"

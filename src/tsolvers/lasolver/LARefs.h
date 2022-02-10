@@ -30,9 +30,12 @@ struct LVRef {
     void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const LVRef& a1, const LVRef& a2) { return a1.x == a2.x; }
     inline friend bool operator!= (const LVRef& a1, const LVRef& a2) { return a1.x != a2.x; }
+    static const LVRef Undef;
 };
 
-inline unsigned getVarId(LVRef ref) { return ref.x;}
+inline constexpr LVRef LVRef::Undef = LVRef { INT32_MAX };
+
+inline unsigned getVarId(LVRef ref) { return ref.x; }
 // For debugging
 inline char* printVar (LVRef r) { char* str; int written = asprintf(&str, "v%d", r.x); assert(written >= 0); (void)written; return str; }
 
@@ -43,7 +46,5 @@ struct LVRefHash {
 struct LVRefComp {
     bool operator()(LVRef a, LVRef b) const { return a.x < b.x; }
 };
-
-const struct LVRef LVRef_Undef = { INT32_MAX };
 
 #endif

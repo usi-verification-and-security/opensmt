@@ -32,7 +32,7 @@ void Tableau::newNonbasicVar(LVRef v) {
     varTypes[getVarId(v)] = VarType::NONBASIC;
 }
 
-void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
+void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial<LVRef>> poly) {
     assert(!isProcessed(v));
     ensureTableauReadyFor(v);
     addRow(v, std::move(poly));
@@ -60,12 +60,12 @@ const Tableau::column_t & Tableau::getColumn(LVRef nonBasicVar) const {
     return *cols[nonBasicVar.x];
 }
 
-const Polynomial & Tableau::getRowPoly(LVRef basicVar) const {
+const Polynomial<LVRef> & Tableau::getRowPoly(LVRef basicVar) const {
     assert(rows[basicVar.x]);
     return *rows[basicVar.x];
 }
 
-Polynomial & Tableau::getRowPoly(LVRef basicVar) {
+Polynomial<LVRef> & Tableau::getRowPoly(LVRef basicVar) {
     assert(rows[basicVar.x]);
     return *rows[basicVar.x];
 }
@@ -85,14 +85,14 @@ std::vector<LVRef> Tableau::getNonBasicVars() const {
     return res;
 }
 
-void Tableau::addRow(LVRef v, std::unique_ptr<Polynomial> p) {
+void Tableau::addRow(LVRef v, std::unique_ptr<Polynomial<LVRef>> p) {
     assert(!rows[v.x]);
     rows[v.x] = std::move(p);
 }
 
-std::unique_ptr<Polynomial> Tableau::removeRow(LVRef v) {
+std::unique_ptr<Polynomial<LVRef>> Tableau::removeRow(LVRef v) {
     assert(rows[v.x]);
-    std::unique_ptr<Polynomial> res;
+    std::unique_ptr<Polynomial<LVRef>> res;
     assert(!res);
     res.swap(rows[v.x]);
     return res;
@@ -125,7 +125,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     assert(rows[bv.x]);
     assert(!rows[nv.x]);
     {
-        Polynomial & nvPoly = getRowPoly(bv);
+        Polynomial<LVRef> & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.removeVar(nv);
         if (not coeff.isOne()) {
             nvPoly.divideBy(coeff);
@@ -139,7 +139,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     // move the column from nv tto bv
     moveColFromTo(nv, bv);
 
-    Polynomial & nvPoly = getRowPoly(nv);
+    Polynomial<LVRef> & nvPoly = getRowPoly(nv);
     // update column information regarding this one poly
     for(auto & term : nvPoly) {
         auto var = term.var;
@@ -254,7 +254,7 @@ bool Tableau::checkConsistency() const {
 // Makes sures the representing polynomial of this row contains only nonbasic variables
 void Tableau::normalizeRow(LVRef v) {
     assert(isQuasiBasic(v)); // Do not call this for non quasi rows
-    Polynomial & row = getRowPoly(v);
+    Polynomial<LVRef> & row = getRowPoly(v);
     std::vector<LVRef> toEliminate;
     for (auto const & term : row) {
         if (isQuasiBasic(term.var)) {
@@ -288,7 +288,7 @@ void Tableau::basicToQuasi(LVRef v) {
     varTypes[getVarId(v)] = VarType::QUASIBASIC;
     assert(isQuasiBasic(v));
 
-    Polynomial & row = getRowPoly(v);
+    Polynomial<LVRef> & row = getRowPoly(v);
     for (auto & term : row) {
         assert(isNonBasic(term.var));
         removeRowFromColumn(v, term.var);
