@@ -5,20 +5,21 @@
 #ifndef OPENSMT_POLYNOMIAL_H
 #define OPENSMT_POLYNOMIAL_H
 
-#include "LAVar.h"
 #include "Real.h"
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <iostream>
 
+template<typename VarType>
 class Polynomial{
     friend class Tableau;
 private:
     struct Term {
-        LVRef var;
+        VarType var;
         opensmt::Real coeff;
 
-        Term(LVRef var, opensmt::Real&& coeff): var{var.x}, coeff{std::move(coeff)} {}
+        Term(VarType var, opensmt::Real&& coeff): var{var.x}, coeff{std::move(coeff)} {}
     };
     struct TermCmp {
         bool operator()(const Term& first, const Term& second) { return first.var.x < second.var.x; }
@@ -27,10 +28,10 @@ private:
     using poly_t = std::vector<Term>; // Terms are ordered by variable num
     poly_t poly;
 public:
-    void addTerm(LVRef var, opensmt::Real coeff);
+    void addTerm(VarType var, opensmt::Real coeff);
     std::size_t size() const;
-    const opensmt::Real & getCoeff(LVRef var) const;
-    opensmt::Real removeVar(LVRef var);
+    const opensmt::Real & getCoeff(VarType var) const;
+    opensmt::Real removeVar(VarType var);
     void negate();
     void divideBy(const opensmt::Real& r);
 
@@ -44,8 +45,8 @@ public:
     void merge(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
             std::vector<Term>& storage);
 
-    using iterator = poly_t::iterator;
-    using const_iterator = poly_t::const_iterator;
+    using iterator = typename poly_t::iterator;
+    using const_iterator = typename poly_t::const_iterator;
 
     iterator begin(){
         return poly.begin();
@@ -62,27 +63,28 @@ public:
     }
 
     // debug
-    bool contains(LVRef var) const {
+    bool contains(VarType var) const {
         return findTermForVar(var) != poly.end();
     }
 
 
-    const_iterator findTermForVar(LVRef var) const {
+    const_iterator findTermForVar(VarType var) const {
         return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
     }
 
-    iterator findTermForVar(LVRef var) {
+    iterator findTermForVar(VarType var) {
         return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
     }
 
     void print() const;
 };
 
+template<typename VarType>
 template<typename ADD, typename REM>
-void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD informAdded,
+void Polynomial<VarType>::merge(const Polynomial<VarType> &other, const opensmt::Real &coeff, ADD informAdded,
                   REM informRemoved, std::vector<Term>& storage) {
     if (storage.size() < this->poly.size() + other.poly.size()) {
-        storage.resize(this->poly.size() + other.poly.size(), Term(LVRef_Undef, 0));
+        storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
     }
     std::size_t storageIndex = 0;
     auto myIt = std::make_move_iterator(poly.begin());
@@ -160,4 +162,52 @@ void Polynomial::merge(const Polynomial &other, const opensmt::Real &coeff, ADD 
     }
 }
 
+template<typename VarType>
+void Polynomial<VarType>::addTerm(VarType var, opensmt::Real coeff) {
+    assert(!contains(var));
+    Term term {var, std::move(coeff)};
+    auto it = std::upper_bound(poly.begin(), poly.end(), term, TermCmp{});
+    poly.insert(it, std::move(term));
+}
+
+template<typename VarType>
+unsigned long Polynomial<VarType>::size() const {
+    return poly.size();
+}
+
+template<typename VarType>
+const FastRational &Polynomial<VarType>::getCoeff(VarType var) const {
+    assert(contains(var));
+    return findTermForVar(var)->coeff;
+}
+
+template<typename VarType>
+opensmt::Real Polynomial<VarType>::removeVar(VarType var) {
+    assert(contains(var));
+    iterator it = findTermForVar(var);
+    auto coeff = std::move(it->coeff);
+    poly.erase(it);
+    return coeff;
+}
+
+template<typename VarType>
+void Polynomial<VarType>::negate() {
+    for(auto & term : poly) {
+        term.coeff.negate();
+    }
+}
+
+template<typename VarType>
+void Polynomial<VarType>::divideBy(const opensmt::Real &r) {
+    for(auto & term : poly) {
+        term.coeff /= r;
+    }
+}
+template<typename VarType>
+void Polynomial<VarType>::print() const {
+    for (auto & term : poly) {
+        std::cout << term.coeff << " * " << term.var.x << "v + ";
+    }
+    std::cout << std::endl;
+}
 #endif //OPENSMT_POLYNOMIAL_H

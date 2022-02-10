@@ -4,17 +4,18 @@
 
 #include <gtest/gtest.h>
 #include <lasolver/Polynomial.h>
+#include <lasolver/LAVar.h>
 
 TEST(Polynomial_test, test_AddTerm){
-    Polynomial poly;
+    Polynomial<LVRef> poly;
     LVRef var {10};
     poly.addTerm(var, 1);
     EXPECT_EQ(poly.getCoeff(var), 1);
 }
 
 TEST(Polynomial_test, test_Merge){
-    Polynomial poly1;
-    Polynomial poly2;
+    Polynomial<LVRef> poly1;
+    Polynomial<LVRef> poly2;
     LVRef x {10};
     LVRef y {20};
     LVRef z {30};
@@ -39,8 +40,8 @@ TEST(Polynomial_test, test_Merge){
 }
 
 TEST(Polynomial_test, test_Merge2){
-    Polynomial poly1;
-    Polynomial poly2;
+    Polynomial<LVRef> poly1;
+    Polynomial<LVRef> poly2;
     LVRef x1 {4772};
     LVRef x2 {4776};
     LVRef y1 {2604};
@@ -63,8 +64,8 @@ TEST(Polynomial_test, test_Merge2){
 }
 
 TEST(Polynomial_test, test_Merge3){
-    Polynomial poly1;
-    Polynomial poly2;
+    Polynomial<LVRef> poly1;
+    Polynomial<LVRef> poly2;
     LVRef x1 {4772};
     LVRef x2 {4776};
     poly1.addTerm(x1, 1);

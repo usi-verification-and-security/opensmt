@@ -13,7 +13,7 @@ void SparseColMatrix::Col::negate() {
 }
 
 void SparseColMatrix::Col::add(Col const & other, opensmt::Real const & multiple) {
-    this->poly.merge(other.poly, multiple, [](LVRef){}, [](LVRef){});
+    this->poly.merge(other.poly, multiple, [](IndexType){}, [](IndexType){});
 }
 
 opensmt::Real SparseColMatrix::Col::product(const std::vector<FastRational> & values) const {
@@ -27,7 +27,7 @@ opensmt::Real SparseColMatrix::Col::product(const std::vector<FastRational> & va
 }
 
 SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
-    std::vector<std::pair<LVRef, FastRational>> args;
+    std::vector<std::pair<IndexType, FastRational>> args;
     args.reserve(poly.size());
     for (auto & term : poly) {
         args.emplace_back(term.var, term.coeff);
@@ -36,8 +36,8 @@ SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
 }
 
 const FastRational * SparseColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
-    LVRef bound {rowIndex.count};
-    auto it = std::lower_bound(poly.begin(), poly.end(), bound, [](auto const & term, LVRef val) {
+    IndexType bound {rowIndex.count};
+    auto it = std::lower_bound(poly.begin(), poly.end(), bound, [](auto const & term, IndexType val) {
         return term.var.x < val.x;
     });
     if (it == poly.end()) { return nullptr; }
@@ -48,8 +48,8 @@ namespace {
     SparseColMatrix identityMatrix(uint32_t size) {
         SparseColMatrix id(RowCount{size}, ColumnCount{size});
         for (uint32_t i = 0; i < size; ++i) {
-            Polynomial poly;
-            poly.addTerm(LVRef{i}, 1);
+            Polynomial<IndexType> poly;
+            poly.addTerm(IndexType{i}, 1);
             id.setColumn(ColIndex{i}, std::move(poly));
         }
         return id;

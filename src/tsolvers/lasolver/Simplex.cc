@@ -36,7 +36,7 @@ Simplex::Explanation Simplex::checkSimplex() {
     // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
     while (true) {
         repeats++;
-        LVRef x = LVRef_Undef;
+        LVRef x = LVRef::Undef;
 
         if (!bland_rule && (repeats > tableau.getNumOfCols()))
             bland_rule = true;
@@ -50,14 +50,14 @@ Simplex::Explanation Simplex::checkSimplex() {
             ++simplex_stats.num_pivot_ops;
         }
 
-        if (x == LVRef_Undef) {
+        if (x == LVRef::Undef) {
             // SAT
             refineBounds();
             model->saveAssignment();
             return Explanation();
         }
 
-        LVRef y_found = LVRef_Undef;
+        LVRef y_found = LVRef::Undef;
         if (bland_rule){
             y_found = findNonBasicForPivotByBland(x);
         }
@@ -65,7 +65,7 @@ Simplex::Explanation Simplex::checkSimplex() {
             y_found = findNonBasicForPivotByHeuristic(x);
         }
         // if it was not found - UNSAT
-        if (y_found == LVRef_Undef) {
+        if (y_found == LVRef::Undef) {
             assert(isModelOutOfBounds(x));
             bool isOutOfLowerBound = isModelOutOfLowerBound(x);
             model->restoreAssignment();
@@ -97,10 +97,10 @@ bool Simplex::isUnbounded(LVRef v) const {
 LVRef Simplex::getBasicVarToFixByShortestPoly() const {
     assert(std::all_of(candidates.begin(), candidates.end(),
                        [&](LVRef var) {
-                           return var != LVRef_Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+                           return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
                        }));
     // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getPolySize)
-    LVRef current = LVRef_Undef;
+    LVRef current = LVRef::Undef;
     std::size_t current_poly_size = std::numeric_limits<std::size_t>::max();
     for (auto it : candidates) { // Select the var with smallest row
         bool const doUpdate = tableau.getPolySize(it) < current_poly_size;
@@ -115,11 +115,11 @@ LVRef Simplex::getBasicVarToFixByShortestPoly() const {
 LVRef Simplex::getBasicVarToFixByBland() const {
     assert(std::all_of(candidates.begin(), candidates.end(),
                        [&](LVRef var) {
-                           return var != LVRef_Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+                           return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
                        }));
     // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getVarId)
     auto curr_var_id_x = std::numeric_limits<unsigned>::max();
-    LVRef current = LVRef_Undef;
+    LVRef current = LVRef::Undef;
     for (auto it : candidates) { // Select the var with the smallest id
         auto const id = getVarId(it);
         bool const doUpdate = id < curr_var_id_x;
@@ -134,7 +134,7 @@ LVRef Simplex::getBasicVarToFixByBland() const {
 LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     // favor more independent variables: those present in less rows
     assert(tableau.isBasic(basicVar));
-    LVRef v_found = LVRef_Undef;
+    LVRef v_found = LVRef::Undef;
     if (isModelOutOfLowerBound(basicVar)) {
 
         for (auto const &term : tableau.getRowPoly(basicVar)) {
@@ -146,7 +146,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 
             if ((is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (!is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
-                if (v_found == LVRef_Undef) {
+                if (v_found == LVRef::Undef) {
                     v_found = var;
                 }
                     // heuristic favoring more independent vars
@@ -167,7 +167,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 
             if ((!is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
-                if (v_found == LVRef_Undef) {
+                if (v_found == LVRef::Undef) {
                     v_found = var;
                 }
                     // heuristic favoring more independent vars
@@ -186,7 +186,7 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
 
 LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     auto max_var_id = std::numeric_limits<unsigned>::max();
-    LVRef y_found = LVRef_Undef;
+    LVRef y_found = LVRef::Undef;
     // Model doesn't fit the lower bound
     if (isModelOutOfLowerBound(basicVar)) {
         // For the Bland rule
