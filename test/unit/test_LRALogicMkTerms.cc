@@ -7,7 +7,7 @@
 
 class LRALogicMkTermsTest : public ::testing::Test {
 protected:
-    LRALogicMkTermsTest(): logic{ArithLogic::ArithType::LRA} {}
+    LRALogicMkTermsTest(): logic{opensmt::Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");

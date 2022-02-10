@@ -1,10 +1,20 @@
 ### 2.2.1 (unreleased)
 
-API changes:
- - Interpret: the default build does not depend on line editing libraries.
+Performance improvements:
+ - Arithmetic: Pooling of `mpq_class` objects for memory reuse.
+ - UF: Avoid unnecessary `Enode` instances (negated booleans)
+ - UF: Simplified `Enode` representation of terms.
 
 Bug fixes:
  - UF: Fix internal error on top-level distinct in incremental mode.
+
+API changes:
+ - Logic: `Logic` now takes SMT-LIB logic type as a constructor parameter to determine which terms it should support.
+ - Logic: Support for sorts with arity > 0.
+ - Logic: Unification of all arithmetic `Logic`s into a single `ArithLogic`.
+
+Build:
+ - The default build does not depend on line editing libraries.
 
 ### 2.2.0 (2021-10-04)
 

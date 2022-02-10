@@ -1,34 +1,14 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+/*
+ *  Copyright (c) 2008-2012 Roberto Bruttomesso
+ *  Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
 
 #include "THandler.h"
-#include "CoreSMTSolver.h"
 #include "TSolver.h"
 #include "ModelBuilder.h"
-#include "OsmtInternalException.h"
 
 #include <sys/wait.h>
 #include <assert.h>
@@ -99,32 +79,28 @@ TRes THandler::check(bool complete) {
 //    verifyCallWithExternalTool( res, trail.size( ) - 1 );
 }
 
-void THandler::getNewSplits(vec<Lit> &splits) {
-    vec<PTRef> split_terms;
-    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasNewSplits()) {
-            getSolverHandler().tsolvers[i]->getNewSplits(split_terms);
-            break;
+std::vector<vec<Lit>> THandler::getNewSplits() {
+    vec<PTRef> newSplits = getSolverHandler().getSplitClauses();
+
+    std::vector<vec<Lit>> splitClauses;
+    if (newSplits.size() == 0) {
+        return splitClauses;
+    }
+    for (PTRef clause : newSplits) {
+        splitClauses.emplace_back();
+        Logic const & logic = getLogic();
+        assert(logic.isOr(clause));
+        for (int i = 0; i < logic.getPterm(clause).size(); i++) {
+            PTRef litTerm = logic.getPterm(clause)[i];
+            Lit l = tmap.getOrCreateLit(litTerm);
+            PTRef atomTerm = logic.isNot(litTerm) ? logic.getPterm(litTerm)[0] : litTerm;
+            assert(getLogic().isAtom(atomTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
+            declareAtom(atomTerm);
+            informNewSplit(atomTerm);
+            splitClauses.back().push(l);
         }
     }
-
-    if ( split_terms.size() == 0 ) {
-        return;
-    }
-
-    assert(split_terms.size() == 1);
-    PTRef tr = split_terms[0];
-    split_terms.pop();
-    Logic & logic = getLogic();
-    assert(logic.isOr(tr));
-    for (int i = 0; i < logic.getPterm(tr).size(); i++) {
-        PTRef arg = logic.getPterm(tr)[i];
-        Lit l = tmap.getOrCreateLit(arg);
-        assert(getLogic().isAtom(arg)); // MB: Needs to be an atom, otherwise the declaration would not work.
-        declareAtom(arg);
-        informNewSplit(arg);
-        splits.push(l);
-    }
+    return splitClauses;
 }
 
 //
@@ -146,7 +122,7 @@ void THandler::getConflict (
         int i;
         for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
             if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasExplanation()) {
-                getSolverHandler().tsolvers[i]->getConflict(false, explanation);
+                getSolverHandler().tsolvers[i]->getConflict(explanation);
                 break;
             }
         }
@@ -241,19 +217,9 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
     assert(getLogic().isTheoryTerm(e));
     TSolver* solver = getSolverHandler().getReasoningSolverFor(e);
     assert(solver);
-    solver->pushBacktrackPoint();
-    // Assign temporarily opposite polarity
-    PtAsgn conflictingPolarity = PtAsgn(e, sign(~l) ? l_False : l_True);
-    lbool res = solver->assertLit(conflictingPolarity) == false ? l_False : l_Undef;
-
-    if (res != l_False) {
-        assert(false);
-        throw OsmtInternalException("Error in computing reason for theory-propagated literal");
-    }
 
     // Get Explanation
-    vec<PtAsgn> explanation;
-    solver->getConflict( true, explanation );
+    vec<PtAsgn> explanation = solver->getReasonFor(PtAsgn(e, sign(l) ? l_False : l_True));
     assert(explanation.size() > 0);
 
     // Reserve room for implied lit
@@ -277,7 +243,6 @@ void THandler::getReason( Lit l, vec< Lit > & reason)
             reason.push(pa.sgn == l_True ? ~tmap.getLit(ei) : tmap.getLit(ei)); // Swap the sign for others
         }
     }
-    solver->popBacktrackPoint();
 
 }
 
@@ -421,6 +386,7 @@ char* THandler::printAsrtClause(Clause* c) {
 }
 
 bool THandler::checkTrailConsistency(vec<Lit>& trail) {
+    (void)trail;
     assert(trail.size() >= stack.size()); // There might be extra stuff
                                           // because of conflicting assignments
     for (int i = 0; i < stack.size(); i++) {
@@ -479,7 +445,7 @@ PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v)
 Pterm&  THandler::varToPterm         ( Var v)        { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
-void    THandler::getVarName         ( Var v, char** name ) { *name = getLogic().printTerm(tmap.varToPTRef(v)); }
+std::string THandler::getVarName(Var v) const { return getLogic().printTerm(tmap.varToPTRef(v)); }
 
 Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 

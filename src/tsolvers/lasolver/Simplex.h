@@ -122,6 +122,8 @@ private:
         while (getVarId(v) >= boundsActivated.size()) {
             boundsActivated.push_back(0);
         }
+        model->addVar(v);
+        boundStore.ensureReadyFor(v);
     }
 
     void processBufferOfActivatedBounds();

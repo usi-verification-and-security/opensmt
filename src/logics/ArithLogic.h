@@ -107,20 +107,8 @@ protected:
     SymRef              sym_Int_DISTINCT;
 
 public:
-    enum class ArithType {
-        LIA, LRA, NIA, NRA, LIRA, NIRA, RDL, IDL
-    };
-
-private:
-    ArithType           arithType;
-    static std::vector<std::string> const logicNames;
-    static vec<opensmt::Logic_t> const logicTypes;
-
-public:
-    ArithLogic(ArithType arithType);
+    ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
-    std::string const getName() const override { return logicNames[static_cast<int>(arithType)]; }
-    const opensmt::Logic_t getLogic() const override { return logicTypes[static_cast<int>(arithType)]; }
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
@@ -134,7 +122,8 @@ public:
     PTRef            mkIntVar         (const char* name) { if (not hasIntegers()) { throw OsmtApiException("Create Int var in non-integral logic"); } return mkVar(sort_INT, name); }
     PTRef            mkRealVar        (const char* name) { if (not hasReals()) { throw OsmtApiException("Create Real var in non-real logic"); } return mkVar(sort_REAL, name); }
 
-    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() ||sr == getSort_real() || Logic::isBuiltinSort(sr); }
+    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr); }
+    bool             isBuiltinSortSym (SSymRef ssr) const override { return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) || Logic::isBuiltinSortSym(ssr); }
     bool             isBuiltinConstant(SymRef sr) const override { return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
 
     bool isNumConst (SymRef sr) const { return Logic::isConstant(sr) && yieldsSortNum(sr); }
@@ -160,7 +149,6 @@ public:
     const FastRational & getNumConst(PTRef tr) const;
 
     bool           isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
-    bool           isTheoryEquality(PTRef tr) const override { return isNumEq(tr); }
     bool           isAtom(PTRef tr) const override { return isNumEq(tr) || isLt(tr) || isGt(tr) || isLeq(tr) || isGeq(tr) || Logic::isAtom(tr); }
     const char*    getDefaultValue(PTRef tr) const override;
     PTRef          getDefaultValuePTRef(SRef sref) const override;
@@ -193,9 +181,6 @@ public:
     SymRef get_Sym_Real_ONE() const { return sym_Real_ONE; }
     SymRef get_sym_Int_ITE() const { return sym_Int_ITE;}
     SymRef get_sym_Real_ITE() const { return sym_Real_ITE; }
-
-    bool hasIntegers() const;
-    bool hasReals() const;
 
     void checkArithSortCompatible(vec<PTRef> const & args, SRef numSort) const {
         for (auto tr : args) {
@@ -287,7 +272,7 @@ public:
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
     bool isNumVarOrIte(SymRef sr) const { return isNumVar(sr) || isIte(sr); }
     bool isNumVarOrIte(PTRef tr) const { return isNumVarOrIte(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef tr) const { return isNumVarOrIte(tr) || isIntDiv(tr) || isMod(tr); }
+    bool isNumVarLike(SymRef tr) const { return isNumVarOrIte(tr) || isIntDiv(tr) || isMod(tr) || (hasUFs() and isUF(tr)); }
     bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
@@ -302,7 +287,6 @@ public:
     bool isRealOne(PTRef tr) const { return tr == getTerm_RealOne(); }
     bool isIntOne(SymRef sr) const { return sr == sym_Int_ONE; }
     bool isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
-
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
@@ -379,19 +363,17 @@ public:
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
     opensmt::pair<opensmt::Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
-    void splitTermToVarAndConst(PTRef term, PTRef &var, PTRef &fac) const;
+    opensmt::pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
     PTRef sumToNormalizedEquality(PTRef sum);
-
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
     opensmt::pair<lbool,SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
     void termSort(vec<PTRef> &v) const override;
-    char *printTerm_(PTRef tr, bool ext, bool s) const override;
-    char *printTerm(PTRef tr) const override;
-    char *printTerm(PTRef tr, bool l, bool s) const override;
+
+    std::string printTerm_(PTRef tr, bool ext, bool s) const override;
 
     // Helper methods
 

@@ -10,14 +10,14 @@
 class EnodeStoreTest : public ::testing::Test {
 protected:
     Logic logic;
-    EnodeStoreTest() {}
+    EnodeStoreTest() : logic(opensmt::Logic_t::QF_UF){}
 };
 
 TEST_F(EnodeStoreTest, testUP) {
     PTRef A = logic.mkBoolVar("A");
     PTRef B = logic.mkBoolVar("B");
     PTRef conj = logic.mkAnd({A, B});
-    PTRef P_A = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {A});
+    PTRef P_A = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}), {A});
     AppearsInUfVisitor(logic).visit(P_A);
     EnodeStore enodeStore(logic);
     for (auto tr : {B, conj}) {
@@ -42,7 +42,7 @@ TEST_F(EnodeStoreTest, testUPWithInternalConjIncr) {
     // No enode needed: conj is a boolean operator not appearing in UF
     ASSERT_FALSE(enodeStore.needsEnode(conj));
 
-    PTRef P_conj = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {conj});
+    PTRef P_conj = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {logic.getSort_bool()}), {conj});
     AppearsInUfVisitor(logic).visit(P_conj);
     // Enode needed: P is a UP
     ASSERT_TRUE(enodeStore.needsEnode(P_conj));
@@ -53,7 +53,7 @@ TEST_F(EnodeStoreTest, testUPWithInternalConjIncr) {
         ASSERT_FALSE(enodeStore.needsEnode(tr));
     }
 
-    PTRef Q_A = logic.mkUninterpFun(logic.declareFun("Q", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {A});
+    PTRef Q_A = logic.mkUninterpFun(logic.declareFun("Q", logic.getSort_bool(), {logic.getSort_bool()}), {A});
     AppearsInUfVisitor(logic).visit(Q_A);
     for (auto tr : {A, conj, Q_A}) {
         // Enode needed: A appears in the UP Q, conj still appears in P, Q_A is a UP
@@ -73,7 +73,7 @@ TEST_F(EnodeStoreTest, testUFEquality) {
         // No enode: x, y, and eq are booleans not appearing in UF
         ASSERT_FALSE(enodeStore.needsEnode(tr));
     }
-    PTRef f = logic.mkUninterpFun(logic.declareFun("f", logic.getSort_bool(), {logic.getSort_bool()}, nullptr), {eq});
+    PTRef f = logic.mkUninterpFun(logic.declareFun("f", logic.getSort_bool(), {logic.getSort_bool()}), {eq});
     AppearsInUfVisitor(logic).visit(f);
     for (auto tr : {f, eq}) {
         // Enodes needed: f is a UP and eq appears in f
@@ -92,8 +92,8 @@ TEST_F(EnodeStoreTest, testUFMixed) {
     // No enode needed: x is a boolean var not apparing in UF
     ASSERT_FALSE(enodeStore.needsEnode(x));
     SRef ufsort = logic.declareUninterpretedSort("U");
-    PTRef a = logic.mkUninterpFun(logic.declareFun("a", ufsort, {}, nullptr), {});
-    PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}, nullptr), {a, x});
+    PTRef a = logic.mkUninterpFun(logic.declareFun("a", ufsort, {}), {});
+    PTRef mixed = logic.mkUninterpFun(logic.declareFun("P", logic.getSort_bool(), {ufsort, logic.getSort_bool()}), {a, x});
     AppearsInUfVisitor(logic).visit(mixed);
     // Enode needed: a is a UF, mixed is a UP, and x appears in mixed
     ASSERT_TRUE(enodeStore.needsEnode(a));

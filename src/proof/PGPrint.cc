@@ -185,10 +185,7 @@ void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & c) {
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
-        char* term_name;
-        thandler->getVarName(v, &term_name);
-        out << (sign(c[i])?"(not ":"") << term_name << (sign(c[i])?") ":" ");
-        free(term_name);
+        out << (sign(c[i])?"(not ":"") << thandler->getVarName(v) << (sign(c[i])?") ":" ");
     }
     if ( c.size( ) > 1 ) out << ")";
 }

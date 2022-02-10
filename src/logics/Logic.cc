@@ -61,6 +61,7 @@ const char* Logic::tk_or       = "or";
 const char* Logic::tk_xor      = "xor";
 const char* Logic::tk_distinct = "distinct";
 const char* Logic::tk_ite      = "ite";
+const char* Logic::tk_indexed  = "_";
 
 const char* Logic::s_sort_bool = "Bool";
 const char* Logic::s_ite_prefix = ".oite";
@@ -70,11 +71,13 @@ const char* Logic::s_abstract_value_prefix = "@";
 std::size_t Logic::abstractValueCount = 0;
 
 // The constructor initiates the base logic (Boolean)
-Logic::Logic() :
-      distinctClassCount(0)
-    , sort_store(id_store)
+Logic::Logic(opensmt::Logic_t _logicType) :
+      logicType(_logicType)
+    , distinctClassCount(0)
+    , sort_store()
     , term_store(sym_store)
-    , sort_BOOL(sort_store.newSort(id_store.newIdentifier(s_sort_bool), {}))
+    , sym_IndexedSort(sort_store.newSortSymbol(SortSymbol(tk_indexed, 2, SortSymbol::INTERNAL)))
+    , sort_BOOL(sort_store.getOrCreateSort(sort_store.newSortSymbol(SortSymbol(s_sort_bool, 0, SortSymbol::INTERNAL)), {}).first)
     , term_TRUE(mkConst(getSort_bool(), tk_true))
     , term_FALSE(mkConst(getSort_bool(), tk_false))
     , sym_TRUE(getSymRef(term_TRUE))
@@ -89,7 +92,6 @@ Logic::Logic() :
     , sym_IMPLIES(declareFun_NoScoping(tk_implies, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_DISTINCT(declareFun_Commutative_NoScoping_Pairwise(tk_distinct, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_ITE(declareFun_NoScoping(tk_ite, sort_BOOL, {sort_BOOL, sort_BOOL, sort_BOOL}))
-    , use_extended_signature(false)
 {
     equalities.insert(sym_EQ, true);
     disequalities.insert(sym_DISTINCT, true);
@@ -112,7 +114,7 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
 //
-bool Logic::hasQuotableChars(const char* name) const
+bool Logic::hasQuotableChars(std::string const & name) const
 {
     // Entry is 1 if the corresponding ascii character requires quoting
     const bool quotable[256] =
@@ -143,47 +145,36 @@ bool Logic::hasQuotableChars(const char* name) const
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     };
-    bool quoted = false;
-    bool escape = false;
-    char first = name[0];
-    char last;
-    for (int i = 0; name[i] != '\0'; i++)
-    {
-        if (quotable[(int)name[i]])
-            escape = true;
-        last = name[i];
+
+    if (name.front() == '|' and name.back() == '|') return false; // Already quoted
+
+    for (auto c : name) {
+        if (quotable[(int)c])
+            return true;
     }
-    quoted = (first == '|') && (last == '|');
-    if (!quoted && escape)
-        return true;
-    else
-        return false;
+    return false;
 }
 
 //
 // Quote the name if it contains illegal characters
 //
-char*
-Logic::protectName(const char* name) const
+std::string Logic::protectName(std::string const & name) const
 {
-    char *name_escaped;
-    int printed_chars = hasQuotableChars(name) ? asprintf(&name_escaped, "|%s|", name)
-                                               : asprintf(&name_escaped, "%s", name);
-    (void)printed_chars;
-    return name_escaped;
+    if (hasQuotableChars(name)) {
+        std::stringstream ss;
+        ss << '|' << name << '|';
+        return ss.str();
+    }
+    return name;
 }
 
-char*
-Logic::printSym(SymRef sr) const
+std::string Logic::printSym(SymRef sr) const
 {
     return protectName(sym_store.getName(sr));
 }
 
-char*
-Logic::pp(PTRef tr) const
-{
-    char* out;
 
+std::string Logic::pp(PTRef tr) const {
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
     std::string name_escaped = printSym(sr);
@@ -193,13 +184,12 @@ Logic::pp(PTRef tr) const
         if (isKnownToUser(sr)) {
             ss << name_escaped;
         } else {
-            ss << "(as " << name_escaped << " " << getSortName(getSortRef(sr)) << ")";
+            ss << "(as " << name_escaped << " " << printSort(getSortRef(sr)) << ")";
         }
 #ifdef PARTITION_PRETTYPRINT
         ss << " [" << getIPartitions(tr) << ' ]';
 #endif
-        out = strdup(ss.str().c_str());
-        return out;
+        return ss.str();
     }
 
     // Here we know that t.size() > 0
@@ -217,41 +207,33 @@ Logic::pp(PTRef tr) const
 #ifdef PARTITION_PRETTYPRINT
     ss << " [" << getIPartitions(tr) << ']';
 #endif
-    out = strdup(ss.str().c_str());
-    return out;
+    return ss.str();
 }
 
-char*
-Logic::printTerm_(PTRef tr, bool ext, bool safe) const
-{
+std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
     std::stringstream ss;
 
     const Pterm& t = getPterm(tr);
     SymRef sr = t.symb();
-    char* name_escaped_c = printSym(sr);
-
-    std::string name_escaped = name_escaped_c;
-    free(name_escaped_c);
+    std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
         std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
         if (isKnownToUser(sr)) {
             ss << name_escaped << (ext ? ext_string : "");
         } else {
-            ss << "(as " << name_escaped << ext_string << " " << getSortName(getSortRef(sr)) << ")";
+            ss << "(as " << name_escaped << ext_string << " " << printSort(getSortRef(sr)) << ")";
         }
-        return strdup(ss.str().data());
+        return ss.str();
     } else {
         // Here we know that t.size() > 0
         ss << "(" << name_escaped;
         for (auto arg : t) {
-            char *current_term_p = printTerm_(arg, ext, safe);
-            ss << " " << current_term_p;
-            free(current_term_p);
+            ss << " " << printTerm_(arg, ext, safe);
         }
         ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
     }
-    return strdup(ss.str().data());
+    return ss.str();
 }
 
 bool Logic::isTheoryTerm(PTRef ptr) const {
@@ -337,24 +319,50 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     return nestedBoolRoots;
 }
 
-/**
- * Declare an uninterpreted sort.  Do not call for numeric sorts, since we do not want to add them a default value
- * here nor do we want them to end up in the ufsorts.
- * @param sortName
- * @return sort reference
- */
-SRef Logic::declareUninterpretedSort(char const * sortName) {
-    if (containsSort(sortName)) {
-        return getSortRef(sortName);
+bool Logic::hasSortSymbol(const SortSymbol & symbol) {
+    SSymRef unused;
+    return sort_store.peek(symbol, unused);
+}
+
+bool Logic::peekSortSymbol(SortSymbol const & symbol, SSymRef & out) {
+    return sort_store.peek(symbol, out);
+}
+
+SSymRef Logic::declareSortSymbol(SortSymbol symbol) {
+    SSymRef res;
+    if (sort_store.peek(symbol, res)) {
+        return res;
     }
-    SRef sr = declareSortAndCreateFunctions(sortName);
+    return sort_store.newSortSymbol(std::move(symbol));
+}
+
+SRef Logic::getSort(SSymRef symbolRef, vec<SRef> && args) {
+    auto [sr,created] = sort_store.getOrCreateSort(symbolRef, std::move(args));
+    if (created) {
+        instantiateFunctions(sr);
+        if (not isInternalSort(sr)) {
+            newUninterpretedSortHandler(sr);
+        }
+    }
+    return sr;
+}
+
+void Logic::newUninterpretedSortHandler(SRef sref) {
     std::stringstream ss;
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
-    defaultValueForSort.insert(sr, mkConst(sr, ss.str().c_str()));
+    defaultValueForSort.insert(sref, mkConst(sref, ss.str().c_str()));
+    ufsorts.insert(sref, true);
+}
 
-    SRef rval = sort_store[sortName];
-    ufsorts.insert(rval, true);
-    return sr;
+bool Logic::isInternalSort(SRef sref) const {
+    Sort const & sort = sort_store[sref];
+    SSymRef sortSymbol = sort.getSymRef();
+    return sort_store[sortSymbol].isInternal();
+}
+
+SRef Logic::declareUninterpretedSort(const std::string & name) {
+    SSymRef sortSymbol = declareSortSymbol(SortSymbol(name, 0));
+    return getSort(sortSymbol, {});
 }
 
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
@@ -691,7 +699,7 @@ PTRef Logic::mkConst(const char* name)
 
 
 PTRef Logic::mkVar(SRef s, const char* name) {
-    SymRef sr = newSymb(name, {s});
+    SymRef sr = sym_store.newSymb(name, {s});
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -741,33 +749,23 @@ void Logic::markConstant(SymId id) {
 
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
     if (f == SymRef_Undef) { return PTRef_Undef; }
-    PTRef tr = mkFun(f, std::move(args));
-    if (not isUFTerm(tr) and not isUP(tr)) {
-        char * name = printSym(f);
-        std::string msg = "Unknown symbol: " + std::string(name);
-        free(name);
+    if (isInterpreted(f)) {
+        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + printSym(f);
         throw OsmtApiException(msg);
     }
+    PTRef tr = mkFun(f, std::move(args));
     return tr;
 }
 
 PTRef Logic::mkBoolVar(const char* name)
 {
-    char* msg;
-    SymRef sr = declareFun(name, sort_BOOL, {}, &msg);
+    SymRef sr = declareFun(name, sort_BOOL, {});
     assert(sr != SymRef_Undef);
     return mkFun(sr, {});
 }
 
-SRef Logic::declareSortAndCreateFunctions(std::string const & id)
+void Logic::instantiateFunctions(SRef sr)
 {
-    if (containsSort(id.c_str())) {
-        return getSortRef(id.c_str());
-    }
-
-    IdRef idr = id_store.newIdentifier(id.c_str());
-    SRef sr = sort_store.newSort(idr, {});
-
     // Equality
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
     assert(tr != SymRef_Undef);
@@ -785,11 +783,10 @@ SRef Logic::declareSortAndCreateFunctions(std::string const & id)
     assert(tr != SymRef_Undef);
     ites.insert(tr, true);
     sortToIte.insert(sr, tr);
-
-    return sr;
 }
 
-SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted)
+
+SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> & args, SymbolConfig const & symbolConfig)
 {
     vec<SRef> comb_args;
 
@@ -797,18 +794,11 @@ SymRef Logic::declareFun(const char* fname, const SRef rsort, const vec<SRef>& a
 
     comb_args.push(rsort);
 
-    for (int i = 0; i < args.size(); i++) {
-        assert(args[i] != SRef_Undef);
-        comb_args.push(args[i]);
+    for (SRef sr : args) {
+        assert(sr != SRef_Undef);
+        comb_args.push(sr);
     }
-    SymRef sr = sym_store.newSymb(fname, comb_args);
-    SymId id = getSym(sr).getId();
-    for (unsigned i = interpreted_functions.size(); i <= id; i++)
-        interpreted_functions.push(false);
-    interpreted_functions[id] = interpreted;
-    if (interpreted) {
-        sym_store.setInterpreted(sr);
-    }
+    SymRef sr = sym_store.newSymb(fname.c_str(), comb_args, symbolConfig);
     return sr;
 }
 
@@ -919,7 +909,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 bool
 Logic::isUF(SymRef sref) const
 {
-    return getSym(sref).nargs() > 0 && !interpreted_functions[getSym(sref).getId()];
+    return getSym(sref).nargs() > 0 and not isInterpreted(sref);
 }
 
 bool Logic::isUF(PTRef ptr) const {
@@ -929,7 +919,7 @@ bool Logic::isUF(PTRef ptr) const {
 bool
 Logic::isIF(SymRef sref) const
 {
-    return getSym(sref).nargs() > 0 && interpreted_functions[getSym(sref).getId()];
+    return getSym(sref).nargs() > 0 && isInterpreted(sref);
 }
 
 bool Logic::isIF(PTRef ptr) const {
@@ -938,21 +928,7 @@ bool Logic::isIF(PTRef ptr) const {
 
 // Uninterpreted predicate p : U U* -> Bool
 bool Logic::isUP(PTRef ptr) const {
-    const Pterm& t = term_store[ptr];
-    SymRef sr = t.symb();
-    // Should this really be an uninterpreted predicate?
-    // At least it falsely identifies (= true false) as an uninterpreted
-    // predicate without the extra condition
-    if (isEquality(sr) || isDisequality(sr)) {
-        return false;
-    }
-    if (sym_store[getPterm(ptr).symb()].isInterpreted()) return false;
-
-    const Symbol& sym = sym_store[sr];
-    if (sym.nargs() == 0) return false;
-    if (sym.rsort() != getSort_bool()) return false;
-    if (isBooleanOperator(sr)) return false;
-    return true;
+    return isUF(ptr) and hasSortBool(ptr);
 }
 
 // Check if the term store contains an equality over the given arguments
@@ -1288,17 +1264,13 @@ void
 Logic::dumpHeaderToFile(ostream& dump_out) const
 {
     dump_out << "(set-logic " << getName() << ")" << endl;
-    const vec<SRef>& sorts = sort_store.getSorts();
-    for (int i = 0; i < sorts.size(); i++)
-    {
-        if (isBuiltinSort(sorts[i])) continue;
-        dump_out << "(declare-sort " << sort_store.getName(sorts[i]) << " 0)" << endl;
+    for (SSymRef ssr : sort_store.getSortSyms()) {
+        if (isBuiltinSortSym(ssr)) continue;
+        dump_out << "(declare-sort " << sort_store.getSortSymName(ssr) << " " << sort_store.getSortSymSize(ssr) << ")" << endl;
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
-    for (int i = 0; i < symbols.size(); ++i)
-    {
-        SymRef s = symbols[i];
+    for (SymRef s : symbols) {
         if (s == getSym_true() || s == getSym_false() || s == getSym_anon())
             continue;
         if (isConstant(s)) {
@@ -1310,16 +1282,14 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         else {
             dump_out << "(declare-fun ";
         }
-        char* sym = printSym(s);
+        auto sym = printSym(s);
         dump_out << sym << " ";
-        free(sym);
-        const Symbol& symb = sym_store[s];
+        Symbol const & symb = sym_store[s];
         dump_out << "(";
-        for(unsigned int j = 0; j < symb.nargs(); ++j)
-        {
-            dump_out << sort_store.getName(symb[j]) << " ";
+        for (SRef sr : symb) {
+            dump_out << printSort(sr) << " ";
         }
-        dump_out << ") " << sort_store.getName(symb.rsort()) << ")" << endl;
+        dump_out << ") " << printSort(symb.rsort()) << ")" << endl;
     }
 }
 
@@ -1380,9 +1350,7 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
         dump_out << "((" << buf << " ";
 
         if (term.size() > 0 ) dump_out << "(";
-        char* sym = printSym(term.symb());
         dump_out << printSym(term.symb());
-        free(sym);
         for (int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
@@ -1420,19 +1388,14 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    char *quoted_name = protectName(name);
+    auto quoted_name = protectName(name);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
-    free(quoted_name);
     const vec<PTRef>& args = tpl_fun.getArgs();
-    for (int i = 0; i < args.size(); ++i) {
-        char* arg_name = printTerm(args[i]);
-        const char* sort_name = getSortName(getSortRef(args[i]));
-        dump_out << '(' << arg_name << ' ' <<  sort_name << ") ";
-        free(arg_name);
+    for (PTRef arg : args) {
+        dump_out << '(' << printTerm(arg) << ' ' <<  printSort(getSortRef(arg)) << ") ";
     }
-    const char* rsort = getSortName(tpl_fun.getRetSort());
-    dump_out << ") " << rsort;
+    dump_out << ") " << printSort(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ')' << endl;
 }
@@ -1447,6 +1410,7 @@ PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTR
     if (args.size() != targs.size()) {
         throw OsmtApiException("Function instantiation argument count mismatch");
     }
+    if (args.size() == 0) { return tmplt.getBody(); }
     SubstMap substMap;
     for (int i = 0; i < args.size(); ++i) {
         if (getSortRef(targs[i]) != getSortRef(args[i])) {
@@ -1506,18 +1470,11 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 
 PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
-IdRef       Logic::newIdentifier (const char* name)            { return id_store.newIdentifier(name); }
-IdRef       Logic::newIdentifier (const char* name, vec<int>& nl){ return id_store.newIdentifier(name, nl); }
 // Fetching sorts
-bool        Logic::containsSort  (const char* name)      const { return sort_store.containsSort(name); }
-
-SRef        Logic::newSort       (IdRef idr, const char* name, vec<SRef>& tmp) { return sort_store.newSort(idr, name, tmp); }
-
-SRef        Logic::getSortRef    (const char* name)      const { return sort_store[name]; }
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
-Sort*       Logic::getSort       (const SRef s)                { return sort_store[s]; }
-const char* Logic::getSortName   (const SRef s)          const { return sort_store.getName(s); }
+
+std::string Logic::printSort(SRef s) const { return sort_store.printSort(s); }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
     SRef res = SRef_Undef;
@@ -1557,7 +1514,7 @@ PTRef         Logic::getTerm_false    ()              const { return term_FALSE;
 bool          Logic::isEquality       (SymRef tr)     const { return equalities.has(tr);    }
 bool          Logic::isEquality       (PTRef tr)      const { return equalities.has(term_store[tr].symb());}
 bool          Logic::isUFEquality     (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
-bool          Logic::isTheoryEquality (PTRef tr)      const { return isUFEquality(tr); }
+bool          Logic::isTheoryEquality (PTRef tr)      const { return isEquality(tr) && !hasSortBool(getPterm(tr)[0]); }
 bool          Logic::isDisequality    (SymRef tr)     const { return disequalities.has(tr); }
 bool          Logic::isDisequality    (PTRef tr)      const { return disequalities.has(term_store[tr].symb()); }
 bool          Logic::isIte            (SymRef tr)     const { return ites.has(tr);          }
@@ -1565,10 +1522,11 @@ bool          Logic::isIte            (PTRef tr)      const { return ites.has(te
 
 bool         Logic::isBooleanOperator  (PTRef tr)        const { return isBooleanOperator(term_store[tr].symb()); }
 bool         Logic::isBuiltinSort      (const SRef sr)   const { return sr == sort_BOOL; }
+bool         Logic::isBuiltinSortSym   (const SSymRef ssr) const { return ssr == sort_store.getSortSym(sort_BOOL); }
 bool         Logic::isBuiltinConstant  (const SymRef sr) const { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
 bool         Logic::isBuiltinConstant  (const PTRef tr)  const { return isBuiltinConstant(getPterm(tr).symb()); }
 bool         Logic::isConstant         (PTRef tr)        const { return isConstant(getPterm(tr).symb()); }
-bool         Logic::isUFTerm           (PTRef tr)        const { return isUFSort(getSortRef(tr)); }
+bool         Logic::yieldsSortUninterpreted (PTRef tr)   const { return isUFSort(getSortRef(tr)); }
 bool         Logic::isUFSort           (const SRef sr)   const { return ufsorts.has(sr); }
 
 
@@ -1599,9 +1557,6 @@ bool        Logic::isIff(PTRef tr) const { return isIff(getPterm(tr).symb()); }
 bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).symb()].rsort() == sort_BOOL; }
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
 
-char* Logic::printTerm        (PTRef tr)                 const { return printTerm_(tr, false, false); }
-char* Logic::printTerm        (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-
 void Logic::termSort(vec<PTRef>& v) const { sort(v, LessThan_PTRef()); }
 
 void  Logic::purify     (PTRef r, PTRef& p, lbool& sgn) const {p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}
@@ -1613,23 +1568,23 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
             for (int i = 0; i < args.size(); i++) {
-                symStr += " " + std::string(getSortName(symbol[0]));
+                symStr += " " + printSort(symbol[0]);
             }
         } else if (symbol.left_assoc()) {
-            symStr += " " + std::string(getSortName(symbol[0]));
+            symStr += " " + printSort(symbol[0]);
             for (int i = 1; i < args.size(); i++) {
-                symStr += " " + std::string(getSortName(symbol[1]));
+                symStr += " " + printSort(symbol[1]);
             }
         } else if (symbol.right_assoc()) {
             for (int i = 0; i < args.size() - 1; i++) {
-                symStr += " " + std::string(getSortName(symbol[0]));
+                symStr += " " + printSort(symbol[0]);
             }
-            symStr += " " + std::string(getSortName(symbol[1]));
+            symStr += " " + printSort(symbol[1]);
         }
 
         std::string argSorts;
         for (PTRef tr : args) {
-            argSorts += std::string(getSortName(getSortRef(tr))) + " ";
+            argSorts += printSort(getSortRef(tr)) + " ";
         }
         return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
     };

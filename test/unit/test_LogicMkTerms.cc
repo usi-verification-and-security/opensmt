@@ -10,7 +10,7 @@
 class LogicMkTermsTest: public ::testing::Test {
 public:
     Logic logic;
-    LogicMkTermsTest(): logic{} {}
+    LogicMkTermsTest(): logic{opensmt::Logic_t::QF_UF} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
@@ -166,7 +166,7 @@ TEST_F(LogicMkTermsTest, testAtom_UF) {
     EXPECT_TRUE(logic.isAtom(dist));
     EXPECT_FALSE(logic.isAtom(logic.mkNot(dist)));
 
-    SymRef predicate = logic.declareFun("p", logic.getSort_bool(), {sref}, nullptr);
+    SymRef predicate = logic.declareFun("p", logic.getSort_bool(), {sref});
     PTRef pa = logic.mkUninterpFun(predicate, {a});
     EXPECT_TRUE(logic.isAtom(pa));
     EXPECT_FALSE(logic.isAtom(logic.mkNot(pa)));

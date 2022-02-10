@@ -70,7 +70,7 @@ PTRef rewriteMaxArityClassic(Logic & logic, PTRef root) {
 
 PTRef rewriteMaxArityAggresive(Logic & logic, PTRef root) {
     return rewriteMaxArity(logic, root,
-                    [](PTRef candidate) { return false;});
+                    [](PTRef) { return false;});
 }
 
 namespace {

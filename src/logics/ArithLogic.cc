@@ -8,6 +8,7 @@
 #include "OsmtInternalException.h"
 #include "OsmtApiException.h"
 #include <memory>
+#include <sstream>
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 /***********************************************************
@@ -45,17 +46,10 @@ const std::string ArithLogic::s_sort_real   = "Real";
 const std::string ArithLogic::tk_val_int_default  = "0";
 const std::string ArithLogic::tk_val_real_default = "0.0";
 
-const std::vector<std::string> ArithLogic::logicNames({"LIA", "LRA", "NIA", "NRA", "LIRA", "NIRA", "DRL", "IDL"});
+ArithLogic::ArithLogic(opensmt::Logic_t type)
+    : Logic(type)
 
-const vec<opensmt::Logic_t> ArithLogic::logicTypes(
-        {opensmt::Logic_t::QF_LIA, opensmt::Logic_t::QF_LRA, opensmt::Logic_t::QF_NIA,
-         opensmt::Logic_t::QF_NRA, opensmt::Logic_t::QF_LIRA, opensmt::Logic_t::QF_NIRA,
-         opensmt::Logic_t::QF_RDL, opensmt::Logic_t::QF_IDL});
-
-ArithLogic::ArithLogic(ArithType arithType)
-    : Logic()
-
-    , sort_REAL(declareSortAndCreateFunctions(s_sort_real))
+    , sort_REAL(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_real, 0, SortSymbol::INTERNAL)), {}))
     , term_Real_ZERO(mkConst(sort_REAL, tk_real_zero.c_str()))
     , term_Real_ONE(mkConst(sort_REAL, tk_real_one.c_str()))
     , term_Real_MINUSONE(mkConst(sort_REAL, tk_real_minus + tk_real_one))
@@ -74,7 +68,7 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Real_ITE(sortToIte[sort_REAL])
     , sym_Real_DISTINCT(sortToDisequality[sort_REAL])
 
-    , sort_INT(declareSortAndCreateFunctions(s_sort_int))
+    , sort_INT(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_int, 0, SortSymbol::INTERNAL)), {}))
     , term_Int_ZERO(mkConst(sort_INT, tk_int_zero))
     , term_Int_ONE(mkConst(sort_INT, tk_int_one.c_str()))
     , term_Int_MINUSONE(mkConst(sort_INT, tk_int_minus + tk_int_one))
@@ -93,37 +87,7 @@ ArithLogic::ArithLogic(ArithType arithType)
     , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INT, sort_INT}))
     , sym_Int_ITE(sortToIte[sort_INT])
     , sym_Int_DISTINCT(sortToDisequality[sort_INT])
-
-    , arithType(arithType)
-{
-    assert(static_cast<int>(logicNames.size()) == logicTypes.size());
-}
-
-bool ArithLogic::hasIntegers() const {
-    switch (arithType) {
-        case ArithType::LIA:
-        case ArithType::NIA:
-        case ArithType::IDL:
-        case ArithType::LIRA:
-        case ArithType::NIRA:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool ArithLogic::hasReals() const {
-    switch (arithType) {
-        case ArithType::LRA:
-        case ArithType::NRA:
-        case ArithType::RDL:
-        case ArithType::LIRA:
-        case ArithType::NIRA:
-            return true;
-        default:
-            return false;
-    }
-}
+{ }
 
 SymRef ArithLogic::getPlusForSort(SRef sort) const {
     assert (sort == getSort_int() or sort == getSort_real());
@@ -203,27 +167,27 @@ opensmt::pair<opensmt::Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTR
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-void ArithLogic::splitTermToVarAndConst(PTRef term, PTRef& var, PTRef& fac) const
+opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const
 {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
     if (isTimes(term)) {
         assert(getPterm(term).size() == 2);
-        fac = getPterm(term)[0];
-        var = getPterm(term)[1];
-        if (!isConstant(fac)) {
-            PTRef t = var;
-            var = fac;
-            fac = t;
+        PTRef fac = getPterm(term)[0];
+        PTRef var = getPterm(term)[1];
+        if (not isConstant(fac)) {
+            std::swap(fac, var);
         }
         assert(isConstant(fac));
         assert(isNumVarLike(var));
+        return {var, fac};
     } else if (isNumVarLike(term)) {
-        var = term;
         assert(yieldsSortInt(term) or yieldsSortReal(term));
-        fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+        PTRef var = term;
+        PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+        return {var, fac};
     } else {
-        var = PTRef_Undef; // MB: no variable
-        fac = term;
+        assert(isConstant(term));
+        return {PTRef_Undef, term};
     }
 }
 
@@ -231,9 +195,7 @@ void ArithLogic::splitTermToVarAndConst(PTRef term, PTRef& var, PTRef& fac) cons
 PTRef ArithLogic::normalizeMul(PTRef mul)
 {
     assert(isTimes(mul));
-    PTRef v = PTRef_Undef;
-    PTRef c = PTRef_Undef;
-    splitTermToVarAndConst(mul, v, c);
+    auto [v,c] = splitTermToVarAndConst(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
     } else {
@@ -262,6 +224,9 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
         PTRef var = sub.first;
         assert(var != PTRef_Undef and isNumVarLike(var) and sub.second != PTRef_Undef);
         if (substitutions.has(var)) {
+            if (logic.isConstant(sub.second)) {
+                substitutions[var] = sub.second;
+            }
             // Already has substitution for this var, let the main substitution code deal with this situation
             continue;
         } else {
@@ -289,10 +254,8 @@ opensmt::pair<lbool,Logic::SubstMap> ArithLogic::retrieveSubstitutions(const vec
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
     assert(l.isTimes(tr));
-    PTRef c_t;
-    PTRef v_t;
-    l.splitTermToVarAndConst(tr, v_t, c_t);
-    return v_t.x;
+    auto [v,c] = l.splitTermToVarAndConst(tr);
+    return v.x;
 }
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
@@ -364,9 +327,6 @@ PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
     return ptr;
 }
 
-char* ArithLogic::printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
-char* ArithLogic::printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
-
 PTRef ArithLogic::mkMinus(vec<PTRef> && args)
 {
     SRef sort = checkArithSortCompatible(args);
@@ -409,18 +369,17 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     args.clear();
     SymRef s_new;
     simp.simplify(plusSym, flattened_args, s_new, args);
-    if (args.size() == 1)
-        return args[0];
     if (s_new != getPlusForSort(returnSort)) {
         return mkFun(s_new, std::move(args));
+    }
+    if (args.size() == 1) {
+        return args[0];
     }
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
     VecMap<PTRef,PTRef,PTRefHash> s2t;
     vec<PTRef> keys;
     for (PTRef arg : args) {
-        PTRef v;
-        PTRef c;
-        splitTermToVarAndConst(arg, v, c);
+        auto [v,c] = splitTermToVarAndConst(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (!s2t.has(v)) {
@@ -476,7 +435,8 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args)
     if (isNumTerm(tr) || isPlus(tr) || isUF(tr) || isIte(tr))
         return tr;
     else {
-        throw LANonLinearException(printTerm(tr));
+        auto termStr = pp(tr);
+        throw LANonLinearException(termStr.c_str());
     }
 }
 
@@ -568,7 +528,7 @@ PTRef ArithLogic::mkGt(vec<PTRef> const & args)
 
 PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     if (getSortRef(rhs) != getSortRef(lhs)) { throw OsmtApiException("Equality over non-equal sorts"); }
-    assert(getSortRef(rhs) == getSortRef(lhs));
+    if (hasUFs()) { return Logic::mkBinaryEq(lhs, rhs); }
     SRef eqSort = getSortRef(lhs);
     if (!isSortNum(eqSort)) {
         return Logic::mkBinaryEq(lhs, rhs);
@@ -586,8 +546,7 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
         opensmt::Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
     } else if (isNumVarLike(diff) || isTimes(diff)) {
-        PTRef var, constant;
-        splitTermToVarAndConst(diff, var, constant);
+        auto [var, constant] = splitTermToVarAndConst(diff);
         return Logic::mkBinaryEq(getZeroForSort(eqSort), var); // Avoid anything that calls Logic::mkEq as this would create a loop
     } else if (isPlus(diff)) {
         return sumToNormalizedEquality(diff);
@@ -685,12 +644,10 @@ PTRef ArithLogic::insertTerm(SymRef sym, vec<PTRef>&& terms)
         return mkGeq(terms);
     if (isGt(sym))
         return mkGt(terms);
-    if (extendedSignatureEnabled()) {
-        if (isMod(sym))
-            return mkMod(terms[0], terms[1]);
-        if (isIntDiv(sym))
-            return mkIntDiv(std::move(terms));
-    }
+    if (isMod(sym))
+        return mkMod(std::move(terms));
+    if (isIntDiv(sym))
+        return mkIntDiv(std::move(terms));
     return Logic::insertTerm(sym, std::move(terms));
 }
 
@@ -949,10 +906,8 @@ ArithLogic::getDefaultValuePTRef(const SRef sref) const
 
 // Handle the printing of real constants that are negative and the
 // rational constants
-char*
-ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
+std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
 {
-    char* out;
     if (isNumConst(tr)) {
         bool is_neg = false;
         char* tmp_str;
@@ -962,51 +917,55 @@ ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
             v.negate();
             is_neg = true;
         }
-        char* rat_str = strdup(v.get_str().c_str());
+        std::string rat_str = v.get_str();
         free(tmp_str);
         bool is_div = false;
-        int i = 0;
-        for (; rat_str[i] != '\0'; i++) {
+        unsigned i = 0;
+        unsigned rat_size = rat_str.size();
+        for (; i != rat_size; i++) {
             if (rat_str[i] == '/') {
                 is_div = true;
                 break;
             }
         }
         if (is_div) {
-            int j = 0;
+            unsigned j = 0;
             char* nom = (char*) malloc(i+1);
             for (; j < i; j++)
                 nom[j] = rat_str[j];
             nom[i] = '\0';
-            int len = strlen(rat_str);
-            char* den = (char*) malloc(len-i);
+            char* den = (char*) malloc(rat_size-i);
             i++;
             j = 0;
-            for (; i < len; i++)
+            for (; i < rat_size; i++)
                 den[j++] = rat_str[i];
             den[j] = '\0';
+            char * tmp;
+            std::stringstream str;
+            int written = is_neg ? asprintf(&tmp, "(/ (- %s) %s)", nom, den)
+                                 : asprintf(&tmp, "(/ %s %s)", nom, den);
+            assert(written >= 0); (void)written;
+            str << tmp;
             if (ext) {
-                int written = is_neg ? asprintf(&out, "(/ (- %s) %s) <%d>", nom, den, tr.x)
-                        : asprintf(&out, "(/ %s %s) <%d>", nom, den, tr.x);
-                assert(written >= 0); (void)written;
-            } else {
-                int written = is_neg ? asprintf(&out, "(/ (- %s) %s)", nom, den)
-                    : asprintf(&out, "(/ %s %s)", nom, den);
-                assert(written >= 0); (void)written;
+                str << " <" << tr.x << ">";
             }
             free(nom);
             free(den);
+            free(tmp);
+            return str.str();
         }
         else if (is_neg) {
-            int written = ext ? asprintf(&out, "(- %s) <%d>", rat_str, tr.x)
-                    : asprintf(&out, "(- %s)", rat_str);
-            assert(written >= 0); (void) written;
-        } else
-            out = rat_str;
+            std::stringstream str;
+            str << "(- " << rat_str << ')';
+            if (ext) {
+                str << " <" << tr.x << ">";
+            }
+            return str.str();
+        } else {
+            return rat_str;
+        }
     }
-    else
-        out = Logic::printTerm_(tr, ext, safe);
-    return out;
+    return Logic::printTerm_(tr, ext, safe);
 }
 
 /**
@@ -1025,9 +984,7 @@ opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum)
     vec<PTRef> vars; vars.capacity(varFactors.size());
     std::vector<opensmt::Number> coeffs; coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
-        PTRef var;
-        PTRef coeff;
-        splitTermToVarAndConst(factor, var, coeff);
+        auto [var, coeff] = splitTermToVarAndConst(factor);
         assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
@@ -1104,8 +1061,7 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef 
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
-    PTRef var, coeff;
-    splitTermToVarAndConst(leadingFactor, var, coeff);
+    auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
     opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));

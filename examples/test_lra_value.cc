@@ -15,14 +15,12 @@ kill(Opensmt* osmt)
 {
     delete osmt;
 }
-int
-main(int argc, char** argv)
+int main()
 {
 
     Opensmt* osmt = pre();
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
-    SimpSMTSolver& solver = osmt->getSolver();
     auto & logic = osmt->getLRALogic();
 
     // Let's build two assertions
@@ -72,29 +70,21 @@ main(int argc, char** argv)
         printf("sat\n");
         auto m = mainSolver.getModel();
         PTRef v1 = m->evaluate(x1);
-        char* name = logic.pp(x1);
-        char* value = logic.pp(v1);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        auto name = logic.printTerm(x1);
+        auto value = logic.printTerm(v1);
+        std::cout << name << ": " << value << '\n';
         PTRef v2 = m->evaluate(x2);
-        name = logic.pp(x2);
-        value = logic.pp(v2);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        name = logic.printTerm(x2);
+        value = logic.printTerm(v2);
+        std::cout << name << ": " << value << '\n';
         PTRef v3 = m->evaluate(x3);
-        name = logic.pp(x3);
-        value = logic.pp(v3);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        name = logic.printTerm(x3);
+        value = logic.printTerm(v3);
+        std::cout << name << ": " << value << '\n';
         PTRef v4 = m->evaluate(x4);
         name = logic.printTerm(x4);
         value = logic.printTerm(v4);
-        printf("%s: %s\n", name, value);
-        free(name);
-        free(value);
+        std::cout << name << ": " << value << '\n';
     }
     else if (r == s_False)
     {
@@ -110,12 +100,12 @@ main(int argc, char** argv)
         //ipartitions_t mask = 1;
         //mask <<= 1;
 	    // HighFrog has another representation, which in this case would be
-    	vector<int> part;
+    	vector<unsigned> part;
 	    part.push_back(0);
     	// It can be converted to OpenSMT's representation via
 	    ipartitions_t mask = 0;
 
-        for(int i = 0; i < part.size(); ++i)
+        for(unsigned i = 0; i < part.size(); ++i)
 	    	setbit(mask, part[i] + 1);
 
         vector<PTRef> itps;

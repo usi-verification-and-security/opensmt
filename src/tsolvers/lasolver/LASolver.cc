@@ -1,8 +1,19 @@
+/*
+ *  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2019-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
+
 #include "LASolver.h"
 
 #include "FarkasInterpolator.h"
 #include "LA.h"
 #include "ModelBuilder.h"
+#include "LIAInterpolator.h"
+#include "CutCreator.h"
+
+#include <unordered_set>
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
@@ -123,8 +134,10 @@ void LASolver::clearSolver()
     LABoundRefToLeqAsgn.clear();
     LeqToLABoundRefPair.clear();
 
+    int_vars.clear();
+    int_vars_map.clear();
     // TODO: clear statistics
-//    this->tsolver_stats.clear();
+//    this->egraphStats.clear();
 }
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
@@ -138,7 +151,7 @@ void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
 }
 
 bool LASolver::check_simplex(bool complete) {
-    // opensmt::StopWatch check_timer(tsolver_stats.simplex_timer);
+    // opensmt::StopWatch check_timer(egraphStats.simplex_timer);
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
@@ -153,7 +166,7 @@ bool LASolver::check_simplex(bool complete) {
         setStatus(UNSAT);
     }
 
-    getStatus() ? tsolver_stats.sat_calls ++ : tsolver_stats.unsat_calls ++;
+    getStatus() ? generalTSolverStats.sat_calls ++ : generalTSolverStats.unsat_calls ++;
 //    printf(" - check ended\n");
 //    printf(" => %s\n", getStatus() ? "sat" : "unsat");
 //    if (getStatus())
@@ -208,6 +221,19 @@ opensmt::Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
 }
 
+void LASolver::notifyVar(LVRef v) {
+    assert(logic.isNumVarOrIte(getVarPTRef(v)));
+    if (logic.yieldsSortInt(getVarPTRef(v))) {
+        markVarAsInt(v);
+    }
+}
+
+void LASolver::markVarAsInt(LVRef v) {
+    if (!int_vars_map.has(v)) {
+        int_vars_map.insert(v, true);
+        int_vars.push(v);
+    }
+}
 
 bool LASolver::hasVar(PTRef expr) {
     expr =  laVarMapper.isNegated(expr) ? logic.mkNeg(expr) : expr;
@@ -234,9 +260,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
     auto poly = std::make_unique<Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        PTRef v;
-        PTRef c;
-        logic.splitTermToVarAndConst(logic.getPterm(term)[i], v, c);
+        auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
         LVRef var = getLAVar_single(v);
         Real coeff = getNum(c);
         if (negated) {
@@ -270,10 +294,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
 
     if (logic.isNumVarOrIte(expr) || logic.isTimes(expr)) {
         // Case (1), (2a), and (2b)
-        PTRef v;
-        PTRef c;
-
-        logic.splitTermToVarAndConst(expr, v, c);
+        auto [v,c] = logic.splitTermToVarAndConst(expr);
         assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
@@ -317,6 +338,10 @@ void LASolver::declareAtom(PTRef leq_tr)
         // Treat the PTRef as it is pushed on-the-fly
         //    status = INCREMENT;
         assert( status == SAT );
+        PTRef term = logic.getPterm(leq_tr)[1];
+        LVRef v = exprToLVar(term);
+        laVarMapper.addLeqVar(leq_tr, v);
+        updateBound(leq_tr);
     }
     // DEBUG check
     isProperLeq(leq_tr);
@@ -324,13 +349,67 @@ void LASolver::declareAtom(PTRef leq_tr)
     setKnown(leq_tr);
 }
 
-void LASolver::informNewSplit(PTRef tr)
-{
-    PTRef term = logic.getPterm(tr)[1];
-    LVRef v = exprToLVar(term);
-    laVarMapper.addLeqVar(tr, v);
-    updateBound(tr);
+LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
+    opensmt::Real maxDistance = 0;
+    LVRef chosen = LVRef_Undef;
+    for (LVRef x : varsToFix) {
+        Delta val = simplex.getValuation(x);
+        assert(not val.hasDelta());
+        assert(not val.R().isInteger());
+        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
+        if (distance > maxDistance) {
+            maxDistance = std::move(distance);
+            chosen = x;
+        }
+    }
+    return chosen;
 }
+
+TRes LASolver::checkIntegersAndSplit() {
+
+    vec<LVRef> varsToFix;
+    varsToFix.capacity(int_vars.size());
+
+    for (LVRef x : int_vars) {
+        if (not isModelInteger(x)) {
+            assert(not simplex.hasLBound(x) or not simplex.hasUBound(x) or simplex.Ub(x) - simplex.Lb(x) >= 1);
+            varsToFix.push(x);
+        }
+    }
+
+    if (varsToFix.size() == 0) {
+        setStatus(SAT);
+        return TRes::SAT;
+    }
+
+    if (shouldTryCutFromProof()) {
+        auto res = cutFromProof();
+        if (res != TRes::UNKNOWN) {
+            return res;
+        }
+    }
+
+    LVRef chosen = splitOnMostInfeasible(varsToFix);
+
+    assert(chosen != LVRef_Undef);
+    auto splitLowerVal = simplex.getValuation(chosen).R().floor();
+    //x <= c || x >= c+1;
+    PTRef varPTRef = getVarPTRef(chosen);
+    PTRef upperBound = logic.mkLeq(varPTRef, logic.mkIntConst(splitLowerVal));
+    PTRef lowerBound = logic.mkGeq(varPTRef, logic.mkIntConst(splitLowerVal + 1));
+    PTRef constr = logic.mkOr(upperBound, lowerBound);
+
+    splitondemand.push(constr);
+    setStatus(NEWSPLIT);
+    return TRes::SAT;
+}
+
+void LASolver::getNewSplits(vec<PTRef>& splits) {
+    splitondemand.copyTo(splits);
+    splitondemand.clear();
+    setStatus(SAT);
+}
+
 
 //
 // Push the constraint into the solver and increase the level
@@ -343,19 +422,19 @@ bool LASolver::assertLit(PtAsgn asgn)
 
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
     if (logic.isFalse(asgn.tr) && asgn.sgn == l_False) {
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_False) {
-        tsolver_stats.unsat_calls ++;
+        generalTSolverStats.unsat_calls ++;
         return false;
     }
     if (logic.isFalse(asgn.tr) && asgn.sgn == l_True) {
-        tsolver_stats.unsat_calls ++;
+        generalTSolverStats.unsat_calls ++;
         return false;
     }
     // check if we stop reading constraints
@@ -369,7 +448,7 @@ bool LASolver::assertLit(PtAsgn asgn)
         //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
         //     once it is marked for deduction, so the implementation must count with that.
         assert(getStatus());
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return getStatus();
     }
 
@@ -391,9 +470,9 @@ bool LASolver::assertLit(PtAsgn asgn)
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
         getSimpleDeductions(it, bound_ref);
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     } else {
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     }
 
     return getStatus();
@@ -587,66 +666,11 @@ void LASolver::deduce(LABoundRef bound_prop) {
     }
 }
 
-//
-// Prints the current state of the solver (terms, bounds, tableau)
-//
-void LASolver::print( ostream & )
-{
-    throw "Not implemented yet!";
-    // print current non-basic variables
-//    out << "Var:" << endl;
-//    for ( unsigned i = 0; i < columns.size(); i++ )
-//        out << logic.pp(lva[columns[i]].getPTRef()) << "\t";
-//    out << endl;
-//
-//    // print the terms IDs
-//    out << "Tableau:" << endl;
-//    for ( unsigned i = 0; i < columns.size(); i++)
-//        out << lva[columns[i]].ID() << "\t";
-//    out << endl;
-//
-//    // print the Basic/Nonbasic status of terms
-//    for ( unsigned i = 0; i < columns.size(); i++)
-//        out << ( lva[columns[i]].isBasic() ? "B" : "N" ) << "\t";
-//    out << endl;
-//
-//    // print the tableau cells (zeros are skipped)
-//    // iterate over Tableau rows
-//    for ( unsigned i = 0; i < rows.size( ); i++ ) {
-//        auto const & row_poly = row_polynomials.at(rows[i]);
-//        for (unsigned j = 0; j < columns.size(); j++) {
-////            if (polyStore.has(lva[rows[i]].getPolyRef(), columns[j]))
-////                out << pta[polyStore.find(lva[rows[i]].getPolyRef(), columns[j])].coef;
-//            auto it = row_poly.find(columns[j]);
-//            if (it != row_poly.end()){
-//               out << it->second;
-//            }
-//            out << "\t";
-//        }
-//        out << endl;
-//    }
-}
 
-
-void LASolver::getConflict(bool, vec<PtAsgn>& e) {
-    for (int i = 0; i < explanation.size(); i++) {
-        e.push(explanation[i]);
-
+void LASolver::getConflict(vec<PtAsgn> & conflict) {
+    for (PtAsgn lit : explanation) {
+        conflict.push(lit);
     }
-//    printf(" => explanation: \n");
-//    for (int i = 0; i < e.size(); i++) {
-//        PtAsgn asgn = e[i];
-//        LABoundRefPair p = boundStore.getBoundRefPair(asgn.tr);
-//        LABoundRef bound_ref = asgn.sgn == l_False ? p.neg : p.pos;
-//        printf("(%s) ", boundStore.printBound(bound_ref));
-//    }
-//    printf("\n");
-//    vec<PTRef> check_me;
-//    for (int i = 0; i < e.size(); i++) {
-//        check_me.push(e[i].sgn == l_False ? logic.mkNot(e[i].tr) : e[i].tr);
-//    }
-////    printf("In PTRef this is %s\n", logic.pp(logic.mkAnd(check_me)));
-//    assert(logic.implies(logic.mkAnd(check_me), logic.getTerm_false()));
 }
 
 // We may assume that the term is of the following forms
@@ -661,15 +685,13 @@ opensmt::Number LASolver::evaluateTerm(PTRef tr)
         return logic.getNumConst(tr);
 
     // Cases (1) & (2)
-    PTRef coef;
-    PTRef var;
-    logic.splitTermToVarAndConst(tr, var, coef);
+    auto [var, coeff] = logic.splitTermToVarAndConst(tr);
     if (!hasVar(var)) {
         // MB: This variable is not known to the LASolver. Most probably it was not part of the query.
         // We can assign it any value.
         return 0;
     }
-    val += logic.getNumConst(coef) * concrete_model[getVarId(getVarForTerm(var))];
+    val += logic.getNumConst(coeff) * concrete_model[getVarId(getVarForTerm(var))];
 
     return val;
 }
@@ -712,7 +734,7 @@ void LASolver::computeModel()
 LASolver::~LASolver( )
 {
 #ifdef STATISTICS
-     tsolver_stats.printStatistics(cerr);
+    printStatistics(std::cerr);
 #endif // STATISTICS
 }
 
@@ -777,24 +799,20 @@ lbool LASolver::getPolaritySuggestion(PTRef ptref) const {
 }
 
 TRes LASolver::check(bool complete) {
-
-    if (check_simplex(complete))
-        return TRes::SAT;
-    else
-        return TRes::UNSAT;
-
+    bool rval = check_simplex(complete);
+    if (complete && rval) {
+        return checkIntegersAndSplit();
+    }
+    return rval ? TRes::SAT : TRes::UNSAT;
 }
 
-//
-// Compute interpolants for the conflict
-//
-PTRef
-LASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
-    assert(status == UNSAT);
-    vec<PtAsgn> explCopy;
-    explanation.copyTo(explCopy);
-    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
-        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+bool LASolver::isModelInteger(LVRef v) const
+{
+    Delta val = simplex.getValuation(v);
+    return !( val.hasDelta() || !val.R().isInteger() );
+}
+
+PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const {
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
@@ -802,9 +820,73 @@ LASolver::getInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t>
     else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
     else {
-        assert(false); // Incoorrect value in config
+        assert(false); // Incorrect value in config
         return interpolator.getFarkasInterpolant();
     }
 }
 
+//
+// Compute interpolants for the conflict
+//
+PTRef
+LASolver::getRealInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
+    assert(status == UNSAT);
+    vec<PtAsgn> explCopy;
+    explanation.copyTo(explCopy);
+    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+    return interpolateUsingEngine(interpolator);
+}
 
+PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
+    assert(status == UNSAT);
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
+    return interpolateUsingEngine(interpolator);
+}
+
+void LASolver::printStatistics(std::ostream & out) {
+    TSolver::printStatistics(out);
+    laSolverStats.printStatistics(out);
+}
+
+bool LASolver::shouldTryCutFromProof() const {
+    if (this->config.produce_inter()) { return false; }
+    static unsigned long counter = 0;
+    return ++counter % 10 == 0;
+}
+
+TRes LASolver::cutFromProof() {
+    auto isOnLowerBound = [this](LVRef var) { return simplex.hasLBound(var) and not simplex.isModelStrictlyOverLowerBound(var); };
+    auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
+    // Step 1: Gather defining constraints
+    using DefiningConstraint = CutCreator::DefiningConstaint;
+    std::vector<DefiningConstraint> constraints;
+    for (LVRef var : int_vars) {
+        bool isOnLower = isOnLowerBound(var);
+        bool isOnUpper = isOnUpperBound(var);
+        if (not isOnLower and not isOnUpper) { continue; }
+
+        PTRef term = laVarMapper.getVarPTRef(var);
+        auto const & val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
+        assert(not val.hasDelta());
+        auto const & rhs = val.R();
+        assert(rhs.isInteger());
+        constraints.push_back(DefiningConstraint{term, rhs});
+//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
+    }
+    auto getVarValue = [this](PTRef var) {
+        assert(this->logic.isVar(var));
+        LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+        Delta val = this->simplex.getValuation(lvar);
+        assert(not val.hasDelta());
+        return val.R();
+    };
+    CutCreator cutCreator(logic, getVarValue);
+    PTRef split = cutCreator.cut(constraints);
+    if (split == PTRef_Undef) {
+        return TRes::UNKNOWN;
+    }
+    splitondemand.push(split);
+    setStatus(NEWSPLIT);
+    return TRes::SAT;
+}

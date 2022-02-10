@@ -144,7 +144,7 @@ bool STPSolver<T>::assertLit(PtAsgn asgn) {
 }
 
 template<class T>
-TRes STPSolver<T>::check(bool b) {
+TRes STPSolver<T>::check(bool) {
     // The main method checking the consistency of the current set of constraints
     // Return SAT if the current set of constraints is satisfiable, UNSAT if unsatisfiable
 
@@ -158,11 +158,6 @@ void STPSolver<T>::clearSolver() {
     graphMgr.clear();
     mapper.clear();
     store.clear();
-}
-
-template<class T>
-void STPSolver<T>::print(ostream &out) {
-
 }
 
 template<class T>
@@ -213,17 +208,15 @@ void STPSolver<T>::computeModel() {
 }
 
 template<class T>
-void STPSolver<T>::getConflict(bool b, vec<PtAsgn> &vec) {
-    // In case of unsatisfiability, return the witnessing subset of constraints
-    // The bool parameter can be ignored, the second parameter is the output parameter
+void STPSolver<T>::getConflict(vec<PtAsgn> & conflict) {
     if (inv_asgn == PtAsgn_Undef) return;
-    vec.push(inv_asgn);
+    conflict.push(inv_asgn);
     EdgeRef e = mapper.getEdgeRef(inv_asgn.tr);
     if (inv_asgn.sgn == l_True) {
         e = store.getNegation(e);
     }
     assert(graphMgr.isTrue(e));
-    graphMgr.findExplanation(e, vec);
+    graphMgr.findExplanation(e, conflict);
 }
 
 template<class T>

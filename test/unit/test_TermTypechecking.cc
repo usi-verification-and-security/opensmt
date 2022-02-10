@@ -21,7 +21,7 @@ public:
     SymRef leftAssocFun;
     SymRef rightAssocFun;
     TermTypecheckingTest()
-        : logic{}
+        : logic{opensmt::Logic_t::QF_UF}
         , usort(logic.declareUninterpretedSort("U"))
         , vsort(logic.declareUninterpretedSort("V"))
         , uvar(logic.mkVar(usort, "u"))

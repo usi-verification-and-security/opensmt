@@ -28,6 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CoreSMTSolver.h"
 #include "Proof.h"
 
+#include <algorithm>
+#include <numeric>
+
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 {
@@ -75,74 +78,128 @@ void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
     }
 }
 
+namespace {
+std::vector<int> sortByLastAssignedLevel(std::vector<vec<Lit>> & splitClauses, std::function<int(Var)> getVarLevel) {
+    if (splitClauses.size() == 1) {
+        return {0};
+    }
+    std::vector<int> lastAssignedLevels;
+    lastAssignedLevels.resize(splitClauses.size(), 0);
+    std::transform(splitClauses.begin(), splitClauses.end(), lastAssignedLevels.begin(), [&](auto const & clause) {
+        auto maxLevel = 0;
+        for (Lit l : clause) {
+            auto level = getVarLevel(var(l));
+            if (level > maxLevel) {
+                maxLevel = level;
+            }
+        }
+        return maxLevel;
+    });
+
+    std::vector<int> indices(splitClauses.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&lastAssignedLevels](int first, int second) {
+        return lastAssignedLevels[first] < lastAssignedLevels[second];
+    });
+    return indices;
+}
+}
+
+TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
+    vec<LitLev> deds;
+    deduceTheory(deds); // To remove possible theory deductions
+    TPropRes res = TPropRes::Undef;
+    struct PropagationData {
+        Lit lit;
+        CRef reason;
+    };
+    std::vector<PropagationData> propData;
+
+    auto processNewClause = [&] (auto const & clause) {
+        CRef cr = ca.alloc(clause, false);
+        attachClause(cr);
+        clauses.push(cr);
+        if (logsProofForInterpolation()) {
+            // MB: the proof needs to know about the new clause
+            proof->newSplitClause(cr);
+        }
+        return cr;
+    };
+
+    auto sortedIndices = sortByLastAssignedLevel(splitClauses, [this](Var v) { return v < nVars() ? vardata[v].level : 0; });
+
+    for (int index : sortedIndices) {
+        auto & splitClause = splitClauses[index];
+        unsigned satisfied = 0;
+        unsigned falsified = 0;
+        unsigned unknown = 0;
+        // MB: ensure the SAT solver knows about the variables and that they are active
+        int impliedIndex = -1;
+        for (int i = 0; i < splitClause.size(); ++i) {
+            Lit l = splitClause[i];
+            addVar_(var(l));
+            if (value(l) == l_True) { ++satisfied; }
+            else if (value(l) == l_False) { ++falsified; }
+            else { ++unknown; impliedIndex = i; }
+        }
+        assert(satisfied != 0 or unknown != 0); // The clause cannot be falsified
+        if (satisfied == 0 and unknown == 1) { // propagate
+            // Find the lowest level where all the falsified literals are still falsified
+            int backtrackLevel = 0;
+            for (Lit l : splitClause) {
+                if (value(l) == l_False and vardata[var(l)].level > backtrackLevel) {
+                    backtrackLevel = vardata[var(l)].level;
+                }
+            }
+            if (backtrackLevel < decisionLevel()) {
+                assert(propData.empty()); // This should hold when clauses are sorted according to last assigned level
+                propData.clear();         // But let's make sure
+                cancelUntil(backtrackLevel);
+            }
+            if (!this->logsProofForInterpolation()) {
+                if (decisionLevel() == 0) {
+                    // MB: do not allocate, we can directly enqueue the implied literal
+                    uncheckedEnqueue(splitClause[impliedIndex], CRef_Undef);
+                    res = TPropRes::Propagate;
+                    continue;
+                }
+            }
+            // MB: we are going to propagate, make sure the implied literal is the first one
+            Lit implied = splitClause[impliedIndex];
+            std::swap(splitClause[0],splitClause[impliedIndex]);
+            CRef cr = processNewClause(splitClause);
+            propData.push_back(PropagationData{.lit = implied, .reason = cr});
+            res = TPropRes::Propagate;
+        } else {
+            processNewClause(splitClause);
+            if (satisfied == 0) {
+                forced_split = ~splitClause[0];
+                if (res != TPropRes::Propagate) {
+                    res = TPropRes::Decide;
+                }
+            }
+        }
+    }
+    assert(res != TPropRes::Undef);
+    if (res == TPropRes::Propagate) {
+        forced_split = lit_Undef;
+        for (auto [litToPropogate, reason] : propData) {
+            uncheckedEnqueue(litToPropogate, reason);
+        }
+    }
+    return res;
+}
+
 TPropRes
 CoreSMTSolver::handleSat()
 {
     // Increments skip step for sat calls
     skip_step *= config.sat_skip_step_factor;
 
-    vec<Lit> new_splits; // In case the theory is not convex the new split var is inserted here
-    theory_handler.getNewSplits(new_splits);
+    auto newSplitClauses = theory_handler.getNewSplits();
 
-    if (new_splits.size() > 0) {
-
-        assert(new_splits.size() == 2); // For now we handle the binary case only.
-
-        //printf(" -> Adding the new split\n");
-
-        vec<LitLev> deds;
-        deduceTheory(deds); // To remove possible theory deductions
-
-        Lit l1 = new_splits[0];
-        Lit l2 = new_splits[1];
-        // MB: ensure the SAT solver knows about the variables and that they are active
-        addVar_(var(l1));
-        addVar_(var(l2));
-        assert(value(l1) == l_Undef || value(l2) == l_Undef);
-        assert(value(l1) != l_True);
-        assert(value(l2) != l_True);
-        if (value(l1) == l_Undef && value(l2) == l_Undef) {
-            // MB: allocate, attach and remember the clause - treated as original
-            // MB: TODO: why not theory clause?
-            CRef cr = ca.alloc(new_splits, false);
-            attachClause(cr);
-            clauses.push(cr);
-            if (this->logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new clause
-                proof->newSplitClause(cr);
-            }
-            forced_split = ~l1;
-            return TPropRes::Decide;
-        }
-        else {
-            Lit l_f = value(l1) == l_False ? l1 : l2; // false literal
-            Lit l_i = value(l1) == l_False ? l2 : l1; // implied literal
-
-            assert(value(l_f) == l_False);
-            int lev = vardata[var(l_f)].level;
-            cancelUntil(lev);
-            if (!this->logsProofForInterpolation()) {
-                if (decisionLevel() == 0) {
-                    // MB: do not allocate, we can directly enqueue the implied literal
-                    uncheckedEnqueue(l_i);
-                    return TPropRes::Propagate;
-                }
-            }
-            // MB: we are going to propagate, make sure the implied literal is the first one
-            if (l_i != new_splits[0]) {
-                new_splits[0] = l_i;
-                new_splits[1] = l_f;
-            }
-            CRef cr = ca.alloc(new_splits, false);
-            attachClause(cr);
-            clauses.push(cr);
-            if (logsProofForInterpolation()) {
-                // MB: the proof needs to know about the new clause
-                proof->newSplitClause(cr);
-            }
-            uncheckedEnqueue(l_i, cr);
-            return TPropRes::Propagate;
-        }
+    if (not newSplitClauses.empty()) {
+        return handleNewSplitClauses(newSplitClauses);
     }
     // Theory propagate
     vec<LitLev> deds;
@@ -363,47 +420,3 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
 #endif
     return;
 }
-
-#ifdef DEBUG_REASONS
-
-void CoreSMTSolver::addTheoryReasonClause_debug(Lit ded, vec<Lit>& reason) {
-    Clause* c = Clause_new<vec<Lit> >(reason);
-    int idx = debug_reasons.size();
-    debug_reasons.push(c);
-    assert(!debug_reason_map.contains(var(ded)));
-    debug_reason_map.insert(var(ded), idx);
-    return;
-}
-
-void CoreSMTSolver::checkTheoryReasonClause_debug(Var v) {
-    int idx = debug_reason_map[v];
-    Clause* c = debug_reasons[idx];
-    bool v_found = false;
-    for (int i = 0; i < c->size(); i++) {
-        Lit l = (*c)[i];
-        Var u = var(l);
-        if (value(l) != l_False && (v != u)) {
-            cerr << theory_handler.printAsrtClause(c) << endl;
-            assert(false);
-        }
-        assert(value(l) == l_False || (v == u));
-        if (v == u) {
-            v_found = true;
-            if (value(l) != l_Undef) {
-                cerr << theory_handler.printAsrtClause(c) << endl;
-                assert(false);
-            }
-        }
-    }
-    assert(v_found);
-    assert(var((*c)[0]) == v);
-}
-
-void CoreSMTSolver::removeTheoryReasonClause_debug(Var v) {
-    int idx = debug_reason_map[v];
-    assert(debug_reason_map.contains(v));
-    debug_reason_map.remove(v);
-    assert(!debug_reason_map.contains(v));
-}
-
-#endif

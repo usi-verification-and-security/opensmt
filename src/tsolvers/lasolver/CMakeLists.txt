@@ -1,6 +1,8 @@
 target_sources(tsolvers
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LASolver.h"
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/Simplex.h"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/Matrix.h"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/LIAInterpolator.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVar.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Tableau.cc"
@@ -20,6 +22,9 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Simplex.cc"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.h"
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/FarkasInterpolator.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/Matrix.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/LIAInterpolator.cc"
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}/CutCreator.cc"
     )
 
 option(SIMPLEX_DEBUG "Deeper debugging of Simplex" OFF)

@@ -31,7 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "SymRef.h"
 #include "Logic.h"
-#include "LogicFactory.h"
 #include "MainSolver.h"
 
 #include <unordered_map>
@@ -117,9 +116,9 @@ class Interpret {
     vec<SymRef>     user_declarations;
 
     void                        initializeLogic(opensmt::Logic_t logicType);
-    bool                        isInitialized() const { return logic.get() != nullptr; }
-    char*                       buildSortName(ASTNode& n);
-    SRef                        newSort      (ASTNode& n);
+    bool                        isInitialized() const { return logic != nullptr; }
+    SRef                        sortFromASTNode(ASTNode const & n) const;
+    static SortSymbol           sortSymbolFromASTNode(ASTNode const & node);
 
     void                        setInfo(ASTNode& n);
     void                        getInfo(ASTNode& n);
@@ -128,7 +127,7 @@ class Interpret {
     void                        writeState(const char* fname);
     void                        writeSplits(const char* fname);
     void                        writeSplits_smtlib2(const char* fname);
-    bool                        declareFun(ASTNode& n); //(const char* fname, const vec<SRef>& args);
+    bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
     bool                        checkSat();

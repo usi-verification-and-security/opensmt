@@ -45,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unordered_set>
 
-class UFSolverStats: public TSolverStats
+class UFSolverStats
 {
     public:
         opensmt::OSMTTimeVal egraph_asrt_timer;
@@ -53,12 +53,8 @@ class UFSolverStats: public TSolverStats
         opensmt::OSMTTimeVal egraph_explain_timer;
         int num_eq_classes;
         UFSolverStats() : num_eq_classes(0) {}
-        void printStatistics(ostream& os)
+        void printStatistics(std::ostream & os)
         {
-            os << "; -------------------------" << endl;
-            os << "; STATISTICS FOR EUF SOLVER" << endl;
-            os << "; -------------------------" << endl;
-            TSolverStats::printStatistics(os);
             os << "; egraph time..............: " << egraph_asrt_timer.getTime() << " s\n";
             os << "; backtrack time...........: " << egraph_backtrack_timer.getTime() << " s\n";
             os << "; explain time.............: " << egraph_explain_timer.getTime() << " s\n";
@@ -162,6 +158,8 @@ protected:
         CLASSIC, INTERPOLATING
     };
     std::unique_ptr<Explainer> explainer;
+
+    friend class EgraphModelBuilder;
 private:
     /*
      * fields and methods related to parent vectors
@@ -170,7 +168,7 @@ private:
     std::vector<UseVector> parents;
 
     void addToUseVectors(ERef);
-    void updateUseVectors(PTRef);
+    void ensureUseVectorFor(ERef);
 
     void removeFromUseVectorsExcept(ERef parent, CgId cgid);
     void removeFromUseVectors(ERef parent);
@@ -189,14 +187,14 @@ private:
 
     EnodeStore enode_store;
 
-    bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
+    bool isValid(PTRef tr) override { return logic.isTheoryEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
     bool isEffectivelyEquality(PTRef tr) const;
     bool isEffectivelyUP(PTRef tr) const;
     bool isEffectivelyDisequality(PTRef tr) const;
 
     double fa_garbage_frac;
 
-    UFSolverStats tsolver_stats;
+    UFSolverStats egraphStats;
 
     class Values {
         Map<ERef, ERef, ERefHash> values;
@@ -225,15 +223,12 @@ public:
     Egraph(SMTConfig & c, Logic & l);
 
     virtual ~Egraph() {
-        backtrackToStackSize(0);
 #ifdef STATISTICS
-        tsolver_stats.printStatistics(std::cerr);
+        printStatistics(std::cerr);
 #endif // STATISTICS
     }
 
     void clearSolver() override { clearModel(); } // Only clear the possible computed values
-
-    void print(ostream &) override { return; }
 
 protected:
     inline Enode & getEnode(ERef er) { return enode_store[er]; }
@@ -265,8 +260,6 @@ public:
     ERef    canonizeDTC              (ERef, bool = false);
 
     Logic& getLogic() override { return logic; }
-
-    void addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef tr, ERef er) const;
 public:
 
   //===========================================================================
@@ -277,14 +270,13 @@ public:
     void       popBacktrackPoint       () override;                 // Backtrack to last saved point
     PTRef      getSuggestion           ();                          // Return a suggested literal based on the current state
     lbool      getPolaritySuggestion   (PTRef);                     // Return a suggested polarity for a given literal
-    void       getConflict             (bool, vec<PtAsgn>&) override;// Get explanation
+    void       getConflict             (vec<PtAsgn> &) override;
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
     void       clearModel              ();
-    PTRef      getAbstractValueForERef (ERef er, SRef sr) const;
-    void       splitOnDemand           (vec<PTRef> &, int) {};       // Splitting on demand modulo equality
 
+    void       printStatistics         (std::ostream &) override;
 
 #if MORE_DEDUCTIONS
   bool                deduceMore              ( vector< ERef > & );
@@ -301,7 +293,7 @@ private:
     , DISEQ           // A negated equality is asserted
     , DIST            // A distinction is asserted
     , EXPL            // Explanation added
-    , SET_DYNAMIC     // Dynamic info was set
+    , REANALYZE       // A term added after init need to be reanalyzed
     , SET_POLARITY    // A polarity of a PTRef was set
     , UNDEF_OP        // A dummy value for default constructor
     #if MORE_DEDUCTIONS
@@ -369,6 +361,8 @@ private:
     vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
+    void reanalyze(ERef);
+
     void doExplain(ERef, ERef, PtAsgn);                            // Explain why the Enodes are equivalent when PtAsgn says it should be different
     void explainConstants(ERef, ERef);
 
@@ -386,13 +380,13 @@ private:
     //===========================================================================
     // Debugging routines - Implemented in EgraphDebug.C
 public:
-    char* printEqClass               ( PTRef tr ) const;
-    char* printDistinctions          ( PTRef tr ) const;
-    char* printExplanation           ( PTRef tr ) { char* tmp; asprintf(&tmp, "%s", printExplanationTreeDotty(enode_store.getERef(tr)).c_str()); return tmp; }
+    std::string printEqClass         (PTRef tr) const;
+    std::string printDistinctions    (PTRef tr) const;
+    std::string printExplanation     (PTRef tr) const { return printExplanationTreeDotty(enode_store.getERef(tr)); }
 private:
     std::string toString                 (ERef er) const;
 public:
-    string printExplanationTreeDotty(ERef);
+    std::string printExplanationTreeDotty(ERef) const;
 private:
     const string printDistinctionList( ELRef, ELAllocator& ela, bool detailed = true );
     void checkForbidReferences       ( ERef );
@@ -408,10 +402,6 @@ private:
     void processParentsAfterMerge(ERef mergedRoot);
     void processParentsBeforeUnMerge(ERef oldroot);
     void processParentsAfterUnMerge(ERef oldroot);
-
-#ifdef STATISTICS
-    void printStatistics ( ofstream & );
-#endif
 };
 
 #endif

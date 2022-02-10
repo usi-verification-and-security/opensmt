@@ -9,7 +9,7 @@ const int CUFTheory::i_default_bitwidth = 32;
 // This function adds the newly introduced partial interpretations to
 // the top frame.
 //
-bool CUFTheory::simplify(const vec<PFRef>& formulas, PartitionManager& pmanager, int curr)
+bool CUFTheory::simplify(const vec<PFRef>& formulas, PartitionManager&, int curr)
 {
     auto & currentFrame = pfstore[formulas[curr]];
     if (this->keepPartitions()) {

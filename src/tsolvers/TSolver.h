@@ -59,15 +59,10 @@ class TSolverStats
     , avg_reas_size     ( 0 )
     , max_reas_size     ( 0 )
     , min_reas_size     ( 32767 )
-    , sod_done          ( 0 )
-    , sod_sent          ( 0 )
-    , avg_sod_size      ( 0 )
-    , max_sod_size      ( 0 )
-    , min_sod_size      ( 32767 )
     {}
 
     // Statistics for theory solvers
-    virtual void printStatistics ( ostream & os )
+    void printStatistics ( ostream & os )
     {
         os << "; Satisfiable calls........: " << sat_calls << endl;
         os << "; Unsatisfiable calls......: " << unsat_calls << endl;
@@ -92,14 +87,6 @@ class TSolverStats
                 os << "; Max reason size..........: " << max_reas_size << endl;
                 os << "; Min reason size..........: " << min_reas_size << endl;
             }
-            os << "; SOD done.................: " << sod_done << endl;
-            os << "; SOD sent.................: " << sod_sent << endl;
-            if ( sod_sent > 0 )
-            {
-                os << "; Average reason size......: " << avg_reas_size / (float)sod_sent << endl;
-                os << "; Max reason size..........: " << max_reas_size << endl;
-                os << "; Min reason size..........: " << min_reas_size << endl;
-            }
         }
     }
 
@@ -116,12 +103,6 @@ class TSolverStats
     float avg_reas_size;
     int   max_reas_size;
     int   min_reas_size;
-    // Deductions statistics
-    int   sod_done;
-    int   sod_sent;
-    float avg_sod_size;
-    int   max_sod_size;
-    int   min_sod_size;
 };
 
 
@@ -146,6 +127,8 @@ protected:
     vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
     vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
+
+    TSolverStats                generalTSolverStats;
 
     // Methods for querying and modifying infromation about known polarities
     void  setPolarity(PTRef tr, lbool p);
@@ -173,12 +156,11 @@ public:
     , config  (c)
     {}
 
-    virtual ~TSolver ( ) {}
+    virtual ~TSolver () = default;
 
     // Called after every check-sat.
     virtual void clearSolver();
 
-    virtual void print(ostream& out) = 0;
     virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
@@ -187,7 +169,8 @@ public:
     inline string               getName             ( ) { return name; }         // The name of the solver
     virtual void fillTheoryFunctions(ModelBuilder &) const { throw std::logic_error{"Model computation not supported for the used theory yet!"}; }
     virtual void computeModel() = 0;                      // Compute model for variables
-    virtual void getConflict(bool, vec<PtAsgn>&) = 0;     // Return conflict
+    virtual void getConflict(vec<PtAsgn> &) = 0;          // Return conflict
+    virtual vec<PtAsgn> getReasonFor(PtAsgn lit);
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state
@@ -200,6 +183,8 @@ public:
     virtual bool isValid(PTRef tr) = 0;
     bool         isKnown(PTRef tr);
     void         setKnown(PTRef tr);
+
+    virtual void printStatistics(std::ostream & os);
 
 protected:
     bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }

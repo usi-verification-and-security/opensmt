@@ -13,7 +13,7 @@ bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t con
 
 class UFInterpolationTest : public ::testing::Test {
 protected:
-    UFInterpolationTest(): logic{} {}
+    UFInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -32,10 +32,9 @@ protected:
         z6 = logic.mkVar(ufsort, "z6");
         z7 = logic.mkVar(ufsort, "z7");
         z8 = logic.mkVar(ufsort, "z8");
-        char* msg;
-        f = logic.declareFun("f", ufsort, {ufsort}, &msg, false);
-        g = logic.declareFun("g", ufsort, {ufsort, ufsort}, &msg, false);
-        p = logic.declareFun("p", logic.getSort_bool(), {ufsort}, &msg, false);
+        f = logic.declareFun("f", ufsort, {ufsort});
+        g = logic.declareFun("g", ufsort, {ufsort, ufsort});
+        p = logic.declareFun("p", logic.getSort_bool(), {ufsort});
     }
     Logic logic;
     SMTConfig config;
@@ -398,18 +397,18 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
      */
 
     // Note: this requires a set-up in specific order, different from the set-up we have in UFInterpolationTest
-    Logic logic;
+    Logic logic{opensmt::Logic_t::QF_UF};
     SRef ufsort = logic.declareUninterpretedSort("U");
-    SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort}, nullptr);
-    SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr);
-    logic.declareFun("x", ufsort, {}, nullptr);
-    logic.declareFun("y", ufsort, {}, nullptr);
-    logic.declareFun("r1", ufsort, {}, nullptr);
-    logic.declareFun("r2", ufsort, {}, nullptr);
-    logic.declareFun("a1", ufsort, {}, nullptr);
-    logic.declareFun("a2", ufsort, {}, nullptr);
-    logic.declareFun("b1", ufsort, {}, nullptr);
-    logic.declareFun("b2", ufsort, {}, nullptr);
+    SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort});
+    SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort});
+    logic.declareFun("x", ufsort, {});
+    logic.declareFun("y", ufsort, {});
+    logic.declareFun("r1", ufsort, {});
+    logic.declareFun("r2", ufsort, {});
+    logic.declareFun("a1", ufsort, {});
+    logic.declareFun("a2", ufsort, {});
+    logic.declareFun("b1", ufsort, {});
+    logic.declareFun("b2", ufsort, {});
     PTRef r1 = logic.mkVar(ufsort, "r1");
     PTRef a1 = logic.mkVar(ufsort, "a1");
     PTRef b1 = logic.mkVar(ufsort, "b1");

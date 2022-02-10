@@ -17,9 +17,9 @@ The result is SAT, manifesting spurious counter-example
 #include <stdio.h>
 #include <opensmt/BitBlaster.h>
 
-int main(int argc, char** argv)
+int main()
 {
-    BVLogic logic;
+    BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
@@ -60,14 +60,8 @@ int main(int argc, char** argv)
     PTRef mul4 = logic.mkCUFTimes(mul3, h);
     PTRef eq4= logic.mkEq(mul4, d_p);
 
-    PTRef NotEq = logic.mkCUFNeq(d, d_p); //?
+    PTRef NotEq = logic.mkCUFNeq(d, d_p);
 
-//    PTRef constOne = logic.getTerm_CUFOne();
-//
-//    PTRef assert = logic.mkEq(constOne , NotEq);
-
-
-    SolverId id = { 5 };
 	vec<PtAsgn> asgns;
 	vec<PTRef> foo;
 
@@ -128,29 +122,17 @@ int main(int argc, char** argv)
 
     auto m = mainSolver.getModel();
 
-    char * v_a = logic.pp(m->evaluate(a));
-    std::cout << v_a << "\n";
-    free(v_a);
+    std::cout << logic.pp(m->evaluate(a)) << "\n";
 
-    char * v_b = logic.pp(m->evaluate(b));
-    std::cout << v_b << "\n";
-    free(v_b);
+    std::cout << logic.pp(m->evaluate(b)) << "\n";
 
-    char * v_c1 = logic.pp(m->evaluate(c1));
-    std::cout << v_c1 << "\n";
-    free(v_c1);
+    std::cout << logic.pp(m->evaluate(c1)) << "\n";
 
-    char * v_c2 = logic.pp(m->evaluate(c2));
-	std::cout << v_c2 << "\n";
-    free(v_c2);
+	std::cout << logic.pp(m->evaluate(c2)) << "\n";
 
-	char * v_d = logic.pp(m->evaluate(d));
-	std::cout << v_d << "\n";
-	free(v_d);
+	std::cout << logic.pp(m->evaluate(d)) << "\n";
 
-	char * v_dp = logic.pp(m->evaluate(d_p));
-	std::cout << v_dp << "\n";
-	free(v_dp);
+	std::cout << logic.pp(m->evaluate(d_p)) << "\n";
 
     if (r == s_True)
         printf("sat\n");

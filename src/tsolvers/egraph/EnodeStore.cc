@@ -75,9 +75,7 @@ ERef EnodeStore::addTerm(PTRef term) {
         args.push(termToERef[arg]);
     }
     ERef newEnode = ea.alloc(symref, opensmt::span(args.begin(), args.size_()) , term);
-    // Term's signature must not exist.  Otherwise the term would have two different signatures.
-    assert(not containsSig(newEnode));
-    insertSig(newEnode);
+
     termToERef.insert(term, newEnode);
     assert(not ERefToTerm.has(newEnode));
     ERefToTerm.insert(newEnode, term);
@@ -92,11 +90,13 @@ ERef EnodeStore::addTerm(PTRef term) {
  * @note Could be implemented in Logic as well.
  */
 bool EnodeStore::needsEnode(PTRef tr) const {
-    if (logic.isTrue(tr) || logic.isFalse(tr)) {
+    if (logic.isConstant(tr)) {
         return true;
-    } else if (logic.isUFTerm(tr)) {
+    } else if (logic.isVar(tr) and not logic.hasSortBool(tr)) {
         return true;
-    } else if (logic.isUFEquality(tr)) {
+    } else if (logic.isUF(tr) or logic.yieldsSortUninterpreted(tr)) {
+        return true;
+    } else if (logic.isTheoryEquality(tr)) {
         return true;
     } else if (logic.appearsInUF(tr)) {
         return true;

@@ -48,8 +48,6 @@ public:
 
     void clearSolver() override;
 
-    void print(ostream &out) override;
-
     bool assertLit(PtAsgn asgn) override;
 
     void pushBacktrackPoint() override;
@@ -64,7 +62,7 @@ public:
 
     void computeModel() override;
 
-    void getConflict(bool b, vec<PtAsgn> &vec) override;
+    void getConflict(vec<PtAsgn> &) override;
 
     void declareAtom(PTRef tr) override;
 

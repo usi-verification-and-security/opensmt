@@ -2,8 +2,7 @@
 #include <opensmt/BitBlaster.h>
 #include <stdio.h>
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 
     if (argc != 3)
@@ -14,7 +13,7 @@ main(int argc, char** argv)
     }
     int c1_int = atoi(argv[1]);
     int c2_int = atoi(argv[2]);
-    BVLogic* logic_ = new BVLogic();
+    BVLogic* logic_ = new BVLogic(opensmt::Logic_t::QF_BV);
     BVLogic& logic = *logic_;
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
@@ -55,12 +54,7 @@ main(int argc, char** argv)
     if (r == s_True) {
         printf("sat\n");
         bbb.computeModel();
-        char * val = logic.pp(bbb.getValue(a_bv));
-        printf("%s\n", val);
-        free(val);
-        val = logic.pp(bbb.getValue(a));
-        printf("%s\n", val);
-        free(val);
+        std::cout << logic.pp(bbb.getValue(a_bv)) << '\n' << logic.pp(bbb.getValue(a)) << std::endl;
     }
     else if (r == s_False)
         printf("unsat\n");

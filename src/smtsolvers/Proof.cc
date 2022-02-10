@@ -221,22 +221,16 @@ void Proof::print( ostream & out, CoreSMTSolver & s, THandler & t )
 	if ( ic == 1 )
 	{
 	  assert( iv == 0 );
-	  char* name;
-	  t.getVarName(chain_var[0], &name);
 	  out << " cls_" << chain_cla[ 0 ]
 	    << " cls_" << chain_cla[ 1 ]
-	    << " " << name
+	    << " " << t.getVarName(chain_var[0])
 	    << ")";
-	  free(name);
 	}
 	else
 	{
-	  char* name;
-	  t.getVarName(chain_var[iv], &name);
 	  out << " cls_" << chain_cla[ ic ]
-	    << " " << name
+	    << " " << t.getVarName(chain_var[iv])
 	    << ")";
-	  free(name);
 	}
       }
       out << ")" << endl;

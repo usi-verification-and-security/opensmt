@@ -7,7 +7,7 @@ if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need 
 cmake_policy(SET CMP0074 NEW)
 endif()
 
-set(OpenSMT_DIR CACHE PATH "Path to OpenSMT installation directry")
+set(OpenSMT_DIR CACHE PATH "Path to OpenSMT installation directory")
 
 find_package(OpenSMT REQUIRED CONFIG
     PATHS ${OpenSMT_DIR})

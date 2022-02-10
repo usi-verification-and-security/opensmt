@@ -3,7 +3,7 @@ add_executable(LRATest)
 target_sources(LRATest 
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cpp"
 #    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Matrix.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Matrix.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
     )
 
@@ -33,7 +33,7 @@ gtest_add_tests(TARGET TheorySimplificationsTest)
 
 add_executable(EGraphTest)
 target_sources(EGraphTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Egraph.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Egraph.cc"
     )
 
 target_link_libraries(EGraphTest OpenSMT gtest gtest_main)
@@ -61,7 +61,7 @@ gtest_add_tests(TARGET SimplexTest)
 
 add_executable(HermiteTest)
 target_sources(HermiteTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_HNF.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_HNF.cc"
     )
 
 target_link_libraries(HermiteTest OpenSMT gtest gtest_main)
@@ -211,3 +211,19 @@ target_sources(ArithLogicApiTest
 
 target_link_libraries(ArithLogicApiTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET ArithLogicApiTest)
+
+add_executable(SortsTest)
+target_sources(SortsTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Sorts.cc"
+        )
+
+target_link_libraries(SortsTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET SortsTest)
+
+add_executable(LASolverIncrementalityTest)
+target_sources(LASolverIncrementalityTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LASolverIncrementality.cc"
+        )
+
+target_link_libraries(LASolverIncrementalityTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET LASolverIncrementalityTest)

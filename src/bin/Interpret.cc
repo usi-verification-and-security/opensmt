@@ -34,16 +34,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <CounterRewriter.h>
 
 #include "Interpret.h"
-#include "Theory.h"
-#include "UFLRATheory.h"
-#include "Global.h"
 #include "smt2tokens.h"
 #include "MainSolver.h"
+#include "ArithLogic.h"
 #include "LogicFactory.h"
+#include "Substitutor.h"
 
-#ifdef ITP_DEBUG
-#include "TreeOps.h"
-#endif // ITP_DEBUG
+#include <string>
+#include <sstream>
+#include <cstdarg>
 
 /***********************************************************
  * Class defining interpreter
@@ -97,9 +96,8 @@ void Interpret::getInfo(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "no value for info %s", name);
     else {
-        char* val_str = value.toString();
-        notify_formatted(false, "%s %s", name, val_str);
-        free(val_str);
+        auto val_str = value.toString();
+        notify_formatted(false, "%s %s", name, val_str.c_str());
     }
 }
 
@@ -135,9 +133,8 @@ void Interpret::getOption(ASTNode& n) {
     if (value.isEmpty())
         notify_formatted(true, "No value for attr %s", name);
     else {
-        char* str_val = value.toString();
-        notify_formatted(false, "%s",str_val);
-        free(str_val);
+        auto str_val = value.toString();
+        notify_formatted(false, "%s",str_val.c_str());
     }
 }
 
@@ -147,6 +144,7 @@ void Interpret::exit() {
 
 using opensmt::Logic_t;
 using opensmt::getLogicFromString;
+using namespace osmttokens;
 
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);
@@ -191,14 +189,20 @@ void Interpret::interp(ASTNode& n) {
             }
             case t_declaresort: {
                 if (isInitialized()) {
-                    Logic &logic = main_solver->getLogic();
-                    char *name = buildSortName(n);
-                    bool was_new = !logic.containsSort(name);
-                    free(name);
-                    SRef sr = newSort(n);
-                    if (!was_new) {
-                        notify_formatted(true, "sort %s already declared", logic.getSortName(sr));
+                    assert(n.children and n.children->size() == 2);
+                    auto it = n.children->begin();
+                    ASTNode & symbolNode = **it;
+                    assert(symbolNode.getType() == SYM_T);
+                    ++it;
+                    ASTNode & numNode = **it;
+                    assert(numNode.getType() == NUM_T);
+                    int arity = atoi(numNode.getValue()); // MB: TODO: take care of out-of-range input
+                    SortSymbol symbol(symbolNode.getValue(), arity);
+                    SSymRef ssref;
+                    if (logic->peekSortSymbol(symbol, ssref)) {
+                        notify_formatted(true, "sort %s already declared", symbolNode.getValue());
                     } else {
+                        logic->declareSortSymbol(std::move(symbol));
                         notify_success();
                     }
                 } else
@@ -356,7 +360,7 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             default: {
-                notify_formatted(true, "Unknown command encountered!");
+                notify_formatted(true, "Unknown command encountered: %s", tokenToName.at(cmd.x).c_str());
             }
         }
     } catch (OsmtApiException const &e) {
@@ -395,7 +399,6 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
 
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
-    logic->enableExtendedSignature(config.useExtendedSignature());
     ASTType t = term.getType();
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();
@@ -461,7 +464,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                     const Symbol& t = logic->getSym(ctr);
                     comment_formatted(" candidate %d", j);
                     for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic->getSortName(t[k]));
+                        comment_formatted("  arg %d: %s", k, logic->printSort(t[k]).c_str());
                     }
                 }
             }
@@ -564,7 +567,7 @@ bool Interpret::checkSat() {
 
         const Info& status = config.getInfo(":status");
         if (!status.isEmpty()) {
-            std::string statusString(std::move(status.toString()));
+            std::string statusString = status.toString();
             if ((statusString.compare("sat") == 0) && (res == s_False)) {
                 notify_formatted(false, "(error \"check status which says sat\")");
 
@@ -656,44 +659,109 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
             values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
-            char* pt_str = logic.printTerm(tr);
-            comment_formatted("Found the term %s", pt_str);
-            free(pt_str);
+            auto pt_str = logic.printTerm(tr);
+            comment_formatted("Found the term %s", pt_str.c_str());
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
     printf("(");
     for (auto const & valPair : values) {
-        char* name = logic.printTerm(valPair.first);
-        char* value = logic.printTerm(valPair.second);
-        printf("(%s %s)", name, value);
-        free(name);
-        free(value);
+        auto name = logic.printTerm(valPair.first);
+        auto value = logic.printTerm(valPair.second);
+        printf("(%s %s)", name.c_str(), value.c_str());
     }
     printf(")\n");
+}
+
+namespace {
+/*
+ * This is a helper class to work around the limitation of ModelValidator
+ * which does not like formal parameter with the same name as a variable already defined in the model previously.
+ */
+class NameClashResolver {
+public:
+    NameClashResolver(Logic & logic) : logic(logic) {}
+
+    void addForbiddenVar(PTRef var) {
+        assert(logic.isVar(var));
+        forbiddenVars.insert(var);
+    }
+
+    void addFunction(SymRef sym) {
+        functionsToCheck.insert(sym);
+    }
+
+    std::vector<TemplateFunction> getSafeTemplates(Model const & model) {
+        std::vector<TemplateFunction> res;
+        unsigned num = 0;
+        for (SymRef symRef : functionsToCheck) {
+            auto const & modelTemplate = model.getDefinition(symRef);
+            if (hasClash(modelTemplate)) {
+                auto const & oldArgs = modelTemplate.getArgs();
+                vec<PTRef> newArgs; newArgs.capacity(oldArgs.size());
+                Logic::SubstMap substMap;
+                for (PTRef oldArg : oldArgs) {
+                    std::string name;
+                    PTRef var = PTRef_Undef;
+                    do {
+                        name = getSafePrefix(symRef) + std::to_string(num++);
+                        var = logic.mkVar(logic.getSortRef(oldArg), name.c_str());
+                    } while (forbiddenVars.find(var) != forbiddenVars.end());
+                    newArgs.push(var);
+                    substMap.insert(oldArg, var);
+                }
+                FunctionSignature templateSig(logic.protectName(logic.getSymName(symRef)), std::move(newArgs), logic.getSortRef(symRef));
+                PTRef newBody = Substitutor(logic, substMap).rewrite(modelTemplate.getBody());
+                res.emplace_back(std::move(templateSig), newBody);
+
+            } else {
+                res.push_back(modelTemplate);
+            }
+        }
+        return res;
+    }
+private:
+    Logic & logic;
+    std::unordered_set<PTRef, PTRefHash> forbiddenVars;
+    std::unordered_set<SymRef, SymRefHash> functionsToCheck;
+
+    bool hasClash(TemplateFunction const & templateFunction) {
+        auto const & args = templateFunction.getArgs();
+        return std::any_of(args.begin(), args.end(), [this](PTRef arg) {
+            return forbiddenVars.find(arg) != forbiddenVars.end();
+        });
+    }
+
+    std::string getSafePrefix(SymRef symref) {
+        return logic.getSymName(symref)[0] == 'x' ? "y!" : "x!";
+    }
+};
 }
 
 void Interpret::getModel() {
 
     auto model = main_solver->getModel();
+    NameClashResolver resolver(*logic);
     std::stringstream ss;
     ss << "(\n";
-    for (int i = 0; i < user_declarations.size(); ++i) {
-        SymRef symref = user_declarations[i];
+    for (SymRef symref : user_declarations) {
         const Symbol & sym = logic->getSym(symref);
         if (sym.size() == 1) {
             // variable, just get its value
             const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
             PTRef term = logic->mkVar(symSort, s);
+            resolver.addForbiddenVar(term);
             PTRef val = model->evaluate(term);
             ss << printDefinitionSmtlib(term, val);
         }
         else {
             // function
-            const TemplateFunction & templ = model->getDefinition(symref);
-            ss << printDefinitionSmtlib(templ);
-        };
+            resolver.addFunction(symref);
+        }
+    }
+    for (auto const & safeTempl : resolver.getSafeTemplates(*model)) {
+        ss << printDefinitionSmtlib(safeTempl);
     }
     ss << ')';
     std::cout << ss.str() << std::endl;
@@ -718,12 +786,10 @@ void Interpret::getModel() {
  */
 std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
-    const char *s = logic->protectName(logic->getSymName(tr));
+    auto s = logic->protectName(logic->getSymName(tr));
     SRef sortRef = logic->getSym(tr).rsort();
-    ss << "  (define-fun " << s << " () " << logic->getSortName(sortRef) << '\n';
-    char* val_string = logic->printTerm(val);
-    ss << "    " << val_string << ")\n";
-    free(val_string);
+    ss << "  (define-fun " << s << " () " << logic->printSort(sortRef) << '\n';
+    ss << "    " << logic->printTerm(val) << ")\n";
     return ss.str();
 }
 
@@ -732,15 +798,11 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     ss << "  (define-fun " << templateFun.getName() << " (";
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
-        char* tmp = logic->pp(args[i]);
-        const char* sortString = logic->getSortName(logic->getSortRef(args[i]));
-        ss << "(" << tmp << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
-        free(tmp);
+        auto sortString = logic->printSort(logic->getSortRef(args[i]));
+        ss << "(" << logic->pp(args[i]) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
-    ss << ")" << " " << logic->getSortName(templateFun.getRetSort()) << "\n";
-    char* tmp = logic->pp(templateFun.getBody());
-    ss << "    " << tmp << ")\n";
-    free(tmp);
+    ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
+    ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
     return ss.str();
 }
 
@@ -758,58 +820,54 @@ void Interpret::writeState(const char* filename)
 
 void Interpret::writeSplits_smtlib2(const char* filename)
 {
-    char* msg;
-    main_solver->writeSolverSplits_smtlib2(filename, &msg);
+    char* msg = nullptr;
+    bool ok = main_solver->writeSolverSplits_smtlib2(filename, &msg);
+    if (not ok) {
+        std::cout << "While writing splits to " << filename << ": " << msg << std::endl;
+    }
+    free(msg);
 }
 
-bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& args)
+bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
 {
     auto it = n.children->begin();
-    ASTNode& name_node = **(it++);
-    ASTNode& args_node = **(it++);
-    ASTNode& ret_node  = **(it++);
+    ASTNode const & name_node = **(it++);
+    ASTNode const & args_node = **(it++);
+    ASTNode const & ret_node  = **(it++);
     assert(it == n.children->end());
 
     const char* fname = name_node.getValue();
 
     vec<SRef> args;
 
-    char* name = buildSortName(ret_node);
-    Logic& logic = main_solver->getLogic();
-
-    if (logic.containsSort(name)) {
-        SRef sr = logic.getSortRef(name);
-        args.push(sr);
-        free(name);
+    SRef retSort = sortFromASTNode(ret_node);
+    if (retSort != SRef_Undef) {
+        args.push(retSort);
     } else {
-        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-        free(name);
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
         return false;
     }
-    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-        char* name = buildSortName(**it2);
-        if (logic.containsSort(name)) {
-            args.push(logic.getSortRef(name));
-            free(name);
-        }
-        else {
-            notify_formatted(true, "Undefined sort %s in function %s", name, fname);
-            free(name);
+
+    for (auto childNode : *(args_node.children)) {
+        SRef argSort = sortFromASTNode(*childNode);
+        if (argSort != SRef_Undef) {
+            args.push(argSort);
+        } else {
+            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(*childNode).name.c_str(), fname);
             return false;
         }
     }
-    char* msg;
+
     SRef rsort = args[0];
     vec<SRef> args2;
 
     for (int i = 1; i < args.size(); i++)
         args2.push(args[i]);
 
-    SymRef rval = logic.declareFun(fname, rsort, args2, &msg);
+    SymRef rval = logic->declareFun(fname, rsort, args2);
 
     if (rval == SymRef_Undef) {
-        comment_formatted("While declare-fun %s: %s", fname, msg);
-        free(msg);
+        comment_formatted("Error while declare-fun %s", fname);
         return false;
     }
     user_declarations.push(rval);
@@ -818,27 +876,22 @@ bool Interpret::declareFun(ASTNode& n) // (const char* fname, const vec<SRef>& a
 
 bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_sort)
 {
+    assert(n.children and n.children->size() == 3);
     auto it = n.children->begin();
-    ASTNode& name_node = **(it++);
+    ASTNode const & name_node = **(it++);
     it++; // args_node
-    ASTNode& ret_node = **(it++);
+    ASTNode const & ret_node = **(it++);
     const char* fname = name_node.getValue();
-    char* name = buildSortName(ret_node);
-    Logic& logic = main_solver->getLogic();
-    SRef ret_sort;
-    if (logic.containsSort(name)) {
-        ret_sort = logic.getSortRef(name);
-        free(name);
-    } else {
+    SRef ret_sort = sortFromASTNode(ret_node);
+    if (ret_sort == SRef_Undef) {
         notify_formatted(true, "Failed to declare constant %s", fname);
-        notify_formatted(true, "Unknown return sort %s of %s", name, fname);
-        free(name);
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
         return false;
     }
-    char * msg;
-    SymRef rval = logic.declareFun(fname, ret_sort, {}, &msg, false);
+
+    SymRef rval = logic->declareFun(fname, ret_sort, {});
     if (rval == SymRef_Undef) {
-        comment_formatted("While declare-const %s: %s", fname, "error");
+        comment_formatted("Error while declare-const %s", fname);
         return false;
     }
     user_declarations.push(rval);
@@ -849,48 +902,38 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
 bool Interpret::defineFun(const ASTNode& n)
 {
     auto it = n.children->begin();
-    ASTNode& name_node = **(it++);
-    ASTNode& args_node = **(it++);
-    ASTNode& ret_node  = **(it++);
-    ASTNode& term_node = **(it++);
+    ASTNode const & name_node = **(it++);
+    ASTNode const & args_node = **(it++);
+    ASTNode const & ret_node  = **(it++);
+    ASTNode const & term_node = **(it++);
     assert(it == n.children->end());
 
     const char* fname = name_node.getValue();
-    Logic& logic = main_solver->getLogic();
 
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
-    for (auto it2 = args_node.children->begin(); it2 != args_node.children->end(); it2++) {
-        string varName = (**it2).getValue();
-        auto varC = (**it2).children->begin();
-        auto varCC = (**varC).children->begin();
-        string sortName = (**varCC).getValue();
-
-        if (logic.containsSort(sortName.c_str())) {
-            arg_sorts.push(logic.getSortRef(sortName.c_str()));
-            //free(name);
-            PTRef pvar = logic.mkVar(arg_sorts.last(), varName.c_str());
-            arg_trs.push(pvar);
-        }
-        else {
-            notify_formatted(true, "Undefined sort %s in function %s", sortName.c_str(), fname);
+    for (auto childNodePtr : *args_node.children) {
+        ASTNode const & childNode = *childNodePtr;
+        assert(childNode.children->size() == 1);
+        std::string varName = childNode.getValue();
+        ASTNode const & sortNode = **(childNode.children->begin());
+        SRef sortRef = sortFromASTNode(sortNode);
+        if (sortRef == SRef_Undef) {
+            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname);
             return false;
         }
+        arg_sorts.push(sortRef);
+        PTRef pvar = logic->mkVar(arg_sorts.last(), varName.c_str());
+        arg_trs.push(pvar);
     }
 
     // The return sort
-    char* rsort_name = buildSortName(ret_node);
-    SRef ret_sort;
-    if (logic.containsSort(rsort_name)) {
-        ret_sort = logic.getSortRef(rsort_name);
-        free(rsort_name);
-    } else {
-        notify_formatted(true, "Unknown return sort %s of %s", rsort_name, fname);
-        free(rsort_name);
+    SRef ret_sort = sortFromASTNode(ret_node);
+    if (ret_sort == SRef_Undef) {
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
         return false;
     }
-
     sstat status;
     LetRecords letRecords;
     PTRef tr = parseTerm(term_node, letRecords);
@@ -898,11 +941,11 @@ bool Interpret::defineFun(const ASTNode& n)
         notify_formatted(true, "define-fun returns an unknown sort");
         return false;
     }
-    else if (logic.getSortRef(tr) != ret_sort) {
-        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic.getSortName(logic.getSortRef(tr)), logic.getSortName(ret_sort));
+    else if (logic->getSortRef(tr) != ret_sort) {
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
         return false;
     }
-    bool rval = logic.defineFun(fname, arg_trs, ret_sort, tr);
+    bool rval = logic->defineFun(fname, arg_trs, ret_sort, tr);
     if (rval) notify_success();
     else {
         notify_formatted(true, "define-fun failed");
@@ -1135,60 +1178,51 @@ int Interpret::interpPipe() {
     return 0;
 }
 
-// The Traversal of the node is unnecessary and a result of a confusion
-// Code can possibly be reused when define-sort is implemented
-char* Interpret::buildSortName(ASTNode& sn)
-{
-    auto it = sn.children->begin();
-    char* canon_name;
-    int written = asprintf(&canon_name, "%s", (**it).getValue());
-    assert(written >= 0); (void)written;
-    return canon_name;
-
-//    MB: This code was not reachable, it seems to handle paramteric sorts, but that is not really supported now
-//    asprintf(&canon_name, "%s", (**(it++)).getValue());
-//    if  (it != sn.children->end()) {
-//        char* arg_names;
-//        char* old;
-//        char* sub_name = buildSortName(**(it++));
-//        asprintf(&arg_names, "%s", sub_name);
-//        free(sub_name);
-//        for (; it != sn.children->end(); it++) {
-//            old = arg_names;
-//            sub_name = buildSortName(**it);
-//            asprintf(&arg_names, "%s %s", old, sub_name);
-//            free(sub_name);
-//            free(old);
-//        }
-//        old = canon_name;
-//        asprintf(&canon_name, "%s (%s)", old, arg_names);
-//        free(old);
-//    }
-//    return canon_name;
+SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
+    if (node.getType() == SYM_T) {
+        return {node.getValue(), 0};
+    } else {
+        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        ASTNode const & name = **(node.children->begin());
+        return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
+    }
 }
 
-SRef Interpret::newSort(ASTNode& sn) {
-//    IdRef idr = IdRef_Undef;
-//    vec<SRef> tmp;
-//    if (sn.getType() == CMD_T || sn.getType() == ID_T) {
-//        list<ASTNode*>::iterator p = sn.children->begin();
-//        ASTNode& sym_name = **p;
-//        char* name = sym_name.getValue();
-//        idr = logic->newIdentifier(sym_name.getValue());
-//    } else {
-//        assert(sn.getType() == LID_T);
-//        // This is possibly broken: idr is undef once we exit here.
-//        list<ASTNode*>::iterator it = sn.children->begin();
-//        for (; it != sn.children->end(); it++)
-//            tmp.push(newSort(**it));
-//    }
-//    char* canon_name = buildSortName(sn);
-//    SRef rval = logic->newSort(idr, canon_name, tmp);
-//    free(canon_name);
-
-    char* canon_name = buildSortName(sn);
-    SRef rval = main_solver->getLogic().declareUninterpretedSort(canon_name);
-    return rval;
+SRef Interpret::sortFromASTNode(ASTNode const & node) const {
+    if (node.getType() == SYM_T) {
+        SortSymbol symbol(node.getValue(), 0);
+        SSymRef symRef;
+        bool known = logic->peekSortSymbol(symbol, symRef);
+        if (not known) { return SRef_Undef; }
+        return logic->getSort(symRef, {});
+    } else {
+        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        ASTNode const & name = **(node.children->begin());
+        SortSymbol symbol(name.getValue(), node.children->size() - 1);
+        SSymRef symRef;
+        bool known = logic->peekSortSymbol(symbol, symRef);
+        if (not known) { return SRef_Undef; }
+        vec<SRef> args;
+        for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
+            SRef argSortRef = sortFromASTNode(**it);
+            if (argSortRef == SRef_Undef) { return SRef_Undef; }
+            args.push(argSortRef);
+        }
+        return logic->getSort(symRef, std::move(args));
+    }
+    assert(node.getType() == LID_T and node.children and not node.children->empty());
+    ASTNode const & name = **(node.children->begin());
+    SortSymbol symbol(name.getValue(), node.children->size() - 1);
+    SSymRef symRef;
+    bool known = logic->peekSortSymbol(symbol, symRef);
+    if (not known) { return SRef_Undef; }
+    vec<SRef> args;
+    for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
+        SRef argSortRef = sortFromASTNode(**it);
+        if (argSortRef == SRef_Undef) { return SRef_Undef; }
+        args.push(argSortRef);
+    }
+    return logic->getSort(symRef, std::move(args));
 }
 
 void Interpret::getInterpolants(const ASTNode& n)
@@ -1264,8 +1298,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         printf("Amount of vars: %d\nAmount of boolean operators: %d\n", interesting.config.varNumber, interesting.config.boolNumber);
         char * itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
-                         (j == 0 ? "(" : " "), itp, (j == itps.size() - 1 ? ")" : ""));
-        free(itp);
+                         (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
     }
 }
 

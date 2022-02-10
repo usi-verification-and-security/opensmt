@@ -87,11 +87,13 @@ trap "[ ${preserve} == "true" ] && (\
 
 mkdir -p ${outdir}
 
-${scrambler} -seed "0" -gen-model-val true < $1 > ${tmpin}
+${scrambler} -seed "0" -gen-model-val true < $1 2>&1 > ${tmpin} \
+    | grep "ERROR: " >/dev/null && \
+      echo "Error parsing input file $1" && \
+      exit 1
 
 sh -c "\
     ulimit -St 10;
-    ulimit -Sv 4000000
     ${binary} ${tmpin}" \
         > ${tmpout} 2>/dev/null
 
@@ -107,7 +109,7 @@ if [[ $(grep '^sat' ${tmpout}) ]]; then
         exit 1
     fi
 else
-    echo "Not satisfiable: $1"
+    echo "Not shown satisfiable: $1"
     exit 1
 fi
 

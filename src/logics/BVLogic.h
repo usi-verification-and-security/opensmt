@@ -11,7 +11,6 @@ Module: New Logic for BitVector
 #include "CUFLogic.h"
 #include "NumberUtils.h"
 
-
 class BVLogic: public CUFLogic
 {
 //  protected:
@@ -27,8 +26,6 @@ class BVLogic: public CUFLogic
 
   protected:
 
-    static const char*  tk_bv_zero;
-    static const char*  tk_bv_one;
     static const char*  tk_bv_neg;
     static const char*  tk_bv_eq;
     static const char*  tk_bv_minus;
@@ -59,6 +56,7 @@ class BVLogic: public CUFLogic
 
     static const char*  s_sort_bvnum;
 
+    int                 bitwidth;
     SRef                sort_BVNUM;
     PTRef               term_BV_ZERO;
     PTRef               term_BV_ONE;
@@ -97,21 +95,19 @@ class BVLogic: public CUFLogic
 
     static const int i_default_bitwidth;
 
-    int bitwidth;
-
   public:
-    BVLogic(int width = i_default_bitwidth);
+    BVLogic(opensmt::Logic_t type, int width = i_default_bitwidth);
     ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
     virtual std::string const getName() const override { return "QF_BV"; }
-    virtual const opensmt::Logic_t getLogic() const override { return opensmt::Logic_t::QF_BV; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
     PTRef         mkBVConst   (const char* c) { char* num; opensmt::wordToBinary(opensmt::Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || Logic::isBuiltinSort(sr); }
-    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || Logic::isBuiltinConstant(sr); }
+    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)) || CUFLogic::isBuiltinSortSym(ssr); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || CUFLogic::isBuiltinSort(sr); }
+    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || CUFLogic::isBuiltinConstant(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
 
@@ -122,7 +118,7 @@ class BVLogic: public CUFLogic
 
     SRef declareSort_BVNUM(char** msg);
     SRef getSort_BVNUM() const { return sort_BVNUM; }
-    const int getBVNUMConst(PTRef tr) const;
+    int getBVNUMConst(PTRef tr) const;
 
 
     bool isBVPlus(SymRef sr)   const { return sr == sym_BV_PLUS; }

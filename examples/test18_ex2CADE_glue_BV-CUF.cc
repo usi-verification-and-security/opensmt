@@ -19,16 +19,14 @@ assert(d == d_p);                           //assert ((d != d_p ) = 1)
 
 void printValue(PTRef tr, std::unique_ptr<Model> & m, const Logic & l)
 {
-    char* name = l.pp(tr);
-    char* value = l.pp(m->evaluate(tr));
+    auto name = l.pp(tr);
+    auto value = l.pp(m->evaluate(tr));
     std::cout << name << " "  << value << "\n";
-    free(name);
-    free(value);
 }
 
-int main(int argc, char** argv)
+int main()
 {
-    BVLogic logic;
+    BVLogic logic{opensmt::Logic_t::QF_BV};
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;

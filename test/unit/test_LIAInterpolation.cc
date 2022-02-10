@@ -10,7 +10,7 @@
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
-    LIAInterpolationTest(): logic{ArithLogic::ArithType::LIA} {}
+    LIAInterpolationTest(): logic{opensmt::Logic_t::QF_LIA} {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
@@ -43,13 +43,13 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
     std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1,1}, labels));
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-    std::cout << logic.printTerm(farkasItp) << std::endl;
+    std::cout << logic.pp(farkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, farkasItp));
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
-    std::cout << logic.printTerm(dualFarkasItp) << std::endl;
+    std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, dualFarkasItp));
     PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(FastRational(1,2));
-    std::cout << logic.printTerm(halfFarkasItp) << std::endl;
+    std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, halfFarkasItp));
 }
 
@@ -70,7 +70,7 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
     PTRef leq3 = logic.mkGt(logic.mkNeg(logic.mkPlus(x3,x1)), minusOne);
 
     PTRef leq4 = logic.mkGt(logic.mkMinus(x3,x4), zero);
-    PTRef leq5 = logic.mkGeq(logic.mkNeg(logic.mkPlus(vec<PTRef>{x4,x2})), zero);
+    PTRef leq5 = logic.mkGeq(logic.mkNeg(logic.mkPlus(x4,x2)), zero);
     PTRef leq6 = logic.mkGeq(x4, zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False),
                           PtAsgn(logic.mkNot(leq3), l_False),
@@ -81,11 +81,11 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, std::move(conflict), {2,1,1,1,1,2}, labels));
     PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
-    std::cout << logic.printTerm(decomposedFarkasItp) << std::endl;
+    std::cout << logic.pp(decomposedFarkasItp) << std::endl;
     ASSERT_TRUE(logic.isAnd(decomposedFarkasItp));
     PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
-//    std::cout << logic.printTerm(dualDecomposedFarkasItp) << std::endl;
+//    std::cout << logic.pp(dualDecomposedFarkasItp) << std::endl;
 }
 
 TEST_F(LIAInterpolationTest, test_Split_ALocal){
@@ -118,7 +118,7 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
     ipartitions_t mask;
     setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
 }
 
@@ -152,7 +152,7 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
     ipartitions_t mask;
     setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
 }
 
@@ -186,17 +186,17 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     ipartitions_t mask;
     setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
     config.setBooleanInterpolationAlgorithm(itp_alg_pudlak);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
     config.setBooleanInterpolationAlgorithm(itp_alg_mcmillanp);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+    std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
 }

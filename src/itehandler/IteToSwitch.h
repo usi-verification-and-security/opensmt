@@ -84,7 +84,7 @@ namespace ite {
         Node*       lea       (NodeRef r)       { return (Node*)RegionAllocator<uint32_t>::lea(r.x); }
         const Node *lea       (NodeRef r) const { return (Node*)RegionAllocator<uint32_t>::lea(r.x); }
         NodeRef     ael       (const Node *t)   { auto r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return {r}; }
-        void        free      (NodeRef r)       {}
+        void        free      (NodeRef)         {}
     };
 
 

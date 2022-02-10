@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Global.h"
 
 #include <libgen.h>
+#include <string>
 
 enum ASTType {
       CMD_T      , CMDL_T
@@ -77,13 +78,15 @@ enum ASTType {
 class ASTNode {
   private:
     ASTType             type;
-    smt2token           tok;
+    osmttokens::smt2token   tok;
     char*               val;
     static const char*  typestr[];
   public:
     std::vector< ASTNode* >*children;
-    ASTNode(ASTType t, smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
-    ASTNode(ASTType t, char* v) : type(t), tok({t_none}), val(v), children(NULL) {}
+    ASTNode(ASTType t, osmttokens::smt2token tok) : type(t), tok(tok), val(NULL), children(NULL) {}
+    ASTNode(ASTType t, char* v) : type(t), tok({osmttokens::t_none}), val(v), children(NULL) {}
+    ASTNode(ASTNode const &) = delete;
+    ASTNode & operator=(ASTNode const &) = delete;
     ~ASTNode() {
         if (children) {
             for (auto ci = children->begin(); ci != children->end(); ci++) {
@@ -93,11 +96,12 @@ class ASTNode {
         }
         free(val);
     }
+
     void                   print(std::ostream& o, int indent);
     inline const char      *typeToStr() const { return typestr[type]; }
     inline ASTType         getType()   const { return type; }
     inline const char      *getValue()  const { return val; }
-    inline const smt2token getToken()  const { return tok; }
+    inline const osmttokens::smt2token getToken()  const { return tok; }
 };
 
 
@@ -114,7 +118,7 @@ class ConfValue {
     ConfValue(const char* s);
     ConfValue(const ConfValue& other);
     ConfValue& operator=(const ConfValue& other);
-    char* toString() const;
+    std::string toString() const;
     double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
     ~ConfValue();
 };
@@ -123,24 +127,24 @@ class Info {
   private:
     ConfValue   value;
   public:
-    Info(ASTNode& n);
-    Info(const Info& other);
+    Info(ASTNode const & n);
+    Info(Info const & other);
     Info() {};
     bool isEmpty() const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); };
+    inline std::string toString() const { return value.toString(); }
 };
 
 class SMTOption {
   private:
     ConfValue   value;
   public:
-    SMTOption(ASTNode& n);
+    SMTOption(ASTNode const & n);
     SMTOption() {}
     SMTOption(int i)   : value(i) {}
     SMTOption(double i): value(i) {}
     SMTOption(const char* s) : value(s) {}
-    inline bool  isEmpty()  const { return value.type == O_EMPTY; }
-    inline char* toString() const { return value.toString(); }
+    inline bool isEmpty() const { return value.type == O_EMPTY; }
+    inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
 };
 
@@ -302,7 +306,6 @@ public:
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
   static const char* o_ghost_vars;
-  static const char* o_extended_signature;
 
 private:
 
@@ -909,24 +912,6 @@ public:
 
     int getSimplifyInterpolant() const {
         return simplify_inter();
-    }
-
-    void set_use_extended_signature(bool val)
-    {
-        if (optionTable.has(o_extended_signature)) {
-            delete optionTable[o_extended_signature];
-            optionTable[o_extended_signature] = new SMTOption(val);
-        }
-        else
-            insertOption(o_extended_signature, new SMTOption(val));
-    }
-
-    bool useExtendedSignature() const {
-        if (optionTable.has(o_extended_signature)) {
-            return optionTable[o_extended_signature]->getValue().numval != 0;
-        } else {
-            return false;
-        }
     }
 
 private:

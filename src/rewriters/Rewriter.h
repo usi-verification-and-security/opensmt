@@ -14,7 +14,7 @@ class Rewriter {
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
-    PTRef rewrite(PTRef root) {
+    virtual PTRef rewrite(PTRef root) {
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;
@@ -55,6 +55,7 @@ public:
                 PTRef target;
                 bool childChanged = substitutions.peek(term[i], target);
                 needsChange |= childChanged;
+                assert(not childChanged or (logic.getSortRef(target) == logic.getSortRef(term[i])));
                 newArgs[i] = childChanged ? target : term[i];
             }
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(newArgs)) : currentRef;
@@ -62,6 +63,7 @@ public:
 
             PTRef rewritten = cfg.rewrite(newTerm);
             if (rewritten != newTerm or needsChange) {
+                assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));
                 substitutions.insert(currentRef, rewritten);
             }
             done[currentId] = 1;

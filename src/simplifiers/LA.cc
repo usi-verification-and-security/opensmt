@@ -39,6 +39,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
 
     while (!curr_term.empty()) {
         PTRef t = curr_term.back();
+        assert(logic.yieldsSortNum(t));
         curr_term.pop_back();
         opensmt::Real c = curr_const.back();
         curr_const.pop_back();
@@ -263,6 +264,7 @@ void LAExpression::addExprWithCoeff(const LAExpression & a, const opensmt::Real 
     // Iterate over expression to add
     //
     for (auto const & [var, factor] : a.polynome) {
+        assert(var == PTRef_Undef or logic.yieldsSortNum(var));
         auto it2 = polynome.find(var);
         if (it2 != polynome.end()) {
             it2->second += coeff * factor;

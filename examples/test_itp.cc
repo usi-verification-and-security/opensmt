@@ -11,14 +11,12 @@ pre()
     return osmt;
 }
 
-int
-main(int argc, char** argv)
+int main()
 {
     
     Opensmt* osmt = pre();
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
-    SimpSMTSolver& solver = osmt->getSolver();
     Logic& logic = osmt->getLogic();
     
     // Let's build two assertions
@@ -62,11 +60,11 @@ main(int argc, char** argv)
         //ipartitions_t mask = 1;
         //mask <<= 1;
 	    // HighFrog has another representation, which in this case would be
-    	vector<int> part;
+    	vector<unsigned> part;
 	    part.push_back(0);
     	// It can be converted to OpenSMT's representation via
 	    ipartitions_t mask = 0;
-    	for(int i = 0; i < part.size(); ++i)
+    	for(unsigned i = 0; i < part.size(); ++i)
 	    	setbit(mask, part[i] + 1);
 
         vector<PTRef> itps;

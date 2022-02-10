@@ -1,10 +1,9 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
-int
-main(int argc, char** argv)
+int main()
 {
-    Logic logic; // UF Logic
+    Logic logic{opensmt::Logic_t::QF_UF}; // UF Logic
     SMTConfig c;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;

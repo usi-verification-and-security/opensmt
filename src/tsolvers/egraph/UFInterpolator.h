@@ -58,7 +58,6 @@ struct CNode {
     PTRef e;
     icolor_t color;
     CEdge * next;
-    std::set<CEdge *> prev;
 };
 
 typedef std::pair<CNode *, CNode *> path_t;
@@ -87,8 +86,8 @@ class CGraph {
     void clear();
 
 public:
-    std::vector<CNode *> const & getNodes() { return cnodes; }
-    std::vector<CEdge *> const & getEdges() { return cedges; }
+    std::vector<CNode *> const & getNodes() const { return cnodes; }
+    std::vector<CEdge *> const & getEdges() const { return cedges; }
     bool hasNode(PTRef term) const { return cnodes_store.find(term) != cnodes_store.end(); }
     CNode * getNode(PTRef term) const { return cnodes_store.at(term); }
 
@@ -99,14 +98,14 @@ public:
     void removeCEdge(CEdge *);
 
     CNode* getConflictStart() const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf1); }
-    CNode* getConflictEnd()   const { assert(conf1 != PTRef_Undef); return cnodes_store.at(conf2); }
+    CNode* getConflictEnd()   const { assert(conf2 != PTRef_Undef); return cnodes_store.at(conf2); }
 
-    inline void setConf( PTRef c1, PTRef c2) {
+    inline void setConf(PTRef c1, PTRef c2) {
 //      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
-        assert( conf1 == PTRef_Undef );
-        assert( conf2 == PTRef_Undef );
-        assert( c1 != PTRef_Undef);
-        assert( c2 != PTRef_Undef);
+        assert(conf1 == PTRef_Undef);
+        assert(conf2 == PTRef_Undef);
+        assert(c1 != PTRef_Undef);
+        assert(c2 != PTRef_Undef);
         conf1 = c1;
         conf2 = c2;
     }
@@ -122,7 +121,7 @@ public:
 
     inline int verbose() const { return config.verbosity(); }
 
-    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &);
+    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) override;
 
     void printAsDotty(ostream &);
 
@@ -132,7 +131,7 @@ private:
         return litColors.at(term);
     }
 
-    icolor_t getTermColor (PTRef term) const {
+    icolor_t getTermColor(PTRef term) const {
         assert(colorInfo);
         return colorInfo->getColorFor(term);
     }
@@ -178,7 +177,7 @@ private:
 
     inline path_t path(CNode * c1, CNode * c2) { return make_pair(c1, c2); }
 
-    bool checkColors();
+    bool checkColors() const;
 
     SMTConfig & config;
     Logic & logic;

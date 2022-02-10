@@ -28,73 +28,68 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SSTORE_H
 
 #include "SSort.h"
-#include "StringMap.h"
 #include "Alloc.h"
+#include "TypeUtils.h"
 
+
+#include <unordered_map>
 #include <iosfwd>
 
-class IdentifierStore
-{
-  private:
-    StrAllocator<IdStr, IdStrRef> isa {1024};
-    IdentifierAllocator ia {1024};
-  public:
-    // Provided for simplicity
-    IdRef newIdentifier(const char* name) {
-        IdStrRef nr = isa.alloc(name);
-        return ia.alloc(nr);
+
+struct SortHash {
+    uint32_t operator() (const SortKey& s) const {
+        auto v = (uint32_t)s.sym.x;
+        for (SRef arg : s.args) {
+            v += (uint32_t)arg.x;
+        }
+        return v;
     }
-    IdRef newIdentifier(const char* name, vec<int>& nl) {
-        IdStrRef nr = isa.alloc(name);
-        return ia.alloc(nr, nl);
-    }
-    ~IdentifierStore() {}
-    const char* getName(IdRef ir) { return isa[ia[ir].getNameRef()].getName(); }
 };
 
 class SStore
 {
   private:
-    IdentifierStore& is;
-    StrAllocator<SStr, SStrRef> ssa {1024};
     SortAllocator sa {512};
-    Map<const char*,SRef,StringHash,Equal<const char*> > sortTable;
-    vec<SRef>                                     sorts;
-    vec<char*> sort_names; // Needed for deallocating the keys in sortTable
-    typedef enum {      // These constants are stored on undo_stack_oper when
-        SYMB            // A new symbol is created
-      , PARA            // A new parameter
-      , CONS            // An undoable cons is done
-    } oper_t;
-
-
+    SortSymbolAllocator ssa {512};
+    std::unordered_map<SortKey, SRef, SortHash> sortTable;
+    std::unordered_map<std::string, SSymRef> sortSymbolTable;
+    vec<SRef> sorts;
+    vec<SSymRef> sortSymbols;
   public:
 
-    SStore(IdentifierStore & is_) : is(is_) { }
-
-    ~SStore() {
-        for (int i = 0; i < sort_names.size(); i++)
-            free(sort_names[i]);
-    }
+    SStore() = default;
+    ~SStore() = default;
 
     //===========================================================================
     // Public APIs for sort construction/destruction
 
-    bool    contains        (const char* s)   const { return sortTable.has(s); }
-    SRef    operator []     (const char* s)   const { return sortTable[s]; }
-    bool    contains        (const Sort& s)   const { return sortTable.has(ssa[s.getNameRef()].getName()); }
-    SRef    operator []     (const Sort& s) { return sortTable[ssa[s.getNameRef()].getName()]; }
-    Sort*   operator []     (SRef sr)       { return &sa[sr]; }
+    bool peek(SortSymbol const & symbol, SSymRef & outRef);
+    SSymRef newSortSymbol(SortSymbol symbol);
 
-    SRef    newSort         (IdRef id, vec<SRef> const & rest);
-    SRef    newSort         (IdRef id, const char* name, vec<SRef>& rest);
-    bool    containsSort    (const char* name) const
-        { bool rval = sortTable.has(name); return rval; }
-    const char* getName     (SRef sr) const { return ssa[sa[sr].getNameRef()].getName(); }
-    Sort&   getSort         (SRef sr) { return sa[sr]; }
+    Sort const & operator [](SRef sr)               const { return sa[sr]; }
+    SortSymbol const & operator [](SSymRef sr)      const { return ssa[sr]; }
+
+    opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
+    SSymRef getSortSym(SRef sr) const { return sa[sr].getSymRef(); }
+    std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
+    std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }
+    unsigned int getSortSymSize(SSymRef ssr) const { return ssa[ssr].arity; }
+    std::string printSort (SRef sr) const {
+        std::string name = getSortSymName(sr);
+        if (sa[sr].getSize() > 0) {
+            name = "(" + name + " ";
+            for (unsigned i = 0; i < sa[sr].getSize(); i++) {
+                name += printSort(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+            }
+            name += ")";
+        }
+        return name;
+    }
+
+    int  getSize(SRef sr) const { return sa[sr].getSize(); }
     const vec<SRef>& getSorts() const { return sorts; }
+    const vec<SSymRef>& getSortSyms() const { return sortSymbols; }
     int     numSorts() const { return sorts.size(); }
-    void dumpSortsToFile(std::ostream&);
 };
 
 #endif

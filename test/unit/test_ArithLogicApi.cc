@@ -9,9 +9,9 @@
 class ArithLogicApiTest: public ::testing::Test {
 public:
     ArithLogicApiTest()
-        : lraLogic(ArithLogic::ArithType::LRA)
-        , liaLogic(ArithLogic::ArithType::LIA)
-        , liraLogic(ArithLogic::ArithType::LIRA)
+        : lraLogic(opensmt::Logic_t::QF_LRA)
+        , liaLogic(opensmt::Logic_t::QF_LIA)
+        , liraLogic(opensmt::Logic_t::QF_LIRA)
     {}
     ArithLogic lraLogic;
     ArithLogic liaLogic;

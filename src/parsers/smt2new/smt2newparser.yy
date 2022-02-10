@@ -65,11 +65,14 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 %union
 {
   char  *                      str;
-  std::vector< std::string > * str_list;
   ASTNode *                    snode;
   std::vector< ASTNode * > *   snode_list;
-  smt2token                    tok;
+  osmttokens::smt2token        tok;
 }
+
+%destructor { free($$); } <str>
+%destructor { delete $$; } <snode>
+%destructor { if ($$) { for (auto node : *$$) { delete node; } delete $$; }} <snode_list>
 
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
@@ -313,12 +316,13 @@ identifier: TK_SYM
     ;
 
 sort: identifier
-      { $$ = new ASTNode(ID_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
+      { $$ = $1; }
     | '(' identifier sort sort_list ')'
       {
         $$ = new ASTNode(LID_T, NULL);
         $$->children = $4;
         $$->children->insert($$->children->begin(), $3);
+        $$->children->insert($$->children->begin(), $2);
       }
     ;
 
@@ -482,12 +486,12 @@ symbol_list:
 
 b_value: TK_SYM
         {
-            if (strcmp($1, "true") == 0)
-                $$ = new ASTNode(BOOL_T, strdup("true"));
-            else if (strcmp($1, "false") == 0)
-                $$ = new ASTNode(BOOL_T, strdup("false"));
+            if (strcmp($1, "true") == 0 or strcmp($1, "false") == 0) {
+                $$ = new ASTNode(BOOL_T, $1);
+            }
             else {
                 printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", $1);
+                free($1);
                 YYERROR;
             }
         }

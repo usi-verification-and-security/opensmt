@@ -38,7 +38,7 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args) {
+SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args, SymbolConfig const & symConfig) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto* symrefs = getRefOrNull(fname);
 
@@ -61,7 +61,7 @@ SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args) {
         }
     }
     bool newsym = (symrefs == nullptr);
-    SymRef tr = ta.alloc(args);
+    SymRef tr = ta.alloc(args, symConfig);
     SymId id = symbols.size();
     symbols.push(tr);
 

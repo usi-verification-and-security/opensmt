@@ -57,6 +57,7 @@ The algorithm and data structures are inspired by the following paper:
 
 
 #include "Egraph.h"
+#include "EgraphModelBuilder.h"
 #include "Enode.h"
 #include "TreeOps.h"
 #include "Deductions.h"
@@ -111,7 +112,7 @@ void Egraph::pushBacktrackPoint( )
 // Pops a backtrack point
 //
 void Egraph::popBacktrackPoint() {
-//    opensmt::StopWatch sw(tsolver_stats.egraph_backtrack_timer);
+//    opensmt::StopWatch sw(egraphStats.egraph_backtrack_timer);
     assert( backtrack_points.size( ) > 0 );
     size_t undo_stack_new_size = backtrack_points.last();
     backtrack_points.pop();
@@ -172,29 +173,18 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
 //
 // Communicate conflict
 //
-void Egraph::getConflict( bool deduction, vec<PtAsgn>& cnfl )
+void Egraph::getConflict(vec<PtAsgn> & conflict)
 {
-    (void)deduction;
-    for (PtAsgn pta : explanation) {
-        cnfl.push(pta);
+    for (PtAsgn lit : explanation) {
+        conflict.push(lit);
     }
 #ifdef STATISTICS
-    if (deduction) {
-        if (cnfl.size() > tsolver_stats.max_reas_size)
-            tsolver_stats.max_reas_size = cnfl.size();
-        if (cnfl.size() < tsolver_stats.min_reas_size)
-            tsolver_stats.min_reas_size = cnfl.size();
-        tsolver_stats.reasons_sent ++;
-        tsolver_stats.avg_reas_size += cnfl.size();
-    }
-    else {
-        if (cnfl.size() > tsolver_stats.max_conf_size)
-            tsolver_stats.max_conf_size = cnfl.size();
-        if (cnfl.size() < tsolver_stats.min_conf_size)
-            tsolver_stats.min_conf_size = cnfl.size();
-        tsolver_stats.conflicts_sent ++;
-        tsolver_stats.avg_conf_size += cnfl.size();
-    }
+    if (conflict.size() > generalTSolverStats.max_conf_size)
+        generalTSolverStats.max_conf_size = conflict.size();
+    if (conflict.size() < generalTSolverStats.min_conf_size)
+        generalTSolverStats.min_conf_size = conflict.size();
+    generalTSolverStats.conflicts_sent ++;
+    generalTSolverStats.avg_conf_size += conflict.size();
 #endif
 }
 
@@ -215,70 +205,9 @@ void Egraph::computeModel( )
     }
 }
 
-/**
- * Get the abstract value (name of an element of the universe) corresponding to er.
- * If er is ERef_Undef, use the default element for the sort sr
- * @param er
- * @param sr the sort of er (used if er is ERef_Undef)
- * @return
- */
-PTRef Egraph::getAbstractValueForERef(ERef er, SRef sr) const {
-
-    if (er == ERef_Undef) {
-        return logic.getDefaultValuePTRef(sr);
-    }
-
-    ERef val_er = values->getValue(er);
-    PTRef val_tr = enode_store.getPTRef(val_er);
-
-    if (isConstant(val_er)) {
-        return val_tr;
-    }
-    std::stringstream ss;
-    ss << Logic::s_abstract_value_prefix << values->getValueIndex(val_er);
-    return logic.mkConst(logic.getSortRef(val_tr), ss.str().c_str());
-}
-
 void Egraph::fillTheoryFunctions(ModelBuilder & modelBuilder) const
 {
-    Map<PTRef,bool,PTRefHash> seen_substs;
-    for (ERef er : enode_store.getTermEnodes()) {
-        PTRef tr = enode_store.getPTRef(er);
-
-        if (logic.hasSortBool(tr) and (not logic.isUP(tr))) {
-            continue; // The Boolean return sorted terms that are not uninterpreted predicates come from the SAT solver
-        }
-
-        // Check that enode_store's PTRef -> ERef conversion is consistent
-        assert(([&](PTRef tr) { ERef tmp; enode_store.peekERef(tr, tmp); return tmp == er; })(tr));
-
-        if (logic.isVarOrIte(tr) or logic.isConstant(tr)) {
-            // Original is a theory variable
-            PTRef val_tr = getAbstractValueForERef(er, logic.getSortRef(tr));
-            modelBuilder.addVarValue(tr, val_tr);
-        } else {
-            addTheoryFunctionEvaluation(modelBuilder, tr, er);
-        }
-    }
-}
-
-/**
- * Add an evaluation for the function symbol of orig_tr using the value of target_er
- * @param modelBuilder The model builder
- * @param orig_tr the original pterm reference (with arity > 0)
- * @param target_er the target enode reference
- * @param substs the substitutions (used for obtaining values for the arguments of orig_tr
- */
-void Egraph::addTheoryFunctionEvaluation(ModelBuilder & modelBuilder, PTRef orig_tr, ERef target_er) const {
-    ERef orig_er = enode_store.getERef(orig_tr);
-    Enode const & orig_enode = getEnode(orig_er);
-    assert(orig_enode.getSize() > 0);
-    vec<PTRef> vals; vals.capacity(orig_enode.getSize());
-    for (ERef child_er : orig_enode) {
-        PTRef child_tr = enode_store.getPTRef(child_er);
-        vals.push(getAbstractValueForERef(child_er,logic.getSortRef(child_tr)));
-    }
-    modelBuilder.addToTheoryFunction(logic.getSymRef(orig_tr), vals, getAbstractValueForERef(target_er, logic.getSortRef(orig_tr)));
+    EgraphModelBuilder(*this).fill(modelBuilder);
 }
 
 void Egraph::declareAtom(PTRef atom) {
@@ -325,7 +254,16 @@ void Egraph::declareTerm(PTRef tr) {
     }
 
     for (auto [term, eref] : PTRefERefPairVec) {
-        updateUseVectors(term); (void)eref;
+        if (logic.getPterm(term).size() > 0) { // MB: No need to insert signatures of terms who cannot be parents
+            if (backtrack_points.size() > 0) {
+                undo_stack_main.push(Undo(REANALYZE, eref));
+            }
+            ensureUseVectorFor(eref);
+            if (not enode_store.containsSig(eref)) { // Check needed to allow dynamic addition of new terms
+                enode_store.insertSig(eref);
+                addToUseVectors(eref);
+            }
+        }
     }
 
     if (logic.hasSortBool(tr) and not logic.isDisequality(tr) and PTRefERefPairVec.size() == 2) {
@@ -366,7 +304,7 @@ bool Egraph::addEquality(PtAsgn pa) {
 
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     // The sat_calls is increased already in addTrue
 #endif
 
@@ -399,7 +337,7 @@ bool Egraph::addDisequality(PtAsgn pa) {
     }
 #ifdef STATISTICS
     if (!res)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     // The sat_calls is increased already in addFalse
 #endif
 
@@ -415,9 +353,9 @@ bool Egraph::addTrue(PTRef term) {
     }
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     else {
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     }
 #endif
     return res;
@@ -432,9 +370,9 @@ bool Egraph::addFalse(PTRef term) {
     }
 #ifdef STATISTICS
     if (res == false)
-        tsolver_stats.unsat_calls++;
+        generalTSolverStats.unsat_calls++;
     else {
-        tsolver_stats.sat_calls++;
+        generalTSolverStats.sat_calls++;
     }
 #endif
     return res;
@@ -753,6 +691,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
     // (might be empty, though, if boolean backtracking happens)
     explanation.clear();
     has_explanation = false;
+    vec<ERef> toReanalyze;
 
     //
     // Restore state at previous backtrack point
@@ -797,11 +736,24 @@ void Egraph::backtrackToStackSize ( size_t size ) {
                 clearPolarity(u.arg.ptr);
                 break;
             }
+            case REANALYZE: {
+                ERef term = u.arg.er;
+                assert(enode_store.lookupSig(term) != ERef_Undef);
+                if (enode_store.lookupSig(term) == term) {
+                    enode_store.removeSig(term);
+                    removeFromUseVectors(term);
+                }
+                toReanalyze.push(term);
+                break;
+            }
             default: {
                 opensmt_error("unknown action");
                 break;
             }
         }
+    }
+    for (ERef eref : toReanalyze) {
+        reanalyze(eref);
     }
 }
 
@@ -922,7 +874,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
                     ERef ded_eq = enode_store.termToERef[eq];
                     enode_store[ded_eq].setDeduced(l_False);
                     deductions.push(PtAsgn_reason(eq, l_False, reason.tr));
-                    tsolver_stats.deductions_done ++;
+                    egraphStats.deductions_done ++;
                 }
             }
             if (elr == next_elr) break;
@@ -943,7 +895,7 @@ void Egraph::deduce( ERef x, ERef y, PtAsgn reason ) {
             assert(v_tr == enode_store.getPTRef(v));
             storeDeduction(PtAsgn_reason(v_tr, deduced_polarity, reason.tr));
 #ifdef STATISTICS
-            tsolver_stats.deductions_done ++;
+            generalTSolverStats.deductions_done ++;
 #endif
         }
         v = getEnode(v).getEqNext();
@@ -1173,7 +1125,7 @@ bool Egraph::assertLit(PtAsgn pta)
         // MB: The deductions done by this TSolver are also marked using polarity.
         //     The invariant is that TSolver will not process the literal again (when asserted from the SAT solver)
         //     once it is marked for deduction, so the implementation must count with that.
-        tsolver_stats.sat_calls ++;
+        generalTSolverStats.sat_calls ++;
         return true;
     }
 
@@ -1204,7 +1156,7 @@ bool Egraph::assertLit(PtAsgn pta)
         assert(false);
     }
 
-    !res ? tsolver_stats.unsat_calls ++ : tsolver_stats.sat_calls ++;
+    !res ? generalTSolverStats.unsat_calls ++ : generalTSolverStats.sat_calls ++;
     return res;
 }
 
@@ -1556,13 +1508,11 @@ uint32_t UseVector::getFreeSlotIndex() {
     return ret;
 }
 
-void Egraph::updateUseVectors(PTRef term) {
-    ERef eref = termToERef(term);
+void Egraph::ensureUseVectorFor(ERef eref) {
     auto cid = getEnode(eref).getCid();
     while (cid >= parents.size()) {
         parents.emplace_back();
     }
-    addToUseVectors(eref);
 }
 
 /**
@@ -1639,5 +1589,21 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
                 parents[childCid].clearEntryAt(parentIndex.x);
             }
         }
+    }
+}
+
+void Egraph::printStatistics(std::ostream & os) {
+    TSolver::printStatistics(os);
+    egraphStats.printStatistics(os);
+}
+
+void Egraph::reanalyze(ERef eref) {
+    // FIXME: This will probably never be false, we need to find a different condition
+    if (backtrack_points.size() > 0) {
+        undo_stack_main.push(Undo(REANALYZE, eref));
+    }
+    if (not enode_store.containsSig(eref)) {
+        enode_store.insertSig(eref);
+        addToUseVectors(eref);
     }
 }

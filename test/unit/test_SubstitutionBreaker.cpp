@@ -8,16 +8,19 @@
 
 typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
 
-TEST(SubstitutionBreaker, test_getVars) {
+class SubstitutionBreaker : public ::testing::Test {
+public:
     Logic logic;
+    SubstitutionBreaker() : logic{opensmt::Logic_t::QF_UF} {}
+};
 
+TEST_F(SubstitutionBreaker, test_getVars) {
 
-    char *tmp;
     SRef U = logic.declareUninterpretedSort("U");
     PTRef a = logic.mkVar(U, "a");
     PTRef b = logic.mkVar(U, "b");
     PTRef c = logic.mkVar(U, "c");
-    SymRef fun = logic.declareFun("f", U, {U, U, U}, &tmp, false);
+    SymRef fun = logic.declareFun("f", U, {U, U, U});
     PTRef f = logic.mkUninterpFun(fun, {a, b, a});
     PTRef f1 = logic.mkUninterpFun(fun, {f, c, f});
 
@@ -25,16 +28,12 @@ TEST(SubstitutionBreaker, test_getVars) {
     SubstNodeAllocator sna(tvl, logic, 1024);
     SNRef snr = sna.alloc(a, f1);
     for (int i = 0; i < sna[snr].nChildren(); i++) {
-        char *n = logic.pp(sna[snr].getChildTerm(i));
-        std::cerr << n << " \n";
-        free(n);
+        std::cerr << logic.pp(sna[snr].getChildTerm(i)) << " \n";
     }
     ASSERT_EQ(sna[snr].nChildren(), 3);
 }
 
-TEST(SubstitutionBreaker, test_Simple) {
-    Logic logic;
-
+TEST_F(SubstitutionBreaker, test_Simple) {
 
     PTRef a = logic.mkVar(logic.getSort_bool(), "a");
     MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
@@ -46,17 +45,15 @@ TEST(SubstitutionBreaker, test_Simple) {
     ASSERT_TRUE(subst_map.has(a));
 }
 
-TEST(SubstitutionBreaker, test_getLoops) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops) {
 
-    char* tmp;
     SRef U = logic.declareUninterpretedSort("U");
     PTRef a = logic.mkVar(U, "a");
     PTRef b = logic.mkVar(U, "b");
     PTRef c = logic.mkVar(U, "c");
     PTRef d = logic.mkVar(U, "d");
     PTRef e = logic.mkVar(U, "e");
-    SymRef fun = logic.declareFun("f", U, {U}, &tmp, false);
+    SymRef fun = logic.declareFun("f", U, {U});
     PTRef f = logic.mkUninterpFun(fun, {a});
 
     MapWithKeys<PTRef,PtAsgn,PTRefHash> substs;
@@ -74,10 +71,8 @@ TEST(SubstitutionBreaker, test_getLoops) {
     std::cerr << slb.printGraphAndLoops(startNodes, loops) << std::endl;
 }
 
-TEST(SubstitutionBreaker, test_getLoops2) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops2) {
 
-    char* tmp;
     SRef U = logic.declareUninterpretedSort("U");
     PTRef a1 = logic.mkVar(U, "a1");
     PTRef b1 = logic.mkVar(U, "b1");
@@ -86,10 +81,10 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     PTRef b2 = logic.mkVar(U, "b2");
     PTRef c2 = logic.mkVar(U, "c2");
     PTRef start = logic.mkVar(U, "start");
-    SymRef symb_f = logic.declareFun("f", U, {U}, &tmp, false);
-    SymRef symb_g = logic.declareFun("g", U, {U}, &tmp, false);
-    SymRef symb_h = logic.declareFun("g", U, {U, U}, &tmp, false);
-    SymRef symb_h2 = logic.declareFun("g", U, {U, U, U}, &tmp, false);
+    SymRef symb_f = logic.declareFun("f", U, {U});
+    SymRef symb_g = logic.declareFun("g", U, {U});
+    SymRef symb_h = logic.declareFun("g", U, {U, U});
+    SymRef symb_h2 = logic.declareFun("g", U, {U, U, U});
 
     PTRef f_b1 = logic.mkUninterpFun(symb_f, {b1});
     PTRef h_c1_c2 = logic.mkUninterpFun(symb_h, {c1, c2});
@@ -117,17 +112,15 @@ TEST(SubstitutionBreaker, test_getLoops2) {
     ASSERT_EQ(loops.size(), 1);
 }
 
-TEST(SubstitutionBreaker, test_getLoops3) {
-    Logic logic;
+TEST_F(SubstitutionBreaker, test_getLoops3) {
 
-    char* tmp;
     SRef U = logic.declareUninterpretedSort("U");
     PTRef e0 = logic.mkVar(U, "e0");
     PTRef e1 = logic.mkVar(U, "e1");
     PTRef e2 = logic.mkVar(U, "e2");
     PTRef e4 = logic.mkVar(U, "e4");
 
-    SymRef symb_op = logic.declareFun("op", U, {U, U}, &tmp, false);
+    SymRef symb_op = logic.declareFun("op", U, {U, U});
 
     PTRef op_e2_e1 = logic.mkUninterpFun(symb_op, {e2, e1});
     PTRef op_e2_e2 = logic.mkUninterpFun(symb_op, {e2, e2});

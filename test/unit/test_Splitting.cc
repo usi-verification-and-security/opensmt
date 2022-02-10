@@ -7,20 +7,17 @@
 
 class SplitTest : public ::testing::Test {
 protected:
-    SplitTest() : logic{} {}
+    SplitTest() : logic{opensmt::Logic_t::QF_UF} {}
     Logic logic;
 };
 
 TEST_F(SplitTest, test_TermPrinting) {
-    char * msg;
     SRef U = logic.declareUninterpretedSort("U");
-    SymRef sr = logic.declareFun("f", U, {U, U}, &msg, false);
+    SymRef sr = logic.declareFun("f", U, {U, U});
     PTRef a = logic.mkVar(U, "a");
     PTRef f_a = logic.mkUninterpFun(sr, {a, a});
-    char * str_p = logic.printTerm(f_a);
-    std::string str(str_p);
+    std::string str = logic.printTerm(f_a);
     std::string reference = "(f a a)";
-    free(str_p);
     std::cout << str << std::endl;
     ASSERT_EQ(str.compare(reference), 0);
 }

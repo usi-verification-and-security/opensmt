@@ -23,14 +23,14 @@ protected:
     PTERef f_c2_c0;
     PTERef f_f_c2_c0_c0;
 
-    UFExplainTest(): logic{}, store(logic) {}
+    UFExplainTest(): logic{opensmt::Logic_t::QF_UF}, store(logic) {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         c0 = makeAndStorePTRef(logic.mkVar(ufsort, "c0"));
         c1 = makeAndStorePTRef(logic.mkVar(ufsort, "c1"));
         c2 = makeAndStorePTRef(logic.mkVar(ufsort, "c2"));
 
-        SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort}, nullptr, false);
+        SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort});
 
         f_c1_c0 = makeAndStorePTRef(logic.insertTerm(f, {c1.tr, c0.tr}));
 

@@ -34,7 +34,7 @@ opensmt::Logic_t convert(opensmt_logic logic) {
 }
 }
 
-Opensmt::Opensmt(opensmt_logic _logic, const char* name, int bw)
+Opensmt::Opensmt(opensmt_logic _logic, const char* name)
 {
     config = std::unique_ptr<SMTConfig>(new SMTConfig());
     logic.reset(opensmt::LogicFactory::getInstance(convert(_logic)));

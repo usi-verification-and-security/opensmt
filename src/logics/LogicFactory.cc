@@ -22,6 +22,8 @@ opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_IDL") return opensmt::Logic_t::QF_IDL;
     if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
+    if (name == "QF_UFLIA") return opensmt::Logic_t::QF_UFLIA;
+    if (name == "QF_AX") return opensmt::Logic_t::QF_AX;
     return opensmt::Logic_t::UNDEF;
 }
 
@@ -35,37 +37,26 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
     switch (logicType) {
         case Logic_t::QF_RDL:
         case Logic_t::QF_UFRDL:
-        {
-            l = new ArithLogic(ArithLogic::ArithType::RDL);
-            break;
-        }
         case Logic_t::QF_LRA:
         case Logic_t::QF_UFLRA:
-        {
-            l = new ArithLogic(ArithLogic::ArithType::LRA);
-            break;
-        }
         case Logic_t::QF_IDL:
         case Logic_t::QF_UFIDL:
-        {
-            l = new ArithLogic(ArithLogic::ArithType::IDL);
-            break;
-        }
         case Logic_t::QF_LIA:
         case Logic_t::QF_UFLIA:
         {
-            l = new ArithLogic(ArithLogic::ArithType::LIA);
+            l = new ArithLogic(logicType);
             break;
         }
         case Logic_t::QF_UF:
         case Logic_t::QF_BOOL:
+        case Logic_t::QF_AX:
         {
-            l = new Logic();
+            l = new Logic(logicType);
             break;
         }
         case Logic_t::QF_CUF:
         {
-            l = new BVLogic();
+            l = new BVLogic(logicType);
             break;
         }
         default:
@@ -75,7 +66,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
     return l;
 }
 
-ArithLogic * opensmt::LogicFactory::getLRAInstance() { return new ArithLogic(ArithLogic::ArithType::LRA); }
+ArithLogic * opensmt::LogicFactory::getLRAInstance() { return new ArithLogic(Logic_t::QF_LRA); }
 
-ArithLogic * opensmt::LogicFactory::getLIAInstance() { return new ArithLogic(ArithLogic::ArithType::LIA); }
+ArithLogic * opensmt::LogicFactory::getLIAInstance() { return new ArithLogic(Logic_t::QF_LIA); }
 

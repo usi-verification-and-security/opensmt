@@ -30,14 +30,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
 #include "GhostSMTSolver.h"
-#include "UFLRATheory.h"
+#include "UFLATheory.h"
 #include "LATheory.h"
+#include "LATHandler.h"
 #include "OsmtApiException.h"
 #include "ModelBuilder.h"
 #include "IteHandler.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
-#include "LIATHandler.h"
 #include "CounterRewriter.h"
 
 #include <thread>
@@ -111,7 +111,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     if (logic.getSortRef(root) != logic.getSort_bool())
     {
         int chars_written = asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                 Logic::s_sort_bool, logic.getSortName(logic.getSortRef(root)));
+                 Logic::s_sort_bool, logic.printSort(logic.getSortRef(root)).c_str());
         (void)chars_written;
         return s_Error;
     }
@@ -139,7 +139,7 @@ MainSolver::insertFormula(PTRef root, char** msg)
     return s_Undef;
 }
 
-sstat MainSolver::simplifyFormulas(char** err_msg)
+sstat MainSolver::simplifyFormulas()
 {
     if (binary_init)
         return s_Undef;
@@ -422,13 +422,13 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_LRA:
         {
             ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LRATHandler>(config, lraLogic);
+            theory = new LATheory<ArithLogic,LATHandler>(config, lraLogic);
             break;
         }
         case Logic_t::QF_LIA:
         {
             ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LIATHandler>(config, liaLogic);
+            theory = new LATheory<ArithLogic,LATHandler>(config, liaLogic);
             break;
         }
         case Logic_t::QF_RDL:
@@ -444,9 +444,10 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::QF_UFLRA:
+        case Logic_t::QF_UFLIA:
         {
-            ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new UFLRATheory(config, lraLogic);
+            ArithLogic & laLogic = dynamic_cast<ArithLogic &>(logic);
+            theory = new UFLATheory(config, laLogic);
             break;
         }
         case Logic_t::UNDEF:

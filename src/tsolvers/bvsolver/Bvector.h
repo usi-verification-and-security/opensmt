@@ -87,7 +87,7 @@ class Bvector {
         header.size      = 0;
     }
 
-    Bvector    operator=   (Bvector)         { assert(false); return *this; }
+    Bvector&    operator=   (Bvector const &) = delete;
 
     int      size        ()          const   { return header.size; }
     PTRef    getActVar   ()          const   { return actVar; }

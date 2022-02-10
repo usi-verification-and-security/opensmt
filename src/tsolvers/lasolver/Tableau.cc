@@ -20,8 +20,7 @@ namespace {
 }
 
 void Tableau::nonbasicVar(LVRef v) {
-    if(isNonBasic(v)) {return;}
-    assert(!isProcessed(v));
+    if (isProcessed(v)) { return; }
     newNonbasicVar(v);
 }
 
@@ -38,6 +37,7 @@ void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
     ensureTableauReadyFor(v);
     addRow(v, std::move(poly));
     varTypes[getVarId(v)] = VarType::QUASIBASIC;
+    normalizeRow(v);
 
 }
 
@@ -255,23 +255,19 @@ bool Tableau::checkConsistency() const {
 void Tableau::normalizeRow(LVRef v) {
     assert(isQuasiBasic(v)); // Do not call this for non quasi rows
     Polynomial & row = getRowPoly(v);
-    std::vector<Polynomial::Term const*> toEliminate;
+    std::vector<LVRef> toEliminate;
     for (auto const & term : row) {
         if (isQuasiBasic(term.var)) {
             normalizeRow(term.var);
-            toEliminate.push_back(&term);
+            toEliminate.push_back(term.var);
         }
         if (isBasic(term.var)) {
-            toEliminate.push_back(&term);
+            toEliminate.push_back(term.var);
         }
     }
-    if (!toEliminate.empty()) {
-        Polynomial p;
-        for (auto const* term : toEliminate) {
-            p.merge(getRowPoly(term->var), term->coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
-            p.addTerm(term->var, -term->coeff);
-        }
-        row.merge(p, 1, [](LVRef) {}, [](LVRef) {}, tmp_storage);
+    for (LVRef var : toEliminate) {
+        auto const coeff = row.removeVar(var);
+        row.merge(getRowPoly(var), coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
     }
 }
 

@@ -59,10 +59,10 @@ class Logic {
     Map<SRef,bool,SRefHash,Equal<SRef> >            ufsorts;
     Map<SRef,PTRef,SRefHash,Equal<SRef>>            defaultValueForSort;
 
+    opensmt::Logic_t const logicType;
+
     bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
     int distinctClassCount;
-
-    bool extendedSignatureEnabled() const { return use_extended_signature; }
 
     class DefinedFunctions {
         std::unordered_map<std::string,TemplateFunction> defined_functions;
@@ -91,15 +91,13 @@ class Logic {
     DefinedFunctions defined_functions;
 
     vec<bool>           constants;
-    vec<bool>           interpreted_functions;
 
 
-
-
-    IdentifierStore     id_store;
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    SSymRef             sym_IndexedSort;
 
     SRef                sort_BOOL;
     PTRef               term_TRUE;
@@ -121,8 +119,6 @@ class Logic {
     void dumpFunction(std::ostream &, const TemplateFunction&);
 
   private:
-    bool use_extended_signature;
-
     enum class UFAppearanceStatus {
         unseen, removed, appears
     };
@@ -130,7 +126,6 @@ class Logic {
     void unsetAppearsInUF(PTRef tr);
 
   public:
-    void enableExtendedSignature(bool flag) { use_extended_signature = flag; }
     vec<PTRef> propFormulasAppearingInUF;
     std::size_t getNumberOfTerms() const { return term_store.getNumberOfTerms(); }
     static const char*  tk_val_uf_default;
@@ -147,6 +142,7 @@ class Logic {
     static const char*  tk_xor;
     static const char*  tk_distinct;
     static const char*  tk_ite;
+    static const char*  tk_indexed;
 
 
     static const char*  s_sort_bool;
@@ -154,37 +150,34 @@ class Logic {
     static const char*  s_framev_prefix;
     static const char*  s_abstract_value_prefix;
 
-    Logic();
+    Logic(opensmt::Logic_t type);
     virtual ~Logic();
 
     virtual PTRef conjoinExtras(PTRef root);
 
-    virtual std::string const getName() const { return "QF_UF"; }
-    virtual const opensmt::Logic_t getLogic() const { return opensmt::Logic_t::QF_UF; }
+    virtual std::string const getName() const { return opensmt::QFLogicToProperties.at(logicType).name; }
+    opensmt::Logic_t getLogic() const { return logicType; }
 
-    // Identifiers
-    IdRef       newIdentifier (const char* name)   ;//         { return id_store.newIdentifier(name); }
-    IdRef       newIdentifier (const char* name, vec<int>& nl);//{ return id_store.newIdentifier(name, nl); }
-    // Fetching sorts
-    bool        containsSort  (const char* name)      const;// { return sort_store.containsSort(name); }
+    bool hasUFs() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasUF; }
+    bool hasIntegers() const { return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasInts; }
+    bool hasReals() const { return opensmt::QFLogicToProperties.at(logicType).arithProperty.hasReals; }
+
   protected:
-    SymRef      newSymb       (const char* name, vec<SRef> const & sort_args) { return sym_store.newSymb(name, sort_args); }
-    SRef        newSort       (IdRef idr, const char* name, vec<SRef>& tmp);// { return sort_store.newSort(idr, name, tmp); }
     PTRef       mkFun         (SymRef f, vec<PTRef>&& args);
     void        markConstant  (PTRef ptr);
     void        markConstant  (SymId sid);
 
   public:
-    SRef        getSortRef    (const char* name)      const;// { return sort_store[name]; }
-    SRef        getSortRef    (const PTRef tr)        const;// { return getSortRef(getPterm(tr).symb()); }
-    SRef        getSortRef    (const SymRef sr)       const;// { return getSym(sr).rsort(); }
-    Sort*       getSort       (const SRef s)   ;//             { return sort_store[s]; }
-    const char* getSortName   (const SRef s)          const;// { return sort_store.getName(s); }
+    SRef                getSortRef (PTRef tr)  const;
+    SRef                getSortRef (SymRef sr) const;
+    std::string         printSort  (SRef s)    const;
+    std::size_t         getSortSize(SRef s)    const;
+    SRef declareUninterpretedSort(std::string const &);
+
     SRef        getUniqueArgSort(SymRef sr)           const;
     SRef        getUniqueArgSort(PTRef tr)            const { return getUniqueArgSort(getSymRef(tr)); }
 
     // Symbols
-    Symbol& getSym              (const SymRef s)        { return sym_store[s]; }
     const Symbol& getSym        (const SymRef s)        const { return sym_store[s]; }
     const Symbol& getSym        (const PTRef tr)        const { return getSym(getPterm(tr).symb()); }
     SymRef      getSymRef       (const PTRef tr)        const { return getPterm(tr).symb(); }
@@ -238,6 +231,9 @@ class Logic {
     PTRef       mkEq          (PTRef a1, PTRef a2) { return mkBinaryEq(a1, a2); }
 protected:
     virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
+    bool isInternalSort(SRef) const;
+    void newUninterpretedSortHandler(SRef);
+
 public:
 
     // General disequalities
@@ -251,26 +247,30 @@ public:
     virtual PTRef mkConst     (const char*);
     virtual PTRef mkConst     (SRef, const char*);
 
-    SymRef      declareFun    (const char* fname, const SRef rsort, const vec<SRef>& args, char** msg, bool interpreted = false);
-    SymRef      declareFun    (const std::string & fname, const SRef rsort, const vec<SRef>& args, bool interpreted = false) { char *msg; return declareFun(fname.data(), rsort, args, &msg, interpreted); };
-    SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args, true); sym_store[sr].setNoScoping(); return sr; }
-    SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
-    SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
-    SymRef      declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setChainable(); return sr; }
-    SymRef      declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
-    SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_LeftAssoc(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
-    SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Chainable(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
-    SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun_NoScoping_Pairwise(s, rsort, args); sym_store[sr].setCommutes(); return sr; }
 
-    SymRef      declareFun_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setLeftAssoc(); return sr; }
-    SymRef      declareFun_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setRightAssoc(); return sr; }
-    SymRef      declareFun_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setChainable(); return sr; }
-    SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { SymRef sr = declareFun(s, rsort, args); sym_store[sr].setPairwise(); return sr;}
+    SymRef      declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig);
+    SymRef      declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args) { return declareFun(fname, rsort, args, SymConf::Default); }
+    SymRef      declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScoping); }
+    SymRef      declareFun_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingLeftAssoc); }
+    SymRef      declareFun_NoScoping_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingRightAssoc); }
+    SymRef      declareFun_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingChainable); }
+    SymRef      declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::NoScopingPairwise); }
+    SymRef      declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc); }
+    SymRef      declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::CommutativeNoScopingChainable); }
+    SymRef      declareFun_Commutative_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::CommutativeNoScopingPairwise); }
+
+    SymRef      declareFun_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::LeftAssoc); }
+    SymRef      declareFun_RightAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::RightAssoc); }
+    SymRef      declareFun_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::Chainable); }
+    SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::Pairwise); }
 
     bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
-    SRef        declareSortAndCreateFunctions(std::string const & id);
-    SRef        declareUninterpretedSort   (char const * id);
-    SRef        declareUninterpretedSort   (const std::string& id) { return declareUninterpretedSort(id.c_str()); }
+    void        instantiateFunctions(SRef);
+
+    bool        hasSortSymbol(SortSymbol const &);
+    bool        peekSortSymbol(SortSymbol const &, SSymRef&);
+    SSymRef     declareSortSymbol(SortSymbol symbol);
+    SRef        getSort(SSymRef, vec<SRef> && args);
 
     PTRef       mkBoolVar     (const char* name);
 
@@ -285,6 +285,7 @@ public:
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
     PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
 
+    SSymRef       getSortSymIndexed()              const { return sym_IndexedSort; }
 
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
@@ -325,13 +326,14 @@ public:
     bool         isBooleanOperator  (SymRef tr)       const;
     bool         isBooleanOperator  (PTRef tr)        const;// { return isBooleanOperator(term_store[tr].symb()); }
     virtual bool isBuiltinSort      (const SRef sr)   const;// { return sr == sort_BOOL; }
+    virtual bool isBuiltinSortSym   (const SSymRef ssr) const;
     virtual bool isBuiltinConstant  (const SymRef sr) const;// { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool         isBuiltinConstant  (const PTRef tr)  const;// { return isBuiltinConstant(getPterm(tr).symb()); }
     virtual bool isBuiltinFunction  (const SymRef sr) const;
     bool         isConstant         (const SymRef sr) const;
-    bool         isConstant         (PTRef tr)        const;// { return isConstant(getPterm(tr).symb()); }
-    bool         isUFTerm           (PTRef tr)        const;// { return isUFSort(getSortRef(tr)); }
-    bool         isUFSort           (const SRef sr)   const;// { return ufsorts.has(sr); }
+    bool         isConstant         (PTRef tr)        const;
+    bool         yieldsSortUninterpreted (PTRef tr)   const;
+    bool         isUFSort           (const SRef sr)   const;
 
     bool         appearsInUF        (PTRef tr)        const;
     void         setAppearsInUF     (PTRef tr);
@@ -344,6 +346,7 @@ public:
     virtual bool isAtom            (PTRef tr)      const;
     bool        isBoolAtom         (PTRef tr)      const;// { return hasSortBool(tr) && isVar(tr); }
     // Check if term is an uninterpreted predicate.
+    bool        isInterpreted      (SymRef sr)     const { return sym_store.isInterpreted(sr); }
     virtual bool isUP              (PTRef)         const;
     virtual bool isUF              (PTRef)         const;
     virtual bool isUF              (SymRef)        const;
@@ -393,14 +396,14 @@ public:
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
 
-    bool       hasQuotableChars(const char* name) const;
-    char*      protectName(const char* name) const;
-    char*      protectName(const std::string& name) const { return protectName(name.c_str()); };
-    virtual char* printTerm_       (PTRef tr, bool l, bool s) const;
-    virtual char* printTerm        (PTRef tr)                 const;// { return printTerm_(tr, false, false); }
-    virtual char* printTerm        (PTRef tr, bool l, bool s) const ;//{ return printTerm_(tr, l, s); }
-    virtual char* pp(PTRef tr) const; // A pretty printer
-    char*       printSym           (SymRef sr) const;
+    bool          hasQuotableChars(std::string const & name) const;
+    std::string   protectName(const std::string& name) const;
+    virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
+    std::string printTerm          (PTRef tr)                 const { return printTerm_(tr, false, false); }
+    std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    std::string pp(PTRef tr) const; // A pretty printer
+
+    std::string   printSym          (SymRef sr) const;
     virtual void termSort(vec<PTRef>& v) const;// { sort(v, LessThan_PTRef()); }
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const;//{p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}

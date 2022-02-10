@@ -38,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct ERef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
-    inline friend bool operator<  (const ERef& a1, const ERef& a2) {return a1.x < a2.x;  }
-    inline friend bool operator== (const ERef& a1, const ERef& a2) {return a1.x == a2.x; }
-    inline friend bool operator!= (const ERef& a1, const ERef& a2) {return a1.x != a2.x; }
+    inline friend bool operator<  (ERef a1, ERef a2) {return a1.x < a2.x;  }
+    inline friend bool operator== (ERef a1, ERef a2) {return a1.x == a2.x; }
+    inline friend bool operator!= (ERef a1, ERef a2) {return a1.x != a2.x; }
 };
 static struct ERef ERef_Undef = {UINT32_MAX};
 

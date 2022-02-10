@@ -46,6 +46,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "smt2newcontext.h"
 #include "smt2newparser.hh"
 
+using namespace osmttokens;
+
 #define YY_EXTRA_TYPE Smt2newContext*
 #define YY_USER_ACTION yyget_lloc(yyscanner)->first_line = yyget_lineno(yyscanner);
 %}
@@ -175,7 +177,6 @@ int Smt2newContext::init_scanner()
         yyset_in(is, scanner);
     }
     else if (ib != NULL) {
-        yylex_init(&scanner);
         yylex_init_extra(this, &scanner);
         yy_scan_string(ib, scanner);
     }

@@ -14,14 +14,13 @@
 
 class UFModelTest : public ::testing::Test {
 protected:
-    UFModelTest(): logic{} {}
+    UFModelTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        char* err;
         S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
-        f_sym = logic.declareFun("f", S, {S, S}, &err);
+        f_sym = logic.declareFun("f", S, {S, S});
         f = logic.mkUninterpFun(f_sym, {x, y});
 
         v0 = logic.mkConst(S, "@0");
@@ -64,14 +63,13 @@ protected:
 
 class UFModelBuilderTest : public ::testing::Test {
 protected:
-    UFModelBuilderTest(): logic{} {}
+    UFModelBuilderTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        char* err;
         S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
         y = logic.mkVar(S, "y");
         z = logic.mkVar(S, "z");
-        f_sym = logic.declareFun("f", S, {S, S}, &err);
+        f_sym = logic.declareFun("f", S, {S, S});
         f = logic.mkUninterpFun(f_sym, {x, y});
 
         v0 = logic.mkConst(S, "@0");
@@ -136,9 +134,8 @@ TEST_F(UFModelBuilderTest, test_modelBuilderVarAndFunction) {
 
 TEST_F(UFModelBuilderTest, test_NameCollision) {
     ModelBuilder mb(logic);
-    char* err;
     std::string symName("x0");
-    SymRef x1_sym = logic.declareFun(symName.c_str(), S, {S}, &err);
+    SymRef x1_sym = logic.declareFun(symName.c_str(), S, {S});
     mb.addToTheoryFunction(x1_sym, {v0}, v0);
     auto m = mb.build();
     auto templateFun = m->getDefinition(x1_sym);
@@ -159,10 +156,9 @@ TEST_F(UFModelBuilderTest, test_functionModel) {
 
 class UFConstModelTest : public ::testing::Test {
 protected:
-    UFConstModelTest() : logic(), ms(logic, c, "uf-solver") {
-        char * msg;
+    UFConstModelTest() : logic(opensmt::Logic_t::QF_UF), ms(logic, c, "uf-solver") {
         SRef U = logic.declareUninterpretedSort("U");
-        fs = logic.declareFun("f", U, {U}, &msg, false);
+        fs = logic.declareFun("f", U, {U});
         x = logic.mkVar(U, "x");
         a = logic.mkConst(U, "a");
         f_a = logic.mkUninterpFun(fs, {a});
@@ -186,9 +182,8 @@ protected:
 
 TEST_F(UFConstModelTest, test_constModel) {
     PTRef a_model = getModelFor(a);
-    char * a_model_name = logic.pp(a_model);
-    ASSERT_EQ(strcmp(a_model_name, "a"), 0);
-    free(a_model_name);
+    auto a_model_name = logic.pp(a_model);
+    ASSERT_EQ(strcmp(a_model_name.c_str(), "a"), 0);
     PTRef f_a_model = getModelFor(f_a);
     PTRef x_model = getModelFor(x);
     ASSERT_EQ(f_a_model, x_model);
@@ -202,7 +197,7 @@ TEST_F(UFConstModelTest, test_constModel) {
 
 class LAModelTest : public ::testing::Test {
 protected:
-    LAModelTest(): logic{ArithLogic::ArithType::LRA} {}
+    LAModelTest(): logic{opensmt::Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");

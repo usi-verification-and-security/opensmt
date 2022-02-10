@@ -129,8 +129,6 @@ class MainSolver
 
     FContainer root_instance; // Contains the root of the instance once simplifications are done
 
-    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
-    sstat simplifyFormulas(char** msg);
     sstat solve           ();
 
     sstat giveToSolver(PTRef root, FrameId push_id) {
@@ -198,7 +196,8 @@ class MainSolver
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
 
     sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
-    sstat simplifyFormulas() { char* msg; sstat res = simplifyFormulas(&msg); if (res == s_Error) { printf("%s\n", msg); } return res; }
+    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
+    sstat simplifyFormulas();
 
     void  printFramesAsQuery() const;
     sstat getStatus       () const { return status; }

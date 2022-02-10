@@ -85,6 +85,12 @@ void LABoundStore::clear() {
     this->bounds.clear();
 }
 
+void LABoundStore::ensureReadyFor(LVRef v) {
+    while (bounds.size() <= getVarId(v)) {
+        bounds.emplace_back();
+    }
+}
+
 void LABoundStore::updateBound(BoundInfo bi) {
     auto & varBounds = getBounds(bi.v);
     for (LABoundRef bound : {bi.ub, bi.lb}) {
@@ -136,17 +142,7 @@ void LABoundStore::buildBounds()
             ba[refs[j]].setIdx(LABound::BLIdx{j});
         }
 
-        while (bounds.size() <= getVarId(v)) {
-            bounds.emplace_back();
-        }
+        assert(getVarId(v) < bounds.size());
         refs.moveTo(bounds.at(getVarId(v)));
-    }
-
-    // make sure all variables are recorded in the bound lists, even if they have no bounds
-    for (LVRef ref : lvstore) {
-        auto id = getVarId(ref);
-        while (bounds.size() <= id) {
-            bounds.emplace_back();
-        }
     }
 }

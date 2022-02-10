@@ -2,10 +2,8 @@
 #include <opensmt/BitBlaster.h>
 #include <stdio.h>
 
-int
-main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-
     if (argc != 5)
     {
         printf("Computes a <op> b on bit width <bw>\n");
@@ -20,7 +18,7 @@ main(int argc, char** argv)
     int bw = atoi(argv[1]);
 
     SMTConfig c;
-    BVLogic* logic_ = new BVLogic(bw);
+    BVLogic* logic_ = new BVLogic(opensmt::Logic_t::QF_BV, bw);
     BVLogic& logic = *logic_;
     MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
     MainSolver& mainSolver = *mainSolver_;
@@ -36,7 +34,7 @@ main(int argc, char** argv)
     PTRef eq2 = logic.mkBVEq(b, c2);
 
     //printf("Computing %d (%s) %s %d (%s)\n", c1_int, logic.printTerm(c1), op, c2_int, logic.printTerm(c2));
-    printf("Computing %s (%s) %s %s (%s)\n", c1_str, logic.printTerm(c1), op, c2_str, logic.printTerm(c2));
+    printf("Computing %s (%s) %s %s (%s)\n", c1_str, logic.printTerm(c1).c_str(), op, c2_str, logic.printTerm(c2).c_str());
 
 
     PTRef op_tr;
@@ -108,11 +106,10 @@ main(int argc, char** argv)
         printf("sat\n");
         bbb.computeModel();
         PTRef v = bbb.getValue(d);
-        char * val = logic.pp(v);
+        auto val = logic.pp(v);
         char* bin;
-        opensmt::wordToBinary(atoi(val), bin, bw);
-        printf("%s (%s)\n", val, bin);
-        free(val);
+        opensmt::wordToBinary(atoi(val.c_str()), bin, bw);
+        printf("%s (%s)\n", val.c_str(), bin);
         free(bin);
     }
     else if (r == s_False)

@@ -62,9 +62,9 @@ const char* CUFLogic::tk_cuf_cond   = "?";
 
 const char*  CUFLogic::s_sort_cufnum = "CUFNum";
 
-CUFLogic::CUFLogic() :
-      Logic()
-    , sort_CUFNUM(declareSortAndCreateFunctions(s_sort_cufnum))
+CUFLogic::CUFLogic(opensmt::Logic_t logicType) :
+      Logic(logicType)
+    , sort_CUFNUM(declareUninterpretedSort(s_sort_cufnum))
     , term_CUF_ZERO(mkConst(sort_CUFNUM, tk_cuf_zero))
     , term_CUF_ONE(mkConst(sort_CUFNUM, tk_cuf_one))
     , sym_CUF_ZERO(getSymRef(term_CUF_ZERO))
@@ -97,7 +97,7 @@ CUFLogic::CUFLogic() :
     , sym_CUF_PTR(declareFun_NoScoping(tk_cuf_addrof, sort_CUFNUM, {sort_CUFNUM}))
     , sym_CUF_ITE(sortToIte[sort_CUFNUM])
     , sym_CUF_DISTINCT(sortToDisequality[sort_CUFNUM])
-{}
+{ }
 
 CUFLogic::~CUFLogic()
 {}
@@ -110,7 +110,7 @@ CUFLogic::~CUFLogic()
 //}
 
 PTRef
-CUFLogic::mkCUFNeg(PTRef tr, char** msg)
+CUFLogic::mkCUFNeg(PTRef tr)
 {
     if (isCUFNeg(tr)) return getPterm(tr)[0];
     if (isCUFPlus(tr)) {
@@ -118,7 +118,7 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
         assert(getPterm(tr).size() == 2);
         PTRef arg1 = mkCUFNeg(getPterm(tr)[0]);
         PTRef arg2 = mkCUFNeg(getPterm(tr)[1]);
-        PTRef tr_n = mkCUFPlus(arg1, arg2, msg);
+        PTRef tr_n = mkCUFPlus(arg1, arg2);
         assert(tr_n != PTRef_Undef);
         return tr_n;
     }
@@ -134,25 +134,25 @@ CUFLogic::mkCUFNeg(PTRef tr, char** msg)
 }
 
 PTRef
-CUFLogic::mkCUFMinus(const vec<PTRef>& args_in, char** msg)
+CUFLogic::mkCUFMinus(const vec<PTRef>& args_in)
 {
     vec<PTRef> args;
     args_in.copyTo(args);
     if (args.size() == 1) {
-        PTRef ret = mkCUFNeg(args[0], msg);
+        PTRef ret = mkCUFNeg(args[0]);
         return ret;
     }
     else {
         assert(args.size() == 2);
         PTRef mo = mkCUFConst(-1);
-        PTRef fact = mkCUFTimes(mo, args[1], msg);
+        PTRef fact = mkCUFTimes(mo, args[1]);
         args[1] = fact;
         return mkCUFPlus(args[0], args[1]);
     }
 }
 
 PTRef
-CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2, char** msg)
+CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2)
 {
     PTRef tr = mkFun(sym_CUF_PLUS, {arg1, arg2});
     PTRef tr_comm = mkFun(sym_CUF_PLUS, {arg2, arg1});
@@ -163,7 +163,7 @@ CUFLogic::mkCUFPlus(const PTRef arg1, const PTRef arg2, char** msg)
 }
 
 PTRef
-CUFLogic::mkCUFTimes(const PTRef arg1, const PTRef arg2, char** msg)
+CUFLogic::mkCUFTimes(const PTRef arg1, const PTRef arg2)
 {
     PTRef tr = mkFun(sym_CUF_TIMES, {arg1, arg2});
     PTRef tr_comm = mkFun(sym_CUF_TIMES, {arg2, arg1});
@@ -181,13 +181,13 @@ CUFLogic::mkCUFDiv(const PTRef arg1, const PTRef arg2)
 }
 
 PTRef
-CUFLogic::mkCUFGeq(const PTRef arg1, const PTRef arg2, char** msg)
+CUFLogic::mkCUFGeq(const PTRef arg1, const PTRef arg2)
 {
-    return mkCUFLeq(arg2, arg1, msg);
+    return mkCUFLeq(arg2, arg1);
 }
 
 PTRef
-CUFLogic::mkCUFLeq(const PTRef arg1, const PTRef arg2, char** msg)
+CUFLogic::mkCUFLeq(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg1) && isCUFNUMConst(arg2)) {
         int c1 = getCUFNUMConst(arg1);
@@ -202,7 +202,7 @@ CUFLogic::mkCUFLeq(const PTRef arg1, const PTRef arg2, char** msg)
 }
 
 PTRef
-CUFLogic::mkCUFGt(const PTRef arg1, const PTRef arg2, char** msg)
+CUFLogic::mkCUFGt(const PTRef arg1, const PTRef arg2)
 {
     if (isCUFNUMConst(arg1) && isCUFNUMConst(arg2)) {
         int c1 = getCUFNUMConst(arg1);
@@ -222,9 +222,9 @@ CUFLogic::mkCUFGt(const PTRef arg1, const PTRef arg2, char** msg)
     return tr;
 }
 
-PTRef CUFLogic::mkCUFLt(const PTRef arg1, const PTRef arg2, char** msg)
+PTRef CUFLogic::mkCUFLt(const PTRef arg1, const PTRef arg2)
 {
-    return mkCUFGt(arg2, arg1, msg);
+    return mkCUFGt(arg2, arg1);
 }
 
 PTRef CUFLogic::mkCUFLshift(const PTRef arg1, const PTRef arg2)
@@ -357,7 +357,7 @@ PTRef CUFLogic::mkCUFNeq(const PTRef a1, const PTRef a2)
     return Logic::mkNot(Logic::mkEq(a1, a2));
 }
 
-const int CUFLogic::getCUFNUMConst(PTRef tr) const
+int CUFLogic::getCUFNUMConst(PTRef tr) const
 {
     return atoi(getSymName(tr));
 }

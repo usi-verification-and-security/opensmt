@@ -1,0 +1,6 @@
+(set-logic QF_UFLRA)
+(set-info :status unsat)
+(declare-fun f (Real Real) Real)
+(declare-fun x () Real)
+(assert (and (distinct x 0) (= 0 (f 0.0 0.0)) (= (f 0.0 0.0) (* 2 x))))
+(check-sat)

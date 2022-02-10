@@ -8,8 +8,7 @@
 void usingWrapper();
 void creatingComponentsDirectly();
 
-int
-main(int argc, char** argv)
+int main()
 {
     // There are now two ways to construct the necessary objects
     // 1. Using a provided wrapper
@@ -22,14 +21,11 @@ main(int argc, char** argv)
 
 void usingWrapper() {
     Opensmt* osmt = new Opensmt(qf_lia, "OpenSMT");
-    SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
     // You can ask the wrapper for the concrete subclass of Logic, but YOU need to make sure it matches the type you
     // have provided in the constructor
     auto & logic = osmt->getLIALogic();
 
-    // Create the constant
-    PTRef cons = logic.mkIntConst(-1);
     PTRef x = logic.mkIntVar("x");
     PTRef y = logic.mkIntVar("y");
     // assertion x + y = y + x
@@ -54,12 +50,10 @@ void usingWrapper() {
 }
 
 void creatingComponentsDirectly() {
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     SMTConfig config;
     MainSolver mainSolver(logic, config, "LIA solver");
 
-    // Create the constant
-    PTRef cons = logic.mkIntConst(-1);
     PTRef x = logic.mkIntVar("x");
     PTRef y = logic.mkIntVar("y");
     // assertion x + y = y + x

@@ -52,13 +52,13 @@ SNRef SubstNodeAllocator::alloc(PTRef tr, PTRef target)
     SNRef sid = {v};
     TVLRef tvr;
     if (target == PTRef_Undef) {
-        new (lea(sid)) SubstNode(tr, PTRef_Undef, vec<PTRef>(), tla);
+        new (lea(sid)) SubstNode(tr, vec<PTRef>(), tla);
     }
     else if (TargetToTargetVarListRef.peek(target, tvr)) {
-        new (lea(sid)) SubstNode(tr, target, tvr, tla);
+        new (lea(sid)) SubstNode(tr, tvr, tla);
     }
     else {
-        new (lea(sid)) SubstNode(tr, target, getVars(target), tla);
+        new (lea(sid)) SubstNode(tr, getVars(target), tla);
     }
     SourceToSNRef.insert(tr, sid);
     SNRefs.push(sid);
@@ -283,9 +283,7 @@ std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, c
 
     ss << "digraph foo {\n";
     for (int i = 0; i < startNodes.size(); i++) {
-        char *n = logic.pp(sna[startNodes[i]].getTr());
-        ss << "  " << n << " [shape=box]\n";
-        free(n);
+        ss << "  " << logic.pp(sna[startNodes[i]].getTr()) << " [shape=box]\n";
     }
 
     Map<PTRef,bool,PTRefHash> seen;
@@ -304,11 +302,7 @@ std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, c
             for (int j = 0; j < sna[n].nChildren(); j++) {
                 SNRef sn = sna[n][j];
                 if (sn != SNRef_Undef) {
-                    char *in = logic.pp(sna[n].getTr());
-                    char *out = logic.pp(sna[sn].getTr());
-                    ss << "  " << in << " -> " << out << ";\n";
-                    free(in);
-                    free(out);
+                    ss << "  " << logic.pp(sna[n].getTr()) << " -> " << logic.pp(sna[sn].getTr()) << ";\n";
                     queue.push(sn);
                 }
             }
@@ -316,20 +310,14 @@ std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, c
     }
     for (const auto & loop : loops) {
         for (int j = 0; j < loop.size()-1; j++) {
-            char *in = logic.pp(sna[loop[j]].getTr());
-            char *out = logic.pp(sna[loop[(j + 1)]].getTr());
-            ss << "  " << in << " -> " << out << " [style=dotted];\n";
-            free(in);
-            free(out);
+            ss << "  " << logic.pp(sna[loop[j]].getTr()) << " -> " << logic.pp(sna[loop[(j + 1)]].getTr()) << " [style=dotted];\n";
         }
         SNRef last = loop[loop.size()-1];
-        char* in = logic.pp(sna[last].getTr());
+        auto in = logic.pp(sna[last].getTr());
         for (int j = 0; j < sna[last].nChildren(); j++) {
-            char* out = logic.pp(sna[sna[last][j]].getTr());
+            auto out = logic.pp(sna[sna[last][j]].getTr());
             ss << "  " << in << " -> " << out << " [style=dashed];\n";
-            free(out);
         }
-        free(in);
     }
     ss << "}";
     return ss.str();

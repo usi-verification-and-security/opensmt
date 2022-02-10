@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "SMTConfig.h"
+#include "OsmtInternalException.h"
 
 void ASTNode::print(std::ostream& o, int indent) {
         for (int i = 0; i < indent; i++)
@@ -207,52 +208,42 @@ ConfValue::~ConfValue()
         free(strval);
 }
 
-char* ConfValue::toString() const {
+std::string ConfValue::toString() const {
     if (type == O_BOOL)
-        return numval == 1 ? strdup("true") : strdup("false");
+        return numval == 1 ? "true" : "false";
     if (type == O_STR)
-        return strdup(strval);
+        return strval;
     if (type == O_NUM) {
-        stringstream ss;
-        ss << numval;
-        return strdup(ss.str().c_str());
+        return std::to_string(numval);
     }
     if (type == O_EMPTY) {
-        return strdup("");
+        return "";
     }
     if (type == O_ATTR) {
-        return strdup(strval);
+        return strval;
     }
     if (type == O_DEC) {
-        stringstream ss;
+        std::stringstream ss;
         ss << decval;
-        return strdup(ss.str().c_str());
+        return ss.str();
     }
-    if (type == O_HEX) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
-    }
-    if (type == O_BIN) {
-        stringstream ss;
-        ss << unumval;
-        return strdup(ss.str().c_str());
+    if (type == O_HEX or type == O_BIN) {
+        return std::to_string(unumval);
     }
     if (type == O_SYM) {
-        return strdup(strval);
+        return strval;
     }
     if (type == O_LIST) {
+        assert(configs);
         stringstream ss;
         ss << "( ";
-        for (list<ConfValue*>::iterator it = configs->begin(); it != configs->end(); it++) {
-            char* conf_str = (*it)->toString();
-            ss << conf_str; ss << " ";
-            free(conf_str);
+        for (ConfValue * val : *configs) {
+            ss << val->toString() << " ";
         }
         ss << ")";
-        return strdup(ss.str().c_str());
+        return ss.str();
     }
-    return strdup("not implemented");
+    throw OsmtInternalException("Not implemented");
 }
 
 
@@ -260,26 +251,22 @@ char* ConfValue::toString() const {
  * Class defining the information, configured with set-info
  ***********************************************************/
 
-Info::Info(ASTNode& n) {
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+Info::Info(ASTNode const & n) {
+    assert(n.getType() == UATTR_T or n.getType() == PATTR_T);
     if (n.children == NULL) {
         value.type = O_EMPTY;
         return;
     }
     else {
-        // n is now attribute_value
-        n = **(n.children->begin());
+        // child is attribute_value
+        ASTNode const & child = **(n.children->begin());
 
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
+        if (child.getType() == SPECC_T or child.getType() == SEXPRL_T) {
+            value = ConfValue(child);
         }
-        else if (n.getType() == SYM_T) {
-            value.strval = strdup(n.getValue());
+        else if (child.getType() == SYM_T) {
+            value.strval = strdup(child.getValue());
             value.type = O_STR;
-            return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
         }
         else assert(false);
     }
@@ -294,64 +281,59 @@ Info::Info(const Info& other)
  * Class defining the options, configured with set-config
  ***********************************************************/
 
-SMTOption::SMTOption(ASTNode& n) {
-    assert(n.children != NULL);
+SMTOption::SMTOption(ASTNode const & n) {
+    assert(n.children);
 
-    n = **(n.children->begin());
+    ASTNode const & child = **(n.children->begin());
 
-    if (n.getType() == BOOL_T) {
+    if (child.getType() == BOOL_T) {
         value.type   = O_BOOL;
-        value.numval = strcmp(n.getValue(), "true") == 0 ? 1 : 0;
+        value.numval = strcmp(child.getValue(), "true") == 0 ? 1 : 0;
         return;
     }
-    if (n.getType() == STR_T) {
+    if (child.getType() == STR_T) {
         value.type   = O_STR;
-        value.strval = strdup(n.getValue());
+        value.strval = strdup(child.getValue());
         return;
     }
-    if (n.getType() == NUM_T) {
+    if (child.getType() == NUM_T) {
         value.type   = O_NUM;
-        value.numval = atoi(n.getValue());
+        value.numval = atoi(child.getValue());
         return;
     }
 
-    if (n.getType() == DEC_T) {
+    if (child.getType() == DEC_T) {
         value.type   = O_DEC;
-        sscanf(n.getValue(), "%lf", &value.decval);
+        sscanf(child.getValue(), "%lf", &value.decval);
     }
-    assert( n.getType() == UATTR_T || n.getType() == PATTR_T );
+    assert(child.getType() == UATTR_T or child.getType() == PATTR_T);
     // The option is an attribute
 
-    if (n.children == NULL) {
+    if (not child.children) {
         value.type = O_EMPTY;
         return;
     }
     else {
         // n is now attribute_value
-        n = **(n.children->begin());
+        ASTNode const & attributeValue = **(child.children->begin());
 
-        if (n.getType() == SPECC_T) {
-            value = ConfValue(n);
+        if (attributeValue.getType() == SPECC_T or attributeValue.getType() == SEXPRL_T) {
+            value = ConfValue(attributeValue);
         }
-        else if (n.getType() == SYM_T) {
-            if (strcmp(n.getValue(), "true") == 0) {
+        else if (attributeValue.getType() == SYM_T) {
+            if (strcmp(attributeValue.getValue(), "true") == 0) {
                 value.type = O_BOOL;
                 value.numval = 1;
             }
-            else if (strcmp(n.getValue(), "false") == 0) {
+            else if (strcmp(attributeValue.getValue(), "false") == 0) {
                 value.type = O_BOOL;
                 value.numval = 0;
             }
             else {
-                value.strval = strdup(n.getValue());
+                value.strval = strdup(attributeValue.getValue());
                 value.type = O_STR;
             }
             return;
-        }
-        else if (n.getType() == SEXPRL_T) {
-            value = ConfValue(n);
-            /*
-            */
         }
         else assert(false);
     }
@@ -535,7 +517,6 @@ const char* SMTConfig::o_respect_logic_partitioning_hints = ":respect-logic-part
 const char* SMTConfig::o_sat_lookahead_split = ":lookahead-split";
 const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
 const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";
-const char* SMTConfig::o_extended_signature = ":use-extended-signature";
 
 char* SMTConfig::server_host=NULL;
 uint16_t SMTConfig::server_port = 0;

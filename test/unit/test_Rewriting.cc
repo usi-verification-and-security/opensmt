@@ -16,7 +16,7 @@
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
 {
-    Logic logic;
+    Logic logic{opensmt::Logic_t::QF_UF};
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -29,7 +29,7 @@ TEST(Rewriting_test, test_RewriteClassicConjunction)
 
 TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 {
-    Logic logic;
+    Logic logic{opensmt::Logic_t::QF_UF};
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -47,7 +47,7 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 
 TEST(Rewriting_test, test_RewriteEquality)
 {
-    ArithLogic logic{ArithLogic::ArithType::LRA};
+    ArithLogic logic{opensmt::Logic_t::QF_LRA};
     PTRef x = logic.mkRealVar("x");
     PTRef y = logic.mkRealVar("y");
     PTRef eq = logic.mkEq(x,y);
@@ -58,7 +58,7 @@ TEST(Rewriting_test, test_RewriteEquality)
 }
 
 TEST(Rewriting_test, test_RewriteDivMod) {
-    ArithLogic logic{ArithLogic::ArithType::LIA};
+    ArithLogic logic{opensmt::Logic_t::QF_LIA};
     PTRef x = logic.mkIntVar("x");
     PTRef two = logic.mkIntConst(2);
     PTRef div = logic.mkIntDiv(x,two);
@@ -78,7 +78,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
 
 class RewriteDistinctTest : public ::testing::Test {
 protected:
-    RewriteDistinctTest() : logic{} {}
+    RewriteDistinctTest() : logic{opensmt::Logic_t::QF_UF} {}
 
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
