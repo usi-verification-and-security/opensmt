@@ -3,6 +3,7 @@
 //
 
 #include "LookaheadSMTSolver.h"
+#include "Proof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver (c, thandler)
@@ -105,13 +106,25 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1)
             {
-                uncheckedEnqueue(out_learnt[0]);
+                CRef reason = CRef_Undef;
+                if (logsProofForInterpolation())
+                {
+                    CRef crd = ca.alloc(out_learnt, false);
+                    proof->endChain(crd);
+                    reason = crd;
+                }
+                uncheckedEnqueue(out_learnt[0], reason);
             }
             else
             {
+
                 CRef crd = ca.alloc(out_learnt, true);
+                if (logsProofForInterpolation()) {
+                    proof->endChain(crd);
+                }
                 learnts.push(crd);
                 attachClause(crd);
+                claBumpActivity(ca[crd]);
                 uncheckedEnqueue(out_learnt[0], crd);
 
             }
@@ -427,6 +440,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::lookaheadLoop(Lit& best)
                     printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
                     uncheckedEnqueue(l);
+//                    printf("Propagating the literal: %d \n", l.x);
                     lbool res = laPropagateWrapper();
                     if (res == l_False) {
                         best = lit_Undef;

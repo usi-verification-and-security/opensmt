@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
+#include <CounterRewriter.h>
 
 #include "Interpret.h"
 #include "Theory.h"
@@ -1257,8 +1258,10 @@ void Interpret::getInterpolants(const ASTNode& n)
     } else {
         interpolationContext->getSingleInterpolant(itps, partitionings[0]);
     }
-
+    CounterRewriter interesting = CounterRewriter(*logic);
     for (int j = 0; j < itps.size(); j++) {
+        interesting.rewrite(itps[j]);
+        printf("Amount of vars: %d\nAmount of boolean operators: %d\n", interesting.config.varNumber, interesting.config.boolNumber);
         char * itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
                          (j == 0 ? "(" : " "), itp, (j == itps.size() - 1 ? ")" : ""));

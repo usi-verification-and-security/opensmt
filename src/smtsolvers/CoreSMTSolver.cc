@@ -2162,7 +2162,7 @@ void CoreSMTSolver::garbageCollect()
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
     ClauseAllocator to(ca.size() - ca.wasted());
-
+    printf("Garbage collect\n");
     relocAll(to);
 //    if (verbosity >= 2)
 //        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",
