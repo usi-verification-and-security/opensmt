@@ -48,8 +48,14 @@ void Proof::newLeafClause(CRef c, clause_type t)
 //
 void Proof::beginChain( CRef c )
 {
+
     assert( c != CRef_Undef );
     assert( !hasOpenChain() );
+//    std::cout<<"Has begun chain\n";
+//    if(c == 1509 || c == 4936){
+//        std::cout<<"Hi!";
+//    }
+//    printf("BegUN chain %d\n", c);
     begun = true;
     assert(current_chain.isEmpty());
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
@@ -76,6 +82,10 @@ void Proof::addResolutionStep(CRef c, Var p)
 void Proof::endChain( CRef conclusion )
 {
   assert(hasOpenChain());
+//  std::cout<<"Has ended chain: " << conclusion << "\n";
+//  if(conclusion == 1509){
+//      printf("Lol\n");
+//  }
   begun = false;
   // There was no chain (only the first clause was stored)
   if ( current_chain.isTrivial() )

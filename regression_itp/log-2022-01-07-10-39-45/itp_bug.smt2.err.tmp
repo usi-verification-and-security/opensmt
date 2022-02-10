@@ -1,0 +1,2 @@
+/usr/bin/time: illegal option -- o
+usage: time [-lp] <command>

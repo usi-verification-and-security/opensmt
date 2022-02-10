@@ -3,6 +3,7 @@
 //
 
 #include "LookaheadSMTSolver.h"
+#include "Proof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver(c, thandler)
@@ -18,7 +19,14 @@ Var LookaheadSMTSolver::newVar(bool sign, bool dvar) {
 
 lbool LookaheadSMTSolver::solve_() {
     declareVarsToTheories();
-
+    before_lookahead = false;
+    next_arr = new bool[nVars()]();
+    auto it = next_init.begin();
+    while(it!=next_init.end()){
+        next_arr[*it] = true;
+        it++;
+    }
+    close_to_prop = next_init.size();
     double nof_conflicts = restart_first;
 
     LALoopRes res = LALoopRes::unknown;
@@ -90,12 +98,26 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
 #endif
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
-            if (out_learnt.size() == 1) {
-                uncheckedEnqueue(out_learnt[0]);
-            } else {
+            if (out_learnt.size() == 1)
+            {
+                CRef reason = CRef_Undef;
+                if (logsProofForInterpolation())
+                {
+                    CRef crd = ca.alloc(out_learnt, false);
+                    proof->endChain(crd);
+                    reason = crd;
+                }
+                uncheckedEnqueue(out_learnt[0], reason);
+            }
+            else
+            {
                 CRef crd = ca.alloc(out_learnt, true);
+                if (logsProofForInterpolation()) {
+                    proof->endChain(crd);
+                }
                 learnts.push(crd);
                 attachClause(crd);
+                claBumpActivity(ca[crd]);
                 uncheckedEnqueue(out_learnt[0], crd);
             }
             diff = true;
@@ -152,13 +174,18 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
 #endif
     for (int i = path.size() - 1; i >= 0; i--) {
         newDecisionLevel();
-        if (value(path[i]) == l_Undef) {
+//        printf("This is decision level: %d\n", path.size());
+
+        if (value(path[i]) == l_Undef)
+        {
 #ifdef LADEBUG
-            printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
+            printf("I will propagate %d\n", var(path[i]));
 #endif
             int curr_dl = decisionLevel();
             uncheckedEnqueue(path[i]);
             lbool res = laPropagateWrapper();
+//            printf("Amount of literals close to propagation: %lu\n", next_s.size());
+//            printf("Number of overall props: %d\n", props);
             // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
             if (res == l_False) {
                 return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
@@ -239,120 +266,144 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     int count = 0;
     bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
     int skipped_vars_due_to_logic = 0;
+    Lit best;
 
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-    for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
+    tested = true;
+//    int count_pr=0;
+//    int predicted=close_to_prop;
+//    if(close_to_prop==1){
+//        printf("fun");
+//    }
+        for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
-        if (!decision[v]) {
-            score->setChecked(v);
+            if(next_arr[v] || close_to_prop <= 0) {
+//                count_pr++;
+//                props++;
+                if (!decision[v]) {
+                    score->setChecked(v);
 #ifdef LADEBUG
-            cout << "Not a decision variable: " << v << "(" << theory_handler.getLogic.printTerm(theory_handler.varToTerm(v)) << ")\n";
+                    cout << "Not a decision variable: " << v << "("
+                         << theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)) << ")\n";
 #endif
-            continue;
-        }
-        if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
-            respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
-        if (respect_logic_partitioning_hints && !okToPartition(v)) {
-            skipped_vars_due_to_logic ++;
-            cout << "Skipping " << v << " since logic says it's not good\n";
-            continue; // Skip the vars that the logic considers bad to split on
-        }
-#ifdef LADEBUG
-        printf("Checking var %d\n", v);
-#endif
-        Lit best = score->getBest();
-        if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
-#ifdef LADEBUG
-            printf("  Var is safe to skip due to %s\n",
-                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
-#endif
-            score->setChecked(v);
-            // It is possible that all variables are assigned here.
-            // In this case it seems that we have a satisfying assignment.
-            // This is in fact a debug check
-            if (static_cast<unsigned int>(trail.size()) == dec_vars) {
-#ifdef LADEBUG
-                printf("All vars set?\n");
-#endif
-                if (checkTheory(true) != TPropRes::Decide)
-                    return {laresult::la_tl_unsat, lit_Undef}; // Problem is trivially unsat
-                assert(checkTheory(true) == TPropRes::Decide);
-#ifndef NDEBUG
-                for (CRef cr : clauses) {
-                    Clause& c = ca[cr];
-                    unsigned k;
-                    for (k = 0; k < c.size(); k++) {
-                        if (value(c[k]) == l_True) {
-                            break;
-                        }
-                    }
-                    assert(k < c.size());
+                    continue;
                 }
+                if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
+                    respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+                if (respect_logic_partitioning_hints && !okToPartition(v)) {
+                    skipped_vars_due_to_logic++;
+                    cout << "Skipping " << v << " since logic says it's not good\n";
+                    continue; // Skip the vars that the logic considers bad to split on
+                }
+#ifdef LADEBUG
+                printf("Checking var %d\n", v);
 #endif
-                return {laresult::la_sat, lit_Undef}; // Stands for SAT
+                Lit best = score->getBest();
+                if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
+#ifdef LADEBUG
+                    printf("  Var is safe to skip due to %s\n",
+                           value(v) != l_Undef ? "being assigned" : "having low upper bound");
+#endif
+                    if(value(v) != l_Undef && next_arr[v]){
+                        next_arr[v] = false;
+                        close_to_prop--;
+                    }
+//                    score->setChecked(v);
+                    // It is possible that all variables are assigned here.
+                    // In this case it seems that we have a satisfying assignment.
+                    // This is in fact a debug check
+                    if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+#ifdef LADEBUG
+                        printf("All vars set?\n");
+#endif
+
+                        if (checkTheory(true) != TPropRes::Decide)
+                            return {laresult::la_tl_unsat, best}; // Problem is trivially unsat
+                        assert(checkTheory(true) == TPropRes::Decide);
+#ifndef NDEBUG
+                        for (int j = 0; j < clauses.size(); j++) {
+                            Clause &c = ca[clauses[j]];
+                            unsigned k;
+                            for (k = 0; k < c.size(); k++) {
+                                if (value(c[k]) == l_True) {
+                                    break;
+                                }
+                            }
+                            assert(k < c.size());
+                        }
+#endif
+                        best = lit_Undef;
+                        return {laresult::la_sat, best}; // Stands for SAT
+                    }
+                    continue;
+                }
+                if (trail.size() == nVars() + skipped_vars_due_to_logic) {
+                    cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
+                    respect_logic_partitioning_hints = false;
+                    continue;
+                }
+                count++;
+                int p0 = 0, p1 = 0;
+                for (int p = 0; p < 2; p++)   // do for both polarities
+                {
+                    assert(decisionLevel() == d);
+                    double ss = score->getSolverScore(this);
+                    newDecisionLevel();
+                    Lit l = mkLit(v, p);
+#ifdef LADEBUG
+                    printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
+#endif
+                    uncheckedEnqueue(l);
+//                    printf("Propagating the literal: %d \n", l.x);
+                    lbool res = laPropagateWrapper();
+                    if (res == l_False) {
+                        best = lit_Undef;
+                        return {laresult::la_tl_unsat, best};
+                    } else if (res == l_Undef) {
+                        cancelUntil(0);
+                        return {laresult::la_restart, best};
+                    }
+                    // Else we go on
+                    if (decisionLevel() == d + 1) {
+#ifdef LADEBUG
+//                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
+#endif
+                        score->updateSolverScore(ss, this);
+                    } else if (decisionLevel() == d) {
+#ifdef LADEBUG
+                        printf(" -> Propagation resulted in backtrack\n");
+#endif
+                        score->updateRound();
+                        break;
+                    } else {
+#ifdef LADEBUG
+                        printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
+#endif
+                        // Backtracking should happen.
+                        best = lit_Undef;
+                        return {laresult::la_unsat, best};
+                    }
+                    p == 0 ? p0 = ss : p1 = ss;
+                    // Update also the clause deletion heuristic?
+                    cancelUntil(decisionLevel() - 1);
+                }
+                if (value(v) == l_Undef) {
+#ifdef LADEBUG
+                    printf("Updating var %d to (%d, %d)\n", v, p0, p1);
+#endif
+                    score->setLAValue(v, p0, p1);
+                    score->updateLABest(v);
+                }
             }
-            continue;
-        }
-        if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-            cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
-            respect_logic_partitioning_hints = false;
-            continue;
-        }
-        count++;
-        int p0 = 0, p1 = 0;
-        for (int p : {0, 1}) { // for both polarities
-            assert(decisionLevel() == d);
-            double ss = score->getSolverScore(this);
-            newDecisionLevel();
-            Lit l = mkLit(v, p);
-#ifdef LADEBUG
-           printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
-#endif
-            uncheckedEnqueue(l);
-            lbool res = laPropagateWrapper();
-            if (res == l_False) {
-                return {laresult::la_tl_unsat, lit_Undef};
-            }
-            else if (res == l_Undef) {
-                cancelUntil(0);
-                return {laresult::la_restart, lit_Undef};
-            }
-            // Else we go on
-            if (decisionLevel() == d+1) {
-#ifdef LADEBUG
-                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
-#endif
-                score->updateSolverScore(ss, this);
-            } else if (decisionLevel() == d) {
-#ifdef LADEBUG
-                printf(" -> Propagation resulted in backtrack\n");
-#endif
-                score->updateRound();
-                break;
-            } else {
-#ifdef LADEBUG
-                printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
-#endif
-                // Backtracking should happen.
-                return {laresult::la_unsat, lit_Undef};
-            }
-            p == 0 ? p0 = ss : p1 = ss;
-            // Update also the clause deletion heuristic?
-            cancelUntil(decisionLevel() - 1);
-        }
-        if (value(v) == l_Undef)
-        {
-#ifdef LADEBUG
-           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
-#endif
-            score->setLAValue(v, p0, p1);
-            score->updateLABest(v);
-        }
     }
-    Lit best = score->getBest();
-    if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
+//    }
+//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
+    tested = false;
+    best = score->getBest();
+    if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
+    {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
@@ -361,11 +412,13 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     assert(best != lit_Undef);
 #ifdef LADEBUG
     printf("Lookahead phase over successfully\n");
-    printf("Best I found propagates high %d and low %d\n",
-           LAexacts[var(best)].getEx_h(),
-           LAexacts[var(best)].getEx_l());
+//    printf("Best I found propagates high %d and low %d\n",
+//           LAexacts[var(best)].getEx_h(),
+//           LAexacts[var(best)].getEx_l());
 #endif
     idx = (idx + i) % nVars();
-    if (!okToPartition(var(best))) { unadvised_splits++; }
+    if (!okToPartition(var(best))) {
+        unadvised_splits++;
+    }
     return {laresult::la_ok, best};
 }

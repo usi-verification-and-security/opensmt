@@ -355,13 +355,20 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     return true;
 }
 
-
 void CoreSMTSolver::attachClause(CRef cr)
 {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
+    if(c.size() > 2 )
+        watches[~c[2]].push(Watcher(cr, c[0]));
+    else{
+        next_init.insert(var(~c[0]));
+        next_init.insert(var(~c[1]));
+//        close_to_prop = next_init.size();
+    }
+
     if (c.learnt()) learnts_literals += c.size();
     else            clauses_literals += c.size();
 }
@@ -374,12 +381,16 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
     {
         remove(watches[~c[0]], Watcher(cr, c[1]));
         remove(watches[~c[1]], Watcher(cr, c[0]));
+        if(c.size() > 2 )
+            remove(watches[~c[2]], Watcher(cr, c[0]));
     }
     else
     {
         // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
         watches.smudge(~c[0]);
         watches.smudge(~c[1]);
+        if (c.size() > 2)
+            watches.smudge(~c[2]);
     }
 
     if (c.learnt()) learnts_literals -= c.size();
@@ -587,10 +598,6 @@ Lit CoreSMTSolver::pickBranchLit()
 
     vec<int> discarded;
 
-//    printf("Activity (%d)\n", activity.size());
-//    for (int i = 0; i < activity.size(); i++)
-//        printf("%f ", activity[i]);
-//    printf("\n");
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
     {
@@ -911,9 +918,6 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         }
     }
     cleanup.clear();
-//    for (int i = 0; i < out_learnt.size(); i++)
-//        printf("%d ", out_learnt[i]);
-//    printf("\n");
 }
 
 
@@ -1152,78 +1156,158 @@ CRef CoreSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
+//            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
-            if (value(blocker) == l_True)
-            {
-                *j++ = *i++;
-                continue;
-            }
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
-            Lit false_lit = ~p;
-            if (c[0] == false_lit)
-                c[0] = c[1], c[1] = false_lit;
 
-            assert(c[1] == false_lit);
+
+
+            unsigned c_size = c.size();
+            Lit false_lit = ~p;
+
+            if(!tested){
+                props++;
+            }
+            // Try to avoid inspecting the clause:
+            if(c_size > 2 && value(c[2]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                }
+                *j++ = *i++;
+                continue;
+            }
+
+            if(value(c[0]) == l_True || value(c[1]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                }
+                *j++ = *i++;
+                continue;
+            }
+
+            if(c_size > 2 ){
+                if (c[0] == false_lit){
+                    if(value(c[2]) != l_False){
+                        c[0] = c[2], c[2] = false_lit;
+                    } else {
+                        c[0] = c[1], c[1] = false_lit;
+                    }
+                }
+                if (c[1] == false_lit){
+                    c[1] = c[2], c[2] = false_lit;
+                }
+            }
+            else {
+                if (c[0] == false_lit) {
+                    c[0] = c[1], c[1] = false_lit;
+                }
+            }
+
+
+            if(c_size == 2){
+                assert(c[1] == false_lit);
+            } else {
+                assert(c[2] == false_lit);
+            }
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
             Lit first = c[0];
             Watcher w = Watcher(cr, first);
-            if (first != blocker && value(first) == l_True)
-            {
-                *j++ = w;
-                continue;
-            }
-
             // Look for new watch:
-            for (unsigned k = 2; k < c.size(); k++)
-                if (value(c[k]) != l_False)
-                {
-                    c[1] = c[k];
+            for (unsigned k = 3; k < c_size; k++) {
+                if (value(c[k]) != l_False) {
+                    c[2] = c[k];
                     c[k] = false_lit;
-                    watches[~c[1]].push(w);
+                    watches[~c[2]].push(w);
                     goto NextClause;
                 }
+            }
 
-            // Did not find watch
             *j++ = w;
-            if (value(first) == l_False) // clause is falsified
-            {
-                confl = cr;
-                qhead = trail.size();
-                // Copy the remaining watches:
-                while (i < end) {
-                    *j++ = *i++;
-                }
-                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                    this->finalizeProof(confl);
-                }
-            }
-            else {  // clause is unit under assignment:
-                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                    // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
-                    //     is not constructed correctly
-                    proof->beginChain(cr);
-                    for (unsigned k = 1; k < c.size(); k++)
-                    {
-                        assert(level(var(c[k])) == 0);
-                        assert(reason(var(c[k])) != CRef_Fake);
-                        assert(reason(var(c[k])) != CRef_Undef);
-                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+            if(value(c[1]) == l_False){
+                if(!tested){
+                    if(next_arr[var(~c[0])]){
+                        close_to_prop--;
                     }
-                    CRef unitClause = ca.alloc(vec<Lit>{first});
-                    proof->endChain(unitClause);
-                    // Replace the reason for enqueing the literal with the unit clause.
-                    // Necessary for correct functioning of proof logging in analyze()
-                    cr = unitClause;
+                    if(next_arr[var(~c[1])]){
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                } else {
+                    if(before_lookahead){
+                        next_init.erase(var(~c[0]));
+                        next_init.erase(var(~c[1]));
+                    }
                 }
-                uncheckedEnqueue(first, cr);
-            }
+                if (value(first) == l_False) // clause is falsified
+                {
+                    confl = cr;
+                    qhead = trail.size();
+                    // Copy the remaining watches:
+                    while (i < end) {
+                        *j++ = *i++;
+                    }
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        this->finalizeProof(confl);
+                    }
+                } else {  // clause is unit under assignment:
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
+                        //     is not constructed correctly
+                        proof->beginChain(cr);
 
+                        for (unsigned k = 1; k < c_size; k++)
+                        {
+                            assert(level(var(c[k])) == 0);
+                            assert(reason(var(c[k])) != CRef_Fake);
+                            assert(reason(var(c[k])) != CRef_Undef);
+                            proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                        }
+                        CRef unitClause = ca.alloc(vec<Lit>{first});
+                        proof->endChain(unitClause);
+                        // Replace the reason for enqueing the literal with the unit clause.
+                        // Necessary for correct functioning of proof logging in analyze()
+                        cr = unitClause;
+                    }
+                    uncheckedEnqueue(first, cr);
+                }
+            } else if (value(c[2]) == l_False) {
+                if(!tested){
+                    if(!next_arr[var(~c[0])]){
+                        close_to_prop += 1;
+                    }
+                    if(!next_arr[var(~c[1])]){
+                        close_to_prop += 1;
+                    }
+                    next_arr[var(~c[0])] = true;
+                    next_arr[var(~c[1])] = true;
+                } else {
+                    if(before_lookahead){
+                        next_init.insert(var(~c[0]));
+                        next_init.insert(var(~c[1]));
+                    }
+                }
+            }
 NextClause:
             ;
         }
@@ -1860,6 +1944,7 @@ lbool CoreSMTSolver::solve_()
     }
     this->clausesUpdate();
 
+    next_arr = new bool[nVars()]();
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
@@ -2052,7 +2137,7 @@ void CoreSMTSolver::garbageCollect()
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
     ClauseAllocator to(ca.size() - ca.wasted());
-
+    printf("Garbage collect\n");
     relocAll(to);
 //    if (verbosity >= 2)
 //        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",
