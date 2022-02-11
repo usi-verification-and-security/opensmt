@@ -25,10 +25,10 @@ CutCreator::Cut CutCreator::makeCut(SparseLinearSystem && system, ColumnMapping 
     // Now check every row of U for infeasibility: if the cross product of the row and vector of variable values is not
     // an integer, the row represents an infeasible constraint
     for (uint32_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
-        auto & row = matrixU[rowIndex];
+        auto const & row = matrixU[rowIndex];
         auto product = row.product(varValues);
         if (not product.isInteger()) {
-            return {std::move(row), product};
+            return {row.toVector(), product};
         }
     }
     return {};
