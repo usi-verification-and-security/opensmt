@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *                      Antti Hyvarinen <antti.hyvarinen@gmail.com>
  *
  *  SPDX-License-Identifier: MIT
  *
