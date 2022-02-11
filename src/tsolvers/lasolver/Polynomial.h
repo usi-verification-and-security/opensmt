@@ -13,7 +13,6 @@
 
 template<typename VarType>
 class PolynomialT {
-    friend class Tableau;
 private:
     struct Term {
         VarType var;
@@ -24,8 +23,9 @@ private:
     struct TermCmp {
         bool operator()(const Term& first, const Term& second) { return first.var.x < second.var.x; }
     };
-//    using poly_t = std::unordered_map<LVRef, opensmt::Real, LVRefHash>;
+public:
     using poly_t = std::vector<Term>; // Terms are ordered by variable num
+private:
     poly_t poly;
 public:
     void addTerm(VarType var, opensmt::Real coeff);

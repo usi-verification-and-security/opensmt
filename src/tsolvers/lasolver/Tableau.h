@@ -105,7 +105,7 @@ private:
     };
     std::vector<VarType> varTypes;
 
-    std::vector<Polynomial::Term> tmp_storage;
+    Tableau::Polynomial::poly_t tmp_storage;
 
     void ensureTableauReadyFor(LVRef v);
 
