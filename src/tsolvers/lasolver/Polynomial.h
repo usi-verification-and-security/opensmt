@@ -27,6 +27,7 @@ public:
     using poly_t = std::vector<Term>; // Terms are ordered by variable num
 private:
     poly_t poly;
+    static poly_t tmp_storage;
 public:
     void addTerm(VarType var, opensmt::Real coeff);
     std::size_t size() const;
@@ -36,14 +37,8 @@ public:
     void divideBy(const opensmt::Real& r);
 
     template<typename ADD, typename REM>
-    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved) {
-        std::vector<Term> storage;
-        merge(other, coeff, informAdded, informRemoved, storage);
-    }
-
-    template<typename ADD, typename REM>
-    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
-            std::vector<Term>& storage);
+    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded = [](VarType){}, REM informRemoved = [](VarType){},
+            poly_t & storage = tmp_storage);
 
     using iterator = typename poly_t::iterator;
     using const_iterator = typename poly_t::const_iterator;
@@ -78,6 +73,9 @@ public:
 
     void print() const;
 };
+
+template<typename VarType>
+typename PolynomialT<VarType>::poly_t PolynomialT<VarType>::tmp_storage;
 
 template<typename VarType>
 template<typename ADD, typename REM>
