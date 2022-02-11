@@ -7,6 +7,7 @@
 #include <lasolver/Simplex.h>
 #include <lasolver/LASolver.h>
 
+using Polynomial = PolynomialT<LVRef>;
 
 TEST(LIACutSolver_test, test_computeEqualityBasis)
 {
@@ -25,21 +26,21 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
 
     //y - x
     LVRef y_minus_x = vs.getNewVar();
-    auto p_y_minus_x = std::make_unique<Polynomial<LVRef>>();
+    auto p_y_minus_x = std::make_unique<Polynomial>();
 
     p_y_minus_x->addTerm(x, -1);
     p_y_minus_x->addTerm(y, 1);
 
     //-y - 10x
     LVRef minus_y_minus_ten_x = vs.getNewVar();
-    auto p_minus_y_minus_ten_x = std::make_unique<Polynomial<LVRef>>();
+    auto p_minus_y_minus_ten_x = std::make_unique<Polynomial>();
 
     p_minus_y_minus_ten_x->addTerm(x, -10);
     p_minus_y_minus_ten_x->addTerm(y, -1);
 
     //2x - 2y
     LVRef two_x_minus_two_y = vs.getNewVar();
-    auto p_two_x_minus_two_y = std::make_unique<Polynomial<LVRef>>();
+    auto p_two_x_minus_two_y = std::make_unique<Polynomial>();
 
     p_two_x_minus_two_y->addTerm(y, -2);
     p_two_x_minus_two_y->addTerm(x, 2);
