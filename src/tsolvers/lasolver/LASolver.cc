@@ -864,9 +864,9 @@ struct DefiningConstraint {
 
 /*
  * Translates the set of defining constraints (linear equalities) into a suitable inner representation:
- * - Matrix A of coefficients
- * - a vector with right-hand-side values (as Rationals)
- * - a map from column index to the corresponding variable
+ * - A sparse matrix A of coefficients and constants b
+ * - a map from column indices to the corresponding variables x
+ * - The result is to be interpreted as the linear system Ax = b
  */
 std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std::vector<DefiningConstraint> const & constraints, ArithLogic & logic) {
     vec<PTRef> terms;
@@ -936,8 +936,8 @@ PTRef getSumFromTermVec(SparseColMatrix::TermVec const & termVec, vec<PTRef> con
 }
 
 PTRef cutToSplit(CutCreator::Cut && cut, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
-    auto termVec = cut.first;
-    auto rhs = cut.second;
+    auto const & termVec = cut.first;
+    auto const & rhs = cut.second;
     if (termVec.empty()) {
         return PTRef_Undef;
     }

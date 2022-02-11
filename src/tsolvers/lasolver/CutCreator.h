@@ -23,7 +23,7 @@ public:
 
     explicit CutCreator(std::function<FastRational(PTRef)> && varValue) : varValue(std::move(varValue)) {}
 
-    using Cut = std::pair<SparseColMatrix::TermVec, FastRational>;
+    using Cut = opensmt::pair<SparseColMatrix::TermVec, FastRational>;
     using ColumnMapping = std::vector<PTRef>;
     Cut makeCut(SparseLinearSystem && constraints, ColumnMapping const &);
 };
