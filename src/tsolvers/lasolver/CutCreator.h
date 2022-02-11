@@ -12,6 +12,7 @@
 #include "Polynomial.h"
 #include "SparseMatrix.h"
 #include "PTRef.h"
+#include "TypeUtils.h"
 
 class CutCreator {
 private:
