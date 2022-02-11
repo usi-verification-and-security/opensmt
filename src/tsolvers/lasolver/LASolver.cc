@@ -256,8 +256,8 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
     return x;
 }
 
-std::unique_ptr<Polynomial<LVRef>> LASolver::expressionToLVarPoly(PTRef term) {
-    auto poly = std::make_unique<Polynomial<LVRef>>();
+std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
+    auto poly = std::make_unique<Tableau::Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
@@ -898,7 +898,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
     uint32_t rows = constraints.size();
     SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
     std::vector<FastRational> rhs(rows);
-    std::vector<Polynomial<IndexType>> columnPolynomials(columns);
+    std::vector<SparseColMatrix::ColumnPolynomial> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
     for (unsigned row = 0; row < constraints.size(); ++row) {

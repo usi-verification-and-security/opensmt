@@ -38,14 +38,15 @@ inline constexpr IndexType IndexType::Undef = IndexType { INT32_MAX };
 
 class SparseColMatrix {
 public:
+    using ColumnPolynomial = PolynomialT<IndexType>;
     using TermVec = std::vector<std::pair<IndexType, FastRational>>;
     class Col {
-        Polynomial<IndexType> poly;
+        ColumnPolynomial poly;
     public:
         Col() = default;
         Col(Col const &) = delete;
         Col(Col &&) = default;
-        void setPolynomial(Polynomial<IndexType> && _poly)  {
+        void setPolynomial(ColumnPolynomial && _poly)  {
             assert(this->poly.size() == 0);
             this->poly = std::move(_poly);
         }
@@ -88,7 +89,7 @@ public:
     uint32_t colCount() const { return _colCount; }
     uint32_t rowCount() const { return _rowCount; }
 
-    void setColumn(ColIndex colIndex, Polynomial<IndexType> && poly) {
+    void setColumn(ColIndex colIndex, ColumnPolynomial && poly) {
         assert(colIndex < _colCount);
         cols[colIndex].setPolynomial(std::move(poly));
     }

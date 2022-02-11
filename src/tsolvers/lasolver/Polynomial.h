@@ -12,7 +12,7 @@
 #include <iostream>
 
 template<typename VarType>
-class Polynomial{
+class PolynomialT {
     friend class Tableau;
 private:
     struct Term {
@@ -36,13 +36,13 @@ public:
     void divideBy(const opensmt::Real& r);
 
     template<typename ADD, typename REM>
-    void merge(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved) {
+    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved) {
         std::vector<Term> storage;
         merge(other, coeff, informAdded, informRemoved, storage);
     }
 
     template<typename ADD, typename REM>
-    void merge(const Polynomial & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
+    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
             std::vector<Term>& storage);
 
     using iterator = typename poly_t::iterator;
@@ -81,7 +81,7 @@ public:
 
 template<typename VarType>
 template<typename ADD, typename REM>
-void Polynomial<VarType>::merge(const Polynomial<VarType> &other, const opensmt::Real &coeff, ADD informAdded,
+void PolynomialT<VarType>::merge(const PolynomialT<VarType> &other, const opensmt::Real &coeff, ADD informAdded,
                   REM informRemoved, std::vector<Term>& storage) {
     if (storage.size() < this->poly.size() + other.poly.size()) {
         storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
@@ -163,7 +163,7 @@ void Polynomial<VarType>::merge(const Polynomial<VarType> &other, const opensmt:
 }
 
 template<typename VarType>
-void Polynomial<VarType>::addTerm(VarType var, opensmt::Real coeff) {
+void PolynomialT<VarType>::addTerm(VarType var, opensmt::Real coeff) {
     assert(!contains(var));
     Term term {var, std::move(coeff)};
     auto it = std::upper_bound(poly.begin(), poly.end(), term, TermCmp{});
@@ -171,18 +171,18 @@ void Polynomial<VarType>::addTerm(VarType var, opensmt::Real coeff) {
 }
 
 template<typename VarType>
-unsigned long Polynomial<VarType>::size() const {
+unsigned long PolynomialT<VarType>::size() const {
     return poly.size();
 }
 
 template<typename VarType>
-const FastRational &Polynomial<VarType>::getCoeff(VarType var) const {
+const FastRational &PolynomialT<VarType>::getCoeff(VarType var) const {
     assert(contains(var));
     return findTermForVar(var)->coeff;
 }
 
 template<typename VarType>
-opensmt::Real Polynomial<VarType>::removeVar(VarType var) {
+opensmt::Real PolynomialT<VarType>::removeVar(VarType var) {
     assert(contains(var));
     iterator it = findTermForVar(var);
     auto coeff = std::move(it->coeff);
@@ -191,20 +191,20 @@ opensmt::Real Polynomial<VarType>::removeVar(VarType var) {
 }
 
 template<typename VarType>
-void Polynomial<VarType>::negate() {
+void PolynomialT<VarType>::negate() {
     for(auto & term : poly) {
         term.coeff.negate();
     }
 }
 
 template<typename VarType>
-void Polynomial<VarType>::divideBy(const opensmt::Real &r) {
+void PolynomialT<VarType>::divideBy(const opensmt::Real &r) {
     for(auto & term : poly) {
         term.coeff /= r;
     }
 }
 template<typename VarType>
-void Polynomial<VarType>::print() const {
+void PolynomialT<VarType>::print() const {
     for (auto & term : poly) {
         std::cout << term.coeff << " * " << term.var.x << "v + ";
     }

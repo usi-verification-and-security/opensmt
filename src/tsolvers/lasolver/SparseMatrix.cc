@@ -48,7 +48,7 @@ namespace {
     SparseColMatrix identityMatrix(uint32_t size) {
         SparseColMatrix id(RowCount{size}, ColumnCount{size});
         for (uint32_t i = 0; i < size; ++i) {
-            Polynomial<IndexType> poly;
+            SparseColMatrix::ColumnPolynomial poly;
             poly.addTerm(IndexType{i}, 1);
             id.setColumn(ColIndex{i}, std::move(poly));
         }
