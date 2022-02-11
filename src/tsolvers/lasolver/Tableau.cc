@@ -267,7 +267,7 @@ void Tableau::normalizeRow(LVRef v) {
     }
     for (LVRef var : toEliminate) {
         auto const coeff = row.removeVar(var);
-        row.merge(getRowPoly(var), coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
+        row.merge(getRowPoly(var), coeff, tmp_storage);
     }
 }
 

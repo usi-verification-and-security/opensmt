@@ -13,7 +13,7 @@ void SparseColMatrix::Col::negate() {
 }
 
 void SparseColMatrix::Col::add(Col const & other, opensmt::Real const & multiple) {
-    this->poly.merge(other.poly, multiple, [](IndexType){}, [](IndexType){});
+    this->poly.merge(other.poly, multiple);
 }
 
 opensmt::Real SparseColMatrix::Col::product(const std::vector<FastRational> & values) const {

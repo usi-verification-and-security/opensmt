@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 31.03.18.
-//
+/*
+ *  Copyright (c) 2018-2022, Martin Blicha <martin.blicha@gmail.com>
+ *  Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_POLYNOMIAL_H
 #define OPENSMT_POLYNOMIAL_H
@@ -36,14 +39,22 @@ public:
     void divideBy(const opensmt::Real& r);
 
     template<typename ADD, typename REM>
-    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved) {
-        std::vector<Term> storage;
+    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved,
+            poly_t & storage);
+
+    template<typename ADD, typename REM>
+    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved) {
+        poly_t storage;
         merge(other, coeff, informAdded, informRemoved, storage);
     }
 
-    template<typename ADD, typename REM>
-    void merge(const PolynomialT & other, const opensmt::Real & coeff, ADD informAdded, REM informRemoved,
-            std::vector<Term>& storage);
+    void merge(PolynomialT const & other, opensmt::Real const & coeff) {
+        merge(other, coeff, [](VarType){}, [](VarType){});
+    }
+
+    void merge(PolynomialT const & other, opensmt::Real const & coeff, poly_t & storage) {
+        merge(other, coeff, [](VarType){}, [](VarType){}, storage);
+    }
 
     using iterator = typename poly_t::iterator;
     using const_iterator = typename poly_t::const_iterator;
@@ -81,8 +92,8 @@ public:
 
 template<typename VarType>
 template<typename ADD, typename REM>
-void PolynomialT<VarType>::merge(const PolynomialT<VarType> &other, const opensmt::Real &coeff, ADD informAdded,
-                  REM informRemoved, std::vector<Term>& storage) {
+void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Real const & coeff, ADD informAdded,
+                  REM informRemoved, poly_t & storage) {
     if (storage.size() < this->poly.size() + other.poly.size()) {
         storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
     }
