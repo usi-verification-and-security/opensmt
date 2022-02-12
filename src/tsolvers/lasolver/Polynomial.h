@@ -30,6 +30,7 @@ public:
     using poly_t = std::vector<Term>; // Terms are ordered by variable num
 private:
     poly_t poly;
+    inline static thread_local poly_t tmp_storage {};
 public:
     void addTerm(VarType var, opensmt::Real coeff);
     std::size_t size() const;
@@ -39,21 +40,10 @@ public:
     void divideBy(const opensmt::Real& r);
 
     template<typename ADD, typename REM>
-    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved,
-            poly_t & storage);
-
-    template<typename ADD, typename REM>
-    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved) {
-        poly_t storage;
-        merge(other, coeff, informAdded, informRemoved, storage);
-    }
+    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved);
 
     void merge(PolynomialT const & other, opensmt::Real const & coeff) {
         merge(other, coeff, [](VarType){}, [](VarType){});
-    }
-
-    void merge(PolynomialT const & other, opensmt::Real const & coeff, poly_t & storage) {
-        merge(other, coeff, [](VarType){}, [](VarType){}, storage);
     }
 
     using iterator = typename poly_t::iterator;
@@ -93,9 +83,9 @@ public:
 template<typename VarType>
 template<typename ADD, typename REM>
 void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Real const & coeff, ADD informAdded,
-                  REM informRemoved, poly_t & storage) {
-    if (storage.size() < this->poly.size() + other.poly.size()) {
-        storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
+                  REM informRemoved) {
+    if (tmp_storage.size() < this->poly.size() + other.poly.size()) {
+        tmp_storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
     }
     std::size_t storageIndex = 0;
     auto myIt = std::make_move_iterator(poly.begin());
@@ -107,26 +97,26 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
     while(true) {
         if (myIt == myEnd) {
             for (auto it = otherIt; it != otherEnd; ++it) {
-                storage[storageIndex].var = it->var;
-                multiplication(storage[storageIndex].coeff, it->coeff, coeff);
+                tmp_storage[storageIndex].var = it->var;
+                multiplication(tmp_storage[storageIndex].coeff, it->coeff, coeff);
                 ++storageIndex;
                 informAdded(it->var);
             }
             break;
         }
         if (otherIt == otherEnd) {
-            std::move(myIt, myEnd, storage.begin() + storageIndex);
+            std::move(myIt, myEnd, tmp_storage.begin() + storageIndex);
             storageIndex += myEnd - myIt;
             break;
         }
         if (cmp(*myIt, *otherIt)) {
-            storage[storageIndex] = *myIt;
+            tmp_storage[storageIndex] = *myIt;
             ++storageIndex;
             ++myIt;
         }
         else if (cmp(*otherIt, *myIt)) {
-            storage[storageIndex].var = otherIt->var;
-            multiplication(storage[storageIndex].coeff, otherIt->coeff, coeff);
+            tmp_storage[storageIndex].var = otherIt->var;
+            multiplication(tmp_storage[storageIndex].coeff, otherIt->coeff, coeff);
             ++storageIndex;
             informAdded(otherIt->var);
             ++otherIt;
@@ -139,15 +129,15 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
                 informRemoved(myIt->var);
             }
             else {
-                storage[storageIndex] = *myIt;
+                tmp_storage[storageIndex] = *myIt;
                 ++storageIndex;
             }
             ++myIt;
             ++otherIt;
         }
     }
-    // At this point the right elements are in `storage`, from beginning to the `storageIndex`.
-    // We need to get these elements to `this->poly`. Note that we never change the `storage` container, we just move out
+    // At this point the right elements are in `tmp_storage`, from beginning to the `storageIndex`.
+    // We need to get these elements to `this->poly`. Note that we never change the `tmp_storage` container, we just move out
     // the appropriate elements.
     // However, we observed that we need to shrink `poly` if its size is much smaller than the capacity.
     // The reason is that keeping large free capacity around for many rows blows up the memory
@@ -156,20 +146,20 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
     if (storageIndex > polySize) {
         // In this case we have more elements to move than the current size of the `poly` container.
         // We move the elements that fit the current `poly` size and then we insert the rest of the elements.
-        std::move(storage.begin(), storage.begin() + polySize, poly.begin());
-        poly.insert(poly.end(), std::make_move_iterator(storage.begin() + polySize), std::make_move_iterator(storage.begin() + storageIndex));
+        std::move(tmp_storage.begin(), tmp_storage.begin() + polySize, poly.begin());
+        poly.insert(poly.end(), std::make_move_iterator(tmp_storage.begin() + polySize), std::make_move_iterator(tmp_storage.begin() + storageIndex));
     }
     else if (/*storageIndex <= poly.size() and */ polySize <= 2 * storageIndex) {
         // In this case we have less elements that need to move than what we currently already have in `poly`, but not too litle.
         // We just move the appropriate elements and destroy the excess elements of `poly`.
         // Since we are removing too many elements, we avoid shrinking which would require re-allocation.
-        std::move(storage.begin(), storage.begin() + storageIndex, poly.begin());
+        std::move(tmp_storage.begin(), tmp_storage.begin() + storageIndex, poly.begin());
         poly.erase(poly.begin() + storageIndex, poly.end());
     } else { // poly.size() > 2 * storageIndex
         // This case is similar to case 2, but we have much less elements in the result than currently in `poly`.
         // To avoid too large free capacity in `poly`, we shrink its capacity to exactly the number of elements.
         // It is basically `poly.shrink_to_fit()`, except that `shrink_to_fit` is non-binding.
-        std::vector<Term>(std::make_move_iterator(storage.begin()), std::make_move_iterator(storage.begin() + storageIndex)).swap(poly);
+        std::vector<Term>(std::make_move_iterator(tmp_storage.begin()), std::make_move_iterator(tmp_storage.begin() + storageIndex)).swap(poly);
     }
 }
 
