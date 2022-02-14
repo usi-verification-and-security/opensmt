@@ -39,12 +39,8 @@ public:
     void negate();
     void divideBy(const opensmt::Real& r);
 
-    template<typename ADD, typename REM>
-    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded, REM informRemoved);
-
-    void merge(PolynomialT const & other, opensmt::Real const & coeff) {
-        merge(other, coeff, [](VarType){}, [](VarType){});
-    }
+    template <typename ADD = std::function<void(VarType)>, typename REM = std::function<void(VarType)>>
+    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded = [](VarType){}, REM informRemoved = [](VarType){});
 
     using iterator = typename poly_t::iterator;
     using const_iterator = typename poly_t::const_iterator;
