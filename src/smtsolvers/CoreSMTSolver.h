@@ -375,7 +375,6 @@ public:
     std::vector<vec<Lit>> split_assumptions;
 
 protected:
-    Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //
