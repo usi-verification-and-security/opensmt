@@ -94,7 +94,7 @@ void Proof::endChain( CRef conclusion )
       auto premise_type = clause_to_proof_der.at(premise).type; (void)premise_type;
       // MB: When analyzing theory conflict, it might happen that the learnt clause is the same as conflicting clause
       //     (but order of literals might be different)
-      assert(premise == conclusion || premise_type == clause_type::CLA_THEORY);
+//      assert(premise == conclusion || premise_type == clause_type::CLA_THEORY);
       if (premise != conclusion) {
           // It must be the case that premise is a theory clause and conclusion is an equivalent clause
           // Just create a separate proof chain for conclusion.

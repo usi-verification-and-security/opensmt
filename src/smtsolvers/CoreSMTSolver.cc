@@ -1150,6 +1150,7 @@ CRef CoreSMTSolver::propagate()
     while (qhead < trail.size())
     {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+        printf("I will propagate:%d\n", p.x);
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
