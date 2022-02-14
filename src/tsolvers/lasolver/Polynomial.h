@@ -31,6 +31,7 @@ public:
 private:
     poly_t poly;
     inline static thread_local poly_t tmp_storage {};
+    using mergeFunctionInformerType = void(*)(VarType);
 public:
     void addTerm(VarType var, opensmt::Real coeff);
     std::size_t size() const;
@@ -39,7 +40,7 @@ public:
     void negate();
     void divideBy(const opensmt::Real& r);
 
-    template <typename ADD = std::function<void(VarType)>, typename REM = std::function<void(VarType)>>
+    template <typename ADD = mergeFunctionInformerType, typename REM = mergeFunctionInformerType>
     void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded = [](VarType){}, REM informRemoved = [](VarType){});
 
     using iterator = typename poly_t::iterator;
