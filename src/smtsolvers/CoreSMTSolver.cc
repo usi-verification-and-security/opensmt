@@ -1150,7 +1150,6 @@ CRef CoreSMTSolver::propagate()
     while (qhead < trail.size())
     {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
-        printf("I will propagate:%d\n", p.x);
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
@@ -1206,11 +1205,11 @@ CRef CoreSMTSolver::propagate()
 
             if(c_size > 2 ){
                 if (c[0] == false_lit){
-                    if(value(c[2]) != l_False){
-                        c[0] = c[2], c[2] = false_lit;
-                    } else {
-                        c[0] = c[1], c[1] = false_lit;
-                    }
+//                    if(value(c[2]) != l_False){
+//                        c[0] = c[1], c[1] = c[2], c[2] = false_lit;
+//                    } else {
+                    c[0] = c[1], c[1] = false_lit;
+//                    }
                 }
                 if (c[1] == false_lit){
                     c[1] = c[2], c[2] = false_lit;
@@ -1282,6 +1281,7 @@ CRef CoreSMTSolver::propagate()
                             assert(level(var(c[k])) == 0);
                             assert(reason(var(c[k])) != CRef_Fake);
                             assert(reason(var(c[k])) != CRef_Undef);
+                            printf("Enqueued: %d\n", var(first));
                             proof->addResolutionStep(reason(var(c[k])), var(c[k]));
                         }
                         CRef unitClause = ca.alloc(vec<Lit>{first});
@@ -1290,6 +1290,7 @@ CRef CoreSMTSolver::propagate()
                         // Necessary for correct functioning of proof logging in analyze()
                         cr = unitClause;
                     }
+//                    printf("Enqueued: %d\n", var(first));
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
