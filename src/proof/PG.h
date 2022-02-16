@@ -339,7 +339,6 @@ public:
     bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
     bool			enabledTransfTraversals() { return (config.proof_transf_trav() >= 1); }
     bool			enabledStructuralHashing() { return (config.proof_struct_hash() >= 1); }
-    bool			enabledStructuralHashingWhileBuilding() { return (config.proof_struct_hash_build() >= 1); }
     // Inverts the normal order Hashing + RecyclePivots
     bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
     inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }

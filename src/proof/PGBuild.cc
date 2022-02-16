@@ -173,9 +173,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
 
     // Map to associate node to its antecedents
     std::map< std::pair<int,int>, int > ants_map;
-    if (verbose() and enabledStructuralHashingWhileBuilding()) {
-        std::cerr << "; " << "Performing structural hashing while building the proof" << '\n';
-    }
     //Start from empty clause
     {
         auto it = clause_to_proof_der.find(CRef_Undef);
@@ -254,36 +251,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
                     if (i < chaincla.size()-1) {
                         currId = (int)graph.size();
 
-                        ///////////////////////////////////////////////////////////////////////////////////////
-                        // NOTE structural hashing: check whether there already
-                        // exists a node with the current pair of antecedents
-                        // if so, stop creating the proof chain
-                        if( enabledStructuralHashingWhileBuilding() )
-                        {
-                            int id__i=clauseToIDMap[ clause_i ];
-                            int c1, c2;
-                            if(id__i <= last_seen_id)
-                            { c1 = id__i; c2 =last_seen_id; }
-                            else
-                            { c2 = last_seen_id; c1 = id__i; }
-                            // Look for pair <ant1,ant2>
-                            std::pair<int, int> ant_pair (c1,c2);
-                            auto it = ants_map.find( ant_pair );
-                            bool found = ( it != ants_map.end() );
-                            // If pairs not found, add id of the next node to the map
-                            if( !found ) ants_map[ ant_pair ] = currId ;
-                            // else replace node with existing one
-                            else
-                            {
-                                assert( getNode( it->second ) );
-                                last_seen_id = it->second;
-                                // Skip the new node construction and move to the next clause in the chain
-                                continue;
-                            }
-                        }
-                        //
-                        //////////////////////////////////////////////////////////////////////////////////////////
-
                         n=new ProofNode(logic_);
                         n->initIData();
                         //Add node to graph vector
@@ -299,39 +266,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
                         if(clauseToIDMap.find(currClause)==clauseToIDMap.end())
                         {
                             currId=(int)graph.size();
-
-                            ///////////////////////////////////////////////////////////////////////////////////////
-                            // NOTE structural hashing: check whether there already
-                            // exists a node with the current pair of antecedents
-                            // if so, stop creating the proof chain
-                            // Make sure ant1 has the pivot positive (and ant2 negated)
-
-                            // NOTE: the technique does not seem to have effect here
-                            if( enabledStructuralHashingWhileBuilding() )
-                            {
-                                int id__i=clauseToIDMap[ clause_i ];
-                                int c1, c2;
-                                if(id__i <= last_seen_id)
-                                { c1 = id__i; c2 =last_seen_id; }
-                                else
-                                { c2 = last_seen_id; c1 = id__i; }
-                                // Look for pair <ant1,ant2>
-                                std::pair<int, int> ant_pair (c1,c2);
-                                auto it = ants_map.find(ant_pair);
-                                bool found = ( it != ants_map.end() );
-                                // If pairs not found, add id of the next node to the map
-                                if( !found ) ants_map[ ant_pair ] = currId ;
-                                // else replace node with existing one
-                                else
-                                {
-                                    assert( getNode( it->second ) );
-                                    last_seen_id = it->second;
-                                    // Skip the new node construction and move to the next clause in the chain
-                                    continue;
-                                }
-                            }
-                            //
-                            //////////////////////////////////////////////////////////////////////////////////////////
 
                             n = new ProofNode(logic_);
                             counters.recordNewClause(clause_type::CLA_LEARNT);
