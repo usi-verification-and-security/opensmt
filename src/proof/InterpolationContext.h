@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 28.09.20.
-//
+/*
+ *  Copyright (c) 2020-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_INTERPOLATIONCONTEXT_H
 #define OPENSMT_INTERPOLATIONCONTEXT_H
@@ -25,8 +28,6 @@ public:
     // Create interpolants with each A consisting of the specified partitions
     void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
 
-    void getInterpolants(const std::vector<ipartitions_t> & partitions, vec<PTRef> & interpolants);
-
     void setColoringSuggestions(vec<std::map<PTRef, icolor_t> *> * mp);
 
     void getSingleInterpolant(vec<PTRef> & interpolants);
@@ -36,16 +37,6 @@ public:
     void getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask);
 
     bool getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks);
-
-    bool getPathInterpolants(vec<PTRef> & interpolants);
-
-    bool getSimultaneousAbstractionInterpolants(vec<PTRef> & interpolants);
-
-    bool getGenSimultaneousAbstractionInterpolants(vec<PTRef> & interpolants);
-
-    bool getStateTransitionInterpolants(vec<PTRef> & interpolants);
-
-    bool getTreeInterpolants(opensmt::InterpolationTree * it, vec<PTRef> & interpolants);
 
 private:
     void reduceProofGraph();

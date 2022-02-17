@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 28.09.20.
-//
+/*
+ *  Copyright (c) 2020-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "InterpolationContext.h"
 
@@ -21,16 +24,6 @@ void InterpolationContext::printProofDotty() {
     proof_graph->printProofGraph();
 }
 
-// Create interpolants with each A consisting of the specified partitions
-void InterpolationContext::getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    proof_graph->produceConfigMatrixInterpolants(partitions, interpolants);
-}
-
-void InterpolationContext::getInterpolants(const std::vector<ipartitions_t> & partitions, vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    proof_graph->produceMultipleInterpolants(partitions, interpolants);
-}
 
 void InterpolationContext::setColoringSuggestions(
     vec<std::map<PTRef, icolor_t> *> * mp) { proof_graph->setColoringSuggestions(mp); }
@@ -54,31 +47,6 @@ void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolant
 bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks) {
     assert(proof_graph);
     return proof_graph->producePathInterpolants(interpolants, A_masks);
-}
-
-bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    return proof_graph->producePathInterpolants(interpolants);
-}
-
-bool InterpolationContext::getSimultaneousAbstractionInterpolants(vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    return proof_graph->produceSimultaneousAbstraction(interpolants);
-}
-
-bool InterpolationContext::getGenSimultaneousAbstractionInterpolants(vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    return proof_graph->produceGenSimultaneousAbstraction(interpolants);
-}
-
-bool InterpolationContext::getStateTransitionInterpolants(vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    return proof_graph->produceStateTransitionInterpolants(interpolants);
-}
-
-bool InterpolationContext::getTreeInterpolants(opensmt::InterpolationTree * it, vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    return proof_graph->produceTreeInterpolants(it, interpolants);
 }
 
 void InterpolationContext::reduceProofGraph() {
