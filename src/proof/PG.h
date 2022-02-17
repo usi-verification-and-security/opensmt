@@ -131,9 +131,8 @@ struct InterpolData
 // Resolution proof graph element
 struct ProofNode
 {
-    ProofNode    (Logic& _logic)
-    : logic      (_logic)
-    , clause     (nullptr)
+    ProofNode    ()
+    : clause     (nullptr)
     , clause_ref (CRef_Undef)
     , pivot      (-1)
     , ant1       (nullptr)
@@ -245,7 +244,6 @@ struct ProofNode
     inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
 
 private:
-    Logic&             logic;
     clauseid_t         id;                 // id
     std::vector<Lit>*     clause;             // Clause
     CRef clause_ref;

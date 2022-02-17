@@ -95,7 +95,7 @@ struct ProofBuildingStatistics {
 }
 
 ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proof const & proof) {
-    ProofNode * n = new ProofNode(logic_);
+    ProofNode * n = new ProofNode();
     n->initIData();
     if (isLeafClauseType(_ctype)) {
         n->initClause(proof.getClause(clause));
@@ -252,7 +252,7 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
                 // End tree not reached: deduced node
                 if (i < chaincla.size() - 1) {
                     currId = graph.size();
-                    n = new ProofNode(logic_);
+                    n = new ProofNode();
                     n->initIData();
                     //Add node to graph vector
                     n->setId(currId);
@@ -570,7 +570,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
         assert(res->getAnt1()==w || res->getAnt2()==w);
     }
 
-    ProofNode* n=new ProofNode(logic_);
+    ProofNode* n=new ProofNode();
     n->initIData();
 
     // Create node and add to graph vector
