@@ -101,44 +101,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     topolSortingTopDown ( DFSv );
     size_t proof_size = DFSv.size();
 
-    // check leaves for False clause
-    // TODO do this in a better fucking way...
-
-    for ( size_t i = 0 ; i < proof_size ; i++ )
-    {
-        n = getNode ( DFSv[ i ] );
-        assert (n);
-
-        if (n->isLeaf())
-        {
-            if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
-
-            std::vector<Lit> &cl = n->getClause();
-            bool fal = false;
-
-            if (cl.size() == 0) {
-                assert(false);
-                throw OsmtInternalException("; Empty clause found in interpolation\n");
-            }
-            Logic &logic = this->logic_;
-            if (cl.size() == 1 && varToPTRef(var(cl[0])) == logic.getTerm_false() && !sign(cl[0])) {
-                fal = true;
-            }
-
-            if ((n->getType() == clause_type::CLA_ORIG && n->getClauseRef() == CRef_Undef) || fal)
-            {
-                //unit clause False exists, return degenerate interpolant
-                icolor_t cc = getClauseColor (n->getInterpPartitionMask(), A_mask);
-                interpolants.push( cc == icolor_t::I_A ? logic.getTerm_false() : logic.getTerm_true());
-
-                if (verbose()) {
-                    std::cout << "; Degenerate interpolant" << std::endl;
-                }
-                return;
-            }
-        }
-    }
-
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
 
     std::map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
