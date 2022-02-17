@@ -290,8 +290,6 @@ public:
     bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
     bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
 
-    bool producePathInterpolants            ( vec<PTRef>& interpolants, const std::vector<ipartitions_t>& A_mask);
-
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
     void printProofAsDotty                  ( std::ostream &, ipartitions_t ip = 0);

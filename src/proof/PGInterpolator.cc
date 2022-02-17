@@ -26,33 +26,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <deque>
 #include <iostream>
 
-bool ProofGraph::producePathInterpolants ( vec<PTRef> &interpolants, const std::vector<ipartitions_t> &A_masks){
-    bool propertySatisfied = true;
-    // check that masks are subset of each other
-#ifndef NDEBUG
-    for (int i = 0; i < static_cast<int>(A_masks.size()-1); ++i) {
-        assert((A_masks[i] & A_masks[i+1]) == A_masks[i]);
-    }
-#endif // NDEBUG
-    for (int i = 0; i < static_cast<int>(A_masks.size()); ++i) {
-        produceSingleInterpolant(interpolants, A_masks[i]);
-        if(i > 0 && enabledInterpVerif()){
-            PTRef previous_itp = interpolants[interpolants.size() - 2];
-            PTRef next_itp = interpolants[interpolants.size() -1];
-            PTRef movedPartitions = logic_.mkAnd(pmanager.getPartitions(A_masks[i] ^ A_masks[i-1]));
-            propertySatisfied &= VerificationUtils(config, logic_).impliesExternal(logic_.mkAnd(previous_itp, movedPartitions), next_itp);
-            if (!propertySatisfied){
-                std::cerr << "; Path interpolation does not hold for:\n"
-                             << "First interpolant: " << logic_.printTerm(previous_itp) << '\n'
-                            << "Moved partitions: " << logic_.printTerm(movedPartitions) << '\n'
-                            << "Second interpolant: " << logic_.printTerm(next_itp) << '\n';
-            }
-        }
-    }
-    assert(propertySatisfied);
-    return propertySatisfied;
-}
-
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
 
 

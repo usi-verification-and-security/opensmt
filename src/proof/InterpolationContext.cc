@@ -8,9 +8,11 @@
 #include "InterpolationContext.h"
 
 #include "PG.h"
+#include "VerificationUtils.h"
 
 InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
-                                           PartitionManager & pmanager, int n) : proof_graph{
+                                           PartitionManager & pmanager, int n)
+                                           : logic(th.getLogic()), pmanager(pmanager), config(c), proof_graph {
     new ProofGraph(c, th, termMapper, t, pmanager, n)} {
     if (c.proof_reduce()) {
         reduceProofGraph();
@@ -46,7 +48,29 @@ void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolant
 
 bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks) {
     assert(proof_graph);
-    return proof_graph->producePathInterpolants(interpolants, A_masks);
+    bool propertySatisfied = true;
+    // check that masks are subset of each other
+    assert(std::mismatch(A_masks.begin() + 1, A_masks.end(), A_masks.begin(), [](auto const & next, auto const & previous){
+        return (previous & next) == previous;
+    }).first == A_masks.end());
+
+    for (unsigned i = 0; i < A_masks.size(); ++i) {
+        getSingleInterpolant(interpolants, A_masks[i]);
+        if (i > 0 and enabledInterpVerif()) {
+            PTRef previous_itp = interpolants[interpolants.size() - 2];
+            PTRef next_itp = interpolants[interpolants.size() - 1];
+            PTRef movedPartitions = logic.mkAnd(pmanager.getPartitions(A_masks[i] ^ A_masks[i - 1]));
+            propertySatisfied &= VerificationUtils(config, logic).impliesExternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
+            if (not propertySatisfied) {
+                std::cerr << "; Path interpolation does not hold for:\n"
+                          << "First interpolant: " << logic.printTerm(previous_itp) << '\n'
+                          << "Moved partitions: " << logic.printTerm(movedPartitions) << '\n'
+                          << "Second interpolant: " << logic.printTerm(next_itp) << '\n';
+            }
+        }
+    }
+    assert(propertySatisfied);
+    return propertySatisfied;
 }
 
 void InterpolationContext::reduceProofGraph() {

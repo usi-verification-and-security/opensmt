@@ -17,6 +17,9 @@ class Proof;
 class ProofGraph;
 
 class InterpolationContext {
+    Logic & logic;
+    PartitionManager & pmanager;
+    SMTConfig & config;
     std::unique_ptr<ProofGraph> proof_graph;
 public:
     InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
@@ -40,6 +43,8 @@ public:
 
 private:
     void reduceProofGraph();
+
+    bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 
 };
 
