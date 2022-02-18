@@ -659,7 +659,9 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
 }
 
 icolor_t ProofGraph::getVarClass2(Var v) {
-    int c = getVarInfoFromMapping(v); assert(c>=-2);
+    assert((unsigned) v < AB_vars_mapping.size());
+    assert(AB_vars_mapping[v] >= -2);
+    int c = AB_vars_mapping[v];
     return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
 }
 

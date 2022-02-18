@@ -397,11 +397,7 @@ public:
     void            setLabelingFromMap       ( ProofNode*, unsigned );
     icolor_t        getPivotColor                            ( ProofNode * );
     void            computeABVariablesMapping                ( const ipartitions_t & );
-    inline int      getVarInfoFromMapping                    ( Var v )
-    {
-    	assert((unsigned)v<AB_vars_mapping.size()); assert(AB_vars_mapping[v]!=-3);
-    	return(AB_vars_mapping[v]);
-    }
+
     // Translation from var info obtained through above function
     icolor_t getVarClass2(Var);
     inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
