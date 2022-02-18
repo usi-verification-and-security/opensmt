@@ -238,7 +238,7 @@ ProofGraph::labelLeaf(ProofNode * n, unsigned num_config, std::map<Var, icolor_t
 PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t & A_mask)
 {
     // Then calculate interpolant
-    icolor_t clause_color = getClauseColor ( n->getInterpPartitionMask(), A_mask );
+    icolor_t clause_color = getClauseColor(n->getClauseRef(), A_mask);
 #ifdef ITP_DEBUG
     std::cout << "Clause has mask " << n->getInterpPartitionMask() << ". Mask " << A_mask << '\n';
     std::cout << "Clause has color " << clause_color << '\n';

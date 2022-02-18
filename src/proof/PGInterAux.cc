@@ -173,10 +173,9 @@ icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
 // Input: proof node, current interpolant partition masks for A and B
 // e.g. 0---010 first partition in A
 // Output: returns A or B
-icolor_t ProofGraph::getClauseColor( const ipartitions_t & clause_mask, const ipartitions_t & A_mask )
+icolor_t ProofGraph::getClauseColor(CRef clause, const ipartitions_t & A_mask )
 {
-    // Get partition mask clause
-    // e.g. 0---0110 variable in first and second partition
+    auto const & clause_mask = pmanager.getClauseClassMask(clause);
 
     // TODO look at isAB methods in egraph
     //Determine mask corresponding to B
@@ -239,7 +238,7 @@ ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions
                 throw OsmtInternalException( "Clause is not original" );
 			}
 
-			icolor_t col = getClauseColor(n->getInterpPartitionMask(), A_mask);
+			icolor_t col = getClauseColor(n->getClauseRef(), A_mask);
 			std::vector<Lit>& lits = n->getClause();
 			if(!lits.empty())
 			{

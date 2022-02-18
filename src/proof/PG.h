@@ -109,7 +109,6 @@ public:
 struct InterpolData
 {
     PTRef            partial_interp;     // Stores partial interpolant
-    ipartitions_t    partition_mask;     // Stores info on partitions in a bitvector
 
     // NOTE labeling rules for AB variables
     // color a:  bit 1, bit 0
@@ -122,7 +121,6 @@ struct InterpolData
 
     InterpolData ()
     : partial_interp    ( PTRef_Undef )
-    , partition_mask    ( 0 )
     , AB_vars_a_colored ( 0 )
     , AB_vars_b_colored ( 0 )
     {}
@@ -196,7 +194,6 @@ struct ProofNode
     inline ProofNode *           getAnt2                ( ) const { return ant2; }
     inline clause_type           getType                ( ) const { return type; }
     inline PTRef                 getPartialInterpolant  ( ) const { assert(i_data); return i_data->partial_interp; }
-    inline const ipartitions_t & getInterpPartitionMask ( ) const { assert(i_data); return i_data->partition_mask; }
     unsigned                     getNumResolvents       ( ) const { return resolvents.size(); }
     std::set<clauseid_t>&        getResolvents          ( ) { return resolvents; }
     //
@@ -208,7 +205,6 @@ struct ProofNode
     inline void                  setAnt2                ( ProofNode * a2 )               { ant2 = a2; }
     inline void                  setType                ( clause_type new_type )         { type = new_type; }
     inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
-    void                         setInterpPartitionMask( const ipartitions_t& mask);
     void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
     void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
     void                         initIData() { i_data = new InterpolData(); }
@@ -378,7 +374,7 @@ public:
     // Labeling based interpolation
     //
     icolor_t       getVarClass                              ( Var, const ipartitions_t & );
-    icolor_t       getClauseColor                           ( const ipartitions_t &, const ipartitions_t & );
+    icolor_t       getClauseColor                           ( CRef clause, const ipartitions_t & );
     std::map<Var, icolor_t>* computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions_t &);
     void           getPredicatesSetFromInterpolantIterative ( PTRef, std::set<PTRef>& );
     unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );

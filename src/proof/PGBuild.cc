@@ -25,13 +25,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include <deque>
 
-void
-ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
-{
-    if(i_data == NULL) initIData();
-    i_data->partition_mask = mask;
-}
-
 std::ostream& operator<< (std::ostream &out, RuleContext &ra)
 {
     out << "Context: v1(" << ra.getV1() << ") v2(" << ra.getV2() << ") w("
@@ -102,9 +95,6 @@ ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proo
         n->setClauseRef(clause);
         //Sort clause literals
         std::sort(n->getClause().begin(),n->getClause().end());
-        if (_ctype == clause_type::CLA_ORIG) {
-            n->setInterpPartitionMask(pmanager.getClauseClassMask(clause));
-        }
     }
 
     //Add node to graph vector
@@ -580,7 +570,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
     assert(getNode(currId)==n);
     n->setType(w->getType());
     n->initClause(w->getClause());
-    n->setInterpPartitionMask(w->getInterpPartitionMask());
+    n->setClauseRef(w->getClauseRef());
 
     // Set antecedents, pivot
     n->setAnt1(w->getAnt1());
