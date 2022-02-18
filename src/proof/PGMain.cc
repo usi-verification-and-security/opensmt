@@ -169,6 +169,19 @@ void ProofGraph::transfProofForReduction( )
 	emptyProofGraph();
 }
 
+void ProofGraph::transfProofForCNFInterpolants() {
+    if (verbose() > 0) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
+
+    fillProofGraph();
+    proofTransformAndRestructure(-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2) {
+        return this->handleRuleApplicationForCNFinterpolant(ra1, ra2);
+    });
+    checkProof(true);
+    normalizeAntecedentOrder();
+    emptyProofGraph();
+    printRuleApplicationStatus();
+}
+
 // Performs reduction
 double ProofGraph::doReduction(double solving_time) {
     if (enabledTransfTraversals()) {

@@ -47,24 +47,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     // Track AB class variables and associate index to them in nodes bit masks
     computeABVariablesMapping(A_mask);
 
-    if (interpolantInCNF()) { // Proof restructuring for generation of interpolants in CNF
-        if (usingMcMillanInterpolation()) {
-            if (verbose() > 0) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
-
-            fillProofGraph();
-            proofTransformAndRestructure(-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2) {
-                return this->handleRuleApplicationForCNFinterpolant(ra1, ra2);
-            });
-            checkProof(true);
-            normalizeAntecedentOrder();
-            emptyProofGraph();
-            printRuleApplicationStatus();
-        } else {
-            std::cerr << "; Warning!\n"
-                      << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
-        }
-    }
-
     // Clause and partial interpolant
     ProofNode *n = nullptr;
     PTRef partial_interp = PTRef_Undef;

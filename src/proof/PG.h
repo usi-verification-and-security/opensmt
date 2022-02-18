@@ -317,7 +317,6 @@ public:
     bool           needProofStatistics            ( ) const { ItpAlgorithm ia = config.getBooleanInterpolationAlgorithm(); return ((ia == itp_alg_ps) || (ia == itp_alg_psw) || (ia == itp_alg_pss)); }
     bool 		    restructuringForStrongerInterpolant	    ( ) { return ( config.proof_trans_strength == 1); }
     bool 		    restructuringForWeakerInterpolant	    ( ) { return ( config.proof_trans_strength == 2); }
-    bool		   interpolantInCNF							( ) { return ( config.proof_interpolant_cnf() > 0 ); }
     bool		   usingAlternativeInterpolant ( ) { return ( config.proof_alternative_inter() == 1 ); }
     bool			enabledRecyclePivots() { return (config.proof_rec_piv() >= 1); }
     bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
@@ -457,10 +456,10 @@ public:
     void            applyRuleB2             (RuleContext&);
     void            applyRuleB2Prime        (RuleContext&);
     void            applyRuleB3             (RuleContext&);
-    void            printRuleApplicationStatus  ();
-    void            transfProofForReduction     ();
-    double          doIt                        (double);
-    double          doReduction                 (double);
+    void            printRuleApplicationStatus   ();
+    void            transfProofForReduction      ();
+    void            transfProofForCNFInterpolants();
+    double          doReduction                  (double);
     // Reduce the proof
     ApplicationResult handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
     bool            allowSwapRuleForReduction(RuleContext& );

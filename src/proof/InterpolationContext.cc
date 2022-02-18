@@ -12,10 +12,14 @@
 
 InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
                                            PartitionManager & pmanager, int n)
-                                           : logic(th.getLogic()), pmanager(pmanager), config(c), proof_graph {
-    new ProofGraph(c, th, termMapper, t, pmanager, n)} {
+                                           : logic(th.getLogic()), pmanager(pmanager), config(c),
+                                           proof_graph{new ProofGraph(c, th, termMapper, t, pmanager, n)} {
     if (c.proof_reduce()) {
         reduceProofGraph();
+    }
+
+    if (c.proof_interpolant_cnf() > 0) { // Proof restructuring for generation of interpolants in CNF
+        transformProofForCNFInterpolants();
     }
 }
 
@@ -76,5 +80,15 @@ bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const 
 void InterpolationContext::reduceProofGraph() {
     assert(proof_graph);
     proof_graph->transfProofForReduction();
+}
+
+void InterpolationContext::transformProofForCNFInterpolants() {
+    assert(proof_graph);
+    if (usingMcMillanInterpolation()) {
+        proof_graph->transfProofForCNFInterpolants();
+    } else {
+        std::cerr << "; Warning!\n"
+                  << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
+    }
 }
 

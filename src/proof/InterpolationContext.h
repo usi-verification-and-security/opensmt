@@ -44,6 +44,22 @@ public:
 private:
     void reduceProofGraph();
 
+    void transformProofForCNFInterpolants();
+
+    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+
+    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+
+    bool usingMcMillanPrimeInterpolation() const {
+        return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp;
+    }
+
+    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
+
+    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+
+    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+
     bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 
 };
