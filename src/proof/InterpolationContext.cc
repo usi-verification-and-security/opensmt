@@ -42,6 +42,16 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants) {
 void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask) {
     assert(proof_graph);
     proof_graph->produceSingleInterpolant(interpolants, A_mask);
+
+    if (enabledInterpVerif()) {
+        assert(interpolants.size() > 0);
+        bool sound = verifyInterpolant(interpolants.last(), A_mask);
+        assert(sound);
+        if (verbose()) {
+            if (sound) std::cout << "; Final interpolant is sound" << '\n';
+            else std::cout << "; Final interpolant is NOT sound" << '\n';
+        }
+    }
 }
 
 void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolants, const ipartitions_t & A_mask) {
@@ -90,5 +100,12 @@ void InterpolationContext::transformProofForCNFInterpolants() {
         std::cerr << "; Warning!\n"
                   << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
     }
+}
+
+bool InterpolationContext::verifyInterpolant(PTRef itp, const ipartitions_t & A_mask) const {
+    PTRef partA = pmanager.getPartition(A_mask, PartitionManager::part::A);
+    PTRef partB = pmanager.getPartition(A_mask, PartitionManager::part::B);
+    bool sound = VerificationUtils(config, logic).verifyInterpolantExternal(partA, partB, itp);
+    return sound;
 }
 

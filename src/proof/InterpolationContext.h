@@ -46,6 +46,12 @@ private:
 
     void transformProofForCNFInterpolants();
 
+    bool verifyInterpolant(PTRef itp, ipartitions_t const & A_mask) const;
+
+    /***** CONFIGURATION ****/
+
+    int verbose() const { return config.verbosity(); }
+
     bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
 
     bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }

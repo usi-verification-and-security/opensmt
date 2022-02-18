@@ -165,20 +165,6 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         
     }
 
-    //if ( enabledInterpVerif() ) verifyPartialInterpolantFromLeaves( getRoot(), A_mask );
-    if ( enabledInterpVerif() )
-    {
-        PTRef partA = pmanager.getPartition(A_mask, PartitionManager::part::A);
-        PTRef partB = pmanager.getPartition(A_mask, PartitionManager::part::B);
-        bool sound = VerificationUtils(config, logic_).verifyInterpolantExternal(partA, partB, getRoot()->getPartialInterpolant());
-
-        if(verbose())
-        {
-            if (sound) std::cout << "; Final interpolant is sound" << '\n';
-            else std::cout << "; Final interpolant is NOT sound" << '\n';
-        }
-    }
-
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
 
