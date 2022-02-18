@@ -381,8 +381,6 @@ public:
     // Get formula complexity as number of connectives, number of distinct boolean variables
     void           getComplexityInterpolant( PTRef int_e );
     void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
-    PTRef          compInterpLabelingOriginalSimple         ( ProofNode *, const ipartitions_t & );
-    PTRef          compInterpLabelingInnerSimple            ( ProofNode *, const ipartitions_t & );
 
     PTRef           compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode *);
@@ -422,9 +420,7 @@ public:
     icolor_t getVarColor(ProofNode* n, Var v);
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
-    void 		   verifyPartialInterpolantFromLeaves ( ProofNode*, const ipartitions_t& mask );
     void		   verifyLeavesInconsistency ( );
-    void  		   verifyInductiveSequence ( );
     bool		   decideOnAlternativeInterpolation(ProofNode*);
     // For a given partition mask try to generate interpolants with few predicates
     // Return a vector of interpolants, and for each the set of predicates which was removed
