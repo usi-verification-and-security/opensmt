@@ -1657,3 +1657,61 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
     }
     return true;
 }
+
+void Logic::printTermWithLets(std::ostream & out, PTRef root) const {
+    // collect mapping of id to let expressions
+    auto toLetId = [](PTRef x) -> std::string { return "l" + std::to_string(x.x); };
+    std::vector<PTRef> dfsOrder;
+    std::vector<std::pair<bool, PTRef>> queue; // true means parent and we should put it in the order; false means child and we should process it
+    std::unordered_set<PTRef, PTRefHash> visited;
+    queue.push_back({false, root});
+    while (not queue.empty()) {
+        auto current = queue.back();
+        queue.pop_back();
+        if (current.first) {
+            dfsOrder.push_back(current.second);
+            continue;
+        }
+        PTRef ref = current.second;
+        visited.insert(ref);
+        queue.push_back({true, ref});
+        Pterm const & pterm = getPterm(ref);
+        for (int i = 0; i < pterm.size(); ++i) {
+            if (visited.find(pterm[i]) == visited.end()) {
+                queue.push_back({false, pterm[i]});
+            }
+        }
+    }
+
+    std::unordered_map<PTRef, std::string, PTRefHash> strRepr;
+
+    auto toStr = [this, &strRepr](PTRef ref) -> std::string {
+        Pterm const & pterm = getPterm(ref);
+        auto symbol = printSym(pterm.symb());
+        if (pterm.size() == 0) {
+            return symbol;
+        }
+        std::stringstream ss;
+        ss << '(' << symbol << ' ';
+        for (int i = 0; i < pterm.size(); ++i) {
+            ss << strRepr.at(pterm[i]) << ' ';
+        }
+        ss << ')';
+        return ss.str();
+    };
+
+    int letCount = 0;
+    for (PTRef ref : dfsOrder) {
+        auto actualRepr = toStr(ref);
+        bool introduceLet = isAnd(ref) or isOr(ref);
+        if (introduceLet) {
+            out << "(let " << '(' << '(' << toLetId(ref) << ' ' << actualRepr << ')' << ')';
+            strRepr.insert({ref, toLetId(ref)});
+            ++letCount;
+        } else {
+            strRepr.insert({ref, std::move(actualRepr)});
+        }
+    }
+
+    out << strRepr.at(root) << std::string(letCount, ')');
+}

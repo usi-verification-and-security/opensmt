@@ -403,6 +403,8 @@ public:
     std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     std::string pp(PTRef tr) const; // A pretty printer
 
+    void printTermWithLets(std::ostream & out, PTRef root) const;
+
     std::string   printSym          (SymRef sr) const;
     virtual void termSort(vec<PTRef>& v) const;// { sort(v, LessThan_PTRef()); }
 
