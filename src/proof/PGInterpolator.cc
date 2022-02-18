@@ -39,56 +39,30 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
 
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
-    if ( verbose() ) std::cerr << "; Single interpolant " << '\n';
+    if (verbose()) std::cerr << "; Single interpolant " << '\n';
 
     // Check
     checkInterAlgo();
 
     // Track AB class variables and associate index to them in nodes bit masks
-    computeABVariablesMapping ( A_mask );
+    computeABVariablesMapping(A_mask);
 
-    // NOTE generation of interpolants in CNF
-    if ( interpolantInCNF() )
-    {
-
-        if ( usingMcMillanInterpolation() )
-        {
-            if ( verbose() > 0 ) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
+    if (interpolantInCNF()) { // Proof restructuring for generation of interpolants in CNF
+        if (usingMcMillanInterpolation()) {
+            if (verbose() > 0) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
 
             fillProofGraph();
-            proofTransformAndRestructure (-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2 )
-                { return this->handleRuleApplicationForCNFinterpolant(ra1, ra2); });
-            checkProof (true);
-            // Normalize antecedents order ( for interpolation )
+            proofTransformAndRestructure(-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2) {
+                return this->handleRuleApplicationForCNFinterpolant(ra1, ra2);
+            });
+            checkProof(true);
             normalizeAntecedentOrder();
             emptyProofGraph();
             printRuleApplicationStatus();
+        } else {
+            std::cerr << "; Warning!\n"
+                      << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
         }
-        else
-        {
-            std::cerr << "; Warning!\n" << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
-        }
-
-
-    }
-    // NOTE Preliminary application of A2 rules to strengthen/weaken the interpolant
-    // Not compatible with interpolants in CNF
-    //else if( restructuringForStrongerInterpolant() || restructuringForWeakerInterpolant() )
-    // TODO enable proof reduction
-    else if (0)
-    {
-        if ( verbose() > 0 && restructuringForStrongerInterpolant() ) std::cerr << "; Preliminary A2 rules application to strengthen interpolants" << '\n';
-
-        if ( verbose() > 0 && restructuringForWeakerInterpolant() ) std::cerr << "; Preliminary A2 rules application to weaken interpolants" << '\n';
-
-        fillProofGraph();
-        // NOTE Only a couple of loops to avoid too much overhead
-        proofTransformAndRestructure (-1, 2, true, [this] (RuleContext & ra1, RuleContext & ra2) {
-            return this->handleRuleApplicationForStrongerWeakerInterpolant(ra1, ra2);
-        });
-        // Normalize antecedents order ( for interpolation )
-        normalizeAntecedentOrder();
-        emptyProofGraph();
     }
 
     // Clause and partial interpolant
