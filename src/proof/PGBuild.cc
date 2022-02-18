@@ -214,7 +214,7 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
         clause_type ctype = proofder.type;
 
         if (isLeafClauseType(ctype)) {
-            assert(chaincla.size() == 0);
+            assert(chaincla.empty());
             // MB: Proof built from the root towards the leaves.
             //     A leaf node is constructed when its first children is constructred. Here it must already exist.
             auto it = clauseToIDMap.find(currClause);
@@ -306,8 +306,7 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
         }
         visitedSet.insert(currClause);
         num_clause++;
-    }
-    while(!q.empty());
+    } while(!q.empty());
 
     setRoot(clauseToIDMap.at(CRef_Undef));
 
