@@ -168,40 +168,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef interpol = getRoot()->getPartialInterpolant();
     assert (interpol != PTRef_Undef);
 
-    const bool cannotSimplify = !(logic_.isBooleanOperator(interpol) && !logic_.isNot(interpol));
+    interpolants.push(interpol);
 
-    if (!cannotSimplify) {
-        if(simplifyInterpolant() == 4) {
-            interpol = ::rewriteMaxArityAggresive(logic_, interpol);
-            interpol = ::simplifyUnderAssignment_Aggressive(interpol, logic_);
-        }
-        else {
-            if (simplifyInterpolant() > 0) {
-                if (verbose() > 1) {
-                    std::cout << "Itp before rewriting max arity: \n" << logic_.printTerm(interpol) << "\n\n";
-                }
-                interpol = ::rewriteMaxArityClassic(logic_, interpol);
-            }
-            if (simplifyInterpolant() == 2) {
-                if (verbose() > 1) {
-                    std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
-                }
-                interpol = ::simplifyUnderAssignment(logic_, interpol);
-            }
-
-            if (simplifyInterpolant() == 3) {
-                if (verbose() > 1) {
-                    std::cout << "Itp before aggressive simplifying: \n" << logic_.printTerm(interpol) << "\n\n";
-                }
-                interpol = ::simplifyUnderAssignment_Aggressive(interpol, logic_);
-            }
-        }
-    }
-
-    interpolants.push ( interpol );
-
-    if(verbose() > 1)
-    {
+    if (verbose() > 1) {
         std::cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << '\n';
     }
 }

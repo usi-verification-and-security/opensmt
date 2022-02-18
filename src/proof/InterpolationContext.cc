@@ -9,6 +9,7 @@
 
 #include "PG.h"
 #include "VerificationUtils.h"
+#include "BoolRewriting.h"
 
 InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
                                            PartitionManager & pmanager, int n)
@@ -51,6 +52,10 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, const
             if (sound) std::cout << "; Final interpolant is sound" << '\n';
             else std::cout << "; Final interpolant is NOT sound" << '\n';
         }
+    }
+
+    if (config.simplify_inter() > 0) {
+        interpolants.last() = simplifyInterpolant(interpolants.last());
     }
 }
 
@@ -107,5 +112,38 @@ bool InterpolationContext::verifyInterpolant(PTRef itp, const ipartitions_t & A_
     PTRef partB = pmanager.getPartition(A_mask, PartitionManager::part::B);
     bool sound = VerificationUtils(config, logic).verifyInterpolantExternal(partA, partB, itp);
     return sound;
+}
+
+PTRef InterpolationContext::simplifyInterpolant(PTRef itp) const {
+    const bool cannotSimplify = not logic.isBooleanOperator(itp) or logic.isNot(itp);
+    if (cannotSimplify) { return itp; }
+
+    auto simplificationLevel = config.simplify_inter();
+    if(simplificationLevel == 4) {
+        itp = ::rewriteMaxArityAggresive(logic, itp);
+        itp = ::simplifyUnderAssignment_Aggressive(itp, logic);
+    }
+    else {
+        if (simplificationLevel > 0) {
+            if (verbose() > 1) {
+                std::cout << "Itp before rewriting max arity: \n" << logic.printTerm(itp) << "\n\n";
+            }
+            itp = ::rewriteMaxArityClassic(logic, itp);
+        }
+        if (simplificationLevel == 2) {
+            if (verbose() > 1) {
+                std::cout << "Itp before aggressive simplifying: \n" << logic.printTerm(itp) << "\n\n";
+            }
+            itp = ::simplifyUnderAssignment(logic, itp);
+        }
+
+        if (simplificationLevel == 3) {
+            if (verbose() > 1) {
+                std::cout << "Itp before aggressive simplifying: \n" << logic.printTerm(itp) << "\n\n";
+            }
+            itp = ::simplifyUnderAssignment_Aggressive(itp, logic);
+        }
+    }
+    return itp;
 }
 

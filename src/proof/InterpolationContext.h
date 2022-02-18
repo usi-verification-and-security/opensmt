@@ -48,6 +48,8 @@ private:
 
     bool verifyInterpolant(PTRef itp, ipartitions_t const & A_mask) const;
 
+    PTRef simplifyInterpolant(PTRef itp) const;
+
     /***** CONFIGURATION ****/
 
     int verbose() const { return config.verbosity(); }
