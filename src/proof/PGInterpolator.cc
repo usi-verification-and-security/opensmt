@@ -74,7 +74,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
 
-            labelLeaf(n, PSFunction);
+            labelLeaf(*n, PSFunction);
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
@@ -213,13 +213,11 @@ void ProofGraph::checkInterAlgo()
 
 
 
-void
-ProofGraph::labelLeaf(ProofNode * n, std::map<Var, icolor_t> * PSFunction)
-{
+void ProofGraph::labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction) {
     // Proof Sensitive
-    if (usingPSInterpolation()) setLeafPSLabeling (n, PSFunction);
-    else if (usingPSWInterpolation()) setLeafPSWLabeling (n, PSFunction);
-    else if (usingPSSInterpolation()) setLeafPSSLabeling (n, PSFunction);
+    if (usingPSInterpolation()) setLeafPSLabeling (n, *PSFunction);
+    else if (usingPSWInterpolation()) setLeafPSWLabeling (n, *PSFunction);
+    else if (usingPSSInterpolation()) setLeafPSSLabeling (n, *PSFunction);
     // McMillan's system
     else if ( usingMcMillanInterpolation( ) ) setLeafMcMillanLabeling ( n );
     // Symmetric system
@@ -370,150 +368,58 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
     return partial_interp;
 }
 
-void
-ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
-{
-    assert (labels != NULL);
-    //Reset labeling
-    resetLabeling (n);
+void ProofGraph::setLeafPSLabeling (ProofNode & n, std::map<Var, icolor_t> const & labels) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        auto it = labels.find(v);
+        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
-    std::vector<Lit> const & cl = n->getClause();
-
-    for (unsigned i = 0; i < cl.size(); ++i)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables based on the map "labels"
-        if (var_class == icolor_t::I_AB)
-        {
-            auto it = labels->find(v);
-            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
-
-            if (it->second == icolor_t::I_A)
-                colorsCache.colorA(*n, v);
-            else
-                colorsCache.colorB(*n, v);
-        }
-        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else throw OsmtInternalException("Variable has no class");
-    }
+        if (it->second == icolor_t::I_A)
+            colorsCache.colorA(node, v);
+        else
+            colorsCache.colorB(node, v);
+    });
 }
 
-void
-ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
-{
-    assert (labels != NULL);
-    //Reset labeling
-    resetLabeling (n);
+void ProofGraph::setLeafPSWLabeling(ProofNode & n, std::map<Var, icolor_t> const & labels) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        auto it = labels.find(v);
+        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
-    std::vector<Lit> const & cl = n->getClause();
-
-    for (unsigned i = 0; i < cl.size(); ++i)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables based on the map "labels"
-        if (var_class == icolor_t::I_AB)
-        {
-            auto it = labels->find (v);
-            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
-
-            if (it->second == icolor_t::I_A)
-                colorsCache.colorA(*n, v);
-            else
-                colorsCache.colorAB(*n, v);
-        }
-        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else throw OsmtInternalException("Variable has no class");
-    }
+        if (it->second == icolor_t::I_A)
+            colorsCache.colorA(node, v);
+        else
+            colorsCache.colorAB(node, v);
+    });
 }
 
-void
-ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
-{
-    assert (labels != NULL);
-    //Reset labeling
-    resetLabeling (n);
+void ProofGraph::setLeafPSSLabeling(ProofNode & n, std::map<Var, icolor_t> const & labels) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        auto it = labels.find(v);
+        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
-    std::vector<Lit> const & cl = n->getClause();
-
-    for (unsigned i = 0; i < cl.size(); ++i)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables based on the map "labels"
-        if (var_class == icolor_t::I_AB)
-        {
-            auto it = labels->find(v);
-            assert (theory_only.find(v) != theory_only.end() || it != labels->end());
-
-            if (it->second == icolor_t::I_A)
-                colorsCache.colorAB(*n, v);
-            else
-                colorsCache.colorB(*n, v);
-        }
-        else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
-        else throw OsmtInternalException("Variable has no class");
-    }
-}
-void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
-{
-    // Reset labeling
-    resetLabeling ( n );
-
-    std::vector< Lit > const & cl = n->getClause();
-
-    for ( unsigned i = 0; i < cl.size(); i++)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables as ab
-        if ( var_class == icolor_t::I_AB ) colorsCache.colorAB(*n, v);
-        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else throw OsmtInternalException("Variable has no class");
-    }
+        if (it->second == icolor_t::I_A)
+            colorsCache.colorAB(node, v);
+        else
+            colorsCache.colorB(node, v);
+    });
 }
 
-void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
-{
-    // Reset labeling
-    resetLabeling (n);
-    std::vector< Lit > const & cl = n->getClause();
-
-    for ( unsigned i = 0; i < cl.size(); i++)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables as b
-        if ( var_class == icolor_t::I_AB ) colorsCache.colorB(*n, v);
-        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else throw OsmtInternalException("Variable has no class");
-    }
+void ProofGraph::setLeafPudlakLabeling(ProofNode & n) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        colorsCache.colorAB(node, v);
+    });
 }
 
-void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
-{
-    // Reset labeling
-    resetLabeling (n);
+void ProofGraph::setLeafMcMillanLabeling(ProofNode & n) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        colorsCache.colorB(node, v);
+    });
+}
 
-    std::vector< Lit > const & cl = n->getClause();
-
-    for ( unsigned i = 0; i < cl.size(); i++)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables a if clause is in A
-        if ( var_class == icolor_t::I_AB ) colorsCache.colorA(*n, v);
-        // Color AB class variables b if clause is in B
-        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else throw OsmtInternalException("Variable has no class");
-    }
+void ProofGraph::setLeafMcMillanPrimeLabeling(ProofNode & n) {
+    setLeafLabeling(n, [&](ProofNode & node, Var v) {
+        colorsCache.colorA(node, v);
+    });
 }
 
 // HELPER methods for theory solver

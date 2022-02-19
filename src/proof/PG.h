@@ -435,18 +435,12 @@ public:
 
     PTRef           computePartialInterpolantForOriginalClause               (ProofNode * n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode *);
-    void            labelLeaf                                (ProofNode *n, std::map<Var, icolor_t> *PSFunction = nullptr);
-    void            setLeafRandomLabeling                    (ProofNode *);
-    void            setLeafMcMillanLabeling                  (ProofNode *);
-    void            setLeafPudlakLabeling                    (ProofNode *);
-    void            setLeafMcMillanPrimeLabeling             (ProofNode *);
-    void            setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    void            setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    void            setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
+
+
     icolor_t        getPivotColor                            ( ProofNode * );
 
     // Translation from var info obtained through above function
-    inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
+    inline void    resetLabeling          ( ProofNode& n ){ n.resetLabeling(); }
 
     inline void    updateColoringfromAnts ( ProofNode* n ) { assert(!n->isLeaf()); n->updateColoringfromAnts(); }
     inline void    updateColoringAfterRes ( ProofNode* n ) {
@@ -549,6 +543,16 @@ private:
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
     std::vector<Lit> getLiteralsRestrictedTo(ProofNode const & node, icolor_t wantedVarClass) const;
 
+    void labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction = nullptr);
+    template<typename TFun>
+    void setLeafLabeling(ProofNode & node, TFun colorABVar);
+    void            setLeafMcMillanLabeling                  (ProofNode &);
+    void            setLeafPudlakLabeling                    (ProofNode &);
+    void            setLeafMcMillanPrimeLabeling             (ProofNode &);
+    void            setLeafPSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+    void            setLeafPSWLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+    void            setLeafPSSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
@@ -597,5 +601,22 @@ private:
     mpz_t visited_1;
     mpz_t visited_2;
 };
+
+template<typename TFun>
+void ProofGraph::setLeafLabeling(ProofNode & node, TFun colorABVar) {
+    resetLabeling(node);
+    std::vector<Lit> const & cl = node.getClause();
+
+    for (Lit l : cl) {
+        Var v = var (l);
+        icolor_t var_class = colorsCache.getVarClass(v);
+
+        if (var_class == icolor_t::I_AB) {
+            colorABVar(node, v);
+        } else if ( var_class != icolor_t::I_A and var_class != icolor_t::I_B ) {
+            OsmtInternalException("Variable has no class");
+        }
+    }
+}
 
 #endif
