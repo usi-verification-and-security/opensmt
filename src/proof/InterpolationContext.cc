@@ -31,10 +31,6 @@ void InterpolationContext::printProofDotty() {
     proof_graph->printProofGraph();
 }
 
-
-void InterpolationContext::setColoringSuggestions(
-    vec<std::map<PTRef, icolor_t> *> * mp) { proof_graph->setColoringSuggestions(mp); }
-
 void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants) {
     assert(proof_graph);
     proof_graph->produceSingleInterpolant(interpolants);

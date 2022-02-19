@@ -74,7 +74,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
 
-            labelLeaf (n, 0, PSFunction);
+            labelLeaf(n, PSFunction);
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
@@ -184,9 +184,8 @@ void ProofGraph::checkInterAlgo()
              || usingMcMillanPrimeInterpolation()
              || usingPSInterpolation()
              || usingPSWInterpolation()
-             || usingPSSInterpolation()
-             || usingLabelingSuggestions()))
-        throw OsmtApiException("Please choose 0/1/2/3/4/5/6 as values for itp_bool_algo");
+             || usingPSSInterpolation()))
+        throw OsmtApiException("Please choose 0/1/2/3/4/5 as values for itp_bool_algo");
 
     if ( verbose() > 0 )
     {
@@ -204,8 +203,6 @@ void ProofGraph::checkInterAlgo()
             std::cerr << "Weak Proof-Sensitive";
         else if (  usingPSSInterpolation() )
             std::cerr << "Strong Proof-Sensitive";
-        else if ( usingLabelingSuggestions() )
-            std::cerr << "labeling suggestions";
 
         std::cerr << " for propositional interpolation" << '\n';
     }
@@ -217,7 +214,7 @@ void ProofGraph::checkInterAlgo()
 
 
 void
-ProofGraph::labelLeaf(ProofNode * n, unsigned num_config, std::map<Var, icolor_t> * PSFunction)
+ProofGraph::labelLeaf(ProofNode * n, std::map<Var, icolor_t> * PSFunction)
 {
     // Proof Sensitive
     if (usingPSInterpolation()) setLeafPSLabeling (n, PSFunction);
@@ -229,8 +226,6 @@ ProofGraph::labelLeaf(ProofNode * n, unsigned num_config, std::map<Var, icolor_t
     else if ( usingPudlakInterpolation( ) ) setLeafPudlakLabeling ( n );
     // McMillan's prime system
     else if ( usingMcMillanPrimeInterpolation( ) ) setLeafMcMillanPrimeLabeling ( n );
-    // Labeling suggestions enabled
-    else if ( usingLabelingSuggestions( ) ) setLabelingFromMap ( n, num_config );
     // Error
     else throw OsmtApiException("No interpolation algorithm chosen");
 }
@@ -595,48 +590,6 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
         // Color AB class variables a if clause is in A
         if ( var_class == icolor_t::I_AB ) colorsCache.colorA(*n, v);
         // Color AB class variables b if clause is in B
-        else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
-        else throw OsmtInternalException("Variable has no class");
-    }
-}
-
-void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
-{
-    assert (vars_suggested_color_map);
-    // Reset labeling
-    resetLabeling (n);
-
-    std::vector< Lit > &cl = n->getClause();
-
-    for ( unsigned i = 0; i < cl.size(); i++)
-    {
-        Var v = var (cl[i]);
-        icolor_t var_class = colorsCache.getVarClass(v);
-
-        // Color AB class variables as a
-        if ( var_class == icolor_t::I_AB )
-        {
-            // Retrieve correspondent Enode
-            PTRef en = varToPTRef (v);
-            std::map<PTRef, icolor_t> *col_map = (*vars_suggested_color_map)[num_config];
-            assert (col_map);
-            std::map<PTRef, icolor_t>::iterator it = col_map->find (en);
-
-            if ( it == col_map->end() )
-            {
-                std::cerr << "Color suggestion for " << v << " not found; using Pudlak" << '\n';
-                colorsCache.colorAB(*n, v);
-            }
-            else
-            {
-                icolor_t color = it->second;
-
-                if (color == icolor_t::I_A) colorsCache.colorA(*n, v);
-                else if (color == icolor_t::I_B) colorsCache.colorB(*n, v);
-                else if (color == icolor_t::I_AB) colorsCache.colorAB(*n, v);
-                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
-            }
-        }
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else throw OsmtInternalException("Variable has no class");
     }

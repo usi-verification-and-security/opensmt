@@ -317,7 +317,6 @@ public:
 , logic_ ( th.getLogic() )
 , pmanager (pmanager)
 , thandler {new THandler(th, termMapper)}
-, vars_suggested_color_map ( nullptr )
 {
 		mpz_init(visited_1);
 		mpz_init(visited_2);
@@ -435,7 +434,7 @@ public:
 
     PTRef           compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode *);
-    void            labelLeaf                                (ProofNode *, unsigned num_config = 0, std::map<Var, icolor_t>* PSFunc = nullptr);
+    void            labelLeaf                                (ProofNode *n, std::map<Var, icolor_t> *PSFunction = nullptr);
     void            setLeafRandomLabeling                    (ProofNode *);
     void            setLeafMcMillanLabeling                  (ProofNode *);
     void            setLeafPudlakLabeling                    (ProofNode *);
@@ -443,9 +442,6 @@ public:
     void            setLeafPSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
     void            setLeafPSWLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
     void            setLeafPSSLabeling		( ProofNode*, std::map<Var, icolor_t>* PSFunction );
-    bool            usingLabelingSuggestions           	    ( ) { return ( config.itp_bool_alg() == 6 ); }
-    void            setColoringSuggestions   ( vec< std::map<PTRef, icolor_t>* > * mp ) { assert(mp); vars_suggested_color_map = mp; }
-    void            setLabelingFromMap       ( ProofNode*, unsigned );
     icolor_t        getPivotColor                            ( ProofNode * );
 
     // Translation from var info obtained through above function
@@ -565,7 +561,6 @@ private:
     std::set<Var> theory_only;
     std::vector<Lit> assumedLiterals;
 
-    vec<std::map<PTRef, icolor_t>*> * vars_suggested_color_map { nullptr };	 // To suggest color for shared vars
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
     VarColorsCache colorsCache;
 
