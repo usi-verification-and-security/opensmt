@@ -187,8 +187,9 @@ struct ProofNode
     // Getty methods
     //
     inline clauseid_t            getId                  ( ) const { return id; }
-    inline std::vector<Lit>&          getClause              ( )       { assert(clause); return *clause; }
-    inline std::vector<Lit>*          getPClause             ( )       { return clause; }
+    inline std::vector<Lit> &         getClause              ( )       { assert(clause); return *clause; }
+    inline std::vector<Lit> const &   getClause              ( ) const { assert(clause); return *clause; }
+    inline std::vector<Lit> const *   getPClause             ( ) const { return clause; }
     inline size_t                getClauseSize          ( ) const { return clause->size( ); }
     inline Var                   getPivot               ( ) const { return pivot; }
     inline ProofNode *           getAnt1                ( ) const { return ant1; }
@@ -233,9 +234,9 @@ struct ProofNode
         clrbit( i_data->AB_vars_b_colored, i );
     }
     inline void    resetLabeling          () { i_data->AB_vars_a_colored = 0; i_data->AB_vars_b_colored = 0; }
-    inline bool    isColoredA             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
-    inline bool    isColoredB             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-    inline bool    isColoredAB            ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline bool    isColoredA             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
+    inline bool    isColoredB             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline bool    isColoredAB            ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
     inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
     inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
     inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
@@ -258,7 +259,7 @@ class VarColorsCache {
     std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
 
 public:
-    int getSharedVarIndex(Var v) {
+    int getSharedVarIndex(Var v) const {
         assert(AB_vars_mapping[v] >= 0);
         return AB_vars_mapping[v];
     }
@@ -289,11 +290,11 @@ public:
         }
     }
 
-    inline bool isColoredA(ProofNode & n, Var v) { return n.isColoredA(getSharedVarIndex(v)); }
+    inline bool isColoredA(ProofNode const & n, Var v) const { return n.isColoredA(getSharedVarIndex(v)); }
 
-    inline bool isColoredB(ProofNode & n, Var v) { return n.isColoredB(getSharedVarIndex(v)); }
+    inline bool isColoredB(ProofNode const & n, Var v) const { return n.isColoredB(getSharedVarIndex(v)); }
 
-    inline bool isColoredAB(ProofNode & n, Var v) { return n.isColoredAB(getSharedVarIndex(v)); }
+    inline bool isColoredAB(ProofNode const & n, Var v) const { return n.isColoredAB(getSharedVarIndex(v)); }
 
     inline void colorA(ProofNode & n, Var v) { n.colorA(getSharedVarIndex(v)); }
 
@@ -432,7 +433,7 @@ public:
     void           getComplexityInterpolant( PTRef int_e );
     void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
 
-    PTRef           compInterpLabelingOriginal               (ProofNode * n, const ipartitions_t & A_mask);
+    PTRef           computePartialInterpolantForOriginalClause               (ProofNode * n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode *);
     void            labelLeaf                                (ProofNode *n, std::map<Var, icolor_t> *PSFunction = nullptr);
     void            setLeafRandomLabeling                    (ProofNode *);
@@ -537,13 +538,16 @@ private:
     void recyclePivotsIter_RecyclePhase();
 
     // Coloring related methods
-    icolor_t getSharedVarColorInNode(Var v, ProofNode & node) {
+    icolor_t getSharedVarColorInNode(Var v, ProofNode const & node) const {
         if (colorsCache.isColoredA(node, v)) return icolor_t::I_A;
         else if (colorsCache.isColoredB(node, v)) return icolor_t::I_B;
         else if (colorsCache.isColoredAB(node, v)) return icolor_t::I_AB;
 
         throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(node.getId()));
     }
+
+    PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
+    std::vector<Lit> getLiteralsRestrictedTo(ProofNode const & node, icolor_t wantedVarClass) const;
 
     //NOTE added for experimentation
     Var 				  pred_to_push;

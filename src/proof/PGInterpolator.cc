@@ -78,13 +78,13 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
-                partial_interp = compInterpLabelingOriginal(n, A_mask);
+                partial_interp = computePartialInterpolantForOriginalClause(n, A_mask);
             }
             else if (n->getType() == clause_type::CLA_THEORY) // Theory lemma
             {
                 clearTSolver();
                 vec<Lit> newvec;
-                std::vector<Lit> &oldvec = n->getClause();
+                std::vector<Lit> const & oldvec = n->getClause();
 
                 for (std::size_t j = 0; j < oldvec.size(); ++j) {
                     newvec.push(~oldvec[j]);
@@ -108,7 +108,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 }
                 assert(!res);
                 std::map<PTRef, icolor_t> ptref2label;
-                std::vector<Lit>& cl = n->getClause();
+                std::vector<Lit> const & cl = n->getClause();
 
                 for (std::size_t j = 0; j < cl.size(); ++j) {
                     ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
@@ -230,134 +230,55 @@ ProofGraph::labelLeaf(ProofNode * n, std::map<Var, icolor_t> * PSFunction)
     else throw OsmtApiException("No interpolation algorithm chosen");
 }
 
+std::vector<Lit> ProofGraph::getLiteralsRestrictedTo(ProofNode const & node, icolor_t wantedVarClass) const {
+    std::vector<Lit> restrictedClause;
+    for (Lit l : node.getClause()) {
+        if (isAssumedLiteral(~l)) {
+            // ignore if the negation is assumed, it's as if this literal did not exist
+            continue;
+        }
+        Var v = var(l);
+        icolor_t var_class = colorsCache.getVarClass(v);
+        assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB);
+
+        icolor_t var_color = var_class == icolor_t::I_B or var_class == icolor_t::I_A ? var_class
+                                                                                      : getSharedVarColorInNode(v, node);
+        if (var_color == wantedVarClass) restrictedClause.push_back(l);
+    }
+    return restrictedClause;
+}
+
+PTRef ProofGraph::getInterpolantForOriginalClause(const ProofNode & node, icolor_t clauseClass) const {
+    if (clauseClass != icolor_t::I_A and clauseClass != icolor_t::I_B) { throw OsmtInternalException("Unexpected class"); }
+    auto otherClass = clauseClass == icolor_t::I_A ? icolor_t::I_B : icolor_t::I_A;
+    bool clauseIsA = clauseClass == icolor_t::I_A;
+
+    std::vector<Lit> restricted_clause = getLiteralsRestrictedTo(node, otherClass);
+    if (restricted_clause.empty()) {
+        return clauseIsA ? logic_.getTerm_false() : logic_.getTerm_true();
+    }
+    vec<PTRef> args; args.capacity(restricted_clause.size());
+    for (Lit l : restricted_clause) {
+        PTRef litTerm = varToPTRef(var(l));
+        if (sign(l) == clauseIsA) litTerm = logic_.mkNot(litTerm);
+        args.push(litTerm);
+    }
+    return clauseClass == icolor_t::I_A ? logic_.mkOr(std::move(args)) : logic_.mkAnd(std::move(args));
+}
+
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
-PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t & A_mask)
+PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode * n, const ipartitions_t & A_mask)
 {
-    // Then calculate interpolant
+    assert(n->getType() == clause_type::CLA_ORIG);
     icolor_t clause_color = getClauseColor(n->getClauseRef(), A_mask);
-#ifdef ITP_DEBUG
-    std::cout << "Clause has mask " << n->getInterpPartitionMask() << ". Mask " << A_mask << '\n';
-    std::cout << "Clause has color " << clause_color << '\n';
-#endif
-
-    if (clause_color == icolor_t::I_AB)
-    {
+    if (clause_color == icolor_t::I_AB) {
         // Think of a heuristic for choosing the partition?
         clause_color = icolor_t::I_A;
     }
-
     // Original leaves can be only of class A or B
-    assert ( clause_color == icolor_t::I_A || clause_color == icolor_t::I_B );
-
-    PTRef partial_interp = PTRef_Undef;
-
-    // MB: TODO unite the cases in one function
-    // Leaf belongs to A -> interpolant = leaf clause restricted to b
-    if ( clause_color == icolor_t::I_A )
-    {
-        //Compute clause restricted to b
-
-        std::vector< Lit > restricted_clause;
-        // In labeling, classes and colors are distinct
-        icolor_t var_class;
-        std::vector< Lit > &cl = n->getClause();
-
-        const size_t size = cl.size( );
-
-        for ( size_t i = 0 ; i < size ; i ++ )
-        {
-            if (isAssumedLiteral(~cl[i])) {
-                // ignore if the negation is assumed, it's as if this literal did not exist
-                continue;
-            }
-            Var v = var (cl[i]);
-            var_class = colorsCache.getVarClass(v);
-            assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
-
-            icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
-                    : getSharedVarColorInNode(v, *n);
-            if (var_color == icolor_t::I_B) restricted_clause.push_back(cl[i]);
-        }
-
-        size_t clause_size = restricted_clause.size( );
-
-        //Create enode for the restricted clause
-        if ( clause_size == 0 )
-            //Partial interpolant is false in case of empty clause left
-            partial_interp = logic_.getTerm_false();
-        else
-        {
-            PTRef lit;
-            vec<PTRef> or_args;
-
-            for (size_t i = 0; i < clause_size; i++)
-            {
-                lit = varToPTRef (var (restricted_clause[i]));
-
-                //Check polarity literal
-                if (sign (restricted_clause[i])) lit = logic_.mkNot(lit);
-
-                //Build adding literals progressively
-                or_args.push (lit);
-            }
-            partial_interp = logic_.mkOr(std::move(or_args));
-        }
-    }
-    // Leaf belongs to B -> interpolant = negation of leaf clause restricted to a
-    else if ( clause_color == icolor_t::I_B )
-    {
-        //Compute clause restricted to a
-
-        std::vector< Lit > restricted_clause;
-        // In labeling, classes and colors are distinct
-        icolor_t var_class;
-        std::vector< Lit > &cl = n->getClause();
-
-        const size_t size = cl.size( );
-
-        for ( size_t i = 0 ; i < size ; i ++ )
-        {
-            if (isAssumedLiteral(~cl[i])) {
-                // ignore if the negation is assumed, it's as if this literal did not exist
-                continue;
-            }
-            Var v = var (cl[i]);
-            var_class = colorsCache.getVarClass(v);
-            assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
-
-            icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
-                    : getSharedVarColorInNode(v, *n);
-            if ( var_color == icolor_t::I_A ) restricted_clause.push_back ( cl[i] );
-        }
-
-        size_t clause_size = restricted_clause.size( );
-
-        // Create enode for the restricted clause
-        if ( clause_size == 0 )
-            // Partial interpolant is true (negation of false) in case of empty clause left
-            partial_interp = logic_.getTerm_true();
-        else
-        {
-            PTRef lit;
-            vec<PTRef> and_args;
-
-            for ( size_t i = 0 ; i < clause_size ; i++ )
-            {
-                lit = varToPTRef ( var ( restricted_clause[i] ) );
-
-                // Check polarity literal
-                if ( !sign ( restricted_clause[i] ) )
-                    lit = logic_.mkNot(lit);
-
-                // Build adding literals progressively
-                and_args.push (lit);
-            }
-            partial_interp = logic_.mkAnd (std::move(and_args));
-        }
-    }
-    else throw OsmtInternalException("Clause has no color");
-
+    assert(clause_color == icolor_t::I_A || clause_color == icolor_t::I_B);
+    PTRef partial_interp = getInterpolantForOriginalClause(*n, clause_color);
     assert (partial_interp != PTRef_Undef);
     return partial_interp;
 }
@@ -456,7 +377,7 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     //Reset labeling
     resetLabeling (n);
 
-    std::vector<Lit> &cl = n->getClause();
+    std::vector<Lit> const & cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -486,7 +407,7 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     //Reset labeling
     resetLabeling (n);
 
-    std::vector<Lit> &cl = n->getClause();
+    std::vector<Lit> const & cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -516,7 +437,7 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     //Reset labeling
     resetLabeling (n);
 
-    std::vector<Lit> &cl = n->getClause();
+    std::vector<Lit> const & cl = n->getClause();
 
     for (unsigned i = 0; i < cl.size(); ++i)
     {
@@ -543,7 +464,7 @@ void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
     // Reset labeling
     resetLabeling ( n );
 
-    std::vector< Lit > &cl = n->getClause();
+    std::vector< Lit > const & cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -561,7 +482,7 @@ void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
 {
     // Reset labeling
     resetLabeling (n);
-    std::vector< Lit > &cl = n->getClause();
+    std::vector< Lit > const & cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {
@@ -580,7 +501,7 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
     // Reset labeling
     resetLabeling (n);
 
-    std::vector< Lit > &cl = n->getClause();
+    std::vector< Lit > const & cl = n->getClause();
 
     for ( unsigned i = 0; i < cl.size(); i++)
     {

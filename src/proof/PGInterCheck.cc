@@ -39,7 +39,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
     Logic& logic = this->logic_;
     icolor_t var_class;
-    std::vector< Lit > & cl = n->getClause();
+    std::vector< Lit > const & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
@@ -80,7 +80,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
     Logic& logic = this->logic_;
     icolor_t var_class;
-    std::vector< Lit > & cl = n->getClause();
+    std::vector< Lit > const & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
