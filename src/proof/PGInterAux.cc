@@ -48,42 +48,15 @@ bool ProofGraph::decideOnAlternativeInterpolation(ProofNode* n)
 	return false;
 }
 
-void ProofGraph::computeABVariablesMapping( const ipartitions_t & A_mask )
-{
-	// Track AB class variables and associate index to them
-	// NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
-	int AB_bit_index = 0;
-	for( Var v : proof_variables )
-	{
-		icolor_t v_class = getVarClass( v, A_mask );
-		if( v_class == icolor_t::I_A ){ AB_vars_mapping[v] = -1; }
-		else if( v_class == icolor_t::I_B ){ AB_vars_mapping[v] = -2; }
-		else if( v_class == icolor_t::I_AB ){ AB_vars_mapping[v] = AB_bit_index; AB_bit_index++; }
-		else throw OsmtInternalException("Error in computing variable colors");
-	}
-}
-
 
 icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
 {
     assert( n->isLeaf() );
     // In labeling, classes and colors are distinct
-    icolor_t var_class = getVarClass2( v );
-    icolor_t var_color = icolor_t::I_UNDEF;
-    // Determine if variable A-local, B-local or AB-common
-    if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
-    else if (  var_class == icolor_t::I_AB )
-    {
-        if ( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-        else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-        else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-        else
-        {
-            throw OsmtInternalException("Var has no label");
-        }
-    }
-    else throw OsmtInternalException("Var " + std::to_string(v) + " has no class");
-
+    icolor_t var_class = colorsCache.getVarClass(v);
+    assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB);
+    icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
+            : getSharedVarColorInNode(v, *n);
     return var_color;
 }
 
@@ -97,40 +70,22 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 	assert( !n->isLeaf() );
 	Var v = n->getPivot();
 	// In labeling, classes and colors are distinct
-	icolor_t var_class = getVarClass2( v );
+	icolor_t var_class = colorsCache.getVarClass(v);
+    if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_AB) {
+        throw OsmtInternalException("Pivot " + std::to_string(v) + " has no class");
+    }
 
 	// Update AB vars color vectors from antecedents
 	updateColoringfromAnts(n);
 
-	icolor_t var_color = icolor_t::I_UNDEF;
-	// Determine if variable A-local, B-local or AB-common
-	if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
-	else if (  var_class == icolor_t::I_AB )
-	{
-		if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-		else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-		else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-		else
-		{
-			icolor_t var_color_1=icolor_t::I_UNDEF;
-			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_A;
-			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = icolor_t::I_B;
-			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_AB;
-
-			icolor_t var_color_2=icolor_t::I_UNDEF;
-			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_A;
-			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = icolor_t::I_B;
-			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
-
-			std::cerr << "Pivot " << v << " has colors " << colorToString(var_color_1) << " " << colorToString(var_color_2) <<
-					" in antecedents but no color in resolvent" << '\n';
-			throw OsmtInternalException();
-		}
-
-		// Remove pivot from resolvent if class AB
+    // Determine if variable A-local, B-local or AB-common
+	icolor_t var_color = var_class == icolor_t::I_A || var_class == icolor_t::I_B ? var_class : icolor_t::I_UNDEF;
+	if (var_color == icolor_t::I_UNDEF) {
+        assert(var_class == icolor_t::I_AB);
+        var_color = getSharedVarColorInNode(v, *n);
+        // Remove pivot from resolvent if class AB
 		updateColoringAfterRes(n);
 	}
-	else throw OsmtInternalException("Pivot " + std::to_string(v) + " has no class");
 	Lit pos = mkLit(v);
 	Lit neg = ~pos;
 	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
@@ -249,7 +204,7 @@ ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions
                     if(theory_only.find(v) != theory_only.end())
                         theory_only.erase(theory_only.find(v));
 
-					icolor_t vclass = getVarClass2(v);
+					icolor_t vclass = colorsCache.getVarClass(v);
 					if(vclass != icolor_t::I_AB) continue;
 					if(col == icolor_t::I_A)
 					{

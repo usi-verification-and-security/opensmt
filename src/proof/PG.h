@@ -26,6 +26,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "Theory.h"
 #include "THandler.h"
 #include "PartitionManager.h"
+#include "OsmtInternalException.h"
 
 #include <memory>
 #include <map>
@@ -251,6 +252,56 @@ private:
     InterpolData*      i_data;             // Data for interpolants computation
 };
 
+class VarColorsCache {
+
+    // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
+    std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
+
+public:
+    int getSharedVarIndex(Var v) {
+        assert(AB_vars_mapping[v] >= 0);
+        return AB_vars_mapping[v];
+    }
+
+    icolor_t getVarClass(Var v) const {
+        assert((unsigned) v < AB_vars_mapping.size());
+        assert(AB_vars_mapping[v] >= -2);
+        int c = AB_vars_mapping[v];
+        return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
+    }
+
+    template<typename TContainer, typename TFun>
+    void resetVarColorCache(TContainer const & vars, TFun getClass) {
+        Var maxVar = *std::max_element(vars.begin(), vars.end());
+        AB_vars_mapping.clear();
+        AB_vars_mapping.resize(maxVar + 1, -3);
+        // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
+        int AB_bit_index = 0;
+        for (Var v: vars) {
+            icolor_t v_class = getClass(v);
+            if (v_class == icolor_t::I_A) { AB_vars_mapping[v] = -1; }
+            else if (v_class == icolor_t::I_B) { AB_vars_mapping[v] = -2; }
+            else if (v_class == icolor_t::I_AB) {
+                AB_vars_mapping[v] = AB_bit_index;
+                AB_bit_index++;
+            }
+            else throw OsmtInternalException("Error in computing variable colors");
+        }
+    }
+
+    inline bool isColoredA(ProofNode & n, Var v) { return n.isColoredA(getSharedVarIndex(v)); }
+
+    inline bool isColoredB(ProofNode & n, Var v) { return n.isColoredB(getSharedVarIndex(v)); }
+
+    inline bool isColoredAB(ProofNode & n, Var v) { return n.isColoredAB(getSharedVarIndex(v)); }
+
+    inline void colorA(ProofNode & n, Var v) { n.colorA(getSharedVarIndex(v)); }
+
+    inline void colorB(ProofNode & n, Var v) { n.colorB(getSharedVarIndex(v)); }
+
+    inline void colorAB(ProofNode & n, Var v) { n.colorAB(getSharedVarIndex(v)); }
+};
+
 
 class ProofGraph
 {
@@ -396,22 +447,14 @@ public:
     void            setColoringSuggestions   ( vec< std::map<PTRef, icolor_t>* > * mp ) { assert(mp); vars_suggested_color_map = mp; }
     void            setLabelingFromMap       ( ProofNode*, unsigned );
     icolor_t        getPivotColor                            ( ProofNode * );
-    void            computeABVariablesMapping                ( const ipartitions_t & );
 
     // Translation from var info obtained through above function
-    icolor_t getVarClass2(Var);
     inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
-    inline bool    isColoredA             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredA( AB_vars_mapping[v] ); }
-    inline bool    isColoredB             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredB( AB_vars_mapping[v] ); }
-    inline bool    isColoredAB            ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredAB( AB_vars_mapping[v] ); }
-    inline void    colorA                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorA( AB_vars_mapping[v] ); }
-    inline void    colorB                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorB( AB_vars_mapping[v] ); }
-    inline void    colorAB                ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorAB( AB_vars_mapping[v] ); }
+
     inline void    updateColoringfromAnts ( ProofNode* n ) { assert(!n->isLeaf()); n->updateColoringfromAnts(); }
-    inline void    updateColoringAfterRes ( ProofNode* n )
-    {
-    	assert(!n->isLeaf()); assert( AB_vars_mapping[n->getPivot()]>= 0);
-    	n->updateColoringAfterRes( AB_vars_mapping[n->getPivot()] );
+    inline void    updateColoringAfterRes ( ProofNode* n ) {
+        assert(!n->isLeaf());
+        n->updateColoringAfterRes(colorsCache.getSharedVarIndex(n->getPivot()));
     }
     icolor_t getVarColor(ProofNode* n, Var v);
 
@@ -497,6 +540,15 @@ private:
 
     void recyclePivotsIter_RecyclePhase();
 
+    // Coloring related methods
+    icolor_t getSharedVarColorInNode(Var v, ProofNode & node) {
+        if (colorsCache.isColoredA(node, v)) return icolor_t::I_A;
+        else if (colorsCache.isColoredB(node, v)) return icolor_t::I_B;
+        else if (colorsCache.isColoredAB(node, v)) return icolor_t::I_AB;
+
+        throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(node.getId()));
+    }
+
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
@@ -512,10 +564,10 @@ private:
     unsigned                       max_id_variable;             // Highest value for a variable
     std::set<Var> theory_only;
     std::vector<Lit> assumedLiterals;
-    // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
-    std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
+
     vec<std::map<PTRef, icolor_t>*> * vars_suggested_color_map { nullptr };	 // To suggest color for shared vars
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
+    VarColorsCache colorsCache;
 
     // Info on graph dimension
     int    num_nodes;

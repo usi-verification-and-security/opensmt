@@ -39,7 +39,6 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
     Logic& logic = this->logic_;
     icolor_t var_class;
-    icolor_t var_color;
     std::vector< Lit > & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
@@ -47,17 +46,10 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     for( size_t i = 0 ; i < size ; i ++ )
     {
         Var v = var(cl[i]);
-        var_class = getVarClass2( v );
+        var_class = colorsCache.getVarClass(v);
         assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
-        if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
-        else
-        {
-            // Determine color of AB variable
-            if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-            else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-            else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
-        }
+        icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
+                : getSharedVarColorInNode(v, *n);
         if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
         {
             PTRef ptaux = varToPTRef(var(cl[i]));
@@ -88,7 +80,6 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
     Logic& logic = this->logic_;
     icolor_t var_class;
-    icolor_t var_color;
     std::vector< Lit > & cl = n->getClause();
     vec<PTRef> restricted_clause;
 
@@ -96,17 +87,10 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     for( size_t i = 0 ; i < size ; i ++ )
     {
         Var v = var(cl[i]);
-        var_class = getVarClass2( v );
+        var_class = colorsCache.getVarClass(v);
         assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
-        if( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
-        else
-        {
-            // Determine color of AB variable
-            if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-            else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-            else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
-        }
+        icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
+                : getSharedVarColorInNode(v, *n);
         if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
         {
             PTRef ptaux = varToPTRef(var(cl[i]));

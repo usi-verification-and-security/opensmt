@@ -45,7 +45,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     checkInterAlgo();
 
     // Track AB class variables and associate index to them in nodes bit masks
-    computeABVariablesMapping(A_mask);
+    colorsCache.resetVarColorCache(proof_variables, [&](Var v) {
+       return getVarClass(v, A_mask);
+    });
 
     // Clause and partial interpolant
     ProofNode *n = nullptr;
@@ -264,7 +266,6 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
         std::vector< Lit > restricted_clause;
         // In labeling, classes and colors are distinct
         icolor_t var_class;
-        icolor_t var_color;
         std::vector< Lit > &cl = n->getClause();
 
         const size_t size = cl.size( );
@@ -276,20 +277,12 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
                 continue;
             }
             Var v = var (cl[i]);
-            var_class = getVarClass2 ( v );
+            var_class = colorsCache.getVarClass(v);
             assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
 
-            if ( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
-            else
-            {
-                // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
-                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
-                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
-            }
-
-            if ( var_color == icolor_t::I_B ) restricted_clause.push_back ( cl[i] );
+            icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
+                    : getSharedVarColorInNode(v, *n);
+            if (var_color == icolor_t::I_B) restricted_clause.push_back(cl[i]);
         }
 
         size_t clause_size = restricted_clause.size( );
@@ -324,7 +317,6 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
         std::vector< Lit > restricted_clause;
         // In labeling, classes and colors are distinct
         icolor_t var_class;
-        icolor_t var_color;
         std::vector< Lit > &cl = n->getClause();
 
         const size_t size = cl.size( );
@@ -336,19 +328,11 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
                 continue;
             }
             Var v = var (cl[i]);
-            var_class = getVarClass2 ( v );
+            var_class = colorsCache.getVarClass(v);
             assert ( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
 
-            if ( var_class == icolor_t::I_B || var_class == icolor_t::I_A ) var_color = var_class;
-            else
-            {
-                // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
-                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
-                else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
-            }
-
+            icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
+                    : getSharedVarColorInNode(v, *n);
             if ( var_color == icolor_t::I_A ) restricted_clause.push_back ( cl[i] );
         }
 
@@ -482,7 +466,7 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     for (unsigned i = 0; i < cl.size(); ++i)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 (v);
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
@@ -491,9 +475,9 @@ ProofGraph::setLeafPSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
-                colorA (n, v);
+                colorsCache.colorA(*n, v);
             else
-                colorB (n, v);
+                colorsCache.colorB(*n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else throw OsmtInternalException("Variable has no class");
@@ -512,7 +496,7 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     for (unsigned i = 0; i < cl.size(); ++i)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 (v);
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
@@ -521,9 +505,9 @@ ProofGraph::setLeafPSWLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
-                colorA (n, v);
+                colorsCache.colorA(*n, v);
             else
-                colorAB (n, v);
+                colorsCache.colorAB(*n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else throw OsmtInternalException("Variable has no class");
@@ -542,7 +526,7 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
     for (unsigned i = 0; i < cl.size(); ++i)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 (v);
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables based on the map "labels"
         if (var_class == icolor_t::I_AB)
@@ -551,9 +535,9 @@ ProofGraph::setLeafPSSLabeling (ProofNode *n, std::map<Var, icolor_t> *labels)
             assert (theory_only.find(v) != theory_only.end() || it != labels->end());
 
             if (it->second == icolor_t::I_A)
-                colorAB (n, v);
+                colorsCache.colorAB(*n, v);
             else
-                colorB (n, v);
+                colorsCache.colorB(*n, v);
         }
         else if (var_class == icolor_t::I_A || var_class == icolor_t::I_B);
         else throw OsmtInternalException("Variable has no class");
@@ -569,10 +553,10 @@ void ProofGraph::setLeafPudlakLabeling ( ProofNode *n )
     for ( unsigned i = 0; i < cl.size(); i++)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 ( v );
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables as ab
-        if ( var_class == icolor_t::I_AB ) colorAB (n, v);
+        if ( var_class == icolor_t::I_AB ) colorsCache.colorAB(*n, v);
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else throw OsmtInternalException("Variable has no class");
     }
@@ -587,10 +571,10 @@ void ProofGraph::setLeafMcMillanLabeling ( ProofNode *n )
     for ( unsigned i = 0; i < cl.size(); i++)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 ( v );
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables as b
-        if ( var_class == icolor_t::I_AB ) colorB (n, v);
+        if ( var_class == icolor_t::I_AB ) colorsCache.colorB(*n, v);
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else throw OsmtInternalException("Variable has no class");
     }
@@ -606,10 +590,10 @@ void ProofGraph::setLeafMcMillanPrimeLabeling ( ProofNode *n )
     for ( unsigned i = 0; i < cl.size(); i++)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 ( v );
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables a if clause is in A
-        if ( var_class == icolor_t::I_AB ) colorA (n, v);
+        if ( var_class == icolor_t::I_AB ) colorsCache.colorA(*n, v);
         // Color AB class variables b if clause is in B
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else throw OsmtInternalException("Variable has no class");
@@ -627,7 +611,7 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
     for ( unsigned i = 0; i < cl.size(); i++)
     {
         Var v = var (cl[i]);
-        icolor_t var_class = getVarClass2 ( v );
+        icolor_t var_class = colorsCache.getVarClass(v);
 
         // Color AB class variables as a
         if ( var_class == icolor_t::I_AB )
@@ -641,28 +625,21 @@ void ProofGraph::setLabelingFromMap ( ProofNode *n, unsigned num_config )
             if ( it == col_map->end() )
             {
                 std::cerr << "Color suggestion for " << v << " not found; using Pudlak" << '\n';
-                colorAB (n, v);
+                colorsCache.colorAB(*n, v);
             }
             else
             {
                 icolor_t color = it->second;
 
-                if (color == icolor_t::I_A) colorA (n, v);
-                else if (color == icolor_t::I_B) colorB (n, v);
-                else if (color == icolor_t::I_AB) colorAB (n, v);
+                if (color == icolor_t::I_A) colorsCache.colorA(*n, v);
+                else if (color == icolor_t::I_B) colorsCache.colorB(*n, v);
+                else if (color == icolor_t::I_AB) colorsCache.colorAB(*n, v);
                 else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
         }
         else if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B );
         else throw OsmtInternalException("Variable has no class");
     }
-}
-
-icolor_t ProofGraph::getVarClass2(Var v) {
-    assert((unsigned) v < AB_vars_mapping.size());
-    assert(AB_vars_mapping[v] >= -2);
-    int c = AB_vars_mapping[v];
-    return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
 }
 
 // HELPER methods for theory solver
