@@ -361,12 +361,19 @@ void CoreSMTSolver::attachClause(CRef cr)
     assert(c.size() > 1);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
-    if(c.size() > 2 )
+    if(c.size() > 2 ){
+//        if(c[2].x == 176){
+//            cout << "Here";
+//        }
         watches[~c[2]].push(Watcher(cr, c[0]));
+    }
     else{
         next_init.insert(var(~c[0]));
         next_init.insert(var(~c[1]));
 //        close_to_prop = next_init.size();
+//    if(c[0].x == 176 || c[1].x == 176){
+//        printf("Hi\n");
+//    }
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -1163,6 +1170,9 @@ CRef CoreSMTSolver::propagate()
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
+//            if(cr == 497){
+//                printf("Here\n");
+//            }
 
 
 
@@ -1214,6 +1224,10 @@ CRef CoreSMTSolver::propagate()
                 if (c[1] == false_lit){
                     c[1] = c[2], c[2] = false_lit;
                 }
+                if (value(c[0]) == l_False) {
+                    Lit temp = c[0];
+                    c[0] = c[1], c[1] = temp;
+                }
             }
             else {
                 if (c[0] == false_lit) {
@@ -1225,7 +1239,7 @@ CRef CoreSMTSolver::propagate()
             if(c_size == 2){
                 assert(c[1] == false_lit);
             } else {
-                assert(c[2] == false_lit);
+                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
             }
             i++;
 
@@ -1241,6 +1255,9 @@ CRef CoreSMTSolver::propagate()
                     goto NextClause;
                 }
             }
+//            if(c[2].x == 176){
+//                cout << "Here";
+//            }
 
             *j++ = w;
             if(value(c[1]) == l_False){
@@ -1261,6 +1278,9 @@ CRef CoreSMTSolver::propagate()
                 }
                 if (value(first) == l_False) // clause is falsified
                 {
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -1281,7 +1301,7 @@ CRef CoreSMTSolver::propagate()
                             assert(level(var(c[k])) == 0);
                             assert(reason(var(c[k])) != CRef_Fake);
                             assert(reason(var(c[k])) != CRef_Undef);
-                            printf("Enqueued: %d\n", var(first));
+//                            printf("Enqueued: %d\n", var(first));
                             proof->addResolutionStep(reason(var(c[k])), var(c[k]));
                         }
                         CRef unitClause = ca.alloc(vec<Lit>{first});
@@ -1291,6 +1311,9 @@ CRef CoreSMTSolver::propagate()
                         cr = unitClause;
                     }
 //                    printf("Enqueued: %d\n", var(first));
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {

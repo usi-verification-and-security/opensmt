@@ -169,12 +169,12 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         curr = parent;
         parent = curr->p;
     }
+
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
     for (int i = path.size() - 1; i >= 0; i--) {
         newDecisionLevel();
-//        printf("This is decision level: %d\n", path.size());
 
         if (value(path[i]) == l_Undef)
         {
@@ -212,6 +212,10 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             }
         }
     }
+    if(path.size() > 0) {
+        printf("Propagating: %d\n", path[0]);
+    }
+    printf("This is decision level: %d\n", decisionLevel());
     return PathBuildResult::pathbuild_success;
 }
 

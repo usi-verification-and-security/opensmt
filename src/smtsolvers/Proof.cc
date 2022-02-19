@@ -51,17 +51,17 @@ void Proof::beginChain( CRef c )
 
     assert( c != CRef_Undef );
     assert( !hasOpenChain() );
-    if(c == 281){
-        std::cout<<"Hi!";
-    }
-    printf("BegUN chain %d\n", c);
+//    if(c == 497){
+//        std::cout<<"Hi!";
+//    }
+//    printf("BegUN chain %d\n", c);
     begun = true;
     assert(current_chain.isEmpty());
     assert( clause_to_proof_der.find( c ) != clause_to_proof_der.end( ) );
     current_chain.setInitial(c);
     // Increase reference
     ++clause_to_proof_der.at(c).ref;
-}
+   }
 
 //
 // Store a resolution step with chain_cla.back( ) and c
@@ -81,7 +81,7 @@ void Proof::addResolutionStep(CRef c, Var p)
 void Proof::endChain( CRef conclusion )
 {
   assert(hasOpenChain());
-  std::cout<<"Has ended chain: " << conclusion << "\n";
+//  std::cout<<"Has ended chain: " << conclusion << "\n";
 //  if(conclusion == 1509){
 //      printf("Lol\n");
 //  }
