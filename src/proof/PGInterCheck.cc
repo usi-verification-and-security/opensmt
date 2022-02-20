@@ -46,7 +46,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     for( size_t i = 0 ; i < size ; i ++ )
     {
         Var v = var(cl[i]);
-        var_class = colorsCache.getVarClass(v);
+        var_class = interpolationInfo.getVarClass(v);
         assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
         icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
                 : getSharedVarColorInNode(v, *n);
@@ -69,7 +69,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, n->getPartialInterpolant());
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, interpolationInfo.getPartialInterpolant(*n));
     assert(res);
     return res;
 }
@@ -87,7 +87,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     for( size_t i = 0 ; i < size ; i ++ )
     {
         Var v = var(cl[i]);
-        var_class = colorsCache.getVarClass(v);
+        var_class = interpolationInfo.getVarClass(v);
         assert( var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB );
         icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
                 : getSharedVarColorInNode(v, *n);
@@ -110,7 +110,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(n->getPartialInterpolant()));
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(interpolationInfo.getPartialInterpolant(*n)));
     assert(res);
     return res;
 }

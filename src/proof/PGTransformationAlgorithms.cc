@@ -494,7 +494,6 @@ void ProofGraph::recycleUnits() {
             //printClause(unit);
             ProofNode *newroot = new ProofNode();
             newroot->initClause();
-            if (produceInterpolants()) { newroot->initIData(); }
             newroot->setAnt1(oldroot);
             newroot->setAnt2(unit);
             newroot->setType(clause_type::CLA_DERIVED);

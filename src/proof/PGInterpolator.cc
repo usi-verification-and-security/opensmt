@@ -45,7 +45,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     checkInterAlgo();
 
     // Track AB class variables and associate index to them in nodes bit masks
-    colorsCache.resetVarColorCache(proof_variables, [&](Var v) {
+    interpolationInfo.reset(graph.size(), proof_variables, [&](Var v) {
        return getVarClass(v, A_mask);
     });
 
@@ -131,12 +131,12 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 assert(n->getType() == clause_type::CLA_ASSUMPTION);
                 // MB: Frame literals must be ignored when interpolating
                 // This interpolant will be ignored eventually, any value would do
-                n->setPartialInterpolant (logic_.getTerm_true());
+                interpolationInfo.setPartialInterpolant(*n, logic_.getTerm_true());
                 continue;
             }
 
             assert ( partial_interp != PTRef_Undef );
-            n->setPartialInterpolant ( partial_interp );
+            interpolationInfo.setPartialInterpolant(*n, partial_interp);
             if (enabledPedInterpVerif()) {
                 verifyPartialInterpolant(n, A_mask);
             }
@@ -145,35 +145,31 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             partial_interp = compInterpLabelingInner ( n );
             assert ( partial_interp != PTRef_Undef );
-            n->setPartialInterpolant ( partial_interp );
+            interpolationInfo.setPartialInterpolant(*n, partial_interp);
         }
     }
 
     delete PSFunction;
 
+    PTRef rootInterpolant = interpolationInfo.getPartialInterpolant(*getRoot());
+    assert(rootInterpolant != PTRef_Undef);
     // Last clause visited is the empty clause with total interpolant
-    assert (partial_interp == getRoot()->getPartialInterpolant());
+    assert(partial_interp == rootInterpolant);
 
-    if( verbose() )
-    {
+    if (verbose()) {
         //getComplexityInterpolant(partial_interp);
-        
         int nbool, neq, nuf, nif;
         this->logic_.collectStats(partial_interp, nbool, neq, nuf, nif);
         std::cerr << "; Number of boolean connectives: " << nbool << '\n';
         std::cerr << "; Number of equalities: " << neq << '\n';
         std::cerr << "; Number of uninterpreted functions: " << nuf << '\n';
         std::cerr << "; Number of interpreted functions: " << nif << '\n';
-        
     }
 
-    PTRef interpol = getRoot()->getPartialInterpolant();
-    assert (interpol != PTRef_Undef);
-
-    interpolants.push(interpol);
+    interpolants.push(rootInterpolant);
 
     if (verbose() > 1) {
-        std::cout << "; Interpolant:\n" << this->logic_.printTerm(interpol) << '\n';
+        std::cout << "; Interpolant:\n" << this->logic_.printTerm(rootInterpolant) << '\n';
     }
 }
 
@@ -236,7 +232,7 @@ std::vector<Lit> ProofGraph::getLiteralsRestrictedTo(ProofNode const & node, ico
             continue;
         }
         Var v = var(l);
-        icolor_t var_class = colorsCache.getVarClass(v);
+        icolor_t var_class = interpolationInfo.getVarClass(v);
         assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB);
 
         icolor_t var_color = var_class == icolor_t::I_B or var_class == icolor_t::I_A ? var_class
@@ -286,8 +282,8 @@ PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode * n, cons
 PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
 {
     // Get antecedents partial interpolants
-    PTRef partial_interp_ant1 = n->getAnt1()->getPartialInterpolant();
-    PTRef partial_interp_ant2 = n->getAnt2()->getPartialInterpolant();
+    PTRef partial_interp_ant1 = interpolationInfo.getPartialInterpolant(*n->getAnt1());
+    PTRef partial_interp_ant2 = interpolationInfo.getPartialInterpolant(*n->getAnt2());
     assert ( partial_interp_ant1 != PTRef_Undef );
     assert ( partial_interp_ant2 != PTRef_Undef );
 
@@ -374,9 +370,9 @@ void ProofGraph::setLeafPSLabeling (ProofNode & n, std::map<Var, icolor_t> const
         assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
         if (it->second == icolor_t::I_A)
-            colorsCache.colorA(node, v);
+            interpolationInfo.colorA(node, v);
         else
-            colorsCache.colorB(node, v);
+            interpolationInfo.colorB(node, v);
     });
 }
 
@@ -386,9 +382,9 @@ void ProofGraph::setLeafPSWLabeling(ProofNode & n, std::map<Var, icolor_t> const
         assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
         if (it->second == icolor_t::I_A)
-            colorsCache.colorA(node, v);
+            interpolationInfo.colorA(node, v);
         else
-            colorsCache.colorAB(node, v);
+            interpolationInfo.colorAB(node, v);
     });
 }
 
@@ -398,27 +394,27 @@ void ProofGraph::setLeafPSSLabeling(ProofNode & n, std::map<Var, icolor_t> const
         assert (theory_only.find(v) != theory_only.end() || it != labels.end());
 
         if (it->second == icolor_t::I_A)
-            colorsCache.colorAB(node, v);
+            interpolationInfo.colorAB(node, v);
         else
-            colorsCache.colorB(node, v);
+            interpolationInfo.colorB(node, v);
     });
 }
 
 void ProofGraph::setLeafPudlakLabeling(ProofNode & n) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
-        colorsCache.colorAB(node, v);
+        interpolationInfo.colorAB(node, v);
     });
 }
 
 void ProofGraph::setLeafMcMillanLabeling(ProofNode & n) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
-        colorsCache.colorB(node, v);
+        interpolationInfo.colorB(node, v);
     });
 }
 
 void ProofGraph::setLeafMcMillanPrimeLabeling(ProofNode & n) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
-        colorsCache.colorA(node, v);
+        interpolationInfo.colorA(node, v);
     });
 }
 

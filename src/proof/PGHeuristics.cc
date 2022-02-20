@@ -564,13 +564,13 @@ bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra)
 	// McMillan/McMillan'/Pudlak should be used
 	assert( usingMcMillanInterpolation() || usingPudlakInterpolation() || usingMcMillanPrimeInterpolation() );
 	// Check colors of the two pivots
-	icolor_t piv_w_color = colorsCache.getVarClass(getNode(ra.getW())->getPivot());
+	icolor_t piv_w_color = interpolationInfo.getVarClass(getNode(ra.getW())->getPivot());
 	if(  piv_w_color == icolor_t::I_AB )
 	{
 		if( usingMcMillanInterpolation() ) piv_w_color = icolor_t::I_B;
 		if( usingMcMillanPrimeInterpolation() ) piv_w_color = icolor_t::I_A;
 	}
-    icolor_t piv_v_color = colorsCache.getVarClass(getNode(ra.getV())->getPivot());
+    icolor_t piv_v_color = interpolationInfo.getVarClass(getNode(ra.getV())->getPivot());
 
 	if(  piv_v_color == icolor_t::I_AB )
 	{
@@ -719,9 +719,9 @@ bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
 	assert( usingMcMillanInterpolation() );
 	// Check colors of the two pivots
 	// NOTE with McMillan algorithm the color of a pivot is always A or B
-    icolor_t piv_w_color = colorsCache.getVarClass(getNode(ra.getW())->getPivot());
+    icolor_t piv_w_color = interpolationInfo.getVarClass(getNode(ra.getW())->getPivot());
     if (piv_w_color == icolor_t::I_AB) piv_w_color = icolor_t::I_B;
-    icolor_t piv_v_color = colorsCache.getVarClass(getNode(ra.getV())->getPivot());
+    icolor_t piv_v_color = interpolationInfo.getVarClass(getNode(ra.getV())->getPivot());
     if (piv_v_color == icolor_t::I_AB) piv_v_color = icolor_t::I_B;
 	assert(piv_w_color != icolor_t::I_AB && piv_v_color != icolor_t::I_AB);
 

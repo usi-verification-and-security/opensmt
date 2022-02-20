@@ -27,8 +27,8 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 bool ProofGraph::decideOnAlternativeInterpolation(ProofNode* n)
 {
 	// Get antecedents partial interpolants
-	PTRef I1 = n->getAnt1()->getPartialInterpolant();
-	PTRef I2 = n->getAnt2()->getPartialInterpolant();
+	PTRef I1 = interpolationInfo.getPartialInterpolant(*n->getAnt1());
+	PTRef I2 = interpolationInfo.getPartialInterpolant(*n->getAnt2());
 	assert( I1 != PTRef_Undef ); assert( I2 != PTRef_Undef );
 	bool I1_is_true = ( I1 == logic_.getTerm_true() );
 	bool I2_is_true = ( I2 == logic_.getTerm_true() );
@@ -53,7 +53,7 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
 {
     assert( n->isLeaf() );
     // In labeling, classes and colors are distinct
-    icolor_t var_class = colorsCache.getVarClass(v);
+    icolor_t var_class = interpolationInfo.getVarClass(v);
     assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB);
     icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
             : getSharedVarColorInNode(v, *n);
@@ -70,13 +70,13 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 	assert( !n->isLeaf() );
 	Var v = n->getPivot();
 	// In labeling, classes and colors are distinct
-	icolor_t var_class = colorsCache.getVarClass(v);
+	icolor_t var_class = interpolationInfo.getVarClass(v);
     if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_AB) {
         throw OsmtInternalException("Pivot " + std::to_string(v) + " has no class");
     }
 
 	// Update AB vars color vectors from antecedents
-	updateColoringfromAnts(n);
+	interpolationInfo.updateColoringfromAnts(*n);
 
     // Determine if variable A-local, B-local or AB-common
 	icolor_t var_color = var_class == icolor_t::I_A || var_class == icolor_t::I_B ? var_class : icolor_t::I_UNDEF;
@@ -84,7 +84,7 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
         assert(var_class == icolor_t::I_AB);
         var_color = getSharedVarColorInNode(v, *n);
         // Remove pivot from resolvent if class AB
-		updateColoringAfterRes(n);
+		interpolationInfo.clearPivotColoring(*n);
 	}
 	Lit pos = mkLit(v);
 	Lit neg = ~pos;
@@ -204,7 +204,7 @@ ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions
                     if(theory_only.find(v) != theory_only.end())
                         theory_only.erase(theory_only.find(v));
 
-					icolor_t vclass = colorsCache.getVarClass(v);
+					icolor_t vclass = interpolationInfo.getVarClass(v);
 					if(vclass != icolor_t::I_AB) continue;
 					if(col == icolor_t::I_A)
 					{

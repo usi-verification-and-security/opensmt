@@ -89,7 +89,6 @@ struct ProofBuildingStatistics {
 
 ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proof const & proof) {
     ProofNode * n = new ProofNode();
-    n->initIData();
     if (isLeafClauseType(_ctype)) {
         n->initClause(proof.getClause(clause));
         n->setClauseRef(clause);
@@ -240,7 +239,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
                 if (i < chaincla.size() - 1) {
                     currId = graph.size();
                     n = new ProofNode();
-                    n->initIData();
                     //Add node to graph vector
                     n->setId(currId);
                     graph.push_back(n);
@@ -494,7 +492,6 @@ void ProofGraph::removeNode(clauseid_t vid)
     if(n->getAnt1()==NULL && n->getAnt2()==NULL) removeLeaf(vid);
     n->setAnt1(NULL); n->setAnt2(NULL);
     // Free memory
-    n->delIData();
     delete n;
     // Remove v from proof
     graph[vid]=NULL;
@@ -558,7 +555,6 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
     }
 
     ProofNode* n=new ProofNode();
-    n->initIData();
 
     // Create node and add to graph vector
     clauseid_t currId=getGraphSize();

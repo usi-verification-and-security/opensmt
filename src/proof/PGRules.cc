@@ -234,11 +234,6 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     // Return id new node
     clauseid_t claid = y->getId();
 
-    //for(size_t k = 0; k<getGraphSize(); k++) if(getNode(k)!=NULL) assert(getNode(k)->getId()==k);
-
-    //NOTE for interpolation
-    if(produceInterpolants()) y->initIData();
-
     //v pivot becomes w pivot and viceversa
     Var aux;
     aux=w->getPivot(); w->setPivot(v->getPivot()); v->setPivot(aux);

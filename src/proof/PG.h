@@ -106,27 +106,6 @@ public:
 	friend std::ostream& operator<< (std::ostream &out, RuleContext &ra);
 };
 
-// Interpolation data for resolution proof element
-struct InterpolData
-{
-    PTRef            partial_interp;     // Stores partial interpolant
-
-    // NOTE labeling rules for AB variables
-    // color a:  bit 1, bit 0
-    // color b:  bit 0, bit 1
-    // color ab: bit 1, bit 1
-    // missing:  bit 0, bit 0
-    // This notation is consistent with coloring of inner nodes given by | of antecedents colorings
-    ipartitions_t      AB_vars_a_colored;
-    ipartitions_t      AB_vars_b_colored;
-
-    InterpolData ()
-    : partial_interp    ( PTRef_Undef )
-    , AB_vars_a_colored ( 0 )
-    , AB_vars_b_colored ( 0 )
-    {}
-};
-
 // Resolution proof graph element
 struct ProofNode
 {
@@ -137,7 +116,6 @@ struct ProofNode
     , ant1       (nullptr)
     , ant2       (nullptr)
     , resolvents ()
-    , i_data     (nullptr)
     { }
 
     ~ProofNode ( )
@@ -195,7 +173,6 @@ struct ProofNode
     inline ProofNode *           getAnt1                ( ) const { return ant1; }
     inline ProofNode *           getAnt2                ( ) const { return ant2; }
     inline clause_type           getType                ( ) const { return type; }
-    inline PTRef                 getPartialInterpolant  ( ) const { assert(i_data); return i_data->partial_interp; }
     unsigned                     getNumResolvents       ( ) const { return resolvents.size(); }
     std::set<clauseid_t>&        getResolvents          ( ) { return resolvents; }
     //
@@ -206,40 +183,20 @@ struct ProofNode
     inline void                  setAnt1                ( ProofNode * a1 )               { ant1 = a1; }
     inline void                  setAnt2                ( ProofNode * a2 )               { ant2 = a2; }
     inline void                  setType                ( clause_type new_type )         { type = new_type; }
-    inline void                  setPartialInterpolant  ( PTRef new_part_interp )      { assert(i_data); i_data->partial_interp = new_part_interp; }
     void                         addRes                 ( clauseid_t id )                { resolvents.insert( id ); }
     void                         remRes                 ( clauseid_t id )                { resolvents.erase( id ); }
-    void                         initIData() { i_data = new InterpolData(); }
-    void                         delIData                ( )                                 { delete i_data; i_data = NULL; }
     //
     // Test methods
     //
-    inline bool                  isLeaf(){ assert((ant1==NULL && ant2==NULL) || (ant1!=NULL && ant2!=NULL)); return (ant1==NULL);}
+    inline bool isLeaf() const {
+        assert((ant1 and ant2 ) or (not ant1 and not ant2));
+        return not ant1;
+    }
     // 0 if positive, 1 if negative, -1 if not found
     short                         hasOccurrenceBin( Var );
     // true if positive occurrence pivot is in first antecedent
     bool                          checkPolarityAnt();
 
-    //
-    // Interpolation and labeling
-    //
-    inline void    updateColoringfromAnts ()
-    {
-        orbit( i_data->AB_vars_a_colored, getAnt1()->i_data->AB_vars_a_colored, getAnt2()->i_data->AB_vars_a_colored );
-        orbit( i_data->AB_vars_b_colored, getAnt1()->i_data->AB_vars_b_colored, getAnt2()->i_data->AB_vars_b_colored );
-    }
-    inline void    updateColoringAfterRes ( int i )
-    {
-        clrbit( i_data->AB_vars_a_colored, i );
-        clrbit( i_data->AB_vars_b_colored, i );
-    }
-    inline void    resetLabeling          () { i_data->AB_vars_a_colored = 0; i_data->AB_vars_b_colored = 0; }
-    inline bool    isColoredA             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
-    inline bool    isColoredB             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-    inline bool    isColoredAB            ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-    inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
-    inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
-    inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
 
 private:
     clauseid_t         id;                 // id
@@ -250,13 +207,44 @@ private:
     ProofNode *        ant2;               // Edges to antecedents
     std::set<clauseid_t> resolvents;       // Resolvents
     clause_type        type;               // Node type
-    InterpolData*      i_data;             // Data for interpolants computation
 };
 
-class VarColorsCache {
+class InterpolationInfo {
+    // Interpolation data for resolution proof element
+    struct InterpolationNodeData
+    {
+        // NOTE labeling rules for AB variables
+        // color a:  bit 1, bit 0
+        // color b:  bit 0, bit 1
+        // color ab: bit 1, bit 1
+        // missing:  bit 0, bit 0
+        // This notation is consistent with coloring of inner nodes given by | of antecedents colorings
+        ipartitions_t      AB_vars_a_colored;
+        ipartitions_t      AB_vars_b_colored;
+
+        PTRef partialInterpolant;
+
+        InterpolationNodeData() : AB_vars_a_colored(0), AB_vars_b_colored(0), partialInterpolant(PTRef_Undef) {
+
+        }
+
+        inline void clearSharedVar(int varIndex) {
+            clrbit(AB_vars_a_colored, varIndex);
+            clrbit(AB_vars_b_colored, varIndex);
+        }
+
+        inline void    resetLabeling          () { AB_vars_a_colored = 0; AB_vars_b_colored = 0; }
+        inline bool    isColoredA             ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 1) && (tstbit(AB_vars_b_colored, i ) == 0)); }
+        inline bool    isColoredB             ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 0) && (tstbit(AB_vars_b_colored, i ) == 1)); }
+        inline bool    isColoredAB            ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 1) && (tstbit(AB_vars_b_colored, i ) == 1)); }
+        inline void    colorA                 ( int i ) { setbit(AB_vars_a_colored, i); clrbit(AB_vars_b_colored, i); }
+        inline void    colorB                 ( int i ) { setbit(AB_vars_b_colored, i); clrbit(AB_vars_a_colored, i); }
+        inline void    colorAB                ( int i ) { setbit(AB_vars_a_colored, i); setbit(AB_vars_b_colored, i); }
+    };
 
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
-    std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
+    std::vector<int> AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
+    std::vector<InterpolationNodeData> nodeData;
 
 public:
     int getSharedVarIndex(Var v) const {
@@ -272,10 +260,13 @@ public:
     }
 
     template<typename TContainer, typename TFun>
-    void resetVarColorCache(TContainer const & vars, TFun getClass) {
-        Var maxVar = *std::max_element(vars.begin(), vars.end());
+    void reset(std::size_t nodeCount, TContainer const & vars, TFun getClass) {
+        std::size_t varCounts = (*std::max_element(vars.begin(), vars.end())) + 1;
+        nodeData.clear();
         AB_vars_mapping.clear();
-        AB_vars_mapping.resize(maxVar + 1, -3);
+        nodeData.resize(nodeCount);
+        AB_vars_mapping.resize(varCounts, -3);
+
         // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
         int AB_bit_index = 0;
         for (Var v: vars) {
@@ -290,17 +281,38 @@ public:
         }
     }
 
-    inline bool isColoredA(ProofNode const & n, Var v) const { return n.isColoredA(getSharedVarIndex(v)); }
+    inline bool isColoredA(ProofNode const & n, Var v) const { return nodeData[n.getId()].isColoredA(getSharedVarIndex(v)); }
 
-    inline bool isColoredB(ProofNode const & n, Var v) const { return n.isColoredB(getSharedVarIndex(v)); }
+    inline bool isColoredB(ProofNode const & n, Var v) const { return nodeData[n.getId()].isColoredB(getSharedVarIndex(v)); }
 
-    inline bool isColoredAB(ProofNode const & n, Var v) const { return n.isColoredAB(getSharedVarIndex(v)); }
+    inline bool isColoredAB(ProofNode const & n, Var v) const { return nodeData[n.getId()].isColoredAB(getSharedVarIndex(v)); }
 
-    inline void colorA(ProofNode & n, Var v) { n.colorA(getSharedVarIndex(v)); }
+    inline void colorA(ProofNode & n, Var v) { nodeData[n.getId()].colorA(getSharedVarIndex(v)); }
 
-    inline void colorB(ProofNode & n, Var v) { n.colorB(getSharedVarIndex(v)); }
+    inline void colorB(ProofNode & n, Var v) { nodeData[n.getId()].colorB(getSharedVarIndex(v)); }
 
-    inline void colorAB(ProofNode & n, Var v) { n.colorAB(getSharedVarIndex(v)); }
+    inline void colorAB(ProofNode & n, Var v) { nodeData[n.getId()].colorAB(getSharedVarIndex(v)); }
+
+    inline void resetLabeling(ProofNode const & n) { nodeData[n.getId()].resetLabeling(); }
+
+    inline PTRef getPartialInterpolant(ProofNode const & n) { return nodeData[n.getId()].partialInterpolant; }
+
+    inline void setPartialInterpolant(ProofNode const & n, PTRef itp) { nodeData[n.getId()].partialInterpolant = itp; }
+
+    inline void updateColoringfromAnts(ProofNode const & n) {
+        assert(not n.isLeaf());
+        auto & data = nodeData[n.getId()];
+        auto const & ant1Data = nodeData[n.getAnt1()->getId()];
+        auto const & ant2Data = nodeData[n.getAnt2()->getId()];
+        orbit(data.AB_vars_a_colored, ant1Data.AB_vars_a_colored, ant2Data.AB_vars_a_colored);
+        orbit(data.AB_vars_b_colored, ant1Data.AB_vars_b_colored, ant2Data.AB_vars_b_colored);
+    }
+
+    inline void clearPivotColoring(ProofNode const & n) {
+        assert(not n.isLeaf());
+        auto & data = nodeData[n.getId()];
+        data.clearSharedVar(getSharedVarIndex(n.getPivot()));
+    }
 };
 
 
@@ -439,14 +451,6 @@ public:
 
     icolor_t        getPivotColor                            ( ProofNode * );
 
-    // Translation from var info obtained through above function
-    inline void    resetLabeling          ( ProofNode& n ){ n.resetLabeling(); }
-
-    inline void    updateColoringfromAnts ( ProofNode* n ) { assert(!n->isLeaf()); n->updateColoringfromAnts(); }
-    inline void    updateColoringAfterRes ( ProofNode* n ) {
-        assert(!n->isLeaf());
-        n->updateColoringAfterRes(colorsCache.getSharedVarIndex(n->getPivot()));
-    }
     icolor_t getVarColor(ProofNode* n, Var v);
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
@@ -533,9 +537,9 @@ private:
 
     // Coloring related methods
     icolor_t getSharedVarColorInNode(Var v, ProofNode const & node) const {
-        if (colorsCache.isColoredA(node, v)) return icolor_t::I_A;
-        else if (colorsCache.isColoredB(node, v)) return icolor_t::I_B;
-        else if (colorsCache.isColoredAB(node, v)) return icolor_t::I_AB;
+        if (interpolationInfo.isColoredA(node, v)) return icolor_t::I_A;
+        else if (interpolationInfo.isColoredB(node, v)) return icolor_t::I_B;
+        else if (interpolationInfo.isColoredAB(node, v)) return icolor_t::I_AB;
 
         throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(node.getId()));
     }
@@ -570,7 +574,7 @@ private:
     std::vector<Lit> assumedLiterals;
 
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
-    VarColorsCache colorsCache;
+    InterpolationInfo interpolationInfo;
 
     // Info on graph dimension
     int    num_nodes;
@@ -604,12 +608,12 @@ private:
 
 template<typename TFun>
 void ProofGraph::setLeafLabeling(ProofNode & node, TFun colorABVar) {
-    resetLabeling(node);
+    interpolationInfo.resetLabeling(node);
     std::vector<Lit> const & cl = node.getClause();
 
     for (Lit l : cl) {
         Var v = var (l);
-        icolor_t var_class = colorsCache.getVarClass(v);
+        icolor_t var_class = interpolationInfo.getVarClass(v);
 
         if (var_class == icolor_t::I_AB) {
             colorABVar(node, v);
