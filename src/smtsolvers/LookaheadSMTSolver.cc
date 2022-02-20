@@ -212,10 +212,10 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             }
         }
     }
-    if(path.size() > 0) {
-        printf("Propagating: %d\n", path[0]);
-    }
-    printf("This is decision level: %d\n", decisionLevel());
+//    if(path.size() > 0) {
+//        printf("Propagating: %d\n", path[0]);
+//    }
+//    printf("This is decision level: %d\n", decisionLevel());
     return PathBuildResult::pathbuild_success;
 }
 
