@@ -24,11 +24,11 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 /************************* HELPERS ******************************/
 
-bool ProofGraph::decideOnAlternativeInterpolation(ProofNode* n)
+bool ProofGraph::decideOnAlternativeInterpolation(ProofNode & n)
 {
 	// Get antecedents partial interpolants
-	PTRef I1 = interpolationInfo.getPartialInterpolant(*n->getAnt1());
-	PTRef I2 = interpolationInfo.getPartialInterpolant(*n->getAnt2());
+	PTRef I1 = interpolationInfo.getPartialInterpolant(*n.getAnt1());
+	PTRef I2 = interpolationInfo.getPartialInterpolant(*n.getAnt2());
 	assert( I1 != PTRef_Undef ); assert( I2 != PTRef_Undef );
 	bool I1_is_true = ( I1 == logic_.getTerm_true() );
 	bool I2_is_true = ( I2 == logic_.getTerm_true() );
@@ -65,10 +65,9 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
 // node
 // Output: returns node pivot color as a, b or ab
 // depending on the colors in the node antecedents
-icolor_t ProofGraph::getPivotColor( ProofNode* n )
-{
-	assert( !n->isLeaf() );
-	Var v = n->getPivot();
+icolor_t ProofGraph::getPivotColor(ProofNode & n) {
+    assert(not n.isLeaf());
+    Var v = n.getPivot();
 	// In labeling, classes and colors are distinct
 	icolor_t var_class = interpolationInfo.getVarClass(v);
     if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_AB) {
@@ -76,15 +75,15 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
     }
 
 	// Update AB vars color vectors from antecedents
-	interpolationInfo.updateColoringfromAnts(*n);
+	interpolationInfo.updateColoringfromAnts(n);
 
     // Determine if variable A-local, B-local or AB-common
 	icolor_t var_color = var_class == icolor_t::I_A || var_class == icolor_t::I_B ? var_class : icolor_t::I_UNDEF;
 	if (var_color == icolor_t::I_UNDEF) {
         assert(var_class == icolor_t::I_AB);
-        var_color = getSharedVarColorInNode(v, *n);
+        var_color = getSharedVarColorInNode(v, n);
         // Remove pivot from resolvent if class AB
-		interpolationInfo.clearPivotColoring(*n);
+        interpolationInfo.clearPivotColoring(n);
 	}
 	Lit pos = mkLit(v);
 	Lit neg = ~pos;

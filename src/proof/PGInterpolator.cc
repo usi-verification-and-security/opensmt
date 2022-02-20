@@ -141,10 +141,9 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 verifyPartialInterpolant(n, A_mask);
             }
         }
-        else
-        {
-            partial_interp = compInterpLabelingInner ( n );
-            assert ( partial_interp != PTRef_Undef );
+        else { // Inner node
+            partial_interp = compInterpLabelingInner(*n);
+            assert (partial_interp != PTRef_Undef);
             interpolationInfo.setPartialInterpolant(*n, partial_interp);
         }
     }
@@ -279,23 +278,19 @@ PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode * n, cons
 
 // Input: inner clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
-PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
-{
-    // Get antecedents partial interpolants
-    PTRef partial_interp_ant1 = interpolationInfo.getPartialInterpolant(*n->getAnt1());
-    PTRef partial_interp_ant2 = interpolationInfo.getPartialInterpolant(*n->getAnt2());
-    assert ( partial_interp_ant1 != PTRef_Undef );
-    assert ( partial_interp_ant2 != PTRef_Undef );
+PTRef ProofGraph::compInterpLabelingInner(ProofNode & n) {
+    PTRef partial_interp_ant1 = interpolationInfo.getPartialInterpolant(*n.getAnt1());
+    PTRef partial_interp_ant2 = interpolationInfo.getPartialInterpolant(*n.getAnt2());
+    assert (partial_interp_ant1 != PTRef_Undef);
+    assert (partial_interp_ant2 != PTRef_Undef);
 
-    PTRef partial_interp = PTRef_Undef;
     // Determine color pivot, depending on its color in the two antecedents
-    icolor_t pivot_color = getPivotColor ( n );
+    icolor_t pivot_color = getPivotColor(n);
     if (pivot_color == icolor_t::I_S) {
-        Var v = n->getPivot();
+        Var v = n.getPivot();
         Lit pos = mkLit(v);
         if(isAssumedLiteral(pos)) {
-            // Positive occurence is in first parent
-            // Retuen interpolant from second
+            // Positive occurence of assumed literal is in first parent => return interpolant from second
             return partial_interp_ant2;
         }
         else {
@@ -303,65 +298,31 @@ PTRef ProofGraph::compInterpLabelingInner ( ProofNode *n )
             return partial_interp_ant1;
         }
     }
-
     // Pivot colored a -> interpolant = interpolant of ant1 OR interpolant of ant2
-    if ( pivot_color == icolor_t::I_A)
-    {
-        partial_interp = logic_.mkOr({partial_interp_ant1, partial_interp_ant2});
+    if (pivot_color == icolor_t::I_A) {
+        return logic_.mkOr(partial_interp_ant1, partial_interp_ant2);
     }
     // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
-    else if ( pivot_color == icolor_t::I_B )
-    {
-        partial_interp = logic_.mkAnd({partial_interp_ant1, partial_interp_ant2});
+    else if (pivot_color == icolor_t::I_B) {
+        return logic_.mkAnd(partial_interp_ant1, partial_interp_ant2);
     }
     // Pivot colored ab -> interpolant = (pivot OR interpolant of ant1) AND ((NOT pivot) OR interpolant of ant2)
     // Alternative interpolant = ((NOT pivot) AND interpolant of ant1) OR (pivot AND interpolant of ant2)
-    else if ( pivot_color == icolor_t::I_AB)
-    {
+    else if (pivot_color == icolor_t::I_AB) {
         // Find pivot occurrences in ant1 and ant2 and create enodes
-        Var piv_ = n->getPivot();
-        PTRef piv = varToPTRef ( piv_ );
-        bool choose_alternative = false;
-
-        if ( usingAlternativeInterpolant() ) choose_alternative = decideOnAlternativeInterpolation ( n );
-
-        // Equivalent formula (I_1 /\ ~p) \/ (I_2 /\ p)
-        if ( choose_alternative )
-        {
-            PTRef and_1 = logic_.mkAnd({partial_interp_ant1, logic_.mkNot(piv)});
-            PTRef and_2 = logic_.mkAnd({partial_interp_ant2, piv});
-
-            if (logic_.isNot (and_1) && (logic_.getPterm (and_1)[0] == and_2))
-                partial_interp = logic_.getTerm_true();
-            else if (logic_.isNot (and_2) && (logic_.getPterm (and_2)[0] == and_1))
-                partial_interp = logic_.getTerm_true();
-            else
-            {
-                partial_interp = logic_.mkOr({and_1, and_2});
-                assert (partial_interp != logic_.getTerm_true());
-            }
+        Var piv_ = n.getPivot();
+        PTRef piv = varToPTRef(piv_);
+        bool choose_alternative = usingAlternativeInterpolant() ? decideOnAlternativeInterpolation(n) : false;
+        if (choose_alternative) { // Equivalent formula (I_1 /\ ~p) \/ (I_2 /\ p)
+            PTRef and_1 = logic_.mkAnd(partial_interp_ant1, logic_.mkNot(piv));
+            PTRef and_2 = logic_.mkAnd(partial_interp_ant2, piv);
+            return logic_.mkOr(and_1, and_2);
+        } else { // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
+            PTRef or_1 = logic_.mkOr(partial_interp_ant1, piv);
+            PTRef or_2 = logic_.mkOr(partial_interp_ant2, logic_.mkNot(piv));
+            return logic_.mkAnd(or_1, or_2);
         }
-        // Standard interpolation (I_1 \/ p) /\ (I_2 \/ ~p)
-        else
-        {
-            PTRef or_1 = logic_.mkOr({partial_interp_ant1, piv});
-            PTRef or_2 = logic_.mkOr({partial_interp_ant2, logic_.mkNot(piv)});
-
-            if (logic_.isNot (or_1) && (logic_.getPterm (or_1)[0] == or_2))
-                partial_interp = logic_.getTerm_false();
-            else if (logic_.isNot (or_2) && (logic_.getPterm (or_2)[0] == or_1))
-                partial_interp = logic_.getTerm_false();
-            else
-            {
-                partial_interp = logic_.mkAnd({or_1, or_2});
-                assert (partial_interp != logic_.getTerm_false());
-            }
-
-        }
-    }
-    else throw OsmtInternalException("Pivot has no color");
-
-    return partial_interp;
+    } else throw OsmtInternalException("Pivot has no color");
 }
 
 void ProofGraph::setLeafPSLabeling (ProofNode & n, std::map<Var, icolor_t> const & labels) {
