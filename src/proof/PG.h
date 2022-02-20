@@ -339,7 +339,7 @@ public:
 
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
-    void printProofAsDotty                  ( std::ostream &, ipartitions_t ip = 0);
+    void printProofAsDotty                  ( std::ostream &);
     //
     // Config
     //
