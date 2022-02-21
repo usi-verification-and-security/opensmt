@@ -132,7 +132,7 @@ struct ProofNode
     {
         clause_ref = cref;
     }
-    CRef getClauseRef() { return clause_ref; }
+    CRef getClauseRef() const { return clause_ref; }
 
     void                        initClause(Clause& cla)
     {
@@ -445,13 +445,13 @@ public:
     void           getComplexityInterpolant( PTRef int_e );
     void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
 
-    PTRef           computePartialInterpolantForOriginalClause               (ProofNode * n, const ipartitions_t & A_mask);
+    PTRef           computePartialInterpolantForOriginalClause               (const ProofNode & n, const ipartitions_t & A_mask);
     PTRef           compInterpLabelingInner                  (ProofNode &);
 
 
     icolor_t getPivotColor (ProofNode &);
 
-    icolor_t getVarColor(ProofNode* n, Var v);
+    icolor_t getVarColor(ProofNode const & n, Var v);
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
     void		   verifyLeavesInconsistency ( );
@@ -545,7 +545,7 @@ private:
     }
 
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
-    std::vector<Lit> getLiteralsRestrictedTo(ProofNode const & node, icolor_t wantedVarClass) const;
+    std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
 
     void labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction = nullptr);
     template<typename TFun>

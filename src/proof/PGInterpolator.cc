@@ -45,6 +45,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     checkInterAlgo();
 
     // Track AB class variables and associate index to them in nodes bit masks
+    // TODO: Check that the largest node ID is smaller than the graph size? Are there any holes in graph? Does node ID match its position in graph even after transformations?
     interpolationInfo.reset(graph.size(), proof_variables, [&](Var v) {
        return getVarClass(v, A_mask);
     });
@@ -78,7 +79,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
-                partial_interp = computePartialInterpolantForOriginalClause(n, A_mask);
+                partial_interp = computePartialInterpolantForOriginalClause(*n, A_mask);
             }
             else if (n->getType() == clause_type::CLA_THEORY) // Theory lemma
             {
@@ -111,7 +112,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
                 std::vector<Lit> const & cl = n->getClause();
 
                 for (std::size_t j = 0; j < cl.size(); ++j) {
-                    ptref2label[varToPTRef(var(cl[j]))] = getVarColor(n, var(cl[j]));
+                    ptref2label[varToPTRef(var(cl[j]))] = getVarColor(*n, var(cl[j]));
                 }
 
                 partial_interp = thandler->getInterpolant (A_mask, &ptref2label, pmanager);
@@ -120,8 +121,8 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             else if (n->getType() == clause_type::CLA_SPLIT) {
                 auto const & clause = n->getClause();
                 assert(clause.size() == 2); // only binary splits at the moment
-                auto color = getVarColor(n, var(clause[0]));
-                assert(color == getVarColor(n, var(clause[1]))); // same theory variables in the atoms of the split => same color
+                auto color = getVarColor(*n, var(clause[0]));
+                assert(color == getVarColor(*n, var(clause[1]))); // same theory variables in the atoms of the split => same color
                 assert(color == icolor_t::I_A || color == icolor_t::I_B || color == icolor_t::I_AB);
                 // If split on A-local (B-local) term, then return False (True). This is the same as in purely propoositional case.
                 // If split on AB-shared term, we can choose if we treat it as A-clause (resulting in False) or B-clause (resulting in True). We arbitrarily choose A now.
@@ -223,7 +224,7 @@ void ProofGraph::labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunc
     else throw OsmtApiException("No interpolation algorithm chosen");
 }
 
-std::vector<Lit> ProofGraph::getLiteralsRestrictedTo(ProofNode const & node, icolor_t wantedVarClass) const {
+std::vector<Lit> ProofGraph::getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const {
     std::vector<Lit> restrictedClause;
     for (Lit l : node.getClause()) {
         if (isAssumedLiteral(~l)) {
@@ -246,7 +247,7 @@ PTRef ProofGraph::getInterpolantForOriginalClause(const ProofNode & node, icolor
     auto otherClass = clauseClass == icolor_t::I_A ? icolor_t::I_B : icolor_t::I_A;
     bool clauseIsA = clauseClass == icolor_t::I_A;
 
-    std::vector<Lit> restricted_clause = getLiteralsRestrictedTo(node, otherClass);
+    std::vector<Lit> restricted_clause = getRestrictedNodeClause(node, otherClass);
     if (restricted_clause.empty()) {
         return clauseIsA ? logic_.getTerm_false() : logic_.getTerm_true();
     }
@@ -261,17 +262,17 @@ PTRef ProofGraph::getInterpolantForOriginalClause(const ProofNode & node, icolor
 
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
-PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode * n, const ipartitions_t & A_mask)
+PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode const & n, ipartitions_t const & A_mask)
 {
-    assert(n->getType() == clause_type::CLA_ORIG);
-    icolor_t clause_color = getClauseColor(n->getClauseRef(), A_mask);
+    assert(n.getType() == clause_type::CLA_ORIG);
+    icolor_t clause_color = getClauseColor(n.getClauseRef(), A_mask);
     if (clause_color == icolor_t::I_AB) {
         // Think of a heuristic for choosing the partition?
         clause_color = icolor_t::I_A;
     }
     // Original leaves can be only of class A or B
     assert(clause_color == icolor_t::I_A || clause_color == icolor_t::I_B);
-    PTRef partial_interp = getInterpolantForOriginalClause(*n, clause_color);
+    PTRef partial_interp = getInterpolantForOriginalClause(n, clause_color);
     assert (partial_interp != PTRef_Undef);
     return partial_interp;
 }

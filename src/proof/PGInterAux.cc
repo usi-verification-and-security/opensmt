@@ -49,14 +49,13 @@ bool ProofGraph::decideOnAlternativeInterpolation(ProofNode & n)
 }
 
 
-icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
-{
-    assert( n->isLeaf() );
+icolor_t ProofGraph::getVarColor(ProofNode const & n, Var v) {
+    assert(n.isLeaf());
     // In labeling, classes and colors are distinct
     icolor_t var_class = interpolationInfo.getVarClass(v);
     assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB);
     icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class
-            : getSharedVarColorInNode(v, *n);
+            : getSharedVarColorInNode(v, n);
     return var_color;
 }
 
