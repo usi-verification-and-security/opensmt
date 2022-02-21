@@ -60,11 +60,9 @@ icolor_t ProofGraph::getVarColor(ProofNode const & n, Var v) {
 }
 
 // Input: node, current interpolant partition masks for A and B
-// e.g. 0---010 first partition in A
-// node
 // Output: returns node pivot color as a, b or ab
 // depending on the colors in the node antecedents
-icolor_t ProofGraph::getPivotColor(ProofNode & n) {
+icolor_t ProofGraph::getPivotColor(ProofNode const & n) {
     assert(not n.isLeaf());
     Var v = n.getPivot();
 	// In labeling, classes and colors are distinct
@@ -77,19 +75,16 @@ icolor_t ProofGraph::getPivotColor(ProofNode & n) {
 	interpolationInfo.updateColoringfromAnts(n);
 
     // Determine if variable A-local, B-local or AB-common
-	icolor_t var_color = var_class == icolor_t::I_A || var_class == icolor_t::I_B ? var_class : icolor_t::I_UNDEF;
-	if (var_color == icolor_t::I_UNDEF) {
+	icolor_t var_color = var_class;
+	if (var_color != icolor_t::I_A and var_color != icolor_t::I_B) {
         assert(var_class == icolor_t::I_AB);
         var_color = getSharedVarColorInNode(v, n);
         // Remove pivot from resolvent if class AB
         interpolationInfo.clearPivotColoring(n);
 	}
-	Lit pos = mkLit(v);
-	Lit neg = ~pos;
-	if(isAssumedLiteral(pos) || isAssumedLiteral(neg)) {
-	    return icolor_t::I_S;
-	}
-
+    if (isAssumedVar(v)) { // Small hack to deal with assumption literals in proof
+        return icolor_t::I_S;
+    }
 	return var_color;
 }
 

@@ -449,7 +449,7 @@ public:
     PTRef compInterpLabelingInner                  (ProofNode &);
 
 
-    icolor_t getPivotColor (ProofNode &);
+    icolor_t getPivotColor(ProofNode const &);
 
     icolor_t getVarColor(ProofNode const & n, Var v);
 
@@ -524,7 +524,7 @@ private:
         return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
     }
     inline bool isAssumedVar(Var v) const {
-        return isAssumedLiteral(mkLit(v, true)) || isAssumedLiteral(mkLit(v, false));
+        return isAssumedLiteral(mkLit(v, true)) or isAssumedLiteral(mkLit(v, false));
     }
     ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
 
