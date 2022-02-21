@@ -1,4 +1,5 @@
 (set-logic QF_UFLRA)
+(set-info :status sat)
 (declare-fun b () Real)
 (declare-fun f (Real) Real)
 (declare-fun a () Real)

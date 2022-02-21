@@ -1,4 +1,5 @@
 (set-logic QF_UFLRA)
+(set-info :status sat)
 (declare-const x Bool)
 (declare-fun D () Real)
 (declare-fun A () Real)
