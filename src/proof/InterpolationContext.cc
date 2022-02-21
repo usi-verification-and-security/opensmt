@@ -31,11 +31,6 @@ void InterpolationContext::printProofDotty() {
     proof_graph->printProofGraph();
 }
 
-void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants) {
-    assert(proof_graph);
-    proof_graph->produceSingleInterpolant(interpolants);
-}
-
 void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask) {
     assert(proof_graph);
     proof_graph->produceSingleInterpolant(interpolants, A_mask);

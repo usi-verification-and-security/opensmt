@@ -31,8 +31,6 @@ public:
     // Create interpolants with each A consisting of the specified partitions
     void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
 
-    void getSingleInterpolant(vec<PTRef> & interpolants);
-
     void getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask);
 
     void getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask);

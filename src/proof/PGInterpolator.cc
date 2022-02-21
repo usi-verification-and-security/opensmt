@@ -19,23 +19,11 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
-#include "BoolRewriting.h"
 #include "OsmtInternalException.h"
-#include "VerificationUtils.h"
 
-#include <deque>
 #include <iostream>
 
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
-
-
-void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants )
-{
-    ipartitions_t A_mask = 0;
-    // Set 1_th bit to 1 (bit 0 is untouched)
-    setbit (A_mask, 1);
-    produceSingleInterpolant (interpolants, A_mask);
-}
 
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
 {
