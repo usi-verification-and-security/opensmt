@@ -81,42 +81,8 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             {
                 partial_interp = computePartialInterpolantForOriginalClause(*n, A_mask);
             }
-            else if (n->getType() == clause_type::CLA_THEORY) // Theory lemma
-            {
-                clearTSolver();
-                vec<Lit> newvec;
-                std::vector<Lit> const & oldvec = n->getClause();
-
-                for (std::size_t j = 0; j < oldvec.size(); ++j) {
-                    newvec.push(~oldvec[j]);
-                }
-
-#ifdef ITP_DEBUG
-                std::cout << "; ASSERTING LITS" << '\n';
-                vec<PTRef> tr_vec;
-                Logic& logic = thandler->getLogic();
-                for (int i = 0; i < newvec.size(); ++i) {
-                    PTRef tr_vecel = thandler->varToTerm(var(newvec[i]));
-                    tr_vec.push(sign(newvec[i]) ? logic.mkNot(tr_vecel) : tr_vecel);
-                }
-                PTRef tr_and = logic.mkAnd(tr_vec);
-                printf("%s\n", logic.printTerm(tr_and));
-#endif
-                bool res = this->assertLiteralsToTSolver(newvec);
-                if (res) {
-                    TRes tres = thandler->check(true);
-                    res = (tres != TRes::UNSAT);
-                }
-                assert(!res);
-                std::map<PTRef, icolor_t> ptref2label;
-                std::vector<Lit> const & cl = n->getClause();
-
-                for (std::size_t j = 0; j < cl.size(); ++j) {
-                    ptref2label[varToPTRef(var(cl[j]))] = getVarColor(*n, var(cl[j]));
-                }
-
-                partial_interp = thandler->getInterpolant (A_mask, &ptref2label, pmanager);
-                clearTSolver();
+            else if (n->getType() == clause_type::CLA_THEORY) {
+                partial_interp = computePartialInterpolantForTheoryClause(*n, A_mask);
             }
             else if (n->getType() == clause_type::CLA_SPLIT) {
                 auto const & clause = n->getClause();
@@ -275,6 +241,32 @@ PTRef ProofGraph::computePartialInterpolantForOriginalClause(ProofNode const & n
     PTRef partial_interp = getInterpolantForOriginalClause(n, clause_color);
     assert (partial_interp != PTRef_Undef);
     return partial_interp;
+}
+
+PTRef ProofGraph::computePartialInterpolantForTheoryClause(ProofNode const & n, ipartitions_t const & A_mask) {
+    clearTSolver();
+    vec<Lit> newvec;
+    std::vector<Lit> const & oldvec = n.getClause();
+    for (Lit l : oldvec) {
+        newvec.push(~l);
+    }
+    bool satisfiable = this->assertLiteralsToTSolver(newvec);
+    if (satisfiable) {
+        TRes tres = thandler->check(true);
+        satisfiable = (tres != TRes::UNSAT);
+    }
+    if (satisfiable) {
+        assert(false);
+        throw OsmtInternalException("Asserting negation of theory clause did not result in conflict in theory solver!");
+    }
+    std::map<PTRef, icolor_t> ptref2label;
+    for (Lit l : oldvec) {
+        ptref2label.insert({varToPTRef(var(l)), getVarColor(n, var(l))});
+    }
+
+    PTRef interpolant = thandler->getInterpolant(A_mask, &ptref2label, pmanager);
+    clearTSolver();
+    return interpolant;
 }
 
 // Input: inner clause, current interpolant partition masks for A and B

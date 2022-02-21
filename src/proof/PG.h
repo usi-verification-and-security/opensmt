@@ -445,8 +445,9 @@ public:
     void           getComplexityInterpolant( PTRef int_e );
     void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
 
-    PTRef           computePartialInterpolantForOriginalClause               (const ProofNode & n, const ipartitions_t & A_mask);
-    PTRef           compInterpLabelingInner                  (ProofNode &);
+    PTRef computePartialInterpolantForOriginalClause(ProofNode const & n, ipartitions_t const & A_mask);
+    PTRef computePartialInterpolantForTheoryClause(ProofNode const & n, ipartitions_t const & A_mask);
+    PTRef compInterpLabelingInner                  (ProofNode &);
 
 
     icolor_t getPivotColor (ProofNode &);
