@@ -88,61 +88,38 @@ icolor_t ProofGraph::getPivotColor(ProofNode const & n) {
 	return var_color;
 }
 
-// Input: variable, current interpolant partition masks for A and B
-// e.g. 0---010 first partition in A
-// Output: returns A-local , B-local or AB-common
-icolor_t ProofGraph::getVarClass( Var v, const ipartitions_t & A_mask )
-{
-    //Determine mask corresponding to B
-    ipartitions_t B_mask = ~A_mask;
-    const ipartitions_t & var_mask = this->getVarPartition(v);
-
-    // Check if variable present in A or B
-    bool var_in_A = ((var_mask & A_mask) != 0);
-    bool var_in_B = ((var_mask & B_mask) != 0);
-    // MB: In incremental solving it might be that this is theory literal that has been popped.
-    //      Determine its class based on the classes of variables it contains
-    if (!var_in_A && !var_in_B) {
-        if (this->isAssumedVar(v)) { return icolor_t::I_AB; } // MB: Does not matter for assumed literals
-        // Literals with no partition are handled during proof building, so no other variable except assumed ones should have no partition.
-    }
-    assert(var_in_A || var_in_B);
-
-    icolor_t var_class;
-    // Determine if variable A-local, B-local or AB-common
-    if (var_in_A && !var_in_B) var_class = icolor_t::I_A;
-    else if (!var_in_A && var_in_B) var_class = icolor_t::I_B;
-    else if (var_in_A && var_in_B) var_class = icolor_t::I_AB;
-    else throw OsmtInternalException("Variable has no class");
-
-    return var_class;
-}
-
-// Input: proof node, current interpolant partition masks for A and B
-// e.g. 0---010 first partition in A
-// Output: returns A or B
-icolor_t ProofGraph::getClauseColor(CRef clause, const ipartitions_t & A_mask )
-{
-    auto const & clause_mask = pmanager.getClauseClassMask(clause);
-
-    // TODO look at isAB methods in egraph
-    //Determine mask corresponding to B
+namespace {
+icolor_t getClass(ipartitions_t const & mask, ipartitions_t const & A_mask) {
     ipartitions_t B_mask = ~A_mask;
 
     // Check if belongs to A or B
-    const bool clause_in_A = ( (clause_mask & A_mask) != 0 );
-    const bool clause_in_B = ( (clause_mask & B_mask) != 0 );
-    assert( clause_in_A || clause_in_B );
+    const bool in_A = ((mask & A_mask) != 0);
+    const bool in_B = ((mask & B_mask) != 0);
+    assert(in_A or in_B);
 
-    icolor_t clause_color = icolor_t::I_A;
-
-    // Determine if clause belongs to A or B
-    if( clause_in_A && !clause_in_B ) clause_color = icolor_t::I_A;
-    else if( !clause_in_A && clause_in_B ) clause_color = icolor_t::I_B;
-    else if( clause_in_A && clause_in_B ) clause_color = icolor_t::I_AB;
-    else throw OsmtInternalException("Clause has no color");
+    icolor_t clause_color = icolor_t::I_UNDEF;
+    if (in_A and not in_B) clause_color = icolor_t::I_A;
+    else if (not in_A and in_B) clause_color = icolor_t::I_B;
+    else if (in_A and in_B) clause_color = icolor_t::I_AB;
+    else throw OsmtInternalException("No class could have been determined");
 
     return clause_color;
+}
+}
+
+// Input: variable, current interpolant partition masks for A
+// Output: returns A-local , B-local or AB-common
+icolor_t ProofGraph::getVarClass(Var v, const ipartitions_t & A_mask) {
+    if (this->isAssumedVar(v)) { return icolor_t::I_AB; } // MB: Does not matter for assumed literals
+    const ipartitions_t & var_mask = this->getVarPartition(v);
+    return getClass(var_mask, A_mask);
+}
+
+// Input: proof node, current interpolant partition masks for A
+// Output: returns A, B or AB
+icolor_t ProofGraph::getClauseColor(CRef clause, ipartitions_t const & A_mask) {
+    auto const & clause_mask = pmanager.getClauseClassMask(clause);
+    return getClass(clause_mask, A_mask);
 }
 
 std::map<Var, icolor_t>*
