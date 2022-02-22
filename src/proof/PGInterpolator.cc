@@ -75,7 +75,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
 
-    std::map<Var, icolor_t> * PSFunction = needProofStatistics() ? computePSFunction (A_mask) : nullptr;
+    auto PSFunction = needProofStatistics() ? computePSFunction (A_mask) : nullptr;
 
     // Traverse proof and compute current interpolant
     for ( size_t i = 0 ; i < proof_size ; i++ )
@@ -88,7 +88,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         {
             if (!isLeafClauseType(n->getType())) throw OsmtInternalException("; Leaf node with non-leaf clause type");
 
-            labelLeaf(*n, PSFunction);
+            labelLeaf(*n, PSFunction.get());
 
             if (n->getType() == clause_type::CLA_ORIG)
             {
@@ -128,7 +128,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
         }
     }
 
-    delete PSFunction;
+    PSFunction.release();
 
     PTRef rootInterpolant = interpolationInfo.getPartialInterpolant(*getRoot());
     assert(rootInterpolant != PTRef_Undef);

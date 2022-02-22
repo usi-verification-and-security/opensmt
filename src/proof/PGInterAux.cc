@@ -98,9 +98,9 @@ icolor_t ProofGraph::getClauseColor(CRef clause, ipartitions_t const & A_mask) {
     return getClass(clause_mask, A_mask);
 }
 
-std::map<Var, icolor_t> * ProofGraph::computePSFunction(const ipartitions_t & A_mask) {
+std::unique_ptr<std::map<Var, icolor_t>> ProofGraph::computePSFunction(const ipartitions_t & A_mask) {
 
-    std::map<Var, icolor_t> * labels = new std::map<Var, icolor_t>();
+    auto labels = std::make_unique<std::map<Var, icolor_t>>();
 
     std::map<Var, int> occ_a, occ_b;
 
