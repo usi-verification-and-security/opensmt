@@ -24,30 +24,6 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 /************************* HELPERS ******************************/
 
-bool ProofGraph::decideOnAlternativeInterpolation(ProofNode & n)
-{
-	// Get antecedents partial interpolants
-	PTRef I1 = interpolationInfo.getPartialInterpolant(*n.getAnt1());
-	PTRef I2 = interpolationInfo.getPartialInterpolant(*n.getAnt2());
-	assert( I1 != PTRef_Undef ); assert( I2 != PTRef_Undef );
-	bool I1_is_true = ( I1 == logic_.getTerm_true() );
-	bool I2_is_true = ( I2 == logic_.getTerm_true() );
-	bool I1_is_false = ( I1 == logic_.getTerm_false() );
-	bool I2_is_false = ( I2 == logic_.getTerm_false() );
-	bool I1_is_none = ( !I1_is_true && !I1_is_false );
-	bool I2_is_none = ( !I2_is_true && !I2_is_false );
-
-	// For some combinations of I1, I2, the alternative interpolant
-	// has a smaller size!
-	// Standard     (I1 \/ p ) /\ (I2 \/ ~p)
-	// Alternative  (I1 /\ ~p) \/ (I2 /\ p)
-
-	if(I1_is_false && I2_is_none) return true;
-	if(I1_is_none && I2_is_false) return true;
-	if(I1_is_false && I2_is_false) return true;
-	return false;
-}
-
 
 icolor_t ProofGraph::getVarColor(ProofNode const & n, Var v) {
     assert(n.isLeaf());

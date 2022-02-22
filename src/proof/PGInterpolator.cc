@@ -23,6 +23,31 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 
+/**************** HELPER METHODS ************************/
+
+namespace {
+bool decideOnAlternativeInterpolation(PTRef I1, PTRef I2, Logic const & logic) {
+    assert(I1 != PTRef_Undef);
+    assert(I2 != PTRef_Undef);
+    bool I1_is_true = (I1 == logic.getTerm_true());
+    bool I2_is_true = (I2 == logic.getTerm_true());
+    bool I1_is_false = (I1 == logic.getTerm_false());
+    bool I2_is_false = (I2 == logic.getTerm_false());
+    bool I1_is_none = (not I1_is_true and not I1_is_false);
+    bool I2_is_none = (not I2_is_true and not I2_is_false);
+
+    // For some combinations of I1, I2, the alternative interpolant
+    // has a smaller size!
+    // Standard     (I1 \/ p ) /\ (I2 \/ ~p)
+    // Alternative  (I1 /\ ~p) \/ (I2 /\ p)
+
+    if (I1_is_false and I2_is_none) return true;
+    if (I1_is_none and I2_is_false) return true;
+    if (I1_is_false and I2_is_false) return true;
+    return false;
+}
+}
+
 /**************** MAIN INTERPOLANTS GENERATION METHODS ************************/
 
 void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipartitions_t &A_mask)
@@ -293,7 +318,7 @@ PTRef ProofGraph::compInterpLabelingInner(ProofNode & n) {
         // Find pivot occurrences in ant1 and ant2 and create enodes
         Var piv_ = n.getPivot();
         PTRef piv = varToPTRef(piv_);
-        bool choose_alternative = usingAlternativeInterpolant() ? decideOnAlternativeInterpolation(n) : false;
+        bool choose_alternative = usingAlternativeInterpolant() ? decideOnAlternativeInterpolation(partial_interp_ant1, partial_interp_ant2, logic_) : false;
         if (choose_alternative) { // Equivalent formula (I_1 /\ ~p) \/ (I_2 /\ p)
             PTRef and_1 = logic_.mkAnd(partial_interp_ant1, logic_.mkNot(piv));
             PTRef and_2 = logic_.mkAnd(partial_interp_ant2, piv);

@@ -455,7 +455,6 @@ public:
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
     void		   verifyLeavesInconsistency ( );
-    bool		   decideOnAlternativeInterpolation(ProofNode &);
     // For a given partition mask try to generate interpolants with few predicates
     // Return a vector of interpolants, and for each the set of predicates which was removed
     void 		   removeUnnecessaryPredicates(ipartitions_t & A_mask, std::vector<PTRef>&, std::vector<std::set<PTRef>>&);
