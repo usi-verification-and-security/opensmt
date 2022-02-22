@@ -109,6 +109,8 @@ protected:
 public:
     ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
+
+    std::string      protectName(std::string const & name, SRef retSort, bool isNullary) const override;
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
