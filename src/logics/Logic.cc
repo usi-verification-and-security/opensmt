@@ -160,9 +160,11 @@ bool Logic::hasQuotableChars(std::string const & name) const
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name) const
-{
-    if (hasQuotableChars(name)) {
+std::string Logic::protectName(std::string const & name, SRef retSort, bool isNullary) const {
+    assert(not name.empty());
+    (void)retSort;
+    (void)isNullary;
+    if (hasQuotableChars(name) or std::isdigit(name[0])) {
         std::stringstream ss;
         ss << '|' << name << '|';
         return ss.str();
@@ -170,9 +172,8 @@ std::string Logic::protectName(std::string const & name) const
     return name;
 }
 
-std::string Logic::printSym(SymRef sr) const
-{
-    return protectName(sym_store.getName(sr));
+std::string Logic::printSym(SymRef sr) const {
+    return protectName(sr);
 }
 
 
@@ -1390,7 +1391,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name);
+    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();
