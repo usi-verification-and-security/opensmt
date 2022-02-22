@@ -98,109 +98,41 @@ icolor_t ProofGraph::getClauseColor(CRef clause, ipartitions_t const & A_mask) {
     return getClass(clause_mask, A_mask);
 }
 
-std::map<Var, icolor_t>*
-ProofGraph::computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions_t& A_mask)
-{
-	size_t proof_size = DFSv.size();
+std::map<Var, icolor_t> * ProofGraph::computePSFunction(const ipartitions_t & A_mask) {
 
-	std::map<Var, icolor_t> * labels = nullptr;
-	ProofNode *n;
-    theory_only.clear();
-	if(needProofStatistics())
-	{
-		labels = new std::map<Var, icolor_t>();
+    std::map<Var, icolor_t> * labels = new std::map<Var, icolor_t>();
 
-		time_t after, before;
-		time(&before);
-		
-		std::map<Var, int> occ_a, occ_b;
+    std::map<Var, int> occ_a, occ_b;
 
-		for(size_t i = 0; i < proof_size; ++i)
-		{
-			n = getNode(DFSv[i]); assert(n);
-			if(!n->isLeaf()) continue;
-            if(n->getType() == clause_type::CLA_THEORY)
-            {
-                std::vector<Lit>& tlits = n->getClause();
-                if(!tlits.empty())
-                {
-                    for(int i = 0; i < int(tlits.size()); ++i)
-                    {
-                        int v = var(tlits.at(i));
-                        if(theory_only.find(v) == theory_only.end())
-                            theory_only.insert(v);
-                    }
+    for (auto leafId : leaves_ids) {
+        ProofNode * n = getNode(leafId);
+        assert(n and n->isLeaf());
+        if (n->getType() != clause_type::CLA_ORIG) {
+            continue;
+        }
+        icolor_t col = getClauseColor(n->getClauseRef(), A_mask);
+        for (Lit l : n->getClause()) {
+            Var v = var(l);
+            icolor_t vclass = interpolationInfo.getVarClass(v);
+            if (vclass != icolor_t::I_AB) continue;
+            if (col == icolor_t::I_A) {
+                ++occ_a[v];
+                if (occ_b.find(v) == occ_b.end()) {
+                    occ_b[v] = 0;
                 }
-                continue;
+            } else if (col == icolor_t::I_B) {
+                ++occ_b[v];
+                if (occ_a.find(v) == occ_a.end())
+                    occ_a[v] = 0;
             }
-			if(n->getType() != clause_type::CLA_ORIG)
-			{
-                // FIXME: This check is outdated
-                throw OsmtInternalException( "Clause is not original" );
-			}
-
-			icolor_t col = getClauseColor(n->getClauseRef(), A_mask);
-			std::vector<Lit>& lits = n->getClause();
-			if(!lits.empty())
-			{
-				for(int i = 0; i < int(lits.size()); ++i)
-				{
-					int v = var(lits.at(i));
-                    
-                    if(theory_only.find(v) != theory_only.end())
-                        theory_only.erase(theory_only.find(v));
-
-					icolor_t vclass = interpolationInfo.getVarClass(v);
-					if(vclass != icolor_t::I_AB) continue;
-					if(col == icolor_t::I_A)
-					{
-						++occ_a[v];
-						if(occ_b.find(v) == occ_b.end())
-							occ_b[v] = 0;
-					}
-					else if(col == icolor_t::I_B)
-					{
-						++occ_b[v];
-						if(occ_a.find(v) == occ_a.end())
-							occ_a[v] = 0;
-					}
-				}
-			}
-		}
-		assert(occ_a.size() == occ_b.size());
-		int avars, bvars, aevars, bevars;
-		avars = bvars = aevars = bevars = 0;
-		srand(time(nullptr));
-		for(auto it = occ_a.begin(); it != occ_a.end(); ++it)
-		{
-			Var v = it->first;
-			int qtta = it->second;
-			int qttb = occ_b.find(v)->second;
-			bool fa = true; //suppose label is A
-			if(qtta == qttb)
-			{
-				//if(rand() % 2) fa = false; //random == 1, label B (breaks path-interpolation property!!!)
-				fa = false;
-			}
-			else if(qttb > qtta) //b greater label B
-				fa = false;
-
-			if(fa)
-			{
-				if(qtta > qttb) ++avars; else ++aevars;
-				labels->insert(std::pair<Var, icolor_t>(v, icolor_t::I_A));
-			}
-			else
-			{
-				if(qttb > qtta) ++bvars; else ++bevars;
-				labels->insert(std::pair<Var, icolor_t>(v, icolor_t::I_B));
-			}
-		}
-		///////////////////////////////////////////////////////////
-		time(&after);
-        if(verbose())
-    		std::cout << "; Time spent computing PS labeling function: " << difftime(after, before) << "s" << '\n';
-	}
-
-	return labels;
+        }
+    }
+    assert(occ_a.size() == occ_b.size());
+    for (auto const & entry : occ_a) {
+        Var v = entry.first;
+        int qtta = entry.second;
+        int qttb = occ_b.find(v)->second;
+        labels->insert({v, qtta > qttb ? icolor_t::I_A : icolor_t::I_B});
+    }
+    return labels;
 }

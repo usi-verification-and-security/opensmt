@@ -75,7 +75,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
 
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
 
-    std::map<Var, icolor_t> *PSFunction = computePSFunction (DFSv, A_mask);
+    std::map<Var, icolor_t> * PSFunction = needProofStatistics() ? computePSFunction (A_mask) : nullptr;
 
     // Traverse proof and compute current interpolant
     for ( size_t i = 0 ; i < proof_size ; i++ )
@@ -334,8 +334,6 @@ PTRef ProofGraph::compInterpLabelingInner(ProofNode & n) {
 void ProofGraph::setLeafPSLabeling (ProofNode & n, std::map<Var, icolor_t> const & labels) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
         auto it = labels.find(v);
-        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
-
         if (it->second == icolor_t::I_A)
             interpolationInfo.colorA(node, v);
         else
@@ -346,8 +344,6 @@ void ProofGraph::setLeafPSLabeling (ProofNode & n, std::map<Var, icolor_t> const
 void ProofGraph::setLeafPSWLabeling(ProofNode & n, std::map<Var, icolor_t> const & labels) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
         auto it = labels.find(v);
-        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
-
         if (it->second == icolor_t::I_A)
             interpolationInfo.colorA(node, v);
         else
@@ -358,8 +354,6 @@ void ProofGraph::setLeafPSWLabeling(ProofNode & n, std::map<Var, icolor_t> const
 void ProofGraph::setLeafPSSLabeling(ProofNode & n, std::map<Var, icolor_t> const & labels) {
     setLeafLabeling(n, [&](ProofNode & node, Var v) {
         auto it = labels.find(v);
-        assert (theory_only.find(v) != theory_only.end() || it != labels.end());
-
         if (it->second == icolor_t::I_A)
             interpolationInfo.colorAB(node, v);
         else

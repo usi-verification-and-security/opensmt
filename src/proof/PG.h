@@ -437,7 +437,7 @@ public:
     //
     icolor_t       getVarClass                              ( Var, const ipartitions_t & );
     icolor_t       getClauseColor                           ( CRef clause, const ipartitions_t & );
-    std::map<Var, icolor_t>* computePSFunction(std::vector< clauseid_t >& DFSv, const ipartitions_t &);
+    std::map<Var, icolor_t> * computePSFunction(const ipartitions_t &);
     void           getPredicatesSetFromInterpolantIterative ( PTRef, std::set<PTRef>& );
     unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
     // Get formula complexity as number of connectives, number of distinct boolean variables
@@ -569,7 +569,6 @@ private:
     std::set<clauseid_t>		   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof
     unsigned                       max_id_variable;             // Highest value for a variable
-    std::set<Var> theory_only;
     std::vector<Lit> assumedLiterals;
 
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
