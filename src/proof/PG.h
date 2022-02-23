@@ -451,7 +451,6 @@ public:
 
     icolor_t getVarColor(ProofNode const & n, Var v);
 
-    void 		   analyzeProofLocality   (const ipartitions_t &);
     void		   verifyLeavesInconsistency ( );
     // For a given partition mask try to generate interpolants with few predicates
     // Return a vector of interpolants, and for each the set of predicates which was removed
