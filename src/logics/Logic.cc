@@ -165,10 +165,8 @@ bool Logic::hasQuotableChars(std::string const & name) const
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name, SRef retSort, bool isNullary) const {
+std::string Logic::protectName(std::string const & name, SRef, bool) const {
     assert(not name.empty());
-    (void)retSort;
-    (void)isNullary;
     if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
         std::stringstream ss;
         ss << '|' << name << '|';
