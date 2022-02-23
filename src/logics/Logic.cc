@@ -371,30 +371,27 @@ SRef Logic::declareUninterpretedSort(const std::string & name) {
     return getSort(sortSymbol, {});
 }
 
-PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
-    SymRef sref = term_store.lookupSymbol(s, args);
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef) {
+    SymRef sref = term_store.lookupSymbol(s, args, sortRef);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s)) {
             auto const & tpl = defined_functions[s];
-            try {
-                return instantiateFunctionTemplate(tpl, args);
-            } catch (OsmtApiException const & e) {
-                *msg = strdup(e.what());
-                return PTRef_Undef;
-            }
+            return instantiateFunctionTemplate(tpl, args);
         }
         else {
-            int written = asprintf(msg, "Unknown symbol `%s'", s);
-            assert(written >= 0); (void)written;
-            return PTRef_Undef;
+            std::string argSortsString;
+            for (PTRef tr : args) {
+                argSortsString += printSort(getSortRef(tr)) + ' ';
+            }
+            throw OsmtApiException("Unknown symbol `%s' " + argSortsString + (sortRef != SRef_Undef ?  "/ " +printSort(sortRef) : ""));
         }
     }
     assert(sref != SymRef_Undef);
-    PTRef rval;
+    PTRef rval = PTRef_Undef;
 
     rval = insertTerm(sref, std::move(args));
     if (rval == PTRef_Undef)
-        printf("Error in resolveTerm\n");
+        throw OsmtApiException("Error in resolveTerm\n");
 
     return rval;
 }
@@ -699,8 +696,7 @@ PTRef Logic::mkConst(const char* name)
     //assert(0);
     //return PTRef_Undef;
     assert(strlen(name) > 0);
-    char *msg2;
-    return resolveTerm(name, {}, &msg2);
+    return resolveTerm(name, {});
 }
 
 
