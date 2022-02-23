@@ -449,19 +449,19 @@ public:
   inline void setInstanceName(const char* name) { insertOption(o_inst_name, new SMTOption(name)); }
 
   // Get interpolation algorithms
-  inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
+  inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
       else { return itp_alg_mcmillan; }}
 
-  inline ItpAlgorithm getEUFInterpolationAlgorithm() {
+  inline ItpAlgorithm getEUFInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_euf_alg)) { return { optionTable[o_itp_euf_alg]->getValue().numval }; }
       else { return itp_euf_alg_strong; }}
 
-  inline ItpAlgorithm getLRAInterpolationAlgorithm() {
+  inline ItpAlgorithm getLRAInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_lra_alg)) { return { optionTable[o_itp_lra_alg]->getValue().numval }; }
       else { return itp_lra_alg_strong; }}
 
-  inline const char* getLRAStrengthFactor() {
+  inline const char* getLRAStrengthFactor() const {
       if (optionTable.has(o_itp_lra_factor)) { return optionTable[o_itp_lra_factor]->getValue().strval; }
       else { return itp_lra_factor_0; }
   }
