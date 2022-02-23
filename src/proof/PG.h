@@ -497,12 +497,13 @@ public:
     inline void     setPredicateToPush(Var p){ pred_to_push = p; }
 
     // Strengthen/weaken interpolants by applying A2 rule locally
-    ApplicationResult handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2);
-    bool            allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra);
+    ApplicationResult handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2, std::function<bool(RuleContext &)> allowSwap);
+    bool allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra, std::function<icolor_t(Var)> getVarClass, bool restructureForStronger);
+
     // Produce interpolants in CNF using McMillan algorithm - partial CNFization since no duplications allowed!
     // See allowSwapRuleForCNFinterpolant
-    ApplicationResult handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2);
-    bool            allowSwapRuleForCNFinterpolant(RuleContext& ra);
+    ApplicationResult handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2, std::function<bool(RuleContext &)> allowSwap);
+    bool allowSwapRuleForCNFinterpolant(RuleContext& ra, std::function<icolor_t(Var)>);
 
 private:
     void buildProofGraph(Proof const & proof, int varCount);

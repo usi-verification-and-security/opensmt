@@ -174,7 +174,9 @@ void ProofGraph::transfProofForCNFInterpolants() {
 
     fillProofGraph();
     proofTransformAndRestructure(-1, -1, true, [this](RuleContext & ra1, RuleContext & ra2) {
-        return this->handleRuleApplicationForCNFinterpolant(ra1, ra2);
+        return this->handleRuleApplicationForCNFinterpolant(ra1, ra2, [this](RuleContext & ra) {
+            return this->allowSwapRuleForCNFinterpolant(ra, [this](Var v) { return interpolationInfo.getVarClass(v); });
+        });
     });
     checkProof(true);
     normalizeAntecedentOrder();
