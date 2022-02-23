@@ -408,27 +408,29 @@ public:
     // Auxiliary
     //
     inline size_t     getGraphSize              ( ) const { return graph.size( ); }
-    bool              isSetVisited1             ( clauseid_t id ) { return mpz_tstbit(visited_1, id); }
-    bool              isSetVisited2             ( clauseid_t id ) { return mpz_tstbit(visited_2, id); }
-    void              setVisited1               ( clauseid_t id ) { mpz_setbit(visited_1, id); }
-    void              setVisited2               ( clauseid_t id ) { mpz_setbit(visited_2, id); }
-    void              resetVisited1             ( )               { mpz_set_ui(visited_1,0); }
-    void              resetVisited2             ( )               { mpz_set_ui(visited_2,0); }
-    bool              isResetVisited1           ( )               { return mpz_cmp_ui(visited_1, 0) == 0; }
-    bool              isResetVisited2           ( )               { return mpz_cmp_ui(visited_2, 0) == 0; }
+    bool              isSetVisited1             ( clauseid_t id ) const { return mpz_tstbit(visited_1, id); }
+    bool              isSetVisited2             ( clauseid_t id ) const { return mpz_tstbit(visited_2, id); }
+    void              setVisited1               ( clauseid_t id ) const { mpz_setbit(visited_1, id); }
+    void              setVisited2               ( clauseid_t id ) const { mpz_setbit(visited_2, id); }
+    void              resetVisited1             ( ) const               { mpz_set_ui(visited_1,0); }
+    void              resetVisited2             ( ) const               { mpz_set_ui(visited_2,0); }
+    bool              isResetVisited1           ( ) const               { return mpz_cmp_ui(visited_1, 0) == 0; }
+    bool              isResetVisited2           ( ) const               { return mpz_cmp_ui(visited_2, 0) == 0; }
 
     unsigned          getMaxIdVar           ( ) { return max_id_variable; }
     void              getGraphInfo          ( );
-    void              topolSortingTopDown   ( std::vector< clauseid_t > & );
-    void              topolSortingBotUp     ( std::vector< clauseid_t > & );
+
+    std::vector<clauseid_t> topolSortingTopDown() const;
+    std::vector<clauseid_t> topolSortingBotUp() const;
+
     void              printProofNode        ( clauseid_t );
     void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, std::ostream & );
-    inline ProofNode* getNode               ( clauseid_t id ) { assert( id<graph.size() ); return graph[ id ]; }
+    inline ProofNode* getNode               ( clauseid_t id ) const { assert(id < graph.size()); return graph[id]; }
     static bool       mergeClauses          (std::vector<Lit> const &, std::vector<Lit> const &, std::vector<Lit>&, Var);
-    inline bool       isRoot                ( ProofNode* n ) { assert(n); return( n->getId() == root ); }
-    inline ProofNode* getRoot               ( ) { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
+    inline bool       isRoot                ( ProofNode* n ) const { assert(n); return( n->getId() == root ); }
+    inline ProofNode* getRoot               ( ) const { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
     inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
     inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
     inline void       removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
@@ -600,8 +602,8 @@ private:
     unsigned swap_ties;
 
     // Global visit vectors
-    mpz_t visited_1;
-    mpz_t visited_2;
+    mutable mpz_t visited_1;
+    mutable mpz_t visited_2;
 };
 
 template<typename TFun>

@@ -180,9 +180,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
     PTRef partial_interp = PTRef_Undef;
 
     // Vector for topological ordering
-    std::vector< clauseid_t > DFSv;
-    // Compute topological sorting of graph
-    topolSortingTopDown ( DFSv );
+    std::vector<clauseid_t> DFSv = topolSortingTopDown();
     size_t proof_size = DFSv.size();
 
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;

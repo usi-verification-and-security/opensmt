@@ -49,9 +49,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
     // Allocate root bitset
     mpz_init(safe_lit_set[getRoot()->getId()]);
 
-    //DFS vector
-    std::vector<clauseid_t> DFSvec;
-    topolSortingBotUp(DFSvec);
+    std::vector<clauseid_t> DFSvec = topolSortingBotUp();
 
     assert(isResetVisited1());
     // To initialize pivots set to the set of the first resolvent

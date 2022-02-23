@@ -100,36 +100,22 @@ void ProofGraph::getGraphInfo()
     resetVisited1();
 }
 
-//Input: a vector which will contain the topological sorting of nodes
-//Output: a topological sorting antecedents-resolvents
-void ProofGraph::topolSortingTopDown(std::vector<clauseid_t>& DFS)
-{
-    std::deque<clauseid_t>q;
-    ProofNode* n;
-    DFS.clear();
+std::vector<clauseid_t> ProofGraph::topolSortingTopDown() const {
+    std::vector<clauseid_t> DFS;
+    std::deque<clauseid_t> q;
     DFS.reserve(getGraphSize());
-    if (getGraphSize() == 1)
-    {
-        DFS.push_back(graph[0]->getId());
-        return;
-    }
-    clauseid_t id;
     // Enqueue leaves first
     q.assign(leaves_ids.begin(),leaves_ids.end());
-    do
-    {
-        id=q.front(); q.pop_front();
-        n=getNode(id); assert(n);
-        //Node not visited yet
-        if (!isSetVisited1(id))
-        {
-            if (n->getAnt1()!=NULL && !isSetVisited1(n->getAnt1()->getId())){}
-            else if (n->getAnt2()!=NULL && !isSetVisited1(n->getAnt2()->getId())){}
-            // Mark node as visited if both antecedents visited
-            else
-            {
-                // Enqueue resolvents
-                for (clauseid_t resolvent_id : n->getResolvents()) {
+    do {
+        clauseid_t id = q.front();
+        q.pop_front();
+        ProofNode * n = getNode(id);
+        assert(n);
+        if (not isSetVisited1(id)) {
+            // Process node if both antecedents visited
+            if ((not n->getAnt1() or isSetVisited1(n->getAnt1()->getId())) and
+                (not n->getAnt2() or isSetVisited1(n->getAnt2()->getId()))) {
+                for (clauseid_t resolvent_id: n->getResolvents()) {
                     if (getNode(resolvent_id)) q.push_back(resolvent_id);
                 }
                 setVisited1(id);
@@ -137,47 +123,38 @@ void ProofGraph::topolSortingTopDown(std::vector<clauseid_t>& DFS)
             }
         }
     }
-    while(!q.empty());
+    while(not q.empty());
     resetVisited1();
+    return DFS;
 }
 
-//Input: a vector which will contain the topological sorting of nodes
-//Output: a topological sorting antecedents-resolvents
-void ProofGraph::topolSortingBotUp(std::vector<clauseid_t>& DFS)
-{
-    clauseid_t id,id1,id2;
-    std::vector<clauseid_t> q;
-    ProofNode * node = nullptr;
-    std::vector<unsigned> visited_count(getGraphSize(),0);
-    DFS.clear();
+std::vector<clauseid_t> ProofGraph::topolSortingBotUp() const {
+    std::vector<clauseid_t> DFS;
     DFS.reserve(getGraphSize());
-
-    // Building DFS vector
+    std::vector<clauseid_t> q;
+    std::vector<unsigned> visited_count(getGraphSize(),0);
     q.push_back(getRoot()->getId());
-    do
-    {
-        id = q.back();
-        node = getNode(id);
+    do {
+        clauseid_t id = q.back();
+        ProofNode * node = getNode(id);
         assert(node);
         visited_count[id]++;
         q.pop_back();
 
         // All resolvents have been visited
-        if (id == getRoot()->getId() || visited_count[id] == node->getNumResolvents())
-        {
-            if (!node->isLeaf())
-            {
-                id1 = node->getAnt1()->getId();
-                id2 = node->getAnt2()->getId();
-                // Enqueue antecedents
-                assert( visited_count[id1] < node->getAnt1()->getNumResolvents() );
-                assert( visited_count[id2] < node->getAnt2()->getNumResolvents() );
-                q.push_back(id1); q.push_back(id2);
+        if (visited_count[id] == node->getNumResolvents() or id == getRoot()->getId()) {
+            if (not node->isLeaf()) {
+                clauseid_t id1 = node->getAnt1()->getId();
+                clauseid_t id2 = node->getAnt2()->getId();
+                assert(visited_count[id1] < node->getAnt1()->getNumResolvents());
+                assert(visited_count[id2] < node->getAnt2()->getNumResolvents());
+                q.push_back(id1);
+                q.push_back(id2);
             }
             DFS.push_back(id);
         }
-    }
-    while(!q.empty());
+    } while (not q.empty());
+    return DFS;
 }
 
 /*
