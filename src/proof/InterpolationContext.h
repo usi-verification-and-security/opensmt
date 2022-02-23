@@ -17,9 +17,11 @@ class Proof;
 class ProofGraph;
 
 class InterpolationContext {
+    SMTConfig & config;
+    Theory & theory;
+    TermMapper & termMapper;
     Logic & logic;
     PartitionManager & pmanager;
-    SMTConfig & config;
     std::unique_ptr<ProofGraph> proof_graph;
 public:
     InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
@@ -66,6 +68,9 @@ private:
 
     bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 
+    void ensureNoLiteralsWithoutPartition();
+
+    icolor_t getVarClass(Var v, ipartitions_t const & A_mask) const;
 };
 
 

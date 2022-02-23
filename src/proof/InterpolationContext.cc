@@ -11,10 +11,11 @@
 #include "VerificationUtils.h"
 #include "BoolRewriting.h"
 
-InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
+InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & proof,
                                            PartitionManager & pmanager, int n)
-                                           : logic(th.getLogic()), pmanager(pmanager), config(c),
-                                           proof_graph{new ProofGraph(c, th, termMapper, t, pmanager, n)} {
+                                           :config(c), theory(th), termMapper(termMapper), logic(th.getLogic()), pmanager(pmanager),
+                                           proof_graph{new ProofGraph(c, th.getLogic(), termMapper, proof, n)} {
+    ensureNoLiteralsWithoutPartition();
     if (c.proof_reduce()) {
         reduceProofGraph();
     }
@@ -33,11 +34,10 @@ void InterpolationContext::printProofDotty() {
 
 void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask) {
     assert(proof_graph);
-    proof_graph->produceSingleInterpolant(interpolants, A_mask);
+    PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask).produceSingleInterpolant();
 
     if (enabledInterpVerif()) {
-        assert(interpolants.size() > 0);
-        bool sound = verifyInterpolant(interpolants.last(), A_mask);
+        bool sound = verifyInterpolant(itp, A_mask);
         assert(sound);
         if (verbose()) {
             if (sound) std::cout << "; Final interpolant is sound" << '\n';
@@ -46,8 +46,9 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, const
     }
 
     if (config.simplify_inter() > 0) {
-        interpolants.last() = simplifyInterpolant(interpolants.last());
+        itp = simplifyInterpolant(itp);
     }
+    interpolants.push(itp);
 }
 
 void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolants, const ipartitions_t & A_mask) {
@@ -89,9 +90,10 @@ void InterpolationContext::reduceProofGraph() {
 }
 
 void InterpolationContext::transformProofForCNFInterpolants() {
+    throw std::logic_error("Not supported at the moment");
     assert(proof_graph);
     if (usingMcMillanInterpolation()) {
-        proof_graph->transfProofForCNFInterpolants();
+        proof_graph->transfProofForCNFInterpolants([](Var) { return icolor_t::I_UNDEF; }); // FIXME: this requires partition mask and can be done only for single interpolant computation
     } else {
         std::cerr << "; Warning!\n"
                   << "; Please set McMillan interpolation algorithm to generate interpolants in CNF";
@@ -136,5 +138,27 @@ PTRef InterpolationContext::simplifyInterpolant(PTRef itp) const {
         }
     }
     return itp;
+}
+
+void InterpolationContext::ensureNoLiteralsWithoutPartition() {
+    std::vector<Var> noPartitionVars;
+    for (Var v : proof_graph->getVariables()) {
+        auto const& part = pmanager.getIPartitions(termMapper.varToPTRef(v));
+        if(part == 0 && not proof_graph->isAssumedVar(v)) {
+            PTRef term = termMapper.varToPTRef(v);
+            assert(this->logic.isTheoryTerm(term));
+            auto allowedPartitions = pmanager.computeAllowedPartitions(term);
+            if (allowedPartitions != 0) {
+                // MB: Update the partition information
+                pmanager.addIPartitions(term, allowedPartitions);
+            }
+            else {
+                noPartitionVars.push_back(v);
+            }
+        }
+    }
+    if (!noPartitionVars.empty()) {
+        proof_graph->eliminateNoPartitionTheoryVars(noPartitionVars);
+    }
 }
 

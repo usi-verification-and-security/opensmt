@@ -33,23 +33,6 @@ std::ostream& operator<< (std::ostream &out, RuleContext &ra)
     return out;
 }
 
-void ProofGraph::initTSolver() {
-    assert(!this->leaves_ids.empty());
-    for (auto id : this->leaves_ids) {
-        ProofNode * node = getNode(id);
-        assert(node);
-        assert(isLeafClauseType(node->getType()));
-        if (node->getType() != clause_type::CLA_THEORY) { continue; }
-        const auto & clause = this->getNode(id)->getClause();
-        for (auto const & lit : clause) {
-            Var v = var(lit);
-            PTRef atom = this->varToPTRef(v);
-            assert(logic_.isTheoryTerm(atom));
-            thandler->declareAtom(atom);
-        }
-    }
-}
-
 namespace{
 struct ProofBuildingStatistics {
     unsigned num_leaf = 0;
@@ -345,7 +328,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
     // Postprocessing of the proof
 
     this->addDefaultAssumedLiterals(proof.getAssumedLiterals());
-    this->ensureNoLiteralsWithoutPartition();
 
     if (proofCheck()) {
         verifyLeavesInconsistency();
@@ -591,28 +573,6 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 
 void ProofGraph::addDefaultAssumedLiterals(std::vector<Lit> && assumedLiteralsFromDerivations) {
     this->assumedLiterals = std::move(assumedLiteralsFromDerivations);
-}
-
-void ProofGraph::ensureNoLiteralsWithoutPartition() {
-    std::vector<Var> noPartitionVars;
-    for (Var v : proof_variables) {
-        auto const& part = getVarPartition(v);
-        if(part == 0 && !this->isAssumedVar(v)) {
-            PTRef term = varToPTRef(v);
-            assert(this->logic_.isTheoryTerm(term));
-            auto allowedPartitions = pmanager.computeAllowedPartitions(term);
-            if (allowedPartitions != 0) {
-                // MB: Update the partition information
-                pmanager.addIPartitions(term, allowedPartitions);
-            }
-            else {
-                noPartitionVars.push_back(v);
-            }
-        }
-    }
-    if (!noPartitionVars.empty()) {
-        this->eliminateNoPartitionTheoryVars(noPartitionVars);
-    }
 }
 
 void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noPartitionTheoryVars) {

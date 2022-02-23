@@ -209,7 +209,9 @@ private:
     clause_type        type;               // Node type
 };
 
-class InterpolationInfo {
+class ProofGraph;
+
+class SingleInterpolationComputationContext {
     // Interpolation data for resolution proof element
     struct InterpolationNodeData
     {
@@ -245,6 +247,12 @@ class InterpolationInfo {
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
     std::vector<int> AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
     std::vector<InterpolationNodeData> nodeData;
+    Logic & logic;
+    SMTConfig const & config;
+    PartitionManager & pmanager;
+    ProofGraph const & proofGraph;
+    std::unique_ptr<THandler> thandler;
+    ipartitions_t const & A_mask;
 
 public:
     int getSharedVarIndex(Var v) const {
@@ -252,34 +260,21 @@ public:
         return AB_vars_mapping[v];
     }
 
-    icolor_t getVarClass(Var v) const {
+    icolor_t getVarClassFromCache(Var v) const {
         assert((unsigned) v < AB_vars_mapping.size());
         assert(AB_vars_mapping[v] >= -2);
         int c = AB_vars_mapping[v];
         return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
     }
 
-    template<typename TContainer, typename TFun>
-    void reset(std::size_t nodeCount, TContainer const & vars, TFun getClass) {
-        std::size_t varCounts = (*std::max_element(vars.begin(), vars.end())) + 1;
-        nodeData.clear();
-        AB_vars_mapping.clear();
-        nodeData.resize(nodeCount);
-        AB_vars_mapping.resize(varCounts, -3);
-
-        // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
-        int AB_bit_index = 0;
-        for (Var v: vars) {
-            icolor_t v_class = getClass(v);
-            if (v_class == icolor_t::I_A) { AB_vars_mapping[v] = -1; }
-            else if (v_class == icolor_t::I_B) { AB_vars_mapping[v] = -2; }
-            else if (v_class == icolor_t::I_AB) {
-                AB_vars_mapping[v] = AB_bit_index;
-                AB_bit_index++;
-            }
-            else throw OsmtInternalException("Error in computing variable colors");
-        }
-    }
+    SingleInterpolationComputationContext(
+            SMTConfig const & config,
+            Theory & theory,
+            TermMapper & termMapper,
+            PartitionManager & pmanager,
+            ProofGraph const & proof,
+            ipartitions_t const & A_mask
+            );
 
     inline bool isColoredA(ProofNode const & n, Var v) const { return nodeData[n.getId()].isColoredA(getSharedVarIndex(v)); }
 
@@ -313,6 +308,89 @@ public:
         auto & data = nodeData[n.getId()];
         data.clearSharedVar(getSharedVarIndex(n.getPivot()));
     }
+
+    void initTSolver();
+    void backtrackTSolver();
+    bool assertLiteralsToTSolver(vec<Lit> const &);
+
+    ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
+    inline Lit PTRefToLit(PTRef ref) const {return thandler->getTMap().getLit(ref);}
+    inline Var PTRefToVar(PTRef ref) const { return thandler->getTMap().getVar(ref); }
+    inline PTRef varToPTRef(Var v) const { return thandler->getTMap().varToPTRef(v); }
+
+    icolor_t getSharedVarColorInNode(Var v, ProofNode const & node) const {
+        if (isColoredA(node, v)) return icolor_t::I_A;
+        else if (isColoredB(node, v)) return icolor_t::I_B;
+        else if (isColoredAB(node, v)) return icolor_t::I_AB;
+
+        throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(node.getId()));
+    }
+
+    void labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction = nullptr);
+    template<typename TFun>
+    void setLeafLabeling(ProofNode & node, TFun colorABVar);
+    void            setLeafMcMillanLabeling                  (ProofNode &);
+    void            setLeafPudlakLabeling                    (ProofNode &);
+    void            setLeafMcMillanPrimeLabeling             (ProofNode &);
+    void            setLeafPSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+    void            setLeafPSWLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+    void            setLeafPSSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+
+    PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
+    std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
+
+    icolor_t getVarClass(Var) const;
+
+    icolor_t getClauseColor(CRef clause) const;
+
+    std::unique_ptr<std::map<Var, icolor_t>> computePSFunction() const;
+
+
+    PTRef computePartialInterpolantForOriginalClause(ProofNode const & n) const;
+
+    PTRef computePartialInterpolantForTheoryClause(ProofNode const & n);
+
+    PTRef compInterpLabelingInner(ProofNode &);
+
+
+    icolor_t getPivotColor(ProofNode const &);
+
+    icolor_t getVarColor(ProofNode const & n, Var v) const;
+
+    PTRef produceSingleInterpolant();
+
+    void checkInterAlgo() const;
+
+    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+
+    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+
+    bool usingMcMillanPrimeInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp; }
+
+    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
+
+    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+
+    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+
+    int verbose() const { return config.verbosity(); }
+
+    bool usingAlternativeInterpolant() const { return (config.proof_alternative_inter() == 1); }
+
+    bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
+
+    bool enabledPedInterpVerif() const { return (config.certify_inter() >= 2); }
+
+    bool needProofStatistics() const {
+        ItpAlgorithm ia = config.getBooleanInterpolationAlgorithm();
+        return ((ia == itp_alg_ps) or (ia == itp_alg_psw) or (ia == itp_alg_pss));
+    }
+
+    bool verifyPartialInterpolant(ProofNode const &);
+
+    bool verifyPartialInterpolantA(ProofNode const &);
+
+    bool verifyPartialInterpolantB(ProofNode const &);
 };
 
 
@@ -321,20 +399,17 @@ class ProofGraph
 public:
 
 	ProofGraph ( SMTConfig &  c
-			, Theory &        th
-			, TermMapper &    termMapper
-			, Proof const &   proof
-			, PartitionManager & pmanager
-			, int             n = -1 )
+            , Logic & logic
+            , TermMapper const & termMapper
+            , Proof const &   proof
+			, int             varCount)
 : config   ( c )
-, logic_ ( th.getLogic() )
-, pmanager (pmanager)
-, thandler {new THandler(th, termMapper)}
+, logic_ ( logic )
+, termMapper(termMapper)
 {
 		mpz_init(visited_1);
 		mpz_init(visited_2);
-		buildProofGraph(proof, n);
-		initTSolver();
+		buildProofGraph(proof, varCount);
 }
 
 	~ProofGraph()
@@ -345,11 +420,6 @@ public:
 			if(getNode(i)!=NULL) removeNode(i);
 	}
 
-    bool verifyPartialInterpolant(ProofNode*, const ipartitions_t&);
-    bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
-    bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
-
-    void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
     void printProofAsDotty                  ( std::ostream &);
     //
     // Config
@@ -363,19 +433,10 @@ public:
     inline int     reductionLoops                 ( ) const { return config.proof_red_trans(); }
     inline int     numGraphTraversals             ( ) const { return config.proof_num_graph_traversals(); }
     inline int     proofCheck                     ( ) const { return config.proof_check(); }
-    bool           enabledInterpVerif             ( ) const { return ( config.certify_inter() >= 1 ); }
-    bool           enabledPedInterpVerif          ( ) const { return ( config.certify_inter() >= 2 ); }
-    bool           usingMcMillanInterpolation     ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
-    bool           usingPudlakInterpolation       ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
-    bool           usingMcMillanPrimeInterpolation( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp; }
-    bool           usingPSInterpolation           ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps;  }
-    bool           usingPSWInterpolation          ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
-    bool           usingPSSInterpolation          ( ) const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
 
-    bool           needProofStatistics            ( ) const { ItpAlgorithm ia = config.getBooleanInterpolationAlgorithm(); return ((ia == itp_alg_ps) || (ia == itp_alg_psw) || (ia == itp_alg_pss)); }
+
     bool 		    restructuringForStrongerInterpolant	    ( ) { return ( config.proof_trans_strength == 1); }
     bool 		    restructuringForWeakerInterpolant	    ( ) { return ( config.proof_trans_strength == 2); }
-    bool		   usingAlternativeInterpolant ( ) { return ( config.proof_alternative_inter() == 1 ); }
     bool			enabledRecyclePivots() { return (config.proof_rec_piv() >= 1); }
     bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
     bool			enabledTransfTraversals() { return (config.proof_transf_trav() >= 1); }
@@ -403,7 +464,6 @@ public:
     // Checks the proof structure; if flag is true, also checks correctness of clause derivations
     void           checkProof                         ( bool check_clauses );
     void 	       checkClauseSorting				  ( clauseid_t );
-    void		   checkInterAlgo						();
     //
     // Auxiliary
     //
@@ -423,6 +483,9 @@ public:
     std::vector<clauseid_t> topolSortingTopDown() const;
     std::vector<clauseid_t> topolSortingBotUp() const;
 
+    std::set<clauseid_t> const & getLeaves() const { return leaves_ids; };
+    std::set<Var> const & getVariables() const { return proof_variables; }
+
     void              printProofNode        ( clauseid_t );
     void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
@@ -432,24 +495,6 @@ public:
     inline bool       isRoot                ( ProofNode* n ) const { assert(n); return( n->getId() == root ); }
     inline ProofNode* getRoot               ( ) const { assert( root<graph.size() );assert(graph[ root ]); return graph[ root ]; }
     inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
-    inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
-    inline void       removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
-    //
-    // Labeling based interpolation
-    //
-    icolor_t       getVarClass                              ( Var, const ipartitions_t & );
-    icolor_t       getClauseColor                           ( CRef clause, const ipartitions_t & );
-    std::unique_ptr<std::map<Var, icolor_t>> computePSFunction(const ipartitions_t &);
-
-
-    PTRef computePartialInterpolantForOriginalClause(ProofNode const & n, ipartitions_t const & A_mask);
-    PTRef computePartialInterpolantForTheoryClause(ProofNode const & n, ipartitions_t const & A_mask);
-    PTRef compInterpLabelingInner                  (ProofNode &);
-
-
-    icolor_t getPivotColor(ProofNode const &);
-
-    icolor_t getVarColor(ProofNode const & n, Var v);
 
     void		   verifyLeavesInconsistency ( );
     // For a given partition mask try to generate interpolants with few predicates
@@ -480,7 +525,7 @@ public:
     void            applyRuleB3             (RuleContext&);
     void            printRuleApplicationStatus   ();
     void            transfProofForReduction      ();
-    void            transfProofForCNFInterpolants();
+    void            transfProofForCNFInterpolants(std::function<icolor_t(Var)> getVarClass);
     double          doReduction                  (double);
     // Reduce the proof
     ApplicationResult handleRuleApplicationForReduction(RuleContext & ra1, RuleContext & ra2);
@@ -505,62 +550,36 @@ public:
     ApplicationResult handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2, std::function<bool(RuleContext &)> allowSwap);
     bool allowSwapRuleForCNFinterpolant(RuleContext& ra, std::function<icolor_t(Var)>);
 
-private:
-    void buildProofGraph(Proof const & proof, int varCount);
-    ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, Proof const & proof); // Helper method for building the proof graph
-
-    inline Lit PTRefToLit(PTRef ref) const {return thandler->getTMap().getLit(ref);}
-    inline Var PTRefToVar(PTRef ref) const { return thandler->getTMap().getVar(ref); }
-    inline PTRef varToPTRef(Var v) const { return thandler->getTMap().varToPTRef(v); }
-
-    void initTSolver();
-    void clearTSolver();
-    bool assertLiteralsToTSolver(vec<Lit> const &);
-    void addDefaultAssumedLiterals(std::vector<Lit> && assumedLiteralsFromDerivations);
     inline bool isAssumedLiteral(Lit l) const {
         return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
     }
     inline bool isAssumedVar(Var v) const {
         return isAssumedLiteral(mkLit(v, true)) or isAssumedLiteral(mkLit(v, false));
     }
-    ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
 
-    void ensureNoLiteralsWithoutPartition();
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
+
+private:
+    void buildProofGraph(Proof const & proof, int varCount);
+    ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, Proof const & proof); // Helper method for building the proof graph
+
+    inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
+    inline void       removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }
+
+    void addDefaultAssumedLiterals(std::vector<Lit> && assumedLiteralsFromDerivations);
+
     void liftVarsToLeaves(std::vector<Var> const & vars);
     void replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> const & vars);
 
     void recyclePivotsIter_RecyclePhase();
 
-    // Coloring related methods
-    icolor_t getSharedVarColorInNode(Var v, ProofNode const & node) const {
-        if (interpolationInfo.isColoredA(node, v)) return icolor_t::I_A;
-        else if (interpolationInfo.isColoredB(node, v)) return icolor_t::I_B;
-        else if (interpolationInfo.isColoredAB(node, v)) return icolor_t::I_AB;
-
-        throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(node.getId()));
-    }
-
-    PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
-    std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
-
-    void labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction = nullptr);
-    template<typename TFun>
-    void setLeafLabeling(ProofNode & node, TFun colorABVar);
-    void            setLeafMcMillanLabeling                  (ProofNode &);
-    void            setLeafPudlakLabeling                    (ProofNode &);
-    void            setLeafMcMillanPrimeLabeling             (ProofNode &);
-    void            setLeafPSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
-    void            setLeafPSWLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
-    void            setLeafPSSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
 
     //NOTE added for experimentation
     Var 				  pred_to_push;
 
     SMTConfig &                 config;
     Logic &                     logic_;
-    PartitionManager &          pmanager;
-    std::unique_ptr<THandler>   thandler;
+    TermMapper const &          termMapper;
     std::vector<ProofNode *>    graph {};
     double                         building_time;               // Time spent building graph
     clauseid_t                     root;                        // Proof root
@@ -570,7 +589,6 @@ private:
     std::vector<Lit> assumedLiterals;
 
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
-    InterpolationInfo interpolationInfo;
 
     // Info on graph dimension
     int    num_nodes;
@@ -603,14 +621,13 @@ private:
 };
 
 template<typename TFun>
-void ProofGraph::setLeafLabeling(ProofNode & node, TFun colorABVar) {
-    interpolationInfo.resetLabeling(node);
+void SingleInterpolationComputationContext::setLeafLabeling(ProofNode & node, TFun colorABVar) {
+    resetLabeling(node);
     std::vector<Lit> const & cl = node.getClause();
 
     for (Lit l : cl) {
         Var v = var (l);
-        icolor_t var_class = interpolationInfo.getVarClass(v);
-
+        icolor_t var_class = getVarClassFromCache(v);
         if (var_class == icolor_t::I_AB) {
             colorABVar(node, v);
         } else if ( var_class != icolor_t::I_A and var_class != icolor_t::I_B ) {
