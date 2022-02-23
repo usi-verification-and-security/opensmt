@@ -440,11 +440,7 @@ public:
     icolor_t       getVarClass                              ( Var, const ipartitions_t & );
     icolor_t       getClauseColor                           ( CRef clause, const ipartitions_t & );
     std::unique_ptr<std::map<Var, icolor_t>> computePSFunction(const ipartitions_t &);
-    void           getPredicatesSetFromInterpolantIterative ( PTRef, std::set<PTRef>& );
-    unsigned long  getComplexityInterpolantIterative        ( PTRef, bool );
-    // Get formula complexity as number of connectives, number of distinct boolean variables
-    void           getComplexityInterpolant( PTRef int_e );
-    void           topolSortingEnode                        ( std::vector< PTRef > &, PTRef );
+
 
     PTRef computePartialInterpolantForOriginalClause(ProofNode const & n, ipartitions_t const & A_mask);
     PTRef computePartialInterpolantForTheoryClause(ProofNode const & n, ipartitions_t const & A_mask);
