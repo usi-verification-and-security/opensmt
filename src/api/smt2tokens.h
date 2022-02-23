@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+
 namespace osmttokens {
 //
 // The names for the tokens in the API for smtlib
@@ -72,7 +74,45 @@ namespace osmttokens {
         t_let,
         t_echo
     };
-
+    inline const std::unordered_set<std::string> tokenNames = {
+        "none",
+        "as",
+        "decimal",
+        "numeral",
+        "par",
+        "string",
+        "exists",
+        "forall",
+        "assert",
+        "check-sat",
+        "declare-sort",
+        "define-sort",
+        "declare-fun",
+        "declare-const",
+        "define-fun",
+        "exit",
+        "get-assertions",
+        "get-assignment",
+        "get-info",
+        "set-info",
+        "get-option",
+        "set-option",
+        "get-proof",
+        "get-unsat-core",
+        "get-value",
+        "get-model",
+        "pop",
+        "push",
+        "set-logic",
+        "get-interpolants",
+        "theory",
+        "write-state",
+        "read-state",
+        "simplify",
+        "write-funs",
+        "let",
+        "echo"
+    };
     inline const std::unordered_map<token, std::string> tokenToName = {
         {t_none, "none"},
         {t_as, "as"},

@@ -48,3 +48,8 @@ TEST_F(NameProtectionTest, test_SymbolExcapeMixed) {
     PTRef funSymbolOne = ufliaLogic.mkUninterpFun(functionOne, {ufliaLogic.mkIntVar("1")});
     ASSERT_EQ(ufliaLogic.pp(funSymbolOne), "(|1| 1)");
 }
+
+TEST_F(NameProtectionTest, test_ReservedWord) {
+    PTRef symbolLet = ufLogic.mkVar(ufLogic.getSort_bool(), "let");
+    ASSERT_EQ(ufLogic.pp(symbolLet), "|let|");
+}

@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
 #include "Substitutor.h"
+#include "smt2tokens.h"
 
 #include <iostream>
 #include <map>
@@ -112,6 +113,10 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
     return false;
 }
 
+bool Logic::isReservedWord(std::string const & name) const {
+    return osmttokens::tokenNames.find(name) != osmttokens::tokenNames.end();
+}
+
 //
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
@@ -164,7 +169,7 @@ std::string Logic::protectName(std::string const & name, SRef retSort, bool isNu
     assert(not name.empty());
     (void)retSort;
     (void)isNullary;
-    if (hasQuotableChars(name) or std::isdigit(name[0])) {
+    if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
         std::stringstream ss;
         ss << '|' << name << '|';
         return ss.str();
