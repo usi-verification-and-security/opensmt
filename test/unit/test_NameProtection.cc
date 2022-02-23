@@ -52,4 +52,8 @@ TEST_F(NameProtectionTest, test_SymbolExcapeMixed) {
 TEST_F(NameProtectionTest, test_ReservedWord) {
     PTRef symbolLet = ufLogic.mkVar(ufLogic.getSort_bool(), "let");
     ASSERT_EQ(ufLogic.pp(symbolLet), "|let|");
+    PTRef symbolLet2 = arithLogic.mkVar(arithLogic.getSort_bool(), "let");
+    ASSERT_EQ(arithLogic.pp(symbolLet2), "|let|");
+    PTRef symbolLet3 = ufliaLogic.mkVar(ufliaLogic.getSort_bool(), "let");
+    ASSERT_EQ(ufliaLogic.pp(symbolLet3), "|let|");
 }
