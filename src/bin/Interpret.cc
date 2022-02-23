@@ -389,6 +389,16 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
     return letRecords.getOrUndef(s);
 }
 
+PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const * sort) {
+    SRef sr = sortFromASTNode(*sort);
+    PTRef tr = PTRef_Undef;
+    try {
+        tr = logic->resolveTerm(name, {}, sr);
+    } catch (OsmtApiException & e) {
+        reportError(e.what());
+    }
+    return tr;
+}
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     ASTType t = term.getType();
@@ -407,19 +417,30 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     }
 
     else if (t == QID_T) {
-        const char* name = (**(term.children->begin())).getValue();
+        if ((**(term.children->begin())).getType() == AS_T) {
+
+            auto const & as_node = **(term.children->begin());
+            const char * name = (*as_node.children)[0]->getValue();
+            const ASTNode * sortNode = (*as_node.children)[1];
+            assert(name != nullptr);
+            PTRef tr = resolveQualifiedIdentifier(name, sortNode);
+            return tr;
+        } else {
+            const char *name = (**(term.children->begin())).getValue();
+            assert(name != nullptr);
 //        comment_formatted("Processing term with symbol %s", name);
-        PTRef tr = letNameResolve(name, letRecords);
-        char* msg = NULL;
-        if (tr != PTRef_Undef) {
+            PTRef tr = letNameResolve(name, letRecords);
+            if (tr != PTRef_Undef) {
 //            comment_formatted("Found a let reference to term %d", tr);
+                return tr;
+            }
+            try {
+                tr = logic->resolveTerm(name, {});
+            } catch (OsmtApiException & e) {
+                reportError(e.what());
+            }
             return tr;
         }
-        tr = logic->resolveTerm(name, {}, &msg);
-        if (tr == PTRef_Undef)
-            comment_formatted("unknown qid term %s: %s", name, msg);
-        free(msg);
-        return tr;
     }
 
     else if ( t == LQID_T ) {
@@ -439,10 +460,13 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         char* msg = NULL;
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic->resolveTerm(name, std::move(args), &msg);
+            tr = logic->resolveTerm(name, std::move(args));
         }
         catch (ArithDivisionByZeroException & ex) {
-            notify_formatted(true, ex.what());
+            reportError(ex.what());
+            return PTRef_Undef;
+        } catch (OsmtApiException & e) {
+            reportError(e.what());
             return PTRef_Undef;
         }
         if (tr == PTRef_Undef) {
