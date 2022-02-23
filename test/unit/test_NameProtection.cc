@@ -17,10 +17,10 @@ public:
 };
 
 TEST_F(NameProtectionTest, test_NumberEscape) {
-    PTRef numberOne = arithLogic.mkIntVar("1");
+    PTRef numberOne = arithLogic.mkIntConst(1);
     ASSERT_EQ(arithLogic.pp(numberOne), "1");
 
-    PTRef numberTen = arithLogic.mkIntVar("10");
+    PTRef numberTen = arithLogic.mkIntConst(10);
     ASSERT_EQ(arithLogic.pp(numberTen), "10");
 
     PTRef numericVar = arithLogic.mkIntVar("10abc");
@@ -40,12 +40,12 @@ TEST_F(NameProtectionTest, test_SymbolEscape) {
 
 TEST_F(NameProtectionTest, test_SymbolExcapeMixed) {
     PTRef symbolOne = ufliaLogic.mkVar(ufliaLogic.getSort_bool(), "1");
-    PTRef numberOne = ufliaLogic.mkIntVar("1");
+    PTRef numberOne = ufliaLogic.mkIntConst(1);
     ASSERT_EQ(ufliaLogic.pp(symbolOne), "|1|");
     ASSERT_EQ(ufliaLogic.pp(numberOne), "1");
 
     SymRef functionOne = ufliaLogic.declareFun("1", ufliaLogic.getSort_int(), {ufliaLogic.getSort_int()});
-    PTRef funSymbolOne = ufliaLogic.mkUninterpFun(functionOne, {ufliaLogic.mkIntVar("1")});
+    PTRef funSymbolOne = ufliaLogic.mkUninterpFun(functionOne, {ufliaLogic.mkIntConst(1)});
     ASSERT_EQ(ufliaLogic.pp(funSymbolOne), "(|1| 1)");
 }
 
