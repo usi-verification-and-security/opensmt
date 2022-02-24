@@ -457,40 +457,15 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                 args.push(arg_term);
         }
         assert(args.size() > 0);
-        char* msg = NULL;
+
         PTRef tr = PTRef_Undef;
         try {
             tr = logic->resolveTerm(name, std::move(args));
-        }
-        catch (ArithDivisionByZeroException & ex) {
+        } catch (ArithDivisionByZeroException &ex) {
             reportError(ex.what());
-            return PTRef_Undef;
-        } catch (OsmtApiException & e) {
+        } catch (OsmtApiException &e) {
             reportError(e.what());
-            return PTRef_Undef;
         }
-        if (tr == PTRef_Undef) {
-            notify_formatted(true, "No such symbol %s: %s", name, msg);
-            comment_formatted("The symbol %s is not defined for the given sorts", name);
-            if (logic->hasSym(name)) {
-                comment_formatted("candidates are:");
-                const vec<SymRef>& trefs = logic->symNameToRef(name);
-                for (int j = 0; j < trefs.size(); j++) {
-                    SymRef ctr = trefs[j];
-                    const Symbol& t = logic->getSym(ctr);
-                    comment_formatted(" candidate %d", j);
-                    for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic->printSort(t[k]).c_str());
-                    }
-                }
-            }
-            else
-                comment_formatted("There are no candidates.");
-            free(msg);
-            return PTRef_Undef;
-        }
-
-
         return tr;
     }
 
