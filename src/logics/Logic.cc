@@ -165,14 +165,22 @@ bool Logic::hasQuotableChars(std::string const & name) const
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name, SRef, bool) const {
+std::string Logic::protectName(std::string const & name, SRef sortRef, bool isNullary) const {
     assert(not name.empty());
+    std::string processedName = name;
+    bool needsQualifiedIdentifier = false;
+    if (isNullary) {
+        needsQualifiedIdentifier = not isKnownToUser(name) or isAmbiguousNullarySymbolName(name);
+    }
     if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
         std::stringstream ss;
         ss << '|' << name << '|';
-        return ss.str();
+        processedName = ss.str();
     }
-    return name;
+    if (needsQualifiedIdentifier) {
+        processedName = "(as " + processedName + " " + printSort(sortRef) + ')';
+    }
+    return processedName;
 }
 
 std::string Logic::printSym(SymRef sr) const {
@@ -181,24 +189,21 @@ std::string Logic::printSym(SymRef sr) const {
 
 
 std::string Logic::pp(PTRef tr) const {
-    const Pterm& t = getPterm(tr);
+    const Pterm &t = getPterm(tr);
     SymRef sr = t.symb();
     std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
-        std::stringstream ss;
-        if (isKnownToUser(sr)) {
-            ss << name_escaped;
-        } else {
-            ss << "(as " << name_escaped << " " << printSort(getSortRef(sr)) << ")";
-        }
 #ifdef PARTITION_PRETTYPRINT
-        ss << " [" << getIPartitions(tr) << ' ]';
-#endif
+        std::stringstream ss;
+        ss << name_escaped << " [" << getIPartitions(tr) << ' ]';
         return ss.str();
+#else
+        return name_escaped;
+#endif
     }
 
-    // Here we know that t.size() > 0
+    assert(t.size() > 0);
 
     std::stringstream ss;
     ss << '(' << name_escaped << ' ';
@@ -225,14 +230,10 @@ std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
 
     if (t.size() == 0) {
         std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
-        if (isKnownToUser(sr)) {
-            ss << name_escaped << (ext ? ext_string : "");
-        } else {
-            ss << "(as " << name_escaped << ext_string << " " << printSort(getSortRef(sr)) << ")";
-        }
+        ss << name_escaped << (ext ? ext_string : "");
         return ss.str();
     } else {
-        // Here we know that t.size() > 0
+        assert(t.size() > 0);
         ss << "(" << name_escaped;
         for (auto arg : t) {
             ss << " " << printTerm_(arg, ext, safe);
@@ -380,10 +381,11 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef) {
         }
         else {
             std::string argSortsString;
-            for (PTRef tr : args) {
-                argSortsString += printSort(getSortRef(tr)) + ' ';
+            for (int i = 0; i < args.size(); i++) {
+                PTRef tr = args[i];
+                argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
             }
-            throw OsmtApiException("Unknown symbol `%s' " + argSortsString + (sortRef != SRef_Undef ?  "/ " +printSort(sortRef) : ""));
+            throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " +printSort(sortRef) : "") + "'");
         }
     }
     assert(sref != SymRef_Undef);

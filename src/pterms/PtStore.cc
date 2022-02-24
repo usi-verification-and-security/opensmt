@@ -33,6 +33,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;
 
+bool PtStore::isAmbiguousNullarySymbolName(std::string const & name) const {
+    auto * values = symstore.getRefOrNull(name.c_str());
+    if (not values) {
+        return false;
+    }
+    assert(values);
+    int matches = 0;
+    for (SymRef sr : *values) {
+        if (symstore[sr].nargs() == 0) {
+            matches ++;
+        }
+        if (matches > 1) return true;
+    }
+    return false;
+}
+
 //
 // Resolves the SymRef for name s taking into account polymorphism
 // Returns SymRef_Undef if the name is not defined anywhere
