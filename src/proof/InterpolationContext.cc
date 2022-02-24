@@ -26,9 +26,7 @@ class SingleInterpolationComputationContext {
 
         PTRef partialInterpolant;
 
-        InterpolationNodeData() : AB_vars_a_colored(0), AB_vars_b_colored(0), partialInterpolant(PTRef_Undef) {
-
-        }
+        InterpolationNodeData() : AB_vars_a_colored(0), AB_vars_b_colored(0), partialInterpolant(PTRef_Undef) {}
 
         inline void clearSharedVar(int varIndex) {
             clrbit(AB_vars_a_colored, varIndex);

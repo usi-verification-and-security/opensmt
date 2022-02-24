@@ -69,8 +69,6 @@ private:
     bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 
     void ensureNoLiteralsWithoutPartition();
-
-    icolor_t getVarClass(Var v, ipartitions_t const & A_mask) const;
 };
 
 
