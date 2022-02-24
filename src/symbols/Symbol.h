@@ -49,6 +49,7 @@ struct SymbolConfig {
 
 namespace SymConf {
     constexpr auto Default = SymbolConfig{false, false, false, SymbolProperty::None};
+    constexpr auto Interpreted = SymbolConfig{true, false, false, SymbolProperty::None};
     constexpr auto LeftAssoc = SymbolConfig{false, false, false, SymbolProperty::LeftAssoc};
     constexpr auto RightAssoc = SymbolConfig{false, false, false, SymbolProperty::RightAssoc};
     constexpr auto Chainable = SymbolConfig{false, false, false, SymbolProperty::Chainable};

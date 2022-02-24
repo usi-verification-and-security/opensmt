@@ -23,6 +23,10 @@ TEST_F(NameProtectionTest, test_NumberEscape) {
     PTRef numberTen = arithLogic.mkIntConst(10);
     ASSERT_EQ(arithLogic.pp(numberTen), "10");
 
+    PTRef varOne = arithLogic.mkIntVar("1");
+    ASSERT_NE(varOne, numberOne);
+    ASSERT_EQ(arithLogic.pp(varOne), "|1|");
+
     PTRef numericVar = arithLogic.mkIntVar("10abc");
     ASSERT_EQ(arithLogic.pp(numericVar), "|10abc|");
 }
@@ -56,4 +60,14 @@ TEST_F(NameProtectionTest, test_ReservedWord) {
     ASSERT_EQ(arithLogic.pp(symbolLet2), "|let|");
     PTRef symbolLet3 = ufliaLogic.mkVar(ufliaLogic.getSort_bool(), "let");
     ASSERT_EQ(ufliaLogic.pp(symbolLet3), "|let|");
+}
+
+TEST_F(NameProtectionTest, test_AmbiguousVarPrinting) {
+    PTRef intVar = arithLogic.mkVar(arithLogic.getSort_int(), "a");
+    PTRef boolVar = arithLogic.mkVar(arithLogic.getSort_bool(), "a");
+    ASSERT_NE(intVar, boolVar);
+    std::string intVar_pp = arithLogic.pp(intVar);
+    std::string boolVar_pp = arithLogic.pp(boolVar);
+    ASSERT_EQ(intVar_pp, "(as a Int)");
+    ASSERT_EQ(boolVar_pp, "(as a Bool)");
 }

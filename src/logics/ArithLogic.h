@@ -110,7 +110,8 @@ public:
     ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
 
-    std::string      protectName(std::string const & name, SRef retSort, bool isNullary) const override;
+    bool             isAmbiguousNullarySymbolName(std::string_view name) const override;
+    std::string      protectName(std::string const & name, SRef sortRef, bool isNullary, bool isInterpreted) const override;
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
@@ -121,8 +122,8 @@ public:
     PTRef            mkConst          (SRef s, opensmt::Number const & c);
     PTRef            mkIntConst       (opensmt::Number const & c) { if (not hasIntegers()) { throw OsmtApiException("Create Int constant in non-integral logic"); } return mkConst(getSort_int(), c); }
     PTRef            mkRealConst      (opensmt::Number const & c) { if (not hasReals()) { throw OsmtApiException("Create Real constant in non-real logic"); } return mkConst(getSort_real(), c); }
-    PTRef            mkIntVar         (const char* name) { if (not hasIntegers()) { throw OsmtApiException("Create Int var in non-integral logic"); } return mkVar(sort_INT, name); }
-    PTRef            mkRealVar        (const char* name) { if (not hasReals()) { throw OsmtApiException("Create Real var in non-real logic"); } return mkVar(sort_REAL, name); }
+    PTRef            mkIntVar         (const char* name) { if (not hasIntegers()) { throw OsmtApiException("Create Int var in non-integral logic"); } return mkVar(sort_INT, name, false); }
+    PTRef            mkRealVar        (const char* name) { if (not hasReals()) { throw OsmtApiException("Create Real var in non-real logic"); } return mkVar(sort_REAL, name, false); }
 
     bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr); }
     bool             isBuiltinSortSym (SSymRef ssr) const override { return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) || Logic::isBuiltinSortSym(ssr); }

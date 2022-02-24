@@ -162,29 +162,46 @@ bool Logic::hasQuotableChars(std::string const & name) const
     return false;
 }
 
+// If the symbol corresponding to the one specified in the arguments would be ambiguous, i.e., either not known by
+// the user or there is a homonymous symbol with the same return type that is not a constant fixed by the language syntax,
+// specify the return sort.
+std::string Logic::disambiguateName(std::string const & protectedName, SRef sortRef, bool isNullary) const {
+    assert(not protectedName.empty());
+    if (not isNullary) {
+        return protectedName;
+    }
+
+    auto isQuoted = [](std::string const &s) { return s.size() > 3 and *s.begin() == '|' and *(s.end()-1) == '|'; };
+    auto name = isQuoted(protectedName) ?
+            std::string_view(protectedName.data()+1, protectedName.size()-2) : std::string_view(protectedName);
+
+    if (not isKnownToUser(name) or isAmbiguousNullarySymbolName(name)) {
+        return "(as " + std::string(protectedName) + " " + printSort(sortRef) + ')';
+    } else {
+        return protectedName;
+    }
+}
+
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name, SRef sortRef, bool isNullary) const {
+std::string Logic::protectName(std::string const & name, SRef, bool, bool) const {
     assert(not name.empty());
-    std::string processedName = name;
-    bool needsQualifiedIdentifier = false;
-    if (isNullary) {
-        needsQualifiedIdentifier = not isKnownToUser(name) or isAmbiguousNullarySymbolName(name);
-    }
     if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
-        std::stringstream ss;
-        ss << '|' << name << '|';
-        processedName = ss.str();
+        return '|' + name + '|';
     }
-    if (needsQualifiedIdentifier) {
-        processedName = "(as " + processedName + " " + printSort(sortRef) + ')';
-    }
-    return processedName;
+    return name;
 }
 
+// Return a string corresponding to the SMT lib representation of the string, with disambiguation and name protection
 std::string Logic::printSym(SymRef sr) const {
-    return protectName(sr);
+    Symbol const & symbol = getSym(sr);
+    std::string symName = getSymName(sr);
+    SRef sortRef = getSortRef(sr);
+    bool isNullary = symbol.nargs() == 0;
+    bool isInterpreted = symbol.isInterpreted();
+    std::string protectedName = protectName(symName, sortRef, isNullary, isInterpreted);
+    return disambiguateName(std::move(protectedName), sortRef, isNullary);
 }
 
 
@@ -702,8 +719,8 @@ PTRef Logic::mkConst(const char* name)
 }
 
 
-PTRef Logic::mkVar(SRef s, const char* name) {
-    SymRef sr = sym_store.newSymb(name, {s});
+PTRef Logic::mkVar(SRef s, const char* name, bool isInterpreted) {
+    SymRef sr = sym_store.newSymb(name, {s}, isInterpreted ? SymConf::Interpreted : SymConf::Default);
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -1392,7 +1409,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0);
+    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0, tpl_fun.isInterpreted());
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();
