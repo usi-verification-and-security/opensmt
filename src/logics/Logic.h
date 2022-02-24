@@ -61,7 +61,8 @@ class Logic {
 
     opensmt::Logic_t const logicType;
 
-    bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
+    bool isKnownToUser(std::string const & name) const { return name[0] != s_abstract_value_prefix[0]; }
+    bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -398,6 +399,7 @@ public:
 
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
+    bool isAmbiguousNullarySymbolName(std::string const & name) const { return term_store.isAmbiguousNullarySymbolName(name); };
     virtual std::string protectName(std::string const & name, SRef retSort, bool isNullary) const;
     std::string   protectName(SymRef sr) const { return protectName(getSymName(sr), getSortRef(sr), getSym(sr).nargs() == 0); };
     virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
