@@ -11,17 +11,20 @@ class FunctionSignature {
     SRef ret_sort;
     std::string name;
     vec<PTRef> args;
+    SymbolConfig symbolConfig;
 private:
-    FunctionSignature() : ret_sort(SRef_Undef) {}
+    FunctionSignature() : ret_sort(SRef_Undef), symbolConfig(SymConf::Default) {}
 public:
     FunctionSignature(std::string && name, vec<PTRef> && args, SRef ret_sort)
     : ret_sort(ret_sort)
     , name(std::move(name))
     , args(std::move(args))
+    , symbolConfig(SymConf::Default)
     {}
     std::string getName() const { return name; }
     SRef getRetSort() const { return ret_sort; }
     const vec<PTRef>& getArgs() const { return args; }
+    const SymbolConfig & getSymbolConfig() const { return symbolConfig; }
 };
 
 class TemplateFunction {
@@ -50,5 +53,6 @@ public:
     PTRef getBody() const { return tr_body; }
     const vec<PTRef>& getArgs() const { return signature.getArgs(); }
     void updateBody(PTRef new_body) { tr_body = new_body; }
+    bool isInterpreted() const { return signature.getSymbolConfig().isInterpreted; }
 };
 

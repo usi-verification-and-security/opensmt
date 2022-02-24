@@ -45,16 +45,16 @@ SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args, SymbolConfi
     if (symrefs) {
         const vec<SymRef>& trs = *symrefs;
         for (int i = 0; i < trs.size(); i++) {
-            if (ta[trs[i]].rsort() == args[0] && ta[trs[i]].nargs() == args.size_()-1) {
+            if (ta[trs[i]].rsort() == args[0] and ta[trs[i]].nargs() == args.size_()-1
+                    and ta[trs[i]].commutes() == symConfig.commutes
+                    and ta[trs[i]].noScoping() == symConfig.noScoping
+                    and ta[trs[i]].isInterpreted() == symConfig.isInterpreted) {
                 uint32_t j;
                 for (j = 0; j < ta[trs[i]].nargs(); j++) {
                     if (ta[trs[i]][j] != args[j+1])
                         break;
                 }
                 if (j == ta[trs[i]].nargs()) { // The term exists already
-                    //*msg = (char*)malloc(strlen(e_duplicate_symbol)+1);
-                    //strcpy(*msg, e_duplicate_symbol);
-                    //return SymRef_Undef;
                     return trs[i];
                 }
             }

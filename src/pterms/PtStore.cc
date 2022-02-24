@@ -33,8 +33,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;
 
-bool PtStore::isAmbiguousNullarySymbolName(std::string const & name) const {
-    auto * values = symstore.getRefOrNull(name.c_str());
+bool PtStore::isAmbiguousNullarySymbolName(std::string_view name) const {
+    auto * values = symstore.getRefOrNull(name.data());
     if (not values) {
         return false;
     }
@@ -47,6 +47,20 @@ bool PtStore::isAmbiguousNullarySymbolName(std::string const & name) const {
         if (matches > 1) return true;
     }
     return false;
+}
+
+vec<SymRef> PtStore::getHomonymousNullarySymbols(const std::string_view &name) const {
+    auto * values = symstore.getRefOrNull(name.data());
+    if (not values) {
+        return {};
+    }
+    vec<SymRef> ambiguousNullarySymbols;
+    for (SymRef sr : *values) {
+        if (symstore[sr].nargs() == 0) {
+            ambiguousNullarySymbols.push(sr);
+        }
+    }
+    return ambiguousNullarySymbols;
 }
 
 //

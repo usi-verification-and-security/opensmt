@@ -737,7 +737,7 @@ void Interpret::getModel() {
     ss << "(\n";
     for (SymRef symref : user_declarations) {
         const Symbol & sym = logic->getSym(symref);
-        if (sym.size() == 1) {
+        if (sym.nargs() == 0) {
             // variable, just get its value
             const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
@@ -745,8 +745,7 @@ void Interpret::getModel() {
             resolver.addForbiddenVar(term);
             PTRef val = model->evaluate(term);
             ss << printDefinitionSmtlib(term, val);
-        }
-        else {
+        } else {
             // function
             resolver.addFunction(symref);
         }
@@ -790,7 +789,7 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         auto sortString = logic->printSort(logic->getSortRef(args[i]));
-        ss << "(" << logic->pp(args[i]) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
+        ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
     ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
