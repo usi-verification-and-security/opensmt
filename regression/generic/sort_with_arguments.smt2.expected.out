@@ -1,4 +1,4 @@
-(error "No such symbol =: Unknown symbol `='")
+(error "Unknown symbol `= (U V) (U W)'")
 
 (error "assertion returns an unknown sort")
 
