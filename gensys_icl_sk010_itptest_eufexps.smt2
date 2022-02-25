@@ -1,6 +1,4 @@
 (set-logic QF_UF)
-(set-option :produce-interpolants true)
-(set-option :produce-interpolants true)
 (set-info :source |
 http://www.cs.bham.ac.uk/~vxs/quasigroups/benchmark/
 
@@ -757,5 +755,4 @@ http://www.cs.bham.ac.uk/~vxs/quasigroups/benchmark/
 (assert (not (and (and (and (and (= e4 (op e1 e0)) (= e3 (op e1 e1))) (= e2 (op e3 e5))) (= e1 (op e5 e5))) (= e0 (op e3 e2)))))
 (check-sat)
 
-(get-interpolants)
-(get-interpolants)
+
