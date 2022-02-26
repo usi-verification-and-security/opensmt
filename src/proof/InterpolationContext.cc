@@ -13,16 +13,15 @@
 
 class SingleInterpolationComputationContext {
     // Interpolation data for resolution proof element
-    struct InterpolationNodeData
-    {
+    struct InterpolationNodeData {
         // NOTE labeling rules for AB variables
         // color a:  bit 1, bit 0
         // color b:  bit 0, bit 1
         // color ab: bit 1, bit 1
         // missing:  bit 0, bit 0
         // This notation is consistent with coloring of inner nodes given by | of antecedents colorings
-        ipartitions_t      AB_vars_a_colored;
-        ipartitions_t      AB_vars_b_colored;
+        ipartitions_t AB_vars_a_colored;
+        ipartitions_t AB_vars_b_colored;
 
         PTRef partialInterpolant;
 
@@ -33,13 +32,37 @@ class SingleInterpolationComputationContext {
             clrbit(AB_vars_b_colored, varIndex);
         }
 
-        inline void    resetLabeling          () { AB_vars_a_colored = 0; AB_vars_b_colored = 0; }
-        inline bool    isColoredA             ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 1) && (tstbit(AB_vars_b_colored, i ) == 0)); }
-        inline bool    isColoredB             ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 0) && (tstbit(AB_vars_b_colored, i ) == 1)); }
-        inline bool    isColoredAB            ( int i ) const { return ((tstbit(AB_vars_a_colored, i ) == 1) && (tstbit(AB_vars_b_colored, i ) == 1)); }
-        inline void    colorA                 ( int i ) { setbit(AB_vars_a_colored, i); clrbit(AB_vars_b_colored, i); }
-        inline void    colorB                 ( int i ) { setbit(AB_vars_b_colored, i); clrbit(AB_vars_a_colored, i); }
-        inline void    colorAB                ( int i ) { setbit(AB_vars_a_colored, i); setbit(AB_vars_b_colored, i); }
+        inline void resetLabeling() {
+            AB_vars_a_colored = 0;
+            AB_vars_b_colored = 0;
+        }
+
+        inline bool isColoredA(int i) const {
+            return ((tstbit(AB_vars_a_colored, i) == 1) && (tstbit(AB_vars_b_colored, i) == 0));
+        }
+
+        inline bool isColoredB(int i) const {
+            return ((tstbit(AB_vars_a_colored, i) == 0) && (tstbit(AB_vars_b_colored, i) == 1));
+        }
+
+        inline bool isColoredAB(int i) const {
+            return ((tstbit(AB_vars_a_colored, i) == 1) && (tstbit(AB_vars_b_colored, i) == 1));
+        }
+
+        inline void colorA(int i) {
+            setbit(AB_vars_a_colored, i);
+            clrbit(AB_vars_b_colored, i);
+        }
+
+        inline void colorB(int i) {
+            setbit(AB_vars_b_colored, i);
+            clrbit(AB_vars_a_colored, i);
+        }
+
+        inline void colorAB(int i) {
+            setbit(AB_vars_a_colored, i);
+            setbit(AB_vars_b_colored, i);
+        }
     };
 
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
@@ -111,7 +134,7 @@ public:
     void backtrackTSolver();
     bool assertLiteralsToTSolver(vec<Lit> const &);
 
-    ipartitions_t const& getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
+    ipartitions_t const & getVarPartition(Var v) const { return pmanager.getIPartitions(varToPTRef(v)); }
     inline Lit PTRefToLit(PTRef ref) const {return thandler->getTMap().getLit(ref);}
     inline Var PTRefToVar(PTRef ref) const { return thandler->getTMap().getVar(ref); }
     inline PTRef varToPTRef(Var v) const { return thandler->getTMap().varToPTRef(v); }
@@ -127,12 +150,18 @@ public:
     void labelLeaf(ProofNode & n, std::map<Var, icolor_t> const * PSFunction = nullptr);
     template<typename TFun>
     void setLeafLabeling(ProofNode & node, TFun colorABVar);
-    void            setLeafMcMillanLabeling                  (ProofNode &);
-    void            setLeafPudlakLabeling                    (ProofNode &);
-    void            setLeafMcMillanPrimeLabeling             (ProofNode &);
-    void            setLeafPSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
-    void            setLeafPSWLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
-    void            setLeafPSSLabeling		(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+
+    void setLeafMcMillanLabeling(ProofNode &);
+
+    void setLeafPudlakLabeling(ProofNode &);
+
+    void setLeafMcMillanPrimeLabeling(ProofNode &);
+
+    void setLeafPSLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+
+    void setLeafPSWLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
+
+    void setLeafPSSLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
 
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
     std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
@@ -149,7 +178,6 @@ public:
     PTRef computePartialInterpolantForTheoryClause(ProofNode const & n);
 
     PTRef compInterpLabelingInner(ProofNode &);
-
 
     icolor_t getPivotColor(ProofNode const &);
 
@@ -407,7 +435,7 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolantA(ProofNode 
     std::vector<Lit> const & cl = n.getClause();
     vec<PTRef> restricted_clause;
 
-    for (Lit l: cl) {
+    for (Lit l : cl) {
         Var v = var(l);
         icolor_t var_class = getVarClass(v);
         assert(var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB);
@@ -435,7 +463,7 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolantB(ProofNode 
     std::vector<Lit> const & cl = n.getClause();
     vec<PTRef> restricted_clause;
 
-    for (Lit l: cl) {
+    for (Lit l : cl) {
         Var v = var(l);
         icolor_t var_class = getVarClass(v);
         assert(var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_AB);
@@ -486,7 +514,6 @@ SingleInterpolationComputationContext::SingleInterpolationComputationContext(
         }
         else throw OsmtInternalException("Error in computing variable colors");
     }
-
     initTSolver();
 }
 

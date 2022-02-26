@@ -20,12 +20,10 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-#include "InterpolationUtils.h"
 #include "Proof.h"
 #include "PTRef.h"
 #include "Theory.h"
 #include "THandler.h"
-#include "PartitionManager.h"
 #include "OsmtInternalException.h"
 
 #include <memory>
@@ -240,7 +238,6 @@ public:
     // Config
     //
     inline int     verbose                        ( ) const { return config.verbosity(); }
-    inline int     produceInterpolants            ( ) const { return config.produce_inter(); }
     inline int     printProofSMT                  ( ) const { return config.print_proofs_smtlib2; }
     inline int     printProofDotty                ( ) const { return config.print_proofs_dotty; }
     inline double  ratioReductionSolvingTime      ( ) const { return config.proof_ratio_red_solv; }
@@ -259,7 +256,6 @@ public:
     // Inverts the normal order Hashing + RecyclePivots
     bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
     inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
-    int             simplifyInterpolant () const { return config.getSimplifyInterpolant(); }
     //
     // Build et al.
     //
@@ -312,9 +308,6 @@ public:
     inline void       setRoot               ( clauseid_t id ) { assert( id<graph.size() ); root=id; }
 
     void		   verifyLeavesInconsistency ( );
-    // For a given partition mask try to generate interpolants with few predicates
-    // Return a vector of interpolants, and for each the set of predicates which was removed
-    void 		   removeUnnecessaryPredicates(ipartitions_t & A_mask, std::vector<PTRef>&, std::vector<std::set<PTRef>>&);
 
     //
     // Trasformation

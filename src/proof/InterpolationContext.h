@@ -48,6 +48,8 @@ private:
 
     PTRef simplifyInterpolant(PTRef itp) const;
 
+    void ensureNoLiteralsWithoutPartition();
+
     /***** CONFIGURATION ****/
 
     int verbose() const { return config.verbosity(); }
@@ -67,8 +69,6 @@ private:
     bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
 
     bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
-
-    void ensureNoLiteralsWithoutPartition();
 };
 
 
