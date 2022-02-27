@@ -77,15 +77,15 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
-%token TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%token TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %token KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS
 
 %type <tok> TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %type <tok> TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
 
-%type <str> TK_NUM TK_SYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%type <str> TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
-%type <snode> identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
+%type <snode> symbol identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
 %type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
 %type <snode> b_value option info_flag
 
@@ -95,6 +95,11 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 script: command_list { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = $1; context->insertRoot(n); };
 
+symbol: TK_SYM
+        { $$ = new ASTNode(SYM_T, $1); }
+    | TK_QSYM
+        { $$ = new ASTNode(QSYM_T, $1); }
+    ;
 
 command_list:
         { $$ = new std::vector<ASTNode*>(); }
@@ -102,11 +107,11 @@ command_list:
         { (*$1).push_back($2); $$ = $1; }
     ;
 
-command: '(' TK_SETLOGIC TK_SYM ')'
+command: '(' TK_SETLOGIC symbol ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
         }
     | '(' TK_SETOPTION option ')'
         {
@@ -120,18 +125,18 @@ command: '(' TK_SETLOGIC TK_SYM ')'
             $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($3);
         }
-    | '(' TK_DECLARESORT TK_SYM TK_NUM ')'
+    | '(' TK_DECLARESORT symbol TK_NUM ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
             $$->children->push_back(new ASTNode(NUM_T, $4));
         }
-    | '(' TK_DEFINESORT TK_SYM '(' symbol_list ')' sort ')'
+    | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
 
             ASTNode* syml = new ASTNode(SYML_T, NULL);
             syml->children = $5;
@@ -140,11 +145,11 @@ command: '(' TK_SETLOGIC TK_SYM ')'
             $$->children->push_back($7);
         }
 
-    | '(' TK_DECLAREFUN TK_SYM '(' sort_list ')' sort ')'
+    | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
 
             ASTNode* sortl = new ASTNode(SORTL_T, NULL);
             sortl->children = $5;
@@ -164,11 +169,11 @@ command: '(' TK_SETLOGIC TK_SYM ')'
 
             $$->children->push_back($4);
         }
-    | '(' TK_DEFINEFUN TK_SYM '(' sorted_var_list ')' sort term ')'
+    | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
         {
             $$ = new ASTNode(CMD_T, $2);
             $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(SYM_T, $3));
+            $$->children->push_back($3);
 
             ASTNode* svl = new ASTNode(SVL_T, NULL);
             svl->children = $5;
@@ -298,9 +303,9 @@ attribute: TK_KEY
 
 attribute_value: spec_const
         { $$ = new ASTNode(SPECC_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
-    | TK_SYM
+    | symbol
         {
-            $$ = new ASTNode(SYM_T, $1);
+            $$ = $1;
         }
     | '(' s_expr_list ')'
         {
@@ -309,10 +314,10 @@ attribute_value: spec_const
         }
     ;
 
-identifier: TK_SYM
-        { $$ = new ASTNode(SYM_T, $1); }
-    | '(' '_' TK_SYM numeral_list ')'
-        { $$ = new ASTNode(SYM_T, $3); $$->children = $4; }
+identifier: symbol
+        { $$ = $1; }
+    | '(' '_' symbol numeral_list ')'
+        { $$ = $3; $$->children = $4; }
     ;
 
 sort: identifier
@@ -338,9 +343,9 @@ s_expr: spec_const
             $$->children = new std::vector<ASTNode*>();
             $$->children->push_back($1);
         }
-    | TK_SYM
+    | symbol
         {
-            $$ = new ASTNode(SYM_T, $1);
+            $$ = $1;
         }
     | TK_KEY
         {
@@ -377,8 +382,8 @@ spec_const: TK_NUM
         { $$ = new ASTNode(STR_T, $1); }
     ;
 
-const_val: TK_SYM
-        { $$ = new ASTNode(SYM_T, $1); }
+const_val: symbol
+        { $$ = $1; }
     | spec_const
         { $$ = $1; }
     ;
@@ -406,8 +411,8 @@ var_binding_list:
         { $1->push_back($2); $$ = $1; }
     ;
 
-var_binding: '(' TK_SYM term ')'
-        { $$ = new ASTNode(VARB_T, $2); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
+var_binding: '(' symbol term ')'
+        { $$ = new ASTNode(VARB_T, strdup($2->getValue())); delete $2; $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
     ;
 
 sorted_var_list:
@@ -416,8 +421,8 @@ sorted_var_list:
         { $1->push_back($2); $$ = $1; }
     ;
 
-sorted_var: '(' TK_SYM sort ')'
-        { $$ = new ASTNode(SV_T, $2);  $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
+sorted_var: '(' symbol sort ')'
+        { $$ = new ASTNode(SV_T, strdup($2->getValue())); delete $2; $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
 
 term_list:
         { $$ = new std::vector<ASTNode*>(); }
@@ -480,18 +485,19 @@ term: spec_const
 
 symbol_list:
         { $$ = new std::vector<ASTNode*>(); }
-    | symbol_list TK_SYM
-        { $1->push_back(new ASTNode(SYM_T, $2)); $$ = $1; }
+    | symbol_list symbol
+        { $1->push_back($2); $$ = $1; }
     ;
 
-b_value: TK_SYM
+b_value: symbol
         {
-            if (strcmp($1, "true") == 0 or strcmp($1, "false") == 0) {
-                $$ = new ASTNode(BOOL_T, $1);
+            const char * str = $1->getValue();
+            if (strcmp(str, "true") == 0 or strcmp(str, "false") == 0) {
+                $$ = new ASTNode(BOOL_T, strdup($1->getValue())); delete $1;
             }
             else {
-                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", $1);
-                free($1);
+                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", str);
+                delete $1;
                 YYERROR;
             }
         }

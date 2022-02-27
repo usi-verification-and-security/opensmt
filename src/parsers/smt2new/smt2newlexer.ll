@@ -162,7 +162,7 @@ using namespace osmttokens;
   \n            { yyextra->insertBuf('\n');                                      }
   [^ \t\n\\\|]  { yyextra->insertBuf(yyget_text(yyscanner)[0]);                  }
   \|            { yylval->str = strdup(yyextra->getBuf()); yyextra->clearBuf();
-                    yy_pop_state(yyscanner); return TK_SYM;                      }
+                    yy_pop_state(yyscanner); return TK_QSYM;                     }
   \\            { printf("Syntax error at line %d near %s, \\ not allowed inside | ... |\n", yyget_lineno(yyscanner), yyget_text(yyscanner)); exit(1); }
 }
 
