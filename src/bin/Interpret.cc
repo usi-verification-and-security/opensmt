@@ -184,7 +184,7 @@ void Interpret::interp(ASTNode& n) {
                     assert(n.children and n.children->size() == 2);
                     auto it = n.children->begin();
                     ASTNode & symbolNode = **it;
-                    assert(symbolNode.getType() == SYM_T);
+                    assert(symbolNode.getType() == SYM_T or symbolNode.getType() == QSYM_T);
                     ++it;
                     ASTNode & numNode = **it;
                     assert(numNode.getType() == NUM_T);
@@ -518,7 +518,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 
         if (strcmp(name_attr.getValue(), ":named") == 0) {
             ASTNode& sym = **(name_attr.children->begin());
-            assert(sym.getType() == SYM_T);
+            assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
             if (nameToTerm.has(sym.getValue())) {
                 notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
@@ -1164,24 +1164,26 @@ int Interpret::interpPipe() {
 }
 
 SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
-    if (node.getType() == SYM_T) {
+    auto type = node.getType();
+    if (type == SYM_T or type == QSYM_T) {
         return {node.getValue(), 0};
     } else {
-        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        assert(type == LID_T and node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
         return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
     }
 }
 
 SRef Interpret::sortFromASTNode(ASTNode const & node) const {
-    if (node.getType() == SYM_T) {
+    auto type = node.getType();
+    if (type == SYM_T or type == QSYM_T) {
         SortSymbol symbol(node.getValue(), 0);
         SSymRef symRef;
         bool known = logic->peekSortSymbol(symbol, symRef);
         if (not known) { return SRef_Undef; }
         return logic->getSort(symRef, {});
     } else {
-        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        assert(type == LID_T and node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
         SortSymbol symbol(name.getValue(), node.children->size() - 1);
         SSymRef symRef;
@@ -1195,7 +1197,7 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         }
         return logic->getSort(symRef, std::move(args));
     }
-    assert(node.getType() == LID_T and node.children and not node.children->empty());
+    assert(type == LID_T and node.children and not node.children->empty());
     ASTNode const & name = **(node.children->begin());
     SortSymbol symbol(name.getValue(), node.children->size() - 1);
     SSymRef symRef;

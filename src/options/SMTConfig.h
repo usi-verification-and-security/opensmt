@@ -41,6 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 enum ASTType {
       CMD_T      , CMDL_T
     , SYM_T      , SYML_T
+    , QSYM_T     , QSYML_T
     , NUM_T      , NUML_T
     , SORT_T     , SORTL_T
     , SV_T       , SVL_T
