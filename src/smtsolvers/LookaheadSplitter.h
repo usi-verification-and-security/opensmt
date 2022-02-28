@@ -69,6 +69,8 @@ protected:
     };
 
 public:
+    std::vector<SplitData> splits;
+
     LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
 };
 
