@@ -150,7 +150,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SymbolConfig
     }
 
     auto endOfMatches = std::remove_if(candidates.begin(), candidates.end(),
-                                       [this, &symbolConfig](SymRef sr) { return symstore[sr].isInterpreted() and symbolConfig.isInterpreted; });
+                                       [this, &symbolConfig](SymRef sr) { return symstore[sr].isInterpreted() != symbolConfig.isInterpreted; });
     candidates.erase(endOfMatches, candidates.end());
 
     if (candidates.empty()) {

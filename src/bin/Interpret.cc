@@ -389,11 +389,11 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
     return letRecords.getOrUndef(s);
 }
 
-PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & sort) {
+PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted) {
     SRef sr = sortFromASTNode(sort);
     PTRef tr = PTRef_Undef;
     try {
-        tr = logic->resolveTerm(name, {}, sr);
+        tr = logic->resolveTerm(name, {}, sr, isQuoted);
     } catch (OsmtApiException & e) {
         reportError(e.what());
     }
@@ -419,20 +419,24 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     else if (t == QID_T) {
         if ((**(term.children->begin())).getType() == AS_T) {
             auto const & as_node = **(term.children->begin());
+            ASTNode const * symbolNode = (*as_node.children)[0];
+            bool isQuoted = symbolNode->getType() == QSYM_T;
             const char * name = (*as_node.children)[0]->getValue();
             ASTNode const & sortNode = *(*as_node.children)[1];
             assert(name != nullptr);
-            PTRef tr = resolveQualifiedIdentifier(name, sortNode);
+            PTRef tr = resolveQualifiedIdentifier(name, sortNode, isQuoted);
             return tr;
         } else {
-            const char *name = (**(term.children->begin())).getValue();
+            ASTNode const * symbolNode = (*(term.children->begin()));
+            char const * name = symbolNode->getValue();
+            bool isQuoted = symbolNode->getType() == QSYM_T;
             assert(name != nullptr);
             PTRef tr = letNameResolve(name, letRecords);
             if (tr != PTRef_Undef) {
                 return tr;
             }
             try {
-                tr = logic->resolveTerm(name, {});
+                tr = logic->resolveTerm(name, {}, SRef_Undef, isQuoted);
             } catch (OsmtApiException & e) {
                 reportError(e.what());
             }

@@ -150,7 +150,7 @@ class Interpret {
 
     bool                        addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords);
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
-    PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort);
+    PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 
 
   public:
