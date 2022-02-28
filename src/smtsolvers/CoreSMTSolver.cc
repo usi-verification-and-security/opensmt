@@ -594,10 +594,6 @@ Lit CoreSMTSolver::choosePolarity(Var next) {
 
 Lit CoreSMTSolver::pickBranchLit()
 {
-    Lit fs = lit_Undef;
-    if ((fs = doForcedSplit()) != lit_Undef ) // A non-convex theory forces a branch
-        return fs;
-
     Var next = var_Undef;
 
    // Pick a variable either randomly or based on activity

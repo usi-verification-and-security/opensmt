@@ -360,7 +360,6 @@ protected:
     double              max_learnts;
     double              learntsize_adjust_confl;
     int                 learntsize_adjust_cnt;
-
     // Resource contraints:
     //
     int64_t             conflict_budget;    // -1 means no budget.
@@ -371,15 +370,6 @@ protected:
     //
     virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
-    Lit      doForcedSplit() {
-        if (forced_split != lit_Undef) {
-            assert(value(var(forced_split)) == l_Undef);
-            Lit fs = forced_split;
-            forced_split = lit_Undef;
-            return fs;
-        }
-        return lit_Undef;
-    }
     Var doRandomDecision();
     Lit choosePolarity(Var next);
     virtual Var doActivityDecision();
