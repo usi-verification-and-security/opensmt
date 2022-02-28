@@ -12,7 +12,7 @@
 #include "VerificationUtils.h"
 
 bool
-ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
+ProofGraph::verifyPartialInterpolant(ProofNode const & n, const ipartitions_t& mask)
 {
     if(verbose())
         std::cout << "; Verifying partial interpolant" << '\n';
@@ -34,13 +34,13 @@ ProofGraph::verifyPartialInterpolant(ProofNode *n, const ipartitions_t& mask)
 }
 
 bool
-ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
+ProofGraph::verifyPartialInterpolantA(ProofNode const & n, const ipartitions_t& mask)
 {
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
     Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
-    std::vector< Lit > & cl = n->getClause();
+    std::vector< Lit > const & cl = n.getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
@@ -56,7 +56,7 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
             if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
             else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
             else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
+            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n.getId()));
         }
         if( var_color == icolor_t::I_A || var_color == icolor_t::I_AB )
         {
@@ -77,19 +77,19 @@ ProofGraph::verifyPartialInterpolantA(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, n->getPartialInterpolant());
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, n.getPartialInterpolant());
     assert(res);
     return res;
 }
 
 bool
-ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
+ProofGraph::verifyPartialInterpolantB(ProofNode const & n, const ipartitions_t& mask)
 {
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat 
     Logic& logic = this->logic_;
     icolor_t var_class;
     icolor_t var_color;
-    std::vector< Lit > & cl = n->getClause();
+    std::vector< Lit > const & cl = n.getClause();
     vec<PTRef> restricted_clause;
 
     const size_t size = cl.size( );
@@ -105,7 +105,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
             if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
             else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
             else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
-            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
+            else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n.getId()));
         }
         if( var_color == icolor_t::I_B || var_color == icolor_t::I_AB )
         {
@@ -126,7 +126,7 @@ ProofGraph::verifyPartialInterpolantB(ProofNode *n, const ipartitions_t& mask)
     cout << "; PARTIAL INTERPOLANT IS " << logic.printTerm(n->getPartialInterpolant()) << endl;
     */
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(n->getPartialInterpolant()));
+    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(n.getPartialInterpolant()));
     assert(res);
     return res;
 }

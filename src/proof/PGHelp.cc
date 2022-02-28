@@ -25,7 +25,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <deque>
 
 short ProofNode::hasOccurrenceBin(Var v) {
-    std::vector<Lit>& cla = getClause();
+    std::vector<Lit> const & cla = getClause();
     int first=0;
     int last=cla.size()-1;
 
@@ -536,9 +536,9 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 				// 1) At least an antecedent has local variables
 				// 2) The resolvent has only AB variables
 				bool resolvent_is_clean = false;
-				std::vector<Lit>& c1 = n->getAnt1()->getClause();
-				std::vector<Lit>& c2 = n->getAnt2()->getClause();
-				std::vector<Lit>& c = n->getClause();
+				std::vector<Lit> const & c1 = n->getAnt1()->getClause();
+				std::vector<Lit> const & c2 = n->getAnt2()->getClause();
+				std::vector<Lit> const & c = n->getClause();
 
 				for(unsigned i = 0; i < c1.size(); i++)
 				{
@@ -576,7 +576,7 @@ void ProofGraph::analyzeProofLocality(const ipartitions_t & A_mask)
 				// 1) The leaf has only AB variables
 				bool clause_has_A_local = false;
 				bool clause_has_B_local = false;
-				std::vector<Lit>& c = n->getClause();
+				std::vector<Lit> const & c = n->getClause();
 
 				for(unsigned i = 0; i < c.size(); i++)
 				{

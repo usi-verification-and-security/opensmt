@@ -218,7 +218,7 @@ void ProofGraph::produceSingleInterpolant ( vec<PTRef> &interpolants, const ipar
             assert ( partial_interp != PTRef_Undef );
             n->setPartialInterpolant ( partial_interp );
             if (enabledPedInterpVerif()) {
-                verifyPartialInterpolant(n, A_mask);
+                verifyPartialInterpolant(*n, A_mask);
             }
         }
         else
@@ -410,9 +410,9 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
             else
             {
                 // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
-                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
+                if ( isColoredA ( *n, v ) ) var_color = icolor_t::I_A;
+                else if ( isColoredB ( *n, v )  ) var_color = icolor_t::I_B;
+                else if ( isColoredAB ( *n, v ) ) var_color = icolor_t::I_AB;
                 else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
 
@@ -470,9 +470,9 @@ PTRef ProofGraph::compInterpLabelingOriginal(ProofNode * n, const ipartitions_t 
             else
             {
                 // Determine color of AB variable
-                if ( isColoredA ( n, v ) ) var_color = icolor_t::I_A;
-                else if ( isColoredB ( n, v )  ) var_color = icolor_t::I_B;
-                else if ( isColoredAB ( n, v ) ) var_color = icolor_t::I_AB;
+                if ( isColoredA ( *n, v ) ) var_color = icolor_t::I_A;
+                else if ( isColoredB ( *n, v )  ) var_color = icolor_t::I_B;
+                else if ( isColoredAB ( *n, v ) ) var_color = icolor_t::I_AB;
                 else throw OsmtInternalException("Variable " + std::to_string(v) + " has no color in clause " + std::to_string(n->getId()));
             }
 

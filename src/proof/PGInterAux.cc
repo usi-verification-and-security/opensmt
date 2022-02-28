@@ -74,9 +74,9 @@ icolor_t ProofGraph::getVarColor( ProofNode* n , Var v)
     if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
     else if (  var_class == icolor_t::I_AB )
     {
-        if ( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-        else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-        else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
+        if ( isColoredA( *n,v ) ) var_color = icolor_t::I_A;
+        else if ( isColoredB( *n,v )  ) var_color = icolor_t::I_B;
+        else if ( isColoredAB( *n,v ) ) var_color = icolor_t::I_AB;
         else
         {
             throw OsmtInternalException("Var has no label");
@@ -107,20 +107,20 @@ icolor_t ProofGraph::getPivotColor( ProofNode* n )
 	if ( var_class == icolor_t::I_A || var_class == icolor_t::I_B ) var_color = var_class;
 	else if (  var_class == icolor_t::I_AB )
 	{
-		if( isColoredA( n,v ) ) var_color = icolor_t::I_A;
-		else if ( isColoredB( n,v )  ) var_color = icolor_t::I_B;
-		else if ( isColoredAB( n,v ) ) var_color = icolor_t::I_AB;
+		if( isColoredA( *n,v ) ) var_color = icolor_t::I_A;
+		else if ( isColoredB( *n,v )  ) var_color = icolor_t::I_B;
+		else if ( isColoredAB( *n,v ) ) var_color = icolor_t::I_AB;
 		else
 		{
 			icolor_t var_color_1=icolor_t::I_UNDEF;
-			if( isColoredA( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_A;
-			else if ( isColoredB( n->getAnt1(),v )  ) var_color_1 = icolor_t::I_B;
-			else if ( isColoredAB( n->getAnt1(),v ) ) var_color_1 = icolor_t::I_AB;
+			if( isColoredA( *(n->getAnt1()),v ) ) var_color_1 = icolor_t::I_A;
+			else if ( isColoredB( *(n->getAnt1()),v )  ) var_color_1 = icolor_t::I_B;
+			else if ( isColoredAB( *(n->getAnt1()),v ) ) var_color_1 = icolor_t::I_AB;
 
 			icolor_t var_color_2=icolor_t::I_UNDEF;
-			if( isColoredA( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_A;
-			else if ( isColoredB( n->getAnt2(),v )  ) var_color_2 = icolor_t::I_B;
-			else if ( isColoredAB( n->getAnt2(),v ) ) var_color_2 = icolor_t::I_AB;
+			if( isColoredA( *(n->getAnt2()),v ) ) var_color_2 = icolor_t::I_A;
+			else if ( isColoredB( *(n->getAnt2()),v )  ) var_color_2 = icolor_t::I_B;
+			else if ( isColoredAB( *(n->getAnt2()),v ) ) var_color_2 = icolor_t::I_AB;
 
 			std::cerr << "Pivot " << v << " has colors " << colorToString(var_color_1) << " " << colorToString(var_color_2) <<
 					" in antecedents but no color in resolvent" << '\n';

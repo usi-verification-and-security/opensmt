@@ -188,7 +188,8 @@ struct ProofNode
     // Getty methods
     //
     inline clauseid_t            getId                  ( ) const { return id; }
-    inline std::vector<Lit>&          getClause              ( )       { assert(clause); return *clause; }
+    inline std::vector<Lit> const& getClause            ( ) const { assert(clause); return *clause; }
+    inline std::vector<Lit> &    getClause              ( )       { assert(clause); return *clause; }
     inline std::vector<Lit>*          getPClause             ( )       { return clause; }
     inline size_t                getClauseSize          ( ) const { return clause->size( ); }
     inline Var                   getPivot               ( ) const { return pivot; }
@@ -236,9 +237,9 @@ struct ProofNode
         clrbit( i_data->AB_vars_b_colored, i );
     }
     inline void    resetLabeling          () { i_data->AB_vars_a_colored = 0; i_data->AB_vars_b_colored = 0; }
-    inline bool    isColoredA             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
-    inline bool    isColoredB             ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
-    inline bool    isColoredAB            ( int i ) { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline bool    isColoredA             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 0)); }
+    inline bool    isColoredB             ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 0) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
+    inline bool    isColoredAB            ( int i ) const { return ((tstbit(i_data->AB_vars_a_colored, i ) == 1) && (tstbit(i_data->AB_vars_b_colored, i ) == 1)); }
     inline void    colorA                 ( int i ) { setbit( i_data->AB_vars_a_colored, i ); clrbit( i_data->AB_vars_b_colored, i ); }
     inline void    colorB                 ( int i ) { setbit( i_data->AB_vars_b_colored, i ); clrbit( i_data->AB_vars_a_colored, i ); }
     inline void    colorAB                ( int i ) { setbit( i_data->AB_vars_a_colored, i ); setbit( i_data->AB_vars_b_colored, i ); }
@@ -286,9 +287,9 @@ public:
 			if(getNode(i)!=NULL) removeNode(i);
 	}
 
-    bool verifyPartialInterpolant(ProofNode*, const ipartitions_t&);
-    bool verifyPartialInterpolantA(ProofNode*, const ipartitions_t&);
-    bool verifyPartialInterpolantB(ProofNode*, const ipartitions_t&);
+    bool verifyPartialInterpolant(ProofNode const &, const ipartitions_t&);
+    bool verifyPartialInterpolantA(ProofNode const &, const ipartitions_t&);
+    bool verifyPartialInterpolantB(ProofNode const &, const ipartitions_t&);
 
     void produceSingleInterpolant           (vec<PTRef>& interpolants);
     void produceSingleInterpolant           (vec<PTRef>& interpolants, const ipartitions_t& A_mask);
@@ -412,9 +413,9 @@ public:
     // Translation from var info obtained through above function
     icolor_t getVarClass2(Var);
     inline void    resetLabeling          ( ProofNode* n ){ n->resetLabeling(); }
-    inline bool    isColoredA             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredA( AB_vars_mapping[v] ); }
-    inline bool    isColoredB             ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredB( AB_vars_mapping[v] ); }
-    inline bool    isColoredAB            ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n->isColoredAB( AB_vars_mapping[v] ); }
+    inline bool    isColoredA             ( ProofNode const & n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n.isColoredA( AB_vars_mapping[v] ); }
+    inline bool    isColoredB             ( ProofNode const & n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n.isColoredB( AB_vars_mapping[v] ); }
+    inline bool    isColoredAB            ( ProofNode const & n, Var v ) { assert ( AB_vars_mapping[v]>= 0); return n.isColoredAB( AB_vars_mapping[v] ); }
     inline void    colorA                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorA( AB_vars_mapping[v] ); }
     inline void    colorB                 ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorB( AB_vars_mapping[v] ); }
     inline void    colorAB                ( ProofNode* n, Var v ) { assert ( AB_vars_mapping[v]>= 0); n->colorAB( AB_vars_mapping[v] ); }
@@ -427,7 +428,7 @@ public:
     icolor_t getVarColor(ProofNode* n, Var v);
 
     void 		   analyzeProofLocality   (const ipartitions_t &);
-    void 		   verifyPartialInterpolantFromLeaves ( ProofNode*, const ipartitions_t& mask );
+    void 		   verifyPartialInterpolantFromLeaves(ProofNode const &, const ipartitions_t& mask);
     void		   verifyLeavesInconsistency ( );
     void  		   verifyInductiveSequence ( );
     bool		   decideOnAlternativeInterpolation(ProofNode*);
