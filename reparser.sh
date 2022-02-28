@@ -33,8 +33,8 @@ do
         for j in $(seq 1 $length) ; do
             assert_name+=${symbols:RANDOM % count_symbols:1}
         done
+        echo $line |sed 's/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g' >> temp.txt
         sed -e "$i s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g" $FILE > temp.txt;
-        cat temp.txt > $FILE;
         if [ $((i%2)) == 1 ]
         then
           sed -e "/(get-interpolants/ s/(get-interpolants (\(.*\)) (\(.*\)))/(get-interpolants (\1$assert_name ) (\2))/g" $FILE > temp.txt;
@@ -43,11 +43,14 @@ do
         fi
         cat temp.txt > $FILE;
         let i++;
-      fi
+       else
+          echo $line >> temp.txt
+       fi
 #      echo $line;
       if [ $asserts == 0 ]
       then
         let i++;
       fi
     done < $FILE
+    cat temp.txt > $FILE;
 done
