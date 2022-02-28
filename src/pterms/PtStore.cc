@@ -67,7 +67,7 @@ vec<SymRef> PtStore::getHomonymousNullarySymbols(std::string_view name) const {
 // Resolves the SymRef for name s taking into account polymorphism
 // Returns SymRef_Undef if the name is not defined anywhere
 //
-SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
+SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SymbolConfig const & symbolConfig, SRef sort) {
     auto* values = symstore.getRefOrNull(s);
     std::vector<SymRef> candidates;
     if (values) {
@@ -148,6 +148,11 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
             }
         }
     }
+
+    auto endOfMatches = std::remove_if(candidates.begin(), candidates.end(),
+                                       [this, &symbolConfig](SymRef sr) { return symstore[sr].isInterpreted() and symbolConfig.isInterpreted; });
+    candidates.erase(endOfMatches, candidates.end());
+
     if (candidates.empty()) {
         return SymRef_Undef; // Not found
     } else if (candidates.size() == 1 and sort == SRef_Undef) {
