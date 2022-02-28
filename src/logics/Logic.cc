@@ -193,7 +193,7 @@ std::string Logic::protectName(std::string const & name, SRef, bool, bool) const
     return name;
 }
 
-// Return a string corresponding to the SMT lib representation of the string, with disambiguation and name protection
+// Return a string corresponding to the SMT lib representation of the symbol, with disambiguation and name protection
 std::string Logic::printSym(SymRef sr) const {
     Symbol const & symbol = getSym(sr);
     std::string symName = getSymName(sr);
@@ -211,13 +211,7 @@ std::string Logic::pp(PTRef tr) const {
     std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
-#ifdef PARTITION_PRETTYPRINT
-        std::stringstream ss;
-        ss << name_escaped << " [" << getIPartitions(tr) << ' ]';
-        return ss.str();
-#else
         return name_escaped;
-#endif
     }
 
     assert(t.size() > 0);
