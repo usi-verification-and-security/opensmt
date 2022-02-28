@@ -377,7 +377,7 @@ void ProofGraph::fillProofGraph()
 
     std::vector<clauseid_t> q;
     clauseid_t id;
-    ProofNode* n=NULL;
+    ProofNode* n = nullptr;
     q.push_back(getRoot()->getId());
     do
     {
