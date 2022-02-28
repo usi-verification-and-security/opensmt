@@ -25,7 +25,8 @@ class InterpolationContext {
     std::unique_ptr<ProofGraph> proof_graph;
 public:
     InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
-                         PartitionManager& pmanager , int n = -1 );
+                         PartitionManager & pmanager, int n = -1);
+
     ~InterpolationContext();
 
     void printProofDotty();
