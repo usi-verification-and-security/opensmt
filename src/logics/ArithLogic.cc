@@ -269,6 +269,20 @@ void ArithLogic::termSort(vec<PTRef>& v) const
     sort(v, LessThan_deepPTRef(*this));
 }
 
+std::string ArithLogic::protectName(std::string const & name, SRef retSort, bool isNullary) const {
+    assert(not name.empty());
+    // TODO: We cannot use isNumConst here since it takes a SymRef.  We cannot take a SymRef because this
+    // function needs to be callable from TemplateFunction, which does not have a SymRef.
+    if (isSortNum(retSort) and isNullary and std::all_of(name.begin(), name.end(), [](unsigned char c) { return std::isdigit(c); })) {
+        return name; // Is a number, no escaping
+    } else if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
+        std::stringstream ss;
+        ss << '|' << name << '|';
+        return ss.str();
+    }
+    return name;
+}
+
 bool ArithLogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sym_store[sr].isInterpreted()) return true;

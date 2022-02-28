@@ -396,8 +396,10 @@ public:
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
 
-    bool          hasQuotableChars(std::string const & name) const;
-    std::string   protectName(const std::string& name) const;
+    bool hasQuotableChars(std::string const & name) const;
+    bool isReservedWord(std::string const & name) const;
+    virtual std::string protectName(std::string const & name, SRef retSort, bool isNullary) const;
+    std::string   protectName(SymRef sr) const { return protectName(getSymName(sr), getSortRef(sr), getSym(sr).nargs() == 0); };
     virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
     std::string printTerm          (PTRef tr)                 const { return printTerm_(tr, false, false); }
     std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }

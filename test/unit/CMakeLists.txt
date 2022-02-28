@@ -227,3 +227,11 @@ target_sources(LASolverIncrementalityTest
 
 target_link_libraries(LASolverIncrementalityTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET LASolverIncrementalityTest)
+
+add_executable(NameProtectionTest)
+target_sources(NameProtectionTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_NameProtection.cc"
+        )
+
+target_link_libraries(NameProtectionTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET NameProtectionTest)

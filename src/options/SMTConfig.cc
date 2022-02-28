@@ -475,7 +475,6 @@ const char* SMTConfig::o_certify_inter = ":certify-interpolants";
 const char* SMTConfig::o_simplify_inter = ":simplify-interpolants";
 const char* SMTConfig::o_interpolant_cnf = ":cnf-interpolants";
 const char* SMTConfig::o_proof_struct_hash       = ":proof-struct-hash";
-const char* SMTConfig::o_proof_struct_hash_build = ":proof-struct-hash-build";
 const char* SMTConfig::o_proof_check   = ":proof-check";
 const char* SMTConfig::o_proof_multiple_inter    = ":proof-interpolation-property";
 const char* SMTConfig::o_proof_alternative_inter = ":proof-alternative-inter";

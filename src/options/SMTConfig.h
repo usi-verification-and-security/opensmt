@@ -266,7 +266,6 @@ public:
   static const char* o_proof_rec_piv;
   static const char* o_proof_push_units;
   static const char* o_proof_transf_trav;
-  static const char* o_proof_struct_hash_build;
   static const char* o_proof_check;
   static const char* o_proof_multiple_inter;
   static const char* o_proof_alternative_inter;
@@ -597,9 +596,6 @@ public:
   int proof_transf_trav() const
     { return optionTable.has(o_proof_transf_trav) ?
         optionTable[o_proof_transf_trav]->getValue().numval : 1; }
-  int proof_struct_hash_build() const
-    { return optionTable.has(o_proof_struct_hash_build) ?
-        optionTable[o_proof_struct_hash_build]->getValue().numval : 0; }
   int proof_check() const
     { return optionTable.has(o_proof_check) ?
         optionTable[o_proof_check]->getValue().numval : 0; }

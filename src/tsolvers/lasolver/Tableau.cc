@@ -170,7 +170,6 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
                        assert(contains(getColumn(removedVar), rowVar));
                        removeRowFromColumn(rowVar, removedVar);
                    }
-                   , tmp_storage
         );
     }
     assert(!cols[nv.x]);
@@ -267,7 +266,7 @@ void Tableau::normalizeRow(LVRef v) {
     }
     for (LVRef var : toEliminate) {
         auto const coeff = row.removeVar(var);
-        row.merge(getRowPoly(var), coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
+        row.merge(getRowPoly(var), coeff);
     }
 }
 

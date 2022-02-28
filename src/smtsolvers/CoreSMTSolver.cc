@@ -100,7 +100,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
-    , forced_split          (lit_Undef)
 
     , ok                    (true)
     , conflict_frame        (0)
@@ -558,13 +557,6 @@ Lit CoreSMTSolver::pickBranchLit()
 #ifdef STATISTICS
     opensmt::StopWatch s(branchTimer);
 #endif
-    if (forced_split != lit_Undef) {
-        assert(value(var(forced_split)) == l_Undef);
-        Lit fs = forced_split;
-        forced_split = lit_Undef;
-        return fs;
-    }
-
     Var next = var_Undef;
 
     // Random decision:

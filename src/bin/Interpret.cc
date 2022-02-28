@@ -702,7 +702,7 @@ public:
                     newArgs.push(var);
                     substMap.insert(oldArg, var);
                 }
-                FunctionSignature templateSig(logic.protectName(logic.getSymName(symRef)), std::move(newArgs), logic.getSortRef(symRef));
+                FunctionSignature templateSig(logic.protectName(symRef), std::move(newArgs), logic.getSortRef(symRef));
                 PTRef newBody = Substitutor(logic, substMap).rewrite(modelTemplate.getBody());
                 res.emplace_back(std::move(templateSig), newBody);
 
@@ -778,7 +778,7 @@ void Interpret::getModel() {
  */
 std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
-    auto s = logic->protectName(logic->getSymName(tr));
+    auto s = logic->protectName(logic->getSymRef(tr));
     SRef sortRef = logic->getSym(tr).rsort();
     ss << "  (define-fun " << s << " () " << logic->printSort(sortRef) << '\n';
     ss << "    " << logic->printTerm(val) << ")\n";

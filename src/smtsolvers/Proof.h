@@ -166,7 +166,7 @@ public:
         return res;
     }
 
-    std::unordered_map< CRef, ProofDer> const & getProof() const { return clause_to_proof_der; }
+    std::unordered_map<CRef, ProofDer> const & getProof() const { return clause_to_proof_der; }
 
 private:
     // Helper methods

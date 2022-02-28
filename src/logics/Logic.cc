@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
 #include "Substitutor.h"
+#include "smt2tokens.h"
 
 #include <iostream>
 #include <map>
@@ -112,6 +113,10 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
     return false;
 }
 
+bool Logic::isReservedWord(std::string const & name) const {
+    return osmttokens::tokenNames.find(name) != osmttokens::tokenNames.end();
+}
+
 //
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
@@ -160,9 +165,9 @@ bool Logic::hasQuotableChars(std::string const & name) const
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name) const
-{
-    if (hasQuotableChars(name)) {
+std::string Logic::protectName(std::string const & name, SRef, bool) const {
+    assert(not name.empty());
+    if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
         std::stringstream ss;
         ss << '|' << name << '|';
         return ss.str();
@@ -170,9 +175,8 @@ std::string Logic::protectName(std::string const & name) const
     return name;
 }
 
-std::string Logic::printSym(SymRef sr) const
-{
-    return protectName(sym_store.getName(sr));
+std::string Logic::printSym(SymRef sr) const {
+    return protectName(sr);
 }
 
 
@@ -1390,7 +1394,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name);
+    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();

@@ -265,21 +265,18 @@ public:
 	ProofGraph ( SMTConfig &  c
 			, Theory &        th
 			, TermMapper &    termMapper
-			, Proof const &   t
+			, Proof const &   proof
 			, PartitionManager & pmanager
 			, int             n = -1 )
 : config   ( c )
-, proof	   ( t )
 , logic_ ( th.getLogic() )
 , pmanager (pmanager)
 , thandler {new THandler(th, termMapper)}
-, graph_   ( new std::vector<ProofNode*> )
-, graph    ( *graph_ )
-, vars_suggested_color_map ( NULL )
+, vars_suggested_color_map ( nullptr )
 {
 		mpz_init(visited_1);
 		mpz_init(visited_2);
-		buildProofGraph( n );
+		buildProofGraph(proof, n);
 		initTSolver();
 }
 
@@ -289,7 +286,6 @@ public:
 		mpz_clear(visited_2);
 		for(size_t i=0;i<getGraphSize();i++)
 			if(getNode(i)!=NULL) removeNode(i);
-		delete graph_;
 	}
 
     bool verifyPartialInterpolant(ProofNode*, const ipartitions_t&);
@@ -343,7 +339,6 @@ public:
     bool			enabledPushDownUnits() { return (config.proof_push_units() >=1); }
     bool			enabledTransfTraversals() { return (config.proof_transf_trav() >= 1); }
     bool			enabledStructuralHashing() { return (config.proof_struct_hash() >= 1); }
-    bool			enabledStructuralHashingWhileBuilding() { return (config.proof_struct_hash_build() >= 1); }
     // Inverts the normal order Hashing + RecyclePivots
     bool			switchToRPHashing()			{ return (config.proof_switch_to_rp_hash >= 1);}
     inline bool    additionalRandomization       ( ) { return ( config.proof_random_context_analysis == 1 ); }
@@ -351,7 +346,6 @@ public:
     //
     // Build et al.
     //
-    void           buildProofGraph               ( int );
     void		   emptyProofGraph				 ();					// Empties all clauses besides leaves
     void 		   fillProofGraph				 ();					// Explicitly compute all clauses
     int            cleanProofGraph               ( );                   // Removes proof leftovers
@@ -506,6 +500,8 @@ public:
     bool            allowSwapRuleForCNFinterpolant(RuleContext& ra);
 
 private:
+    void buildProofGraph(Proof const & proof, int varCount);
+    ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, Proof const & proof); // Helper method for building the proof graph
 
     inline Lit PTRefToLit(PTRef ref) const {return thandler->getTMap().getLit(ref);}
     inline Var PTRefToVar(PTRef ref) const { return thandler->getTMap().getVar(ref); }
@@ -513,8 +509,8 @@ private:
 
     void initTSolver();
     void clearTSolver();
-    bool assertLiteralsToTSolver(vec<Lit> const&);
-    void addDefaultAssumedLiterals();
+    bool assertLiteralsToTSolver(vec<Lit> const &);
+    void addDefaultAssumedLiterals(std::vector<Lit> && assumedLiteralsFromDerivations);
     inline bool isAssumedLiteral(Lit l) const {
         return std::find(assumedLiterals.begin(), assumedLiterals.end(), l) != assumedLiterals.end();
     }
@@ -534,13 +530,10 @@ private:
     Var 				  pred_to_push;
 
     SMTConfig &                 config;
-    Proof const &               proof;
     Logic &                     logic_;
     PartitionManager &          pmanager;
     std::unique_ptr<THandler>   thandler;
-
-    std::vector< ProofNode * >*    graph_;                      // Graph
-    std::vector< ProofNode * >&    graph;
+    std::vector<ProofNode *>    graph {};
     double                         building_time;               // Time spent building graph
     clauseid_t                     root;                        // Proof root
     std::set<clauseid_t>		   leaves_ids;					// Proof leaves, for top-down visits
@@ -550,7 +543,7 @@ private:
     std::vector<Lit> assumedLiterals;
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
     std::vector<int>               AB_vars_mapping;             // Variables of class AB mapping to mpz integer bit index
-    vec< std::map<PTRef, icolor_t>* > *    vars_suggested_color_map;	 // To suggest color for shared vars
+    vec<std::map<PTRef, icolor_t>*> * vars_suggested_color_map { nullptr };	 // To suggest color for shared vars
     int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
 
     // Info on graph dimension
