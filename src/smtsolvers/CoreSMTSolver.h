@@ -360,6 +360,7 @@ protected:
     double              max_learnts;
     double              learntsize_adjust_confl;
     int                 learntsize_adjust_cnt;
+    int                 unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
     // Resource contraints:
     //
     int64_t             conflict_budget;    // -1 means no budget.
