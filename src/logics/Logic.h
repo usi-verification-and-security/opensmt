@@ -381,8 +381,8 @@ public:
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
 
-    PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef);
-
+    PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, bool quoted = false);
+    virtual SymRef lookupSymbol(const char *s, vec<PTRef> const & args, SRef returnSort, bool quoted);
     virtual PTRef insertTerm (SymRef sym, vec<PTRef> && args);
     PTRef insertTerm(SymRef sym, vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return insertTerm(sym, std::move(tmp)); }
 

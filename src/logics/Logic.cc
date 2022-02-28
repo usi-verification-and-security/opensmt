@@ -380,8 +380,12 @@ SRef Logic::declareUninterpretedSort(const std::string & name) {
     return getSort(sortSymbol, {});
 }
 
-PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef) {
-    SymRef sref = term_store.lookupSymbol(s, args, sortRef);
+SymRef Logic::lookupSymbol(const char *s, vec<PTRef> const & args, SRef returnSort, bool) {
+    return term_store.lookupSymbol(s, args, SymConf::Default, returnSort);
+}
+
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, bool quoted) {
+    SymRef sref = lookupSymbol(s, args, sortRef, quoted);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s)) {
             auto const & tpl = defined_functions[s];
