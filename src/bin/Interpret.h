@@ -177,6 +177,7 @@ class Interpret {
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
+    MainSolver&     getMainSolver() { return *main_solver; }
 };
 
 #endif

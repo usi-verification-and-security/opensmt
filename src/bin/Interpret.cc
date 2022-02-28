@@ -814,7 +814,7 @@ void Interpret::writeState(const char* filename)
 void Interpret::writeSplits_smtlib2(const char* filename)
 {
     char* msg = nullptr;
-    bool ok = main_solver->writeSolverSplits_smtlib2(filename, &msg);
+    bool ok = (static_cast<MainSplitter &>(getMainSolver()).writeSolverSplits_smtlib2(filename, &msg));
     if (not ok) {
         std::cout << "While writing splits to " << filename << ": " << msg << std::endl;
     }
