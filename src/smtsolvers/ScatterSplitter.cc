@@ -111,12 +111,6 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
         ::free(name);
     }
 #endif
-    if (proof) {
-        // Force disable theory propagation, since we don't
-        // have at the moment we don't construct the reasons
-        // for the propagated literals
-        config.theory_propagation = false;
-    }
     assert(ok);
     int         backtrack_level;
     int         conflictC = 0;
