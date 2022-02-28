@@ -12,8 +12,9 @@
 
 InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
                                            PartitionManager & pmanager, int n)
-                                           : logic(th.getLogic()), pmanager(pmanager), config(c), proof_graph {
-    new ProofGraph(c, th, termMapper, t, pmanager, n)} {
+                                           : logic(th.getLogic()), pmanager(pmanager), config(c)
+                                           , proof_graph {new ProofGraph(c, th, termMapper, t, pmanager, n)}
+{
     if (c.proof_reduce()) {
         reduceProofGraph();
     }
@@ -27,8 +28,9 @@ void InterpolationContext::printProofDotty() {
 }
 
 
-void InterpolationContext::setColoringSuggestions(
-    vec<std::map<PTRef, icolor_t> *> * mp) { proof_graph->setColoringSuggestions(mp); }
+void InterpolationContext::setColoringSuggestions(vec<std::map<PTRef, icolor_t> *> * mp) {
+    proof_graph->setColoringSuggestions(mp);
+}
 
 void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants) {
     assert(proof_graph);
