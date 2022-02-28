@@ -64,6 +64,10 @@ namespace SymConf {
     constexpr auto CommutativeNoScopingPairwise = SymbolConfig{true, true, true, SymbolProperty::Pairwise};
 }
 
+enum class SymbolMatcher : char {
+    Any, Interpreted, Uninterpreted
+};
+
 // args[0].sort is the return sort, rest are arguments.
 class Symbol {
     struct Header {
@@ -125,6 +129,18 @@ class Symbol {
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
     bool     isInterpreted() const       { return header.interpreted; }
+
+    bool matches(SymbolMatcher matcher) const {
+        switch (matcher) {
+            case SymbolMatcher::Interpreted:
+                return isInterpreted();
+            case SymbolMatcher::Uninterpreted:
+                return not isInterpreted();
+            case SymbolMatcher::Any:
+            default:
+                return true;
+        }
+    }
 };
 
 

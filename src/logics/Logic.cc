@@ -381,7 +381,7 @@ SRef Logic::declareUninterpretedSort(const std::string & name) {
 }
 
 SymRef Logic::lookupSymbol(const char *s, vec<PTRef> const & args, SRef returnSort, bool) {
-    return term_store.lookupSymbol(s, args, SymConf::Default, returnSort);
+    return term_store.lookupSymbol(s, args, SymbolMatcher::Any, returnSort);
 }
 
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, bool quoted) {
