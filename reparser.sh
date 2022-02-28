@@ -12,12 +12,14 @@ done
 i=1;
 j=0;
 assert_regex="\(assert .*\)"
+info_regex="\(set-info \:status sat\)"
+exit="\(exit\)"
 for FILE in *.smt2;
 do
-    sed -e '1 s/\(.*\)/(set-option :produce-interpolants true)\n\1/g' $FILE > temp.txt;
-    cat temp.txt > $FILE;
-    sed -e '/(check-sat)/ s/\(.*\)/\1\n(get-interpolants (and ) (and ))\n/g' $FILE > temp.txt;
-    cat temp.txt > $FILE;
+    ok=0
+    new_file='(set-option :produce-interpolants true)\n';
+    left=''
+    right=''
     echo $FILE
     asserts=0
     i=1
@@ -26,28 +28,43 @@ do
       if [[ "$line" =~ $assert_regex ]]
       then
         asserts=1
-        echo $i;
-#        echo $line;
         assert_name=""
         (( length = RANDOM % 6 + 10 ))
         for j in $(seq 1 $length) ; do
             assert_name+=${symbols:RANDOM % count_symbols:1}
         done
-        sed -e "$i s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g" $FILE > temp.txt;
-        cat temp.txt > $FILE;
+        new_file="$new_file$(echo $line | sed "s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g")\n"
         if [ $((i%2)) == 1 ]
         then
-          sed -e "/(get-interpolants/ s/(get-interpolants (\(.*\)) (\(.*\)))/(get-interpolants (\1$assert_name ) (\2))/g" $FILE > temp.txt;
+          left="$assert_name $left"
         else
-          sed -e "/(get-interpolants/ s/(get-interpolants (\(.*\)) (\(.*\)))/(get-interpolants (\1) (\2$assert_name ))/g" $FILE > temp.txt;
+          right="$assert_name $right"
         fi
-        cat temp.txt > $FILE;
         let i++;
-      fi
-#      echo $line;
+      else
+          if [[ "$line" =~ $info_regex ]]
+          then
+            ok=1
+            rm $FILE
+            echo "removed $FILE"
+            break
+          fi
+          if [[ "$line" =~ $exit ]]
+          then
+            break
+          fi
+          new_file="$new_file$line"
+       fi
       if [ $asserts == 0 ]
       then
         let i++;
       fi
     done < $FILE
+
+    interpolants_t="(get-interpolants (and $left) (and $right))"
+    if [ $ok == 0 ]
+    then
+      new_file="$new_file$interpolants_t";
+      cat new_file > $FILE;
+    fi
 done

@@ -15,6 +15,11 @@ class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
     ConflQuota confl_quota;
     int idx;
+    bool*               next_arr;
+    std::set<Var>       next_init;
+    int                 close_to_prop = 0;
+    bool                before_lookahead = true;
+    bool                tested = true;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -95,7 +100,13 @@ protected:
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
-    Var newVar(bool dvar) override;
+    Var newVar(bool sign, bool dvar) override;
+
+    CRef propagate() override;
+
+    void detachClause(CRef cr, bool strict) override;
+
+    void attachClause(CRef cr) override;
 };
 
 // Maintain the tree explicitly.  Each internal node should have the info whether its

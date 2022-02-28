@@ -3,7 +3,6 @@
 //
 
 #ifndef OPENSMT_DIVMODREWRITER_H
-#define OPENSMT_DIVMODREWRITER_H
 #endif
 
 #include "PTRef.h"

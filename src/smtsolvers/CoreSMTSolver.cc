@@ -81,6 +81,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_var_freq  (c.sat_random_var_freq())
     , luby_restart     (c.sat_luby_restart())
     , ccmin_mode       (c.sat_ccmin_mode())
+    , phase_saving     (c.sat_pcontains())
     , rnd_pol          (c.sat_rnd_pol())
     , rnd_init_act     (c.sat_rnd_init_act())
     , garbage_frac     (c.sat_garbage_frac())
@@ -88,15 +89,15 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , restart_inc      (c.sat_restart_inc())
     , learntsize_factor((double)1/(double)3)
     , learntsize_inc   ( 1.1 )
-      // More parameters:
-      //
+    // More parameters:
+    //
     , expensive_ccmin  ( true )
     , learntsize_adjust_start_confl (0)
-      // Statistics: (formerly in 'SolverStats')
-      //
+    // Statistics: (formerly in 'SolverStats')
+    //
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
     , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-      // ADDED FOR MINIMIZATION
+    // ADDED FOR MINIMIZATION
     , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
@@ -116,7 +117,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , remove_satisfied      (true)
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
-    , analyze_cnt           (0)
+, analyze_cnt           (0)
 #endif
     , conflict_budget       (-1)
     , propagation_budget    (-1)
@@ -147,6 +148,30 @@ CoreSMTSolver::initialize( )
     tsolvers_time = 0;
     ie_generated = 0;
 #endif
+    //
+    // Set polarity_mode
+    //
+    switch ( config.sat_polarity_mode )
+    {
+    case 0:
+        polarity_mode = polarity_true;
+        break;
+    case 1:
+        polarity_mode = polarity_false;
+        break;
+    case 2:
+        polarity_mode = polarity_rnd;
+        break;
+    case 3:
+        polarity_mode = polarity_user;
+        break; // Polarity is set in
+    case 4:
+        polarity_mode = polarity_user;
+        break; // THandler.C for
+    case 5:
+        polarity_mode = polarity_user;
+        break; // Boolean atoms
+    }
 
     if (config.produce_inter() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
@@ -277,7 +302,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                ps.size() == 0 ? CRef_Undef : ca.alloc(ps);
+            ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -315,6 +340,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     return true;
 }
 
+
 void CoreSMTSolver::attachClause(CRef cr)
 {
     const Clause& c = ca[cr];
@@ -322,21 +348,6 @@ void CoreSMTSolver::attachClause(CRef cr)
     assert(value(c[0]) != l_False or value(c[1]) != l_False);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
-    if(c.size() > 2 ){
-//        if(c[2].x == 176){
-//            cout << "Here";
-//        }
-        watches[~c[2]].push(Watcher(cr, c[0]));
-    }
-    else{
-        next_init.insert(var(~c[0]));
-        next_init.insert(var(~c[1]));
-//        close_to_prop = next_init.size();
-//    if(c[0].x == 176 || c[1].x == 176){
-//        printf("Hi\n");
-//    }
-    }
-
     if (c.learnt()) learnts_literals += c.size();
     else            clauses_literals += c.size();
 }
@@ -349,16 +360,12 @@ void CoreSMTSolver::detachClause(CRef cr, bool strict)
     {
         remove(watches[~c[0]], Watcher(cr, c[1]));
         remove(watches[~c[1]], Watcher(cr, c[0]));
-        if(c.size() > 2 )
-            remove(watches[~c[2]], Watcher(cr, c[0]));
     }
     else
     {
         // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
         watches.smudge(~c[0]);
         watches.smudge(~c[1]);
-        if (c.size() > 2)
-            watches.smudge(~c[2]);
     }
 
     if (c.learnt()) learnts_literals -= c.size();
@@ -578,7 +585,7 @@ Lit CoreSMTSolver::pickBranchLit()
 {
     Var next = var_Undef;
 
-   // Pick a variable either randomly or based on activity
+    // Pick a variable either randomly or based on activity
     next = doRandomDecision();
     // Activity based decision
     if (next == var_Undef || value(next) != l_Undef || !decision[next])
@@ -837,6 +844,9 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         }
     }
     cleanup.clear();
+//    for (int i = 0; i < out_learnt.size(); i++)
+//        printf("%d ", out_learnt[i]);
+//    printf("\n");
 }
 
 
@@ -896,7 +906,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             if (cr == CRef_Fake)
             {
                 for (int j = top; j < analyze_toclear.size(); j++)
-                seen[var(analyze_toclear[j])] = 0;
+                    seen[var(analyze_toclear[j])] = 0;
                 analyze_toclear.shrink(analyze_toclear.size() - top);
 
                 return false;
@@ -1069,177 +1079,78 @@ CRef CoreSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
-//            props++;
             // Try to avoid inspecting the clause:
             Lit blocker = i->blocker;
+            if (value(blocker) == l_True)
+            {
+                *j++ = *i++;
+                continue;
+            }
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
-//            if(cr == 497){
-//                printf("Here\n");
-//            }
-
-
-
-            unsigned c_size = c.size();
             Lit false_lit = ~p;
+            if (c[0] == false_lit)
+                c[0] = c[1], c[1] = false_lit;
 
-            if(!tested){
-                props++;
-            }
-            // Try to avoid inspecting the clause:
-            if(c_size > 2 && value(c[2]) == l_True){
-                if(!tested) {
-                    if (next_arr[var(~c[0])]) {
-                        close_to_prop--;
-                    }
-                    if (next_arr[var(~c[1])]) {
-                        close_to_prop--;
-                    }
-                    next_arr[var(~c[0])] = false;
-                    next_arr[var(~c[1])] = false;
-                }
-                *j++ = *i++;
-                continue;
-            }
-
-            if(value(c[0]) == l_True || value(c[1]) == l_True){
-                if(!tested) {
-                    if (next_arr[var(~c[0])]) {
-                        close_to_prop--;
-                    }
-                    if (next_arr[var(~c[1])]) {
-                        close_to_prop--;
-                    }
-                    next_arr[var(~c[0])] = false;
-                    next_arr[var(~c[1])] = false;
-                }
-                *j++ = *i++;
-                continue;
-            }
-
-            if(c_size > 2 ){
-                if (c[0] == false_lit){
-//                    if(value(c[2]) != l_False){
-//                        c[0] = c[1], c[1] = c[2], c[2] = false_lit;
-//                    } else {
-                    c[0] = c[1], c[1] = false_lit;
-//                    }
-                }
-                if (c[1] == false_lit){
-                    c[1] = c[2], c[2] = false_lit;
-                }
-                if (value(c[0]) == l_False) {
-                    Lit temp = c[0];
-                    c[0] = c[1], c[1] = temp;
-                }
-            }
-            else {
-                if (c[0] == false_lit) {
-                    c[0] = c[1], c[1] = false_lit;
-                }
-            }
-
-            if (c.size() > 2) {
-                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
-            } else {
-                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
-            }
+            assert(c[1] == false_lit);
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
             Lit first = c[0];
             Watcher w = Watcher(cr, first);
+            if (first != blocker && value(first) == l_True)
+            {
+                *j++ = w;
+                continue;
+            }
+
             // Look for new watch:
-            for (unsigned k = 3; k < c.size(); k++)
+            for (unsigned k = 2; k < c.size(); k++)
                 if (value(c[k]) != l_False)
                 {
-                    c[2] = c[k];
+                    c[1] = c[k];
                     c[k] = false_lit;
-                    watches[~c[2]].push(w);
+                    watches[~c[1]].push(w);
                     goto NextClause;
                 }
-<<<<<<< HEAD
-=======
-            }
-//            if(c[2].x == 176){
-//                cout << "Here";
-//            }
->>>>>>> 2b8a6b7f (seems there is a bug)
 
+            // Did not find watch
             *j++ = w;
-            if(value(c[1]) == l_False){
-                if(!tested){
-                    if(next_arr[var(~c[0])]){
-                        close_to_prop--;
-                    }
-                    if(next_arr[var(~c[1])]){
-                        close_to_prop--;
-                    }
-                    next_arr[var(~c[0])] = false;
-                    next_arr[var(~c[1])] = false;
-                } else {
-                    if(before_lookahead){
-                        next_init.erase(var(~c[0]));
-                        next_init.erase(var(~c[1]));
-                    }
+            if (value(first) == l_False) // clause is falsified
+            {
+                confl = cr;
+                qhead = trail.size();
+                // Copy the remaining watches:
+                while (i < end) {
+                    *j++ = *i++;
                 }
-                if (value(first) == l_False) // clause is falsified
-                {
-//                    if(cr == 497){
-//                        printf("Here\n");
-//                    }
-                    confl = cr;
-                    qhead = trail.size();
-                    // Copy the remaining watches:
-                    while (i < end) {
-                        *j++ = *i++;
-                    }
-                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                        this->finalizeProof(confl);
-                    }
-                } else {  // clause is unit under assignment:
-                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
-                        // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
-                        //     is not constructed correctly
-                        proof->beginChain(cr);
-                        for (unsigned k = 1; k < c.size(); k++) {
-                            assert(level(var(c[k])) == 0);
-                            assert(reason(var(c[k])) != CRef_Fake);
-                            assert(reason(var(c[k])) != CRef_Undef);
-//                            printf("Enqueued: %d\n", var(first));
-                            proof->addResolutionStep(reason(var(c[k])), var(c[k]));
-                        }
-                        CRef unitClause = ca.alloc(vec<Lit>{first});
-                        proof->endChain(unitClause);
-                        // Replace the reason for enqueing the literal with the unit clause.
-                        // Necessary for correct functioning of proof logging in analyze()
-                        cr = unitClause;
-                    }
-//                    printf("Enqueued: %d\n", var(first));
-//                    if(cr == 497){
-//                        printf("Here\n");
-//                    }
-                    uncheckedEnqueue(first, cr);
-                }
-            } else if (value(c[2]) == l_False) {
-                if(!tested){
-                    if(!next_arr[var(~c[0])]){
-                        close_to_prop += 1;
-                    }
-                    if(!next_arr[var(~c[1])]){
-                        close_to_prop += 1;
-                    }
-                    next_arr[var(~c[0])] = true;
-                    next_arr[var(~c[1])] = true;
-                } else {
-                    if(before_lookahead){
-                        next_init.insert(var(~c[0]));
-                        next_init.insert(var(~c[1]));
-                    }
+                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                    this->finalizeProof(confl);
                 }
             }
+            else {  // clause is unit under assignment:
+                if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                    // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
+                    //     is not constructed correctly
+                    proof->beginChain(cr);
+                    for (unsigned k = 1; k < c.size(); k++)
+                    {
+                        assert(level(var(c[k])) == 0);
+                        assert(reason(var(c[k])) != CRef_Fake);
+                        assert(reason(var(c[k])) != CRef_Undef);
+                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                    }
+                    CRef unitClause = ca.alloc(vec<Lit>{first});
+                    proof->endChain(unitClause);
+                    // Replace the reason for enqueing the literal with the unit clause.
+                    // Necessary for correct functioning of proof logging in analyze()
+                    cr = unitClause;
+                }
+                uncheckedEnqueue(first, cr);
+            }
+
 NextClause:
             ;
         }
@@ -1746,7 +1657,6 @@ static double luby(double y, int x)
     // size of that subsequence:
     int size, seq;
     for (size = 1, seq = 0; size < x+1; seq++, size = 2*size+1);
-
     while (size-1 != x)
     {
         size = (size-1)>>1;
@@ -1814,7 +1724,6 @@ lbool CoreSMTSolver::solve_()
         this->addVar_(var(l));
     }
 
-    next_arr = new bool[nVars()]();
     // Inform theories of the variables that are actually seen by the
     // SAT solver.
     declareVarsToTheories();
@@ -1950,7 +1859,7 @@ void CoreSMTSolver::garbageCollect()
     // Initialize the next region to a size corresponding to the estimated utilization degree. This
     // is not precise but should avoid some unnecessary reallocations for the new region:
     ClauseAllocator to(ca.size() - ca.wasted());
-    printf("Garbage collect\n");
+
     relocAll(to);
 //    if (verbosity >= 2)
 //        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",
