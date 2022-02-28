@@ -28,9 +28,6 @@ public:
 
     void printProofDotty();
 
-    // Create interpolants with each A consisting of the specified partitions
-    void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
-
     void setColoringSuggestions(vec<std::map<PTRef, icolor_t> *> * mp);
 
     void getSingleInterpolant(vec<PTRef> & interpolants);
