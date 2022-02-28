@@ -49,7 +49,7 @@ bool PtStore::isAmbiguousNullarySymbolName(std::string_view name) const {
     return false;
 }
 
-vec<SymRef> PtStore::getHomonymousNullarySymbols(const std::string_view &name) const {
+vec<SymRef> PtStore::getHomonymousNullarySymbols(std::string_view name) const {
     auto * values = symstore.getRefOrNull(name.data());
     if (not values) {
         return {};
@@ -71,13 +71,13 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
     auto* values = symstore.getRefOrNull(s);
     vec<SymRef> candidates;
     if (values) {
-        const vec<SymRef> &trefs = *values;
+        vec<SymRef> const &trefs = *values;
         if (symstore[trefs[0]].noScoping()) {
             // No need to look forward, this is the only possible term
             // list
             for (int i = 0; i < trefs.size(); i++) {
                 SymRef ctr = trefs[i];
-                const Symbol &t = symstore[ctr];
+                Symbol const &t = symstore[ctr];
                 if (t.nargs() == args.size_()) {
                     // t is a potential match.  Check that arguments match
                     uint32_t j = 0;
@@ -158,31 +158,29 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
         } else {
             return candidates[0];
         }
-    } else {
-        assert(candidates.size() > 1);
-        if (sort == SRef_Undef) {
-            throw OsmtApiException("Ambiguous symbol: `" + std::string(s) + "'");
-        }
+    }
 
-        assert(sort != SRef_Undef);
+    assert(candidates.size() > 1);
+    if (sort == SRef_Undef) {
+        throw OsmtApiException("Ambiguous symbol: `" + std::string(s) + "'");
+    }
 
-        vec<SymRef> retSortMatched;
-        retSortMatched.capacity(candidates.size());
-        for (SymRef sr : candidates) {
-            if (symstore[sr].rsort() == sort) {
-                retSortMatched.push(sr);
-            }
-        }
-        if (retSortMatched.size() == 0) {
-            return SymRef_Undef;
-        } else if (retSortMatched.size() > 1) {
-            throw OsmtInternalException("System has " + std::to_string(retSortMatched.size()) + " symbol with same argument and return sorts");
-        } else {
-            return retSortMatched[0];
+    assert(sort != SRef_Undef);
+
+    vec<SymRef> retSortMatched;
+    retSortMatched.capacity(candidates.size());
+    for (SymRef sr : candidates) {
+        if (symstore[sr].rsort() == sort) {
+            retSortMatched.push(sr);
         }
     }
-    assert(false); // unreachable
-    return SymRef_Undef;
+    if (retSortMatched.size() == 0) {
+        return SymRef_Undef;
+    } else if (retSortMatched.size() > 1) {
+        throw OsmtInternalException("System has " + std::to_string(retSortMatched.size()) + " symbol with same argument and return sorts");
+    } else {
+        return retSortMatched[0];
+    }
 }
 
 
