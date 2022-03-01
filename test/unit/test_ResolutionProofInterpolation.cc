@@ -79,6 +79,55 @@ TEST_F(ResolutionProofInterpolationTest, test_McMillanPrimeInterpolant) {
 }
 
 
+class ResolutionProofInterpolationTestWithReduction : public ::testing::Test {
+protected:
+    ResolutionProofInterpolationTestWithReduction(): logic{opensmt::Logic_t::QF_UF} {}
+    virtual void SetUp() {
+        const char* msg;
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+//        config.setOption(SMTConfig::o_verbosity, SMTOption(2), msg);
+        solver = std::make_unique<MainSolver>(logic, config, "test");
+        a = logic.mkBoolVar("a");
+        b = logic.mkBoolVar("b");
+        c = logic.mkBoolVar("c");
+        d = logic.mkBoolVar("d");
+        e = logic.mkBoolVar("e");
+        na = logic.mkNot(a);
+        nb = logic.mkNot(b);
+        nc = logic.mkNot(c);
+        nd = logic.mkNot(d);
+        ne = logic.mkNot(e);
+
+        A_part = logic.mkAnd({logic.mkOr(a, b), logic.mkOr(na,c)});
+        B_part = logic.mkAnd({logic.mkOr(a, e), nd, logic.mkOr(d, ne), logic.mkOr(d, nc), logic.mkOr({na, nb, d})});
+
+        solver->insertFormula(A_part);
+        solver->insertFormula(B_part);
+        auto res = solver->check();
+        ASSERT_EQ(res, s_False);
+    }
+    Logic logic;
+    SMTConfig config;
+    std::unique_ptr<MainSolver> solver;
+    PTRef a, b, c, d, e, na, nb, nc, nd, ne;
+    PTRef A_part, B_part;
+
+    bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
+        return VerificationUtils(config, logic).verifyInterpolantInternal(A, B, itp);
+    }
+};
+
+TEST_F(ResolutionProofInterpolationTestWithReduction, test_InterpolationAfterReduction) {
+    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillan);
+    config.setReduction(1);
+    auto itpContext = solver->getInterpolationContext();
+    vec<PTRef> itps;
+    ipartitions_t A_mask = 1;
+    itpContext->getSingleInterpolant(itps, A_mask);
+    PTRef itp = itps.last();
+    std::cout << logic.pp(itp);
+    ASSERT_TRUE(verifyInterpolant(A_part, B_part, itp));
+}
 
 /*************** TESTS FOR INTERPOLATION FOR INCREMENTAL SOLVING *****************/
 class ResolutionProofIncrementalInterpolationTest : public ::testing::Test {
