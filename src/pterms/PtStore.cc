@@ -167,20 +167,23 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
 
     assert(sort != SRef_Undef);
 
-    vec<SymRef> retSortMatched;
-    retSortMatched.capacity(candidates.size());
-    for (SymRef sr : candidates) {
-        if (symstore[sr].rsort() == sort) {
-            retSortMatched.push(sr);
+    int i, j;
+    for (i = j = 0; i < candidates.size(); i++) {
+        if (symstore[candidates[i]].rsort() == sort) {
+            candidates[j++] = candidates[i];
+        }
+        if (j > 1) {
+            throw OsmtInternalException("System has > 1 symbols with same argument and return sorts");
         }
     }
-    if (retSortMatched.size() == 0) {
+    candidates.shrink(i-j);
+
+    if (candidates.size() == 0) {
         return SymRef_Undef;
-    } else if (retSortMatched.size() > 1) {
-        throw OsmtInternalException("System has " + std::to_string(retSortMatched.size()) + " symbol with same argument and return sorts");
-    } else {
-        return retSortMatched[0];
     }
+    assert(candidates.size() == 1);
+    assert(symstore[candidates[0]].rsort() == sort);
+    return candidates[0];
 }
 
 
