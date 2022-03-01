@@ -69,7 +69,7 @@ vec<SymRef> PtStore::getHomonymousNullarySymbols(std::string_view name) const {
 //
 SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
     auto* values = symstore.getRefOrNull(s);
-    vec<SymRef> candidates;
+    std::vector<SymRef> candidates;
     if (values) {
         vec<SymRef> const & trefs = *values;
         if (symstore[trefs[0]].noScoping()) {
@@ -87,7 +87,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
                     }
                     if (j == t.nargs()) {
                         // Add to list of candidates
-                        candidates.push(ctr);
+                        candidates.push_back(ctr);
                     }
                 }
                 // The term might still be one of the special cases:
@@ -104,7 +104,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
                         SRef ctrReturnSort = symstore[ctr].rsort();
                         if (not std::any_of(candidates.begin(), candidates.end(),
                                             [this, ctrReturnSort](SymRef sr) { return symstore[sr].rsort() == ctrReturnSort; })) {
-                            candidates.push(ctr);
+                            candidates.push_back(ctr);
                         }
                     }
                 } else if (t.right_assoc()) {
@@ -117,7 +117,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
                         if (symstore[argt].rsort() != t[0]) break;
                     }
                     if (j == args.size()) {
-                        candidates.push(ctr);
+                        candidates.push_back(ctr);
                     }
                 } else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;
@@ -126,7 +126,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
                         if (symstore[argt].rsort() != t[0]) break;
                     }
                     if (j == args.size()) {
-                        candidates.push(ctr);
+                        candidates.push_back(ctr);
                     }
                 }
             }
@@ -142,13 +142,13 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
                         if (t[j] != symstore[argt].rsort()) break;
                     }
                     if (j == t.nargs()) {
-                        candidates.push(ctr);
+                        candidates.push_back(ctr);
                     }
                 }
             }
         }
     }
-    if (candidates.size() == 0) {
+    if (candidates.empty()) {
         return SymRef_Undef; // Not found
     } else if (candidates.size() == 1 and sort == SRef_Undef) {
         return candidates[0];
@@ -167,20 +167,16 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
 
     assert(sort != SRef_Undef);
 
-    int i, j;
-    for (i = j = 0; i < candidates.size(); i++) {
-        if (symstore[candidates[i]].rsort() == sort) {
-            candidates[j++] = candidates[i];
-        }
-        if (j > 1) {
-            throw OsmtInternalException("System has > 1 symbols with same argument and return sorts");
-        }
-    }
-    candidates.shrink(i-j);
+    auto equalSortEnd = std::remove_if(candidates.begin(), candidates.end(), [this, sort](SymRef sr) { return symstore[sr].rsort() != sort; });
+    candidates.erase(equalSortEnd, candidates.end());
 
-    if (candidates.size() == 0) {
+    if (candidates.empty()) {
         return SymRef_Undef;
     }
+    if (candidates.size() > 1) {
+        throw OsmtInternalException("System has " + std::to_string(candidates.size()) + " symbols with same argument and return sorts");
+    }
+
     assert(candidates.size() == 1);
     assert(symstore[candidates[0]].rsort() == sort);
     return candidates[0];
