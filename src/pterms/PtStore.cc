@@ -77,7 +77,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
             // list
             for (int i = 0; i < trefs.size(); i++) {
                 SymRef ctr = trefs[i];
-                Symbol const &t = symstore[ctr];
+                Symbol const & t = symstore[ctr];
                 if (t.nargs() == args.size_()) {
                     // t is a potential match.  Check that arguments match
                     uint32_t j = 0;
