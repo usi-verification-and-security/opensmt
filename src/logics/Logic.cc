@@ -396,7 +396,7 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef) {
                 PTRef tr = args[i];
                 argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
             }
-            throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " +printSort(sortRef) : "") + "'");
+            throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " + printSort(sortRef) : "") + "'");
         }
     }
     assert(sref != SymRef_Undef);
