@@ -111,12 +111,6 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
         ::free(name);
     }
 #endif
-    if (proof) {
-        // Force disable theory propagation, since we don't
-        // have at the moment we don't construct the reasons
-        // for the propagated literals
-        config.theory_propagation = false;
-    }
     assert(ok);
     int         backtrack_level;
     int         conflictC = 0;
@@ -291,7 +285,7 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
                 updateSplitState();
                 if (!splitConfig.split_start && splitConfig.split_on && scatterLevel())
                 {
-                    if (!createSplit_scatter(false))   // Rest is unsat
+                    if (!createSplit_scatter())   // Rest is unsat
                     {
                         opensmt::stop = true;
                         return l_Undef;
@@ -353,7 +347,7 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
         }
     }
     cancelUntil(0);
-    createSplit_scatter(true);
+    createSplit_scatter();
     opensmt::stop = true;
     return l_Undef;
 }
@@ -521,7 +515,7 @@ bool ScatterSplitter::scatterLevel()
 }
 
 
-bool ScatterSplitter::createSplit_scatter(bool last)
+bool ScatterSplitter::createSplit_scatter()
 {
     assert(splits.size() == split_assumptions.size());
     splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
