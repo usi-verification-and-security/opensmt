@@ -10,7 +10,7 @@
 class MainSplitter : public MainSolver {
 public:
     MainSplitter(Logic& logic, SMTConfig& config, std::string name) : MainSolver(logic, config, std::move(name)) {}
-    bool writeSolverSplits_smtlib2(const char* file, char** msg) const;
+    void writeSolverSplits_smtlib2(std::string const & file) const;
 };
 
 

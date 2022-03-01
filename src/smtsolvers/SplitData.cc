@@ -101,16 +101,17 @@ char* SplitData::splitToString()
     return buf;
 }
 
-void SplitData::toPTRefs(std::vector<vec<PtAsgn>>& out, const std::vector<vec<Lit>>& in, const THandler& theory_handler)
+std::vector<vec<PtAsgn>> SplitData::toPTRefs(std::vector<vec<Lit>> const & in, THandler const & theory_handler)
 {
+    std::vector<vec<PtAsgn>> out;
     for (const vec<Lit>& c : in) {
         out.emplace_back();
         vec<PtAsgn>& out_clause = out[out.size()-1];
-        for (Lit l : c)
-        {
+        for (Lit l : c) {
             PTRef tr = theory_handler.varToTerm(var(l));
             PtAsgn pta(tr, sign(l) ? l_False : l_True);
             out_clause.push(pta);
         }
     }
+    return out;
 }

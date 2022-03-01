@@ -156,7 +156,9 @@ void Interpret::interp(ASTNode& n) {
                         break;
                     }
                     initializeLogic(logic_type);
-                    main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
+                    main_solver = config.sat_split_type() != spt_none ?
+                            std::make_unique<MainSplitter>(*logic, config, std::string(logic_name) + " solver") :
+                            std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
                     main_solver->initialize();
                     notify_success();
                 }
@@ -812,12 +814,12 @@ void Interpret::writeState(const char* filename)
 
 void Interpret::writeSplits_smtlib2(const char* filename)
 {
-    char* msg = nullptr;
-    bool ok = (static_cast<MainSplitter &>(getMainSolver()).writeSolverSplits_smtlib2(filename, &msg));
-    if (not ok) {
-        std::cout << "While writing splits to " << filename << ": " << msg << std::endl;
+    try {
+        dynamic_cast<MainSplitter &>(getMainSolver()).writeSolverSplits_smtlib2(filename);
     }
-    free(msg);
+    catch (OsmtApiException const & e) {
+        std::cout << "While writing splits to " << filename << ": " << e.what() << std::endl;
+    }
 }
 
 bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)

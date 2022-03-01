@@ -22,7 +22,7 @@ class SplitData
     template<class C> char* clauseToString(const C&);
     char* clauseToString(const vec<Lit>&);
     static int getLitSize(Lit l);
-    static void toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler &thandler);
+    static std::vector<vec<PtAsgn>> toPTRefs(std::vector<vec<Lit>> const & in, const THandler &thandler);
 
 public:
     SplitData(bool no_instance = true)
@@ -45,8 +45,8 @@ public:
     }
 
     char* splitToString();
-    void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, constraints, thandler); }
-    void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, learnts, thandler); }
+    std::vector<vec<PtAsgn>> constraintsToPTRefs(const THandler& thandler) const { return toPTRefs(constraints, thandler); }
+    std::vector<vec<PtAsgn>> learntsToPTRefs(const THandler& thandler) const { return toPTRefs(learnts, thandler); }
 };
 
 #endif //OPENSMT_SPLITDATA_H
