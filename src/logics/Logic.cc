@@ -165,9 +165,9 @@ bool Logic::hasQuotableChars(std::string const & name) const
 // If the symbol corresponding to the one specified in the arguments would be ambiguous, i.e., either not known by
 // the user or there is a homonymous symbol with the same return type that is not a constant fixed by the language syntax,
 // specify the return sort.
-std::string Logic::disambiguateName(std::string const & protectedName, SRef sortRef, bool isNullary) const {
+std::string Logic::disambiguateName(std::string const & protectedName, SRef sortRef, bool isNullary, bool isInterpreted) const {
     assert(not protectedName.empty());
-    if (not isNullary) {
+    if (not isNullary or isInterpreted) {
         return protectedName;
     }
 
@@ -175,7 +175,7 @@ std::string Logic::disambiguateName(std::string const & protectedName, SRef sort
     auto name = isQuoted(protectedName) ?
             std::string_view(protectedName.data()+1, protectedName.size()-2) : std::string_view(protectedName);
 
-    if (not isKnownToUser(name) or isAmbiguousNullarySymbolName(name)) {
+    if (not isKnownToUser(name) or isAmbiguousUninterpretedNullarySymbolName(name)) {
         return "(as " + std::string(protectedName) + " " + printSort(sortRef) + ')';
     } else {
         return protectedName;
@@ -196,8 +196,9 @@ std::string Logic::protectName(std::string const & name, bool isInterpreted) con
 // Return a string corresponding to the SMT lib representation of the symbol, with disambiguation and name protection
 std::string Logic::printSym(SymRef sr) const {
     Symbol const & symbol = getSym(sr);
-    std::string protectedName = protectName(getSymName(sr), symbol.isInterpreted());
-    return disambiguateName(std::move(protectedName), getSortRef(sr), symbol.nargs() == 0);
+    bool isInterpreted = symbol.isInterpreted();
+    std::string protectedName = protectName(getSymName(sr), isInterpreted);
+    return disambiguateName(std::move(protectedName), getSortRef(sr), symbol.nargs() == 0, isInterpreted);
 }
 
 
