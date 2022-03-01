@@ -269,19 +269,6 @@ void ArithLogic::termSort(vec<PTRef>& v) const
     sort(v, LessThan_deepPTRef(*this));
 }
 
-bool ArithLogic::isAmbiguousNullarySymbolName(std::string_view name) const {
-    int i = 0;
-    auto name_str = std::string(name);
-    for (auto sr : term_store.getHomonymousNullarySymbols(name)) {
-        if (not (sym_store[sr].isInterpreted() and
-                (opensmt::isIntString(name_str.c_str()) or
-                 opensmt::isRealString(name_str.c_str())))) {
-            i++;
-        }
-    }
-    return i > 1;
-}
-
 bool ArithLogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sym_store[sr].isInterpreted()) return true;
