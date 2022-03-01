@@ -111,7 +111,6 @@ public:
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
 
     bool             isBuiltinFunction(SymRef sr) const override;
-    SymRef           lookupSymbol     (const char *s, vec<PTRef> const & args, SRef returnSort, bool quoted) override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
     SRef             getSort_int      () const { return sort_INT; }

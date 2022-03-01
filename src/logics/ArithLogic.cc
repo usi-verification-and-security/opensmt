@@ -624,13 +624,6 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args)
     return tr;
 }
 
-SymRef ArithLogic::lookupSymbol(const char *s, vec<PTRef> const & args, SRef returnSort, bool quoted) {
-    if (quoted and (opensmt::isIntString(s) or opensmt::isRealString(s)) and args.size() == 0) {
-        return term_store.lookupSymbol(s, args, SymbolMatcher::Uninterpreted, returnSort);
-    }
-    return term_store.lookupSymbol(s, args, SymbolMatcher::Any, returnSort);
-}
-
 PTRef ArithLogic::insertTerm(SymRef sym, vec<PTRef>&& terms)
 {
     if (isNeg(sym))
