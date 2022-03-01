@@ -389,8 +389,8 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
     return letRecords.getOrUndef(s);
 }
 
-PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const * sort) {
-    SRef sr = sortFromASTNode(*sort);
+PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & sort) {
+    SRef sr = sortFromASTNode(sort);
     PTRef tr = PTRef_Undef;
     try {
         tr = logic->resolveTerm(name, {}, sr);
@@ -418,20 +418,17 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 
     else if (t == QID_T) {
         if ((**(term.children->begin())).getType() == AS_T) {
-
             auto const & as_node = **(term.children->begin());
             const char * name = (*as_node.children)[0]->getValue();
-            const ASTNode * sortNode = (*as_node.children)[1];
+            ASTNode const & sortNode = *(*as_node.children)[1];
             assert(name != nullptr);
             PTRef tr = resolveQualifiedIdentifier(name, sortNode);
             return tr;
         } else {
             const char *name = (**(term.children->begin())).getValue();
             assert(name != nullptr);
-//        comment_formatted("Processing term with symbol %s", name);
             PTRef tr = letNameResolve(name, letRecords);
             if (tr != PTRef_Undef) {
-//            comment_formatted("Found a let reference to term %d", tr);
                 return tr;
             }
             try {

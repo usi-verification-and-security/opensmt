@@ -273,7 +273,9 @@ bool ArithLogic::isAmbiguousNullarySymbolName(std::string_view name) const {
     int i = 0;
     auto name_str = std::string(name);
     for (auto sr : term_store.getHomonymousNullarySymbols(name)) {
-        if (not (sym_store[sr].isInterpreted() and (opensmt::isIntString(name_str.c_str()) or opensmt::isRealString(std::string(name_str).c_str())))) {
+        if (not (sym_store[sr].isInterpreted() and
+                (opensmt::isIntString(name_str.c_str()) or
+                 opensmt::isRealString(name_str.c_str())))) {
             i++;
         }
     }
