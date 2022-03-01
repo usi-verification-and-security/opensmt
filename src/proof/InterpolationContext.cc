@@ -497,8 +497,6 @@ SingleInterpolationComputationContext::SingleInterpolationComputationContext(
 ) : logic(theory.getLogic()), config(config), pmanager(pmanager), proofGraph(proof), thandler(new THandler(theory, termMapper)), A_mask(A_mask) {
     auto const & vars = proof.getVariables();
     std::size_t varCounts = (*std::max_element(vars.begin(), vars.end())) + 1;
-    nodeData.clear();
-    AB_vars_mapping.clear();
     nodeData.resize(proof.getGraphSize());
     AB_vars_mapping.resize(varCounts, -3);
 
