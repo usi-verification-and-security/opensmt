@@ -393,7 +393,7 @@ PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & s
     SRef sr = sortFromASTNode(sort);
     PTRef tr = PTRef_Undef;
     try {
-        tr = logic->resolveTerm(name, {}, sr, isQuoted);
+        tr = logic->resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
     } catch (OsmtApiException & e) {
         reportError(e.what());
     }
@@ -436,7 +436,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                 return tr;
             }
             try {
-                tr = logic->resolveTerm(name, {}, SRef_Undef, isQuoted);
+                tr = logic->resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
             } catch (OsmtApiException & e) {
                 reportError(e.what());
             }
