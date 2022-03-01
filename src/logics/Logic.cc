@@ -400,9 +400,7 @@ PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef) {
         }
     }
     assert(sref != SymRef_Undef);
-    PTRef rval = PTRef_Undef;
-
-    rval = insertTerm(sref, std::move(args));
+    PTRef rval = insertTerm(sref, std::move(args));
     if (rval == PTRef_Undef)
         throw OsmtApiException("Error in resolveTerm\n");
 
