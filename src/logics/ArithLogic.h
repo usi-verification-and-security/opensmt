@@ -111,7 +111,6 @@ public:
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
 
     bool             isAmbiguousNullarySymbolName(std::string_view name) const override;
-    std::string      protectName(std::string const & name, SRef sortRef, bool isNullary, bool isInterpreted) const override;
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }

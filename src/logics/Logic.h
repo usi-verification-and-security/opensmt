@@ -400,9 +400,9 @@ public:
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
     virtual bool isAmbiguousNullarySymbolName(std::string_view name) const { return term_store.isAmbiguousNullarySymbolName(name); };
-    virtual std::string protectName(std::string const & name, SRef sortRef, bool isNullary, bool isInterpreted) const;
+    std::string protectName(std::string const & name, SRef sortRef, bool isInterpreted) const;
     std::string disambiguateName(std::string const & protectedName, SRef retSort, bool isNullary) const;
-    std::string protectName(SymRef sr) const { const Symbol & sym = getSym(sr); return protectName(getSymName(sr), sym.rsort(), sym.nargs() == 0, sym.isInterpreted()); };
+    std::string protectName(SymRef sr) const { const Symbol & sym = getSym(sr); return protectName(getSymName(sr), sym.rsort(), sym.isInterpreted()); };
     virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
     std::string printTerm          (PTRef tr)                 const { return printTerm_(tr, false, false); }
     std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
