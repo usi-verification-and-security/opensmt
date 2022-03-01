@@ -1,28 +1,15 @@
-/*********************************************************************
-Author: Simone Fulvio Rollini <simone.rollini@gmail.com>
-
-Periplo -- Copyright (C) 2013, Simone Fulvio Rollini
-
-Periplo is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Periplo is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Periplo. If not, see <http://www.gnu.org/licenses/>.
- *********************************************************************/
+/*
+ *  Copyright (c) 2013, Simone Fulvio Rollini <simone.rollini@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "PG.h"
-#include "CoreSMTSolver.h"
 
 // Prints resolution proof graph to a dot file,
 // with proper colors
-void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
+void ProofGraph::printProofAsDotty(std::ostream & out) {
     // Visited nodes vector
     std::vector<bool> visited_dotty(getGraphSize(), false);
     // Visit proof graph from sink via DFS
@@ -47,17 +34,7 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     typ = "cls_";
                     out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
                     printClause(node, out);
-                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
-                        // FIXME out << "\\\\n" << node->getPartialInterpolant( );
-                        if (produceInterpolants()) {
-                            icolor_t col = getClauseColor(node->getInterpPartitionMask(), A_mask);
-                            if (col == icolor_t::I_A) out << "\", color=\"lightblue\",";
-                            if (col == icolor_t::I_B) out << "\", color=\"red\",";
-                            if (col == icolor_t::I_AB) out << "\", color=\"violet\",";
-                        }
-                    } else {
-                        out << "\", color=\"lightblue\",";
-                    }
+                    out << "\", color=\"lightblue\",";
                     out << " fontcolor=\"black\", style=\"filled\"]" << '\n';
                     break;
                 case clause_type::CLA_THEORY:
@@ -65,9 +42,6 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
                     if (!node->getClause().empty()) { printClause(node, out); }
                     else out << "+"; // learnt clause
-                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
-                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
-                    }
                     out << "\", color=\"grey\"";
                     out << ", style=\"filled\"]" << '\n';
                     break;
@@ -76,9 +50,6 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
                     if (!node->getClause().empty()) { printClause(node, out); }
                     else out << "+"; // learnt clause
-                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
-                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
-                    }
                     out << "\", color=\"orange\"";
                     out << ", style=\"filled\"]" << '\n';
                     break;
@@ -87,9 +58,6 @@ void ProofGraph::printProofAsDotty(std::ostream & out, ipartitions_t A_mask) {
                     out << typ << node->getId() << "[shape=plaintext, label=\"c" << node->getId() << "  :  ";
                     if (!node->getClause().empty()) { printClause(node, out); }
                     else out << "+"; // internal derived clause
-                    if (produceInterpolants() && node->getPartialInterpolant() != PTRef_Undef) {
-                        //FIXME out << "\\\\n" << node->getPartialInterpolant( );
-                    }
                     out << "\", color=\"green\"";
                     out << ", style=\"filled\"]" << '\n';
                     break;
@@ -185,7 +153,7 @@ void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & c) {
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
-        out << (sign(c[i])?"(not ":"") << thandler->getVarName(v) << (sign(c[i])?") ":" ");
+        out << (sign(c[i])?"(not ":"") << logic_.printTerm(termMapper.varToPTRef(v)) << (sign(c[i])?") ":" ");
     }
     if ( c.size( ) > 1 ) out << ")";
 }

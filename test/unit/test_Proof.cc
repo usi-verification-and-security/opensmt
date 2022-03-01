@@ -172,7 +172,7 @@ TEST_F(ReductionTest, test_recyclePivots) {
     proof.endChain(CRef_Undef);
 
     int nVars = 4;
-    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -232,7 +232,7 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents) {
     proof.endChain(CRef_Undef);
 
     int nVars = 5;
-    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -294,7 +294,7 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents_AfterPhaseOneRepla
     proof.endChain(CRef_Undef);
 
     int nVars = 5;
-    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -338,7 +338,7 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure) {
     proof.endChain(CRef_Undef);
 
     int nVars = 5;
-    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -405,7 +405,7 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
     proof.endChain(CRef_Undef);
 
     int nVars = 5;
-    ProofGraph pg(config, theory, termMapper, proof, partitionManager, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);

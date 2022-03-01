@@ -551,65 +551,38 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
 
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
-bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra)
+bool ProofGraph::allowSwapRuleForStrongerWeakerInterpolant(RuleContext & ra, std::function<icolor_t(Var)> getVarClass, bool restructureForStronger)
 {
-	rul_type t=ra.getType();
-	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
+    rul_type t = ra.getType();
 	// Light technique: no duplications allowed
-	if(dupl) return false;
+    if (getNode(ra.getW())->getNumResolvents() > 1) return false;
 	// No creation of new nodes or simplifications allowed
-	if(t==rA1 || t==rA1B || t==rB2 || t==rA1prime) return false;
-	assert(t==rA2 || t==rA2B || t==rA2u);
-
-	// McMillan/McMillan'/Pudlak should be used
-	assert( usingMcMillanInterpolation() || usingPudlakInterpolation() || usingMcMillanPrimeInterpolation() );
+    if (t == rA1 || t == rA1B || t == rB2 || t == rA1prime) return false;
+    assert(t == rA2 || t == rA2B || t == rA2u);
 	// Check colors of the two pivots
-	icolor_t piv_w_color = getVarClass2( getNode(ra.getW())->getPivot() );
-	if(  piv_w_color == icolor_t::I_AB )
-	{
-		if( usingMcMillanInterpolation() ) piv_w_color = icolor_t::I_B;
-		if( usingMcMillanPrimeInterpolation() ) piv_w_color = icolor_t::I_A;
-	}
-	icolor_t piv_v_color = getVarClass2( getNode(ra.getV())->getPivot() );
-
-	if(  piv_v_color == icolor_t::I_AB )
-	{
-		if( usingMcMillanInterpolation() ) piv_v_color = icolor_t::I_B;
-		if( usingMcMillanPrimeInterpolation() ) piv_v_color = icolor_t::I_A;
-	}
-
-	if( restructuringForStrongerInterpolant() )
-	{
-	// The new interpolant is stronger than the original one for the following
-	// pairs of pivot colors: (b,a) (ab,a) (b,ab)
-	if(		(piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_A) ||
-			(piv_w_color == icolor_t::I_AB && piv_v_color == icolor_t::I_A ) ||
-			(piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_AB))
-		return true;
-	else
-		return false;
-	}
-	else if( restructuringForWeakerInterpolant() )
-	{
+	icolor_t piv_w_color = getVarClass(getNode(ra.getW())->getPivot());
+    icolor_t piv_v_color = getVarClass(getNode(ra.getV())->getPivot());
+    if (restructureForStronger) {
+        // The new interpolant is stronger than the original one for the following
+        // pairs of pivot colors: (b,a) (ab,a) (b,ab)
+        return  (piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_A) ||
+                (piv_w_color == icolor_t::I_AB && piv_v_color == icolor_t::I_A ) ||
+                (piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_AB);
+	} else { // restructure for weaker interpolant
 		// The new interpolant is stronger than the original one for the following
 		// pairs of pivot colors: (a,b) (a,ab) (ab,b)
-		if(		(piv_w_color == icolor_t::I_A && piv_v_color == icolor_t::I_B) ||
+		return  (piv_w_color == icolor_t::I_A && piv_v_color == icolor_t::I_B) ||
 				(piv_w_color == icolor_t::I_A && piv_v_color == icolor_t::I_AB ) ||
-				(piv_w_color == icolor_t::I_AB && piv_v_color == icolor_t::I_B))
-			return true;
-		else
-			return false;
+				(piv_w_color == icolor_t::I_AB && piv_v_color == icolor_t::I_B);
 	}
-	else throw OsmtInternalException("Unexpected situation in rule application");
+    assert(false); // UNREACHABLE
+    return false;
 }
 
 
 //Input: a pair of left/right contexts
-ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2)
+ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(RuleContext & ra1, RuleContext & ra2, std::function<bool(RuleContext &)> allowSwap)
 {
-	// Swap application rule
-	bool(ProofGraph::*allowSwap)(RuleContext&) = &ProofGraph::allowSwapRuleForStrongerWeakerInterpolant;
-
 	// Check need for duplication
 	bool dupl1, dupl2;
 
@@ -629,7 +602,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
 	{
         bool allowed2;
 		if (is2cut) allowed2 = false;
-		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
+		else if (is2swap) allowed2 = allowSwap(ra2);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
@@ -638,7 +611,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
 	{
 	    bool allowed1;
 		if( is1cut ) allowed1 = false;
-		else if( is1swap ) allowed1 = (*this.*allowSwap)(ra1);
+		else if( is1swap ) allowed1 = allowSwap(ra1);
 		else throw OsmtInternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
@@ -647,11 +620,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
 	{
         bool allowed1, allowed2;
         if (is1cut) allowed1 = false;
-		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
+		else if (is1swap) allowed1 = allowSwap(ra1);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = false;
-		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
+		else if (is2swap) allowed2 = allowSwap(ra2);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 
 		//Neither allowed
@@ -711,32 +684,23 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
 
 //Input: a context for a swap rule
 //Output: true if rule application is allowed
-bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra)
-{
-	bool dupl=(getNode(ra.getW())->getNumResolvents()>1);
-
+bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra, std::function<icolor_t(Var)> getVarClass) {
+    bool dupl = (getNode(ra.getW())->getNumResolvents() > 1);
 	// McMillan should be used for generating an interpolant in CNF
-	assert( usingMcMillanInterpolation() );
 	// Check colors of the two pivots
 	// NOTE with McMillan algorithm the color of a pivot is always A or B
-	icolor_t piv_w_color = getVarClass2( getNode(ra.getW())->getPivot() );
-	if(  piv_w_color == icolor_t::I_AB ) piv_w_color = icolor_t::I_B;
-	icolor_t piv_v_color = getVarClass2( getNode(ra.getV())->getPivot() );
-	if(  piv_v_color == icolor_t::I_AB ) piv_v_color = icolor_t::I_B;
-	assert(piv_w_color != icolor_t::I_AB && piv_v_color != icolor_t::I_AB);
+    icolor_t piv_w_color = getVarClass(getNode(ra.getW())->getPivot());
+    if (piv_w_color == icolor_t::I_AB) piv_w_color = icolor_t::I_B;
+    icolor_t piv_v_color = getVarClass(getNode(ra.getV())->getPivot());
+    if (piv_v_color == icolor_t::I_AB) piv_v_color = icolor_t::I_B;
+	assert(piv_w_color != icolor_t::I_AB and piv_v_color != icolor_t::I_AB);
 
 	// NOTE A-colored pivots must stay above B-colored pivots
-	if((piv_w_color == icolor_t::I_A && piv_v_color == icolor_t::I_A) || (piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_B ))
-	{
+	if(piv_w_color == piv_v_color) {
 		return false;
-	}
-	else if (piv_w_color == icolor_t::I_B && piv_v_color == icolor_t::I_A)
-	{
-		if(dupl) return false;
-		else return true;
-	}
-	else if (piv_w_color == icolor_t::I_A && piv_v_color == icolor_t::I_B)
-	{
+	} else if (piv_w_color == icolor_t::I_B and piv_v_color == icolor_t::I_A) {
+        return not dupl;
+	} else if (piv_w_color == icolor_t::I_A and piv_v_color == icolor_t::I_B) {
 		return false;
 	}
 	else throw OsmtInternalException("Unexpected situation in rule application");
@@ -746,10 +710,8 @@ using ApplicationResult = ProofGraph::ApplicationResult;
 
 //Input: a pair of left/right contexts
 //Output: 0,1,2 to apply no rule, rule1, rule2
-ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2)
+ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext & ra1, RuleContext & ra2, std::function<bool(RuleContext &)> allowSwap)
 {
-	// Swap application rule
-	bool(ProofGraph::*allowSwap)(RuleContext& ra) = &ProofGraph::allowSwapRuleForCNFinterpolant;
 	// Cut application rule
 	bool(ProofGraph::*allowCut)(RuleContext& ra) = &ProofGraph::allowCutRuleForReduction;
 
@@ -774,7 +736,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	else if (ra1.disabled() && ra2.enabled())
 	{
 		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
-		else if(is2swap) allowed2 = (*this.*allowSwap)(ra2);
+		else if(is2swap) allowed2 = allowSwap(ra2);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
@@ -782,7 +744,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	else if (ra1.enabled() && ra2.disabled())
 	{
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
-		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
+		else if (is1swap) allowed1 = allowSwap(ra1);
 		else throw OsmtInternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
@@ -790,11 +752,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	else if (ra1.enabled() && ra2.enabled())
 	{
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
-		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
+		else if (is1swap) allowed1 = allowSwap(ra1);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
-		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
+		else if (is2swap) allowed2 = allowSwap(ra2);
 		else throw OsmtInternalException("Unexpected situation in rule application");
 
 		//Neither allowed

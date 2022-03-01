@@ -17,23 +17,22 @@ class Proof;
 class ProofGraph;
 
 class InterpolationContext {
+    SMTConfig & config;
+    Theory & theory;
+    TermMapper & termMapper;
     Logic & logic;
     PartitionManager & pmanager;
-    SMTConfig & config;
     std::unique_ptr<ProofGraph> proof_graph;
 public:
     InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
-                         PartitionManager& pmanager , int n = -1 );
+                         PartitionManager & pmanager, int n = -1);
+
     ~InterpolationContext();
 
     void printProofDotty();
 
     // Create interpolants with each A consisting of the specified partitions
     void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
-
-    void setColoringSuggestions(vec<std::map<PTRef, icolor_t> *> * mp);
-
-    void getSingleInterpolant(vec<PTRef> & interpolants);
 
     void getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask);
 
@@ -44,8 +43,33 @@ public:
 private:
     void reduceProofGraph();
 
-    bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
+    void transformProofForCNFInterpolants();
 
+    bool verifyInterpolant(PTRef itp, ipartitions_t const & A_mask) const;
+
+    PTRef simplifyInterpolant(PTRef itp) const;
+
+    void ensureNoLiteralsWithoutPartition();
+
+    /***** CONFIGURATION ****/
+
+    int verbose() const { return config.verbosity(); }
+
+    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+
+    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+
+    bool usingMcMillanPrimeInterpolation() const {
+        return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp;
+    }
+
+    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
+
+    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+
+    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+
+    bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 };
 
 
