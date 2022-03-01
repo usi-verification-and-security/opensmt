@@ -46,10 +46,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "CoreSMTSolver.h"
 
-#include "SystemQueries.h"
 #include "ModelBuilder.h"
 #include "OsmtInternalException.h"
-#include "ReportUtils.h"
 #include "Sort.h"
 
 #include <cmath>
@@ -594,10 +592,6 @@ Lit CoreSMTSolver::choosePolarity(Var next) {
 
 Lit CoreSMTSolver::pickBranchLit()
 {
-    Lit fs = lit_Undef;
-    if ((fs = doForcedSplit()) != lit_Undef ) // A non-convex theory forces a branch
-        return fs;
-
     Var next = var_Undef;
 
    // Pick a variable either randomly or based on activity
