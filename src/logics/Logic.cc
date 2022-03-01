@@ -1401,7 +1401,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0, tpl_fun.isInterpreted());
+    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0, false);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();

@@ -2,7 +2,8 @@
 // Created by prova on 26.04.21.
 //
 
-#pragma once
+#ifndef FUNCTION_TOOLS_H
+#define FUNCTION_TOOLS_H
 
 #include "PTRef.h"
 #include "SSort.h"
@@ -11,20 +12,17 @@ class FunctionSignature {
     SRef ret_sort;
     std::string name;
     vec<PTRef> args;
-    SymbolConfig symbolConfig;
 private:
-    FunctionSignature() : ret_sort(SRef_Undef), symbolConfig(SymConf::Default) {}
+    FunctionSignature() : ret_sort(SRef_Undef) {}
 public:
     FunctionSignature(std::string && name, vec<PTRef> && args, SRef ret_sort)
     : ret_sort(ret_sort)
     , name(std::move(name))
     , args(std::move(args))
-    , symbolConfig(SymConf::Default)
     {}
     std::string getName() const { return name; }
     SRef getRetSort() const { return ret_sort; }
     const vec<PTRef>& getArgs() const { return args; }
-    const SymbolConfig & getSymbolConfig() const { return symbolConfig; }
 };
 
 class TemplateFunction {
@@ -53,6 +51,6 @@ public:
     PTRef getBody() const { return tr_body; }
     const vec<PTRef>& getArgs() const { return signature.getArgs(); }
     void updateBody(PTRef new_body) { tr_body = new_body; }
-    bool isInterpreted() const { return signature.getSymbolConfig().isInterpreted; }
 };
 
+#endif // FUNCTION_TOOLS_H
