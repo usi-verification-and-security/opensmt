@@ -71,7 +71,7 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SRef sort) {
     auto* values = symstore.getRefOrNull(s);
     vec<SymRef> candidates;
     if (values) {
-        vec<SymRef> const &trefs = *values;
+        vec<SymRef> const & trefs = *values;
         if (symstore[trefs[0]].noScoping()) {
             // No need to look forward, this is the only possible term
             // list
