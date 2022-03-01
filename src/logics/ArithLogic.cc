@@ -282,15 +282,6 @@ bool ArithLogic::isAmbiguousNullarySymbolName(std::string_view name) const {
     return i > 1;
 }
 
-std::string ArithLogic::protectName(std::string const & name, SRef retSort, bool isNullary, bool isInterpreted) const {
-    assert(not name.empty());
-    if (isSortNum(retSort) and isNullary and (opensmt::isIntString(name.c_str()) or opensmt::isRealString(name.c_str())) and isInterpreted) {
-        return name; // Is a number, no escaping
-    } else {
-        return Logic::protectName(name, retSort, isNullary, isInterpreted);
-    }
-}
-
 bool ArithLogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sym_store[sr].isInterpreted()) return true;

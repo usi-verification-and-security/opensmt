@@ -185,9 +185,9 @@ std::string Logic::disambiguateName(std::string const & protectedName, SRef sort
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name, SRef, bool, bool) const {
+std::string Logic::protectName(std::string const & name, SRef, bool isInterpreted) const {
     assert(not name.empty());
-    if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
+    if (not isInterpreted and (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name))) {
         return '|' + name + '|';
     }
     return name;
@@ -200,7 +200,7 @@ std::string Logic::printSym(SymRef sr) const {
     SRef sortRef = getSortRef(sr);
     bool isNullary = symbol.nargs() == 0;
     bool isInterpreted = symbol.isInterpreted();
-    std::string protectedName = protectName(symName, sortRef, isNullary, isInterpreted);
+    std::string protectedName = protectName(symName, sortRef, isInterpreted);
     return disambiguateName(std::move(protectedName), sortRef, isNullary);
 }
 
@@ -1401,7 +1401,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name, tpl_fun.getRetSort(), tpl_fun.getArgs().size() == 0, false);
+    auto quoted_name = protectName(name, tpl_fun.getRetSort(), false);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();
