@@ -399,7 +399,7 @@ public:
 
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
-    virtual bool isAmbiguousNullarySymbolName(std::string_view name) const { return term_store.isAmbiguousNullarySymbolName(name); };
+    bool isAmbiguousNullarySymbolName(std::string_view name) const { return term_store.isAmbiguousNullarySymbolName(name); };
     std::string protectName(std::string const & name, bool isInterpreted) const;
     std::string disambiguateName(std::string const & protectedName, SRef retSort, bool isNullary) const;
     std::string protectName(SymRef sr) const { return protectName(getSymName(sr), getSym(sr).isInterpreted()); };
