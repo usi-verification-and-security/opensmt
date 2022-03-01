@@ -7,48 +7,47 @@
 #include "SplitData.h"
 #include "ScatterSplitter.h"
 
-bool MainSplitter::writeSolverSplits_smtlib2(const char* file, char** msg) const
-{
-    std::vector<SplitData>& splits =(config.sat_split_type()==spt_scatter) ? static_cast<ScatterSplitter&>(ts.solver).splits
-            : static_cast<LookaheadSplitter&>(ts.solver).splits;
+void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const {
+    std::vector<SplitData> const & splits = (config.sat_split_type() == spt_scatter)
+            ? dynamic_cast<ScatterSplitter&>(ts.solver).splits
+            : dynamic_cast<LookaheadSplitter&>(ts.solver).splits;
     int i = 0;
-    for (const auto & split : splits) {
-        vec<PTRef> conj_vec;
-        std::vector<vec<PtAsgn> > constraints;
-        split.constraintsToPTRefs(constraints, thandler);
-        addToConj(constraints, conj_vec);
 
-        std::vector<vec<PtAsgn> > learnts;
-        split.learntsToPTRefs(learnts, thandler);
-        addToConj(learnts, conj_vec);
+    auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in, vec<PTRef> & out) {
+        for (const auto & constr : in) {
+            vec<PTRef> disj_vec;
+            for (PtAsgn pta : constr)
+                disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
+            out.push(logic.mkOr(std::move(disj_vec)));
+        }
+    };
+
+    for (auto const & split : splits) {
+        vec<PTRef> conj_vec;
+
+        addToConjunction(split.constraintsToPTRefs(thandler), conj_vec);
+        addToConjunction(split.learntsToPTRefs(thandler), conj_vec);
 
         if (config.smt_split_format_length() == spformat_full)
             conj_vec.push(root_instance.getRoot());
 
         PTRef problem = logic.mkAnd(conj_vec);
 
-        char* name;
-        int written = asprintf(&name, "%s-%02d.smt2", file, i ++);
-        assert(written >= 0);
-        (void)written;
-        std::ofstream file;
-        file.open(name);
-        if (file.is_open()) {
-            logic.dumpHeaderToFile(file);
-            logic.dumpFormulaToFile(file, problem);
+        auto zeroPadString = [](std::string const & s, unsigned long nZeros) { return std::string(nZeros - std::min(nZeros, s.length()), '0') + s; };
+
+        std::string name = baseName + '-' + zeroPadString(std::to_string(i++), 2) + ".smt2";
+        std::ofstream outFile;
+        outFile.open(name);
+        if (outFile.is_open()) {
+            logic.dumpHeaderToFile(outFile);
+            logic.dumpFormulaToFile(outFile, problem);
 
             if (config.smt_split_format_length() == spformat_full)
-                logic.dumpChecksatToFile(file);
+                logic.dumpChecksatToFile(outFile);
 
-            file.close();
+            outFile.close();
+        } else {
+            throw OsmtApiException("Failed to open file " + name);
         }
-        else {
-            written = asprintf(msg, "Failed to open file %s\n", name);
-            assert(written >= 0);
-            free(name);
-            return false;
-        }
-        free(name);
     }
-    return true;
 }

@@ -176,7 +176,7 @@ class MainSolver
         PushFrame& last = pfstore[frames.last()];
         last.push(logic.getTerm_true());
     }
-
+    virtual ~MainSolver()  {}
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
@@ -204,7 +204,6 @@ class MainSolver
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;
-    void  addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

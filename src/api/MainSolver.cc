@@ -227,15 +227,6 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     );
 }
 
-void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
-{
-    for (const auto & constr : in) {
-        vec<PTRef> disj_vec;
-        for (PtAsgn pta : constr)
-            disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
-        out.push(logic.mkOr(std::move(disj_vec)));
-    }
-}
 
 bool MainSolver::writeFuns_smtlib2(const char* file) const
 {
