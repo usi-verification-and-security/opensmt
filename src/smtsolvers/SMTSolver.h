@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SMTSOLVER_H
 
 #include "SolverTypes.h"
+#include "SystemQueries.h"
+#include "ReportUtils.h"
 
 class THandler; // Forward declaration
 struct SMTConfig; // Forward declaration
