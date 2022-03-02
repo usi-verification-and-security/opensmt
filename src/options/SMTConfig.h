@@ -309,6 +309,7 @@ public:
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
   static const char* o_ghost_vars;
+  static const char* o_sat_solver_limit;
 
 private:
 
@@ -813,6 +814,10 @@ public:
 
    bool use_theory_polarity_suggestion() const
    { return sat_theory_polarity_suggestion != 0; }
+
+   int sat_solver_limit() const
+   { return optionTable.has(o_sat_solver_limit) ?
+        optionTable[o_sat_solver_limit]->getValue().numval : 0; }
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
