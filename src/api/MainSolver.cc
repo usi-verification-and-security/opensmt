@@ -215,7 +215,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
 
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
-    thandler.fillTheoryFunctions(modelBuilder);
+    thandler->fillTheoryFunctions(modelBuilder);
 
     return modelBuilder.build();
 }
@@ -223,7 +223,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
     return std::make_unique<InterpolationContext>(
-        config, *theory, term_mapper, getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()
+            config, *theory, *term_mapper, getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()
     );
 }
 
@@ -327,7 +327,7 @@ sstat MainSolver::solve()
     status = sstat(ts.solve(en_frames));
 
     if (status == s_True && config.produce_models())
-        thandler.computeModel();
+        thandler->computeModel();
     smt_solver->clearSearch();
     return status;
 }
