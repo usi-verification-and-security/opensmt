@@ -15,7 +15,6 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <cstdio>
-#include <stdio.h>
 
 namespace opensmt {
 

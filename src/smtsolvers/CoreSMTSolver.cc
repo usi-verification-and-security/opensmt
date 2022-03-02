@@ -55,7 +55,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 
 #include "Proof.h"
-
+#include "SystemQueries.h"
+#include "ReportUtils.h"
 
 namespace opensmt
 {
@@ -535,7 +536,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 }
 
 Var CoreSMTSolver::doRandomDecision() {
-    Var next var_Undef;
+    Var next = var_Undef;
     if (branchLitRandom()) {
         next = order_heap[irand(random_seed,order_heap.size())];
         if (value(next) == l_Undef && decision[next])
@@ -600,7 +601,7 @@ Lit CoreSMTSolver::pickBranchLit()
     if (next == var_Undef || value(next) != l_Undef || !decision[next])
         next = doActivityDecision();
 
-    if ( next == var_Undef ) // All variables are assigned
+    if (next == var_Undef) // All variables are assigned
         return lit_Undef;
 
     // Return the literal with the chosen polarity

@@ -1,6 +1,9 @@
-//
-// Created by prova on 01.04.21.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_MAINSPLITTER_H
 #define OPENSMT_MAINSPLITTER_H

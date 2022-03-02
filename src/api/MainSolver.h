@@ -176,7 +176,7 @@ class MainSolver
         PushFrame& last = pfstore[frames.last()];
         last.push(logic.getTerm_true());
     }
-    virtual ~MainSolver()  {}
+    virtual ~MainSolver() = default;
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }

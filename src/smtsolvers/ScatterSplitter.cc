@@ -1,9 +1,14 @@
-//
-// Created by prova on 31.03.21.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include "ScatterSplitter.h"
 #include "Proof.h"
+#include "SystemQueries.h"
+#include "ReportUtils.h"
 
 namespace opensmt
 {
