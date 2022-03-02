@@ -240,7 +240,7 @@ class MainSolver
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
-    std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
+    static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 };
 
 #endif //
