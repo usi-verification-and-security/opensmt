@@ -152,6 +152,7 @@ class Interpret {
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
     PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 
+    std::unique_ptr<MainSolver>   createMainSolver(SMTConfig & config, const char* logic_name);
 
   public:
 
