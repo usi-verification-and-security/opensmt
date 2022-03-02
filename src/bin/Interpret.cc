@@ -156,9 +156,7 @@ void Interpret::interp(ASTNode& n) {
                         break;
                     }
                     initializeLogic(logic_type);
-                    main_solver = config.sat_split_type() != spt_none ?
-                            std::make_unique<MainSplitter>(*logic, config, std::string(logic_name) + " solver") :
-                            std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+                    main_solver = createMainSolver(config, logic_name);
                     main_solver->initialize();
                     notify_success();
                 }
@@ -1308,5 +1306,26 @@ int Interpret::get_assertion_index(PTRef ref) {
 void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
+
+std::unique_ptr<MainSolver> Interpret::createMainSolver(SMTConfig & config, const char*  logic_name) {
+
+    if (config.sat_split_type() == spt_none) {
+        return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+    }
+    else {
+        auto th = MainSolver::createTheory(*logic, config);
+        auto tm = std::unique_ptr<TermMapper>(new TermMapper(*logic));
+        auto thandler = new THandler(*th, *tm);
+        return std::make_unique<MainSplitter>(std::move(th),
+                                 std::move(tm),
+                                 std::unique_ptr<THandler>(thandler),
+                                 MainSplitter::createInnerSolver(config, *thandler),
+                                 *logic,
+                                 config,
+                                 std::string(logic_name)
+                                 + " splitter");
+    }
+}
+
 
 
