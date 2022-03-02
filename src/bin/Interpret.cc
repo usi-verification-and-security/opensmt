@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ArithLogic.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
+#include "CounterRewriter.h"
 
 #include <string>
 #include <sstream>
@@ -1283,7 +1284,10 @@ void Interpret::getInterpolants(const ASTNode& n)
         interpolationContext->getSingleInterpolant(itps, partitionings[0]);
     }
 
+    CounterRewriter interesting = CounterRewriter(*logic);
     for (int j = 0; j < itps.size(); j++) {
+        interesting.rewrite(itps[j]);
+        printf("Amount of vars: %d\nAmount of boolean operators: %d\n", interesting.config.varNumber, interesting.config.boolNumber);
         auto itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
                          (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
