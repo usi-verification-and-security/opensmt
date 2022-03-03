@@ -1,6 +1,9 @@
-//
-// Created by prova on 08.02.19.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_LOOKAHEADSPLITTER_H
 #define OPENSMT_LOOKAHEADSPLITTER_H
@@ -20,6 +23,9 @@ static inline int getLog2Ceil(int i)
 }
 
 class LookaheadSplitter : public LookaheadSMTSolver {
+
+private:
+    std::vector<SplitData> splits;
 protected:
     LALoopRes solveLookahead() override;
     class LASplitNode : public LookaheadSMTSolver::LANode {
@@ -35,7 +41,7 @@ protected:
             LANode::print_local();
             for (int i = 0; i < d; i++)
                 dprintf(STDERR_FILENO, " ");
-            dprintf(STDERR_FILENO, "%s\n", sd == nullptr? "no instance" : "has instance" );
+            dprintf(STDERR_FILENO, "%s\n", sd == nullptr ? "no instance" : "has instance" );
         }
         LASplitNode const * getC1() const { return (LASplitNode*) c1.get(); }
         LASplitNode const * getC2() const { return (LASplitNode*) c2.get(); }
@@ -67,11 +73,10 @@ protected:
         LALoopRes exitState() const { return LALoopRes::unknown_final; }
         SplitBuildConfig(LookaheadSplitter & splitter_) : splitter(splitter_) {}
     };
-
 public:
-    std::vector<SplitData> splits;
-
     LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
+
+    std::vector<SplitData>    const &    getSplits()                  { return splits; }
 };
 
 #endif //OPENSMT_LOOKAHEADSPLITTER_H
