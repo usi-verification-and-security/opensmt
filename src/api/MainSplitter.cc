@@ -49,9 +49,7 @@ void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const
             std::ofstream outFile;
             outFile.open(name);
             if (outFile.is_open()) {
-                logic.dumpHeaderToFile(outFile);
                 logic.dumpFormulaToFile(outFile, problem);
-
                 if (config.smt_split_format_length() == spformat_full)
                     logic.dumpChecksatToFile(outFile);
 
