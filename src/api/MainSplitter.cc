@@ -11,9 +11,10 @@
 #include "ScatterSplitter.h"
 #include <filesystem>
 
-void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const {
+void MainSplitter::writeSplits(std::string const & baseName) const {
     assert(config.sat_split_type() != spt_none);
     assert(strcmp(config.output_dir(),"") != 0);
+
     std::vector<SplitData> const & splits = (config.sat_split_type() == spt_scatter)
             ? dynamic_cast<ScatterSplitter&>(ts.solver).getSplits()
             : dynamic_cast<LookaheadSplitter&>(ts.solver).getSplits();
@@ -38,24 +39,19 @@ void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const
 
         addToConjunction(split.constraintsToPTRefs(*thandler), conj_vec);
 
-        if (config.smt_split_format_length() == spformat_full)
-            conj_vec.push(root_instance.getRoot());
-
-        auto zeroPadString = [](std::string const &s, unsigned long nZeros) {
-            return std::string(nZeros - std::min(nZeros, s.length()), '0') + s;
-        };
-
         PTRef problem = logic.mkAnd(conj_vec);
 
-        std::string name = baseName + '-' + zeroPadString(std::to_string(i++), 2) + ".smt2";
+        auto zeroPadNumber = [](int number, unsigned long targetLength) {
+            std::string s = std::to_string(number);
+            return std::string(targetLength - std::min(targetLength, s.length()), '0') + s;
+        };
+
+        std::string name = baseName + '-' + zeroPadNumber(i++, static_cast<int>(std::log10(splits.size()))+1) + ".smt2";
         std::ofstream outFile;
         outFile.open(name);
         if (outFile.is_open()) {
             logic.dumpFormulaToFile(outFile, problem);
-            if (config.smt_split_format_length() == spformat_full)
-                logic.dumpChecksatToFile(outFile);
-
-        outFile.close();
+            outFile.close();
         } else {
             throw OsmtApiException("Failed to open file " + name);
         }

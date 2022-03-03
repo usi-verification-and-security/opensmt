@@ -581,7 +581,7 @@ bool Interpret::checkSat() {
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
         else if (o_split != spt_none) {
-            writeSplits_smtlib2(name);
+            writeSplits(name);
         }
         free(name);
     }
@@ -810,10 +810,10 @@ void Interpret::writeState(const char* filename)
     }
 }
 
-void Interpret::writeSplits_smtlib2(const char* filename)
+void Interpret::writeSplits(const char* filename)
 {
     try {
-        dynamic_cast<MainSplitter &>(getMainSolver()).writeSolverSplits_smtlib2(filename);
+        dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
     }
     catch (OsmtApiException const & e) {
         std::cout << "While writing splits to " << filename << ": " << e.what() << std::endl;

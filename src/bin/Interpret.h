@@ -126,7 +126,6 @@ class Interpret {
     void                        getOption(ASTNode& n);
     void                        writeState(const char* fname);
     void                        writeSplits(const char* fname);
-    void                        writeSplits_smtlib2(const char* fname);
     bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
