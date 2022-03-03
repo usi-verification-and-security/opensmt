@@ -41,19 +41,18 @@ Var ScatterSplitter::doActivityDecision() {
             break;
         } else {
             next = order_heap.removeMin();
-            if (splitConfig.split_on && next != var_Undef) {
-                if (splitConfig.split_preference == sppref_tterm && !theory_handler.isDeclared(next)) {
+            if (splitConfig.split_on and next != var_Undef) {
+                if (splitConfig.split_preference == sppref_tterm and not theory_handler.isDeclared(next)) {
                     discarded.push(next);
                     next = var_Undef;
-                }
-                else if (splitConfig.split_preference == sppref_bterm && theory_handler.isDeclared(next)) {
+                } else if (splitConfig.split_preference == sppref_bterm and theory_handler.isDeclared(next)) {
                     discarded.push(next);
                     next = var_Undef;
                 }
             }
         }
     }
-    if (splitConfig.split_preference == sppref_tterm || splitConfig.split_preference == sppref_bterm)
+    if (splitConfig.split_preference == sppref_tterm or splitConfig.split_preference == sppref_bterm)
         for (Var v : discarded)
             order_heap.insert(v);
 
@@ -67,8 +66,7 @@ bool ScatterSplitter::okContinue() const {
     return true;
 }
 
-void ScatterSplitter::runPeriodics()
-{
+void ScatterSplitter::runPeriodics() {
     if (conflicts % 1000 == 0)
         clausesPublish();
 
@@ -96,7 +94,7 @@ void ScatterSplitter::runPeriodics()
   |________________________________________________________________________________________________@*/
 lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 {
-    // Time my executionto search_timer
+// Time my execution to search_timer
 //    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
 #ifdef VERBOSE_SAT
     cerr << "Units when starting search:" << endl;
@@ -139,21 +137,18 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (splitConfig.split_type == spt_none || static_cast<int>(splits.size()) < splitConfig.split_num - 1)
-    {
+    assert(splitConfig.split_type != spt_none);
+    while (static_cast<int>(splits.size()) < splitConfig.split_num - 1) {
         if (!okContinue())
             return l_Undef;
         runPeriodics();
 
-
         CRef confl = propagate();
-        if (confl != CRef_Undef)
-        {
+        if (confl != CRef_Undef) {
             // CONFLICT
             conflicts++;
             conflictC++;
-            if (decisionLevel() == 0)
-            {
+            if (decisionLevel() == 0) {
                 return zeroLevelConflictHandler();
             }
             learnt_clause.clear();
@@ -163,19 +158,15 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 
             assert(value(learnt_clause[0]) == l_Undef);
 
-            if (learnt_clause.size() == 1)
-            {
+            if (learnt_clause.size() == 1) {
                 CRef reason = CRef_Undef;
-                if (logsProofForInterpolation())
-                {
+                if (logsProofForInterpolation()) {
                     CRef cr = ca.alloc(learnt_clause, false);
                     proof->endChain(cr);
                     reason = cr;
                 }
                 uncheckedEnqueue(learnt_clause[0], reason);
-            }
-            else
-            {
+            } else {
                 // ADDED FOR NEW MINIMIZATION
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
@@ -195,12 +186,9 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
             claDecayActivity();
 
             learntSizeAdjust();
-        }
-        else
-        {
+        } else {
             // NO CONFLICT
-            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget())
-            {
+            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) or not withinBudget()) {
                 // Reached bound on number of conflicts:
                 progress_estimate = progressEstimate();
                 cancelUntil(0);
@@ -208,58 +196,39 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
             }
 
             // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify())
-            {
+            if (decisionLevel() == 0 && !simplify()) {
                 return zeroLevelConflictHandler();
             }
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
             // if ((learnts.size()-nAssigns()) >= max_learnts)
-            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
+            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts) {
                 // Reduce the set of learnt clauses:
                 reduceDB();
+            }
 
-//            if ( first_model_found )
-            {
-                // Early Pruning Call
-                // Step 1: check if the current assignment is theory-consistent
+            // Early Pruning Call
+            // Step 1: check if the current assignment is theory-consistent
 
-                TPropRes res = checkTheory(false, conflictC);
-                if (res == TPropRes::Unsat) {
-                    return zeroLevelConflictHandler();
-                }
-                else if (res == TPropRes::Propagate) {
-                    continue; // Theory conflict: time for bcp
-                }
-                else if (res == TPropRes::Decide) {
-                    ;                 // Sat and no deductions: go ahead
-                }
-                else {
-                    assert( false );
-                }
-
-//          switch( res )
-//          {
-//            case -1: return l_False;        // Top-Level conflict: unsat
-//            case  0: conflictC++; continue; // Theory conflict: time for bcp
-//            case  1: break;                 // Sat and no deductions: go ahead
-//            case  2: continue;              // Sat and deductions: time for bcp
-//            default: assert( false );
-//          }
+            TPropRes res = checkTheory(false, conflictC);
+            if (res == TPropRes::Unsat) {
+                return zeroLevelConflictHandler();
+            } else if (res == TPropRes::Propagate) {
+                continue; // Theory conflict: time for bcp
+            } else if (res == TPropRes::Decide) {
+                ; // Sat and no deductions: go ahead
+            } else {
+                assert( false );
             }
 
             Lit next = lit_Undef;
-            while (decisionLevel() < assumptions.size())
-            {
+            while (decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:
                 Lit p = assumptions[decisionLevel()];
-                if (value(p) == l_True)
-                {
+                if (value(p) == l_True) {
                     // Dummy decision level:
                     newDecisionLevel();
-                }
-                else if (value(p) == l_False)
-                {
+                } else if (value(p) == l_False) {
                     analyzeFinal(~p, conflict);
                     int max = 0;
                     for (Lit q : conflict) {
@@ -269,26 +238,22 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
                     }
                     conflict_frame = max+1;
                     return zeroLevelConflictHandler();
-                }
-                else
-                {
+                } else {
                     next = p;
                     break;
                 }
             }
 
-            if (next == lit_Undef)
-            {
+            if (next == lit_Undef) {
                 // Assumptions done and the solver is in consistent state
                 updateSplitState();
-                if (!splitConfig.split_start && splitConfig.split_on && scatterLevel())
-                {
-                    if (!createSplit_scatter())   // Rest is unsat
-                    {
+                if (not splitConfig.split_start and splitConfig.split_on and scatterLevel()) {
+                    if (!createSplit_scatter()) { // Rest is unsat
                         opensmt::stop = true;
                         return l_Undef;
+                    } else {
+                        continue;
                     }
-                    else continue;
                 }
                 // Otherwise continue to variable decision.
 
@@ -307,22 +272,18 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 
 #endif
                 // Complete Call
-                if ( next == lit_Undef )
-                {
-//                    first_model_found = true;
+                if (next == lit_Undef) {
 #ifdef STATISTICS
                     const double start = cpuTime( );
 #endif
-                    TPropRes res = checkTheory(true, conflictC);
+                    res = checkTheory(true, conflictC);
 #ifdef STATISTICS
                     tsolvers_time += cpuTime( ) - start;
 #endif
-                    if ( res == TPropRes::Propagate )
-                    {
+                    if ( res == TPropRes::Propagate ) {
                         continue;
                     }
-                    if ( res == TPropRes::Unsat )
-                    {
+                    if ( res == TPropRes::Unsat ) {
                         return zeroLevelConflictHandler();
                     }
                     assert( res == TPropRes::Decide );
@@ -333,9 +294,10 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
                     next = pickBranchLit();
                 }
 
-                if (next == lit_Undef)
+                if (next == lit_Undef) {
                     // Model found:
                     return l_True;
+                }
             }
             assert(value(next) == l_Undef);
             // Increase decision level and enqueue 'next'
@@ -350,8 +312,7 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
     return l_Undef;
 }
 
-lbool ScatterSplitter::solve_()
-{
+lbool ScatterSplitter::solve_() {
 //    opensmt::PrintStopWatch watch("solve time", cerr);
 
     for (Lit l : this->assumptions) {
@@ -363,40 +324,42 @@ lbool ScatterSplitter::solve_()
     // SAT solver.
     declareVarsToTheories();
 
-    splitConfig.split_type     = config.sat_split_type();
-    if (splitConfig.split_type != spt_none and splitConfig.split_on)
-    {
-        opensmt::stop = false;
-        splitConfig.split_start    = config.sat_split_asap();
-        splitConfig.split_num      = config.sat_split_num();
-        splitConfig.split_inittune = config.sat_split_inittune();
-        splitConfig.split_midtune  = config.sat_split_midtune();
-        splitConfig.split_units    = config.sat_split_units();
-        if (splitConfig.split_units == spm_time)
-            splitConfig.split_next = config.sat_split_inittune() + cpuTime();
-        else if (splitConfig.split_units == spm_decisions)
-            splitConfig.split_next = config.sat_split_inittune() + decisions;
-        else splitConfig.split_next = -1;
+    assert(config.sat_split_type() != spt_none);
 
-        splitConfig.split_preference = config.sat_split_preference();
-
+    splitConfig.split_start    = config.sat_split_asap();
+    splitConfig.split_on       = false;
+    splitConfig.split_num      = config.sat_split_num();
+    splitConfig.split_inittune = config.sat_split_inittune();
+    splitConfig.split_midtune  = config.sat_split_midtune();
+    splitConfig.split_units    = config.sat_split_units();
+    if (splitConfig.split_units == spm_time) {
+        splitConfig.split_next = config.sat_split_inittune() + cpuTime();
+    } else if (splitConfig.split_units == spm_decisions) {
+        splitConfig.split_next = config.sat_split_inittune() + decisions;
+    } else {
+        splitConfig.split_next = -1;
     }
+
+    splitConfig.split_preference = config.sat_split_preference();
     splitConfig.resource_units = config.sat_resource_units();
     splitConfig.resource_limit = config.sat_resource_limit();
+
     if (splitConfig.resource_limit >= 0) {
 
-        if (splitConfig.resource_units == spm_time)
+        if (splitConfig.resource_units == spm_time) {
             splitConfig.next_resource_limit = cpuTime() + splitConfig.resource_limit;
-        else if (splitConfig.resource_units == spm_decisions)
+        } else if (splitConfig.resource_units == spm_decisions) {
             splitConfig.next_resource_limit = decisions + splitConfig.resource_limit;
+        }
+    } else {
+        splitConfig.next_resource_limit = -1;
     }
-    else splitConfig.next_resource_limit = -1;
 
-    if (config.dump_only()) return l_Undef;
+    if (config.dump_only()) {
+        return l_Undef;
+    }
 
     random_seed = config.getRandomSeed();
-    // UF solver should be enabled for lazy dtc
-    assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 
     if (config.sat_dump_cnf != 0) {
         dumpCNF();
@@ -405,7 +368,9 @@ lbool ScatterSplitter::solve_()
     model.clear();
     conflict.clear();
 
-    if (!ok) return l_False;
+    if (!ok) {
+        return l_False;
+    }
 
     solves++;
 
@@ -418,8 +383,7 @@ lbool ScatterSplitter::solve_()
 
     unsigned last_luby_k = luby_k;
 
-    if (verbosity >= 1)
-    {
+    if (verbosity >= 1) {
         fprintf(stderr, "; ============================[ Search Statistics ]==============================\n");
         fprintf(stderr, "; | Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
         fprintf(stderr, "; |           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
@@ -429,53 +393,46 @@ lbool ScatterSplitter::solve_()
 
     // Search:
 
-    if (config.dryrun())
+    if (config.dryrun()) {
         stop = true;
-    while (status == l_Undef && !opensmt::stop && !this->stop)
-    {
+    }
+    while (status == l_Undef && !opensmt::stop && !this->stop) {
         // Print some information. At every restart for
         // standard mode or any 2^n intervarls for luby
         // restarts
-        if (conflicts == 0 || conflicts >= next_printout)
-        {
-            if ( config.verbosity() > 0 ) {
+        if (conflicts == 0 || conflicts >= next_printout) {
+            if (config.verbosity() > 0) {
                 reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
                         cpuTime(), memUsed() / 1048576.0);
                 fflush(stderr);
             }
         }
 
-        if (config.sat_use_luby_restart)
+        if (config.sat_use_luby_restart) {
             next_printout *= 2;
-        else
+        } else {
             next_printout *= restart_inc;
-
+        }
         // XXX
         status = search((int)nof_conflicts, (int)nof_learnts);
         nof_conflicts = restartNextLimit( nof_conflicts );
-        if (config.sat_use_luby_restart)
-        {
-            if (last_luby_k != luby_k)
-            {
+        if (config.sat_use_luby_restart) {
+            if (last_luby_k != luby_k) {
                 nof_learnts *= 1.215;
             }
             last_luby_k = luby_k;
-        }
-        else
-        {
+        } else {
             nof_learnts *= learntsize_inc;
         }
     }
 
-    if (status == l_True)
-    {
+    if (status == l_True) {
         // Extend & copy model:
         model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++)
+        for (int i = 0; i < nVars(); i++) {
             model[i] = value(i);
-    }
-    else
-    {
+        }
+    } else {
         assert( opensmt::stop || status == l_False || this->stop);
     }
 
@@ -484,7 +441,7 @@ lbool ScatterSplitter::solve_()
 }
 
 lbool ScatterSplitter::zeroLevelConflictHandler() {
-    if (splits.size() > 0) {
+    if (splits.empty()) {
         opensmt::stop = true;
         return l_Undef;
     } else {
@@ -492,18 +449,17 @@ lbool ScatterSplitter::zeroLevelConflictHandler() {
     }
 }
 
-bool ScatterSplitter::scatterLevel()
-{
+bool ScatterSplitter::scatterLevel() {
     int d;
-    if (!splitConfig.split_on) return false;
+    if (not splitConfig.split_on) {
+        return false;
+    }
     // Current scattered instance number i = splits.size() + 1
     float r = 1/(float)(splitConfig.split_num-splits.size());
-    for (int i = 0; ; i++)
-    {
+    for (int i = 0; ; i++) {
         // 2 << i == 2^(i+1)
         if ((2 << (i-1) <= splitConfig.split_num - static_cast<int>(splits.size())) &&
-            (2 << i >= splitConfig.split_num - static_cast<int>(splits.size())))
-        {
+            (2 << i >= splitConfig.split_num - static_cast<int>(splits.size()))) {
             // r-1(2^i) < 0 and we want absolute
             d = -(r-1/(float)(2<<(i-1))) > r-1/(float)(2<<i) ? i+1 : i;
             break;
@@ -512,9 +468,7 @@ bool ScatterSplitter::scatterLevel()
     return d == decisionLevel() - assumptions.size();
 }
 
-
-bool ScatterSplitter::createSplit_scatter()
-{
+bool ScatterSplitter::createSplit_scatter() {
     assert(splits.size() == split_assumptions.size());
     split_assumptions.emplace_back();
     SplitData sp;
@@ -552,28 +506,43 @@ bool ScatterSplitter::createSplit_scatter()
     splitConfig.split_start = true;
     splitConfig.split_on    = true;
     splitConfig.split_next = (splitConfig.split_units == spm_time ? cpuTime() + splitConfig.split_midtune : decisions + splitConfig.split_midtune);
+
+    splits.emplace_back(std::move(sp));
+
     return true;
 }
 
-bool ScatterSplitter::excludeAssumptions(vec<Lit>& neg_constrs)
-{
+bool ScatterSplitter::excludeAssumptions(vec<Lit> const & neg_constrs) {
     addOriginalClause(neg_constrs);
     simplify();
     return ok;
 }
 
-void ScatterSplitter::updateSplitState()
-{
-    if (splitConfig.split_start)
-    {
-        if ((splitConfig.split_units == spm_time && cpuTime() >= splitConfig.split_next) ||
-            (splitConfig.split_units == spm_decisions && decisions >= splitConfig.split_next))
-        {
+void ScatterSplitter::updateSplitState() {
+    if (splitConfig.split_start and not splitConfig.split_on) {
+        if ((splitConfig.split_units == spm_time and cpuTime() >= splitConfig.split_next) or
+            (splitConfig.split_units == spm_decisions and decisions >= splitConfig.split_next)) {
             cancelUntil(0);
             splitConfig.split_start = false;
             splitConfig.split_on = true;
-            if (splitConfig.split_units == spm_time) splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
-            if (splitConfig.split_units == spm_decisions) splitConfig.split_next = decisions + splitConfig.split_midtune;
+            if (splitConfig.split_units == spm_time) {
+                splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
+            } else if (splitConfig.split_units == spm_decisions) {
+                splitConfig.split_next = decisions + splitConfig.split_midtune;
+            }
+        }
+    }
+    if (splitConfig.split_start and splitConfig.split_on) {
+        if ((splitConfig.split_units == spm_time and cpuTime() >= splitConfig.split_next) or
+            (splitConfig.split_units == spm_decisions and decisions >= splitConfig.split_next)) {
+            cancelUntil(0);
+            splitConfig.split_start = false;
+            splitConfig.split_on = true;
+            if (splitConfig.split_units == spm_time) {
+                splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
+            } else if (splitConfig.split_units == spm_decisions) {
+                splitConfig.split_next = decisions + splitConfig.split_midtune;
+            }
         }
     }
 }

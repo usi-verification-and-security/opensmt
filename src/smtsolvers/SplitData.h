@@ -17,14 +17,13 @@ class SplitData
     std::vector<vec<Lit>>  learnts;        // The learnt clauses
 
     static char* litToString(Lit);
-    template<class C> char* clauseToString(const C&);
+    template<class C> char* clauseToString(C const &);
     char* clauseToString(const vec<Lit>&);
     static int getLitSize(Lit l);
-    static std::vector<vec<PtAsgn>> toPTRefs(std::vector<vec<Lit>> const & in, const THandler &thandler);
+    static std::vector<vec<PtAsgn>> toPTRefs(std::vector<vec<Lit>> const & in, THandler const & thandler);
 
 public:
-    template<class C> void addConstraint(const C& c)
-    {
+    template<class C> void addConstraint(const C& c) {
         constraints.emplace_back();
         vec<Lit> cstr;
         for (Lit l : c) {
