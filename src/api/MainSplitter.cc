@@ -72,3 +72,28 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
     }
     return std::unique_ptr<SimpSMTSolver>(solver);
 }
+
+std::vector<std::string> MainSplitter::getPartitionClauses() {
+    std::vector<std::string> partitions;
+    std::vector<SplitData> const &splits = (config.sat_split_type() == spt_scatter)
+                                           ? dynamic_cast<ScatterSplitter &>(ts.solver).getSplits()
+                                           : dynamic_cast<LookaheadSplitter &>(ts.solver).getSplits();
+    for (auto const &split : splits) {
+        std::vector<vec<PtAsgn> > constraints;
+        split.constraintsToPTRefs(*thandler);
+        vec<PTRef> clauses;
+        for (auto const &constraint : constraints) {
+            vec<PTRef> clause;
+            for (auto const &ptAsgn : constraint) {
+                PTRef pt =
+                        ptAsgn.sgn == l_True ?
+                        ptAsgn.tr :
+                        getLogic().mkNot(ptAsgn.tr);
+                clause.push(pt);
+            }
+            clauses.push(getLogic().mkOr(clause));
+        }
+        partitions.push_back(getTHandler().getLogic().printString(getLogic().mkAnd(clauses)));
+    }
+    return partitions;
+}

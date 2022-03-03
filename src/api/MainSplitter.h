@@ -22,6 +22,8 @@ public:
                  {}
 
     void writeSolverSplits_smtlib2(std::string const & file) const;
+
+    std::vector<std::string> getPartitionClauses();
 };
 
 
