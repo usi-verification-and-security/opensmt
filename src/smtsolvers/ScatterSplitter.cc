@@ -121,7 +121,7 @@ bool ScatterSplitter::scatterLevel() {
 }
 
 opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
-    assert(splitContext.getCurrentSplitCount() == split_assumptions.size());
+    assert(splitContext.getCurrentSplitCount() == static_cast<int>(split_assumptions.size()));
     SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit> split_assumption;
