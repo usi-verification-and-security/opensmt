@@ -62,3 +62,15 @@ void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const
         }
     }
 }
+
+std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & config, THandler & thandler) {
+    SimpSMTSolver* solver = nullptr;
+    if (config.sat_split_type() == spt_scatter) {
+        solver = new ScatterSplitter(config, thandler);
+    }
+        // to do
+    else if (config.sat_split_type() == spt_lookahead)  {
+        solver = new LookaheadSplitter(config, thandler);
+    }
+    return std::unique_ptr<SimpSMTSolver>(solver);
+}
