@@ -305,8 +305,6 @@ public:
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
   static const char* o_do_substitutions;
-  static const char* o_smt_split_format;
-  static const char* o_smt_split_format_length;
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
   static const char* o_ghost_vars;
@@ -633,16 +631,6 @@ public:
               return spm_time;
       }
       return spm_unknown;
-    }
-  const SpFormat smt_split_format_length() const {
-      if (optionTable.has(o_smt_split_format_length)) {
-          const char* type = optionTable[o_smt_split_format_length]->getValue().strval;
-          if (strcmp(type, spformats_brief) == 0)
-              return spformat_brief;
-          else if (strcmp(type, spformats_full) == 0)
-              return spformat_full;
-      }
-      return spformat_full; // The default
     }
   bool respect_logic_partitioning_hints() const
   { return optionTable.has(o_respect_logic_partitioning_hints) ?

@@ -21,9 +21,8 @@ public:
                  MainSolver(std::move(t), std::move(tm), std::move(th), std::move(ss),logic,config, std::move(name))
                  {}
 
-    void writeSolverSplits_smtlib2(std::string const & file) const;
-
     std::vector<std::string> getPartitionClauses();
+    void writeSplits(std::string const & file) const;
 };
 
 
