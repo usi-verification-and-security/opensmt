@@ -1,6 +1,9 @@
-//
-// Created by prova on 08.02.19.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include "LookaheadSplitter.h"
 
@@ -20,7 +23,7 @@ bool LookaheadSplitter::createSplitLookahead(LASplitNode & n)
 {
     // Create a split instance and add it to node n.
     assert(n.sd == nullptr);
-    n.sd = std::make_unique<SplitData>(config.smt_split_format_length() == spformat_brief);
+    n.sd = std::make_unique<SplitData>();
     SplitData& sd = *n.sd;
     printf("; Outputing an instance:\n; ");
     Lit p = lit_Undef;

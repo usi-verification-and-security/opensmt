@@ -13,8 +13,6 @@
 //
 class SplitData
 {
-    bool                   no_instance;    // Does SplitData store the instance?
-
     std::vector<vec<Lit>>  constraints;    // The split constraints
     std::vector<vec<Lit>>  learnts;        // The learnt clauses
 
@@ -25,10 +23,6 @@ class SplitData
     static std::vector<vec<PtAsgn>> toPTRefs(std::vector<vec<Lit>> const & in, const THandler &thandler);
 
 public:
-    SplitData(bool no_instance = true)
-            : no_instance(no_instance)
-    { assert(no_instance); }
-
     template<class C> void addConstraint(const C& c)
     {
         constraints.emplace_back();
