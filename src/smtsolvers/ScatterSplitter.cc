@@ -70,7 +70,7 @@ bool ScatterSplitter::okContinue() const {
     } else if (conflicts % 1000 == 0 and splitContext.resourceLimitReached(decisions)) {
         opensmt::stop = true;
         return false;
-    } else if (static_cast<int>(splitContext.getSplits().size()) < splitContext.splitTargetNumber() - 1) {
+    } else if (static_cast<int>(splitContext.getCurrentSplitCount()) < splitContext.splitTargetNumber() - 1) {
         return false;
     }
     return true;
@@ -93,7 +93,7 @@ lbool ScatterSplitter::solve_() {
 }
 
 lbool ScatterSplitter::zeroLevelConflictHandler() {
-    if (not splitContext.getSplits().empty()) {
+    if (splitContext.hasCurrentSplits()) {
         opensmt::stop = true;
         return l_Undef;
     } else {
@@ -103,7 +103,7 @@ lbool ScatterSplitter::zeroLevelConflictHandler() {
 
 bool ScatterSplitter::scatterLevel() {
     int d;
-    int currentSplitNum = static_cast<int>(splitContext.getSplits().size());
+    int currentSplitNum = static_cast<int>(splitContext.getCurrentSplitCount());
     int targetSplitNum = splitContext.splitTargetNumber();
     int splitsToDo = targetSplitNum - currentSplitNum;
     assert(splitsToDo > 0);
@@ -121,7 +121,7 @@ bool ScatterSplitter::scatterLevel() {
 }
 
 opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
-    assert(splitContext.getSplits().size() == split_assumptions.size());
+    assert(splitContext.getCurrentSplitCount() == split_assumptions.size());
     SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit> split_assumption;
