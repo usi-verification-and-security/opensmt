@@ -5,7 +5,7 @@ add_library(smtsolvers OBJECT ""
 		LookaheadSplitter.h
 		ScatterSplitter.cc
 		ScatterSplitter.h
-		SplitConfig.h
+		SplitContext.h
 		SplitData.cc
 		SplitData.h
 		LAScore.h

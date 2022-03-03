@@ -154,7 +154,6 @@ class SMTOption {
 
 // Type safe wrapper for split types
 typedef struct SpType    { int t; } SpType;
-typedef struct SpUnit    { int t; } SpUnit;
 typedef struct SpPref    { int t; } SpPref;
 
 typedef struct SpFormat  { int t; } SpFormat;
@@ -177,9 +176,7 @@ static const struct ItpAlgorithm itp_lra_alg_decomposing_weak  = {5 };
 static const char *itp_lra_factor_0 = "1/2";
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
-inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
-inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t; }
 inline bool operator==(const SpPref& s1, const SpPref& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t; }
 inline bool operator==(const SpFormat& s1, const SpFormat& s2) { return s1.t == s2.t; }
@@ -204,9 +201,7 @@ static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
 static const struct SpType spt_scatter   = { 2 };
 
-static const struct SpUnit spm_decisions = { 0 };
-static const struct SpUnit spm_time      = { 1 };
-static const struct SpUnit spm_unknown   = { 2 };
+enum class SpUnit : char { decisions, time };
 
 static const struct SpPref sppref_tterm = { 0 };
 static const struct SpPref sppref_blind = { 1 };
@@ -623,16 +618,17 @@ public:
     { return optionTable.has(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }
 
-  const SpUnit sat_resource_units() const {
+  SpUnit sat_resource_units() const {
       if (optionTable.has(o_sat_resource_units)) {
           const char* type = optionTable[o_sat_resource_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return spm_decisions;
+              return SpUnit::decisions;
           else if (strcmp(type, spts_time) == 0)
-              return spm_time;
+              return SpUnit::time;
       }
-      return spm_unknown;
+      return SpUnit::decisions;
     }
+
   bool respect_logic_partitioning_hints() const
   { return optionTable.has(o_respect_logic_partitioning_hints) ?
       optionTable[o_respect_logic_partitioning_hints]->getValue().numval : 0; }
@@ -713,16 +709,16 @@ public:
       }
   }
 
-  const SpUnit sat_split_units() const {
+  SpUnit sat_split_units() const {
       if (optionTable.has(o_sat_split_units)) {
           const char* type = optionTable[o_sat_split_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return spm_decisions;
+              return SpUnit::decisions;
           else if (strcmp(type, spts_time) == 0)
-              return spm_time;
+              return SpUnit::time;
       }
-      return spm_decisions;
-    }
+      return SpUnit::decisions;
+  }
 
   double sat_split_inittune() const {
       return optionTable.has(o_sat_split_inittune) ?
