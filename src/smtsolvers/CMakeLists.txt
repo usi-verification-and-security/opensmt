@@ -13,7 +13,6 @@ add_library(smtsolvers OBJECT ""
 		)
 
 target_sources(smtsolvers
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SMTSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.h"
@@ -49,6 +48,6 @@ install(FILES TheoryInterpolator.h
         DESTINATION ${INSTALL_HEADERS_DIR})
 
 
-install(FILES SimpSMTSolver.h CoreSMTSolver.h SMTSolver.h  ScatterSplitter.h
+install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
