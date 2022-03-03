@@ -18,7 +18,6 @@ class SplitContext {
     SpType   split_type;
 
     bool     split_on;
-    bool     split_start;
     int      split_num;
     SpUnit   split_units;
 
@@ -28,7 +27,6 @@ class SplitContext {
 
     SpPref   split_preference;
 
-    int      unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
     bool resourceLimitEnabled() const { return resource_limit >= 0; }
     bool useTimeAsResourceLimit() const { return resource_units == SpUnit::time; }
     bool useTimeAsSplitLimit() const { return split_units == SpUnit::time; }
@@ -44,6 +42,8 @@ class SplitContext {
     std::vector<SplitData> splits;
 public:
 
+    int getCurrentSplitCount() const { return splits.size(); }
+    bool hasCurrentSplits() const { return not splits.empty(); }
     void enterInitCycle(uint64_t decisions) {
         split_on = false;
         setNextSplitLimit(decisions, initTune);
@@ -102,14 +102,12 @@ public:
         setNextResourceLimit(decisions);
         split_type       = config.sat_split_type();
         split_on         = false;
-        split_start      = config.sat_split_asap();
         split_num        = config.sat_split_num();
         split_units      = config.sat_split_units();
         initTune         = config.sat_split_inittune();
         midTune          = config.sat_split_midtune();
         split_next       = split_units == SpUnit::time ? initTune + cpuTime() : initTune + decisions;
         split_preference = config.sat_split_preference();
-        unadvised_splits = 0;
     }
 
     SplitContext(const SMTConfig & config, uint64_t decisions) : config(config) { reset(decisions); }
