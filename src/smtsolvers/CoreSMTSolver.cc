@@ -1384,11 +1384,7 @@ void CoreSMTSolver::popBacktrackPoint()
 bool CoreSMTSolver::okContinue() const
 {
     if ( opensmt::stop ) return false;
-
-    if (conflicts % 1000 == 0) {
-        if ( this->stop )
-            return false;
-    }
+    
     return true;
 }
 
@@ -1632,6 +1628,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             uncheckedEnqueue(next);
         }
     }
+    assert(false);
     cancelUntil(0);
     return l_Undef;
 }
@@ -1862,7 +1859,7 @@ void CoreSMTSolver::relocAll(ClauseAllocator& to)
         for (int s = 0; s < 2; s++)
         {
             Lit p = mkLit(v, s);
-            // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
+            // printf(" >>> RELOCING: %s%d\n", sign(p) ? "-" : "", var(p)+1);
             vec<Watcher>& ws = watches[p];
             for (int j = 0; j < ws.size(); j++)
                 ca.reloc(ws[j].cref, to);

@@ -48,7 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #define CACHE_POLARITY     0
 
-#include "SMTSolver.h"
 #include "THandler.h"
 
 #include <cstdio>
@@ -390,7 +389,7 @@ protected:
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
-    virtual lbool zeroLevelConflictHandler();                                               // Common handling of zero-level conflict as it can happen at multiple places
+    virtual lbool zeroLevelConflictHandler();                                          // Common handling of zero-level conflict as it can happen at multiple places
 
     // Maintaining Variable/Clause activity:
     //
@@ -898,7 +897,7 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, const C& c )
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
-        os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+        os << (sign(c[i]) ? "(not " : "") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
     }
     if ( c.size( ) > 1 ) os << ")";
 }
@@ -912,10 +911,10 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, vec< Lit > & c, boo
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
         if ( ids )
-            os << (sign(c[i])?"-":" ") << v << " ";
+            os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
-            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+            os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -930,10 +929,10 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, std::vector< Lit > 
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
         if ( ids )
-            os << (sign(c[i])?"-":" ") << v << " ";
+            os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
-            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+            os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") " : " ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -946,7 +945,7 @@ inline void CoreSMTSolver::printSMTLit(std::ostream & os, const Lit l )
     else if ( v == 1 ) os << "false";
     else
     {
-        os << (sign(l)?"(not ":"") << theory_handler.getVarName(v) << (sign(l)?") ":" ");
+        os << (sign(l) ? "(not " : "") << theory_handler.getVarName(v) << (sign(l) ? ") " : " ");
     }
 }
 
