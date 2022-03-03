@@ -141,13 +141,6 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 #endif
     while (splitConfig.split_type == spt_none || static_cast<int>(splits.size()) < splitConfig.split_num - 1)
     {
-        if (not splitConfig.split_on and config.sat_solver_limit() and config.sat_solver_limit() == conflicts) {
-            std::cout << config.getInfo(":status").toString() << std::endl;
-            std::cout << config.getRandomSeed() << std::endl;
-            opensmt::stop = true;
-            setSplitConfig_split_on();
-            return l_Undef;
-        }
         if (!okContinue())
             return l_Undef;
         runPeriodics();
