@@ -24,7 +24,9 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
-    return ((!splitConfig.split_on && drand(random_seed) < random_var_freq) || (splitConfig.split_on && splitConfig.split_preference == sppref_rand)) && !order_heap.empty();
+    return ((not splitConfig.splitOn() and drand(random_seed) < random_var_freq) or
+            (splitConfig.splitOn() and splitConfig.preferRandom()))
+           and not order_heap.empty();
 }
 
 Var ScatterSplitter::doActivityDecision() {
@@ -32,7 +34,7 @@ Var ScatterSplitter::doActivityDecision() {
     Var next = var_Undef;
     while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
         if (order_heap.empty()) {
-            if (splitConfig.split_preference == sppref_tterm || splitConfig.split_preference == sppref_bterm) {
+            if (splitConfig.preferTerm() or splitConfig.preferFormula()) {
                 if (discarded.size() > 0) {
                     next = discarded[0];
                 } else {
@@ -44,18 +46,18 @@ Var ScatterSplitter::doActivityDecision() {
             break;
         } else {
             next = order_heap.removeMin();
-            if (splitConfig.split_on and next != var_Undef) {
-                if (splitConfig.split_preference == sppref_tterm and not theory_handler.isDeclared(next)) {
+            if (splitConfig.splitOn() and next != var_Undef) {
+                if (splitConfig.preferTerm() and not theory_handler.isDeclared(next)) {
                     discarded.push(next);
                     next = var_Undef;
-                } else if (splitConfig.split_preference == sppref_bterm and theory_handler.isDeclared(next)) {
+                } else if (splitConfig.preferFormula() and theory_handler.isDeclared(next)) {
                     discarded.push(next);
                     next = var_Undef;
                 }
             }
         }
     }
-    if (splitConfig.split_preference == sppref_tterm or splitConfig.split_preference == sppref_bterm)
+    if (splitConfig.preferTerm() or splitConfig.preferFormula())
         for (Var v : discarded)
             order_heap.insert(v);
 
@@ -64,6 +66,10 @@ Var ScatterSplitter::doActivityDecision() {
 
 bool ScatterSplitter::okContinue() const {
     if (!CoreSMTSolver::okContinue()) {
+        return false;
+    }
+    if (conflicts % 1000 == 0 and splitConfig.resourceLimitReached(decisions)) {
+        opensmt::stop = true;
         return false;
     }
     return true;
@@ -140,8 +146,8 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    assert(splitConfig.split_type != spt_none);
-    while (static_cast<int>(splits.size()) < splitConfig.split_num - 1) {
+    assert(splitConfig.isSplitTypeScatter());
+    while (static_cast<int>(splits.size()) < splitConfig.splitTargetNumber() - 1) {
         if (!okContinue())
             return l_Undef;
         runPeriodics();
@@ -250,7 +256,7 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
             if (next == lit_Undef) {
                 // Assumptions done and the solver is in consistent state
                 updateSplitState();
-                if (not splitConfig.split_start and splitConfig.split_on and scatterLevel()) {
+                if (not splitConfig.splitStarted() and splitConfig.splitOn() and scatterLevel()) {
                     if (!createSplit_scatter()) { // Rest is unsat
                         opensmt::stop = true;
                         return l_Undef;
@@ -327,36 +333,9 @@ lbool ScatterSplitter::solve_() {
     // SAT solver.
     declareVarsToTheories();
 
-    assert(config.sat_split_type() != spt_none);
+    assert(config.sat_split_type() == spt_scatter);
 
-    splitConfig.split_start    = config.sat_split_asap();
-    splitConfig.split_on       = false;
-    splitConfig.split_num      = config.sat_split_num();
-    splitConfig.split_inittune = config.sat_split_inittune();
-    splitConfig.split_midtune  = config.sat_split_midtune();
-    splitConfig.split_units    = config.sat_split_units();
-    if (splitConfig.split_units == spm_time) {
-        splitConfig.split_next = config.sat_split_inittune() + cpuTime();
-    } else if (splitConfig.split_units == spm_decisions) {
-        splitConfig.split_next = config.sat_split_inittune() + decisions;
-    } else {
-        splitConfig.split_next = -1;
-    }
-
-    splitConfig.split_preference = config.sat_split_preference();
-    splitConfig.resource_units = config.sat_resource_units();
-    splitConfig.resource_limit = config.sat_resource_limit();
-
-    if (splitConfig.resource_limit >= 0) {
-
-        if (splitConfig.resource_units == spm_time) {
-            splitConfig.next_resource_limit = cpuTime() + splitConfig.resource_limit;
-        } else if (splitConfig.resource_units == spm_decisions) {
-            splitConfig.next_resource_limit = decisions + splitConfig.resource_limit;
-        }
-    } else {
-        splitConfig.next_resource_limit = -1;
-    }
+    splitConfig.reset(decisions);
 
     if (config.dump_only()) {
         return l_Undef;
@@ -454,15 +433,15 @@ lbool ScatterSplitter::zeroLevelConflictHandler() {
 
 bool ScatterSplitter::scatterLevel() {
     int d;
-    if (not splitConfig.split_on) {
+    if (not splitConfig.splitOn()) {
         return false;
     }
     // Current scattered instance number i = splits.size() + 1
-    float r = 1/(float)(splitConfig.split_num-splits.size());
+    float r = 1/(float)(splitConfig.splitTargetNumber()-splits.size());
     for (int i = 0; ; i++) {
         // 2 << i == 2^(i+1)
-        if ((2 << (i-1) <= splitConfig.split_num - static_cast<int>(splits.size())) &&
-            (2 << i >= splitConfig.split_num - static_cast<int>(splits.size()))) {
+        if ((2 << (i-1) <= splitConfig.splitTargetNumber() - static_cast<int>(splits.size())) &&
+            (2 << i >= splitConfig.splitTargetNumber() - static_cast<int>(splits.size()))) {
             // r-1(2^i) < 0 and we want absolute
             d = -(r-1/(float)(2<<(i-1))) > r-1/(float)(2<<i) ? i+1 : i;
             break;
@@ -478,11 +457,8 @@ bool ScatterSplitter::createSplit_scatter() {
     vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
     for (int i = assumptions.size(); i < decisionLevel(); i++) {
-        vec<Lit> tmp;
-        splitData.addConstraint(std::vec<Lit>{trail[trail_lim[i]]});
-        tmp.push(l);
-        // Add the literal
-        splitData.addConstraint(tmp);
+        Lit l = trail[trail_lim[i]];
+        splitData.addConstraint<vec<Lit>>({l});
         // Remember this literal in the split assumptions vector of the
         // SAT solver
         split_assumption.push(l);
@@ -490,23 +466,21 @@ bool ScatterSplitter::createSplit_scatter() {
         // space
         constraints_negated.push(~l);
     }
-    for (size_t i = 0; i < split_assumptions.size() - 1; i++) {
-        const auto & split_assumption = split_assumptions[i];
+    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
         vec<Lit> tmp;
-        for (auto tr : split_assumption)
+        for (auto tr : split_assumptions[i]) {
             tmp.push(~tr);
+        }
         splitData.addConstraint(tmp);
     }
-    splits.emplace_back(std::move(splitData));
-    // XXX Skipped learned clauses
+
     cancelUntil(0);
     if (!excludeAssumptions(constraints_negated))
         return false;
-    simplify();
     assert(ok);
-    splitConfig.split_start = true;
-    splitConfig.split_on    = true;
-    splitConfig.split_next = (splitConfig.split_units == spm_time ? cpuTime() + splitConfig.split_midtune : decisions + splitConfig.split_midtune);
+    splitConfig.startSplit();
+    splitConfig.continueSplit();
+    splitConfig.updateNextSplitLimit(decisions);
 
     splits.emplace_back(std::move(splitData));
 
@@ -520,30 +494,10 @@ bool ScatterSplitter::excludeAssumptions(vec<Lit> const & neg_constrs) {
 }
 
 void ScatterSplitter::updateSplitState() {
-    if (splitConfig.split_start and not splitConfig.split_on) {
-        if ((splitConfig.split_units == spm_time and cpuTime() >= splitConfig.split_next) or
-            (splitConfig.split_units == spm_decisions and decisions >= splitConfig.split_next)) {
-            cancelUntil(0);
-            splitConfig.split_start = false;
-            splitConfig.split_on = true;
-            if (splitConfig.split_units == spm_time) {
-                splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
-            } else if (splitConfig.split_units == spm_decisions) {
-                splitConfig.split_next = decisions + splitConfig.split_midtune;
-            }
-        }
-    }
-    if (splitConfig.split_start and splitConfig.split_on) {
-        if ((splitConfig.split_units == spm_time and cpuTime() >= splitConfig.split_next) or
-            (splitConfig.split_units == spm_decisions and decisions >= splitConfig.split_next)) {
-            cancelUntil(0);
-            splitConfig.split_start = false;
-            splitConfig.split_on = true;
-            if (splitConfig.split_units == spm_time) {
-                splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
-            } else if (splitConfig.split_units == spm_decisions) {
-                splitConfig.split_next = decisions + splitConfig.split_midtune;
-            }
-        }
+    if (splitConfig.splitStarted() and splitConfig.splitLimitReached(decisions)) {
+        cancelUntil(0);
+        splitConfig.unStartSplit();
+        splitConfig.continueSplit();
+        splitConfig.updateNextSplitLimit(decisions);
     }
 }
