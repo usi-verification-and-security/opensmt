@@ -55,17 +55,10 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
         } else if (logic.isTimes(t)) {
             // If it is times, then one side must be constant, other
             // is enqueued with a new constant
-            const Pterm & term = logic.getPterm(t);
-            assert(term.size() == 2);
-            PTRef x = term[0];
-            PTRef y = term[1];
-            assert(logic.isConstant(x) || logic.isConstant(y));
-            if (logic.isConstant(y)) {
-                std::swap(x, y);
-            }
-            opensmt::Real new_c = logic.getNumConst(x);
+            auto [var, constant] = logic.splitTermToVarAndConst(t);
+            opensmt::Real new_c = logic.getNumConst(constant);
             new_c *= c;
-            curr_term.emplace_back(y);
+            curr_term.emplace_back(var);
             curr_const.emplace_back(std::move(new_c));
         } else {
             // Otherwise it is a variable, Ite, UF or constant
