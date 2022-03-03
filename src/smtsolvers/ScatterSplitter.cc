@@ -479,7 +479,7 @@ bool ScatterSplitter::createSplit_scatter() {
     // Add the literals on the decision levels
     for (int i = assumptions.size(); i < decisionLevel(); i++) {
         vec<Lit> tmp;
-        Lit l = trail[trail_lim[i]];
+        splitData.addConstraint(std::vec<Lit>{trail[trail_lim[i]]});
         tmp.push(l);
         // Add the literal
         splitData.addConstraint(tmp);
