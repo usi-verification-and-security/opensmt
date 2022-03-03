@@ -516,7 +516,7 @@ bool ScatterSplitter::scatterLevel()
             break;
         }
     }
-    return d == decisionLevel()+assumptions.size();
+    return d == decisionLevel() - assumptions.size();
 }
 
 
@@ -524,11 +524,11 @@ bool ScatterSplitter::createSplit_scatter()
 {
     assert(splits.size() == split_assumptions.size());
     split_assumptions.emplace_back();
-    SplitData sp = SplitData();
+    SplitData sp;
     vec<Lit> constraints_negated;
     vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
-    for (int i = 0; i < decisionLevel(); i++) {
+    for (int i = assumptions.size(); i < decisionLevel(); i++) {
         vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
@@ -541,14 +541,15 @@ bool ScatterSplitter::createSplit_scatter()
         // space
         constraints_negated.push(~l);
     }
-    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
+    for (size_t i = 0; i < split_assumptions.size() - 1; i++) {
         const auto & split_assumption = split_assumptions[i];
         vec<Lit> tmp;
         for (auto tr : split_assumption)
             tmp.push(~tr);
         sp.addConstraint(tmp);
     }
-    splits.emplace_back(std::move(sp));
+    if (not split_assumptions.empty())
+        splits.emplace_back(std::move(sp));
     // XXX Skipped learned clauses
     cancelUntil(0);
     if (!excludeAssumptions(constraints_negated))
