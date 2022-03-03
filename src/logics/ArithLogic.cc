@@ -269,20 +269,6 @@ void ArithLogic::termSort(vec<PTRef>& v) const
     sort(v, LessThan_deepPTRef(*this));
 }
 
-std::string ArithLogic::protectName(std::string const & name, SRef retSort, bool isNullary) const {
-    assert(not name.empty());
-    // TODO: We cannot use isNumConst here since it takes a SymRef.  We cannot take a SymRef because this
-    // function needs to be callable from TemplateFunction, which does not have a SymRef.
-    if (isSortNum(retSort) and isNullary and std::all_of(name.begin(), name.end(), [](unsigned char c) { return std::isdigit(c); })) {
-        return name; // Is a number, no escaping
-    } else if (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name)) {
-        std::stringstream ss;
-        ss << '|' << name << '|';
-        return ss.str();
-    }
-    return name;
-}
-
 bool ArithLogic::isBuiltinFunction(const SymRef sr) const
 {
     if (sym_store[sr].isInterpreted()) return true;
@@ -331,7 +317,7 @@ PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
     std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer inside temporary object -> crash.
     const char * val = str.c_str();
     PTRef ptr = PTRef_Undef;
-    ptr = mkVar(sort, val);
+    ptr = mkVar(sort, val, true);
     // Store the value of the number as a real
     SymId id = sym_store[getPterm(ptr).symb()].getId();
     for (auto i = numbers.size(); i <= id; i++) { numbers.emplace_back(); }
@@ -678,7 +664,7 @@ PTRef ArithLogic::mkConst(SRef s, const char* name)
                 throw OsmtApiException("Not parseable as an integer");
             rat = strdup(name);
         }
-        ptr = mkVar(s, rat);
+        ptr = mkVar(s, rat, true);
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
         for (auto i = numbers.size(); i <= id; i++)

@@ -169,6 +169,21 @@ void ProofGraph::transfProofForReduction( )
 	emptyProofGraph();
 }
 
+void ProofGraph::transfProofForCNFInterpolants(std::function<icolor_t(Var)> getVarClass) {
+    if (verbose() > 0) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
+
+    fillProofGraph();
+    proofTransformAndRestructure(-1, -1, true, [this, &getVarClass](RuleContext & ra1, RuleContext & ra2) {
+        return this->handleRuleApplicationForCNFinterpolant(ra1, ra2, [this, &getVarClass](RuleContext & ra) {
+            return this->allowSwapRuleForCNFinterpolant(ra, getVarClass);
+        });
+    });
+    checkProof(true);
+    normalizeAntecedentOrder();
+    emptyProofGraph();
+    printRuleApplicationStatus();
+}
+
 // Performs reduction
 double ProofGraph::doReduction(double solving_time) {
     if (enabledTransfTraversals()) {

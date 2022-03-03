@@ -216,7 +216,7 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     v3->addRes(ra.getW());
 
     //Creation new node y
-    ProofNode* y=new ProofNode(logic_);
+    ProofNode* y=new ProofNode();
     y->initClause();
     //y given by resolution v2,v3 over v pivot
     mergeClauses(v2->getClause(),v3->getClause(),y->getClause(),v->getPivot());
@@ -233,11 +233,6 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     v3->addRes(y->getId());
     // Return id new node
     clauseid_t claid = y->getId();
-
-    //for(size_t k = 0; k<getGraphSize(); k++) if(getNode(k)!=NULL) assert(getNode(k)->getId()==k);
-
-    //NOTE for interpolation
-    if(produceInterpolants()) y->initIData();
 
     //v pivot becomes w pivot and viceversa
     Var aux;

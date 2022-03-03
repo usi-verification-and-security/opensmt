@@ -49,9 +49,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
     // Allocate root bitset
     mpz_init(safe_lit_set[getRoot()->getId()]);
 
-    //DFS vector
-    std::vector<clauseid_t> DFSvec;
-    topolSortingBotUp(DFSvec);
+    std::vector<clauseid_t> DFSvec = topolSortingBotUp();
 
     assert(isResetVisited1());
     // To initialize pivots set to the set of the first resolvent
@@ -492,9 +490,8 @@ void ProofGraph::recycleUnits() {
         } else {
             assert(oldroot->hasOccurrenceBin(var(unit->getClause()[0])) != -1);
             //printClause(unit);
-            ProofNode *newroot = new ProofNode(logic_);
+            ProofNode *newroot = new ProofNode();
             newroot->initClause();
-            if (produceInterpolants()) { newroot->initIData(); }
             newroot->setAnt1(oldroot);
             newroot->setAnt2(unit);
             newroot->setType(clause_type::CLA_DERIVED);

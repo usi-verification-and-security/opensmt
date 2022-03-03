@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
- * Copyright (c) 2021, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,6 +22,10 @@ TEST_F(NameProtectionTest, test_NumberEscape) {
 
     PTRef numberTen = arithLogic.mkIntConst(10);
     ASSERT_EQ(arithLogic.pp(numberTen), "10");
+
+    PTRef varOne = arithLogic.mkIntVar("1");
+    ASSERT_NE(varOne, numberOne);
+    ASSERT_EQ(arithLogic.pp(varOne), "|1|");
 
     PTRef numericVar = arithLogic.mkIntVar("10abc");
     ASSERT_EQ(arithLogic.pp(numericVar), "|10abc|");
@@ -57,3 +61,26 @@ TEST_F(NameProtectionTest, test_ReservedWord) {
     PTRef symbolLet3 = ufliaLogic.mkVar(ufliaLogic.getSort_bool(), "let");
     ASSERT_EQ(ufliaLogic.pp(symbolLet3), "|let|");
 }
+
+TEST_F(NameProtectionTest, test_AmbiguousVarPrinting) {
+    PTRef intVar = arithLogic.mkVar(arithLogic.getSort_int(), "a");
+    PTRef boolVar = arithLogic.mkVar(arithLogic.getSort_bool(), "a");
+    ASSERT_NE(intVar, boolVar);
+    std::string intVar_pp = arithLogic.pp(intVar);
+    std::string boolVar_pp = arithLogic.pp(boolVar);
+    ASSERT_EQ(intVar_pp, "(as a Int)");
+    ASSERT_EQ(boolVar_pp, "(as a Bool)");
+
+    PTRef boolVarWithNumericName = arithLogic.mkVar(arithLogic.getSort_bool(), "1");
+    PTRef intVar2 = arithLogic.mkVar(arithLogic.getSort_int(), "b");
+    PTRef intEquality = arithLogic.mkEq(intVar2, arithLogic.mkIntConst(1));
+
+    std::string boolVarWithNumericName_s = arithLogic.pp(boolVarWithNumericName);
+    std::string intEquality_s = arithLogic.pp(intEquality);
+
+    std::cout << boolVarWithNumericName_s << std::endl;
+    ASSERT_EQ(boolVarWithNumericName_s, "|1|"); // No disambiguation necessary
+    std::cout << intEquality_s << std::endl;
+    ASSERT_TRUE(intEquality_s.find("(as ") == std::string::npos); // No disambiguation necessary
+}
+

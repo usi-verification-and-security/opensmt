@@ -61,7 +61,8 @@ class Logic {
 
     opensmt::Logic_t const logicType;
 
-    bool isKnownToUser(SymRef sr) const { return getSymName(sr)[0] != s_abstract_value_prefix[0]; }
+    bool isKnownToUser(std::string_view name) const { return name[0] != s_abstract_value_prefix[0]; }
+    bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -240,7 +241,7 @@ public:
     PTRef       mkDistinct    (vec<PTRef>&& args);
 
     // Generic variables
-    PTRef       mkVar         (SRef, const char*);
+    PTRef       mkVar         (SRef, const char*, bool isInterpreted = false);
     PTRef       mkUniqueAbstractValue(SRef);
 
     // Generic constants
@@ -380,8 +381,7 @@ public:
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
 
-    PTRef       resolveTerm        (const char* s, vec<PTRef>&& args, char** msg);
-
+    PTRef       resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
     virtual PTRef insertTerm (SymRef sym, vec<PTRef> && args);
     PTRef insertTerm(SymRef sym, vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return insertTerm(sym, std::move(tmp)); }
 
@@ -398,8 +398,10 @@ public:
 
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
-    virtual std::string protectName(std::string const & name, SRef retSort, bool isNullary) const;
-    std::string   protectName(SymRef sr) const { return protectName(getSymName(sr), getSortRef(sr), getSym(sr).nargs() == 0); };
+    bool isAmbiguousUninterpretedNullarySymbolName(std::string_view name) const { return term_store.isAmbiguousNullarySymbolName(name); };
+    std::string protectName(std::string const & name, bool isInterpreted) const;
+    std::string disambiguateName(std::string const & protectedName, SRef retSort, bool isNullary, bool isInterpreted) const;
+    std::string protectName(SymRef sr) const { return protectName(getSymName(sr), getSym(sr).isInterpreted()); };
     virtual std::string printTerm_ (PTRef tr, bool l, bool s) const;
     std::string printTerm          (PTRef tr)                 const { return printTerm_(tr, false, false); }
     std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }

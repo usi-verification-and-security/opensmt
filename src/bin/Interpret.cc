@@ -185,7 +185,7 @@ void Interpret::interp(ASTNode& n) {
                     assert(n.children and n.children->size() == 2);
                     auto it = n.children->begin();
                     ASTNode & symbolNode = **it;
-                    assert(symbolNode.getType() == SYM_T);
+                    assert(symbolNode.getType() == SYM_T or symbolNode.getType() == QSYM_T);
                     ++it;
                     ASTNode & numNode = **it;
                     assert(numNode.getType() == NUM_T);
@@ -390,6 +390,16 @@ PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) con
     return letRecords.getOrUndef(s);
 }
 
+PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted) {
+    SRef sr = sortFromASTNode(sort);
+    PTRef tr = PTRef_Undef;
+    try {
+        tr = logic->resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+    } catch (OsmtApiException & e) {
+        reportError(e.what());
+    }
+    return tr;
+}
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     ASTType t = term.getType();
@@ -408,19 +418,31 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     }
 
     else if (t == QID_T) {
-        const char* name = (**(term.children->begin())).getValue();
-//        comment_formatted("Processing term with symbol %s", name);
-        PTRef tr = letNameResolve(name, letRecords);
-        char* msg = NULL;
-        if (tr != PTRef_Undef) {
-//            comment_formatted("Found a let reference to term %d", tr);
+        if ((**(term.children->begin())).getType() == AS_T) {
+            auto const & as_node = **(term.children->begin());
+            ASTNode const * symbolNode = (*as_node.children)[0];
+            bool isQuoted = symbolNode->getType() == QSYM_T;
+            const char * name = (*as_node.children)[0]->getValue();
+            ASTNode const & sortNode = *(*as_node.children)[1];
+            assert(name != nullptr);
+            PTRef tr = resolveQualifiedIdentifier(name, sortNode, isQuoted);
+            return tr;
+        } else {
+            ASTNode const * symbolNode = (*(term.children->begin()));
+            char const * name = symbolNode->getValue();
+            bool isQuoted = symbolNode->getType() == QSYM_T;
+            assert(name != nullptr);
+            PTRef tr = letNameResolve(name, letRecords);
+            if (tr != PTRef_Undef) {
+                return tr;
+            }
+            try {
+                tr = logic->resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+            } catch (OsmtApiException & e) {
+                reportError(e.what());
+            }
             return tr;
         }
-        tr = logic->resolveTerm(name, {}, &msg);
-        if (tr == PTRef_Undef)
-            comment_formatted("unknown qid term %s: %s", name, msg);
-        free(msg);
-        return tr;
     }
 
     else if ( t == LQID_T ) {
@@ -437,37 +459,15 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                 args.push(arg_term);
         }
         assert(args.size() > 0);
-        char* msg = NULL;
+
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic->resolveTerm(name, std::move(args), &msg);
+            tr = logic->resolveTerm(name, std::move(args));
+        } catch (ArithDivisionByZeroException &ex) {
+            reportError(ex.what());
+        } catch (OsmtApiException &e) {
+            reportError(e.what());
         }
-        catch (ArithDivisionByZeroException & ex) {
-            notify_formatted(true, ex.what());
-            return PTRef_Undef;
-        }
-        if (tr == PTRef_Undef) {
-            notify_formatted(true, "No such symbol %s: %s", name, msg);
-            comment_formatted("The symbol %s is not defined for the given sorts", name);
-            if (logic->hasSym(name)) {
-                comment_formatted("candidates are:");
-                const vec<SymRef>& trefs = logic->symNameToRef(name);
-                for (int j = 0; j < trefs.size(); j++) {
-                    SymRef ctr = trefs[j];
-                    const Symbol& t = logic->getSym(ctr);
-                    comment_formatted(" candidate %d", j);
-                    for (uint32_t k = 0; k < t.nargs(); k++) {
-                        comment_formatted("  arg %d: %s", k, logic->printSort(t[k]).c_str());
-                    }
-                }
-            }
-            else
-                comment_formatted("There are no candidates.");
-            free(msg);
-            return PTRef_Undef;
-        }
-
-
         return tr;
     }
 
@@ -523,7 +523,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 
         if (strcmp(name_attr.getValue(), ":named") == 0) {
             ASTNode& sym = **(name_attr.children->begin());
-            assert(sym.getType() == SYM_T);
+            assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
             if (nameToTerm.has(sym.getValue())) {
                 notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
@@ -739,7 +739,7 @@ void Interpret::getModel() {
     ss << "(\n";
     for (SymRef symref : user_declarations) {
         const Symbol & sym = logic->getSym(symref);
-        if (sym.size() == 1) {
+        if (sym.nargs() == 0) {
             // variable, just get its value
             const char* s = logic->getSymName(symref);
             SRef symSort = sym.rsort();
@@ -747,8 +747,7 @@ void Interpret::getModel() {
             resolver.addForbiddenVar(term);
             PTRef val = model->evaluate(term);
             ss << printDefinitionSmtlib(term, val);
-        }
-        else {
+        } else {
             // function
             resolver.addFunction(symref);
         }
@@ -792,7 +791,7 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
     const vec<PTRef>& args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         auto sortString = logic->printSort(logic->getSortRef(args[i]));
-        ss << "(" << logic->pp(args[i]) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
+        ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
     ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
@@ -1170,24 +1169,26 @@ int Interpret::interpPipe() {
 }
 
 SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
-    if (node.getType() == SYM_T) {
+    auto type = node.getType();
+    if (type == SYM_T or type == QSYM_T) {
         return {node.getValue(), 0};
     } else {
-        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        assert(type == LID_T and node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
         return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
     }
 }
 
 SRef Interpret::sortFromASTNode(ASTNode const & node) const {
-    if (node.getType() == SYM_T) {
+    auto type = node.getType();
+    if (type == SYM_T or type == QSYM_T) {
         SortSymbol symbol(node.getValue(), 0);
         SSymRef symRef;
         bool known = logic->peekSortSymbol(symbol, symRef);
         if (not known) { return SRef_Undef; }
         return logic->getSort(symRef, {});
     } else {
-        assert(node.getType() == LID_T and node.children and not node.children->empty());
+        assert(type == LID_T and node.children and not node.children->empty());
         ASTNode const & name = **(node.children->begin());
         SortSymbol symbol(name.getValue(), node.children->size() - 1);
         SSymRef symRef;
@@ -1201,7 +1202,7 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         }
         return logic->getSort(symRef, std::move(args));
     }
-    assert(node.getType() == LID_T and node.children and not node.children->empty());
+    assert(type == LID_T and node.children and not node.children->empty());
     ASTNode const & name = **(node.children->begin());
     SortSymbol symbol(name.getValue(), node.children->size() - 1);
     SSymRef symRef;

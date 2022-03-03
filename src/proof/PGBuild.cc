@@ -25,36 +25,12 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include <deque>
 
-void
-ProofNode::setInterpPartitionMask( const ipartitions_t& mask)
-{
-    if(i_data == NULL) initIData();
-    i_data->partition_mask = mask;
-}
-
 std::ostream& operator<< (std::ostream &out, RuleContext &ra)
 {
     out << "Context: v1(" << ra.getV1() << ") v2(" << ra.getV2() << ") w("
         << ra.getW() << ") v3(" << ra.getV3() << ") v("
         << ra.getV() << ")";
     return out;
-}
-
-void ProofGraph::initTSolver() {
-    assert(!this->leaves_ids.empty());
-    for (auto id : this->leaves_ids) {
-        ProofNode * node = getNode(id);
-        assert(node);
-        assert(isLeafClauseType(node->getType()));
-        if (node->getType() != clause_type::CLA_THEORY) { continue; }
-        const auto & clause = this->getNode(id)->getClause();
-        for (auto const & lit : clause) {
-            Var v = var(lit);
-            PTRef atom = this->varToPTRef(v);
-            assert(logic_.isTheoryTerm(atom));
-            thandler->declareAtom(atom);
-        }
-    }
 }
 
 namespace{
@@ -95,16 +71,12 @@ struct ProofBuildingStatistics {
 }
 
 ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proof const & proof) {
-    ProofNode * n = new ProofNode(logic_);
-    n->initIData();
+    ProofNode * n = new ProofNode();
     if (isLeafClauseType(_ctype)) {
         n->initClause(proof.getClause(clause));
         n->setClauseRef(clause);
         //Sort clause literals
         std::sort(n->getClause().begin(),n->getClause().end());
-        if (_ctype == clause_type::CLA_ORIG) {
-            n->setInterpPartitionMask(pmanager.getClauseClassMask(clause));
-        }
     }
 
     //Add node to graph vector
@@ -127,9 +99,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
     assert(varCount > 0);
     num_vars_limit = varCount;
     max_id_variable=0;
-    // Mapping for AB class variables
-    AB_vars_mapping.reserve(num_vars_limit);
-    AB_vars_mapping.resize(num_vars_limit,-3);
 
     av_cla_size=0; max_cla_size=0;
     num_edges=0;
@@ -252,8 +221,7 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
                 // End tree not reached: deduced node
                 if (i < chaincla.size() - 1) {
                     currId = graph.size();
-                    n = new ProofNode(logic_);
-                    n->initIData();
+                    n = new ProofNode();
                     //Add node to graph vector
                     n->setId(currId);
                     graph.push_back(n);
@@ -360,7 +328,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
     // Postprocessing of the proof
 
     this->addDefaultAssumedLiterals(proof.getAssumedLiterals());
-    this->ensureNoLiteralsWithoutPartition();
 
     if (proofCheck()) {
         verifyLeavesInconsistency();
@@ -507,7 +474,6 @@ void ProofGraph::removeNode(clauseid_t vid)
     if(n->getAnt1()==NULL && n->getAnt2()==NULL) removeLeaf(vid);
     n->setAnt1(NULL); n->setAnt2(NULL);
     // Free memory
-    n->delIData();
     delete n;
     // Remove v from proof
     graph[vid]=NULL;
@@ -570,8 +536,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
         assert(res->getAnt1()==w || res->getAnt2()==w);
     }
 
-    ProofNode* n=new ProofNode(logic_);
-    n->initIData();
+    ProofNode* n=new ProofNode();
 
     // Create node and add to graph vector
     clauseid_t currId=getGraphSize();
@@ -580,7 +545,7 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
     assert(getNode(currId)==n);
     n->setType(w->getType());
     n->initClause(w->getClause());
-    n->setInterpPartitionMask(w->getInterpPartitionMask());
+    n->setClauseRef(w->getClauseRef());
 
     // Set antecedents, pivot
     n->setAnt1(w->getAnt1());
@@ -608,28 +573,6 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 
 void ProofGraph::addDefaultAssumedLiterals(std::vector<Lit> && assumedLiteralsFromDerivations) {
     this->assumedLiterals = std::move(assumedLiteralsFromDerivations);
-}
-
-void ProofGraph::ensureNoLiteralsWithoutPartition() {
-    std::vector<Var> noPartitionVars;
-    for (Var v : proof_variables) {
-        auto const& part = getVarPartition(v);
-        if(part == 0 && !this->isAssumedVar(v)) {
-            PTRef term = varToPTRef(v);
-            assert(this->logic_.isTheoryTerm(term));
-            auto allowedPartitions = pmanager.computeAllowedPartitions(term);
-            if (allowedPartitions != 0) {
-                // MB: Update the partition information
-                pmanager.addIPartitions(term, allowedPartitions);
-            }
-            else {
-                noPartitionVars.push_back(v);
-            }
-        }
-    }
-    if (!noPartitionVars.empty()) {
-        this->eliminateNoPartitionTheoryVars(noPartitionVars);
-    }
 }
 
 void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noPartitionTheoryVars) {

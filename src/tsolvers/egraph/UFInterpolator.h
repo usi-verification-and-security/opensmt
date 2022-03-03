@@ -136,6 +136,8 @@ private:
         return colorInfo->getColorFor(term);
     }
 
+    icolor_t determineDisequalityColor(PTRef t1, PTRef t2, std::map<PTRef, icolor_t> const & conflictColors) const;
+
     void colorCGraph();
     void colorNodes();
     icolor_t colorNode(CNode * c);

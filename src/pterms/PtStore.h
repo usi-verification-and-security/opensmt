@@ -75,7 +75,9 @@ class PtStore {
 
     void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy
 
-    SymRef lookupSymbol(const char* s, const vec<PTRef>& args);
+    bool isAmbiguousNullarySymbolName(std::string_view name) const;
+    vec<SymRef> getHomonymousNullarySymbols(std::string_view name) const;
+    SymRef lookupSymbol(const char* s, const vec<PTRef>& args, SymbolMatcher symbolMatcher = SymbolMatcher::Any, SRef sort = SRef_Undef);
 
     Pterm& operator[] (PTRef tr);// { return pta[tr]; }
     const Pterm& operator[] (PTRef tr) const;// { return pta[tr]; }

@@ -1,5 +1,4 @@
-(error "Unknown symbol `= (U V) (U W)'")
+(error "Ambiguous symbol: `a'")
 
 (error "assertion returns an unknown sort")
 
-sat

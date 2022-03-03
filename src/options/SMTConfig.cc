@@ -267,7 +267,7 @@ Info::Info(ASTNode const & n) {
         if (child.getType() == SPECC_T or child.getType() == SEXPRL_T) {
             value = ConfValue(child);
         }
-        else if (child.getType() == SYM_T) {
+        else if (child.getType() == SYM_T or child.getType() == QSYM_T) {
             value.strval = strdup(child.getValue());
             value.type = O_STR;
         }

@@ -49,6 +49,7 @@ struct SymbolConfig {
 
 namespace SymConf {
     constexpr auto Default = SymbolConfig{false, false, false, SymbolProperty::None};
+    constexpr auto Interpreted = SymbolConfig{true, false, false, SymbolProperty::None};
     constexpr auto LeftAssoc = SymbolConfig{false, false, false, SymbolProperty::LeftAssoc};
     constexpr auto RightAssoc = SymbolConfig{false, false, false, SymbolProperty::RightAssoc};
     constexpr auto Chainable = SymbolConfig{false, false, false, SymbolProperty::Chainable};
@@ -62,6 +63,10 @@ namespace SymConf {
     constexpr auto CommutativeNoScopingChainable = SymbolConfig{true, true, true, SymbolProperty::Chainable};
     constexpr auto CommutativeNoScopingPairwise = SymbolConfig{true, true, true, SymbolProperty::Pairwise};
 }
+
+enum class SymbolMatcher : char {
+    Any, Interpreted, Uninterpreted
+};
 
 // args[0].sort is the return sort, rest are arguments.
 class Symbol {
@@ -124,6 +129,18 @@ class Symbol {
     int      getId() const { return id; }
     void     setId(int i) { id = i; }
     bool     isInterpreted() const       { return header.interpreted; }
+
+    bool matches(SymbolMatcher matcher) const {
+        switch (matcher) {
+            case SymbolMatcher::Interpreted:
+                return isInterpreted();
+            case SymbolMatcher::Uninterpreted:
+                return not isInterpreted();
+            case SymbolMatcher::Any:
+            default:
+                return true;
+        }
+    }
 };
 
 
