@@ -294,7 +294,6 @@ public:
   static const char* o_sat_split_asap;
   static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
-  static const char* o_sat_scatter_split;
   static const char* o_sat_pure_lookahead;
   static const char* o_lookahead_score_deep;
   static const char* o_sat_split_units;
