@@ -64,13 +64,6 @@ bool ScatterSplitter::okContinue() const {
     if (!CoreSMTSolver::okContinue()) {
         return false;
     }
-    if (splitConfig.resource_limit >= 0 && conflicts % 1000 == 0) {
-        if ((splitConfig.resource_units == spm_time && time(nullptr) >= splitConfig.next_resource_limit) ||
-            (splitConfig.resource_units == spm_decisions && decisions >= splitConfig.next_resource_limit)) {
-            opensmt::stop = true;
-            return false;
-        }
-    }
     return true;
 }
 
@@ -523,9 +516,8 @@ bool ScatterSplitter::scatterLevel()
 bool ScatterSplitter::createSplit_scatter()
 {
     assert(splits.size() == split_assumptions.size());
-    splits.emplace_back(SplitData(config.smt_split_format_length() == spformat_brief));
     split_assumptions.emplace_back();
-    SplitData& sp = splits.back();
+    SplitData sp = SplitData();
     vec<Lit> constraints_negated;
     vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
@@ -549,7 +541,7 @@ bool ScatterSplitter::createSplit_scatter()
             tmp.push(~tr);
         sp.addConstraint(tmp);
     }
-
+    splits.emplace_back(std::move(sp));
     // XXX Skipped learned clauses
     cancelUntil(0);
     if (!excludeAssumptions(constraints_negated))
