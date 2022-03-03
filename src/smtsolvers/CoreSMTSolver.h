@@ -89,6 +89,7 @@ protected:
     THandler  & theory_handler; // Handles theory
     bool      verbosity;
     bool      init;
+    enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
 public:
     bool stop = false;
 
@@ -383,8 +384,10 @@ protected:
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
-    virtual lbool search      (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
+    lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
     virtual bool okContinue   () const;                                                // Check search termination conditions
+    virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
+    virtual void notifyEnd() { }                                                       // Called at the end of the search loop
     void     learntSizeAdjust ();                                                      // Adjust learnts size and print something
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.

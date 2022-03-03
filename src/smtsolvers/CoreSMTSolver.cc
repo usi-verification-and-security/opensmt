@@ -1463,19 +1463,14 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (true)
-    {
-        if (!okContinue())
-            return l_Undef;
+    while (okContinue()) {
 
         CRef confl = propagate();
-        if (confl != CRef_Undef)
-        {
+        if (confl != CRef_Undef) {
             // CONFLICT
             conflicts++;
             conflictC++;
-            if (decisionLevel() == 0)
-            {
+            if (decisionLevel() == 0) {
                 return zeroLevelConflictHandler();
             }
             learnt_clause.clear();
@@ -1485,19 +1480,15 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
             assert(value(learnt_clause[0]) == l_Undef);
 
-            if (learnt_clause.size() == 1)
-            {
+            if (learnt_clause.size() == 1) {
                 CRef reason = CRef_Undef;
-                if (logsProofForInterpolation())
-                {
+                if (logsProofForInterpolation()) {
                     CRef cr = ca.alloc(learnt_clause, false);
                     proof->endChain(cr);
                     reason = cr;
                 }
                 uncheckedEnqueue(learnt_clause[0], reason);
-            }
-            else
-            {
+            } else {
                 // ADDED FOR NEW MINIMIZATION
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
@@ -1517,12 +1508,9 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             claDecayActivity();
 
             learntSizeAdjust();
-        }
-        else
-        {
+        } else {
             // NO CONFLICT
-            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget())
-            {
+            if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
                 // Reached bound on number of conflicts:
                 progress_estimate = progressEstimate();
                 cancelUntil(0);
@@ -1530,49 +1518,38 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             }
 
             // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify())
-            {
+            if (decisionLevel() == 0 && !simplify()) {
                 return zeroLevelConflictHandler();
             }
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
             // if ((learnts.size()-nAssigns()) >= max_learnts)
-            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts)
+            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts) {
                 // Reduce the set of learnt clauses:
                 reduceDB();
+            }
 
-//            if ( first_model_found )
-            {
-                // Early Pruning Call
-                // Step 1: check if the current assignment is theory-consistent
-
-                TPropRes res = checkTheory(false, conflictC);
-                if (res == TPropRes::Unsat) {
+            // Early Pruning Call
+            // Step 1: check if the current assignment is theory-consistent
+            switch (checkTheory(false, conflictC)) {
+                case TPropRes::Unsat:
                     return zeroLevelConflictHandler();
-                }
-                else if (res == TPropRes::Propagate) {
+                case TPropRes::Propagate:
                     continue; // Theory conflict: time for bcp
-                }
-                else if (res == TPropRes::Decide) {
-                    ;                 // Sat and no deductions: go ahead
-                }
-                else {
+                case TPropRes::Decide:
+                    break; // Sat and no deductions: go ahead
+                default:
                     assert( false );
-                }
             }
 
             Lit next = lit_Undef;
-            while (decisionLevel() < assumptions.size())
-            {
+            while (decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:
                 Lit p = assumptions[decisionLevel()];
-                if (value(p) == l_True)
-                {
+                if (value(p) == l_True) {
                     // Dummy decision level:
                     newDecisionLevel();
-                }
-                else if (value(p) == l_False)
-                {
+                } else if (value(p) == l_False) {
                     analyzeFinal(~p, conflict);
                     int max = 0;
                     for (Lit q : conflict) {
@@ -1582,16 +1559,25 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
                     }
                     conflict_frame = max+1;
                     return zeroLevelConflictHandler();
-                }
-                else
-                {
+                } else {
                     next = p;
                     break;
                 }
             }
 
-            if (next == lit_Undef)
-            {
+            if (next == lit_Undef) {
+                switch (notifyConsistency()) {
+                    case ConsistencyAction::BacktrackToZero:
+                        cancelUntil(0);
+                        break;
+                    case ConsistencyAction::ReturnUndef:
+                        return l_Undef;
+                    case ConsistencyAction::SkipToSearchBegin:
+                        continue;
+                    case ConsistencyAction::NoOp:
+                    default:
+                        ;
+                }
                 // Assumptions done and the solver is in consistent state
                 // New variable decision:
                 decisions++;
@@ -1629,6 +1615,7 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
     }
     assert(false);
     cancelUntil(0);
+    notifyEnd();
     return l_Undef;
 }
 
@@ -1742,8 +1729,6 @@ lbool CoreSMTSolver::solve_()
     if (config.dump_only()) return l_Undef;
 
     random_seed = config.getRandomSeed();
-    // UF solver should be enabled for lazy dtc
-    assert( config.sat_lazy_dtc == 0 || config.uf_disable == 0 );
 
     if (config.sat_dump_cnf != 0) {
         dumpCNF();
@@ -1778,53 +1763,45 @@ lbool CoreSMTSolver::solve_()
 
     if (config.dryrun())
         stop = true;
-    while (status == l_Undef && !opensmt::stop && !this->stop)
-    {
+    while (status == l_Undef && !opensmt::stop && !this->stop) {
         // Print some information. At every restart for
         // standard mode or any 2^n intervarls for luby
         // restarts
-        if (conflicts == 0 || conflicts >= next_printout)
-        {
-          if ( config.verbosity() > 0 ) {
-              reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
-                      cpuTime(), memUsed() / 1048576.0);
-              fflush(stderr);
-          }
+        if (conflicts == 0 || conflicts >= next_printout) {
+            if (config.verbosity() > 0) {
+                reportf("; %9d | %8d %8d | %8.3f s | %6.3f MB\n", (int) conflicts, (int) learnts.size(), nLearnts(),
+                        cpuTime(), memUsed() / 1048576.0);
+                fflush(stderr);
+            }
         }
 
-        if (config.sat_use_luby_restart)
+        if (config.sat_use_luby_restart) {
             next_printout *= 2;
-        else
+        } else {
             next_printout *= restart_inc;
+        }
 
         // XXX
         status = search((int)nof_conflicts, (int)nof_learnts);
-        nof_conflicts = restartNextLimit( nof_conflicts );
-        if (config.sat_use_luby_restart)
-        {
-            if (last_luby_k != luby_k)
-            {
+        nof_conflicts = restartNextLimit(nof_conflicts);
+        if (config.sat_use_luby_restart) {
+            if (last_luby_k != luby_k) {
                 nof_learnts *= 1.215;
             }
             last_luby_k = luby_k;
-        }
-        else
-        {
+        } else {
             nof_learnts *= learntsize_inc;
         }
     }
 
-    if (status == l_True)
-    {
+    if (status == l_True) {
         // Extend & copy model:
         model.growTo(nVars());
         for (int i = 0; i < nVars(); i++) {
             model[i] = value(i);
         }
-    }
-    else
-    {
-        assert( opensmt::stop || status == l_False || this->stop);
+    } else {
+        assert(opensmt::stop || status == l_False || this->stop);
     }
 
     // We terminate

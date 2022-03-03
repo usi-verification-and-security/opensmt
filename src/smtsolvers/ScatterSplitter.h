@@ -10,30 +10,26 @@
 
 #include "SimpSMTSolver.h"
 #include "SplitData.h"
-#include "SplitConfig.h"
+#include "SplitContext.h"
 
 class ScatterSplitter : public SimpSMTSolver {
 public:
     ScatterSplitter(SMTConfig & c, THandler & t);
 
-    std::vector<SplitData> const & getSplits() const { return splits; }
+    std::vector<SplitData> const & getSplits() { return splitContext.getSplits(); }
 private:
     std::vector<vec<Lit>> split_assumptions;
-    std::vector<SplitData> splits;
-    SplitConfig splitConfig;
-    void     updateSplitState();                                              // Update the state of the splitting machine.
+    SplitContext splitContext;
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
-    bool     createSplit_scatter();                                           // Create a split formula and place it to the splits vector.
+    opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate
 protected:
     lbool solve_() override;
-    virtual inline void clausesPublish() {};
-    virtual inline void clausesUpdate() {};
     bool branchLitRandom() override;
     Var doActivityDecision() override;
     bool okContinue() const override;
-    void runPeriodics();                                                      // Update clauses
-    lbool search(int nof_conflicts, int nof_learnts) override;                // Search for a given number of conflicts.
+    ConsistencyAction notifyConsistency() override;
+    void notifyEnd() override;
     lbool zeroLevelConflictHandler() override;                                // Common handling of zero-level conflict as it can happen at multiple places
 };
 
