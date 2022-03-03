@@ -14,14 +14,17 @@
 
 class ScatterSplitter : public SimpSMTSolver {
 public:
-    std::vector<SplitData> splits;
     ScatterSplitter(SMTConfig & c, THandler & t);
+    void setSplitConfig_split_on()                                    { splitConfig.split_on = true; };
+    bool                      const &    getSplitConfig_split_on()    { return splitConfig.split_on; }
+    std::vector<SplitData>    const &    getSplits()                  { return splits; }
 private:
     std::vector<vec<Lit>> split_assumptions;
+    std::vector<SplitData> splits;
     SplitConfig splitConfig;
     void     updateSplitState();                                                       // Update the state of the splitting machine.
     bool     scatterLevel();                                                           // Are we currently on a scatter level.
-    bool     createSplit_scatter();                                           // Create a split formula and place it to the splits vector.
+    bool     createSplit_scatter();                                                    // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
 protected:
     virtual lbool solve_() override;

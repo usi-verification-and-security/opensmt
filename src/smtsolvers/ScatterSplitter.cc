@@ -141,6 +141,13 @@ lbool ScatterSplitter::search(int nof_conflicts, int nof_learnts)
 #endif
     while (splitConfig.split_type == spt_none || static_cast<int>(splits.size()) < splitConfig.split_num - 1)
     {
+        if (not splitConfig.split_on and config.sat_solver_limit() and config.sat_solver_limit() == conflicts) {
+            std::cout << config.getInfo(":status").toString() << std::endl;
+            std::cout << config.getRandomSeed() << std::endl;
+            opensmt::stop = true;
+            setSplitConfig_split_on();
+            return l_Undef;
+        }
         if (!okContinue())
             return l_Undef;
         runPeriodics();
@@ -364,10 +371,10 @@ lbool ScatterSplitter::solve_()
     declareVarsToTheories();
 
     splitConfig.split_type     = config.sat_split_type();
-    if (splitConfig.split_type != spt_none)
+    if (splitConfig.split_type != spt_none and splitConfig.split_on)
     {
+        opensmt::stop = false;
         splitConfig.split_start    = config.sat_split_asap();
-        splitConfig.split_on       = false;
         splitConfig.split_num      = config.sat_split_num();
         splitConfig.split_inittune = config.sat_split_inittune();
         splitConfig.split_midtune  = config.sat_split_midtune();
@@ -563,19 +570,7 @@ bool ScatterSplitter::excludeAssumptions(vec<Lit>& neg_constrs)
 
 void ScatterSplitter::updateSplitState()
 {
-    if (splitConfig.split_start && !splitConfig.split_on)
-    {
-        if ((splitConfig.split_units == spm_time && cpuTime() >= splitConfig.split_next) ||
-            (splitConfig.split_units == spm_decisions && decisions >= splitConfig.split_next))
-        {
-            cancelUntil(0);
-            splitConfig.split_start = false;
-            splitConfig.split_on = true;
-            if (splitConfig.split_units == spm_time) splitConfig.split_next = cpuTime() + splitConfig.split_midtune;
-            if (splitConfig.split_units == spm_decisions) splitConfig.split_next = decisions + splitConfig.split_midtune;
-        }
-    }
-    if (splitConfig.split_start && splitConfig.split_on)
+    if (splitConfig.split_start)
     {
         if ((splitConfig.split_units == spm_time && cpuTime() >= splitConfig.split_next) ||
             (splitConfig.split_units == spm_decisions && decisions >= splitConfig.split_next))
