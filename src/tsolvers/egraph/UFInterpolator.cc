@@ -295,6 +295,42 @@ void UFInterpolator::colorCongruenceEdge(CEdge * edge) {
     }
 }
 
+icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, std::map<PTRef, icolor_t> const & conflictColors) const {
+    icolor_t conf_color = icolor_t::I_UNDEF;
+    PTRef eq = logic.mkEq(t1, t2);
+    if (conflictColors.find(eq) != conflictColors.end()) {
+        conf_color = conflictColors.at(eq);
+        if (conf_color == icolor_t::I_AB) {
+            conf_color = resolveABColor();
+        }
+    } else {
+        auto it = std::find_if(conflictColors.begin(), conflictColors.end(), [this](auto const & entry) { return logic.isDisequality(entry.first); });
+        if (it != conflictColors.end()) {
+            Pterm const & distinctTerm = logic.getPterm(it->first);
+            bool t1Present = std::find(distinctTerm.begin(), distinctTerm.end(), t1) != distinctTerm.end();
+            bool t2Present = std::find(distinctTerm.begin(), distinctTerm.end(), t2) != distinctTerm.end();
+            assert(t1Present and t2Present);
+            if (not(t1Present and t2Present)) {
+                throw OsmtInternalException("Error in UF interpolator, could not determine the color of the conflict equality");
+            } else {
+                conf_color = it->second;
+                if (conf_color == icolor_t::I_AB) {
+                    conf_color = resolveABColor();
+                }
+            }
+        } else {
+            // equality of two different constants derived
+            assert(logic.isConstant(t1) && logic.isConstant(t2));
+            if (not(logic.isConstant(t1) && logic.isConstant(t2))) {
+                throw OsmtInternalException("Error in UF interpolator, could not determine the color of the conflict equality");
+            }
+            conf_color = resolveABColor();
+        }
+    }
+    assert(conf_color == icolor_t::I_A or conf_color == icolor_t::I_B);
+    return conf_color;
+}
+
 //
 // Here mask is a bit-mask of the form 1..10..0
 // which indicates the current splitting for the
@@ -315,34 +351,15 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolo
     // Traverse the graph, look for edges of "color" to summarize
     CNode * c1 = cgraph.getConflictStart();
     CNode * c2 = cgraph.getConflictEnd();
-
-    assert (c1);
-    assert (c2);
-    icolor_t conf_color = icolor_t::I_UNDEF;
-    PTRef eq = logic.mkEq(c1->e, c2->e);
-
-    if (labels != nullptr && (labels->find(eq) != labels->end())) {
-        conf_color = (*labels)[eq];
-        if (conf_color == icolor_t::I_AB) {
-            conf_color = resolveABColor();
-        }
-    } else {
-        // equality of two different constants derived
-        assert(logic.isConstant(c1->e) && logic.isConstant(c2->e));
-        if (not(logic.isConstant(c1->e) && logic.isConstant(c2->e))) {
-            throw std::logic_error("Error in UF interpolator, could not determine the color of the conflict equality");
-        }
-        conf_color = resolveABColor();
-    }
-    assert (conf_color == icolor_t::I_A || conf_color == icolor_t::I_B);
-
-    PTRef result = PTRef_Undef;
+    assert(c1);
+    assert(c2);
     const path_t pi = path(c1, c2);
-
     //
     // Compute interpolant as described in Fuchs et al. paper
     // Ground Interpolation for the Theory of Equality
     //
+    icolor_t conf_color = determineDisequalityColor(c1->e, c2->e, *labels);
+    PTRef result = PTRef_Undef;
     // Conflict belongs to A part
     if (conf_color == icolor_t::I_A) {
         if (usingStrong())
