@@ -17,7 +17,7 @@ exit="\(exit\)"
 for FILE in *.smt2;
 do
     ok=0
-    echo '(set-option :produce-interpolants true)'  > temp.txt;
+    new_file='(set-option :produce-interpolants true)\n';
     interpolants_t='(get-interpolants (and ) (and ))'
     echo $FILE
 #    echo $interpolants_t
@@ -35,7 +35,7 @@ do
         for j in $(seq 1 $length) ; do
             assert_name+=${symbols:RANDOM % count_symbols:1}
         done
-        echo $line | sed "s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g" >> temp.txt
+        new_file="$new_file$(echo $line | sed "s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g")\n"
 #        sed -e "$i s/(assert \(.*\))/(assert (! \1 :named $assert_name ))/g" $FILE > temp.txt;
         if [ $((i%2)) == 1 ]
         then
@@ -58,7 +58,7 @@ do
           then
             break
           fi
-          echo $line >> temp.txt
+          new_file="$new_file$line"
        fi
 #      echo $line;
       if [ $asserts == 0 ]
@@ -68,7 +68,7 @@ do
     done < $FILE
     if [ $ok == 0 ]
     then
-      echo $interpolants_t >> temp.txt;
-      cat temp.txt > $FILE;
+      new_file="$new_file$interpolants_t";
+      cat new_file > $FILE;
     fi
 done
