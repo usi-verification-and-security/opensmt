@@ -294,6 +294,7 @@ public:
   static const char* o_sat_split_asap;
   static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
+  static const char* o_sat_scatter_split;
   static const char* o_sat_pure_lookahead;
   static const char* o_lookahead_score_deep;
   static const char* o_sat_split_units;
@@ -759,7 +760,7 @@ public:
               0; }
     int sat_scatter_split() const {
         return optionTable.has(o_sat_scatter_split) ?
-               optionTable[o_sat_lookahead_split]->getValue().numval :
+               optionTable[o_sat_scatter_split]->getValue().numval :
                0; }
   int sat_lookahead_split() const {
       return optionTable.has(o_sat_lookahead_split) ?
