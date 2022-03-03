@@ -73,10 +73,11 @@ protected:
         LALoopRes exitState() const { return LALoopRes::unknown_final; }
         SplitBuildConfig(LookaheadSplitter & splitter_) : splitter(splitter_) {}
     };
+
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
 
-    std::vector<SplitData>    const &    getSplits()                  { return splits; }
+    std::vector<SplitData> const & getSplits() const { return splits; }
 };
 
 #endif //OPENSMT_LOOKAHEADSPLITTER_H
