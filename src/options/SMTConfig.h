@@ -333,6 +333,7 @@ private:
   bool isPreInitializationOption(const char* o_name) {
       return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0
         || strcmp(o_name, o_sat_pure_lookahead) == 0 || strcmp(o_name, o_sat_lookahead_split) == 0
+        || strcmp(o_name, o_sat_scatter_split) == 0
         || strcmp(o_name, o_ghost_vars) == 0;
   }
 
@@ -702,17 +703,15 @@ public:
     { return optionTable.has(o_sat_split_test_cube_and_conquer) ?
         optionTable[o_sat_split_test_cube_and_conquer]->getValue().numval : 0; }
 
-  const SpType sat_split_type() const {
-      if (sat_lookahead_split())
+  SpType sat_split_type() const {
+      if (sat_lookahead_split()) {
           return spt_lookahead;
-      if (optionTable.has(o_sat_split_type)) {
-        const char* type = optionTable[o_sat_split_type]->getValue().strval;
-        if (strcmp(type, spts_lookahead) == 0)
-            return spt_lookahead;
-        else if (strcmp(type, spts_scatter) == 0)
-            return spt_scatter;
+      } else if (sat_scatter_split()) {
+          return spt_scatter;
+      } else {
+          return spt_none;
       }
-      return spt_none; }
+  }
 
   const SpUnit sat_split_units() const {
       if (optionTable.has(o_sat_split_units)) {
@@ -745,14 +744,14 @@ public:
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
               0; }
-    int sat_scatter_split() const {
-        return optionTable.has(o_sat_scatter_split) ?
-               optionTable[o_sat_scatter_split]->getValue().numval :
-               0; }
   int sat_lookahead_split() const {
       return optionTable.has(o_sat_lookahead_split) ?
               optionTable[o_sat_lookahead_split]->getValue().numval :
               0; }
+  int sat_scatter_split() const {
+      return optionTable.has(o_sat_scatter_split) ?
+             optionTable[o_sat_scatter_split]->getValue().numval :
+             0; }
   int sat_pure_lookahead() const {
       return optionTable.has(o_sat_pure_lookahead) ?
               optionTable[o_sat_pure_lookahead]->getValue().numval :
