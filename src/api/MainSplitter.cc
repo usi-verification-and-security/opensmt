@@ -38,7 +38,6 @@ void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const
         vec<PTRef> conj_vec;
 
         addToConjunction(split.constraintsToPTRefs(*thandler), conj_vec);
-        addToConjunction(split.learntsToPTRefs(*thandler), conj_vec);
 
         if (config.smt_split_format_length() == spformat_full)
             conj_vec.push(root_instance.getRoot());

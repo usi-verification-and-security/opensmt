@@ -26,21 +26,15 @@ public:
     template<class C> void addConstraint(const C& c)
     {
         constraints.emplace_back();
-        vec<Lit>& cstr = constraints.back();
-        for (int i = 0; i < c.size(); i++)
-            cstr.push(c[i]);
-    }
-    void addLearnt(Clause& c)
-    {
-        learnts.emplace_back();
-        vec<Lit>& learnt = learnts.back();
-        for (unsigned i = 0; i < c.size(); i++)
-            learnt.push(c[i]);
+        vec<Lit> cstr;
+        for (Lit l : c) {
+            cstr.push(l);
+        }
+        constraints.emplace_back(cstr);
     }
 
     char* splitToString();
     std::vector<vec<PtAsgn>> constraintsToPTRefs(const THandler& thandler) const { return toPTRefs(constraints, thandler); }
-    std::vector<vec<PtAsgn>> learntsToPTRefs(const THandler& thandler) const { return toPTRefs(learnts, thandler); }
 };
 
 #endif //OPENSMT_SPLITDATA_H
