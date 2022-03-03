@@ -516,6 +516,7 @@ const char* SMTConfig::o_do_substitutions = ":do-substitutions";
 const char* SMTConfig::o_smt_split_format = ":split-format";
 const char* SMTConfig::o_smt_split_format_length = ":split-format-length"; // brief or full: output the constraints only, or the full problem
 const char* SMTConfig::o_respect_logic_partitioning_hints = ":respect-logic-partitioning-hints"; // Logic can have a say whether a var is good for partitioning
+const char* SMTConfig::o_sat_scatter_split = ":scatter-split";
 const char* SMTConfig::o_sat_lookahead_split = ":lookahead-split";
 const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
 const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";

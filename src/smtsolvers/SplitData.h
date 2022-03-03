@@ -11,8 +11,8 @@
 // -----------------------------------------------------------------------------------------
 // The splits
 //
-class SplitData
-{
+
+class SplitData {
     std::vector<vec<Lit>>  constraints;    // The split constraints
     std::vector<vec<Lit>>  learnts;        // The learnt clauses
 
@@ -24,12 +24,11 @@ class SplitData
 
 public:
     template<class C> void addConstraint(const C& c) {
-        constraints.emplace_back();
         vec<Lit> cstr;
         for (Lit l : c) {
             cstr.push(l);
         }
-        constraints.emplace_back(cstr);
+        constraints.emplace_back(std::move(cstr));
     }
 
     char* splitToString();

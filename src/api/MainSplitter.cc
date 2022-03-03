@@ -13,7 +13,6 @@
 
 void MainSplitter::writeSolverSplits_smtlib2(std::string const & baseName) const {
     assert(config.sat_split_type() != spt_none);
-    assert(dynamic_cast<ScatterSplitter&>(ts.solver).getSplitConfig_split_on());
     assert(strcmp(config.output_dir(),"") != 0);
     std::vector<SplitData> const & splits = (config.sat_split_type() == spt_scatter)
             ? dynamic_cast<ScatterSplitter&>(ts.solver).getSplits()

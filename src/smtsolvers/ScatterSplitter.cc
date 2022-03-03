@@ -473,8 +473,7 @@ bool ScatterSplitter::scatterLevel() {
 
 bool ScatterSplitter::createSplit_scatter() {
     assert(splits.size() == split_assumptions.size());
-    split_assumptions.emplace_back();
-    SplitData sp;
+    SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit>& split_assumption = split_assumptions.back();
     // Add the literals on the decision levels
@@ -483,7 +482,7 @@ bool ScatterSplitter::createSplit_scatter() {
         Lit l = trail[trail_lim[i]];
         tmp.push(l);
         // Add the literal
-        sp.addConstraint(tmp);
+        splitData.addConstraint(tmp);
         // Remember this literal in the split assumptions vector of the
         // SAT solver
         split_assumption.push(l);
@@ -496,10 +495,9 @@ bool ScatterSplitter::createSplit_scatter() {
         vec<Lit> tmp;
         for (auto tr : split_assumption)
             tmp.push(~tr);
-        sp.addConstraint(tmp);
+        splitData.addConstraint(tmp);
     }
-    if (not split_assumptions.empty())
-        splits.emplace_back(std::move(sp));
+    splits.emplace_back(std::move(splitData));
     // XXX Skipped learned clauses
     cancelUntil(0);
     if (!excludeAssumptions(constraints_negated))
@@ -510,7 +508,7 @@ bool ScatterSplitter::createSplit_scatter() {
     splitConfig.split_on    = true;
     splitConfig.split_next = (splitConfig.split_units == spm_time ? cpuTime() + splitConfig.split_midtune : decisions + splitConfig.split_midtune);
 
-    splits.emplace_back(std::move(sp));
+    splits.emplace_back(std::move(splitData));
 
     return true;
 }
