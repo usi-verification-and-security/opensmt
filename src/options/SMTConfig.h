@@ -756,6 +756,10 @@ public:
       return optionTable.has(o_sat_split_asap) ?
               optionTable[o_sat_split_asap]->getValue().numval :
               0; }
+    int sat_scatter_split() const {
+        return optionTable.has(o_sat_scatter_split) ?
+               optionTable[o_sat_lookahead_split]->getValue().numval :
+               0; }
   int sat_lookahead_split() const {
       return optionTable.has(o_sat_lookahead_split) ?
               optionTable[o_sat_lookahead_split]->getValue().numval :
