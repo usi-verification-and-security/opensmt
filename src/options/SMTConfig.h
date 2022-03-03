@@ -292,6 +292,7 @@ public:
   static const char* o_sat_split_num;
   static const char* o_sat_split_fix_vars; // Like split_num, but give the number of vars to fix instead
   static const char* o_sat_split_asap;
+  static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
   static const char* o_sat_pure_lookahead;
   static const char* o_lookahead_score_deep;
