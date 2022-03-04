@@ -142,6 +142,7 @@ target_sources(InterpolationTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_UFInterpolation.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LRAInterpolation.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIAInterpolation.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ResolutionProofInterpolation.cc"
     )
 
 target_link_libraries(InterpolationTest OpenSMT gtest gtest_main)
@@ -227,3 +228,11 @@ target_sources(LASolverIncrementalityTest
 
 target_link_libraries(LASolverIncrementalityTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET LASolverIncrementalityTest)
+
+add_executable(NameProtectionTest)
+target_sources(NameProtectionTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_NameProtection.cc"
+        )
+
+target_link_libraries(NameProtectionTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET NameProtectionTest)

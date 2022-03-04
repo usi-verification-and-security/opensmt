@@ -30,14 +30,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
-#include "Global.h"
 
+#include <cstring>
 #include <libgen.h>
+#include <iostream>
+#include <list>
 #include <string>
+#include <fstream>
 
 enum ASTType {
       CMD_T      , CMDL_T
     , SYM_T      , SYML_T
+    , QSYM_T     , QSYML_T
     , NUM_T      , NUML_T
     , SORT_T     , SORTL_T
     , SV_T       , SVL_T
@@ -263,7 +267,6 @@ public:
   static const char* o_proof_rec_piv;
   static const char* o_proof_push_units;
   static const char* o_proof_transf_trav;
-  static const char* o_proof_struct_hash_build;
   static const char* o_proof_check;
   static const char* o_proof_multiple_inter;
   static const char* o_proof_alternative_inter;
@@ -447,19 +450,19 @@ public:
   inline void setInstanceName(const char* name) { insertOption(o_inst_name, new SMTOption(name)); }
 
   // Get interpolation algorithms
-  inline ItpAlgorithm getBooleanInterpolationAlgorithm() {
+  inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_bool_alg)) { return { optionTable[o_itp_bool_alg]->getValue().numval }; }
       else { return itp_alg_mcmillan; }}
 
-  inline ItpAlgorithm getEUFInterpolationAlgorithm() {
+  inline ItpAlgorithm getEUFInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_euf_alg)) { return { optionTable[o_itp_euf_alg]->getValue().numval }; }
       else { return itp_euf_alg_strong; }}
 
-  inline ItpAlgorithm getLRAInterpolationAlgorithm() {
+  inline ItpAlgorithm getLRAInterpolationAlgorithm() const {
       if (optionTable.has(o_itp_lra_alg)) { return { optionTable[o_itp_lra_alg]->getValue().numval }; }
       else { return itp_lra_alg_strong; }}
 
-  inline const char* getLRAStrengthFactor() {
+  inline const char* getLRAStrengthFactor() const {
       if (optionTable.has(o_itp_lra_factor)) { return optionTable[o_itp_lra_factor]->getValue().strval; }
       else { return itp_lra_factor_0; }
   }
@@ -475,7 +478,7 @@ public:
     {
       out.open( attr );
       if( !out )
-        opensmt_error2( "can't open ", attr );
+        throw std::ifstream::failure("can't open " + std::string(attr));
       rocset = true;
     }
   }
@@ -486,7 +489,7 @@ public:
     {
       err.open( attr );
       if( !err )
-        opensmt_error2( "can't open ", attr );
+          throw std::ifstream::failure("can't open " + std::string(attr));
       rocset = true;
     }
   }
@@ -594,9 +597,6 @@ public:
   int proof_transf_trav() const
     { return optionTable.has(o_proof_transf_trav) ?
         optionTable[o_proof_transf_trav]->getValue().numval : 1; }
-  int proof_struct_hash_build() const
-    { return optionTable.has(o_proof_struct_hash_build) ?
-        optionTable[o_proof_struct_hash_build]->getValue().numval : 0; }
   int proof_check() const
     { return optionTable.has(o_proof_check) ?
         optionTable[o_proof_check]->getValue().numval : 0; }

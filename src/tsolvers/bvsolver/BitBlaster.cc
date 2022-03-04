@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ModelBuilder.h"
 #include "BitBlaster.h"
 #include "BVStore.h"
-#include "Global.h"
 #include "MainSolver.h"
 #include "Real.h"
 
@@ -263,7 +262,7 @@ BitBlaster::bbTerm(PTRef tr)
     //
     // Exit if term is not handled
     //
-    cerr << "term not handled (yet ?): " << logic.printTerm(tr) << "\n";
+    std::cerr << "term not handled (yet ?): " << logic.printTerm(tr) << "\n";
     return BVRef_Undef;
 }
 
@@ -2168,7 +2167,7 @@ BitBlaster::notifyEqualities()
         }
     }
 
-    cerr << "; Added " << added_eqs << " equalities for bind" << endl;
+    std::cerr << "; Added " << added_eqs << " equalities for bind" << '\n';
 
     last_refined = refined.size();
 

@@ -26,8 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SStore.h"
 #include "PtStore.h"
 #include "CUFLogic.h"
-#include "TreeOps.h"
-#include "Global.h"
 
 const char* CUFLogic::tk_cuf_zero  = "0";
 const char* CUFLogic::tk_cuf_one   = "1";

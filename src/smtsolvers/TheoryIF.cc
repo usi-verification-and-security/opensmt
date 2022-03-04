@@ -172,7 +172,6 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
         } else {
             processNewClause(splitClause);
             if (satisfied == 0) {
-                forced_split = ~splitClause[0];
                 if (res != TPropRes::Propagate) {
                     res = TPropRes::Decide;
                 }
@@ -181,7 +180,6 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     }
     assert(res != TPropRes::Undef);
     if (res == TPropRes::Propagate) {
-        forced_split = lit_Undef;
         for (auto [litToPropogate, reason] : propData) {
             uncheckedEnqueue(litToPropogate, reason);
         }

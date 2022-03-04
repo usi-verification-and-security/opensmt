@@ -389,7 +389,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
         if (ref != CRef_Undef) {
             ipartitions_t parts = 0;
             assert(currentPartition != -1);
-            setbit(parts, static_cast<unsigned int>(currentPartition));
+            opensmt::setbit(parts, static_cast<unsigned int>(currentPartition));
             pmanager.addClauseClassMask(ref, parts);
         }
     }

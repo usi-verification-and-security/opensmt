@@ -45,8 +45,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "CoreSMTSolver.h"
-#include "Sort.h"
+
+#include "SystemQueries.h"
 #include "ModelBuilder.h"
+#include "OsmtInternalException.h"
+#include "ReportUtils.h"
+#include "Sort.h"
 
 #include <cmath>
 #include <iostream>
@@ -96,7 +100,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
-    , forced_split          (lit_Undef)
 
     , ok                    (true)
     , conflict_frame        (0)
@@ -572,13 +575,6 @@ Lit CoreSMTSolver::pickBranchLit()
 #ifdef STATISTICS
     opensmt::StopWatch s(branchTimer);
 #endif
-    if (forced_split != lit_Undef) {
-        assert(value(var(forced_split)) == l_Undef);
-        Lit fs = forced_split;
-        forced_split = lit_Undef;
-        return fs;
-    }
-
     Var next = var_Undef;
 
     // Random decision:
@@ -1526,7 +1522,7 @@ void CoreSMTSolver::popBacktrackPoint()
         }
         else
         {
-            opensmt_error2( "unknown undo operation in CoreSMTSolver", op.getType() );
+            throw OsmtInternalException("unknown undo operation in CoreSMTSolver" + std::to_string(op.getType()));
         }
 
         undo_stack.pop();

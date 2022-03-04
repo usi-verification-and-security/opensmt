@@ -216,7 +216,7 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     v3->addRes(ra.getW());
 
     //Creation new node y
-    ProofNode* y=new ProofNode(logic_);
+    ProofNode* y=new ProofNode();
     y->initClause();
     //y given by resolution v2,v3 over v pivot
     mergeClauses(v2->getClause(),v3->getClause(),y->getClause(),v->getPivot());
@@ -233,11 +233,6 @@ clauseid_t ProofGraph::applyRuleA1( RuleContext& ra )
     v3->addRes(y->getId());
     // Return id new node
     clauseid_t claid = y->getId();
-
-    //for(size_t k = 0; k<getGraphSize(); k++) if(getNode(k)!=NULL) assert(getNode(k)->getId()==k);
-
-    //NOTE for interpolation
-    if(produceInterpolants()) y->initIData();
 
     //v pivot becomes w pivot and viceversa
     Var aux;
@@ -446,24 +441,23 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
         for(unsigned u = 0; u < getGraphSize(); u++)
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
-                cerr << u << " detached" << endl;
-                opensmt_error_();
+                std::cerr << u << " detached" << '\n';
+                throw OsmtInternalException("Unexpected situation in rule application");
             }
     }
 
     w->remRes( ra.getV() );
     v3->remRes( ra.getV() );
     // v2 inherits v children
-    set<clauseid_t>& resolvents = v->getResolvents();
-    for(set<clauseid_t>::iterator it = resolvents.begin(); it!=resolvents.end(); it++)
-    {
-        assert((*it)<getGraphSize());
-        ProofNode* res = getNode((*it));
-        assert(res!=NULL);
+    std::set<clauseid_t>& resolvents = v->getResolvents();
+    for (clauseid_t resolvent_id : resolvents) {
+        assert(resolvent_id < getGraphSize());
+        ProofNode* res = getNode(resolvent_id);
+        assert(res);
         if(res->getAnt1() == v) res->setAnt1( v2 );
         else if (res->getAnt2() == v) res->setAnt2( v2 );
-        else opensmt_error_();
-        v2->addRes((*it));
+        else throw OsmtInternalException("Unexpected situation in rule application");
+        v2->addRes(resolvent_id);
     }
     assert(v->getNumResolvents()>0);
 
@@ -482,45 +476,13 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
     //Remove v
     removeNode(v->getId());
 
-    /*
-    // NOTE rule application in line with other rules, where v stays there
-    // alternative: copy content of v2 into v and keep both nodes
-    // NOTE We cannot create another leaf!!
-    if(v2->getType() == CLAORIG) return;
-
-    v->setAnt1(v2->getAnt1());
-    v->setAnt2(v2->getAnt2());
-    v->getAnt1()->addRes(v->getId());
-    v->getAnt2()->addRes(v->getId());
-
-    v->setPivot(v2->getPivot());
-    v->setType(v2->getType());
-    v->setClause(v2->getClause());
-    assert(v->getNumResolvents()>0); // TODO what if v was the root?
-
-    checkClause(v->getId());
-
-    for(unsigned u = 0; u < getGraphSize(); u++)
-        if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
-        {
-            cerr << u << " detached" << endl;
-            opensmt_error_();
-        }
-
-    // w might become useless
-    w->remRes( ra.getV() );
-    v3->remRes( ra.getV() );
-    if(w->getNumResolvents()==0) removeTree(w->getId());
-    // v3 can become useless
-    if(v3->getNumResolvents()==0) removeTree(v3->getId());*/
-
     if( proofCheck() > 1 )
     {
         for(unsigned u = 0; u < getGraphSize(); u++)
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
-                cerr << u << " detached" << endl;
-                opensmt_error_();
+                std::cerr << u << " detached" << '\n';
+                throw OsmtInternalException("Unexpected situation in rule application");
             }
     }
 

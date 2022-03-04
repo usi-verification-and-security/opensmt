@@ -65,11 +65,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     interpolants.clear();
-    setbit(mask, 1);
+    opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -92,11 +92,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     interpolants.clear();
-    setbit(mask, 1);
+    opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -117,7 +117,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -138,7 +138,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -161,7 +161,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -190,7 +190,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -229,7 +229,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -269,7 +269,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -297,7 +297,7 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -320,7 +320,7 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
 }
@@ -347,7 +347,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -379,7 +379,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 0);
+    opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
@@ -442,10 +442,60 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    setbit(mask, 1);
+    opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
 //    std::cout << logic.printTerm(interpolants[0]) << std::endl;
     EXPECT_TRUE(::verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask, config, logic));
+}
+
+TEST_F(UFInterpolationTest, test_DistinctInA){
+    /*
+     * B = { distinct(x1,x3,x4) }
+     * A = { x1 = x2, x2 = x3 }
+     */
+    PTRef eqA1 = logic.mkEq(x1,x2);
+    PTRef eqA2 = logic.mkEq(x2,x3);
+    PTRef deqB = logic.mkDistinct({x1,x4,x3});
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(logic.mkAnd(eqA1, eqA2));
+    solver.insertFormula(deqB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask = 1;
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+//    std::cout << "Interpolant: " << logic.pp(itp) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(itp, solver.getPartitionManager(), mask));
+    ASSERT_EQ(itp, logic.mkEq(x1,x3));
+}
+
+TEST_F(UFInterpolationTest, test_DistinctInB){
+    /*
+     * A = { distinct(x1,x3,x4) }
+     * B = { x1 = x2, x2 = x3 }
+     */
+    PTRef eqB1 = logic.mkEq(x1,x2);
+    PTRef eqB2 = logic.mkEq(x2,x3);
+    PTRef deqA = logic.mkDistinct({x1,x4,x3});
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "ufinterpolator");
+    solver.insertFormula(deqA);
+    solver.insertFormula(logic.mkAnd(eqB1, eqB2));
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask = 1;
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+//    std::cout << "Interpolant: " << logic.pp(itp) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(itp, solver.getPartitionManager(), mask));
+    ASSERT_EQ(itp, logic.mkNot(logic.mkEq(x1,x3)));
 }
 
 

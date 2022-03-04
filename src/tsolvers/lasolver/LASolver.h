@@ -33,7 +33,7 @@ class LASolverStats
 
         LASolverStats() : num_vars(0) {}
 
-        void printStatistics(ostream& os) {
+        void printStatistics(std::ostream& os) {
             os << "; Number of LA vars........: " << num_vars << '\n';
             os << "; LA time..................: " << timer.getTime() << " s\n";
         }
@@ -110,7 +110,7 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
     lbool getPolaritySuggestion(PTRef) const;
-    PTRef getRealInterpolant(const ipartitions_t &, map<PTRef, icolor_t>*, PartitionManager & pmanager);
+    PTRef getRealInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t>*, PartitionManager & pmanager);
     PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);
 
     // Return the conflicting bounds
@@ -130,7 +130,7 @@ private:
     LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
     void storeExplanation(Simplex::Explanation &&explanationBounds);
 
-    std::unique_ptr<Polynomial> expressionToLVarPoly(PTRef term);
+    std::unique_ptr<Tableau::Polynomial> expressionToLVarPoly(PTRef term);
 
     opensmt::Number getNum(PTRef);
 

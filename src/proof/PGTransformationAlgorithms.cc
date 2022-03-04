@@ -19,9 +19,12 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "PG.h"
-#include "CoreSMTSolver.h" // TODO: MB: deal with reportf and remove this include
-#include "OsmtInternalException.h"
 
+#include "SystemQueries.h"
+#include "OsmtInternalException.h"
+#include "ReportUtils.h"
+
+#include <deque>
 #include <unordered_set>
 
 //************************* RECYCLE PIVOTS AND RECYCLE UNITS ***************************
@@ -46,9 +49,7 @@ void ProofGraph::recyclePivotsIter_RecyclePhase() {
     // Allocate root bitset
     mpz_init(safe_lit_set[getRoot()->getId()]);
 
-    //DFS vector
-    vector<clauseid_t> DFSvec;
-    topolSortingBotUp(DFSvec);
+    std::vector<clauseid_t> DFSvec = topolSortingBotUp();
 
     assert(isResetVisited1());
     // To initialize pivots set to the set of the first resolvent
@@ -326,7 +327,7 @@ double ProofGraph::recyclePivotsIter() {
 
 void ProofGraph::recycleUnits() {
     assert(mpz_cmp_ui(visited_1, 0) == 0 and mpz_cmp_ui(visited_2, 0) == 0);
-    if (verbose() > 1) { cerr << "# " << "Recycle units begin" << endl; }
+    if (verbose() > 1) { std::cerr << "# " << "Recycle units begin" << '\n'; }
     if (verbose() > 1) {
         uint64_t mem_used = memUsed();
         reportf("# Memory used before recycling: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
@@ -410,7 +411,7 @@ void ProofGraph::recycleUnits() {
                                     assert(res);
                                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                    else opensmt_error_();
+                                    else throw OsmtInternalException("Unexpected situation in recycleUnits");
                                     assert(res->getAnt1() != res->getAnt2());
                                     replacing->addRes(clauseid);
                                 }
@@ -452,7 +453,7 @@ void ProofGraph::recycleUnits() {
                                 assert(res);
                                 if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                 else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                else opensmt_error_();
+                                else throw OsmtInternalException("Unexpected situation in recycleUnits");
                                 assert(res->getAnt1() != res->getAnt2());
                                 replacing->addRes(clauseid);
                             }
@@ -486,13 +487,11 @@ void ProofGraph::recycleUnits() {
         // NOTE is it possible to have multiple unit clauses containing the same literal?
         // If so, which one should be readded?
         if (oldroot->getClauseSize() == 0) {
-            //cerr << "Clause not useful: "; printClause(unit);
         } else {
             assert(oldroot->hasOccurrenceBin(var(unit->getClause()[0])) != -1);
             //printClause(unit);
-            ProofNode *newroot = new ProofNode(logic_);
+            ProofNode *newroot = new ProofNode();
             newroot->initClause();
-            if (produceInterpolants()) { newroot->initIData(); }
             newroot->setAnt1(oldroot);
             newroot->setAnt2(unit);
             newroot->setType(clause_type::CLA_DERIVED);
@@ -510,7 +509,7 @@ void ProofGraph::recycleUnits() {
 
     if (proofCheck()) {
         unsigned rem = cleanProofGraph();
-        if (rem > 0) cerr << "# Cleaned " << rem << " residual nodes" << endl;
+        if (rem > 0) std::cerr << "# Cleaned " << rem << " residual nodes" << '\n';
         assert(rem == 0);
         checkProof(true);
     }
@@ -533,11 +532,11 @@ void ProofGraph::recycleUnits() {
             }
         }
 
-        cerr << "# LU\t";
-        cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes) << "%)\t";
-        cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges) << "%)\t";
-        cerr << "Traversals: " << curr_num_loops << "\t";
-        cerr << "Time: " << (endTime - initTime) << " s" << endl;
+        std::cerr << "# LU\t";
+        std::cerr << "Nodes: " << new_n_nodes << "(-" << 100 * ((double) (num_nodes - new_n_nodes) / num_nodes) << "%)\t";
+        std::cerr << "Edges: " << new_n_edges << "(-" << 100 * ((double) (num_edges - new_n_edges) / num_edges) << "%)\t";
+        std::cerr << "Traversals: " << curr_num_loops << "\t";
+        std::cerr << "Time: " << (endTime - initTime) << " s" << '\n';
     }
     //////////////////////////////////////////////////////////////////
 }
@@ -634,7 +633,6 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                                 }
                                 clauseid_t A1_new_id = ruleApply(chosen_ra);
                                 some_transf_done = true;
-                                // if(dupl_id != 0 && A1_new_id != 0) cerr << "A1 double on " << dupl_id << " " << A1_new_id << endl;
 
                                 // NOTE see ProofGraphRules B3
                                 // Mark v as modified
@@ -786,12 +784,11 @@ void ProofGraph::proofPostStructuralHashing()
 	}
 
 	double initTime = cpuTime();
-	vector<clauseid_t>q;
+	std::vector<clauseid_t> q;
 	clauseid_t id;
-	ProofNode* n=NULL;
+	ProofNode* n = nullptr;
 	// Map to associate node to its antecedents
-	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >* ants_map_ = new map< std::pair<clauseid_t,clauseid_t>, clauseid_t >;
-	map< std::pair<clauseid_t,clauseid_t>, clauseid_t >& ants_map = *ants_map_;
+	std::map< std::pair<clauseid_t,clauseid_t>, clauseid_t> ants_map;
 
 	// NOTE Topological visit and node replacement on the fly
 	// Guarantees that both replacing and replaced node subproofs have been visited
@@ -825,7 +822,7 @@ void ProofGraph::proofPostStructuralHashing()
 					{ c2 = n->getAnt1()->getId(); c1 = n->getAnt2()->getId(); }
 					// Look for pair <ant1,ant2>
 					std::pair<clauseid_t, clauseid_t> ant_pair (c1,c2);
-					map< std::pair<clauseid_t,clauseid_t>, clauseid_t >::iterator it = ants_map.find( ant_pair );
+					auto it = ants_map.find(ant_pair);
 					found = ( it != ants_map.end() );
 					// If pairs not found, add node to the map
 					if( !found ) ants_map[ ant_pair ] = id ;
@@ -835,15 +832,15 @@ void ProofGraph::proofPostStructuralHashing()
 						ProofNode* replacing = getNode( it->second );
 						assert( replacing );
 						// Move n children to replacing node
-						for( set<clauseid_t>::iterator itt = n->getResolvents().begin(); itt != n->getResolvents().end(); itt++ )
+						for(clauseid_t resolvent_id : n->getResolvents())
 						{
-							assert((*itt)<getGraphSize());
-							ProofNode* res = getNode((*itt));
+							assert(resolvent_id < getGraphSize());
+							ProofNode* res = getNode(resolvent_id);
 							assert( res );
 							if(res->getAnt1() == n) res->setAnt1( replacing );
 							else if (res->getAnt2() == n) res->setAnt2( replacing );
-							else opensmt_error_();
-							replacing->addRes((*itt));
+							else throw OsmtInternalException("Unexpected situation in proofPostStructuralHashing");
+							replacing->addRes(resolvent_id);
 						}
 						n->getAnt1()->remRes(id);
 						n->getAnt2()->remRes(id);
@@ -855,7 +852,6 @@ void ProofGraph::proofPostStructuralHashing()
 		else q.pop_back();
 	}
 	while(!q.empty());
-	delete(ants_map_);
 	resetVisited1();
 
 	if( proofCheck() )
@@ -982,7 +978,7 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
             assert(resolvent);
             assert(mustBeEliminated(resolvent->getPivot())); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
             if (!mustBeEliminated(resolvent->getPivot())) {
-                opensmt_error("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
+                throw OsmtInternalException("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
             }
             // resolvent must be theory valid lemma, make it new leaf
             ProofNode * ant1 = resolvent->getAnt1();

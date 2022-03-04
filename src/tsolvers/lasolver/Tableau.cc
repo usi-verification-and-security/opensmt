@@ -60,12 +60,12 @@ const Tableau::column_t & Tableau::getColumn(LVRef nonBasicVar) const {
     return *cols[nonBasicVar.x];
 }
 
-const Polynomial & Tableau::getRowPoly(LVRef basicVar) const {
+const Tableau::Polynomial & Tableau::getRowPoly(LVRef basicVar) const {
     assert(rows[basicVar.x]);
     return *rows[basicVar.x];
 }
 
-Polynomial & Tableau::getRowPoly(LVRef basicVar) {
+Tableau::Polynomial & Tableau::getRowPoly(LVRef basicVar) {
     assert(rows[basicVar.x]);
     return *rows[basicVar.x];
 }
@@ -90,7 +90,7 @@ void Tableau::addRow(LVRef v, std::unique_ptr<Polynomial> p) {
     rows[v.x] = std::move(p);
 }
 
-std::unique_ptr<Polynomial> Tableau::removeRow(LVRef v) {
+std::unique_ptr<Tableau::Polynomial> Tableau::removeRow(LVRef v) {
     assert(rows[v.x]);
     std::unique_ptr<Polynomial> res;
     assert(!res);
@@ -170,7 +170,6 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
                        assert(contains(getColumn(removedVar), rowVar));
                        removeRowFromColumn(rowVar, removedVar);
                    }
-                   , tmp_storage
         );
     }
     assert(!cols[nv.x]);
@@ -267,7 +266,7 @@ void Tableau::normalizeRow(LVRef v) {
     }
     for (LVRef var : toEliminate) {
         auto const coeff = row.removeVar(var);
-        row.merge(getRowPoly(var), coeff, [](LVRef) {}, [](LVRef) {}, tmp_storage);
+        row.merge(getRowPoly(var), coeff);
     }
 }
 

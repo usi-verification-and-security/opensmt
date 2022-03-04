@@ -43,8 +43,11 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
 
-#include "Sort.h"
+
 #include "SimpSMTSolver.h"
+
+#include "ReportUtils.h"
+#include "Sort.h"
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -122,13 +125,9 @@ lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
     vec<Var> extra_frozen;
     lbool    result = l_True;
 
-    if ( config.sat_preprocess_theory == 0 )
-        goto skip_theory_preproc;
-
-
-    opensmt_error( "preprocess theory has been temporairly disabled in this version" );
-
-skip_theory_preproc:
+    if (config.sat_preprocess_theory != 0) {
+        throw OsmtApiException("preprocess theory has been temporairly disabled in this version");
+    }
 
     // Added Code
     //=================================================================================================
@@ -209,8 +208,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::p
             && smt_clause.size( ) == 1   // Consider unit clauses
             && var(smt_clause[0]) >= 2 ) // Don't consider true/false
     {
-//        Var v = var( smt_clause[0] );
-        cerr << "XXX skipped handling of unary theory literal?" << endl;
+        std::cerr << "XXX skipped handling of unary theory literal?" << '\n';
     }
     int nclauses = clauses.size();
     if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))

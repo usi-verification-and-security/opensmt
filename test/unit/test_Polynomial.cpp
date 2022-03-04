@@ -4,6 +4,9 @@
 
 #include <gtest/gtest.h>
 #include <lasolver/Polynomial.h>
+#include <lasolver/LAVar.h>
+
+using Polynomial = PolynomialT<LVRef>;
 
 TEST(Polynomial_test, test_AddTerm){
     Polynomial poly;

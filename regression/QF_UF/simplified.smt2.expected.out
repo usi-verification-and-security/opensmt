@@ -1,4 +1,4 @@
-(error "No such symbol ?v_52: Unknown symbol `?v_52'")
+(error "Unknown symbol `?v_52 Bool'")
 
 (error "assertion returns an unknown sort")
 

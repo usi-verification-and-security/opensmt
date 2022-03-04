@@ -19,6 +19,7 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PG.h"
 
+#include "SystemQueries.h"
 
 // Manipulates proofs
 void ProofGraph::printProofGraph( )
@@ -27,8 +28,8 @@ void ProofGraph::printProofGraph( )
 	// Fill proof
 	fillProofGraph();
 	//Print original proof
-	if( verbose() > 0 ) cerr << "# Outputting dotty proof" << endl;
-	ofstream dotty( "proof.dot", ofstream::out | ofstream::trunc);
+	if( verbose() > 0 ) std::cerr << "# Outputting dotty proof" << '\n';
+	std::ofstream dotty( "proof.dot", std::ofstream::out | std::ofstream::trunc);
 	printProofAsDotty( dotty );
 	emptyProofGraph();
 }
@@ -78,7 +79,7 @@ void ProofGraph::transfProofForReduction( )
 	{
 		checkProof( true );
 		unsigned rem = cleanProofGraph( );
-		if(verbose() > 0) cerr << "# Cleaned " << rem << " residual nodes"  << endl;
+		if(verbose() > 0) std::cerr << "# Cleaned " << rem << " residual nodes"  << '\n';
 		if(rem > 0) checkProof( true );
 	}
 
@@ -89,63 +90,63 @@ void ProofGraph::transfProofForReduction( )
 		double perc_nodes=(((double)num_nodes-(double)numnodes)/(double)numnodes)*100;
 		double perc_edges=(((double)num_edges-(double)numedges)/(double)numedges)*100;
 		double perc_leaves=(((double)num_leaves-(double)numleaves)/(double)numleaves)*100;
-		cerr << "#" << endl;
-		cerr << "# ------------------------------------" << endl;
-		cerr << "# PROOF GRAPH REDUCTION STATISTICS    " << endl;
-		cerr << "# ------------------------------------" << endl;
-		cerr << "# Structural properties" << endl;
-		cerr << "# ---------------------" << endl;
-		cerr << "# Nominal num proof variables: ";
+		std::cerr << "#" << '\n';
+		std::cerr << "# ------------------------------------" << '\n';
+		std::cerr << "# PROOF GRAPH REDUCTION STATISTICS    " << '\n';
+		std::cerr << "# ------------------------------------" << '\n';
+		std::cerr << "# Structural properties" << '\n';
+		std::cerr << "# ---------------------" << '\n';
+		std::cerr << "# Nominal num proof variables: ";
 		fprintf( stderr, "%-10d\n", num_vars_limit );
-		cerr << "# Actual num proof variables.: ";
+		std::cerr << "# Actual num proof variables.: ";
 		fprintf( stderr, "%-10d %-10d\n", numvars, (int)proof_variables.size() );
-		cerr << "# Nodes......................: ";
+		std::cerr << "# Nodes......................: ";
 		fprintf( stderr, "%-10d %-10d\n", numnodes, num_nodes );
-		cerr << "# Nodes variation............: ";
+		std::cerr << "# Nodes variation............: ";
 		fprintf( stderr, "%-9.2f %%\n", perc_nodes );
-		cerr << "# Leaves.....................: ";
+		std::cerr << "# Leaves.....................: ";
 		fprintf( stderr, "%-10d %-10d\n", numleaves, num_leaves );
-		cerr << "# Leaves variation...........: ";
+		std::cerr << "# Leaves variation...........: ";
 		fprintf( stderr, "%-9.2f %%\n", perc_leaves );
-		cerr << "# Edges......................: ";
+		std::cerr << "# Edges......................: ";
 		fprintf( stderr, "%-10d %-10d\n", numedges, num_edges );
-		cerr << "# Edges variation............: ";
+		std::cerr << "# Edges variation............: ";
 		fprintf( stderr, "%-9.2f %%\n", perc_edges );
-		//cerr << "# Graph vector size..........: ";
+		//std::cerr << "# Graph vector size..........: ";
 		//fprintf( stderr, "%-10ld %-10ld\n", size, graph.size( ) );
-		cerr << "# Average degree.............: ";
+		std::cerr << "# Average degree.............: ";
 		fprintf( stderr, "%-10.2f %-10.2f\n", avgdeg, (double)num_edges / (double)num_nodes );
-		cerr << "# Unary clauses..............: ";
+		std::cerr << "# Unary clauses..............: ";
 		fprintf( stderr, "%-10d %-10d\n", numunary, num_unary );
-		cerr << "# Max clause size............: ";
+		std::cerr << "# Max clause size............: ";
 		fprintf( stderr, "%-10d %-10d\n", maxclasize, max_cla_size );
-		cerr << "# Average clause size........: ";
+		std::cerr << "# Average clause size........: ";
 		fprintf( stderr, "%-10.2f %-10.2f\n", avgclasize, av_cla_size );
-		//cerr << "# Variance clause size.......: ";
+		//std::cerr << "# Variance clause size.......: ";
 		//fprintf( stderr, "%-10.2f %-10.2f\n", varclasize, var_cla_size );
-		cerr << "# -------------------------" << endl;
-		cerr << "# Transformation statistics" << endl;
-		cerr << "# -------------------------" << endl;
-		cerr << "# Graph building time........: " << building_time << " s" << endl;
-		cerr << "# Transformation time........: " << time << " s" << endl;
-		//cerr << "# Duplications...............: " << num_dup << endl;
-		//cerr << "# Node additions due to A1...: " << num_node_add_A1 << endl;
-		cerr << "# ---------------------------" << endl;
-		cerr << "# Rules application statistics" << endl;
-		cerr << "# ---------------------------" << endl;
-		cerr << "# A1.........................: " << A1 << endl;
-		cerr << "# A1'........................: " << A1prime << endl;
-		cerr << "# A1 to B....................: " << A1B << endl;
-		cerr << "# A2.........................: " << A2 << endl;
-		cerr << "# A2 to B....................: " << A2B << endl;
-		cerr << "# A2 unary...................: " << A2U << endl;
-		cerr << "# B1.........................: " << B1 << endl;
-		cerr << "# B2'........................: " << B2prime << endl;
-		cerr << "# B2.........................: " << B2 << endl;
-		cerr << "# B3.........................: " << B3 << endl;
-		cerr << "# Duplications...............: " << duplications << endl;
-		cerr << "# Swap ties..................: " << swap_ties << endl;
-		cerr << "# ---------------------------" << endl;
+		std::cerr << "# -------------------------" << '\n';
+		std::cerr << "# Transformation statistics" << '\n';
+		std::cerr << "# -------------------------" << '\n';
+		std::cerr << "# Graph building time........: " << building_time << " s" << '\n';
+		std::cerr << "# Transformation time........: " << time << " s" << '\n';
+		//std::cerr << "# Duplications...............: " << num_dup << '\n';
+		//std::cerr << "# Node additions due to A1...: " << num_node_add_A1 << '\n';
+		std::cerr << "# ---------------------------" << '\n';
+		std::cerr << "# Rules application statistics" << '\n';
+		std::cerr << "# ---------------------------" << '\n';
+		std::cerr << "# A1.........................: " << A1 << '\n';
+		std::cerr << "# A1'........................: " << A1prime << '\n';
+		std::cerr << "# A1 to B....................: " << A1B << '\n';
+		std::cerr << "# A2.........................: " << A2 << '\n';
+		std::cerr << "# A2 to B....................: " << A2B << '\n';
+		std::cerr << "# A2 unary...................: " << A2U << '\n';
+		std::cerr << "# B1.........................: " << B1 << '\n';
+		std::cerr << "# B2'........................: " << B2prime << '\n';
+		std::cerr << "# B2.........................: " << B2 << '\n';
+		std::cerr << "# B3.........................: " << B3 << '\n';
+		std::cerr << "# Duplications...............: " << duplications << '\n';
+		std::cerr << "# Swap ties..................: " << swap_ties << '\n';
+		std::cerr << "# ---------------------------" << '\n';
 	}
 
 	/*	if ( verbose() > 0 )
@@ -157,8 +158,8 @@ void ProofGraph::transfProofForReduction( )
 	if( printProofDotty() == 1 )
 	{
 		//Print reduced proof
-		if( verbose() > 0 ) cerr << "# Outputting dotty proof reduced" << endl;
-		ofstream dottyred( "proof_reduced.dot" );
+		if( verbose() > 0 ) std::cerr << "# Outputting dotty proof reduced" << '\n';
+        std::ofstream dottyred( "proof_reduced.dot" );
 		printProofAsDotty( dottyred );
 	}
 	// TODO return reduced proof in SMTLIB2 format
@@ -168,16 +169,33 @@ void ProofGraph::transfProofForReduction( )
 	emptyProofGraph();
 }
 
+void ProofGraph::transfProofForCNFInterpolants(std::function<icolor_t(Var)> getVarClass) {
+    if (verbose() > 0) std::cerr << "; Proof transformation for interpolants (partially) in CNF" << '\n';
+
+    fillProofGraph();
+    proofTransformAndRestructure(-1, -1, true, [this, &getVarClass](RuleContext & ra1, RuleContext & ra2) {
+        return this->handleRuleApplicationForCNFinterpolant(ra1, ra2, [this, &getVarClass](RuleContext & ra) {
+            return this->allowSwapRuleForCNFinterpolant(ra, getVarClass);
+        });
+    });
+    checkProof(true);
+    normalizeAntecedentOrder();
+    emptyProofGraph();
+    printRuleApplicationStatus();
+}
+
 // Performs reduction
 double ProofGraph::doReduction(double solving_time) {
     if (enabledTransfTraversals()) {
         if ((ratioReductionSolvingTime() > 0 && reductionTime() > 0) ||
             (ratioReductionSolvingTime() > 0 && numGraphTraversals() > 0) ||
             (reductionTime() > 0 && numGraphTraversals() > 0) ||
-            (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) opensmt_error(
-                "Please set either ratio or time for reduction or number of proof traversals");
+            (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) {
+                throw OsmtApiException("Please set either ratio or time for reduction or number of proof traversals");
+        }
+
     }
-    if (reductionLoops() == 0) opensmt_error("Please set number of global reduction loops to at least 1");
+    if (reductionLoops() == 0) throw OsmtApiException("Please set number of global reduction loops to at least 1");
 
     //Transformation time calculation
     double time_init = 0;
@@ -207,26 +225,26 @@ double ProofGraph::doReduction(double solving_time) {
     //Each global loop is given an equal fraction of available time
     num_global_reduction_loops = reductionLoops();
     if (verbose() > 0) {
-        cerr << "# Compressing proof, " << num_global_reduction_loops << " global iteration(s) " << endl;
-        if (enabledPushDownUnits()) cerr << "# preceded by LowerUnits" << endl;
-        cerr << "# Each global iteration consists of: " << endl;
-        if (enabledStructuralHashing()) cerr << "# StructuralHashing" << endl;
-        if (enabledRecyclePivots()) cerr << "# RecyclePivotsWithIntersection" << endl;
+        std::cerr << "# Compressing proof, " << num_global_reduction_loops << " global iteration(s) " << '\n';
+        if (enabledPushDownUnits()) std::cerr << "# preceded by LowerUnits" << '\n';
+        std::cerr << "# Each global iteration consists of: " << '\n';
+        if (enabledStructuralHashing()) std::cerr << "# StructuralHashing" << '\n';
+        if (enabledRecyclePivots()) std::cerr << "# RecyclePivotsWithIntersection" << '\n';
         if (enabledTransfTraversals()) {
-            cerr << "# ReduceAndExpose ";
+            std::cerr << "# ReduceAndExpose ";
             if (ratioReductionSolvingTime() > 0 || reductionTime() > 0)
-                cerr << "with overall timeout " << red_time << " sec(s) " << endl;
+                std::cerr << "with overall timeout " << red_time << " sec(s) " << '\n';
             else if (numGraphTraversals() > 0)
-                cerr << "with " << numGraphTraversals() << " graph traversal(s) " << endl;
+                std::cerr << "with " << numGraphTraversals() << " graph traversal(s) " << '\n';
         }
-        cerr << "#" << endl;
+        std::cerr << "#" << '\n';
     }
     double spent_time = 0, i_time = 0;
 
     time_init = cpuTime();
     if (enabledPushDownUnits()) recycleUnits();
     for (int k = 1; k <= num_global_reduction_loops; k++) {
-        if (verbose() > 0) cerr << "# Global iteration " << k << endl;
+        if (verbose() > 0) std::cerr << "# Global iteration " << k << '\n';
         i_time = cpuTime();
         if (switchToRPHashing()) {
             if (enabledRecyclePivots()) recyclePivotsIter();

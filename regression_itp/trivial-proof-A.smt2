@@ -1,0 +1,7 @@
+(set-option :produce-interpolants 1)
+(set-logic QF_UF)
+(declare-fun x () Bool)
+(assert (! false :named A))
+(assert (! x :named B))
+(check-sat)
+(get-interpolants A B)

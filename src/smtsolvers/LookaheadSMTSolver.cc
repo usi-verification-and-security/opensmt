@@ -298,7 +298,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                     respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
                 if (respect_logic_partitioning_hints && !okToPartition(v)) {
                     skipped_vars_due_to_logic++;
-                    cout << "Skipping " << v << " since logic says it's not good\n";
+                    std::cout << "Skipping " << v << " since logic says it's not good\n";
                     continue; // Skip the vars that the logic considers bad to split on
                 }
 #ifdef LADEBUG
@@ -344,7 +344,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                     continue;
                 }
                 if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-                    cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
+                    std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
                     respect_logic_partitioning_hints = false;
                     continue;
                 }
@@ -356,6 +356,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                     double ss = score->getSolverScore(this);
                     newDecisionLevel();
                     Lit l = mkLit(v, p);
+
 #ifdef LADEBUG
                     printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif

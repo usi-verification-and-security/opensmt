@@ -4,6 +4,7 @@
 
 #include "PartitionManager.h"
 #include "TreeOps.h"
+#include "OsmtInternalException.h"
 
 void PartitionManager::propagatePartitionMask(PTRef root) {
     ipartitions_t& p = getIPartitions(root);
@@ -48,8 +49,10 @@ ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
     return allowed;
 }
 
-PTRef
-PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part p)
+using opensmt::isAlocal;
+using opensmt::isBlocal;
+
+PTRef PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part p)
 {
     auto isLocalToP = [p](const ipartitions_t& p_mask, const ipartitions_t& mask){ return p == part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask); };
     auto hasNoPartition = [](const ipartitions_t& p_mask, const ipartitions_t&mask) { return !isAlocal(p_mask, mask) and !isBlocal(p_mask, mask); };
@@ -62,7 +65,7 @@ PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part
             args.push(part);
         }
         else if (hasNoPartition(p_mask, mask)) {
-            opensmt_error("Assertion is neither A or B");
+            throw OsmtInternalException("Assertion is neither A or B");
         }
     }
     PTRef A = logic.mkAnd(std::move(args));

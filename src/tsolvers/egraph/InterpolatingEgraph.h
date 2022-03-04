@@ -15,7 +15,7 @@ public:
     {}
 
 
-    PTRef getInterpolant(const ipartitions_t& mask, map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
+    PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
     {
         InterpolatingExplainer * itp_explainer = static_cast<InterpolatingExplainer*>(explainer.get());
         auto cgraph = itp_explainer->getCGraph();

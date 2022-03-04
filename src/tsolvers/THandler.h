@@ -65,7 +65,7 @@ public:
     void    getConflict          ( vec<Lit>&, vec<VarData>&, int & ); // Returns theory conflict in terms of literals
     std::vector<vec<Lit>> getNewSplits(); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 
-    PTRef   getInterpolant       (const ipartitions_t&, map<PTRef, icolor_t>*, PartitionManager &pmanager);
+    PTRef   getInterpolant       (const ipartitions_t&, std::map<PTRef, icolor_t>*, PartitionManager &pmanager);
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal
@@ -107,8 +107,8 @@ protected:
         return (int)(drand(seed) * size);
     }*/
 
-    void dumpHeaderToFile(ostream&);
-    void dumpFormulaToFile(ostream&, PTRef, bool negate = false);
+    void dumpHeaderToFile(std::ostream&);
+    void dumpFormulaToFile(std::ostream&, PTRef, bool negate = false);
 
 #ifdef PEDANTIC_DEBUG
     bool  isOnTrail     ( Lit, vec<Lit>& );

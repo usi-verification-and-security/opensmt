@@ -57,6 +57,8 @@ class Tableau{
         const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
     };
 
+public:
+    using Polynomial = PolynomialT<LVRef>;
 protected:
 
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
@@ -66,6 +68,7 @@ protected:
     using vars_t = std::set<LVRef, LVRefComp>;
 
 public:
+
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
     void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
@@ -101,8 +104,6 @@ private:
         NONE, BASIC, NONBASIC, QUASIBASIC
     };
     std::vector<VarType> varTypes;
-
-    std::vector<Polynomial::Term> tmp_storage;
 
     void ensureTableauReadyFor(LVRef v);
 

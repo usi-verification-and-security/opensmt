@@ -583,19 +583,19 @@ icolor_t FarkasInterpolator::getGlobalColorFor(PTRef term) const {
 }
 
 PTRef FarkasInterpolator::getDecomposedInterpolant() {
-    return getDecomposedInterpolant(I_A);
+    return getDecomposedInterpolant(icolor_t::I_A);
 }
 
 PTRef FarkasInterpolator::getDualDecomposedInterpolant() {
-    return getDecomposedInterpolant(I_B);
+    return getDecomposedInterpolant(icolor_t::I_B);
 }
 
 PTRef FarkasInterpolator::getFarkasInterpolant() {
-    return getFarkasInterpolant(I_A);
+    return getFarkasInterpolant(icolor_t::I_A);
 }
 
 PTRef FarkasInterpolator::getDualFarkasInterpolant() {
-    return getFarkasInterpolant(I_B);
+    return getFarkasInterpolant(icolor_t::I_B);
 }
 
 PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system) {
@@ -634,13 +634,13 @@ PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
     std::vector<std::pair<PtAsgn, opensmt::Real>> system;
     for (int i = 0; i < explanations.size(); ++i) {
         auto litColor = getColorFor(explanations[i].tr);
-        if (litColor == color or litColor == I_AB) {
+        if (litColor == color or litColor == icolor_t::I_AB) {
             system.emplace_back(explanations[i], explanation_coeffs[i]);
         }
     }
     PTRef itp = weightedSum(system);
     assert(itp != PTRef_Undef);
-    return color == I_B ? logic.mkNot(itp) : itp;
+    return color == icolor_t::I_B ? logic.mkNot(itp) : itp;
 }
 
 PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
@@ -651,9 +651,9 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
     std::vector<std::pair<PtAsgn, opensmt::Real>> systemB;
     for (int i = 0; i < explanations.size(); ++i) {
         auto litColor = getColorFor(explanations[i].tr);
-        if (litColor == I_A or litColor == I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
+        if (litColor == icolor_t::I_A or litColor == icolor_t::I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
             systemA.emplace_back(explanations[i], explanation_coeffs[i]);
-        } else if (litColor == I_B) {
+        } else if (litColor == icolor_t::I_B) {
             systemB.emplace_back(explanations[i], explanation_coeffs[i]);
         }
     }

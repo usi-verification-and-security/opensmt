@@ -3,6 +3,9 @@
 //
 
 #include "GhostSMTSolver.h"
+
+#include "ReportUtils.h"
+
 #include <utility>
 
 bool GhostSMTSolver::isGhost(Lit l)
@@ -159,11 +162,6 @@ GhostSMTSolver::pickBranchLit() {
 #ifdef STATISTICS
     opensmt::StopWatch s(branchTimer);
 #endif
-    if (forced_split != lit_Undef) {
-        Lit fs = forced_split;
-        forced_split = lit_Undef;
-        return fs;
-    }
 
     if ((drand(random_seed) < random_var_freq) && !order_heap.empty()) {
         Var v = pickRandomBranchVar();

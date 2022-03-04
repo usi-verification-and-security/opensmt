@@ -68,7 +68,7 @@ do
     done < $FILE
     if [ $ok == 0 ]
     then
-      new_file="$new_file$interpolants_t";
-      cat new_file > $FILE;
+      new_file="$new_file\n$interpolants_t"
+      echo $new_file > $FILE;
     fi
 done

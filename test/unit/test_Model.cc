@@ -183,7 +183,7 @@ protected:
 TEST_F(UFConstModelTest, test_constModel) {
     PTRef a_model = getModelFor(a);
     auto a_model_name = logic.pp(a_model);
-    ASSERT_EQ(strcmp(a_model_name.c_str(), "a"), 0);
+    ASSERT_EQ(a_model_name, "a");
     PTRef f_a_model = getModelFor(f_a);
     PTRef x_model = getModelFor(x);
     ASSERT_EQ(f_a_model, x_model);

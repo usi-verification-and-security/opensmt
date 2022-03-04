@@ -319,9 +319,9 @@ public:
     inline int  getConflictFrame   ( ) const { assert(not isOK()); return conflict_frame; }
 
     template<class C>
-    void     printSMTClause   ( ostream &, const C& );
-    void     printSMTClause   ( ostream &, vec< Lit > &, bool = false );
-    void     printSMTClause   ( ostream &, vector< Lit > &, bool = false );
+    void     printSMTClause   (std::ostream &, const C& );
+    void     printSMTClause   (std::ostream &, vec< Lit > &, bool = false );
+    void     printSMTClause   (std::ostream &, std::vector<Lit> &, bool = false );
 
     // Added Code
     //=================================================================================================
@@ -373,7 +373,6 @@ public:
     std::vector<vec<Lit>> split_assumptions;
 
 protected:
-    Lit forced_split; // If theory solver tells that we must split the instance, a literal with unknown value is inserted here for the splitting heuristic
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
     // Helper structures:
     //
@@ -467,7 +466,7 @@ protected:
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     bool*               next_arr;
-    set<Var>            next_init;
+    std::set<Var>            next_init;
     int                 close_to_prop = 0;
 protected:
 #ifdef PEDANTIC_DEBUG
@@ -595,7 +594,7 @@ protected:
     bool     withinBudget     ()      const;
 
 
-    void     printSMTLit              ( ostream &, const Lit );
+    void     printSMTLit              (std::ostream &, const Lit);
 
     virtual void verifyModel      ();
     void         checkLiteralCount();
@@ -639,7 +638,7 @@ public:
 	std::string printCnfClauses  ();
 	std::string printCnfLearnts  ();
 
-    void   printProofSMT2          ( ostream & ); // Print proof
+    void   printProofSMT2          (std::ostream &); // Print proof
 protected:
 
 #ifdef STATISTICS
@@ -667,7 +666,7 @@ protected:
 
     unsigned           luby_i;                     // Keep track of luby index
     unsigned           luby_k;                     // Keep track of luby k
-    vector< unsigned > luby_previous;              // Previously computed luby numbers
+    std::vector<unsigned> luby_previous;           // Previously computed luby numbers
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
@@ -680,12 +679,6 @@ protected:
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     // End of proof production
-
-    //
-    // Data structures for DTC
-    //
-    set< PTRef >     interface_equalities;       // To check that we do not duplicate eij
-    set< PTRef >     atoms_seen;                 // Some interface equalities may already exists in the formula
     
     //
     // Data structures required for incrementality, backtrackability
@@ -1067,7 +1060,7 @@ inline std::string CoreSMTSolver::printCnfLearnts()
 // Added code
 
 template<class C>
-inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
+inline void CoreSMTSolver::printSMTClause(std::ostream & os, const C& c )
 {
     if ( c.size( ) == 0 ) os << "-";
     if ( c.size( ) > 1 ) os << "(or ";
@@ -1080,7 +1073,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, const C& c )
     if ( c.size( ) > 1 ) os << ")";
 }
 
-inline void CoreSMTSolver::printSMTClause( ostream & os, vec< Lit > & c, bool ids )
+inline void CoreSMTSolver::printSMTClause(std::ostream & os, vec< Lit > & c, bool ids )
 {
     if ( c.size( ) == 0 ) os << "-";
     if ( c.size( ) > 1 ) os << "(or ";
@@ -1098,7 +1091,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, vec< Lit > & c, bool id
     if ( c.size( ) > 1 ) os << ")";
 }
 
-inline void CoreSMTSolver::printSMTClause( ostream & os, vector< Lit > & c, bool ids )
+inline void CoreSMTSolver::printSMTClause(std::ostream & os, std::vector< Lit > & c, bool ids )
 {
     if ( c.size( ) == 0 ) os << "-";
     if ( c.size( ) > 1 ) os << "(or ";
@@ -1116,7 +1109,7 @@ inline void CoreSMTSolver::printSMTClause( ostream & os, vector< Lit > & c, bool
     if ( c.size( ) > 1 ) os << ")";
 }
 
-inline void CoreSMTSolver::printSMTLit( ostream & os, const Lit l )
+inline void CoreSMTSolver::printSMTLit(std::ostream & os, const Lit l )
 {
     Var v = var( l );
     if ( v == 0 ) os << "true";

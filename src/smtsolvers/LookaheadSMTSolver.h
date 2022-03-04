@@ -9,6 +9,7 @@
 #include "LAScore.h"
 
 #include <memory>
+#include <unistd.h>
 
 class LookaheadSMTSolver : public SimpSMTSolver {
 protected:

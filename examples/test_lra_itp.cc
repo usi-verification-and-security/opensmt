@@ -68,16 +68,16 @@ int main()
         //ipartitions_t mask = 1;
         //mask <<= 1;
 	    // HighFrog has another representation, which in this case would be
-    	vector<unsigned> part;
+    	std::vector<unsigned> part;
 	    part.push_back(0);
     	// It can be converted to OpenSMT's representation via
 	    ipartitions_t mask = 0;
     	for(unsigned i = 0; i < part.size(); ++i)
-	    	setbit(mask, part[i] + 1);
+	    	opensmt::setbit(mask, part[i] + 1);
 
-        vector<PTRef> itps;
+        std::vector<PTRef> itps;
         itp_context->getSingleInterpolant(itps, mask);
-        cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << endl;
+        std::cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << std::endl;
     }
     else if (r == s_Undef)
         printf("unknown\n");

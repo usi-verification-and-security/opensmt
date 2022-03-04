@@ -4,6 +4,7 @@
 #include "STPModel.h"
 
 #include <memory>
+#include <queue>
 
 // returns a list of all vertices present in graph
 template<class T>

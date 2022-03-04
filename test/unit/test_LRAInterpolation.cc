@@ -42,7 +42,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothNonstrict){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_B}, {conflict[3].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.pp(farkasItp) << std::endl;
@@ -70,7 +70,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Astrict){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_B}, {conflict[3].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.pp(farkasItp) << std::endl;
@@ -98,7 +98,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_Bstrict){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(logic.mkNot(leq3), l_False), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_B}, {conflict[3].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
 //    std::cout << logic.pp(farkasItp) << std::endl;
@@ -126,7 +126,7 @@ TEST_F(LRAInterpolationTest, test_FarkasInterpolation_BothStrict){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(leq2, l_True), PtAsgn(logic.mkNot(leq3), l_False), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_B}, {conflict[3].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     std::cout << logic.pp(farkasItp) << std::endl;
@@ -153,7 +153,7 @@ TEST_F(LRAInterpolationTest, test_AllInA){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A}, {conflict[3].tr, I_A}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A}, {conflict[3].tr, icolor_t::I_A}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3, leq4}), logic.getTerm_true(), farkasItp));
@@ -186,7 +186,7 @@ TEST_F(LRAInterpolationTest, test_AllInB){
     PTRef leq4 = logic.mkGeq(logic.mkMinus(x4,x3), zero);
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True), PtAsgn(leq4, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_B}, {conflict[1].tr, I_B}, {conflict[2].tr, I_B}, {conflict[3].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_B}, {conflict[1].tr, icolor_t::I_B}, {conflict[2].tr, icolor_t::I_B}, {conflict[3].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1,1}, labels);
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.getTerm_true(), logic.mkAnd({leq1, leq2, leq3, leq4}), farkasItp));
@@ -226,8 +226,8 @@ TEST_F(LRAInterpolationTest, test_Decomposition_NonStrict){
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True),
                           PtAsgn(leq4, l_True), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
-                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A},
+                                      {conflict[3].tr, icolor_t::I_B}, {conflict[4].tr, icolor_t::I_B}, {conflict[5].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {2,1,1,1,1,2}, labels);
     PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));
@@ -258,8 +258,8 @@ TEST_F(LRAInterpolationTest, test_Decomposition_Strict){
     vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(logic.mkNot(leq2), l_False), PtAsgn(leq3, l_True),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, I_A}, {conflict[1].tr, I_A}, {conflict[2].tr, I_A},
-                                      {conflict[3].tr, I_B}, {conflict[4].tr, I_B}, {conflict[5].tr, I_B}};
+    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A},
+                                      {conflict[3].tr, icolor_t::I_B}, {conflict[4].tr, icolor_t::I_B}, {conflict[5].tr, icolor_t::I_B}};
     FarkasInterpolator interpolator(logic, std::move(conflict), {2,1,1,1,1,2}, labels);
     PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), decomposedFarkasItp));

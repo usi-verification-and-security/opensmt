@@ -1,6 +1,5 @@
 #include "Opensmt.h"
 
-#include "Global.h"
 #include "LogicFactory.h"
 
 namespace{

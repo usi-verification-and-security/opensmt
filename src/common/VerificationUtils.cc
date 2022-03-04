@@ -8,6 +8,7 @@
 #include "TreeOps.h"
 
 #include <sys/wait.h>
+#include <unistd.h>
 
 bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
     const char * implies = "implies.smt2";
@@ -16,8 +17,8 @@ bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
 
     logic.dumpFormulaToFile(dump_out, implicant);
     logic.dumpFormulaToFile(dump_out, implicated, true);
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+    dump_out << "(check-sat)" << '\n';
+    dump_out << "(exit)" << '\n';
     dump_out.close( );
     // Check !
     bool tool_res;

@@ -256,8 +256,8 @@ LVRef LASolver::getLAVar_single(PTRef expr_in) {
     return x;
 }
 
-std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
-    auto poly = std::make_unique<Polynomial>();
+std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
+    auto poly = std::make_unique<Tableau::Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
@@ -284,7 +284,7 @@ std::unique_ptr<Polynomial> LASolver::expressionToLVarPoly(PTRef term) {
 // (4b) (* -1 x) + p_1 + ... + p_n
 //
 LVRef LASolver::exprToLVar(PTRef expr) {
-    LVRef x = LVRef_Undef;
+    LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
         if (simplex.isProcessedByTableau(x)){
@@ -318,7 +318,7 @@ LVRef LASolver::exprToLVar(PTRef expr) {
             markVarAsInt(x);
         }
     }
-    assert(x != LVRef_Undef);
+    assert(x != LVRef::Undef);
     return x;
 }
 
@@ -351,7 +351,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 
 LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
     opensmt::Real maxDistance = 0;
-    LVRef chosen = LVRef_Undef;
+    LVRef chosen = LVRef::Undef;
     for (LVRef x : varsToFix) {
         Delta val = simplex.getValuation(x);
         assert(not val.hasDelta());
@@ -391,7 +391,7 @@ TRes LASolver::checkIntegersAndSplit() {
 
     LVRef chosen = splitOnMostInfeasible(varsToFix);
 
-    assert(chosen != LVRef_Undef);
+    assert(chosen != LVRef::Undef);
     auto splitLowerVal = simplex.getValuation(chosen).R().floor();
     //x <= c || x >= c+1;
     PTRef varPTRef = getVarPTRef(chosen);
@@ -462,7 +462,7 @@ bool LASolver::assertLit(PtAsgn asgn)
 
     LVRef it = getVarForLeq(asgn.tr);
     // Constraint to push was not found in local storage. Most likely it was not read properly before
-    assert(it != LVRef_Undef);
+    assert(it != LVRef::Undef);
 
     if (assertBoundOnVar( it, bound_ref))
     {
@@ -482,7 +482,7 @@ bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
 
     assert(status == SAT);
-    assert(it != LVRef_Undef);
+    assert(it != LVRef::Undef);
     storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
 
     if (explanation.size() > 0) {
@@ -585,8 +585,9 @@ void LASolver::initSolver()
 
         status = SAT;
     }
-    else
-    opensmt_error( "Solver can not be initialized in the state different from INIT" );
+    else {
+        throw OsmtInternalException("Solver can not be initialized in the state different from INIT");
+    }
 }
 
 //
@@ -617,8 +618,7 @@ inline bool LASolver::getStatus( )
         case INIT:
         case ERROR:
         default:
-        opensmt_error( "Status is undef!" );
-            return false;
+            throw OsmtApiException("Status is undef!");
     }
 }
 
@@ -855,11 +855,105 @@ bool LASolver::shouldTryCutFromProof() const {
     return ++counter % 10 == 0;
 }
 
+namespace {
+
+struct DefiningConstraint {
+    PTRef lhs;
+    opensmt::Real rhs;
+};
+
+/*
+ * Translates the set of defining constraints (linear equalities) into a suitable inner representation:
+ * - A sparse matrix A of coefficients and constants b
+ * - a map from column indices to the corresponding variables x
+ * - The result is to be interpreted as the linear system Ax = b
+ */
+std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std::vector<DefiningConstraint> const & constraints, ArithLogic & logic) {
+    vec<PTRef> terms;
+    auto fillTerms = [&logic](PTRef poly, vec<PTRef> & terms) {// reduces linear polynomial to a vector of the polynomial's terms
+        terms.clear();
+        if (logic.isPlus(poly)) {
+            for (PTRef arg : logic.getPterm(poly)) {
+                terms.push(arg);
+            }
+        } else {
+            terms.push(poly);
+        }
+    };
+    std::unordered_map<PTRef, unsigned, PTRefHash> varIndices;
+    uint32_t columns = 0;
+    // First pass to assign indices and find out number of columns
+    for (auto const & defConstraint : constraints) {
+        PTRef poly = defConstraint.lhs;
+        fillTerms(poly, terms);
+        for (PTRef arg : terms) {
+            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            assert(var != PTRef_Undef);
+            if (varIndices.find(var) == varIndices.end()) {
+                varIndices.insert({var, columns++});
+            }
+        }
+    }
+
+    uint32_t rows = constraints.size();
+    SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
+    std::vector<FastRational> rhs(rows);
+    std::vector<SparseColMatrix::ColumnPolynomial> columnPolynomials(columns);
+
+    // Second pass to build the actual matrix
+    for (unsigned row = 0; row < constraints.size(); ++row) {
+        rhs[row] = constraints[row].rhs;
+        PTRef poly = constraints[row].lhs;
+        fillTerms(poly, terms);
+        for (PTRef arg : terms) {
+            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto col = varIndices[var];
+            columnPolynomials[col].addTerm(IndexType{row}, logic.getNumConst(constant));
+        }
+    }
+    for (uint32_t i = 0; i < columnPolynomials.size(); ++i) {
+        matrixA.setColumn(ColIndex{i}, std::move(columnPolynomials[i]));
+    }
+    // compute the inverse map from column indices to variables
+    std::vector<PTRef> columnMapping(matrixA.colCount(), PTRef_Undef);
+    for (auto [var, index] : varIndices) {
+        columnMapping[index] = var;
+    }
+
+    assert(matrixA.colCount() == columnMapping.size());
+
+    return {SparseLinearSystem{std::move(matrixA), std::move(rhs)}, std::move(columnMapping)};
+}
+
+PTRef getSumFromTermVec(SparseColMatrix::TermVec const & termVec, vec<PTRef> const & toVarMap, ArithLogic & logic) {
+    vec<PTRef> args;
+    for (auto const & term : termVec) {
+        IndexType var = term.first;
+        auto const & coeff = term.second;
+        args.push(logic.mkTimes(toVarMap[var.x], logic.mkIntConst(coeff)));
+    }
+    return logic.mkPlus(std::move(args));
+}
+
+PTRef cutToSplit(CutCreator::Cut && cut, std::vector<PTRef> const & toVarMap, ArithLogic & logic) {
+    auto const & termVec = cut.first;
+    auto const & rhs = cut.second;
+    if (termVec.empty()) {
+        return PTRef_Undef;
+    }
+    PTRef constraint = getSumFromTermVec(termVec, toVarMap, logic);
+    auto lowerBoundValue = rhs.ceil();
+    auto upperBoundValue = rhs.floor();
+    PTRef upperBound = logic.mkLeq(constraint, logic.mkIntConst(upperBoundValue));
+    PTRef lowerBound = logic.mkGeq(constraint, logic.mkIntConst(lowerBoundValue));
+    return logic.mkOr(upperBound, lowerBound);
+}
+}
+
 TRes LASolver::cutFromProof() {
     auto isOnLowerBound = [this](LVRef var) { return simplex.hasLBound(var) and not simplex.isModelStrictlyOverLowerBound(var); };
     auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
     // Step 1: Gather defining constraints
-    using DefiningConstraint = CutCreator::DefiningConstaint;
     std::vector<DefiningConstraint> constraints;
     for (LVRef var : int_vars) {
         bool isOnLower = isOnLowerBound(var);
@@ -881,8 +975,10 @@ TRes LASolver::cutFromProof() {
         assert(not val.hasDelta());
         return val.R();
     };
-    CutCreator cutCreator(logic, getVarValue);
-    PTRef split = cutCreator.cut(constraints);
+    CutCreator cutCreator(getVarValue);
+    auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
+    auto cut = cutCreator.makeCut(std::move(system), toVarMap);
+    PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;
     }

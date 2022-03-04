@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TSEITIN_H
 #define TSEITIN_H
 
-#include "Global.h"
 #include "PTRef.h"
 #include "Cnfizer.h"
 

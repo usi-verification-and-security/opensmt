@@ -27,13 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
+#include "ReportUtils.h"
+
 void CoreSMTSolver::dumpCNF( )
 {
   const char * name = "cnf.smt2";
   std::ofstream dump_out( name );
 //  egraph.dumpHeaderToFile( dump_out );
-  dump_out << "(assert" << endl;
-  dump_out << "(and" << endl;
+  dump_out << "(assert" << '\n';
+  dump_out << "(and" << '\n';
 
   for ( int i = 0 ; i < clauses.size( ) ; i ++ )
   {
@@ -43,25 +45,14 @@ void CoreSMTSolver::dumpCNF( )
       continue;
 
 //    printSMTClause( dump_out, c );
-    dump_out << endl;
+    dump_out << '\n';
   }
 
-  //
-  // Also dump the trail which contains clauses of size 1
-  //
-  for ( int i = 0 ; i < trail.size( ) ; i ++ )
-  {
-    Var v = var(trail[i]);
-    if ( v <= 1 ) continue;
-//    Enode * e = theory_handler->varToEnode( v );
-//    dump_out << (sign(trail[i])?"(not ":" ") << e << (sign(trail[i])?") ":" ") << endl;
-  }
-
-  dump_out << "))" << endl;
-  dump_out << "(check-sat)" << endl;
-  dump_out << "(exit)" << endl;
+  dump_out << "))" << '\n';
+  dump_out << "(check-sat)" << '\n';
+  dump_out << "(exit)" << '\n';
   dump_out.close( );
-  cerr << "[Dumped " << name << "]" << endl;
+  std::cerr << "[Dumped " << name << "]" << '\n';
 }
 
 void CoreSMTSolver::verifyModel()

@@ -26,26 +26,58 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PtStore.h"
 #include "OsmtInternalException.h"
+#include "OsmtApiException.h"
 
 #include <sstream>
 
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;
 
+bool PtStore::isAmbiguousNullarySymbolName(std::string_view name) const {
+    auto * values = symstore.getRefOrNull(name.data());
+    if (not values) {
+        return false;
+    }
+    assert(values);
+    int matches = 0;
+    for (SymRef sr : *values) {
+        if (symstore[sr].nargs() == 0) {
+            matches ++;
+        }
+        if (matches > 1) return true;
+    }
+    return false;
+}
+
+vec<SymRef> PtStore::getHomonymousNullarySymbols(std::string_view name) const {
+    auto * values = symstore.getRefOrNull(name.data());
+    if (not values) {
+        return {};
+    }
+    vec<SymRef> ambiguousNullarySymbols;
+    for (SymRef sr : *values) {
+        if (symstore[sr].nargs() == 0) {
+            ambiguousNullarySymbols.push(sr);
+        }
+    }
+    return ambiguousNullarySymbols;
+}
+
 //
 // Resolves the SymRef for name s taking into account polymorphism
 // Returns SymRef_Undef if the name is not defined anywhere
 //
-SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
+SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args, SymbolMatcher symbolMatcher, SRef sort) {
     auto* values = symstore.getRefOrNull(s);
+    std::vector<SymRef> candidates;
     if (values) {
-        const vec<SymRef>& trefs = *values;
+        vec<SymRef> const & trefs = *values;
         if (symstore[trefs[0]].noScoping()) {
             // No need to look forward, this is the only possible term
             // list
             for (int i = 0; i < trefs.size(); i++) {
                 SymRef ctr = trefs[i];
-                const Symbol& t = symstore[ctr];
+                Symbol const & t = symstore[ctr];
                 if (t.nargs() == args.size_()) {
                     // t is a potential match.  Check that arguments match
                     uint32_t j = 0;
@@ -54,8 +86,8 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                         if (t[j] != symstore[argt].rsort()) break;
                     }
                     if (j == t.nargs()) {
-                        // Create / lookup the proper term and return the reference
-                        return ctr;
+                        // Add to list of candidates
+                        candidates.push_back(ctr);
                     }
                 }
                 // The term might still be one of the special cases:
@@ -67,49 +99,92 @@ SymRef PtStore::lookupSymbol(const char* s, const vec<PTRef>& args) {
                         SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[1]) break;
                     }
-                    if (j == args.size())
-                        return ctr;
-                }
-                else if (t.right_assoc()) {
-                    throw OsmtInternalException(std::string("right assoc term not implemented yet:") + symstore.getName(ctr));
-                }
-                else if (t.nargs() < args.size_() && t.chainable()) {
+                    if (j == args.size()) {
+                        // We add this candidate only if the return type of the candidate is new.
+                        SRef ctrReturnSort = symstore[ctr].rsort();
+                        if (not std::any_of(candidates.begin(), candidates.end(),
+                                            [this, ctrReturnSort](SymRef sr) { return symstore[sr].rsort() == ctrReturnSort; })) {
+                            candidates.push_back(ctr);
+                        }
+                    }
+                } else if (t.right_assoc()) {
+                    throw OsmtInternalException(
+                            std::string("right assoc term not implemented yet:") + symstore.getName(ctr));
+                } else if (t.nargs() < args.size_() && t.chainable()) {
                     int j = 0;
                     for (; j < args.size(); j++) {
                         SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[0]) break;
                     }
-                    if (j == args.size()) return ctr;
-                }
-                else if (t.nargs() < args.size_() && t.pairwise()) {
+                    if (j == args.size()) {
+                        candidates.push_back(ctr);
+                    }
+                } else if (t.nargs() < args.size_() && t.pairwise()) {
                     int j = 0;
                     for (; j < args.size(); j++) {
                         SymRef argt = pta[args[j]].symb();
                         if (symstore[argt].rsort() != t[0]) break;
                     }
-                    if (j == args.size()) return ctr;
+                    if (j == args.size()) {
+                        candidates.push_back(ctr);
+                    }
+                }
+            }
+        } else {
+            for (int i = 0; i < trefs.size(); i++) {
+                SymRef ctr = trefs[i];
+                const Symbol &t = symstore[ctr];
+                if (t.nargs() == args.size_()) {
+                    // t is a potential match.  Check that arguments match
+                    uint32_t j = 0;
+                    for (; j < t.nargs(); j++) {
+                        SymRef argt = pta[args[j]].symb();
+                        if (t[j] != symstore[argt].rsort()) break;
+                    }
+                    if (j == t.nargs()) {
+                        candidates.push_back(ctr);
+                    }
                 }
             }
         }
-
-        for (int i = 0; i < trefs.size(); i++) {
-            SymRef ctr = trefs[i];
-            const Symbol& t = symstore[ctr];
-            if (t.nargs() == args.size_()) {
-                // t is a potential match.  Check that arguments match
-                uint32_t j = 0;
-                for (; j < t.nargs(); j++) {
-                    SymRef argt = pta[args[j]].symb();
-                    if (t[j] != symstore[argt].rsort()) break;
-                }
-                if (j == t.nargs())
-                    return ctr;
-            }
-        }
-
     }
-    // Not found
-    return SymRef_Undef;
+
+    auto endOfMatches = std::remove_if(candidates.begin(), candidates.end(),
+                                       [this, &symbolMatcher](SymRef sr) { return not symstore[sr].matches(symbolMatcher); });
+    candidates.erase(endOfMatches, candidates.end());
+
+    if (candidates.empty()) {
+        return SymRef_Undef; // Not found
+    } else if (candidates.size() == 1 and sort == SRef_Undef) {
+        return candidates[0];
+    } else if (candidates.size() == 1 and sort != SRef_Undef) {
+        if (symstore[candidates[0]].rsort() != sort) {
+            return SymRef_Undef;
+        } else {
+            return candidates[0];
+        }
+    }
+
+    assert(candidates.size() > 1);
+    if (sort == SRef_Undef) {
+        throw OsmtApiException("Ambiguous symbol: `" + std::string(s) + "'");
+    }
+
+    assert(sort != SRef_Undef);
+
+    auto equalSortEnd = std::remove_if(candidates.begin(), candidates.end(), [this, sort](SymRef sr) { return symstore[sr].rsort() != sort; });
+    candidates.erase(equalSortEnd, candidates.end());
+
+    if (candidates.empty()) {
+        return SymRef_Undef;
+    }
+    if (candidates.size() > 1) {
+        throw OsmtInternalException("System has " + std::to_string(candidates.size()) + " symbols with same argument and return sorts");
+    }
+
+    assert(candidates.size() == 1);
+    assert(symstore[candidates[0]].rsort() == sort);
+    return candidates[0];
 }
 
 

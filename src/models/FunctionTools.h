@@ -2,7 +2,8 @@
 // Created by prova on 26.04.21.
 //
 
-#pragma once
+#ifndef FUNCTION_TOOLS_H
+#define FUNCTION_TOOLS_H
 
 #include "PTRef.h"
 #include "SSort.h"
@@ -52,3 +53,4 @@ public:
     void updateBody(PTRef new_body) { tr_body = new_body; }
 };
 
+#endif // FUNCTION_TOOLS_H

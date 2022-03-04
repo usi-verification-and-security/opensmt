@@ -10,8 +10,6 @@ Module: New Logic for BitVector
 #include "PtStore.h"
 #include "BVLogic.h"
 #include "CUFLogic.h"
-#include "TreeOps.h"
-#include "Global.h"
 
 const char* BVLogic::tk_bv_neg   = "-";
 const char* BVLogic::tk_bv_eq    = "==";

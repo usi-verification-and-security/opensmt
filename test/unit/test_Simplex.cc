@@ -17,7 +17,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
     LVRef y = vs.getNewVar();
 
     LVRef y_minus_x = vs.getNewVar();
-    auto p_y_minus_x = std::make_unique<Polynomial>();
+    auto p_y_minus_x = std::make_unique<PolynomialT<LVRef>>();
 
     p_y_minus_x->addTerm(x, -1);
     p_y_minus_x->addTerm(y, 1);
@@ -59,11 +59,11 @@ TEST(Simplex_test, test_ops_in_Simplex)
 
     Real d = s.computeDelta();
     Delta x_val = s.getValuation(x);
-    cout << x_val.R() + x_val.D() * d << endl;
+    std::cout << x_val.R() + x_val.D() * d << '\n';
     Delta y_val = s.getValuation(y);
-    cout << y_val.R() + y_val.D() * d << endl;
+    std::cout << y_val.R() + y_val.D() * d << '\n';
     Delta sum = s.getValuation(y_minus_x);
-    cout << sum.R() + sum.D() * d << endl;
+    std::cout << sum.R() + sum.D() * d << '\n';
 
     s.assertBoundOnVar(x, x_strict_0.lb);
     s.assertBoundOnVar(y, y_strict_0.lb);
@@ -77,11 +77,11 @@ TEST(Simplex_test, test_ops_in_Simplex)
     ASSERT_EQ(ex.size(), 0);
     d = s.computeDelta();
     x_val = s.getValuation(x);
-    cout << x_val.R() + x_val.D() * d << endl;
+    std::cout << x_val.R() + x_val.D() * d << '\n';
     y_val = s.getValuation(y);
-    cout << y_val.R() + y_val.D() * d << endl;
+    std::cout << y_val.R() + y_val.D() * d << '\n';
     sum = s.getValuation(y_minus_x);
-    cout << sum.R() + sum.D() * d << endl;
+    std::cout << sum.R() + sum.D() * d << '\n';
 
     ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_1.lb);
     ASSERT_EQ(ex.size(), 0); // not detectable at this point
@@ -98,11 +98,11 @@ TEST(Simplex_test, test_ops_in_Simplex)
     ASSERT_EQ(ex.size(), 0);
     d = s.computeDelta();
     x_val = s.getValuation(x);
-    cout << "x = " << x_val.R() + x_val.D() * d << endl;
+    std::cout << "x = " << x_val.R() + x_val.D() * d << '\n';
     y_val = s.getValuation(y);
-    cout << "y = " << y_val.R() + y_val.D() * d << endl;
+    std::cout << "y = " << y_val.R() + y_val.D() * d << '\n';
     sum = s.getValuation(y_minus_x);
-    cout << "y - x = " << sum.R() + sum.D() * d << endl;
+    std::cout << "y - x = " << sum.R() + sum.D() * d << std::endl;
 }
 
 TEST(Simplex_test, test_Assignment)
@@ -131,7 +131,7 @@ TEST(Simplex_test, test_Assignment)
 
     s.newNonbasicVar(x);
     s.newNonbasicVar(y);
-    auto p_y_plus_x = std::make_unique<Polynomial>();
+    auto p_y_plus_x = std::make_unique<PolynomialT<LVRef>>();
     p_y_plus_x->addTerm(x, 1);
     p_y_plus_x->addTerm(y, 1);
     s.newRow(y_minus_x, std::move(p_y_plus_x));

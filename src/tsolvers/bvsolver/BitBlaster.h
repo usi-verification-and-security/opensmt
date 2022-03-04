@@ -161,16 +161,16 @@ private:
 
     BVStore                         bs;
 
-    vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
-    vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
-    vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
+    std::vector< Lit >                   cnf_cache;                     // Global cache for cnfizer
+    std::vector< Var >                   enode_id_to_var;               // Theory atom to Minisat Var correspondence
+    std::vector< Enode * >               var_to_enode;                  // Minisat Var to Theory Atom correspondence
 
 
     vec<PtAsgn> &                   explanation;                   // Reference to explanation
     vec<PTRef> &                    suggestions;                   // Reference to suggestions
 
     vec<PTRef>                      variables;                     // Variables
-    map< int, Var >                 cnf_var;                       // BB variable to cnf var
+    std::map< int, Var >                 cnf_var;                       // BB variable to cnf var
     bool                            has_model;                     // Is the model computed
     std::unordered_map<PTRef,PTRef,PTRefHash>    model;          // Model is stored here
 

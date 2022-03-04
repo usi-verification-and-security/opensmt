@@ -747,7 +747,8 @@ void Egraph::backtrackToStackSize ( size_t size ) {
                 break;
             }
             default: {
-                opensmt_error("unknown action");
+                assert(false);
+                throw OsmtInternalException("unknown action");
                 break;
             }
         }

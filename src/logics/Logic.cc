@@ -27,15 +27,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStore.h"
 #include "Logic.h"
 #include "TreeOps.h"
-#include "Global.h"
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
 #include "Substitutor.h"
+#include "smt2tokens.h"
 
+#include <iostream>
+#include <map>
 #include <queue>
 #include <set>
+#include <sstream>
 
 using namespace std;
 
@@ -110,6 +113,10 @@ bool Logic::isBuiltinFunction(const SymRef sr) const
     return false;
 }
 
+bool Logic::isReservedWord(std::string const & name) const {
+    return osmttokens::tokenNames.find(name) != osmttokens::tokenNames.end();
+}
+
 //
 // Escape the symbol name if it contains a prohibited character from the
 // list defined by the quotable[] table below
@@ -155,44 +162,56 @@ bool Logic::hasQuotableChars(std::string const & name) const
     return false;
 }
 
+// If the symbol corresponding to the one specified in the arguments would be ambiguous, i.e., either not known by
+// the user or there is a homonymous symbol with the same return type that is not a constant fixed by the language syntax,
+// specify the return sort.
+std::string Logic::disambiguateName(std::string const & protectedName, SRef sortRef, bool isNullary, bool isInterpreted) const {
+    assert(not protectedName.empty());
+    if (not isNullary or isInterpreted) {
+        return protectedName;
+    }
+
+    auto isQuoted = [](std::string const &s) { return s.size() > 3 and *s.begin() == '|' and *(s.end()-1) == '|'; };
+    auto name = isQuoted(protectedName) ?
+            std::string_view(protectedName.data()+1, protectedName.size()-2) : std::string_view(protectedName);
+
+    if (not isKnownToUser(name) or isAmbiguousUninterpretedNullarySymbolName(name)) {
+        return "(as " + std::string(protectedName) + " " + printSort(sortRef) + ')';
+    } else {
+        return protectedName;
+    }
+}
+
 //
 // Quote the name if it contains illegal characters
 //
-std::string Logic::protectName(std::string const & name) const
-{
-    if (hasQuotableChars(name)) {
-        std::stringstream ss;
-        ss << '|' << name << '|';
-        return ss.str();
+std::string Logic::protectName(std::string const & name, bool isInterpreted) const {
+    assert(not name.empty());
+    if (not isInterpreted and (hasQuotableChars(name) or std::isdigit(name[0]) or isReservedWord(name))) {
+        return '|' + name + '|';
     }
     return name;
 }
 
-std::string Logic::printSym(SymRef sr) const
-{
-    return protectName(sym_store.getName(sr));
+// Return a string corresponding to the SMT lib representation of the symbol, with disambiguation and name protection
+std::string Logic::printSym(SymRef sr) const {
+    Symbol const & symbol = getSym(sr);
+    bool isInterpreted = symbol.isInterpreted();
+    std::string protectedName = protectName(getSymName(sr), isInterpreted);
+    return disambiguateName(std::move(protectedName), getSortRef(sr), symbol.nargs() == 0, isInterpreted);
 }
 
 
 std::string Logic::pp(PTRef tr) const {
-    const Pterm& t = getPterm(tr);
+    const Pterm &t = getPterm(tr);
     SymRef sr = t.symb();
     std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
-        std::stringstream ss;
-        if (isKnownToUser(sr)) {
-            ss << name_escaped;
-        } else {
-            ss << "(as " << name_escaped << " " << printSort(getSortRef(sr)) << ")";
-        }
-#ifdef PARTITION_PRETTYPRINT
-        ss << " [" << getIPartitions(tr) << ' ]';
-#endif
-        return ss.str();
+        return name_escaped;
     }
 
-    // Here we know that t.size() > 0
+    assert(t.size() > 0);
 
     std::stringstream ss;
     ss << '(' << name_escaped << ' ';
@@ -219,14 +238,10 @@ std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
 
     if (t.size() == 0) {
         std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
-        if (isKnownToUser(sr)) {
-            ss << name_escaped << (ext ? ext_string : "");
-        } else {
-            ss << "(as " << name_escaped << ext_string << " " << printSort(getSortRef(sr)) << ")";
-        }
+        ss << name_escaped << (ext ? ext_string : "");
         return ss.str();
     } else {
-        // Here we know that t.size() > 0
+        assert(t.size() > 0);
         ss << "(" << name_escaped;
         for (auto arg : t) {
             ss << " " << printTerm_(arg, ext, safe);
@@ -365,30 +380,26 @@ SRef Logic::declareUninterpretedSort(const std::string & name) {
     return getSort(sortSymbol, {});
 }
 
-PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, char** msg) {
-    SymRef sref = term_store.lookupSymbol(s, args);
+PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, SymbolMatcher symbolMatcher) {
+    SymRef sref = term_store.lookupSymbol(s, args, symbolMatcher, sortRef);
     if (sref == SymRef_Undef) {
         if (defined_functions.has(s)) {
             auto const & tpl = defined_functions[s];
-            try {
-                return instantiateFunctionTemplate(tpl, args);
-            } catch (OsmtApiException const & e) {
-                *msg = strdup(e.what());
-                return PTRef_Undef;
-            }
+            return instantiateFunctionTemplate(tpl, args);
         }
         else {
-            int written = asprintf(msg, "Unknown symbol `%s'", s);
-            assert(written >= 0); (void)written;
-            return PTRef_Undef;
+            std::string argSortsString;
+            for (int i = 0; i < args.size(); i++) {
+                PTRef tr = args[i];
+                argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
+            }
+            throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " + printSort(sortRef) : "") + "'");
         }
     }
     assert(sref != SymRef_Undef);
-    PTRef rval;
-
-    rval = insertTerm(sref, std::move(args));
+    PTRef rval = insertTerm(sref, std::move(args));
     if (rval == PTRef_Undef)
-        printf("Error in resolveTerm\n");
+        throw OsmtApiException("Error in resolveTerm\n");
 
     return rval;
 }
@@ -693,13 +704,12 @@ PTRef Logic::mkConst(const char* name)
     //assert(0);
     //return PTRef_Undef;
     assert(strlen(name) > 0);
-    char *msg2;
-    return resolveTerm(name, {}, &msg2);
+    return resolveTerm(name, {});
 }
 
 
-PTRef Logic::mkVar(SRef s, const char* name) {
-    SymRef sr = sym_store.newSymb(name, {s});
+PTRef Logic::mkVar(SRef s, const char* name, bool isInterpreted) {
+    SymRef sr = sym_store.newSymb(name, {s}, isInterpreted ? SymConf::Interpreted : SymConf::Default);
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -1296,8 +1306,8 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
 void
 Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
-    vector< PTRef > unprocessed_enodes;
-    map< PTRef, string > enode_to_def;
+    std::vector<PTRef> unprocessed_enodes;
+    std::map<PTRef, std::string> enode_to_def;
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back( formula );
@@ -1388,7 +1398,7 @@ void
 Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
 {
     const std::string& name = tpl_fun.getName();
-    auto quoted_name = protectName(name);
+    auto quoted_name = protectName(name, false);
 
     dump_out << "(define-fun " << quoted_name << " ( ";
     const vec<PTRef>& args = tpl_fun.getArgs();

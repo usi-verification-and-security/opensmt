@@ -45,7 +45,7 @@ for file in $(find . -name '*.smt2' |sort) generic/foo; do
     name=$(basename $file)
     dir=$(dirname $file)
 
-    sh -c "ulimit -St 120; ${opensmt} $(echo ${options}) $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
+    sh -c "ulimit -St 60; ${opensmt} $(echo ${options}) $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
 
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
     diff -q ${tmpfolder}/${name}.out ${dir}/${name}.expected.out

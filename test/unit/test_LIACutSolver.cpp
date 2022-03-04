@@ -7,6 +7,7 @@
 #include <lasolver/Simplex.h>
 #include <lasolver/LASolver.h>
 
+using Polynomial = PolynomialT<LVRef>;
 
 TEST(LIACutSolver_test, test_computeEqualityBasis)
 {

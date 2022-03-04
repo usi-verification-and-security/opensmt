@@ -20,7 +20,7 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
 
 }
 
-PTRef UFLATHandler::getInterpolant(const ipartitions_t&, map<PTRef, icolor_t> *, PartitionManager &)
+PTRef UFLATHandler::getInterpolant(const ipartitions_t&, std::map<PTRef, icolor_t> *, PartitionManager &)
 {
     throw std::logic_error("Not implemented");
 }
