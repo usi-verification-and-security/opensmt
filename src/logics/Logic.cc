@@ -23,9 +23,9 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
+#include "Logic.h"
 #include "SStore.h"
 #include "PtStore.h"
-#include "Logic.h"
 #include "TreeOps.h"
 #include "Deductions.h"
 #include "SubstLoopBreaker.h"
@@ -1270,6 +1270,12 @@ Logic::dumpChecksatToFile(ostream& dump_out) const
     dump_out << "(exit)" << endl;
 }
 
+std::string Logic::dumpWithLets(PTRef formula) const {
+    std::stringstream out;
+    dumpWithLets(out, formula);
+    return out.str();
+}
+
 void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
 {
     uint32_t random_Idx = 0;
@@ -1385,92 +1391,16 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
 void
 Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
-    std::vector<PTRef> unprocessed_enodes;
-    std::map<PTRef, std::string> enode_to_def;
-    unsigned num_lets = 0;
-
-    unprocessed_enodes.push_back( formula );
-    // Open assert
-    if(toassert)
-        dump_out << "(assert" << endl;
-    //
-    // Visit the DAG of the formula from the leaves to the root
-    //
-    while( !unprocessed_enodes.empty( ) )
-    {
-        PTRef e = unprocessed_enodes.back( );
-        //
-        // Skip if the node has already been processed before
-        //
-        if ( enode_to_def.find( e ) != enode_to_def.end( ) )
-        {
-            unprocessed_enodes.pop_back( );
-            continue;
-        }
-
-        bool unprocessed_children = false;
-        const Pterm& term = getPterm(e);
-        for(int i = 0; i < term.size(); ++i)
-        {
-            PTRef pref = term[i];
-            //assert(isTerm(pref));
-            //
-            // Push only if it is unprocessed
-            //
-            if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (isBooleanOperator( pref ) || isEquality(pref)))
-            {
-                unprocessed_enodes.push_back( pref );
-                unprocessed_children = true;
-            }
-        }
-        //
-        // SKip if unprocessed_children
-        //
-        if ( unprocessed_children ) continue;
-
-        unprocessed_enodes.pop_back( );
-
-        char buf[ 32 ];
-        sprintf( buf, "?def%d", Idx(getPterm(e).getId()) );
-
-        // Open let
-        dump_out << "(let ";
-        // Open binding
-        dump_out << "((" << buf << " ";
-
-        if (term.size() > 0 ) dump_out << "(";
-        dump_out << printSym(term.symb());
-        for (int i = 0; i < term.size(); ++i)
-        {
-            PTRef pref = term[i];
-            if ( isBooleanOperator(pref) || isEquality(pref) )
-                dump_out << " " << enode_to_def[ pref ];
-            else
-            {
-                dump_out << " " << printTerm(pref);
-                if ( isAnd(e) ) dump_out << endl;
-            }
-        }
-        if ( term.size() > 0 ) dump_out << ")";
-
-        // Closes binding
-        dump_out << "))" << endl;
-        // Keep track of number of lets to close
-        num_lets++;
-
-        assert( enode_to_def.find( e ) == enode_to_def.end( ) );
-        enode_to_def[ e ] = buf;
-    }
-    dump_out << endl;
-    // Formula
-    if ( negate ) dump_out << "(not ";
-    dump_out << enode_to_def[ formula ] << endl;
-    if ( negate ) dump_out << ")";
-    // Close all lets
-    for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
-    // Closes assert
     if (toassert)
-        dump_out << ")" << endl;
+        dump_out << "(assert" << '\n';
+
+    if (negate) dump_out << "(not ";
+    dumpWithLets(dump_out, formula);
+
+    if (negate) dump_out << ")";
+
+    if (toassert)
+        dump_out << ")" << '\n';
 }
 
 void
