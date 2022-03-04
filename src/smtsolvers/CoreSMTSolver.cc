@@ -1613,7 +1613,6 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
             uncheckedEnqueue(next);
         }
     }
-    assert(false);
     cancelUntil(0);
     notifyEnd();
     return l_Undef;
