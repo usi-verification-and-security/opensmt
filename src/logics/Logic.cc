@@ -1270,20 +1270,14 @@ Logic::dumpChecksatToFile(ostream& dump_out) const
     dump_out << "(exit)" << endl;
 }
 
-string
-Logic::printString(PTRef formula, bool negate, bool toassert) const
+void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
 {
     uint32_t random_Idx = 0;
-    std::stringstream dump_out;
     vector< PTRef > unprocessed_enodes;
     map< PTRef, string > enode_to_def;
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back( formula );
-// Open assert
-    if(toassert)
-        dump_out << "(assert";
-//
 // Visit the DAG of the formula from the leaves to the root
 //
     while( !unprocessed_enodes.empty( ) )
@@ -1351,16 +1345,8 @@ Logic::printString(PTRef formula, bool negate, bool toassert) const
         assert( enode_to_def.find( e ) == enode_to_def.end( ) );
         enode_to_def[ e ] = buf;
     }
-// Formula
-    if ( negate ) dump_out << "(not ";
-    dump_out << enode_to_def[ formula ];
-    if ( negate ) dump_out << ")";
 // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
-// Closes assert
-    if (toassert)
-        dump_out << ")";
-    return dump_out.str();
 }
 
 void
