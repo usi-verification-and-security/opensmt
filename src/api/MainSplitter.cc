@@ -10,6 +10,7 @@
 #include "SplitData.h"
 #include "ScatterSplitter.h"
 #include <filesystem>
+#include <cmath>
 
 void MainSplitter::writeSplits(std::string const & baseName) const {
     assert(config.sat_split_type() != spt_none);
