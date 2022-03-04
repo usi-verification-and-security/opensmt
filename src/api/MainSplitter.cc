@@ -59,15 +59,13 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
 }
 
 std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & config, THandler & thandler) {
-    SimpSMTSolver* solver = nullptr;
     if (config.sat_split_type() == spt_scatter) {
-        solver = new ScatterSplitter(config, thandler);
+        return std::make_unique<ScatterSplitter>(config, thandler);
+    } else if (config.sat_split_type() == spt_lookahead) {
+        return std::make_unique<LookaheadSplitter>(config, thandler);
+    } else {
+        return MainSolver::createInnerSolver(config, thandler);
     }
-        // to do
-    else if (config.sat_split_type() == spt_lookahead)  {
-        solver = new LookaheadSplitter(config, thandler);
-    }
-    return std::unique_ptr<SimpSMTSolver>(solver);
 }
 
 std::vector<std::string> MainSplitter::getPartitionClauses() {
