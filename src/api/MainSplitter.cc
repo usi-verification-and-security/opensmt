@@ -83,12 +83,14 @@ std::vector<std::string> MainSplitter::getPartitionClauses() {
                 PTRef pt =
                         ptAsgn.sgn == l_True ?
                         ptAsgn.tr :
-                        getLogic().mkNot(ptAsgn.tr);
+                        logic.mkNot(ptAsgn.tr);
                 clause.push(pt);
             }
-            clauses.push(getLogic().mkOr(clause));
+            clauses.push(logic.mkOr(clause));
         }
-        partitions.push_back(getTHandler().getLogic().printString(getLogic().mkAnd(clauses)));
+        std::stringstream ss;
+        logic.dumpWithLets(ss ,logic.mkAnd(clauses));
+        partitions.push_back(ss.str());
     }
     return partitions;
 }

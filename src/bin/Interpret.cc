@@ -1314,7 +1314,7 @@ std::unique_ptr<MainSolver> Interpret::createMainSolver(SMTConfig & config, cons
     }
     else {
         auto th = MainSolver::createTheory(*logic, config);
-        auto tm = std::unique_ptr<TermMapper>(new TermMapper(*logic));
+        auto tm = std::make_unique<TermMapper>(*logic);
         auto thandler = new THandler(*th, *tm);
         return std::make_unique<MainSplitter>(std::move(th),
                                  std::move(tm),
