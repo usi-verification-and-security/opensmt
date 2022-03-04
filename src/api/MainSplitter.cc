@@ -63,7 +63,7 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
     } else if (config.sat_split_type() == spt_lookahead) {
         return std::make_unique<LookaheadSplitter>(config, thandler);
     } else {
-        assert(false);
+        return MainSolver::createInnerSolver(config, thandler);
     }
 }
 
@@ -87,9 +87,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() {
             }
             clauses.push(logic.mkOr(clause));
         }
-        std::stringstream ss;
-        logic.dumpWithLets(ss ,logic.mkAnd(clauses));
-        partitions.push_back(ss.str());
+        partitions.push_back(logic.dumpWithLets(logic.mkAnd(clauses)));
     }
     return partitions;
 }
