@@ -83,6 +83,8 @@ jobs:
                     pip3 install wheel
                     echo "pip3 install pyinstaller" |scl enable devtoolset-8 bash
                     yum -y install Cython
+                    yum -y install patch
+                    yum -y install bzip2
             - run:
                 name: Set up newer version of cmake
                 command: pip3 install cmake
