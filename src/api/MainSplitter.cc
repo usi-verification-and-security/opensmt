@@ -5,11 +5,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <LookaheadSplitter.h>
 #include "MainSplitter.h"
+#include "LookaheadSplitter.h"
 #include "SplitData.h"
 #include "ScatterSplitter.h"
-#include <filesystem>
 #include <cmath>
 
 void MainSplitter::writeSplits(std::string const & baseName) const {
@@ -64,7 +63,7 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
     } else if (config.sat_split_type() == spt_lookahead) {
         return std::make_unique<LookaheadSplitter>(config, thandler);
     } else {
-        return MainSolver::createInnerSolver(config, thandler);
+        assert(false);
     }
 }
 
