@@ -24,7 +24,6 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
 
     std::cout << config.sat_split_num() << std::endl;
     std::cout << splits.size() << std::endl;
-    std::filesystem::create_directory(config.output_dir());
 
     auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in, vec<PTRef> & out) {
         for (const auto & constr : in) {
