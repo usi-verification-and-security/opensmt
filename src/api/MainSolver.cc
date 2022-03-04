@@ -334,19 +334,15 @@ sstat MainSolver::solve()
 }
 
 std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
-    SimpSMTSolver* solver = nullptr;
     if (config.sat_pure_lookahead()) {
-        solver = new LookaheadSMTSolver(config, thandler);
+        return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else if (config.sat_lookahead_split()) {
-        solver = new LookaheadSplitter(config, thandler);
+        return std::make_unique<LookaheadSplitter>(config, thandler);
     } else if (config.use_ghost_vars()) {
-        solver = new GhostSMTSolver(config, thandler);
-    } else if (config.sat_scatter_split()) {
-        solver = new ScatterSplitter(config, thandler);
+        return std::make_unique<GhostSMTSolver>(config, thandler);
     } else {
-        solver = new SimpSMTSolver(config, thandler);
+        return std::make_unique<SimpSMTSolver>(config, thandler);
     }
-    return std::unique_ptr<SimpSMTSolver>(solver);
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
