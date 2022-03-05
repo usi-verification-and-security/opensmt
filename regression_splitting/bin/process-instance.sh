@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage="Usage: $0: [-h] -i <base> -p <patch> -o <output>"
+usage="Usage: $0 [-h] -i <base> -p <patch> -o <output>"
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -8,7 +8,7 @@ while [ $# -gt 0 ]; do
             echo "$usage"
             exit 1
             ;;
-        -i|--intput)
+        -i|--input)
             base=$2
             ;;
         -p|--patch)
@@ -29,14 +29,12 @@ done
 
 if [ -z $base ] || [ ! -f $base ]; then
     echo "Basefile not provided or not accessible: $base"
-    echo
     echo $usage
     exit 1
 fi
 
 if [ -z $patch ] || [ ! -f $patch ]; then
     echo "Patch file not provided or not accessible: $patch"
-    echo
     echo $usage
     exit $1
 fi
@@ -47,9 +45,9 @@ if [ -z $output ]; then
     echo "Using $output"
 fi
 
-uncompressed=${TMPDIR}file.smt2
-
 TMPDIR=$(mktemp -d)
+
+uncompressed=${TMPDIR}/file.smt2
 trap "rm -rf ${uncompressed} ${tmpdir}" EXIT
 
 bunzip2 -c $base > $uncompressed
