@@ -177,6 +177,8 @@ public:
 
     PTRef computePartialInterpolantForTheoryClause(ProofNode const & n);
 
+    PTRef computePartialInterpolantForSplitClause(ProofNode const & n) const;
+
     PTRef compInterpLabelingInner(ProofNode &);
 
     icolor_t getPivotColor(ProofNode const &);
@@ -556,14 +558,7 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
                 partial_interp = computePartialInterpolantForTheoryClause(*n);
             }
             else if (n->getType() == clause_type::CLA_SPLIT) {
-                auto const & clause = n->getClause();
-                assert(clause.size() == 2); // only binary splits at the moment
-                auto color = getVarColor(*n, var(clause[0]));
-                assert(color == getVarColor(*n, var(clause[1]))); // same theory variables in the atoms of the split => same color
-                assert(color == icolor_t::I_A || color == icolor_t::I_B || color == icolor_t::I_AB);
-                // If split on A-local (B-local) term, then return False (True). This is the same as in purely propoositional case.
-                // If split on AB-shared term, we can choose if we treat it as A-clause (resulting in False) or B-clause (resulting in True). We arbitrarily choose A now.
-                partial_interp = color == icolor_t::I_A ? logic.getTerm_false() : (color == icolor_t::I_B ? logic.getTerm_true() : logic.getTerm_false());
+                partial_interp = computePartialInterpolantForSplitClause(*n);
             }
             else {
                 assert(n->getType() == clause_type::CLA_ASSUMPTION);
@@ -704,6 +699,31 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
     PTRef interpolant = thandler->getInterpolant(A_mask, &ptref2label, pmanager);
     backtrackTSolver();
     return interpolant;
+}
+
+/*
+ * We treat split clauses as original clauses, but we need to determine the color of the clause.
+ * Currently we only support binary split clauses from LIA, in this case we know the split is on an expression
+ * already present in the original formula (=> no mixed literals). Thus, we take the color of the clause as the common
+ * color of both literals. If one literal is colored A and the other one B, then the split expression is actually common
+ * to both A and B. Thus we can consider the clause as A or as B and the interpolant condition on common variables
+ * will be preserved.
+ */
+PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitClause(const ProofNode & n) const {
+    auto const & clause = n.getClause();
+    assert(clause.size() == 2); // only binary splits at the moment
+    auto clauseColor = getVarClass(var(clause[0])) & getVarClass(var(clause[1]));
+    if (clauseColor == icolor_t::I_AB) {
+        clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
+    } else if (clauseColor == icolor_t::I_UNDEF) {
+        clauseColor = icolor_t::I_A; // MB: Split expression is common, we treat the clause as AB-clause
+    }
+    if (clauseColor != icolor_t::I_A and clauseColor != icolor_t::I_B) {
+        assert(false);
+        throw OsmtInternalException("Error in coloring split clause!");
+    }
+    // Compute interpolant the same way as for original clause
+    return getInterpolantForOriginalClause(n, clauseColor);
 }
 
 // Input: inner clause, current interpolant partition masks for A and B
