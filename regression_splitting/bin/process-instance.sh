@@ -48,7 +48,7 @@ fi
 TMPDIR=$(mktemp -d)
 
 uncompressed=${TMPDIR}/file.smt2
-trap "rm -rf ${uncompressed} ${tmpdir}" EXIT
+trap "rm -rf ${uncompressed} ${TMPDIR}" EXIT
 
 bunzip2 -c $base > $uncompressed
 patch $uncompressed -i $patch -o $output > /dev/null
