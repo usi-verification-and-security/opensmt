@@ -21,9 +21,6 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
 
     int i = 0;
 
-    std::cout << config.sat_split_num() << std::endl;
-    std::cout << splits.size() << std::endl;
-
     auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in, vec<PTRef> & out) {
         for (const auto & constr : in) {
             vec<PTRef> disj_vec;
