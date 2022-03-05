@@ -80,8 +80,6 @@ ln -s $TMPDIR/$symlinkPath $symlinkPath
 
 file=$(constructInstance $base $patch)
 
-echo "Running $solver on $file"
-
 solverResult=$($solver $file)
 
 if [ x"$solverResult" != x"unknown" ]; then
