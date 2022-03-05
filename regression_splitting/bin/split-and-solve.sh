@@ -84,7 +84,7 @@ echo "Running $solver on $file"
 
 solverResult=$($solver $file)
 
-if [ x$solverResult != x"unknown" ]; then
+if [ x"$solverResult" != x"unknown" ]; then
     echo $solverResult
 fi
 
