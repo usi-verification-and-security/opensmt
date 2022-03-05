@@ -18,7 +18,7 @@ fi
 TMPDIR=$(mktemp -d)
 
 # Note: set to `true' to prevent deletion of temporary files
-keep=true
+keep=false
 trap "if [ x$keep == xtrue ]; then echo 'keeping output in ${TMPDIR}'; else rm -rf ${TMPDIR}; fi" EXIT
 
 function constructInstance () {
