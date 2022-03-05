@@ -67,6 +67,8 @@ for split in $inputs/*.smt2; do
         numSat=$((numSat+1))
     elif [ x"$splitResult" == x"unsat" ]; then
         numUnsat=$((numUnsat+1))
+    else
+        echo "Unexpected result while solving a split '$TMPDIR/split.smt2': '$splitResult'"
     fi
 done
 
@@ -76,6 +78,7 @@ elif [ $numSat -gt 0 ]; then
     echo "sat"
 else
     echo "unknown"
+    exit 1
 fi
 
 
