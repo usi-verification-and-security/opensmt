@@ -45,7 +45,7 @@ if [ -z $output ]; then
     echo "Using $output"
 fi
 
-bunzip2 -c $base |grep -v '^(check-sat)\|(exit)$' > $output
+bunzip2 -c $base |grep -v '^(check-sat)\|(exit)\|(set-info :status \(sat\|unsat\))$' > $output
 cat $split >> $output
 cat << __EOF__ >> $output
 (check-sat)
