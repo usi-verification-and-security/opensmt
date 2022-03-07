@@ -1284,14 +1284,14 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back( formula );
-// Visit the DAG of the formula from the leaves to the root
-//
+    // Visit the DAG of the formula from the leaves to the root
+    //
     while( !unprocessed_enodes.empty( ) )
     {
         PTRef e = unprocessed_enodes.back( );
-//
-// Skip if the node has already been processed before
-//
+        //
+        // Skip if the node has already been processed before
+        //
         if ( enode_to_def.find( e ) != enode_to_def.end( ) )
         {
             unprocessed_enodes.pop_back( );
@@ -1303,19 +1303,19 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
         for(int i = 0; i < term.size(); ++i)
         {
             PTRef pref = term[i];
-//assert(isTerm(pref));
-//
-// Push only if it is unprocessed
-//
+            //assert(isTerm(pref));
+            //
+            // Push only if it is unprocessed
+            //
             if ( enode_to_def.find( pref ) == enode_to_def.end( ) && (isBooleanOperator( pref ) || isEquality(pref)))
             {
                 unprocessed_enodes.push_back( pref );
                 unprocessed_children = true;
             }
         }
-//
-// SKip if unprocessed_children
-//
+        //
+        // SKip if unprocessed_children
+        //
         if ( unprocessed_children ) continue;
 
         unprocessed_enodes.pop_back( );
@@ -1323,9 +1323,9 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
         char buf[ 32 ];
         sprintf( buf, "?def%d", random_Idx++ );
 
-// Open let
+        // Open let
         dump_out << "(let ";
-// Open binding
+        // Open binding
         dump_out << "((" << buf << " ";
 
         if (term.size() > 0 ) dump_out << "(";
@@ -1343,9 +1343,9 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
         }
         if ( term.size() > 0 ) dump_out << ")";
 
-// Closes binding
+        // Closes binding
         dump_out << "))\n";
-// Keep track of number of lets to close
+        // Keep track of number of lets to close
         num_lets++;
 
         assert( enode_to_def.find( e ) == enode_to_def.end( ) );
@@ -1353,17 +1353,17 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
     }
     dump_out << '\n' << enode_to_def[formula] << '\n';
 
-// Close all lets
+    // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
 }
 
 void
 Logic::dumpHeaderToFile(ostream& dump_out) const
 {
-    dump_out << "(set-logic " << getName() << ")" << endl;
+    dump_out << "(set-logic " << getName() << ")\n";
     for (SSymRef ssr : sort_store.getSortSyms()) {
         if (isBuiltinSortSym(ssr)) continue;
-        dump_out << "(declare-sort " << sort_store.getSortSymName(ssr) << " " << sort_store.getSortSymSize(ssr) << ")" << endl;
+        dump_out << "(declare-sort " << sort_store.getSortSymName(ssr) << " " << sort_store.getSortSymSize(ssr) << ")\n";
     }
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
@@ -1386,7 +1386,7 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
         for (SRef sr : symb) {
             dump_out << printSort(sr) << " ";
         }
-        dump_out << ") " << printSort(symb.rsort()) << ")" << endl;
+        dump_out << ") " << printSort(symb.rsort()) << ")\n";
     }
 }
 
@@ -1394,7 +1394,7 @@ void
 Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const
 {
     if (toassert)
-        dump_out << "(assert" << '\n';
+        dump_out << "(assert\n";
 
     if (negate) dump_out << "(not ";
     dumpWithLets(dump_out, formula);
@@ -1402,7 +1402,7 @@ Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool to
     if (negate) dump_out << ")";
 
     if (toassert)
-        dump_out << ")" << '\n';
+        dump_out << ")\n";
 }
 
 void
@@ -1418,7 +1418,7 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     }
     dump_out << ") " << printSort(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
-    dump_out << ')' << endl;
+    dump_out << ")\n";
 }
 
 PTRef Logic::instantiateFunctionTemplate(const char * name, vec<PTRef> const & args) {
