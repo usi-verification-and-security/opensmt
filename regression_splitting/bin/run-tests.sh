@@ -54,6 +54,7 @@ run_solver ./base-instances/small.smt2.bz2 ./patches/small-lookahead.smt2 sat
 run_solver ./base-instances/tta_startup_simple_startup_3nodes.synchro.base.smt2.bz2 ./patches/tta_startup_simple_startup_3nodes.synchro.base-deep.smt2 unsat
 run_solver ./base-instances/tta_startup_simple_startup_3nodes.synchro.base.smt2.bz2 ./patches/tta_startup_simple_startup_3nodes.synchro.base-deep.smt2 unsat
 
+
 if [[ ${ok} == true ]]; then
     exit 0;
 else
