@@ -66,6 +66,15 @@ run_solver ./base-instances/small.smt2.bz2 ./patches/small-lookahead.smt2 sat
 run_solver ./base-instances/tta_startup_simple_startup_3nodes.synchro.base.smt2.bz2 ./patches/tta_startup_simple_startup_3nodes.synchro.base-deep.smt2 unsat
 run_solver ./base-instances/tta_startup_simple_startup_3nodes.synchro.base.smt2.bz2 ./patches/tta_startup_simple_startup_3nodes.synchro.base-deep.smt2 unsat
 
+run_splitter ./base-instances/init_unsat.smt2.bz2 patches/init_unsat-scatter.smt2 unsat
+run_splitter ./base-instances/iso_brn164.smt2.bz2 patches/iso_brn164-scatter.smt2 sat
+run_splitter ./base-instances/meti-tarski_sqrt_1mcosq_7_sqrt-1mcosq-7-chunk-0100.smt2.bz2 patches/meti-tarski_sqrt_1mcosq_7_sqrt-1mcosq-7-chunk-0100-scatter.smt2 sat
+run_splitter ./base-instances/p2-zenonumeric_s6.smt2.bz2 patches/p2-zenonumeric_s6-scatter.smt2 sat
+run_splitter ./base-instances/small.smt2.bz2 ./patches/small-scatter.smt2 sat
+run_splitter ./base-instances/tta_startup_simple_startup_3nodes.synchro.base.smt2.bz2 patches/tta_startup_simple_startup_3nodes.synchro.base-scatter.smt2 unsat
+run_splitter ./base-instances/unsat.smt2.bz2 patches/unsat-2-incremental-scatter.smt2 unsat
+run_splitter ./base-instances/unsat.smt2.bz2 patches/unsat-2-scatter.smt2 unsat
+run_splitter ./base-instances/unsat.smt2.bz2 patches/unsat-4-scatter.smt2 unsat
 
 if [[ ${ok} == true ]]; then
     exit 0;
