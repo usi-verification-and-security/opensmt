@@ -53,8 +53,6 @@ if [[ $# != 1 ]]; then
     exit 1
 fi
 
-run_solver ./base-instances/NEQ004_size4.smt2.bz2 ./patches/NEQ004_size4_smt2split_0-deep.smt2 unknown
-run_solver ./base-instances/NEQ004_size4.smt2.bz2 ./patches/NEQ004_size4_smt2split_0.smt2 unknown
 run_solver ./base-instances/init_unsat.smt2.bz2 ./patches/init_unsat-lookahead.smt2 unsat
 run_solver ./base-instances/init_unsat.smt2.bz2 ./patches/init_unsat-deep.smt2 unsat
 run_solver ./base-instances/iso_brn164.smt2.bz2 ./patches/iso_brn164-deep.smt2 sat
