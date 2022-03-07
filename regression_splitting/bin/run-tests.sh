@@ -24,7 +24,7 @@ function run_solver () {
     fi
     ${RESULTCHECKER} ${outfile} ${expected}
     if [[ $? != 0 ]]; then
-        echo "Error in result on ${smtfile}"
+        echo "Error in result on ${smtfile} and ${patch}"
         ok=false
         return 1
     fi
@@ -32,6 +32,20 @@ function run_solver () {
     rm ${outfile}
     rm -rf ${TMPDIR}
     return 0
+}
+
+function run_splitter () {
+    smtfile=$1
+    patch=$2
+    expected=$3
+    output=$(./bin/split-and-solve.sh -b ${SOLVER} -i $smtfile -p $patch)
+    if [ x"$output" == x"$expected" ]; then
+        return 0;
+    else
+        echo "Error running the solver on $smtfile and $patch"
+        ok=false
+        return 1
+    fi
 }
 
 if [[ $# != 1 ]]; then

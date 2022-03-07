@@ -62,7 +62,7 @@ numUnsat=0
 
 for split in $inputs/*.smt2; do
     $CONSTRUCTSPLIT -i $base -s $split -o $TMPDIR/split.smt2
-    splitResult=$($solver $TMPDIR/split.smt2)
+    splitResult=$($solver $TMPDIR/split.smt2 2>/dev/null)
     if [ x"$splitResult" == x"sat" ]; then
         numSat=$((numSat+1))
     elif [ x"$splitResult" == x"unsat" ]; then

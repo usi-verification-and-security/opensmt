@@ -80,20 +80,26 @@ ln -s $TMPDIR/$symlinkPath $symlinkPath
 
 file=$(constructInstance $base $patch)
 
-solverResult=$($solver $file)
+solverResult=$($solver $file 2>/dev/null)
 
 if [ x"$solverResult" != x"unknown" ]; then
-    echo $solverResult
+    if [ x"$solverResult" == x"unsat" ]; then
+        echo $solverResult
+    elif [ x"$solverResult" == x"sat" ]; then
+        echo $solverResult
+    else
+        echo "Unexepected solver output: '$solverResult'"
+    fi
+else
+    numSplits=$(ls $symlinkPath/*.smt2 |wc -l)
+
+    if [ $numSplits -eq 0 ]; then
+        echo "Error: no splits found but result was unknown"
+        exit 1
+    fi
+
+    $SPLITSOLVER -i $base -s $symlinkPath -b $solver
 fi
-
-numSplits=$(ls $symlinkPath/*.smt2 |wc -l)
-
-if [ $numSplits -eq 0 ]; then
-    echo "Error: no splits found but result was unknown"
-    exit 1
-fi
-
-$SPLITSOLVER -i $base -s $symlinkPath -b $solver
 
 if [ x$keep != xtrue ]; then
     rm $symlinkPath
