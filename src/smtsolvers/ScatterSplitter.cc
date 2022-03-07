@@ -70,7 +70,7 @@ bool ScatterSplitter::okContinue() const {
     } else if (conflicts % 1000 == 0 and splitContext.resourceLimitReached(decisions)) {
         opensmt::stop = true;
         return false;
-    } else if (static_cast<int>(splitContext.getCurrentSplitCount()) < splitContext.splitTargetNumber() - 1) {
+    } else if (static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber() - 1) {
         return false;
     }
     return true;
