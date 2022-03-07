@@ -816,7 +816,7 @@ void Interpret::writeSplits(const char* filename)
         dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
     }
     catch (OsmtApiException const & e) {
-        std::cout << "While writing splits to " << filename << ": " << e.what() << std::endl;
+        std::cout << "While writing splits: " << e.what() << std::endl;
     }
 }
 
