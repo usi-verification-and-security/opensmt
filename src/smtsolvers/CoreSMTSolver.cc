@@ -1382,9 +1382,11 @@ void CoreSMTSolver::popBacktrackPoint()
 
 bool CoreSMTSolver::okContinue() const
 {
-    if ( opensmt::stop ) return false;
-    
-    return true;
+    if ( opensmt::stop ) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 void CoreSMTSolver::learntSizeAdjust() {

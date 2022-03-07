@@ -70,7 +70,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() {
                                            ? dynamic_cast<ScatterSplitter &>(ts.solver).getSplits()
                                            : dynamic_cast<LookaheadSplitter &>(ts.solver).getSplits();
     for (auto const &split : splits) {
-        std::vector<vec<PtAsgn> > constraints;
+        std::vector<vec<PtAsgn>> constraints;
         split.constraintsToPTRefs(*thandler);
         vec<PTRef> clauses;
         for (auto const &constraint : constraints) {

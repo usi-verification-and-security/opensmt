@@ -2,6 +2,7 @@
 
 RESULTCHECKER=./bin/check_result.py
 INSTANCECONSTRUCT=./bin/process-instance.sh
+RUNSPLITTER=./bin/split-and-solve.sh
 SOLVER=${1}
 ok=true
 
@@ -38,7 +39,7 @@ function run_splitter () {
     smtfile=$1
     patch=$2
     expected=$3
-    output=$(./bin/split-and-solve.sh -b ${SOLVER} -i $smtfile -p $patch)
+    output=$($RUNSPLITTER -b ${SOLVER} -i $smtfile -p $patch)
     if [ x"$output" == x"$expected" ]; then
         return 0;
     else
