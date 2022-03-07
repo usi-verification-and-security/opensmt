@@ -1161,7 +1161,6 @@ CRef CoreSMTSolver::propagate()
         {
 //            props++;
             // Try to avoid inspecting the clause:
-            Lit blocker = i->blocker;
 
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
