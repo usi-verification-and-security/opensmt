@@ -1344,13 +1344,15 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const
         if ( term.size() > 0 ) dump_out << ")";
 
 // Closes binding
-        dump_out << "))";
+        dump_out << "))\n";
 // Keep track of number of lets to close
         num_lets++;
 
         assert( enode_to_def.find( e ) == enode_to_def.end( ) );
         enode_to_def[ e ] = buf;
     }
+    dump_out << '\n' << enode_to_def[formula] << '\n';
+
 // Close all lets
     for ( unsigned n=1; n <= num_lets; n++ ) dump_out << ")";
 }
