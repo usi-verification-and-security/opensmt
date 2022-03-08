@@ -933,7 +933,7 @@ void InterpolationContext::transformProofForCNFInterpolants() {
 bool InterpolationContext::verifyInterpolant(PTRef itp, const ipartitions_t & A_mask) const {
     PTRef partA = pmanager.getPartition(A_mask, PartitionManager::part::A);
     PTRef partB = pmanager.getPartition(A_mask, PartitionManager::part::B);
-    bool sound = VerificationUtils(config, logic).verifyInterpolantExternal(partA, partB, itp);
+    bool sound = VerificationUtils(config, logic).verifyInterpolantInternal(partA, partB, itp);
     return sound;
 }
 
