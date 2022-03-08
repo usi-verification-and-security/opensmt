@@ -9,7 +9,7 @@ Performance improvements:
 Bug fixes:
  - UF: Fix internal error on top-level distinct in incremental mode.
  - LIA+Interpolation: Fix interpolation in incremental mode when split clauses are involved.
- - UF+Interpolation: Fix interpolation in the present of `distinct`s.
+ - UF+Interpolation: Fix interpolation in the presence of `distinct`s.
  - Logic+Parser: Fix handling of (unusual) quoted identifiers.
  - Logic+Parser: Fix handling of qualified terms (operator `as`).
 
