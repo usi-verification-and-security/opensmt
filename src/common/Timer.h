@@ -29,9 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <string.h>
 #include <ostream>
+#include <iostream>
 #include <sys/time.h>
 #include <chrono>
 #include <sys/resource.h>
+#include <cassert>
 
 namespace opensmt {
 // A c++ wrapper for struct timeval
