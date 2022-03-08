@@ -50,5 +50,30 @@ namespace opensmt {
             BG_BrightWhite = 107
         };
     }
+
+    class synced_stream {
+    public:
+        synced_stream(std::ostream & _out_stream = std::cout)
+                : out_stream(_out_stream) {};
+
+        template<typename... T>
+        void print(Color::Code colorCode, const T & ...items) {
+            const std::scoped_lock lock(stream_mutex);
+            if (colorCode != Color::FG_DEFAULT)
+                out_stream << "\033[" << colorCode << "m";
+            (out_stream << ... << items);
+            if (colorCode != Color::FG_DEFAULT)
+                out_stream << "\033[" << Color::FG_DEFAULT << "m";
+        }
+
+        template<typename... T>
+        void println(Color::Code colorCode, const T & ...items) {
+            print(colorCode, items..., '\n');
+        }
+
+    private:
+        mutable std::mutex stream_mutex = {};
+        std::ostream & out_stream;
+    };
 }
 #endif
