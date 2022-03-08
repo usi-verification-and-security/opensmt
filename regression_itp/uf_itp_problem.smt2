@@ -1,4 +1,5 @@
 (set-option :produce-interpolants true)
+(set-option :certify-interpolants 1)
 (set-logic QF_UF)
 (declare-sort Real 0)
 (declare-fun g (Real Real ) Real)

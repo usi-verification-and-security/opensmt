@@ -1,4 +1,5 @@
 (set-option :produce-interpolants 1)
+(set-option :certify-interpolants 1)
 (set-logic QF_UF)
 (declare-fun x () Bool)
 (assert (! x :named A))
