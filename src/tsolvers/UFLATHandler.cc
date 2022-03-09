@@ -63,7 +63,7 @@ vec<PTRef> UFLATHandler::getSplitClauses() {
         return res;
     }
     for (PTRef eq : equalitiesToPropagate) {
-        if (knownEqualities.count(eq) != 0) {
+        if (knownEqualities.find(eq) != knownEqualities.end()) {
             continue;
         }
         // create clauses corresponding to "x = y iff x >= y and x <= y"

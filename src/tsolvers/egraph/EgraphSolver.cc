@@ -1608,7 +1608,7 @@ void Egraph::reanalyze(ERef eref) {
     }
 }
 
-void Egraph::collectEqualitiesFor(const vec<PTRef> & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
+void Egraph::collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     MapWithKeys<ERef, PTRef, ERefHash> enodes;
     for (PTRef var : vars) {
         assert(logic.isVar(var) or logic.isConstant(var));
