@@ -55,12 +55,10 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
 }
 
 std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & config, THandler & thandler) {
-    if (config.sat_split_type() == spt_scatter) {
-        return std::make_unique<ScatterSplitter>(config, thandler);
-    } else if (config.sat_split_type() == spt_lookahead) {
+    if (config.sat_split_type() == spt_lookahead) {
         return std::make_unique<LookaheadSplitter>(config, thandler);
     } else {
-        return MainSolver::createInnerSolver(config, thandler);
+        return std::make_unique<ScatterSplitter>(config, thandler);
     }
 }
 
