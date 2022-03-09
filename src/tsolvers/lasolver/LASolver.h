@@ -111,7 +111,7 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
     lbool getPolaritySuggestion(PTRef) const;
-    void collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
+    vec<PTRef> collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
     PTRef getRealInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t>*, PartitionManager & pmanager);
     PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);

@@ -34,12 +34,11 @@ lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
 TRes UFLATHandler::check(bool full) {
     auto res = TSolverHandler::check(full);
     if (full and res == TRes::SAT and not lasolver->hasNewSplits()) {
-        equalitiesToPropagate.clear();
-        ufsolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
+        equalitiesToPropagate = ufsolver->collectEqualitiesFor(interfaceVars, knownEqualities);
         // MB: Only collect equalities from LASolver if there are none from UF solver.
         //  This prevents duplication of equalities
         if (equalitiesToPropagate.size() == 0) {
-            lasolver->collectEqualitiesFor(interfaceVars, equalitiesToPropagate, knownEqualities);
+            equalitiesToPropagate = lasolver->collectEqualitiesFor(interfaceVars, knownEqualities);
         }
     }
     return res;

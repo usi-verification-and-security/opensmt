@@ -987,7 +987,7 @@ TRes LASolver::cutFromProof() {
     return TRes::SAT;
 }
 
-void LASolver::collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equalities, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
+vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
             FastRationalHash hasher;
@@ -995,6 +995,7 @@ void LASolver::collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equali
         }
     };
 
+    vec<PTRef> equalities;
     std::unordered_map<Delta, vec<PTRef>, DeltaHash> eqClasses;
     for (PTRef var : vars) {
         if (logic.isNumConst(var)) {
@@ -1031,7 +1032,6 @@ void LASolver::collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equali
                 valuesWithDelta.push_back(entry.first);
             }
         }
-        if (valuesWithDelta.empty()) { return; }
         for (auto const & val : valuesWithDelta) {
             for (auto const & entry : eqClasses) {
                 // check if entry.first - val could be 0 for some value of delta, with 0 < delta <= 1
@@ -1053,11 +1053,12 @@ void LASolver::collectEqualitiesFor(vec<PTRef> const & vars, vec<PTRef> & equali
                         if (knownEqualities.find(eq) == knownEqualities.end()) {
                             equalities.push(eq);
                             // MB: It should be OK to decide one such equality, we do not have to add whole cross-product at once
-                            return;
+                            return equalities;
                         }
                     }
                 }
             }
         }
     }
+    return equalities;
 }
