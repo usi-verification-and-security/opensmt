@@ -156,7 +156,7 @@ void Interpret::interp(ASTNode& n) {
                         break;
                     }
                     initializeLogic(logic_type);
-                    main_solver = createMainSolver(config, logic_name);
+                    main_solver = createMainSolver(logic_name);
                     main_solver->initialize();
                     notify_success();
                 }
@@ -1307,7 +1307,7 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
 
-std::unique_ptr<MainSolver> Interpret::createMainSolver(SMTConfig & config, const char*  logic_name) {
+std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
 
     if (config.sat_split_type() == spt_none) {
         return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");

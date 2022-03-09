@@ -25,7 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "MainSolver.h"
-#include "TreeOps.h"
 #include "BoolRewriting.h"
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
@@ -39,9 +38,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
 #include <thread>
-#include <random>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 namespace opensmt { bool stop; }
