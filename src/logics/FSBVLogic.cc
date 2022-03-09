@@ -56,10 +56,8 @@ PTRef FSBVLogic::mkBVConstFromBin(std::string const & bin) {
 }
 
 PTRef FSBVLogic::mkBVConst(BitWidth_t m, unsigned c) {
-    char * num;
-    opensmt::wordToBinary(c, num, m);
-    PTRef tr = mkConst(makeBitVectorSortForBW(m), num);
-    return tr;
+    std::string bitString = "#b" + opensmt::wordToBinary(c, m);
+    return mkConst(makeBitVectorSortForBW(m), bitString.c_str());
 }
 
 PTRef FSBVLogic::mkBVConst(SymRef sym) {

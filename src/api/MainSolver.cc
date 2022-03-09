@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "BoolRewriting.h"
 #include "LookaheadSMTSolver.h"
 #include "GhostSMTSolver.h"
-#include "ClausePrinter.h"
 #include "UFLATheory.h"
 #include "LATheory.h"
 #include "LATHandler.h"
@@ -321,8 +320,6 @@ std::unique_ptr<SMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THa
         return std::make_unique<GhostSMTSolver>(config, thandler);
     } else if (config.sat_picky()) {
     return std::make_unique<LookaheadSMTSolver>(config, thandler);
-    } else if (config.print_clauses_only()) {
-        return std::make_unique<ModelCounter>(config, thandler);
     } else {
         return std::make_unique<SimpSMTSolver>(config, thandler);
     }

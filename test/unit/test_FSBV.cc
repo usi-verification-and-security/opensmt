@@ -20,27 +20,36 @@ protected:
 TEST_F(FSBVTest, test_createConst) {
     PTRef x = logic.mkBVConst(32, 123);
     SRef xsort = logic.getSortRef(x);
-    std::cout << logic.pp(x) << std::endl;
+    std::string binaryRepresentation = logic.pp(x);
+    std::cout << binaryRepresentation << std::endl;
+    ASSERT_EQ(binaryRepresentation, "#b00000000000000000000000001111011");
     std::cout << logic.printSort(xsort) << std::endl;
     ASSERT_NE(x, PTRef_Undef);
 
     PTRef y = logic.mkBVConst(16, 123);
     SRef ysort = logic.getSortRef(y);
-    std::cout << logic.pp(y) << std::endl;
+    binaryRepresentation = logic.pp(y);
+    std::cout << binaryRepresentation << std::endl;
+    ASSERT_EQ(binaryRepresentation, "#b0000000001111011");
     std::cout << logic.printSort(ysort) << std::endl;
 
     PTRef z = logic.mkBVConst(16, 124);
     SRef zsort = logic.getSortRef(z);
-    std::cout << logic.pp(z) << std::endl;
+    binaryRepresentation = logic.pp(z);
+    std::cout << binaryRepresentation << std::endl;
+    ASSERT_EQ(binaryRepresentation, "#b0000000001111100");
     std::cout << logic.printSort(zsort) << std::endl;
     ASSERT_NE(y, z);
     ASSERT_EQ(ysort, zsort);
 
     PTRef char1 = logic.mkBVConst(8, 1);
     PTRef char257 = logic.mkBVConst(8, 257);
-    std::cout << logic.pp(char1) << std::endl;
-    std::cout << logic.pp(char257) << std::endl;
-    ASSERT_EQ(char1, char257);
+    binaryRepresentation = logic.pp(char1);
+    ASSERT_EQ(binaryRepresentation, "#b00000001");
+    std::cout << binaryRepresentation << std::endl;
+    binaryRepresentation = logic.pp(char257);
+    ASSERT_EQ(binaryRepresentation, "#b00000001");
+    std::cout << binaryRepresentation << std::endl;
 
 //    x = logic.mkBVConstFromHex("#0000007B");
 }

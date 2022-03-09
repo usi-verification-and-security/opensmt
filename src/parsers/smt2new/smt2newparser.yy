@@ -86,7 +86,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 %type <str> TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
 %type <snode> symbol identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
-%type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
+%type <snode_list> sort_list command_list s_expr_list term_list var_binding_list attribute_list sorted_var_list symbol_list
 %type <snode> b_value option info_flag
 
 %start script
@@ -396,12 +396,6 @@ const_val: symbol
         { $$ = $1; }
     | spec_const
         { $$ = $1; }
-    ;
-
-numeral_list: numeral_list TK_NUM
-        { $1->push_back(new ASTNode(NUM_T, $2)); $$ = $1; }
-    | TK_NUM
-        { $$ = new std::vector<ASTNode*>(); $$->push_back(new ASTNode(NUM_T, $1)); }
     ;
 
 qual_identifier: identifier

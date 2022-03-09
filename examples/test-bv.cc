@@ -107,10 +107,8 @@ int main(int argc, char** argv)
         bbb.computeModel();
         PTRef v = bbb.getValue(d);
         auto val = logic.pp(v);
-        char* bin;
-        opensmt::wordToBinary(atoi(val.c_str()), bin, bw);
-        printf("%s (%s)\n", val.c_str(), bin);
-        free(bin);
+        std::string bin = opensmt::wordToBinary(atoi(val.c_str()), bw);
+        printf("%s (%s)\n", val.c_str(), bin.c_str());
     }
     else if (r == s_False)
         printf("unsat\n");

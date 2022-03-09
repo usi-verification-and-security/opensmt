@@ -13,7 +13,7 @@ void ModelCounter::count(vec<PTRef> const & terms) const {
     // print all clauses
     auto & theory = dynamic_cast<FSBVTheory&>(theory_handler.getTheory());
 
-    ofstream out;
+    std::ofstream out;
     out.open(config.get_counting_output_file());
 
     unsigned int numOfDisappearedAtoms = 0;

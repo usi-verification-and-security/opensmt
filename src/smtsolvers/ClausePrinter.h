@@ -13,8 +13,9 @@ class ModelCounter : public SMTSolver {
     Map<Var, bool, VarHash> vars;
     int numberOfVarsSeen;
     std::unordered_map<PTRef, std::unordered_set<Var>, PTRefHash> bvTermToVars;
+    SMTConfig & config;
 public:
-    ModelCounter(SMTConfig &, THandler & tHandler) : SMTSolver(tHandler), numberOfVarsSeen(0) {}
+    ModelCounter(SMTConfig &c, THandler & tHandler) : SMTSolver(tHandler), numberOfVarsSeen(0), config(c) {}
     int nVars() const override { return numberOfVarsSeen; }
     int nClauses() const override { return clauses.size(); }
     bool isOK() const override { return true; }
