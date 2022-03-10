@@ -1,3 +1,19 @@
+set(partitionChannelRepo "https://github.com/usi-verification-and-security/partition-channel.git")
+message("opensmt is fetching partition-channel library from " ${partitionChannelRepo})
+include(FetchContent)
+FetchContent_Declare(
+        partition-channel
+        GIT_REPOSITORY ${partitionChannelRepo}
+        GIT_TAG master
+)
+FetchContent_GetProperties(partition-channel)
+if(NOT partition-channel_POPULATED)
+  FetchContent_Populate(partition-channel)
+  add_subdirectory(${partition-channel_SOURCE_DIR} ${partition-channel_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+message("-- partition-channel: partition-channel files have been written to: ${partition-channel_SOURCE_DIR}")
+include_directories(${partition-channel_SOURCE_DIR}/src)
+
 add_subdirectory(proof)
 add_subdirectory(common)
 add_subdirectory(cnfizers)
