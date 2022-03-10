@@ -412,7 +412,7 @@ Delta Simplex::getValuation(LVRef v) const {
 opensmt::Real Simplex::computeDelta() const {
 
     /*
-     Delta computation according to the Technical Report accompanying the Simple paper
+     Delta computation according to the Technical Report accompanying the Simplex paper
      https://yices.csl.sri.com/papers/sri-csl-06-01.pdf
      For a pair (c,k) \in Q_\delta representing Real value c + k * \delta if the inequality (c_1, k_1) <= (c_2, k_2) holds
      then there exists \delta_0 such that \forall 0 < \epsilon < \delta_0 the inequality c_1 + k_1 * \epsilon <= c_2 + k_2 * \epsilon holds.
@@ -427,15 +427,14 @@ opensmt::Real Simplex::computeDelta() const {
     Delta delta_abst;
     bool deltaNotSet = true;
 
-    const LAVarStore& laVarStore = boundStore.getVarStore();
-    for (LVRef v : laVarStore)
-    {
-        assert( !isModelOutOfBounds(v) );
-
-        if (model->read(v).D() == 0)
-            continue; // If values are exact we do not need to consider them for delta computation
+    LAVarStore const & laVarStore = boundStore.getVarStore();
+    for (LVRef v : laVarStore) {
+        assert(not isModelOutOfBounds(v));
 
         auto const & val = model->read(v);
+        if (val.D().isZero())
+            continue; // If values are exact we do not need to consider them for delta computation
+
         // Computing delta to satisfy lower bound
         if (model->hasLBound(v)) {
             auto const & lb = model->Lb(v);
@@ -443,7 +442,7 @@ opensmt::Real Simplex::computeDelta() const {
             if (lb.R() < val.R() && lb.D() > val.D()) {
                 Real valOfDelta = (val.R() - lb.R()) / (lb.D() - val.D());
                 assert(valOfDelta > 0);
-                if (deltaNotSet || delta_abst > valOfDelta) {
+                if (deltaNotSet or delta_abst > valOfDelta) {
                     deltaNotSet = false;
                     delta_abst = valOfDelta;
                 }
@@ -456,7 +455,7 @@ opensmt::Real Simplex::computeDelta() const {
             if (val.R() < ub.R() && val.D() > ub.D()) {
                 Real valOfDelta = (ub.R() - val.R()) / (val.D() - ub.D());
                 assert(valOfDelta > 0);
-                if (deltaNotSet || delta_abst > valOfDelta) {
+                if (deltaNotSet or delta_abst > valOfDelta) {
                     deltaNotSet = false;
                     delta_abst = valOfDelta;
                 }
@@ -464,7 +463,7 @@ opensmt::Real Simplex::computeDelta() const {
         }
     }
 
-    if (deltaNotSet || delta_abst > 1) {
+    if (deltaNotSet or delta_abst > 1) {
         return 1;
     }
     return delta_abst.R()/2;
