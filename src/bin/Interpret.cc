@@ -1297,9 +1297,9 @@ void Interpret::getInterpolants(const ASTNode& n)
     for (int j = 0; j < itps.size(); j++) {
         interesting.rewrite(itps[j]);
         printf("Amount of vars: %d\nAmount of boolean operators: %d\n", interesting.config.varNumber, interesting.config.boolNumber);
-        auto itp = logic->pp(itps[j]);
-        notify_formatted(false, "%s%s%s",
-                         (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
+//        auto itp = logic->pp(itps[j]);
+//        notify_formatted(false, "%s%s%s",
+//                         (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
     }
 }
 
