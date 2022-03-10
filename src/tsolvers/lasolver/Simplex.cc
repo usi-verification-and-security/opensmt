@@ -409,8 +409,8 @@ Delta Simplex::getValuation(LVRef v) const {
     return val;
 }
 
-// Definition of static member
-const opensmt::Real Simplex::maxDelta {1};
+// Definition of static member: maxDelta = 1/2;
+const opensmt::Real Simplex::maxDelta {1,2};
 
 opensmt::Real Simplex::computeDelta() const {
 
