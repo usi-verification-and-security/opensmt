@@ -9,11 +9,12 @@
 #define OPENSMT_MAINSPLITTER_H
 
 #include "MainSolver.h"
+#include "Channel.h"
 
 class MainSplitter : public MainSolver {
 
 public:
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler, Channel & ch);
 
     MainSplitter(std::unique_ptr<Theory> t,std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> th,
                  std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
