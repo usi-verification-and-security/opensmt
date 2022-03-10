@@ -126,7 +126,8 @@ int main( int argc, char * argv[] )
         }
     }
 
-    Interpret interpreter(c);
+    auto channel = std::make_unique<Channel>();
+    Interpret interpreter(c, *channel);
 
     if (argc - optind == 0) {
         c.setInstanceName("stdin");
