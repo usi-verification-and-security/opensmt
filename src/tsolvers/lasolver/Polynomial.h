@@ -30,7 +30,6 @@ public:
     using poly_t = std::vector<Term>; // Terms are ordered by variable num
 private:
     poly_t poly;
-    inline static thread_local poly_t tmp_storage {};
     using mergeFunctionInformerType = void(*)(VarType);
 public:
     void addTerm(VarType var, opensmt::Real coeff);
@@ -41,7 +40,19 @@ public:
     void divideBy(const opensmt::Real& r);
 
     template <typename ADD = mergeFunctionInformerType, typename REM = mergeFunctionInformerType>
-    void merge(PolynomialT const & other, opensmt::Real const & coeff, ADD informAdded = [](VarType){}, REM informRemoved = [](VarType){});
+    void merge(
+        PolynomialT const & other,
+        opensmt::Real const & coeff,
+        poly_t & tmp_storage,
+        ADD informAdded = [](VarType){},
+        REM informRemoved = [](VarType){}
+    );
+
+    /* Simple version of merge that does not use the hooks and does not need external temporary storage */
+    void merge(PolynomialT const & other, opensmt::Real const & coeff) {
+        poly_t tmp_storage;
+        return merge(other, coeff, tmp_storage);
+    }
 
     using iterator = typename poly_t::iterator;
     using const_iterator = typename poly_t::const_iterator;
@@ -79,7 +90,7 @@ public:
 
 template<typename VarType>
 template<typename ADD, typename REM>
-void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Real const & coeff, ADD informAdded,
+void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Real const & coeff, poly_t & tmp_storage, ADD informAdded,
                   REM informRemoved) {
     if (tmp_storage.size() < this->poly.size() + other.poly.size()) {
         tmp_storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
