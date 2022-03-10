@@ -1352,7 +1352,7 @@ std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) 
         return std::make_unique<MainSplitter>(std::move(th),
                                  std::move(tm),
                                  std::unique_ptr<THandler>(thandler),
-                                 MainSplitter::createInnerSolver(config, *thandler),
+                                 MainSplitter::createInnerSolver(config, *thandler, channel),
                                  *logic,
                                  config,
                                  std::string(logic_name)
