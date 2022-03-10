@@ -13,7 +13,6 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/osmtinttypes.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringConv.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
     "${CMAKE_CURRENT_LIST_DIR}/TreeOps.h"
     "${CMAKE_CURRENT_LIST_DIR}/NatSet.h"
     "${CMAKE_CURRENT_LIST_DIR}/PartitionInfo.cc"
