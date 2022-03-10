@@ -14,10 +14,7 @@ FSBVLogic::FSBVLogic(opensmt::Logic_t type)
 { }
 
 SRef FSBVLogic::makeBitWidthSortForBW(BitWidth_t m) {
-    SRef bwSort;
-    if (bitWidthToBitWidthSort.peek(m, bwSort)) {
-        return bwSort;
-    }
+
     std::string const bw_string = std::to_string(m);
     SSymRef bwSortSym;
     SortSymbol bw_sortSymbol(bw_string, 0, SortSymbol::INTERNAL);
@@ -25,25 +22,15 @@ SRef FSBVLogic::makeBitWidthSortForBW(BitWidth_t m) {
         bwSortSym = sort_store.newSortSymbol(SortSymbol(bw_string, 0, SortSymbol::INTERNAL));
     }
     // Do not create core predicates for bit width sorts
-    bwSort = sort_store.getOrCreateSort(bwSortSym, {}).first;
-    assert(not bitWidthToBitWidthSort.has(m));
-    bitWidthToBitWidthSort.insert(m, bwSort);
-    bitWidthSortToBitWidth.insert(bwSort, m);
+    SRef bwSort = sort_store.getOrCreateSort(bwSortSym, {}).first;
+
     return bwSort;
 }
 
 SRef FSBVLogic::makeBitVectorSortForBW(BitWidth_t m) {
-    SRef bvSort;
-    if (bitWidthToBitVectorSort.peek(m, bvSort)) {
-        return bvSort;
-    }
     SRef bwSort = makeBitWidthSortForBW(m);
-
     // Create core predicates for bit vector sorts
-    bvSort = getSort(sym_IndexedSort, {BVBaseSort, bwSort});
-
-    bitWidthToBitVectorSort.insert(m, bvSort);
-    bitVectorSorts.insert(bvSort, true);
+    SRef bvSort = getSort(sym_IndexedSort, {BVBaseSort, bwSort});
     return bvSort;
 }
 
@@ -101,10 +88,8 @@ SymRef FSBVLogic::mkBVConcatSym(SRef lhsSort, SRef rhsSort) {
         throw OsmtApiException("mkBVConcat called for incompatible sorts " + printSort(lhsSort) \
         + " and " + printSort(rhsSort));
     }
-    SRef lhsBWSort  = sort_store[lhsSort][1];
-    SRef rhsBWSort = sort_store[rhsSort][1];
-    BitWidth_t lhsbw = bitWidthSortToBitWidth[lhsBWSort];
-    BitWidth_t rhsbw = bitWidthSortToBitWidth[rhsBWSort];
+    BitWidth_t lhsbw = getBitWidth(lhsSort);
+    BitWidth_t rhsbw = getBitWidth(rhsSort);
     BitWidth_t returnBitWidth = lhsbw + rhsbw;
 
     SRef returnBitVectorSort = makeBitVectorSortForBW(returnBitWidth);

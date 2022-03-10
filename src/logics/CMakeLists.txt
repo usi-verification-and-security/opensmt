@@ -25,8 +25,8 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/UFTheory.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SubstLoopBreaker.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SubstLoopBreaker.cc"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/FSBVBitBlaster.h"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/FSBVBitBlaster.cc"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BitBlasterRewriter.h"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BitBlasterRewriter.cc"
 )
 
 install(FILES LogicFactory.h Theory.h Logic.h ArithLogic.h CUFLogic.h BVLogic.h FunctionTools.h FSBVLogic.h

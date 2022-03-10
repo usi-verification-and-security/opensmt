@@ -23,11 +23,11 @@ public:
         , logic(logic)
         , fsbvtshandler(c, logic)
     { }
-    virtual FSBVLogic & getLogic() override { return logic; }
-    virtual const FSBVLogic & getLogic() const override { return logic; }
-    virtual FSBVTHandler & getTSolverHandler() override { return fsbvtshandler; }
-    virtual bool simplify(const vec<PFRef>&, PartitionManager&, int) override;
-    const std::unordered_map<PTRef, PTRef, PTRefHash> & getBBTermToBVTerm() const { return bbTermToBVTerm; }
+    FSBVLogic & getLogic() override { return logic; }
+    const FSBVLogic & getLogic() const override { return logic; }
+    FSBVTHandler & getTSolverHandler() override { return fsbvtshandler; }
+    bool simplify(const vec<PFRef>&, PartitionManager&, int) override;
+    std::unordered_map<PTRef, PTRef, PTRefHash> const & getBBTermToBVTerm() const { return bbTermToBVTerm; }
 };
 
 #endif //OPENSMT_FSBVTHEORY_H

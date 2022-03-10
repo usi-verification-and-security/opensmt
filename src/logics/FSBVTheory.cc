@@ -6,8 +6,8 @@
 
 #include "FSBVTheory.h"
 #include "OsmtInternalException.h"
-#include "FSBVBitBlaster.h"
 #include "TreeOps.h"
+#include "BitBlasterRewriter.h"
 
 static SolverDescr descr_bb_solver("BitBlaster", "BitBlaster for counting models?");
 
@@ -23,14 +23,12 @@ bool FSBVTheory::simplify(vec<PFRef> const & formulas, PartitionManager &, int c
         PTRef fla = flaFromSubstitutionResult(subs_res);
 
         vec<PTRef> bvFormulas;
-        FSBVBitBlaster bitBlaster(logic);
         topLevelConjuncts(logic, fla, bvFormulas);
-        PTRef out = logic.getTerm_true();
-        for (PTRef tr : bvFormulas) {
-            if (logic.isBoolAtom(tr)) continue;
-            out = logic.mkAnd(bitBlaster.bbPredicate(tr), out);
-        }
-        bbTermToBVTerm = bitBlaster.getBitBlastedTermToBitVectorTermMap();
+
+        BitBlasterRewriter bitBlasterRewriter(logic);
+        PTRef out = bitBlasterRewriter.rewrite(logic.mkAnd(bvFormulas));
+        bbTermToBVTerm = bitBlasterRewriter.getBitBlastedTermToBitVectorTermMap();
+
         subs_res = computeSubstitutions(out);
         fla = flaFromSubstitutionResult(subs_res);
         pfstore[formulas[curr]].root = fla;
