@@ -16,9 +16,10 @@ namespace opensmt
     extern bool stop;
 }
 
-ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t)
+ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, Channel & ch)
     : SimpSMTSolver         (c, t)
     , splitContext          (config, decisions)
+    , channel               (ch)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
