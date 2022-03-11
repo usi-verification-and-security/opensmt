@@ -289,7 +289,11 @@ void Interpret::interp(ASTNode& n) {
             }
             case t_countmodels: {
                 if (config.count_models()) {
-                    countModels(n);
+                    if (isInitialized()) {
+                        countModels(n);
+                    } else {
+                        notify_formatted(true, "Illegal command before set-logic: count-models");
+                    }
                 } else {
                     notify_formatted(true,
                                      "Option to count models not set.  Ignoring command. ");

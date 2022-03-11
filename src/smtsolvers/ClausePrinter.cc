@@ -33,8 +33,10 @@ void ModelCounter::count(vec<PTRef> const & terms) const {
     std::string bbVarString("c ind ");
 
     for (PTRef tr : terms) {
-        for (auto v : bvTermToVars.at(tr)) {
-            bbVarString += std::to_string(v+1) + " ";
+        if (bvTermToVars.find(tr) != bvTermToVars.end()) {
+            for (auto v: bvTermToVars.at(tr)) {
+                bbVarString += std::to_string(v + 1) + " ";
+            }
         }
     }
     // Add phony vars for correct counting also to ind
@@ -63,13 +65,12 @@ void ModelCounter::addVar(Var v) {
 
 bool ModelCounter::addOriginalSMTClause(vec<Lit> const & smtClause, opensmt::pair<CRef, CRef> &) {
     auto & theory = dynamic_cast<FSBVTheory&>(theory_handler.getTheory());
-    auto & bbTermToBVTerm = theory.getBBTermToBVTerm();
+    auto const & bbTermToBVTerm = theory.getBBTermToBVTerm();
     for (Lit l : smtClause) {
         Var v = var(l);
         if (not vars.has(v)) {
             // A new variable
-            vars.insert(v, true);
-            numberOfVarsSeen++;
+            addVar(v);
 
             PTRef bbTerm = theory_handler.varToTerm(v);
             if (bbTermToBVTerm.find(bbTerm) != bbTermToBVTerm.end()) {

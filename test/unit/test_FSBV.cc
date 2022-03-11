@@ -9,6 +9,7 @@
 #include <FSBVLogic.h>
 
 #include <memory>
+#include "BitBlasterRewriter.h"
 
 class FSBVTest : public ::testing::Test {
 protected:
@@ -69,6 +70,13 @@ TEST_F(FSBVTest, test_mkAdd) {
     PTRef b8 = logic.mkBVVar(8, "b8");
     PTRef add8 = logic.mkBVAdd(a8, b8);
     ASSERT_EQ(logic.getSortRef(add8), logic.getSortRef(b8));
+
+    BitBlasterRewriter bitBlaster(logic);
+    PTRef sum = logic.mkBVAdd(logic.mkBVConst(8, 10), logic.mkBVConst(8, 10));
+    PTRef res = bitBlaster.rewrite(logic.mkEq(sum, logic.mkBVConst(8, 20)));
+    ASSERT_EQ(res, logic.getTerm_true());
+    res = bitBlaster.rewrite(logic.mkEq(sum, logic.mkBVConst(8, 21)));
+    ASSERT_EQ(res, logic.getTerm_false());
 }
 
 TEST_F(FSBVTest, test_mkConcat) {
@@ -115,6 +123,13 @@ TEST_F(FSBVTest, test_mkMul) {
     PTRef mul_a_b = logic.mkBVMul(a, b);
     ASSERT_NE(mul_a_b, PTRef_Undef);
     std::cout << logic.pp(mul_a_b) << std::endl;
+
+    BitBlasterRewriter bitBlaster(logic);
+    PTRef mul = logic.mkBVMul(logic.mkBVConst(8, 10), logic.mkBVConst(8, 2));
+    PTRef res = bitBlaster.rewrite(logic.mkEq(mul, logic.mkBVConst(8, 20)));
+    ASSERT_EQ(res, logic.getTerm_true());
+    res = bitBlaster.rewrite(logic.mkEq(mul, logic.mkBVConst(8, 21)));
+    ASSERT_EQ(res, logic.getTerm_false());
 }
 
 TEST_F(FSBVTest, test_mkUdiv) {
@@ -156,4 +171,10 @@ TEST_F(FSBVTest, test_mkULT) {
     PTRef ult = logic.mkBVUlt(a, b);
     ASSERT_NE(ult, PTRef_Undef);
     std::cout << logic.pp(ult) << std::endl;
+
+    BitBlasterRewriter bitBlaster(logic);
+    PTRef res = bitBlaster.rewrite(logic.mkBVUlt(logic.mkBVConst(8, 1), logic.mkBVConst(8, 2)));
+    ASSERT_EQ(res, logic.getTerm_true());
+    res = bitBlaster.rewrite(logic.mkBVUlt(logic.mkBVConst(8, 2), logic.mkBVConst(8, 2)));
+    ASSERT_EQ(res, logic.getTerm_false());
 }
