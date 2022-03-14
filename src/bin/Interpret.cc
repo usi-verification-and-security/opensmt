@@ -262,7 +262,7 @@ void Interpret::interp(ASTNode& n) {
                     if (status == s_Error)
                         notify_formatted(true, "Simplify");
                 } else {
-                    notify_formatted(true, "Illegal command before set-logic: declare-const");
+                    notify_formatted(true, "Illegal command before set-logic: simplify");
                 }
                 break;
             }
