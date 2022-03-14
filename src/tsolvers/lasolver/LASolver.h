@@ -30,7 +30,7 @@ class LASolverStats
 {
     public:
         int num_vars;
-        opensmt::OSMTTimeVal timer;
+        partitionChannel::OSMTTimeVal timer;
 
         LASolverStats() : num_vars(0) {}
 
