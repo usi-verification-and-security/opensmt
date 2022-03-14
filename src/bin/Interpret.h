@@ -134,8 +134,8 @@ class Interpret {
     void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
     std::string                 printDefinitionSmtlib(const TemplateFunction &templateFun) const;
-    bool                        push();
-    bool                        pop();
+    void                        push(int);
+    void                        pop(int);
 
     PTRef                       parseTerm(const ASTNode& term, LetRecords& letRecords);
 
