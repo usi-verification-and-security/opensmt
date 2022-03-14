@@ -24,17 +24,18 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <deque>
 
-short ProofNode::hasOccurrenceBin(Var v) {
-    std::vector<Lit>& cla = getClause();
-    int first=0;
-    int last=cla.size()-1;
+short ProofNode::hasOccurrenceBin(Var v) const {
+    std::vector<Lit> const & cla = getClause();
+    int first = 0;
+    int last = cla.size() - 1;
 
     while (first <= last) {
         int mid = (first + last) / 2;
-        Lit l = cla[mid]; Var w = var(l);
+        Lit l = cla[mid];
+        Var w = var(l);
         if (v > w) first = mid + 1;
         else if (v < w) last = mid - 1;
-        else if( v == w ) return (sign(l) == false) ? 0 : 1;
+        else if (v == w) return (sign(l) == false) ? 0 : 1;
     }
     return -1;
 }
