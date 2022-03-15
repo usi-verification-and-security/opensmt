@@ -15,6 +15,44 @@ const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonline
  * Class defining simplifications
  ***********************************************************/
 
+namespace{
+class SimplifyConst {
+protected:
+    ArithLogic& l;
+    PTRef simplifyConstOp(const vec<PTRef> & const_terms);
+    virtual void Op(opensmt::Number& s, const opensmt::Number& v) const = 0;
+    virtual opensmt::Number getIdOp() const = 0;
+    virtual void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const = 0;
+public:
+    SimplifyConst(ArithLogic& log) : l(log) {}
+    void simplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new);
+};
+
+class SimplifyConstSum : public SimplifyConst {
+    void Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }
+    opensmt::Number getIdOp() const { return 0; }
+    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
+public:
+    SimplifyConstSum(ArithLogic& log) : SimplifyConst(log) {}
+};
+
+class SimplifyConstTimes : public SimplifyConst {
+    void Op(opensmt::Number& s, const opensmt::Number& v) const { s *= v; }
+    opensmt::Number getIdOp() const { return 1; }
+    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
+public:
+    SimplifyConstTimes(ArithLogic& log) : SimplifyConst(log) {}
+};
+
+class SimplifyConstDiv : public SimplifyConst {
+    void Op(opensmt::Number& s, const opensmt::Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
+    opensmt::Number getIdOp() const { return 1; }
+    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
+public:
+    SimplifyConstDiv(ArithLogic& log) : SimplifyConst(log) {}
+};
+}
+
 const std::string ArithLogic::tk_int_zero  = "0";
 const std::string ArithLogic::tk_int_one   = "1";
 const std::string ArithLogic::tk_int_neg   = "-";
