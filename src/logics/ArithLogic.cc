@@ -19,13 +19,13 @@ namespace{
 class SimplifyConst {
 protected:
     ArithLogic& l;
-    PTRef simplifyConstOp(const vec<PTRef> & const_terms);
     virtual void Op(opensmt::Number& s, const opensmt::Number& v) const = 0;
     virtual opensmt::Number getIdOp() const = 0;
     virtual void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const = 0;
 public:
     SimplifyConst(ArithLogic& log) : l(log) {}
     void simplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new);
+    PTRef simplifyConstOp(const vec<PTRef> & const_terms);
 };
 
 class SimplifyConstSum : public SimplifyConst {
@@ -429,7 +429,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     flattened_args.clear();
     for (PTRef key : keys) {
         const vec<PTRef>& consts = s2t[key];
-        PTRef consts_summed = consts.size() == 1 ? consts[0] : mkPlus(consts);
+        PTRef consts_summed = consts.size() == 1 ? consts[0] : SimplifyConstSum(*this).simplifyConstOp(consts);
         if (isZero(consts_summed)) { continue; }
         if (key == PTRef_Undef) {
             flattened_args.push(consts_summed);
