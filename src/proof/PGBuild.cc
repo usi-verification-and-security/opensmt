@@ -307,12 +307,14 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
         reportf("; Number of nodes: %d (leaves: %d - learnt: %d - derived: %d - theory: %d - assumptions: %d)\n",
                 num_non_null, counters.num_leaf, counters.num_learnt, counters.num_derived, counters.num_theory,
                 counters.num_assump);
+        printf("Number of nodes: %d\n", num_non_null);
         reportf("; Maximum, average size of leaves: %d  %.2f\n", max_leaf_size,
                 avg_leaf_size / (double) counters.num_leaf);
         reportf("; Maximum, average size of learnt: %d  %.2f\n", max_learnt_size,
                 avg_learnt_size / (double) counters.num_learnt);
         num_edges = (counters.num_learnt + counters.num_derived) * 2;
         reportf("; Number of edges: %d\n", num_edges);
+        printf("Number of edges: %d\n", num_edges);
         num_nodes = num_non_null;
 
         //reportf( "# Number of variables - nominal: %d - actual: %d\n",  num_vars_limit, proof_variables.size() );
