@@ -9,6 +9,7 @@
 
 template<typename TConfig>
 class Rewriter {
+protected:
     Logic & logic;
     TConfig & cfg;
 public:
