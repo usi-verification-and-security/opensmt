@@ -1,6 +1,9 @@
-//
-// Created by prova on 09.03.22.
-//
+/*
+ * Copyright (c) 2008 - 2012, Roberto Bruttomesso
+ * Copyright (c) 2012 - 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_BITBLASTERREWRITER_H
 #define OPENSMT_BITBLASTERREWRITER_H
@@ -23,18 +26,19 @@ class BitBlasterConfig : public DefaultRewriterConfig {
     void bbMul(PTRef mul_tr);
     void bbVar(PTRef var_tr);
     void bbAdd(PTRef add_tr);
+    void bbConcat(PTRef tr);
+    void bbNot(PTRef tr);
+    void bbFlip(PTRef tr);
+    void bbAnd(PTRef tr);
+    void bbOr(PTRef tr);
+    void bbUdiv(PTRef tr);
+    void bbUrem(PTRef tr);
+    void bbShl(PTRef tr);
+    void bbLshr(PTRef tr);
 
     void notImplemented(PTRef tr) { throw OsmtInternalException(std::string("Not implemented: ") + logic.getSymName(tr)); }
 
-    void bbConcat(PTRef tr) { notImplemented(tr); }
-    void bbNot(PTRef tr) { notImplemented(tr); }
     void bbNeg(PTRef tr) { notImplemented(tr); }
-    void bbAnd(PTRef tr) { notImplemented(tr); }
-    void bbOr(PTRef tr) { notImplemented(tr); }
-    void bbUdiv(PTRef tr) { notImplemented(tr); }
-    void bbUrem(PTRef tr) { notImplemented(tr); }
-    void bbShl(PTRef tr) { notImplemented(tr); }
-    void bbLshr(PTRef tr) { notImplemented(tr); }
 
 public:
     BitBlasterConfig(FSBVLogic & logic, BVStore & bvStore) : logic(logic), store(bvStore) {}
@@ -61,6 +65,8 @@ public:
             bbNot(tr);
         } else if (logic.isBVNeg(sr)) {
             bbNeg(tr);
+        } else if (logic.isBVFlip(sr)) {
+            bbFlip(tr);
         } else if (logic.isBVAnd(sr)) {
             bbAnd(tr);
         } else if (logic.isBVOr(sr)) {
@@ -88,8 +94,7 @@ public:
         std::unordered_map<PTRef, PTRef, PTRefHash> map;
         for (PTRef tr : store.getBitVectorTerms()) {
             BVRef br = store.getFromPTRef(tr);
-            for (int i = 0; i < store[br].size(); i++) {
-                PTRef bitBlastedTerm = store[br][i];
+            for (PTRef bitBlastedTerm : store[br]) {
                 map.insert({bitBlastedTerm, tr});
             }
         }

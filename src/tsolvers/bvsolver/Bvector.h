@@ -102,6 +102,17 @@ class Bvector {
     const PTRef&    lsb         ()      const   { return operator[](0); }
     const PTRef&    msb         ()      const   { return operator[](size()-1); }
 
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the first child of the term
+     */
+    const PTRef* begin() const { return args; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to right past the last child of the term
+     */
+    const PTRef* end() const { return args + size(); }
+
     bool     reloced     ()      const   { return header.reloced; }
     BVRef    relocation  ()      const   { return { args[0].x }; }
     void     relocate    (BVRef t)       { header.reloced = 1; args[0] = {t.x}; }
@@ -132,14 +143,12 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    BVRef alloc(vec<PTRef> const & asgn, PTRef act_var)
-    {
+    BVRef alloc(vec<PTRef> const & asgn, PTRef act_var) {
         assert(sizeof(PTRef) == sizeof(uint32_t));
         uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(asgn.size()));
         BVRef tid = {v};
         new (lea(tid)) Bvector(asgn, act_var);
         operator[](tid).setId(n_terms++);
-
         return tid;
     }
 
@@ -150,26 +159,12 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
     const Bvector& operator[](BVRef r) const   { return (Bvector&)RegionAllocator<uint32_t>::operator[](r.x); }
     Bvector*       lea       (BVRef r)         { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
     const Bvector* lea       (BVRef r) const   { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
-    BVRef        ael       (const Bvector* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); BVRef rf; rf.x = r; return rf; }
+    BVRef          ael       (const Bvector* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); BVRef rf{r}; return rf; }
 
-    void free(BVRef tid)
-    {
+    void free(BVRef tid) {
         Bvector& t = operator[](tid);
         RegionAllocator<uint32_t>::free(ptermWord32Size(t.size()));
     }
-
-//    void reloc(BVRef& tr, BvectorAllocator& to)
-//    {
-//        Bvector& t = operator[](tr);
-//
-//        if (t.reloced()) { tr = t.relocation(); return; }
-//
-//        tr = to.alloc(t, false);
-//        t.relocate(tr);
-//
-//        // Copy extra data-fields:
-//        to[tr].set_signed(t.is_signed());
-//    }
     friend class BVStore;
 };
 #endif

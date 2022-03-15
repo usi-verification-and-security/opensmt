@@ -20,6 +20,7 @@ class FSBVLogic : public Logic {
     static constexpr const char *tk_bvconcat = "concat";
     static constexpr const char *tk_bvbasesort = "BitVec";
     static constexpr const char *tk_bvnot = "bvnot";
+    static constexpr const char *tk_bvflip = "bvflip";
     static constexpr const char *tk_bvneg = "bvneg";
     static constexpr const char *tk_bvand = "bvand";
     static constexpr const char *tk_bvor = "bvor";
@@ -51,12 +52,13 @@ class FSBVLogic : public Logic {
     Map<SRef, SymRef, SRefHash> lshr_syms;
     Map<SRef, SymRef, SRefHash> ult_syms;
 
-    SRef makeBitWidthSortForBW(BitWidth_t m);
+    opensmt::pair<SRef, bool> makeBitWidthSortForBW(BitWidth_t m);
 
 
     SymRef mkBVConcatSym(SRef lhs, SRef rhs);
     SymRef mkBVNegSym(SRef a);
     SymRef mkBVNotSym(SRef a);
+    SymRef mkBVFlipSym(SRef a);
     SymRef mkBVAndSym(SRef a);
     SymRef mkBVOrSym(SRef a);
     SymRef mkBVAddSym(SRef a);
@@ -67,17 +69,26 @@ class FSBVLogic : public Logic {
     SymRef mkBVLshrSym(SRef a);
     SymRef mkBVUltSym(SRef a);
 
+    Map<SRef, PTRef, SRefHash> defaultValueForSort;
 public:
     FSBVLogic(opensmt::Logic_t type);
-
 
     virtual bool isBuiltinSort(SRef sr) const override { return (sort_store[sr].getSymRef() == sym_IndexedSort and sort_store[sr][0] == BVBaseSort) or Logic::isBuiltinSort(sr); }
     virtual bool isBuiltinConstant(SymRef sr) const override { return isBVConst(sr) || Logic::isBuiltinConstant(sr); }
 
     bool isBitVectorSort(SRef sr) const { return sort_store[sr].getSymRef() == sym_IndexedSort and sort_store[sr].getSize() == 2 and sort_store[sort_store[sr][0]].getSymRef() == sym_BVBaseSort; }
+    SRef getIndexedSort(SRef indexedSort, std::string const & idx) override;
     SRef makeBitVectorSortForBW(BitWidth_t m);
     BitWidth_t getBitWidth(SRef sr) const { assert(isBitVectorSort(sr)); return std::stoi(sort_store.getSortSymName(sort_store[sr][1])); }
     BitWidth_t getRetSortBitWidth(PTRef tr) const { SRef sr = getSortRef(tr); assert(isBitVectorSort(sr)); return getBitWidth(sr); }
+
+    PTRef getDefaultValuePTRef(const SRef sref) const override {
+        if (isBitVectorSort(sref)) {
+            return defaultValueForSort[sref];
+        } else {
+            return Logic::getDefaultValuePTRef(sref);
+        }
+    }
 
     bool yieldsSortBV(SymRef sr) const { return isBitVectorSort(getSortRef(sr)); }
     bool yieldsSortBV(PTRef tr) const { return yieldsSortBV(getSymRef(tr)); }
@@ -92,6 +103,7 @@ public:
 
     PTRef mkBVNeg(PTRef a);
     PTRef mkBVNot(PTRef a);
+    PTRef mkBVFlip(PTRef a);
 
     PTRef mkBVAnd(vec<PTRef> const & args);
     PTRef mkBVAnd(PTRef a1, PTRef a2);
@@ -116,6 +128,7 @@ public:
     bool isEqualAsString(char const * x, char const * y) const { return std::string(x) == y; }
     bool isBVConcat(SymRef sr) const { return isEqualAsString(tk_bvconcat, getSymName(sr)); }
     bool isBVNeg(SymRef sr) const { return isEqualAsString(tk_bvneg, getSymName(sr)); }
+    bool isBVFlip(SymRef sr) const { return isEqualAsString(tk_bvflip, getSymName(sr)); }
     bool isBVNot(SymRef sr) const { return isEqualAsString(tk_bvnot, getSymName(sr)); }
     bool isBVAnd(SymRef sr) const { return isEqualAsString(tk_bvand, getSymName(sr)); }
     bool isBVOr(SymRef sr) const { return isEqualAsString(tk_bvor, getSymName(sr)); }

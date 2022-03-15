@@ -49,5 +49,7 @@ namespace opensmt {
         while ((2 << (n++)) != l);
         return n;
     }
+
+    static inline bool isNumber(std::string const & n) { return not n.empty() and std::for_each(n.begin(), n.end(), [](char c) { return std::isdigit(c); }); }
 }
 #endif //OPENSMT_NUMBERUTILS_H
