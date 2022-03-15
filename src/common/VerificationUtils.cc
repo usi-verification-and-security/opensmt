@@ -109,5 +109,13 @@ bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) {
     return true;
 }
 
+bool VerificationUtils::impliesInternal(PTRef antecedent, PTRef consequent) {
+    SMTConfig validationConfig;
+    MainSolver validationSolver(logic, validationConfig, "validator");
+    validationSolver.insertFormula(logic.mkNot(logic.mkImpl(antecedent, consequent)));
+    auto res = validationSolver.check();
+    bool valid = res == s_False;
+    return valid;
+}
 
 
