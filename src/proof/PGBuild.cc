@@ -317,6 +317,7 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
 
         //reportf( "# Number of variables - nominal: %d - actual: %d\n",  num_vars_limit, proof_variables.size() );
         reportf("; Number of distinct variables in the proof: %d\n", (int) proof_variables.size());
+        printf("Number of distinct variables in the proof: %d\n", (int) proof_variables.size());
     }
     if (verbose() > 0) {
         uint64_t mem_used = memUsed();
