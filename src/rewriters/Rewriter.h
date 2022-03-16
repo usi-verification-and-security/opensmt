@@ -16,6 +16,11 @@ public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     virtual PTRef rewrite(PTRef root) {
+        // MB: If term has no children then single call to config is enough; this can save memory allocations if successful
+        if (logic.isVar(root)) {
+            return cfg.previsit(root) ? cfg.rewrite(root) : root;
+        }
+
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;

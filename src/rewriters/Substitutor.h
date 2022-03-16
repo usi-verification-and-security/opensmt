@@ -31,11 +31,4 @@ public:
     Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs) :
             Rewriter<SubstitutionConfig>(logic, config),
             config(substs) {}
-
-    PTRef rewrite(PTRef term) override {
-        if (logic.isVar(term)) {
-            return config.rewrite(term);
-        }
-        return Rewriter<SubstitutionConfig>::rewrite(term);
-    }
 };
