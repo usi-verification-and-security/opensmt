@@ -1,4 +1,16 @@
-### 2.3.0 (unreleased)
+### 2.3.1 (2022-03-16)
+
+Bug fixes:
+ - Fix crash on non-standard SMT-LIB scripts
+
+Various improvements:
+ - Small performance improvements for Arithmetic theories
+ - Small performance improvements for preprocessing
+
+Build:
+ - Fix version number in CMake files
+
+### 2.3.0 (2022-03-09)
 
 Performance improvements:
  - Arithmetic: Pooling of `mpq_class` objects for memory reuse.
