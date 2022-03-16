@@ -41,14 +41,18 @@ option(PRINT_UNITS "Print units" OFF)
 option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
+option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
+option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
+
 option(ENABLE_LINE_EDITING "Enable line editing with readline or libedit" OFF)
 option(USE_READLINE "Use readline over libedit" OFF)
+
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
-option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
-option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
+
+option(PREFER_STATIC_GMP "Link to static version of GMP if possible" OFF)
 
 find_package(GMP REQUIRED)
 

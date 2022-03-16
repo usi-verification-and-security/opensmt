@@ -3,9 +3,15 @@
 # GMP_INCLUDE_DIR - the GMP include directory
 # GMP_LIBRARIES - Libraries needed to use GMP
 
-find_path(GMP_INCLUDE_DIR NAMES gmp.h )
-find_library(GMP_LIBRARY NAMES gmp libgmp )
-find_library(GMPXX_LIBRARY NAMES gmpxx libgmpxx )
+if(PREFER_STATIC_GMP)
+    #message("Trying to find static version of GMP")
+    find_library(GMP_LIBRARY NAMES libgmp.a)
+    find_library(GMPXX_LIBRARY NAMES libgmpxx.a)
+endif(PREFER_STATIC_GMP)
+
+find_library(GMP_LIBRARY NAMES gmp)
+find_library(GMPXX_LIBRARY NAMES gmpxx)
+find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 mark_as_advanced(GMP_INCLUDE_DIR GMP_LIBRARY GMPXX_LIBRARY)
 MESSAGE(STATUS "GMP libs: " ${GMP_LIBRARY} " " ${GMPXX_LIBRARY} )
 MESSAGE(STATUS "GMP include: " ${GMP_INCLUDE_DIR})
