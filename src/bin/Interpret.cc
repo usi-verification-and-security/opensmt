@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "smt2tokens.h"
 #include "MainSolver.h"
 #include "ArithLogic.h"
+#include "MainSplitter.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
 #include "CounterRewriter.h"
@@ -156,7 +157,7 @@ void Interpret::interp(ASTNode& n) {
                         break;
                     }
                     initializeLogic(logic_type);
-                    main_solver.reset(new MainSolver(*logic, config, std::string(logic_name) + " solver"));
+                    main_solver = createMainSolver(logic_name);
                     main_solver->initialize();
                     notify_success();
                 }
@@ -257,18 +258,30 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_simplify: {
-                sstat status = main_solver->simplifyFormulas();
-                if (status == s_Error)
-                    notify_formatted(true, "Simplify");
+                if (isInitialized()) {
+                    sstat status = main_solver->simplifyFormulas();
+                    if (status == s_Error)
+                        notify_formatted(true, "Simplify");
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: simplify");
+                }
                 break;
             }
             case t_checksat: {
-                checkSat();
+                if (isInitialized()) {
+                    checkSat();
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: check-sat");
+                }
                 break;
             }
             case t_getinterpolants: {
                 if (config.produce_inter()) {
-                    getInterpolants(n);
+                    if (isInitialized()) {
+                        getInterpolants(n);
+                    } else {
+                        notify_formatted(true, "Illegal command before set-logic: get-interpolants");
+                    }
                 } else {
                     notify_formatted(true,
                                      "Option to produce interpolants has not been set, skipping this command ...");
@@ -276,11 +289,19 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_getassignment: {
-                getAssignment();
+                if (isInitialized()) {
+                    getAssignment();
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: get-assignment");
+                }
                 break;
             }
             case t_getvalue: {
-                getValue(n.children);
+                if (isInitialized()) {
+                    getValue(n.children);
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: get-value");
+                }
                 break;
             }
             case t_getmodel: {
@@ -295,17 +316,26 @@ void Interpret::interp(ASTNode& n) {
             }
 
             case t_writestate: {
-                if (main_solver->solverEmpty()) {
-                    sstat status = main_solver->simplifyFormulas();
-                    if (status == s_Error)
-                        notify_formatted(true, "write-state");
+                if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: write-state");
+                } else {
+                    if (main_solver->solverEmpty()) {
+                        sstat status = main_solver->simplifyFormulas();
+                        if (status == s_Error)
+                            notify_formatted(true, "write-state");
+                    } else {
+                        writeState((**(n.children->begin())).getValue());
+                    }
                 }
-                writeState((**(n.children->begin())).getValue());
                 break;
             }
             case t_writefuns: {
-                const char *filename = (**(n.children->begin())).getValue();
-                main_solver->writeFuns_smtlib2(filename);
+                if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: write-funs");
+                } else {
+                    const char *filename = (**(n.children->begin())).getValue();
+                    main_solver->writeFuns_smtlib2(filename);
+                }
                 break;
             }
             case t_echo: {
@@ -314,36 +344,29 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_push: {
-                std::string str((**(n.children->begin())).getValue());
-                try {
-                    int num = std::stoi(str);
-                    if (num < 0) {
-                        notify_formatted(true, "Incorrect push command, value is negative.");
-                        break;
+                if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: push");
+                } else {
+                    try {
+                        int num = std::stoi((**(n.children->begin())).getValue());
+                        push(num);
+                    } catch (std::out_of_range const & e) {
+                        notify_formatted(true, "Illegal push command: %s", e.what());
                     }
-                    bool success = true;
-                    while (num-- and success) { success = push(); }
-                    if (success) { notify_success(); }
-                }
-                catch (std::out_of_range const &ex) {
-                    notify_formatted(true, "Incorrect push command, the value is out of range.");
                 }
                 break;
             }
             case t_pop: {
-                std::string str((**(n.children->begin())).getValue());
-                try {
-                    int num = std::stoi(str);
-                    if (num < 0) {
-                        notify_formatted(true, "Incorrect pop command, value is negative.");
-                        break;
+                if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: pop");
+                } else {
+                    try {
+                        std::string str((**(n.children->begin())).getValue());
+                        int num = std::stoi(str);
+                        pop(num);
+                    } catch (std::out_of_range const &ex) {
+                        notify_formatted(true, "Illegal pop command: %s", ex.what());
                     }
-                    bool success = true;
-                    while (num-- and success) { success = pop(); }
-                    if (success) { notify_success(); }
-                }
-                catch (std::out_of_range const &ex) {
-                    notify_formatted(true, "Incorrect pop command, the value is out of range.");
                 }
                 break;
             }
@@ -547,33 +570,28 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 
 bool Interpret::checkSat() {
     sstat res;
-    if (isInitialized()) {
-        res = main_solver->check();
+    res = main_solver->check();
 
-        if (res == s_True) {
-            notify_formatted(false, "sat");
+    if (res == s_True) {
+        notify_formatted(false, "sat");
+    }
+    else if (res == s_False)
+        notify_formatted(false, "unsat");
+    else
+        notify_formatted(false, "unknown");
+
+    const Info& status = config.getInfo(":status");
+    if (!status.isEmpty()) {
+        std::string statusString = status.toString();
+        if ((statusString.compare("sat") == 0) && (res == s_False)) {
+            notify_formatted(false, "(error \"check status which says sat\")");
+
         }
-        else if (res == s_False)
-            notify_formatted(false, "unsat");
-        else
-            notify_formatted(false, "unknown");
-
-        const Info& status = config.getInfo(":status");
-        if (!status.isEmpty()) {
-            std::string statusString = status.toString();
-            if ((statusString.compare("sat") == 0) && (res == s_False)) {
-                notify_formatted(false, "(error \"check status which says sat\")");
-
-            }
-            else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
-                notify_formatted(false, "(error \"check status which says unsat\")");
-            }
+        else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
+            notify_formatted(false, "(error \"check status which says unsat\")");
         }
     }
-    else {
-        notify_formatted(true, "Illegal command before set-logic: check-sat");
-        return false;
-    }
+
     if (res == s_Undef) {
         const SMTOption& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
@@ -581,7 +599,7 @@ bool Interpret::checkSat() {
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
         else if (o_split != spt_none) {
-            writeSplits_smtlib2(name);
+            writeSplits(name);
         }
         free(name);
     }
@@ -589,31 +607,36 @@ bool Interpret::checkSat() {
     return true;
 }
 
-bool Interpret::push()
-{
-    if (config.isIncremental()) {
-        main_solver->push();
-        return true;
-    }
-    else {
+void Interpret::push(int n) {
+    if (not config.isIncremental()) {
         notify_formatted(true, "push encountered but solver not in incremental mode");
-        return false;
+    } else {
+        if (n < 0) {
+            notify_formatted(true, "Incorrect push command, value is negative.");
+        } else {
+            while (n--) {
+                main_solver->push();
+            }
+            notify_success();
+        }
     }
 }
 
-bool Interpret::pop()
-{
+void Interpret::pop(int n) {
     if (config.isIncremental()) {
-        if (main_solver->pop())
-            return true;
-        else {
-            notify_formatted(true, "Attempt to pop beyond the top of the stack");
-            return false;
+        if (n < 0) {
+            notify_formatted(true, "Incorrect pop command, value is negative.");
+        } else {
+            bool success = true;
+            while (n-- and success) { success = main_solver->pop(); }
+            if (success) {
+                notify_success();
+            } else {
+                notify_formatted(true, "Attempt to pop beyond the top of the stack");
+            }
         }
-    }
-    else {
+    } else {
         notify_formatted(true, "pop encountered but solver not in incremental mode");
-        return false;
     }
 }
 
@@ -810,14 +833,14 @@ void Interpret::writeState(const char* filename)
     }
 }
 
-void Interpret::writeSplits_smtlib2(const char* filename)
+void Interpret::writeSplits(const char* filename)
 {
-    char* msg = nullptr;
-    bool ok = main_solver->writeSolverSplits_smtlib2(filename, &msg);
-    if (not ok) {
-        std::cout << "While writing splits to " << filename << ": " << msg << std::endl;
+    try {
+        dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
     }
-    free(msg);
+    catch (OsmtApiException const & e) {
+        std::cout << "While writing splits: " << e.what() << std::endl;
+    }
 }
 
 bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
@@ -1309,5 +1332,26 @@ int Interpret::get_assertion_index(PTRef ref) {
 void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
+
+std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
+
+    if (config.sat_split_type() == spt_none) {
+        return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+    }
+    else {
+        auto th = MainSolver::createTheory(*logic, config);
+        auto tm = std::make_unique<TermMapper>(*logic);
+        auto thandler = new THandler(*th, *tm);
+        return std::make_unique<MainSplitter>(std::move(th),
+                                 std::move(tm),
+                                 std::unique_ptr<THandler>(thandler),
+                                 MainSplitter::createInnerSolver(config, *thandler),
+                                 *logic,
+                                 config,
+                                 std::string(logic_name)
+                                 + " splitter");
+    }
+}
+
 
 

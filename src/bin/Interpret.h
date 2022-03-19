@@ -126,7 +126,6 @@ class Interpret {
     void                        getOption(ASTNode& n);
     void                        writeState(const char* fname);
     void                        writeSplits(const char* fname);
-    void                        writeSplits_smtlib2(const char* fname);
     bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
@@ -135,8 +134,8 @@ class Interpret {
     void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
     std::string                 printDefinitionSmtlib(const TemplateFunction &templateFun) const;
-    bool                        push();
-    bool                        pop();
+    void                        push(int);
+    void                        pop(int);
 
     PTRef                       parseTerm(const ASTNode& term, LetRecords& letRecords);
 
@@ -152,6 +151,7 @@ class Interpret {
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
     PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 
+    std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name);
 
   public:
 
@@ -178,6 +178,7 @@ class Interpret {
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
+    MainSolver&     getMainSolver() { return *main_solver; }
 };
 
 #endif

@@ -1,6 +1,10 @@
-//
-// Created by prova on 05.08.20.
-//
+/*
+ *  Copyright (c) 2020 - 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_PARTITIONMANAGER_H
 #define OPENSMT_PARTITIONMANAGER_H

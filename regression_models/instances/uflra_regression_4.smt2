@@ -1,0 +1,7 @@
+(set-logic QF_UFLRA)
+(declare-fun f (Real) Real)
+(declare-fun x7 () Real)
+(declare-fun h (Real Real) Real)
+(declare-fun g (Real Real) Real)
+(assert (and (> 0 (f 0.0)) (> 0 (g 0.0 0.0)) (< (h 0 x7) (h 0.0 0.0)) (< (f (h 0 x7)) (h 0.0 0.0))))
+(check-sat)

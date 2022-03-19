@@ -1592,7 +1592,6 @@ void Egraph::removeFromUseVectorsExcept(ERef parent, CgId cgid) {
         }
     }
 }
-
 void Egraph::printStatistics(std::ostream & os) {
     TSolver::printStatistics(os);
     egraphStats.printStatistics(os);
@@ -1607,4 +1606,44 @@ void Egraph::reanalyze(ERef eref) {
         enode_store.insertSig(eref);
         addToUseVectors(eref);
     }
+}
+
+vec<PTRef> Egraph::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
+    vec<PTRef> equalities;
+    MapWithKeys<ERef, PTRef, ERefHash> enodes;
+    for (PTRef var : vars) {
+        assert(logic.isVar(var) or logic.isConstant(var));
+        if (not enode_store.has(var)) { continue; }
+        ERef eref = termToERef(var);
+        assert(not enodes.has(eref));
+        enodes.insert(eref, var);
+    }
+
+    std::unordered_map<ERef, vec<ERef>, ERefHash> eqClasses;
+    for (ERef eref : enodes.getKeys()) {
+        ERef root = getEnode(eref).getRoot();
+        auto it = eqClasses.find(root);
+        if (it == eqClasses.end()) {
+            auto insertRes = eqClasses.emplace(root, vec<ERef>{});
+            assert(insertRes.second); // must have been inserted
+            it = insertRes.first;
+        }
+        it->second.push(eref);
+    }
+
+    for (auto const & entry : eqClasses) {
+        auto const & equivalentVars = entry.second;
+        for (int i = 0; i < equivalentVars.size(); ++i) {
+            for (int j = i + 1; j < equivalentVars.size(); ++j) {
+                PTRef eq = logic.mkEq(ERefToTerm(equivalentVars[i]), ERefToTerm(equivalentVars[j]));
+                if (not enode_store.has(eq)) {
+                    if (knownEqualities.find(eq) != knownEqualities.end()) {
+                        throw OsmtInternalException("Internal error in computing interface equalities in Egraph");
+                    }
+                    equalities.push(eq);
+                }
+            }
+        }
+    }
+    return equalities;
 }

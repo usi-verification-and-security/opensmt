@@ -34,6 +34,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "TResult.h"
 #include "MapWithKeys.h"
 
+#include <unordered_set>
+
 // forward declaration
 class TheoryInterpolator;
 class ModelBuilder;
@@ -175,6 +177,7 @@ public:
     virtual bool hasNewSplits();                          // Are there new splits?
     virtual void getNewSplits(vec<PTRef>&);               // Return new splits if any
     virtual PtAsgn_reason getDeduction();                 // Return an implied literal based on the current state
+    virtual vec<PTRef> collectEqualitiesFor(vec<PTRef> const &, std::unordered_set<PTRef, PTRefHash> const &) { return {}; }
 
     SolverId getId() { return id; }
     bool hasExplanation() { return has_explanation; }

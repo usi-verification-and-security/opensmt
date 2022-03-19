@@ -48,7 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #define CACHE_POLARITY     0
 
-#include "SMTSolver.h"
 #include "THandler.h"
 
 #include <cstdio>
@@ -72,147 +71,6 @@ class ModelBuilder;
 // Helper method to print Literal to a stream
 std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
 
-// -----------------------------------------------------------------------------------------
-// The splits
-//
-class SplitData
-{
-    bool                no_instance;    // Does SplitData store the instance?
-
-    std::vector<vec<Lit>>      constraints;    // The split constraints
-    std::vector<vec<Lit>>      learnts;        // The learnt clauses
-
-    char* litToString(const Lit);
-    template<class C> char* clauseToString(const C&);
-    char* clauseToString(const vec<Lit>&);
-    int getLitSize(const Lit l) const;
-    void toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler &thandler) const;
-
-public:
-    SplitData(bool no_instance = true)
-        : no_instance(no_instance)
-    { assert(no_instance); }
-
-    template<class C> void addConstraint(const C& c)
-    {
-        constraints.emplace_back();
-        vec<Lit>& cstr = constraints.back();
-        for (int i = 0; i < c.size(); i++)
-            cstr.push(c[i]);
-    }
-    void addLearnt(Clause& c)
-    {
-        learnts.emplace_back();
-        vec<Lit>& learnt = learnts.back();
-        for (unsigned i = 0; i < c.size(); i++)
-            learnt.push(c[i]);
-    }
-
-    char* splitToString();
-    inline void  constraintsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, constraints, thandler); }
-    inline void  learntsToPTRefs(std::vector<vec<PtAsgn>>& out, const THandler& thandler) const { toPTRefs(out, learnts, thandler); }
-};
-
-inline int SplitData::getLitSize(const Lit l) const
-{
-    int sz = 0;
-    if (sign(l)) sz++;
-    Var v = var(l);
-    int n = v+1;
-    while (n != 0) { n /= 10; sz++; }
-    return sz;
-}
-
-inline char* SplitData::litToString(const Lit l)
-{
-    char* l_str;
-    asprintf(&l_str, "%s%d", sign(l) ? "-" : "", var(l)+1);
-    return l_str;
-}
-
-template<class C>
-inline char* SplitData::clauseToString(const C& c)
-{
-    char* c_str = (char*)malloc(1);
-    c_str[0] = 0;
-    char* c_old = c_str;
-    for (int i = 0; i < c.size(); i++)
-    {
-        char* l_str = litToString(c[i]);
-        c_old = c_str;
-        asprintf(&c_str, "%s%s ", c_old, l_str);
-        free(l_str);
-        free(c_old);
-    }
-    c_old = c_str;
-    asprintf(&c_str, "%s0", c_str);
-    free(c_old);
-    return c_str;
-}
-
-inline char* SplitData::splitToString()
-{
-    int buf_cap = 1024;
-    int sz = 0;
-    char* buf = (char*) malloc(1024);
-
-    // The constraints
-    for (const vec<Lit>& c : constraints) {
-        for (Lit l : c) {
-            int n = getLitSize(l);
-            while (buf_cap < sz + n + 2)   // Lit, space, and NULL
-            {
-                buf_cap *= 2;
-                buf = (char*) realloc(buf, buf_cap);
-            }
-            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
-            sz += n+1; // Points to the NULL
-        }
-        while (buf_cap < sz + 3)   // 0, newline, and NULL
-        {
-            buf_cap *= 2;
-            buf = (char*) realloc(buf, buf_cap);
-        }
-        sprintf(&buf[sz], "0\n");
-        sz += 2;
-    }
-
-    for (const vec<Lit> & c : learnts) {
-        for (Lit l : c) {
-            int n = getLitSize(l);
-            while (buf_cap < sz + n + 2)   // The size of lit, space, and NULL
-            {
-                buf_cap *= 2;
-                buf = (char*) realloc(buf, buf_cap);
-            }
-            sprintf(&buf[sz], "%s%d ", sign(l) ? "-" : "", var(l)+1);
-            sz += n+1; // points to the null
-        }
-        while (buf_cap < sz + 3)   // The zero, newline, and the NULL
-        {
-            buf_cap *= 2;
-            buf = (char*) realloc(buf, buf_cap);
-        }
-        sprintf(&buf[sz], "0\n");
-        sz += 2; // Points to the NULL
-    }
-    buf = (char*) realloc(buf, sz+1);
-    return buf;
-}
-
-inline void SplitData::toPTRefs(std::vector<vec<PtAsgn> >& out, const std::vector<vec<Lit> >& in, const THandler& theory_handler) const
-{
-    for (const vec<Lit>& c : in) {
-        out.emplace_back();
-        vec<PtAsgn>& out_clause = out[out.size()-1];
-        for (Lit l : c)
-        {
-            PTRef tr = theory_handler.varToTerm(var(l));
-            PtAsgn pta(tr, sign(l) ? l_False : l_True);
-            out_clause.push(pta);
-        }
-    }
-}
 
 template<class A, class B>
 struct Pair { A first; B second; };
@@ -231,6 +89,7 @@ protected:
     THandler  & theory_handler; // Handles theory
     bool      verbosity;
     bool      init;
+    enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
 public:
     bool stop = false;
 
@@ -370,9 +229,6 @@ public:
     uint64_t learnt_theory_conflicts;
     uint64_t top_level_lits;
 
-    // Splits
-    std::vector<SplitData> splits;
-    std::vector<vec<Lit>> split_assumptions;
 
 protected:
     int processed_in_frozen; // The index in Theory's frozen vec until which frozennes has been processed
@@ -504,26 +360,7 @@ protected:
     double              max_learnts;
     double              learntsize_adjust_confl;
     int                 learntsize_adjust_cnt;
-
-    SpUnit   resource_units;
-    double   resource_limit;      // Time limit for the search in resource_units
-    double   next_resource_limit; // The limit at which the solver needs to stop
-
-    // splitting state vars
-    SpType   split_type;
-
-    bool     split_on;
-    bool     split_start;
-    int      split_num;
-    SpUnit   split_units;
-
-    double   split_inittune;                                                           // Initial tuning in units.
-    double   split_midtune;                                                            // mid-tuning in units.
-    double   split_next;                                                               // When the next split will happen?
-
-    SpPref   split_preference;
-
-    int      unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
+    int                 unadvised_splits; // How many times the split happened on a PTRef that the logic considers ill-advised
     // Resource contraints:
     //
     int64_t             conflict_budget;    // -1 means no budget.
@@ -533,12 +370,11 @@ protected:
     // Main internal methods:
     //
     virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
-
-    void     updateSplitState();                                                       // Update the state of the splitting machine.
-    bool     scatterLevel();                                                           // Are we currently on a scatter level.
-    bool     createSplit_scatter();                                                    // Create a split formula and place it to the splits vector.
-    bool     excludeAssumptions(vec<Lit>& neg_constrs);                                // Add a clause to the database and propagate
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
+    Var doRandomDecision();
+    Lit choosePolarity(Var next);
+    virtual Var doActivityDecision();
+    virtual bool branchLitRandom() { return drand(random_seed) < random_var_freq && !order_heap.empty(); }
     virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
@@ -549,13 +385,14 @@ protected:
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
-    bool     okContinue       ();                                                      // Check search termination conditions
-    void     runPeriodics     ();                                                      // Run the periodic functions from searcha
+    virtual bool okContinue   () const;                                                // Check search termination conditions
+    virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
+    virtual void notifyEnd() { }                                                       // Called at the end of the search loop
     void     learntSizeAdjust ();                                                      // Adjust learnts size and print something
     void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
     void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
-    lbool    zeroLevelConflictHandler();                                               // Common handling of zero-level conflict as it can happen at multiple places
+    virtual lbool zeroLevelConflictHandler();                                          // Common handling of zero-level conflict as it can happen at multiple places
 
     // Maintaining Variable/Clause activity:
     //
@@ -745,8 +582,6 @@ public:
     void    printTrace() const;
 
 protected:
-    virtual inline void clausesPublish() {};
-    virtual inline void clausesUpdate() {};
 
     using SplitClauses = std::vector<vec<Lit>>;
     TPropRes handleNewSplitClauses(SplitClauses & clauses);
@@ -1065,7 +900,7 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, const C& c )
     {
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
-        os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+        os << (sign(c[i]) ? "(not " : "") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
     }
     if ( c.size( ) > 1 ) os << ")";
 }
@@ -1079,10 +914,10 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, vec< Lit > & c, boo
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
         if ( ids )
-            os << (sign(c[i])?"-":" ") << v << " ";
+            os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
-            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+            os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -1097,10 +932,10 @@ inline void CoreSMTSolver::printSMTClause(std::ostream & os, std::vector< Lit > 
         Var v = var(c[i]);
         if ( v <= 1 ) continue;
         if ( ids )
-            os << (sign(c[i])?"-":" ") << v << " ";
+            os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
-            os << (sign(c[i])?"(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") ":" ");
+            os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") " : " ");
         }
     }
     if ( c.size( ) > 1 ) os << ")";
@@ -1113,7 +948,7 @@ inline void CoreSMTSolver::printSMTLit(std::ostream & os, const Lit l )
     else if ( v == 1 ) os << "false";
     else
     {
-        os << (sign(l)?"(not ":"") << theory_handler.getVarName(v) << (sign(l)?") ":" ");
+        os << (sign(l) ? "(not " : "") << theory_handler.getVarName(v) << (sign(l) ? ") " : " ");
     }
 }
 
