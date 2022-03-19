@@ -32,6 +32,7 @@ public:
         termSet.assure_domain(size);
         termSet.reset();
         Map<PTRef, PTRef, PTRefHash> substitutions;
+        vec<PTRef> auxiliaryArgs;
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
@@ -57,16 +58,18 @@ public:
             }
             // If we are here, we have already processed all children
             assert(not substitutions.has(currentRef));
-            vec<PTRef> newArgs(childrenCount);
+            auxiliaryArgs.capacity(childrenCount);
             bool needsChange = false;
             for (unsigned i = 0; i < childrenCount; ++i) {
                 PTRef target;
                 bool childChanged = substitutions.peek(term[i], target);
                 needsChange |= childChanged;
                 assert(not childChanged or (logic.getSortRef(target) == logic.getSortRef(term[i])));
-                newArgs[i] = childChanged ? target : term[i];
+                PTRef newChild = childChanged ? target : term[i];
+                auxiliaryArgs.push(newChild);
             }
-            PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(newArgs)) : currentRef;
+            PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(auxiliaryArgs)) : currentRef;
+            auxiliaryArgs.clear();
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
 
             PTRef rewritten = cfg.rewrite(newTerm);
