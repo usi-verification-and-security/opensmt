@@ -35,6 +35,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "FunctionTools.h"
 #include "TypeUtils.h"
+#include "NatSet.h"
+
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -97,6 +99,8 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    nat_set             auxiliaryNatSet;
 
     SSymRef             sym_IndexedSort;
 
@@ -193,6 +197,7 @@ class Logic {
     const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
+    nat_set & getTermSet() { return auxiliaryNatSet; }
     // Default values for the logic
 
     // Deprecated! Use getDefaultValuePTRef instead

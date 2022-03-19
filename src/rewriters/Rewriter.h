@@ -28,8 +28,9 @@ public:
         };
         // MB: Relies on an invariant that id of a child is lower than id of a parent.
         auto size = Idx(logic.getPterm(root).getId()) + 1;
-        std::vector<char> done;
-        done.resize(size, 0);
+        auto & termSet = logic.getTermSet();
+        termSet.assure_domain(size);
+        termSet.reset();
         Map<PTRef, PTRef, PTRefHash> substitutions;
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
@@ -39,16 +40,17 @@ public:
             auto currentId = Idx(logic.getPterm(currentRef).getId());
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
-                done[currentId] = 1;
+                termSet.insert(currentId);
                 continue;
             }
-            assert(not done[currentId]);
+            assert(not termSet.contains(currentId));
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
-                if (not done[Idx(logic.getPterm(nextChild).getId())]) {
+                auto childId = Idx(logic.getPterm(nextChild).getId());
+                if (not termSet.contains(childId)) {
                     toProcess.push_back(DFSEntry(nextChild));
                 }
                 continue;
@@ -72,7 +74,7 @@ public:
                 assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));
                 substitutions.insert(currentRef, rewritten);
             }
-            done[currentId] = 1;
+            termSet.insert(currentId);
             toProcess.pop_back();
         }
 
