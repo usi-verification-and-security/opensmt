@@ -52,7 +52,18 @@ option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
 
-option(PREFER_STATIC_GMP "Link to static version of GMP if possible" OFF)
+option(PACKAGE_TESTS "Build the tests" ON)
+option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
+
+option(MAXIMALLY_STATIC_BINARY "Link to static versions of the libraries as much as reasonably possible" OFF)
+
+if (MAXIMALLY_STATIC_BINARY)
+    MESSAGE("Building maximally static binaries.  Shared libraries and unit tests will not be built")
+    set(FORCE_STATIC_GMP ON)
+    set(BUILD_SHARED_LIBS OFF)
+    set(PACKAGE_TESTS OFF)
+    set(PACKAGE_BENCHMARKS OFF)
+endif(MAXIMALLY_STATIC_BINARY)
 
 find_package(GMP REQUIRED)
 
@@ -147,7 +158,6 @@ endif()
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
 ################# TESTING #############################################
-option(PACKAGE_TESTS "Build the tests" ON)
 if(PACKAGE_TESTS)
     if (NOT BUILD_STATIC_LIBS)
       message(FATAL_ERROR "Building tests requires static libraries")
@@ -161,7 +171,7 @@ if(PACKAGE_TESTS)
 endif()
 #########################################################################
 ################# BENCHMARKING ##########################################
-option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
+
 if (PACKAGE_BENCHMARKS)
     if(CMAKE_VERSION VERSION_LESS 3.11)
         MESSAGE(WARNING "Minimum CMAKE version for building benchmarking is 3.11")
