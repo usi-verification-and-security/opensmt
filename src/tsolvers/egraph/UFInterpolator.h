@@ -91,7 +91,7 @@ public:
     bool hasNode(PTRef term) const { return cnodes_store.find(term) != cnodes_store.end(); }
     CNode * getNode(PTRef term) const { return cnodes_store.at(term); }
 
-    void  addCNode (PTRef e);
+    CNode * addCNode (PTRef e);
     void  addCEdge (PTRef, PTRef, PTRef);
     void  addCEdge (CNode *, CNode *, PTRef);
 

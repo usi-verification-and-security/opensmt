@@ -32,14 +32,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#define ITP_DEBUG
 //#define COLOR_DEBUG
 
-void CGraph::addCNode(PTRef e) {
+CNode * CGraph::addCNode(PTRef e) {
     assert (e != PTRef_Undef);
     auto it = cnodes_store.find(e);
-    if (it != cnodes_store.end()) { return; }
+    if (it != cnodes_store.end()) { return nullptr; }
 
-    CNode * n = new CNode(e);
+    auto n = new CNode(e);
     cnodes_store[e] = n;
     cnodes.push_back(n);
+    return n;
 }
 
 void CGraph::clear() {
@@ -1213,8 +1214,7 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
         }
         intermediate->next = nullptr;
     } else {
-        cgraph.addCNode(intermediateTerm);
-        intermediate = cgraph.getNode(intermediateTerm);
+        intermediate = cgraph.addCNode(intermediateTerm);
     }
     intermediate->color = icolor_t::I_AB;
     // We have the intermediate node in hand, now we need to remove edge "from -> to" and
