@@ -1230,11 +1230,17 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
 
     cgraph.addCEdge(intermediate, to, PTRef_Undef);
     if (intermediate_next) {
-        // MB: It looks like it is possible that there has already been an edge n -> cnn
-        // In that case a self-loop edge would be added here and that causes trouble later
-        // We need to prevent that
+        // MB: There are two special cases: when `intermediate_next` was `to` and when it was `from`
         if (intermediate_next == to) {
+            // In this case a new edge from `to` to `intermediate_next` would be a self-loop
+            // We simple do not add it, but use the original reason
             intermediate->next->reason = intermediate_next_reason;
+        } else if (intermediate_next == from) {
+            // In this case a new edge from `to` to `intermediate_next` would form a triangular loop
+            // `from` -> `intermediate` -> `to` -> `from`
+            // We do not add the edge, but update the reason for edge `from` -> `intermediate`
+            assert(from->next->reason == PTRef_Undef);
+            from->next->reason = intermediate_next_reason;
         } else {
             cgraph.addCEdge(to, intermediate_next, intermediate_next_reason);
         }
