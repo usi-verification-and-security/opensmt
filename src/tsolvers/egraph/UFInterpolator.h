@@ -52,12 +52,12 @@ class Logic;
 struct CNode {
     CNode(PTRef e_)
         :
-        e(e_), color(icolor_t::I_UNDEF), next(nullptr)
+        e(e_), color(icolor_t::I_UNDEF), edge(nullptr)
         { }
 
     PTRef e;
     icolor_t color;
-    CEdge * next;
+    CEdge * edge;
 };
 
 typedef std::pair<CNode *, CNode *> path_t;
