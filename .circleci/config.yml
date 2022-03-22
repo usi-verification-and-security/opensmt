@@ -73,6 +73,7 @@ jobs:
                     yum -y install centos-release-scl
                     yum -y install devtoolset-8
                     yum -y install gmp-devel
+                    yum -y install gmp-static
                     yum -y install libedit-devel
                     yum -y install bison
                     yum -y install git
@@ -112,7 +113,7 @@ jobs:
             - run:
                 name: Release build gcc under devtoolset-8
                 command: |
-                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
+                    cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
 
