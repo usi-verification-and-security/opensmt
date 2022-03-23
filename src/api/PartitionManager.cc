@@ -37,14 +37,7 @@ void PartitionManager::propagatePartitionMask(PTRef root) {
 }
 
 ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
-    vec<PtChild> subterms;
-    getTermList(p, subterms, logic);
-    vec<PTRef> vars;
-    for (int i = 0; i < subterms.size(); ++i) {
-        if (logic.isVar(subterms[i].tr)) {
-            vars.push(subterms[i].tr);
-        }
-    }
+    vec<PTRef> vars = variables(logic, p);
     if (vars.size() == 0) { return 0; }
     ipartitions_t allowed = getIPartitions(vars[0]);
     for (int i = 1; i < vars.size(); ++i) {
