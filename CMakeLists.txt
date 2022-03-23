@@ -160,7 +160,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR})
 ################# TESTING #############################################
 if(PACKAGE_TESTS)
     if (NOT BUILD_SHARED_LIBS)
-      message(FATAL_ERROR "Building tests requires static libraries")
+      message(FATAL_ERROR "Building tests requires shared libraries")
     endif()
     if(CMAKE_VERSION VERSION_LESS 3.11)
         MESSAGE(WARNING "Minimum CMAKE version for building tests is 3.11")
