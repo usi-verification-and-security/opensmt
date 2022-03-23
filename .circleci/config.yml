@@ -86,6 +86,8 @@ jobs:
                     yum -y install Cython
                     yum -y install patch
                     yum -y install bzip2
+                    yum -y install glibc-static
+                    yum -y install libstdc++-static
             - run:
                 name: Set up newer version of cmake
                 command: pip3 install cmake
