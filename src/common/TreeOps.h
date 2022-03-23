@@ -27,10 +27,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef Common_TreeOps_h
 #define Common_TreeOps_h
 
-#include <unordered_set>
-#include "Vec.h"
-#include "Pterm.h"
+
 #include "Logic.h"
+#include "NatSet.h"
+#include "Pterm.h"
+#include "Vec.h"
+
+#include <unordered_set>
 
 
 template<typename TConfig>
@@ -48,33 +51,36 @@ public:
         };
         // MB: Relies on an invariant that id of a child is lower than id of a parent.
         auto size = Idx(logic.getPterm(root).getId()) + 1;
-        std::vector<char> done;
-        done.resize(size, 0);
+        auto & termSet = logic.getTermSet();
+        termSet.assure_domain(size);
+        termSet.reset();
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
+            auto currentId = Idx(logic.getPterm(currentRef).getId());
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
-                done[Idx(logic.getPterm(currentRef).getId())] = 1;
+                termSet.insert(currentId);
                 continue;
             }
-            assert(not done[Idx(logic.getPterm(currentRef).getId())]);
+            assert(not termSet.contains(currentId));
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
-                if (not done[Idx(logic.getPterm(nextChild).getId())]) {
+                auto childId = Idx(logic.getPterm(nextChild).getId());
+                if (not termSet.contains(childId)) {
                     toProcess.push_back(DFSEntry(nextChild));
                 }
                 continue;
             }
             // If we are here, we have already processed all children
-            assert(done[Idx(term.getId())] == 0);
+            assert(not termSet.contains(currentId));
             cfg.visit(currentRef);
-            done[Idx(logic.getPterm(currentRef).getId())] = 1;
+            termSet.insert(currentId);
             toProcess.pop_back();
         }
     }
