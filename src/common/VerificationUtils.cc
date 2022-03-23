@@ -97,12 +97,10 @@ bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bparti
 }
 
 bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) const {
-    MapWithKeys<PTRef, bool, PTRefHash> vars_p1;
-    getVars(p1, logic, vars_p1);
-    MapWithKeys<PTRef, bool, PTRefHash> vars_p2;
-    getVars(p2, logic, vars_p2);
-    for (PTRef key : vars_p1.getKeys()) {
-        if (vars_p1[key] and (not vars_p2.has(key))) {
+    auto vars_p1 = variables(logic, p1);
+    auto vars_p2 = variables(logic, p2);
+    for (PTRef key : vars_p1) {
+        if (std::find(vars_p2.begin(), vars_p2.end(), key) == vars_p2.end()) {
             return false;
         }
     }
