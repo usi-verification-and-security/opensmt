@@ -185,6 +185,7 @@ void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
 
 // Get variables starting from the root
 //
+[[deprecated("Use variables(Logic &, PTRef) instead.")]]
 inline void
 getVars(PTRef tr, Logic& logic, MapWithKeys<PTRef,bool,PTRefHash>& vars)
 {
@@ -253,6 +254,32 @@ getAtoms(PTRef tr, Logic & logic)
         seen.insert(tr);
     }
     return atoms;
+}
+
+template<typename TPred>
+class TermCollectorConfig : public DefaultVisitorConfig {
+    TPred predicate;
+    vec<PTRef> gatheredTerms;
+public:
+    TermCollectorConfig(TPred predicate) : predicate(std::move(predicate)) {}
+    vec<PTRef> && extractCollectedTerms() { return std::move(gatheredTerms); }
+    void visit(PTRef term) override { if (predicate(term)) gatheredTerms.push(term); }
+};
+
+template<typename TPred>
+static vec<PTRef> subTerms(Logic & logic, PTRef term, TPred predicate) {
+    TermCollectorConfig<TPred> config(predicate);
+    TermVisitor<decltype(config)>(logic, config).visit(term);
+    return config.extractCollectedTerms();
+}
+
+inline vec<PTRef> subTerms(Logic & logic, PTRef term) {
+    return subTerms(logic, term, [](PTRef){ return true; });
+}
+
+/* Returns all variables present in the given term */
+inline vec<PTRef> variables(Logic & logic, PTRef term) {
+    return subTerms(logic, term, [&](PTRef subTerm) { return logic.isVar(subTerm); });
 }
 
 #endif
