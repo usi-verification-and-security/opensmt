@@ -31,10 +31,7 @@ public:
             unsigned int nextChild = 0;
         };
         // MB: Relies on an invariant that id of a child is lower than id of a parent.
-        auto size = Idx(logic.getPterm(root).getId()) + 1;
-        auto & termSet = logic.getTermSet();
-        termSet.assure_domain(size);
-        termSet.reset();
+        auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
         Map<PTRef, PTRef, PTRefHash> substitutions;
         vec<PTRef> auxiliaryArgs;
         std::vector<DFSEntry> toProcess;
@@ -42,20 +39,20 @@ public:
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
-            auto currentId = Idx(logic.getPterm(currentRef).getId());
+            auto currentId = logic.getPterm(currentRef).getId();
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
-                termSet.insert(currentId);
+                termMarks.mark(currentId);
                 continue;
             }
-            assert(not termSet.contains(currentId));
+            assert(not termMarks.isMarked(currentId));
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
-                auto childId = Idx(logic.getPterm(nextChild).getId());
-                if (not termSet.contains(childId)) {
+                auto childId = logic.getPterm(nextChild).getId();
+                if (not termMarks.isMarked(childId)) {
                     toProcess.push_back(DFSEntry(nextChild));
                 }
                 continue;
@@ -81,7 +78,7 @@ public:
                 assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));
                 substitutions.insert(currentRef, rewritten);
             }
-            termSet.insert(currentId);
+            termMarks.mark(currentId);
             toProcess.pop_back();
         }
 

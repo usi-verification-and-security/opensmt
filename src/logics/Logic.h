@@ -100,7 +100,17 @@ class Logic {
     SymStore            sym_store;
     PtStore             term_store;
 
-    nat_set             auxiliaryNatSet;
+    class TermMarks {
+        nat_set & innerSet;
+    public:
+        TermMarks(nat_set & innerSet, unsigned int domainSize) : innerSet(innerSet){
+            innerSet.assure_domain(domainSize);
+            innerSet.reset();
+        }
+        inline void mark(PTId id) { innerSet.insert(Idx(id)); }
+        inline bool isMarked(PTId id) const { return innerSet.contains(Idx(id)); }
+    };
+    mutable nat_set     auxiliaryNatSet;
 
     SSymRef             sym_IndexedSort;
 
@@ -197,7 +207,7 @@ class Logic {
     const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
-    nat_set & getTermSet() { return auxiliaryNatSet; }
+    TermMarks getTermMarks(PTId maxTermId) const { return TermMarks(auxiliaryNatSet, Idx(maxTermId) + 1); }
     // Default values for the logic
 
     // Deprecated! Use getDefaultValuePTRef instead
