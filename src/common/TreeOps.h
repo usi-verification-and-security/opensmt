@@ -20,10 +20,10 @@
 
 template<typename TConfig>
 class TermVisitor {
-    Logic & logic;
+    Logic const & logic;
     TConfig & cfg;
 public:
-    TermVisitor(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
+    TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     void visit(PTRef root) {
         struct DFSEntry {
@@ -94,10 +94,10 @@ public:
 };
 
 class TopLevelConjunctsConfig : public DefaultVisitorConfig {
-    Logic & logic;
+    Logic const & logic;
     vec<PTRef> & conjuncts;
 public:
-    TopLevelConjunctsConfig(Logic & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
+    TopLevelConjunctsConfig(Logic const & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
 
     bool previsit(PTRef term) override {
         if (not logic.isAnd(term)) {
@@ -108,12 +108,12 @@ public:
     }
 };
 
-inline void topLevelConjuncts(Logic & logic, PTRef fla, vec<PTRef> & res) {
+inline void topLevelConjuncts(Logic const & logic, PTRef fla, vec<PTRef> & res) {
     TopLevelConjunctsConfig config(logic, res);
     TermVisitor<TopLevelConjunctsConfig>(logic, config).visit(fla);
 }
 
-inline vec<PTRef> topLevelConjuncts(Logic & logic, PTRef fla) {
+inline vec<PTRef> topLevelConjuncts(Logic const & logic, PTRef fla) {
     vec<PTRef> res;
     topLevelConjuncts(logic, fla, res);
     return res;
