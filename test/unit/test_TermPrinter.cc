@@ -60,7 +60,17 @@ TEST_F(TermPrinterTest, test_TermPrinting) {
     PTRef ex2 = buildExampleFormula2();
     PTRef ex3 = buildExampleFormula3();
     for (PTRef ex : {ex1, ex2, ex3}) {
+        ReferenceCounterConfig refCounter(logic);
+        TermVisitor(logic, refCounter).visit(ex);
         std::cout << TermPrinter(logic).print(ex) << std::endl;
         ASSERT_EQ (TermPrinter(logic).print(ex), logic.pp(ex));
+    }
+
+    for (PTRef ex : {ex1, ex2, ex3}) {
+        DagPrinter printer(logic);
+        std::cout << "===================================" << std::endl;
+        std::cout << logic.pp(ex) << std::endl;
+        std::cout << " -> " << std::endl;
+        std::cout << printer.print(ex) << std::endl;
     }
 }

@@ -19,12 +19,14 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/PartitionInfo.cc"
     "${CMAKE_CURRENT_LIST_DIR}/VerificationUtils.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ReportUtils.h"
+    "${CMAKE_CURRENT_LIST_DIR}/TermPrinter.h"
+    "${CMAKE_CURRENT_LIST_DIR}/TermPrinter.cc"
 )
 
 install(FILES
         Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h Timer.h osmtinttypes.h
         TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h 
-        NumberUtils.h NatSet.h
+        NumberUtils.h NatSet.h TermPrinter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 
