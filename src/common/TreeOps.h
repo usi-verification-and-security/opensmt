@@ -26,12 +26,18 @@ public:
     TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     void visit(PTRef root) {
+        // Avoid initializations if no traversal will be done
+        if (logic.isVar(root)) {
+            if (cfg.previsit(root))
+                cfg.visit(root);
+            return;
+        }
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;
             unsigned int nextChild = 0;
         };
-        // MB: Relies on an invariant that id of a child is lower than id of a parent.
+
         auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
