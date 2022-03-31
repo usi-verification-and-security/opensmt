@@ -30,7 +30,6 @@ public:
             PTRef term;
             unsigned int nextChild = 0;
         };
-        // MB: Relies on an invariant that id of a child is lower than id of a parent.
         auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
         Map<PTRef, PTRef, PTRefHash> substitutions;
         vec<PTRef> auxiliaryArgs;

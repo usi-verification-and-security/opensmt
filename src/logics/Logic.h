@@ -190,6 +190,11 @@ class Logic {
     const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
+    /*
+     * Provides an efficient data structure for representing a set of terms through "marking".
+     *
+     * Relies on a term invariant that id of a child is lower than id of a parent.
+     */
     TermMarks getTermMarks(PTId maxTermId) const { return TermMarks(auxiliaryNatSet, Idx(maxTermId) + 1); }
     // Default values for the logic
 
