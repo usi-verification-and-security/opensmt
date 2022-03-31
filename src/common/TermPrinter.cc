@@ -49,8 +49,7 @@ void TermPrinterConfig::visit(PTRef tr) {
 }
 
 void DagPrinterConfig::visit(PTRef tr) {
-    // Todo: Ensure that the let identifier does not also appear as a symbol
-    auto getLetSymbol = [](PTRef tr) { return "?l" + std::to_string(tr.x); };
+    auto getLetSymbol = [&](PTRef tr) { return logic.getLetPrefix() + std::to_string(tr.x); };
 
     assert(termStrings.find(tr) == termStrings.end());
     Pterm const & term = logic.getPterm(tr);
@@ -71,7 +70,7 @@ void DagPrinterConfig::visit(PTRef tr) {
         auto const & defTerms = defsInNode->second;
         for (int i = defTerms.size()-1; i >= 0; i--) {
             // Note: Reverse order guarantees that dependencies are respected in let terms
-            // Todo: Figure out if there is a dependency between two definitions
+            // Todo: Use parallel lets if there is no dependency between two definitions
             PTRef def = defTerms[i];
             std::string letSymbol = getLetSymbol(def);
             openLetStatements += "(let ((" + letSymbol + " " + termStrings.at(def) + ")) ";

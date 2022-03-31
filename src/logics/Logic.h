@@ -49,6 +49,7 @@ class Logic {
     bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
     std::size_t abstractValueCount = 0;
     int distinctClassCount;
+    std::string letVarPrefix;
 
     class DefinedFunctions {
         std::unordered_map<std::string,TemplateFunction> defined_functions;
@@ -147,6 +148,8 @@ class Logic {
     static const char*  s_ite_prefix;
     static const char*  s_framev_prefix;
     static const char*  s_abstract_value_prefix;
+    static const char   c_let_var_primary_prefix;
+    static const char   c_let_var_secondary_prefix;
 
     Logic(opensmt::Logic_t type);
     virtual ~Logic();
@@ -399,6 +402,7 @@ public:
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
+    std::string const & getLetPrefix() const { return letVarPrefix; }
 
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
