@@ -31,7 +31,6 @@ class Logic {
   public:
     using SubstMap = MapWithKeys<PTRef,PTRef,PTRefHash>;
   protected:
-    static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
@@ -48,6 +47,7 @@ class Logic {
 
     bool isKnownToUser(std::string_view name) const { return name[0] != s_abstract_value_prefix[0]; }
     bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
+    std::size_t abstractValueCount;
     int distinctClassCount;
 
     class DefinedFunctions {

@@ -54,11 +54,11 @@ const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
 const char* Logic::s_abstract_value_prefix = "@";
 
-std::size_t Logic::abstractValueCount = 0;
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(opensmt::Logic_t _logicType) :
       logicType(_logicType)
+    , abstractValueCount(0)
     , distinctClassCount(0)
     , sort_store()
     , term_store(sym_store)
