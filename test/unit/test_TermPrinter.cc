@@ -13,8 +13,8 @@ public:
 
     PTRef buildExampleFormula1() {
         SRef sort = logic.declareUninterpretedSort("U");
-        PTRef x = logic.mkVar(sort, "x");
-        PTRef y = logic.mkVar(sort, "y");
+        PTRef x = logic.mkVar(sort, "?20");
+        PTRef y = logic.mkVar(sort, "????");
         SymRef g_s = logic.declareFun("g", sort, {sort, sort});
         SymRef h_s = logic.declareFun("h", sort, {sort});
         SymRef f_s = logic.declareFun("f", sort, {sort, sort, sort});
