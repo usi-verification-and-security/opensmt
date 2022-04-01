@@ -47,7 +47,7 @@ class Logic {
 
     bool isKnownToUser(std::string_view name) const { return name[0] != s_abstract_value_prefix[0]; }
     bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
-    std::size_t abstractValueCount;
+    std::size_t abstractValueCount = 0;
     int distinctClassCount;
 
     class DefinedFunctions {
