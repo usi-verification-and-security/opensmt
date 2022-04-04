@@ -236,6 +236,7 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
     polarity    .push((char)sign);
+    savedPolarity.push(true);
 
 #if CACHE_POLARITY
     prev_polarity.push(toInt(l_Undef));
@@ -406,6 +407,12 @@ void CoreSMTSolver::cancelUntil(int level)
 {
     if (decisionLevel() > level)
     {
+        if (trail.size() > longestTrail) {
+            for (auto p : trail) {
+                savedPolarity[var(p)] = not sign(p);
+            }
+            longestTrail = trail.size();
+        }
         for (int c = trail.size()-1; c >= trail_lim[level]; c--)
         {
             Var      x  = var(trail[c]);
@@ -568,22 +575,7 @@ Lit CoreSMTSolver::choosePolarity(Var next) {
             return mkLit(next, sign);
         }
     }
-    switch ( polarity_mode ) {
-        case polarity_true:
-            sign = false;
-            break;
-        case polarity_false:
-            sign = true;
-            break;
-        case polarity_user:
-            sign = polarity[next];
-            break;
-        case polarity_rnd:
-            sign = irand(random_seed, 2);
-            break;
-        default:
-            assert(false);
-    }
+    sign = (savedPolarity[next] == flipState);
     return mkLit(next, sign);
 }
 
@@ -1465,6 +1457,10 @@ lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
 
         CRef confl = propagate();
         if (confl != CRef_Undef) {
+            if (conflicts > conflictsUntilFlip) {
+                conflictsUntilFlip += flipIncrement;
+                flipState = not flipState;
+            }
             // CONFLICT
             conflicts++;
             conflictC++;

@@ -319,6 +319,11 @@ protected:
     double              var_inc;          // Amount to bump next variable with.
     OccLists<Lit, vec<Watcher>, WatcherDeleted>  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     vec<lbool>          assigns;          // The current assignments (lbool:s stored as char:s).
+    vec<bool>           savedPolarity;
+    int                 longestTrail = 0;
+    uint64_t            conflictsUntilFlip = 0;
+    uint64_t            flipIncrement = 10000;
+    bool                flipState = false;
     vec<bool>           var_seen;
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
