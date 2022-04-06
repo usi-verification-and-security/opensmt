@@ -1,18 +1,20 @@
-set(partitionChannelRepo "https://github.com/usi-verification-and-security/partition-channel.git")
-message("opensmt is fetching partition-channel library from " ${partitionChannelRepo})
+set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
+set(git_branch protocol_example)
+message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
+message("-- Branch : ${git_branch}")
+
 include(FetchContent)
 FetchContent_Declare(
-        partition-channel
-        GIT_REPOSITORY ${partitionChannelRepo}
-        GIT_TAG master
+        PTPLib
+        GIT_REPOSITORY ${PTPLib_repository}
+        GIT_TAG ${git_branch}
 )
-FetchContent_GetProperties(partition-channel)
-if(NOT partition-channel_POPULATED)
-  FetchContent_Populate(partition-channel)
-  add_subdirectory(${partition-channel_SOURCE_DIR} ${partition-channel_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-message("-- partition-channel: partition-channel files have been written to: ${partition-channel_SOURCE_DIR}")
-include_directories(${partition-channel_SOURCE_DIR}/src)
+
+FetchContent_MakeAvailable(PTPLib)
+
+add_library(PTPLib::PTPLib ALIAS PTPLib)
+
+message("-- PTPLib files have been written to: ${PTPLib_SOURCE_DIR}")
 
 add_subdirectory(proof)
 add_subdirectory(common)
