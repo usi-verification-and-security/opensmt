@@ -48,9 +48,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class UFSolverStats
 {
     public:
-        partitionChannel::OSMTTimeVal egraph_asrt_timer;
-        partitionChannel::OSMTTimeVal egraph_backtrack_timer;
-        partitionChannel::OSMTTimeVal egraph_explain_timer;
+        opensmt::OSMTTimeVal egraph_asrt_timer;
+        opensmt::OSMTTimeVal egraph_backtrack_timer;
+        opensmt::OSMTTimeVal egraph_explain_timer;
         int num_eq_classes;
         UFSolverStats() : num_eq_classes(0) {}
         void printStatistics(std::ostream & os)
