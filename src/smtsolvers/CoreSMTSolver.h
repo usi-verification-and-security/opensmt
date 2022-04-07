@@ -416,6 +416,8 @@ protected:
 
     void     relocAll         (ClauseAllocator& to);
 
+    virtual void shallLearnClauses () { return; } ;            // Check if solver is in clause share mode and leanr clauses
+
     // Misc:
     //
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
