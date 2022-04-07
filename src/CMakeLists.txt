@@ -1,13 +1,16 @@
 set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
-set(git_branch protocol_example)
+set(PTPLib_branch ${branch})
+if(NOT PTPLib_branch )
+  set(PTPLib_branch protocol_example)
+endif()
 message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
-message("-- Branch : ${git_branch}")
+message("-- PTPLib Branch : ${PTPLib_branch}")
 
 include(FetchContent)
 FetchContent_Declare(
         PTPLib
         GIT_REPOSITORY ${PTPLib_repository}
-        GIT_TAG ${git_branch}
+        GIT_TAG ${PTPLib_branch}
 )
 
 FetchContent_MakeAvailable(PTPLib)
