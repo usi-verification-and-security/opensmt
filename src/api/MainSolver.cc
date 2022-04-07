@@ -270,7 +270,7 @@ sstat MainSolver::check()
     check_called ++;
     if (config.timeQueries()) {
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
-        partitionChannel::StopWatch sw(query_timer);
+        opensmt::StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) {
         return s_False;

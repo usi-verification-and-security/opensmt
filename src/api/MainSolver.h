@@ -109,7 +109,7 @@ class MainSolver
     PushFramesWrapper               frames;
 
 
-    partitionChannel::OSMTTimeVal query_timer; // How much time we spend solving.
+    opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
     int            check_called;     // A counter on how many times check was called.
     sstat          status;           // The status of the last solver call (initially s_Undef)

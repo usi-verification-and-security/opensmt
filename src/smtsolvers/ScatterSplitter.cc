@@ -12,7 +12,7 @@
 #include "Random.h"
 
 
-ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, Channel & ch)
+ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
     : SimpSMTSolver         (c, t)
     , splitContext          (config, decisions)
     , channel               (ch)
@@ -60,7 +60,7 @@ Var ScatterSplitter::doActivityDecision() {
 }
 
 bool ScatterSplitter::okContinue() const {
-    if (!CoreSMTSolver::okContinue()) {
+    if (channel.shouldStop()) {
         return false;
     } else if (conflicts % 1000 == 0 and splitContext.resourceLimitReached(decisions)) {
         channel.setShouldStop();
