@@ -51,3 +51,4 @@ install(FILES TheoryInterpolator.h
 install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
+target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
