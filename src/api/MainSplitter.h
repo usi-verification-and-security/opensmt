@@ -35,7 +35,28 @@ public:
         }
         return MainSolver::check();
     }
-   
+
+    void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid) {
+        vec<opensmt::pair<int,int>> addrVector;
+        addrVector.capacity(solver_branch.size());
+        for (auto el : solver_branch) {
+            addrVector.push(el);
+        }
+        this->term_mapper->mapSolverBranchToFrameId(fid, std::move(addrVector));
+    }
+
+    sstat solve_(vec<FrameId> & enabledFrames) override {
+        vec<opensmt::pair<int,int>> const &  solverBranch = (dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch();
+        for (int i = 0; i < enabledFrames.size(); i++) {
+            if (enabledFrames.size() > solverBranch.size() + 1)
+                throw OsmtInternalException(
+                        "inconsistency in solverBranch length and enabled_frame size: " + std::to_string(enabledFrames.size()));
+            if (i > 0) {
+                addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
+            }
+        }
+        return MainSolver::solve_(enabledFrames);
+    }
 };
 
 

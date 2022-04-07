@@ -131,6 +131,10 @@ class MainSolver
 
     sstat solve           ();
 
+    virtual sstat solve_(vec<FrameId> & enabledFrames) {
+        return sstat(ts.solve(enabledFrames));
+    }
+
     sstat giveToSolver(PTRef root, FrameId push_id) {
         if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
         return s_Undef; }
