@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PTRef.h"
 #include "Logic.h"
 
+#include <unordered_set>
 #include <map>
 
 class TermMapper {
@@ -57,6 +58,8 @@ class TermMapper {
 
     // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for the same term.
     Var addBinding(PTRef tr);
+
+    std::unordered_set<Var> assumptionVars;
 
     typedef std::map<uint32_t, vec<opensmt::pair<int,int>>> map_frameId_solverBranch;
     map_frameId_solverBranch frameId_solverBranch;
@@ -90,7 +93,11 @@ class TermMapper {
     PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
 
     int  nVars()          const { return varToTerm.size(); }
-    
+
+    bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
+
+    void addAssumptionVar(Var v) { assumptionVars.insert(v); }
+
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
         frameId_solverBranch[fid] = std::move(solverAddress);
     }
