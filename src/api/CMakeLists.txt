@@ -18,6 +18,8 @@ $<TARGET_OBJECTS:rewriters>
 
 add_library(api OBJECT "")
 
+target_link_libraries(api PUBLIC PTPLib::PTPLib)
+
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.cc"
