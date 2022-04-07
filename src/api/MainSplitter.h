@@ -9,6 +9,9 @@
 #define OPENSMT_MAINSPLITTER_H
 
 #include "MainSolver.h"
+#include "ScatterSplitter.h"
+#include "OsmtInternalException.h"
+
 #include <PTPLib/net/Channel.hpp>
 
 class MainSplitter : public MainSolver {
@@ -24,6 +27,15 @@ public:
 
     std::vector<std::string> getPartitionClauses();
     void writeSplits(std::string const & file) const;
+
+    sstat check() override {
+        //push frames size should match with length of the solver branch
+        if (frames.size() != (dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1) {
+            throw OsmtInternalException("MainSplitter: Inconsistency in push frames size and length of the solver address");
+        }
+        return MainSolver::check();
+    }
+   
 };
 
 
