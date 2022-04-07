@@ -8,7 +8,7 @@ jobs:
                 password: $DOCKERHUB_PASSWORD
             environment:
                 CMAKE_BUILD_TYPE: Release
-                FLAGS: -Wall -Wextra -Werror
+                FLAGS: -Wall -Wextra
                 OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
@@ -44,7 +44,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Debug
-                    FLAGS: -Wall -Wextra -Werror -fsanitize=signed-integer-overflow,address,undefined
+                    FLAGS: -Wall -Wextra -fsanitize=signed-integer-overflow,address,undefined
             - run:
                 name: Release build llvm
                 command: ./ci/run_travis_commands.sh
@@ -62,7 +62,7 @@ jobs:
                 password: $DOCKERHUB_PASSWORD
               environment:
                 CMAKE_BUILD_TYPE: Release
-                FLAGS: -Wall -Wextra -Werror
+                FLAGS: -Wall -Wextra
                 OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
 
@@ -139,7 +139,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Release
-                    FLAGS: -Wall -Wextra -Werror
+                    FLAGS: -Wall -Wextra
                     OSMT_INSTALL: ~/osmt-install
 
 workflows:
