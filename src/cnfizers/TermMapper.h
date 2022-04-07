@@ -30,6 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SolverTypes.h"
 #include "PTRef.h"
 #include "Logic.h"
+
+#include <map>
+
 class TermMapper {
   private:
     int         var_cnt;
@@ -55,7 +58,11 @@ class TermMapper {
     // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for the same term.
     Var addBinding(PTRef tr);
 
+    typedef std::map<uint32_t, vec<opensmt::pair<int,int>>> map_frameId_solverBranch;
+    map_frameId_solverBranch frameId_solverBranch;
 
+    typedef std::map<Var ,uint32_t> map_var_frameId;
+    map_var_frameId var_frameId;
 
   public:
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
@@ -83,6 +90,16 @@ class TermMapper {
     PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
 
     int  nVars()          const { return varToTerm.size(); }
+    
+    void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
+        frameId_solverBranch[fid] = std::move(solverAddress);
+    }
+
+    vec<opensmt::pair<int,int>> & get_solverBranch(uint32_t fid) { return frameId_solverBranch[fid]; }
+
+    void mapEnabledFrameIdToVar(Var v, uint32_t fid) { var_frameId[v] = fid ;}
+
+    uint32_t get_FrameId(Var v) { return var_frameId[v]; }
 };
 
 #endif
