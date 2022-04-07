@@ -11,18 +11,18 @@
 #include "SimpSMTSolver.h"
 #include "SplitData.h"
 #include "SplitContext.h"
-#include "Channel.h"
+#include <PTPLib/net/Channel.hpp>
 
 class ScatterSplitter : public SimpSMTSolver {
 public:
-    ScatterSplitter(SMTConfig & c, THandler & t, Channel & ch);
+    ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
 
     std::vector<SplitData> const & getSplits() { return splitContext.getSplits(); }
 
 private:
     std::vector<vec<Lit>> split_assumptions;
     SplitContext splitContext;
-    Channel & channel;
+    PTPLib::net::Channel & channel;
 
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
