@@ -16,6 +16,6 @@ if (ENABLE_LINE_EDITING)
 endif()
 
 target_link_libraries(OpenSMT-bin PUBLIC OpenSMT-static)
-
+target_link_libraries(OpenSMT-bin PUBLIC PTPLib::PTPLib)
 
 install(TARGETS OpenSMT-bin RUNTIME DESTINATION bin)
