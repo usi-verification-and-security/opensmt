@@ -57,6 +57,8 @@ public:
         }
         return MainSolver::solve_(enabledFrames);
     }
+
+    TermMapper& getTermMapper() { return *term_mapper;}
 };
 
 
