@@ -9,8 +9,6 @@
 #include "Logic.h"
 #include "SStore.h"
 #include "PtStore.h"
-#include "TreeOps.h"
-#include "Deductions.h"
 #include "SubstLoopBreaker.h"
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
