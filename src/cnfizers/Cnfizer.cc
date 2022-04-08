@@ -375,7 +375,9 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
     c_in.copyTo(c);
     if (current_frame_term != logic.getTerm_true()) {
         Lit l = this->getOrCreateLiteralFor(current_frame_term);
-        tmap.setFrozen(var(l));
+        Var v = var(l);
+        tmap.setFrozen(v);
+        tmap.addAssumptionVar(v);
         c.push(l);
     }
 
