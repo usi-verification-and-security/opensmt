@@ -11,11 +11,12 @@
 #include "ReportUtils.h"
 #include "Random.h"
 
-
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
     : SimpSMTSolver         (c, t)
     , splitContext          (config, decisions)
     , channel               (ch)
+    , trail_sent            (0)
+    , firstPropagation      (true)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
@@ -169,4 +170,147 @@ CoreSMTSolver::ConsistencyAction ScatterSplitter::notifyConsistency() {
         }
     }
     return ConsistencyAction::NoOp;
+}
+
+bool ScatterSplitter::learnSomeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
+    int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
+    trail_sent = std::max<int>(trail_sent, numTriviallyPropagatedOnDl0-1);
+    assert(trail_sent >= 0);
+    for (int i = this->trail_sent; i < trail_max; i++) {
+        this->trail_sent++;
+        Lit l = trail[i];
+        Var v = var(l);
+        if (isAssumptionVar(v)) {
+            continue;
+        }
+        PTRef pt = this->theory_handler.varToTerm(v);
+        std::string str = this->theory_handler.getLogic().dumpWithLets(pt);
+        assert([&](std::string const &str) {
+            if (str.find(".frame") != std::string::npos) {
+                throw PTPLib::common::Exception(__FILE__, __LINE__,"assert: frame caught in trail");
+            }
+            return true;
+        }(str));
+        pt = sign(l) ? this->theory_handler.getLogic().mkNot(pt) : pt;
+        learnedLemmas.emplace_back(PTPLib::net::Lemma(this->theory_handler.getLogic().dumpWithLets(pt), 0));
+    }
+
+    for (CRef cr : learnts) {
+        Clause &c = this->ca[cr];
+        if (c.size() > 3 + assumptions.size() || c.mark() == 3)
+            continue;
+        int level = 0;
+        vec<PTRef> clause;
+        bool hasForeignAssumption = false;
+        for (unsigned int j = 0; j < c.size(); j++) {
+            Lit l = c[j];
+            Var v = var(l);
+            if (isAssumptionVar(v)) {
+                vec<opensmt::pair<int, int>> const & solverBranch_perVar = get_solverBranch(v);
+                if (isPrefix(solverBranch_perVar, get_solver_branch())) {
+                    int result = solverBranch_perVar.size();
+                    assert([&]() {
+                        if (result > get_solver_branch().size()) {
+                            std::scoped_lock<std::mutex> s_lk(channel.getMutex());
+                            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
+                                channel.get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
+                        }
+                        return true;
+                    }());
+
+                    assert(result > 0);
+                    level = std::max<int>(level, result);
+                    continue;
+                } else {
+                    hasForeignAssumption = true;
+                    break;
+                }
+//                int result = getAssumptionLevel(v);
+//                if (result >= 1) {
+//                    assert(result >= 1);
+//                    level = std::max<int>(level, result);
+//                    continue;
+//                } else {
+//                    hasForeignAssumption = true;
+//                    break;
+//                }
+            }
+            PTRef pt = theory_handler.varToTerm(v);
+            pt = sign(l) ? theory_handler.getLogic().mkNot(pt) : pt;
+            clause.push(pt);
+        }
+        if (hasForeignAssumption or clause.size() > 3)
+            continue;
+        std::string str = this->theory_handler.getLogic().dumpWithLets(theory_handler.getLogic().mkOr(clause));
+
+        learnedLemmas.emplace_back(PTPLib::net::Lemma(str, level));
+        assert([&](std::string_view str) {
+            if (str.find(".frame") != std::string::npos) {
+                throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: frame caught in actual clauses");
+            }
+            return true;
+        }(str));
+        c.mark(3);
+    }
+    return not learnedLemmas.empty();
+}
+
+void ScatterSplitter::set_solver_branch(std::string solver_branch)
+{
+    solverBranch.clear();
+    solver_branch.erase(std::remove(solver_branch.begin(), solver_branch.end(), ' '), solver_branch.end());
+    std::string const delimiter{ "," };
+    size_t beg, pos = 0;
+    uint16_t counter = 0;
+    uint16_t temp = 0;
+    while ((beg = solver_branch.find_first_not_of(delimiter, pos)) != std::string::npos)
+    {
+        pos = solver_branch.find_first_of(delimiter, beg + 1);
+        int index = stoi(solver_branch.substr(beg, pos - beg));
+        if (counter % 2 == 1) {
+            solverBranch.push({temp, index});
+        } else temp = index;
+        counter++;
+    }
+}
+
+void ScatterSplitter::shallLearnClauses()
+{
+    if (not channel.isClauseShareMode()) return;
+
+    if (firstPropagation) {
+        assert(decisionLevel() == 0);
+        firstPropagation = false;
+        numTriviallyPropagatedOnDl0 = trail.size();
+    }
+
+    std::vector<PTPLib::net::Lemma> toPublishLemmas;
+    if (channel.shouldLearnClauses()) {
+        channel.clearShouldLearnClauses();
+
+        if (learnSomeClauses(toPublishLemmas)) {
+            std::unique_lock<std::mutex> lk(channel.getMutex());
+            assert([&]() {
+                if (not lk.owns_lock()) {
+                    throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: clause Learning couldn't take the lock");
+                }
+                return true;
+            }());
+            channel.insert_learned_clause(std::move(toPublishLemmas));
+        }
+    }
+}
+
+int ScatterSplitter::getAssumptionLevel(Var v) const
+{
+    assert(isAssumptionVar(v));
+    int level = 0;
+    for (Lit p : assumptions) {
+        if (sign(p)) {
+            ++level;
+            if (var(p) == v)
+                return level;
+        }
+    }
+    return -1;
 }
