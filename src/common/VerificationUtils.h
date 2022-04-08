@@ -14,16 +14,16 @@ class VerificationUtils {
 public:
     VerificationUtils(SMTConfig const & config, Logic & logic) : config(config), logic(logic) {}
 
-    bool impliesExternal(PTRef, PTRef); // Check the result with an external solver
+    bool impliesExternal(PTRef, PTRef) const; // Check the result with an external solver
 
-    bool verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp); // Verify interpolant using an external solver
+    bool verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp) const; // Verify interpolant using an external solver
 
     bool verifyInterpolantInternal(PTRef partA, PTRef partB, PTRef itp); // Verify interpolant internally, using OpenSMT's MainSolver
 
     bool impliesInternal(PTRef antecedent, PTRef consequent); // Verify validity of implication `antecedent -> consequent`, using OpenSMT's MainSolver
 
 private:
-    bool checkSubsetCondition(PTRef p1, PTRef p2);
+    bool checkSubsetCondition(PTRef p1, PTRef p2) const;
 };
 
 

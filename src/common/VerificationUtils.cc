@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
+bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) const {
     const char * implies = "implies.smt2";
     std::ofstream dump_out( implies );
     logic.dumpHeaderToFile(dump_out);
@@ -59,7 +59,7 @@ bool VerificationUtils::impliesExternal(PTRef implicant, PTRef implicated) {
     return !tool_res;
 }
 
-bool VerificationUtils::verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp) {
+bool VerificationUtils::verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp) const {
     bool verbose = config.verbosity() > 0;
     if(verbose) {
         std::cout << "; Verifying final interpolant" << std::endl;
@@ -96,7 +96,7 @@ bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bparti
     return checkSubsetCondition(itp, Apartition) and checkSubsetCondition(itp, Bpartition);
 }
 
-bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) {
+bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) const {
     MapWithKeys<PTRef, bool, PTRefHash> vars_p1;
     getVars(p1, logic, vars_p1);
     MapWithKeys<PTRef, bool, PTRefHash> vars_p2;
