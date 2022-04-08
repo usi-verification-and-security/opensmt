@@ -8,7 +8,6 @@
 #include "MainSplitter.h"
 #include "LookaheadSplitter.h"
 #include "SplitData.h"
-#include "ScatterSplitter.h"
 #include <cmath>
 
 void MainSplitter::writeSplits(std::string const & baseName) const {
