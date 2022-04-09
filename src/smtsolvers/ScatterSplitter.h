@@ -14,6 +14,7 @@
 
 #include <PTPLib/net/Channel.hpp>
 #include <PTPLib/common/Exception.hpp>
+#include <PTPLib/common/Printer.hpp>
 
 class ScatterSplitter : public SimpSMTSolver {
 public:
@@ -27,6 +28,8 @@ public:
 
     PTPLib::net::Channel & getChannel() const { return channel;};
 
+    void passRef_SyncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }
+
 private:
     std::vector<vec<Lit>>   split_assumptions;
     SplitContext            splitContext;
@@ -35,6 +38,7 @@ private:
     bool                    firstPropagation;
     int                     numTriviallyPropagatedOnDl0;
     vec<opensmt::pair<int,int>> solverBranch;
+    PTPLib::common::synced_stream * syncedStream;
 
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.

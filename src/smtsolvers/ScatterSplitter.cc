@@ -303,14 +303,22 @@ void ScatterSplitter::shallLearnClauses()
         channel.clearShouldLearnClauses();
 
         if (learnSomeClauses(toPublishLemmas)) {
-            std::unique_lock<std::mutex> lk(channel.getMutex());
-            assert([&]() {
-                if (not lk.owns_lock()) {
-                    throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: clause Learning couldn't take the lock");
-                }
-                return true;
-            }());
-            channel.insert_learned_clause(std::move(toPublishLemmas));
+            {
+                std::unique_lock<std::mutex> lk(channel.getMutex());
+                assert([&]() {
+                    if (not lk.owns_lock()) {
+                        throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                        ";assert: clause Learning couldn't take the lock");
+                    }
+                    return true;
+                }());
+                channel.insert_learned_clause(std::move(toPublishLemmas));
+            }
+#ifdef SMTS_ACTIVELOG
+            if (syncedStream)
+                syncedStream->println(channel.isColorMode() ? PTPLib::common::Color::FG_Green : PTPLib::common::Color::FG_DEFAULT,
+                           "[t SEARCH ] -------------- add learned clauses to channel buffer, Size : ", toPublishLemmas.size());
+#endif
         }
     }
 }
