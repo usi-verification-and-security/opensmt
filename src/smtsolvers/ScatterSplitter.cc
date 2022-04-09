@@ -225,6 +225,8 @@ bool ScatterSplitter::learnSomeClauses(std::vector<PTPLib::net::Lemma> & learned
                     hasForeignAssumption = true;
                     break;
                 }
+// Second algorithm of how to correctly publish clauses so that they do not include assumption literals.
+// Issue: https://github.com/MasoudAsadzade/OpenSMT2/issues/1
 //                int result = getAssumptionLevel(v);
 //                if (result >= 1) {
 //                    assert(result >= 1);
@@ -276,7 +278,7 @@ void ScatterSplitter::set_solver_branch(std::string solver_branch)
 
 void ScatterSplitter::shallLearnClauses()
 {
-    if (not channel.isClauseShareMode()) return;
+    if (not channel.isClauseShareMode() and channel.isSolverInParallelMode()) return;
 
     if (firstPropagation) {
         assert(decisionLevel() == 0);
@@ -285,7 +287,7 @@ void ScatterSplitter::shallLearnClauses()
     }
 
     std::vector<PTPLib::net::Lemma> toPublishLemmas;
-    if (channel.shouldLearnClauses()) {
+    if (channel.shouldLearnClauses() or not channel.isSolverInParallelMode()) {
         channel.clearShouldLearnClauses();
 
         if (learnSomeClauses(toPublishLemmas)) {
