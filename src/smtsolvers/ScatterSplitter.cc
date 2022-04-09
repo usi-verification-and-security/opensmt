@@ -85,7 +85,19 @@ lbool ScatterSplitter::solve_() {
     splitContext.reset(decisions);
     splitContext.enterInitCycle(decisions);
 
-    return CoreSMTSolver::solve_();
+    lbool result = CoreSMTSolver::solve_();
+    notifyFoundedResult(result);
+    return result;
+}
+
+void ScatterSplitter::notifyFoundedResult(lbool const & result) const
+{
+    if (not channel.isSolverInParallelMode()) return;
+
+    if (result not_eq l_Undef) {
+        channel.setShallStop();
+        channel.notify_all();
+    }
 }
 
 lbool ScatterSplitter::zeroLevelConflictHandler() {
