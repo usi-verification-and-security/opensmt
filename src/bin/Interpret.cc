@@ -1086,6 +1086,12 @@ int Interpret::interpFile(char *content){
     return rval;
 }
 
+sstat Interpret::interp_SMT_content(char *content) {
+    int rval = interpFile(content);
+    if (rval != 0)
+        return s_Error;
+    return main_solver->getStatus();
+}
 
 // For reading from pipe
 int Interpret::interpPipe() {
