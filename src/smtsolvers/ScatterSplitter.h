@@ -25,6 +25,8 @@ public:
 
     void set_solver_branch(std::string solver_branch);
 
+    PTPLib::net::Channel & getChannel() const { return channel;};
+
 private:
     std::vector<vec<Lit>>   split_assumptions;
     SplitContext            splitContext;
@@ -38,7 +40,7 @@ private:
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate
 
-    void shallLearnClauses () override ;                                      // Check if solver is in clause share mode
+    void shallLearnClauses () override;                                       // Check if solver is in clause share mode or single-query mode and then starts clause learning operation
 
 protected:
     lbool solve_() override;

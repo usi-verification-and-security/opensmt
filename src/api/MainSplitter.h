@@ -15,7 +15,6 @@
 #include <PTPLib/net/Channel.hpp>
 
 class MainSplitter : public MainSolver {
-
 public:
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler, PTPLib::net::Channel & ch);
 
@@ -23,7 +22,14 @@ public:
                  std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
                  :
                  MainSolver(std::move(t), std::move(tm), std::move(th), std::move(ss),logic,config, std::move(name))
-                 {}
+                 {
+                     if (not (dynamic_cast<ScatterSplitter&>(getSMTSolver())).getChannel().isSolverInParallelMode()) {
+                         PTPLib::net::Header header = PTPLib::net::Header();
+                         header.emplace(PTPLib::common::Param.NAME, config.getInstanceName());
+                         header.emplace(PTPLib::common::Param.NODE, "[]");
+                         (dynamic_cast<ScatterSplitter&>(getSMTSolver())).getChannel().set_current_header(header);
+                     }
+                 }
 
     std::vector<std::string> getPartitionClauses();
     void writeSplits(std::string const & file) const;
