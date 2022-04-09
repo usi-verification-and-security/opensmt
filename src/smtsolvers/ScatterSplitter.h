@@ -42,6 +42,8 @@ private:
 
     void shallLearnClauses () override;                                       // Check if solver is in clause share mode or single-query mode and then starts clause learning operation
 
+    void notifyFoundedResult(lbool const & result) const;                     // OpenSMT signalling to communication channel that it founded a result and will stop
+
 protected:
     lbool solve_() override;
     bool branchLitRandom() override;
