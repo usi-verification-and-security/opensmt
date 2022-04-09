@@ -307,7 +307,7 @@ sstat MainSolver::solve()
         const PushFrame& frame = pfstore[frames.getFrameReference(i)];
         en_frames.push(frame.getId());
     }
-    status = sstat(ts.solve(en_frames));
+    status = sstat(solve_(en_frames));
 
     if (status == s_True && config.produce_models())
         thandler->computeModel();
