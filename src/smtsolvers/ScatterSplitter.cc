@@ -67,6 +67,7 @@ bool ScatterSplitter::okContinue() const {
         channel.setShouldStop();
         return false;
     } else if (static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber() - 1) {
+        channel.setShouldStop();
         return false;
     }
     return true;
@@ -77,7 +78,6 @@ void ScatterSplitter::notifyEnd() {
     splitContext.insertSplitData(std::move(data));
     assert(result == l_False);
     (void)result;
-    channel.setShouldStop();
 }
 
 lbool ScatterSplitter::solve_() {
