@@ -209,7 +209,7 @@ bool ScatterSplitter::learnSomeClauses(std::vector<PTPLib::net::Lemma> & learned
 
     for (CRef cr : learnts) {
         Clause &c = this->ca[cr];
-        if (c.size() > 3 + assumptions.size() || c.mark() == 3)
+        if (c.size() > static_cast<unsigned int>(3 + assumptions.size()) || c.mark() == 3)
             continue;
         int level = 0;
         vec<PTRef> clause;
