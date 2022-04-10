@@ -36,9 +36,9 @@ public:
 
     sstat check() override {
         //push frames size should match with length of the solver branch
-        if (frames.size() != static_cast<std::size_t>((dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1)) {
-            throw OsmtInternalException("MainSplitter: Inconsistency in push frames size and length of the solver address");
-        }
+        if (frames.size() != static_cast<std::size_t>((dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1))
+            throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: Inconsistency in push frames size and length of the solver address");
+
         return MainSolver::check();
     }
 
@@ -55,8 +55,8 @@ public:
         vec<opensmt::pair<int,int>> const &  solverBranch = (dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch();
         for (int i = 0; i < enabledFrames.size(); i++) {
             if (enabledFrames.size() > solverBranch.size() + 1)
-                throw OsmtInternalException(
-                        "inconsistency in solverBranch length and enabled_frame size: " + std::to_string(enabledFrames.size()));
+                throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                ";assert: inconsistency in solverBranch length and enabled_frame size: " + std::to_string(enabledFrames.size()));
             if (i > 0) {
                 addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
             }
