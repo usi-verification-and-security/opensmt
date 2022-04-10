@@ -59,7 +59,7 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
     } else if (config.sat_split_type() == spt_lookahead) {
         return std::make_unique<LookaheadSplitter>(config, thandler);
     } else {
-        return std::make_unique<ScatterSplitter>(config, thandler);
+        assert(false);
     }
 }
 
