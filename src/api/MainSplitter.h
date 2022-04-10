@@ -36,7 +36,7 @@ public:
 
     sstat check() override {
         //push frames size should match with length of the solver branch
-        if (frames.size() != (dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1) {
+        if (frames.size() != static_cast<std::size_t>((dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1)) {
             throw OsmtInternalException("MainSplitter: Inconsistency in push frames size and length of the solver address");
         }
         return MainSolver::check();
