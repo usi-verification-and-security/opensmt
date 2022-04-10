@@ -1,7 +1,7 @@
 set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
 set(PTPLib_branch ${branch})
 if(NOT PTPLib_branch )
-  set(PTPLib_branch protocol_example)
+  set(PTPLib_branch master)
 endif()
 message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
 message("-- PTPLib Branch : ${PTPLib_branch}")
