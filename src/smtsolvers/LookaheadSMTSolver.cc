@@ -5,6 +5,52 @@
 #include "LookaheadSMTSolver.h"
 #include "Proof.h"
 
+
+void LookaheadSMTSolver::attachClause(CRef cr)
+{
+    const Clause& c = ca[cr];
+    assert(c.size() > 1);
+    watches[~c[0]].push(Watcher(cr, c[1]));
+    watches[~c[1]].push(Watcher(cr, c[0]));
+    if(c.size() > 2 ){
+        watches[~c[2]].push(Watcher(cr, c[0]));
+    }
+    else{
+        next_init.insert(var(~c[0]));
+        next_init.insert(var(~c[1]));
+    }
+
+    if (c.learnt()) learnts_literals += c.size();
+    else            clauses_literals += c.size();
+}
+
+
+void LookaheadSMTSolver::detachClause(CRef cr, bool strict)
+{
+    const Clause& c = ca[cr];
+    assert(c.size() > 1);
+    if (strict)
+    {
+        remove(watches[~c[0]], Watcher(cr, c[1]));
+        remove(watches[~c[1]], Watcher(cr, c[0]));
+        if(c.size() > 2 )
+            remove(watches[~c[2]], Watcher(cr, c[0]));
+    }
+    else
+    {
+        // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
+        watches.smudge(~c[0]);
+        watches.smudge(~c[1]);
+        if (c.size() > 2)
+            watches.smudge(~c[2]);
+    }
+
+    if (c.learnt()) learnts_literals -= c.size();
+    else            clauses_literals -= c.size();
+}
+
+
+
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver(c, thandler)
     , idx(0)
@@ -251,6 +297,214 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
     };
     return buildAndTraverse<LANode, PlainBuildConfig>(PlainBuildConfig()).first;
 };
+
+
+
+/*_________________________________________________________________________________________________
+  |
+  |  propagate : [void]  ->  [Clause*]
+  |
+  |  Description:
+  |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+  |    otherwise NULL.
+  |
+  |    Post-conditions:
+  |      * the propagation queue is empty, even if there was a conflict.
+  |________________________________________________________________________________________________@*/
+CRef LookaheadSMTSolver::propagate()
+{
+    CRef    confl     = CRef_Undef;
+    int     num_props = 0;
+    watches.cleanAll();
+
+    while (qhead < trail.size())
+    {
+        Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
+        vec<Watcher>&  ws  = watches[p];
+        Watcher        *i, *j, *end;
+        num_props++;
+
+        for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
+        {
+//            props++;
+            // Try to avoid inspecting the clause:
+
+            // Make sure the false literal is data[1]:
+            CRef     cr        = i->cref;
+            Clause&  c         = ca[cr];
+//            if(cr == 497){
+//                printf("Here\n");
+//            }
+
+
+
+            unsigned c_size = c.size();
+            Lit false_lit = ~p;
+
+            if(!tested){
+                props++;
+            }
+            // Try to avoid inspecting the clause:
+            if(c_size > 2 && value(c[2]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                }
+                *j++ = *i++;
+                continue;
+            }
+
+            if(value(c[0]) == l_True || value(c[1]) == l_True){
+                if(!tested) {
+                    if (next_arr[var(~c[0])]) {
+                        close_to_prop--;
+                    }
+                    if (next_arr[var(~c[1])]) {
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                }
+                *j++ = *i++;
+                continue;
+            }
+
+            if(c_size > 2 ){
+                if (c[0] == false_lit){
+//                    if(value(c[2]) != l_False){
+//                        c[0] = c[1], c[1] = c[2], c[2] = false_lit;
+//                    } else {
+                    c[0] = c[1], c[1] = false_lit;
+//                    }
+                }
+                if (c[1] == false_lit){
+                    c[1] = c[2], c[2] = false_lit;
+                }
+                if (value(c[0]) == l_False) {
+                    Lit temp = c[0];
+                    c[0] = c[1], c[1] = temp;
+                }
+            }
+            else {
+                if (c[0] == false_lit) {
+                    c[0] = c[1], c[1] = false_lit;
+                }
+            }
+
+
+            if(c_size == 2){
+                assert(c[1] == false_lit);
+            } else {
+                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
+            }
+            i++;
+
+            // If 0th watch is true, then clause is already satisfied.
+            Lit first = c[0];
+            Watcher w = Watcher(cr, first);
+            // Look for new watch:
+            for (unsigned k = 3; k < c_size; k++) {
+                if (value(c[k]) != l_False) {
+                    c[2] = c[k];
+                    c[k] = false_lit;
+                    watches[~c[2]].push(w);
+                    goto NextClause;
+                }
+            }
+//            if(c[2].x == 176){
+//                cout << "Here";
+//            }
+
+            *j++ = w;
+            if(value(c[1]) == l_False){
+                if(!tested){
+                    if(next_arr[var(~c[0])]){
+                        close_to_prop--;
+                    }
+                    if(next_arr[var(~c[1])]){
+                        close_to_prop--;
+                    }
+                    next_arr[var(~c[0])] = false;
+                    next_arr[var(~c[1])] = false;
+                } else {
+                    if(before_lookahead){
+                        next_init.erase(var(~c[0]));
+                        next_init.erase(var(~c[1]));
+                    }
+                }
+                if (value(first) == l_False) // clause is falsified
+                {
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
+                    confl = cr;
+                    qhead = trail.size();
+                    // Copy the remaining watches:
+                    while (i < end) {
+                        *j++ = *i++;
+                    }
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        this->finalizeProof(confl);
+                    }
+                } else {  // clause is unit under assignment:
+                    if (decisionLevel() == 0 && this->logsProofForInterpolation()) {
+                        // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
+                        //     is not constructed correctly
+                        proof->beginChain(cr);
+
+                        for (unsigned k = 1; k < c_size; k++)
+                        {
+                            assert(level(var(c[k])) == 0);
+                            assert(reason(var(c[k])) != CRef_Fake);
+                            assert(reason(var(c[k])) != CRef_Undef);
+//                            printf("Enqueued: %d\n", var(first));
+                            proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                        }
+                        CRef unitClause = ca.alloc(vec<Lit>{first});
+                        proof->endChain(unitClause);
+                        // Replace the reason for enqueing the literal with the unit clause.
+                        // Necessary for correct functioning of proof logging in analyze()
+                        cr = unitClause;
+                    }
+//                    printf("Enqueued: %d\n", var(first));
+//                    if(cr == 497){
+//                        printf("Here\n");
+//                    }
+                    uncheckedEnqueue(first, cr);
+                }
+            } else if (value(c[2]) == l_False) {
+                if(!tested){
+                    if(!next_arr[var(~c[0])]){
+                        close_to_prop += 1;
+                    }
+                    if(!next_arr[var(~c[1])]){
+                        close_to_prop += 1;
+                    }
+                    next_arr[var(~c[0])] = true;
+                    next_arr[var(~c[1])] = true;
+                } else {
+                    if(before_lookahead){
+                        next_init.insert(var(~c[0]));
+                        next_init.insert(var(~c[1]));
+                    }
+                }
+            }
+            NextClause:
+            ;
+        }
+        ws.shrink(i - j);
+    }
+    propagations += num_props;
+    simpDB_props -= num_props;
+
+    return confl;
+}
 
 std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() {
     ConflQuota prev = confl_quota;

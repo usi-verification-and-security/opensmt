@@ -96,6 +96,12 @@ protected:
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
     Var newVar(bool sign, bool dvar) override;
+
+    CRef propagate();
+
+    void detachClause(CRef cr, bool strict);
+
+    void attachClause(CRef cr);
 };
 
 // Maintain the tree explicitly.  Each internal node should have the info whether its
