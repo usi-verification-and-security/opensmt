@@ -154,7 +154,6 @@ class SMTOption {
 
 // Type safe wrapper for split types
 typedef struct SpType    { int t; } SpType;
-typedef struct SpUnit    { int t; } SpUnit;
 typedef struct SpPref    { int t; } SpPref;
 
 typedef struct SpFormat  { int t; } SpFormat;
@@ -177,9 +176,7 @@ static const struct ItpAlgorithm itp_lra_alg_decomposing_weak  = {5 };
 static const char *itp_lra_factor_0 = "1/2";
 
 inline bool operator==(const SpType& s1, const SpType& s2) { return s1.t == s2.t; }
-inline bool operator==(const SpUnit& s1, const SpUnit& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpType& s1, const SpType& s2) { return s1.t != s2.t; }
-inline bool operator!=(const SpUnit& s1, const SpUnit& s2) { return s1.t != s2.t; }
 inline bool operator==(const SpPref& s1, const SpPref& s2) { return s1.t == s2.t; }
 inline bool operator!=(const SpPref& s1, const SpPref& s2) { return s1.t != s2.t; }
 inline bool operator==(const SpFormat& s1, const SpFormat& s2) { return s1.t == s2.t; }
@@ -204,9 +201,7 @@ static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
 static const struct SpType spt_scatter   = { 2 };
 
-static const struct SpUnit spm_decisions = { 0 };
-static const struct SpUnit spm_time      = { 1 };
-static const struct SpUnit spm_unknown   = { 2 };
+enum class SpUnit : char { decisions, time };
 
 static const struct SpPref sppref_tterm = { 0 };
 static const struct SpPref sppref_blind = { 1 };
@@ -292,6 +287,7 @@ public:
   static const char* o_sat_split_num;
   static const char* o_sat_split_fix_vars; // Like split_num, but give the number of vars to fix instead
   static const char* o_sat_split_asap;
+  static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
   static const char* o_sat_pure_lookahead;
   static const char* o_lookahead_score_deep;
@@ -304,11 +300,10 @@ public:
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
   static const char* o_do_substitutions;
-  static const char* o_smt_split_format;
-  static const char* o_smt_split_format_length;
   static const char* o_respect_logic_partitioning_hints;
   static const char* o_output_dir;
   static const char* o_ghost_vars;
+  static const char* o_sat_solver_limit;
 
 private:
 
@@ -333,6 +328,7 @@ private:
   bool isPreInitializationOption(const char* o_name) {
       return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0
         || strcmp(o_name, o_sat_pure_lookahead) == 0 || strcmp(o_name, o_sat_lookahead_split) == 0
+        || strcmp(o_name, o_sat_scatter_split) == 0
         || strcmp(o_name, o_ghost_vars) == 0;
   }
 
@@ -622,26 +618,17 @@ public:
     { return optionTable.has(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }
 
-  const SpUnit sat_resource_units() const {
+  SpUnit sat_resource_units() const {
       if (optionTable.has(o_sat_resource_units)) {
           const char* type = optionTable[o_sat_resource_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return spm_decisions;
+              return SpUnit::decisions;
           else if (strcmp(type, spts_time) == 0)
-              return spm_time;
+              return SpUnit::time;
       }
-      return spm_unknown;
+      return SpUnit::decisions;
     }
-  const SpFormat smt_split_format_length() const {
-      if (optionTable.has(o_smt_split_format_length)) {
-          const char* type = optionTable[o_smt_split_format_length]->getValue().strval;
-          if (strcmp(type, spformats_brief) == 0)
-              return spformat_brief;
-          else if (strcmp(type, spformats_full) == 0)
-              return spformat_full;
-      }
-      return spformat_full; // The default
-    }
+
   bool respect_logic_partitioning_hints() const
   { return optionTable.has(o_respect_logic_partitioning_hints) ?
       optionTable[o_respect_logic_partitioning_hints]->getValue().numval : 0; }
@@ -712,28 +699,26 @@ public:
     { return optionTable.has(o_sat_split_test_cube_and_conquer) ?
         optionTable[o_sat_split_test_cube_and_conquer]->getValue().numval : 0; }
 
-  const SpType sat_split_type() const {
-      if (sat_lookahead_split())
+  SpType sat_split_type() const {
+      if (sat_lookahead_split()) {
           return spt_lookahead;
-      if (optionTable.has(o_sat_split_type)) {
-        const char* type = optionTable[o_sat_split_type]->getValue().strval;
-        if (strcmp(type, spts_lookahead) == 0)
-            return spt_lookahead;
-        else if (strcmp(type, spts_scatter) == 0)
-            return spt_scatter;
+      } else if (sat_scatter_split()) {
+          return spt_scatter;
+      } else {
+          return spt_none;
       }
-      return spt_none; }
+  }
 
-  const SpUnit sat_split_units() const {
+  SpUnit sat_split_units() const {
       if (optionTable.has(o_sat_split_units)) {
           const char* type = optionTable[o_sat_split_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return spm_decisions;
+              return SpUnit::decisions;
           else if (strcmp(type, spts_time) == 0)
-              return spm_time;
+              return SpUnit::time;
       }
-      return spm_decisions;
-    }
+      return SpUnit::decisions;
+  }
 
   double sat_split_inittune() const {
       return optionTable.has(o_sat_split_inittune) ?
@@ -759,6 +744,10 @@ public:
       return optionTable.has(o_sat_lookahead_split) ?
               optionTable[o_sat_lookahead_split]->getValue().numval :
               0; }
+  int sat_scatter_split() const {
+      return optionTable.has(o_sat_scatter_split) ?
+             optionTable[o_sat_scatter_split]->getValue().numval :
+             0; }
   int sat_pure_lookahead() const {
       return optionTable.has(o_sat_pure_lookahead) ?
               optionTable[o_sat_pure_lookahead]->getValue().numval :
@@ -813,6 +802,10 @@ public:
 
    bool use_theory_polarity_suggestion() const
    { return sat_theory_polarity_suggestion != 0; }
+
+   int sat_solver_limit() const
+   { return optionTable.has(o_sat_solver_limit) ?
+        optionTable[o_sat_solver_limit]->getValue().numval : 0; }
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?

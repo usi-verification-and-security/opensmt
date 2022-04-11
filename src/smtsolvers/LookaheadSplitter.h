@@ -1,11 +1,15 @@
-//
-// Created by prova on 08.02.19.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Seyedmasoud Asadzadeh <seyedmasoud.asadzadeh@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_LOOKAHEADSPLITTER_H
 #define OPENSMT_LOOKAHEADSPLITTER_H
 
 #include "LookaheadSMTSolver.h"
+#include "SplitData.h"
 
 static inline int getLog2Ceil(int i)
 {
@@ -19,6 +23,9 @@ static inline int getLog2Ceil(int i)
 }
 
 class LookaheadSplitter : public LookaheadSMTSolver {
+
+private:
+    std::vector<SplitData> splits;
 protected:
     LALoopRes solveLookahead() override;
     class LASplitNode : public LookaheadSMTSolver::LANode {
@@ -69,6 +76,8 @@ protected:
 
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
+
+    std::vector<SplitData> const & getSplits() const { return splits; }
 };
 
 #endif //OPENSMT_LOOKAHEADSPLITTER_H

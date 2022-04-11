@@ -82,11 +82,11 @@ TRes THandler::check(bool complete) {
 
 std::vector<vec<Lit>> THandler::getNewSplits() {
     vec<PTRef> newSplits = getSolverHandler().getSplitClauses();
-
     std::vector<vec<Lit>> splitClauses;
     if (newSplits.size() == 0) {
         return splitClauses;
     }
+    assert(std::set<PTRef>(newSplits.begin(), newSplits.end()).size() == newSplits.size_()); // No duplicates in splits
     for (PTRef clause : newSplits) {
         splitClauses.emplace_back();
         Logic const & logic = getLogic();

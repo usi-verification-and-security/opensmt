@@ -1,6 +1,10 @@
-//
-// Created by prova on 05.08.20.
-//
+/*
+ *  Copyright (c) 2020 - 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_PARTITIONMANAGER_H
 #define OPENSMT_PARTITIONMANAGER_H
@@ -48,14 +52,11 @@ public:
 
     void invalidatePartitions(const ipartitions_t & toinvalidate);
 
-    inline std::vector<PTRef> getPartitions() { return partitionInfo.getTopLevelFormulas(); }
+    inline std::vector<PTRef> getPartitions() const { return partitionInfo.getTopLevelFormulas(); }
 
+    vec<PTRef> getPartitions(ipartitions_t const &) const;
 
-    std::vector<PTRef> getPartitions(ipartitions_t const &) {
-        throw std::logic_error{"Not supported at the moment!"};
-    }
-
-    unsigned getNofPartitions() { return partitionInfo.getNoOfPartitions(); }
+    unsigned getNofPartitions() const { return partitionInfo.getNoOfPartitions(); }
 
     void transferPartitionMembership(PTRef old, PTRef new_ptref) {
         this->addIPartitions(new_ptref, getIPartitions(old));

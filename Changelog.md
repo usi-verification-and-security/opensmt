@@ -1,20 +1,52 @@
-### 2.2.1 (unreleased)
+### 2.3.2 (unreleased)
+
+Bug fixes:
+ - STP: Fix crash on problems with no theory variables
+ - UF+Interpolation: Fix bug in congruence graph coloring
+
+Build:
+ - Support building statically linked executable
+
+### 2.3.1 (2022-03-16)
+
+Bug fixes:
+ - Fix crash on non-standard SMT-LIB scripts
+
+Various improvements:
+ - Small performance improvements for Arithmetic theories
+ - Small performance improvements for preprocessing
+
+Build:
+ - Fix version number in CMake files
+
+### 2.3.0 (2022-03-09)
 
 Performance improvements:
  - Arithmetic: Pooling of `mpq_class` objects for memory reuse.
  - UF: Avoid unnecessary `Enode` instances (negated booleans)
  - UF: Simplified `Enode` representation of terms.
+ - Integer arithmetic: Support of cuts-from-proofs algorithm to better avoid divergence.
 
 Bug fixes:
  - UF: Fix internal error on top-level distinct in incremental mode.
+ - LIA+Interpolation: Fix interpolation in incremental mode when split clauses are involved.
+ - UF+Interpolation: Fix interpolation in the presence of `distinct`s.
+ - Logic+Parser: Fix handling of (unusual) quoted identifiers.
+ - Logic+Parser: Fix handling of qualified terms (operator `as`).
 
 API changes:
  - Logic: `Logic` now takes SMT-LIB logic type as a constructor parameter to determine which terms it should support.
  - Logic: Support for sorts with arity > 0.
  - Logic: Unification of all arithmetic `Logic`s into a single `ArithLogic`.
 
+New features:
+- Support for theory combination: QF_UFLRA, QF_UFLIA.
+
 Build:
  - The default build does not depend on line editing libraries.
+
+ Various improvements:
+ - Fix several memory leaks mostly related to string manipulation.
 
 ### 2.2.0 (2021-10-04)
 

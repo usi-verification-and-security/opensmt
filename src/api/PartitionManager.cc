@@ -1,6 +1,10 @@
-//
-// Created by prova on 05.08.20.
-//
+/*
+ *  Copyright (c) 2020 - 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "PartitionManager.h"
 #include "TreeOps.h"
@@ -60,7 +64,12 @@ PTRef PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager
     vec<PTRef> args;
     for (auto part : parts)
     {
-        const auto & p_mask = getIPartitions(part);
+        int partitionIndex = getPartitionIndex(part);
+        if (partitionIndex < 0) {
+            throw OsmtInternalException("Internal error in partition bookkeeping");
+        }
+        ipartitions_t p_mask = 0;
+        opensmt::setbit(p_mask, static_cast<unsigned>(partitionIndex));
         if (isLocalToP(p_mask, mask)) {
             args.push(part);
         }
@@ -68,8 +77,20 @@ PTRef PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager
             throw OsmtInternalException("Assertion is neither A or B");
         }
     }
-    PTRef A = logic.mkAnd(std::move(args));
-    return A;
+    PTRef requestedPartition = logic.mkAnd(std::move(args));
+    return requestedPartition;
+}
+
+vec<PTRef> PartitionManager::getPartitions(ipartitions_t const & mask) const {
+    vec<PTRef> res;
+    for (PTRef topLevelPartition : getPartitions()) {
+        int index = getPartitionIndex(topLevelPartition);
+        assert(index >= 0);
+        if (opensmt::tstbit(mask, static_cast<unsigned>(index))) {
+            res.push(topLevelPartition);
+        }
+    }
+    return res;
 }
 
 void

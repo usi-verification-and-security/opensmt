@@ -986,3 +986,79 @@ TRes LASolver::cutFromProof() {
     setStatus(NEWSPLIT);
     return TRes::SAT;
 }
+
+vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
+    struct DeltaHash {
+        std::size_t operator()(Delta const & d) const {
+            FastRationalHash hasher;
+            return (hasher(d.R()) ^ hasher(d.D()));
+        }
+    };
+
+    vec<PTRef> equalities;
+    std::unordered_map<Delta, vec<PTRef>, DeltaHash> eqClasses;
+    for (PTRef var : vars) {
+        if (logic.isNumConst(var)) {
+            eqClasses[logic.getNumConst(var)].push(var);
+        } else {
+            assert(logic.isNumVar(var));
+            if (not laVarMapper.hasVar(var)) { // LASolver does not have any constraints on this LA var
+                continue;
+            }
+            LVRef v = laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+            auto value = simplex.getValuation(v);
+            eqClasses[value].push(var);
+        }
+    }
+
+    for (auto const & entry : eqClasses) {
+        auto const & equivalentVars = entry.second;
+        for (int i = 0; i < equivalentVars.size(); ++i) {
+            for (int j = i + 1; j < equivalentVars.size(); ++j) {
+                PTRef eq = logic.mkEq(equivalentVars[i], equivalentVars[j]);
+                if (knownEqualities.find(eq) == knownEqualities.end()) {
+                    equalities.push(eq);
+                }
+            }
+        }
+    }
+
+    // Hack to ensure that when model is computed, delta is not picked so that it merges some of the equivalence
+    // classes that are different at this point
+    if (equalities.size() == 0 and not eqClasses.empty()) {
+        std::vector<Delta> valuesWithDelta;
+        for (auto const & entry : eqClasses) {
+            if (entry.first.hasDelta()) {
+                valuesWithDelta.push_back(entry.first);
+            }
+        }
+        for (auto const & val : valuesWithDelta) {
+            for (auto const & entry : eqClasses) {
+                // check if entry.first - val could be 0 for some value of delta, with 0 < delta <= 1
+                auto diff = entry.first - val;
+                if (not diff.hasDelta()) { continue; } // MB: This takes care also of the case where val == entry.first
+                if (isNonNegative(diff.R()) and isPositive(diff.D())) { continue; }
+                if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
+                auto ratio = diff.R() / diff.D();
+                assert(isNegative(ratio));
+                if (ratio < FastRational(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+
+                // They could be equal for the right value of delta, add equalities for cross-product
+                vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);
+                vec<PTRef> const & varsOfSecondVal = entry.second;
+
+                for (PTRef var1 : varsOfFirstVal) {
+                    for (PTRef var2 : varsOfSecondVal) {
+                        PTRef eq = logic.mkEq(var1, var2);
+                        if (knownEqualities.find(eq) == knownEqualities.end()) {
+                            equalities.push(eq);
+                            // MB: It should be OK to decide one such equality, we do not have to add whole cross-product at once
+                            return equalities;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return equalities;
+}

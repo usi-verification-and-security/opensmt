@@ -2,6 +2,7 @@
 (set-option :proof-reduce 1)
 ;(set-option :proof-check 1)
 ;(set-option :verbosity 2)
+(set-option :certify-interpolants 1)
 (set-logic QF_UF)
 (declare-fun a () Bool)
 (declare-fun b () Bool)

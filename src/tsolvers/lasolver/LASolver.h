@@ -17,9 +17,10 @@
 #include "Polynomial.h"
 #include "Simplex.h"
 #include "FarkasInterpolator.h"
+#include "LAVarMapper.h"
 
 #include <unordered_map>
-#include "LAVarMapper.h"
+#include <unordered_set>
 
 class LAVarStore;
 class Delta;
@@ -110,6 +111,8 @@ public:
     void  popBacktrackPoint  ( ) override;                       // Backtrack to last saved point
     void  popBacktrackPoints ( unsigned int ) override;         // Backtrack given number of saved points
     lbool getPolaritySuggestion(PTRef) const;
+    vec<PTRef> collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
+
     PTRef getRealInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t>*, PartitionManager & pmanager);
     PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);
 

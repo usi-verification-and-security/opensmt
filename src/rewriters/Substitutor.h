@@ -17,7 +17,7 @@ private:
 
 public:
 
-    SubstitutionConfig(Logic &, SubMap const & subMap): subMap(subMap) {}
+    SubstitutionConfig(SubMap const & subMap): subMap(subMap) {}
     PTRef rewrite(PTRef term) override {
         PTRef result;
         return subMap.peek(term, result) ? result : term;
@@ -28,7 +28,7 @@ class Substitutor : public Rewriter<SubstitutionConfig> {
     SubstitutionConfig config;
 
 public:
-    Substitutor(Logic &logic, SubstitutionConfig::SubMap const &substs) :
+    Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs) :
             Rewriter<SubstitutionConfig>(logic, config),
-            config(logic, substs) {}
+            config(substs) {}
 };

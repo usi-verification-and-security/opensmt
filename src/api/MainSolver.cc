@@ -25,7 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "MainSolver.h"
-#include "TreeOps.h"
 #include "BoolRewriting.h"
 #include "LookaheadSMTSolver.h"
 #include "LookaheadSplitter.h"
@@ -39,11 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
 #include "CounterRewriter.h"
-
 #include <thread>
-#include <random>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 namespace opensmt { bool stop; }
@@ -217,7 +212,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
 
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
-    thandler.fillTheoryFunctions(modelBuilder);
+    thandler->fillTheoryFunctions(modelBuilder);
 
     return modelBuilder.build();
 }
@@ -225,19 +220,10 @@ std::unique_ptr<Model> MainSolver::getModel() {
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
     return std::make_unique<InterpolationContext>(
-        config, *theory, term_mapper, getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()
+            config, *theory, *term_mapper, getSMTSolver().getProof(), pmanager, getSMTSolver().nVars()
     );
 }
 
-void MainSolver::addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const
-{
-    for (const auto & constr : in) {
-        vec<PTRef> disj_vec;
-        for (PtAsgn pta : constr)
-            disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
-        out.push(logic.mkOr(std::move(disj_vec)));
-    }
-}
 
 bool MainSolver::writeFuns_smtlib2(const char* file) const
 {
@@ -274,50 +260,6 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
     return true;
 }
 
-bool MainSolver::writeSolverSplits_smtlib2(const char* file, char** msg) const
-{
-    std::vector<SplitData>& splits = ts.solver.splits;
-    int i = 0;
-    for (const auto & split : splits) {
-        vec<PTRef> conj_vec;
-        std::vector<vec<PtAsgn> > constraints;
-        split.constraintsToPTRefs(constraints, thandler);
-        addToConj(constraints, conj_vec);
-
-        std::vector<vec<PtAsgn> > learnts;
-        split.learntsToPTRefs(learnts, thandler);
-        addToConj(learnts, conj_vec);
-
-        if (config.smt_split_format_length() == spformat_full)
-            conj_vec.push(root_instance.getRoot());
-
-        PTRef problem = logic.mkAnd(conj_vec);
-
-        char* name;
-        int written = asprintf(&name, "%s-%02d.smt2", file, i ++);
-        assert(written >= 0);
-        (void)written;
-        std::ofstream file;
-        file.open(name);
-        if (file.is_open()) {
-            logic.dumpHeaderToFile(file);
-            logic.dumpFormulaToFile(file, problem);
-
-            if (config.smt_split_format_length() == spformat_full)
-                logic.dumpChecksatToFile(file);
-
-            file.close();
-        }
-        else {
-            written = asprintf(msg, "Failed to open file %s\n", name);
-            assert(written >= 0);
-            free(name);
-            return false;
-        }
-        free(name);
-    }
-    return true;
-}
 
 void MainSolver::printFramesAsQuery() const
 {
@@ -382,23 +324,21 @@ sstat MainSolver::solve()
     status = sstat(ts.solve(en_frames));
 
     if (status == s_True && config.produce_models())
-        thandler.computeModel();
+        thandler->computeModel();
     smt_solver->clearSearch();
     return status;
 }
 
 std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config, THandler & thandler) {
-    SimpSMTSolver* solver = nullptr;
-    if (config.sat_pure_lookahead())
-        solver = new LookaheadSMTSolver(config, thandler);
-    else if (config.sat_lookahead_split())
-        solver = new LookaheadSplitter(config, thandler);
-    else if (config.use_ghost_vars())
-        solver = new GhostSMTSolver(config, thandler);
-    else
-        solver = new SimpSMTSolver(config, thandler);
-
-    return std::unique_ptr<SimpSMTSolver>(solver);
+    if (config.sat_pure_lookahead()) {
+        return std::make_unique<LookaheadSMTSolver>(config, thandler);
+    } else if (config.sat_lookahead_split()) {
+        return std::make_unique<LookaheadSplitter>(config, thandler);
+    } else if (config.use_ghost_vars()) {
+        return std::make_unique<GhostSMTSolver>(config, thandler);
+    } else {
+        return std::make_unique<SimpSMTSolver>(config, thandler);
+    }
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {

@@ -337,130 +337,99 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
     }
 }
 
-void ProofGraph::fillProofGraph()
-{
-    if ( verbose() > 1 )
-    {
+void ProofGraph::fillProofGraph() {
+    if (verbose() > 1) {
         uint64_t mem_used = memUsed();
-        reportf( "; Memory used before filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf("; Memory used before filling the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
-
     std::vector<clauseid_t> q;
-    clauseid_t id;
-    ProofNode* n=NULL;
     q.push_back(getRoot()->getId());
-    do
-    {
-        id=q.back();
-        n=getNode(id);
+    do {
+        clauseid_t id = q.back();
+        ProofNode * n = getNode(id);
         //Node not visited yet
-        if(!isSetVisited1(id))
-        {
+        if (not isSetVisited1(id)) {
             // Enqueue antecedents if not visited
-            if(n->getAnt1() != nullptr && !isSetVisited1(n->getAnt1()->getId())) {
+            if (n->getAnt1() and not isSetVisited1(n->getAnt1()->getId())) {
                 q.push_back(n->getAnt1()->getId());
-            }
-            else if(n->getAnt2() != nullptr && !isSetVisited1(n->getAnt2()->getId())) {
+            } else if (n->getAnt2() and not isSetVisited1(n->getAnt2()->getId())) {
                 q.push_back(n->getAnt2()->getId());
-            }
-            // Mark node as visited if both antecedents visited
-            else
-            {
+            } else { // Mark node as visited if both antecedents visited
                 setVisited1(id);
                 q.pop_back();
                 assert(n);
                 //Non leaf node
-                if(!n->isLeaf())
-                {
+                if (not n->isLeaf()) {
                     n->initClause();
                     mergeClauses(n->getAnt1()->getClause(), n->getAnt2()->getClause(), n->getClause(), n->getPivot());
                 }
             }
-        }
-        else q.pop_back();
-    }
-    while(!q.empty());
+        } else q.pop_back();
+    } while (not q.empty());
     resetVisited1();
 
-    if ( verbose() > 0 )
-    {
+    if (verbose() > 0) {
         uint64_t mem_used = memUsed();
-        reportf( "; Memory used after filling the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf("; Memory used after filling the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 }
 
-void ProofGraph::emptyProofGraph()
-{
-    if ( verbose() > 1 )
-    {
+void ProofGraph::emptyProofGraph() {
+    if (verbose() > 1) {
         uint64_t mem_used = memUsed();
-        reportf( "; Memory used before emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf("; Memory used before emptying the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
-    ProofNode* n = NULL;
-    for(size_t i=0;i< getGraphSize() ;i++)
-    {
-        n=getNode(i);
-        if( n!=NULL && !n->isLeaf() ) { n->resetClause(); }
+    for (size_t i = 0; i < getGraphSize(); ++i) {
+        ProofNode * n = getNode(i);
+        if (n and not n->isLeaf()) { n->resetClause(); }
     }
-    if ( verbose() > 0 )
-    {
+    if (verbose() > 0) {
         uint64_t mem_used = memUsed();
-        reportf( "; Memory used after emptying the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
+        reportf("; Memory used after emptying the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 }
 
-void ProofGraph::normalizeAntecedentOrder()
-{
+void ProofGraph::normalizeAntecedentOrder() {
     // Normalize proof for interpolation
-    std::deque<ProofNode*> q;
-    ProofNode* n;
+    std::deque<ProofNode *> q;
     q.push_back(getRoot());
-    do
-    {
-        n=q.front();
+    do {
+        ProofNode * n = q.front();
         q.pop_front();
-        if(!isSetVisited1(n->getId()))
-        {
-            if(!n->isLeaf())
-            {
+        if (not isSetVisited1(n->getId())) {
+            if (not n->isLeaf()) {
                 q.push_back(n->getAnt1());
                 q.push_back(n->getAnt2());
 
                 // Check pivot in antecedents
                 short f1 = n->getAnt1()->hasOccurrenceBin(n->getPivot());
                 short f2 = n->getAnt2()->hasOccurrenceBin(n->getPivot());
-                assert( f1!=-1 && f2!=-1 );
-                assert( !(f1==1 && f2==1) && !(f1==0 && f2==0) );
+                assert(f1 != -1 && f2 != -1);
+                assert(not (f1 == 1 and f2 == 1) and not(f1 == 0 and f2 == 0));
                 // Exchange antecedents if necessary
-                if( f1==1 && f2==0 )
-                {
-                    ProofNode* aux = n->getAnt1();
-                    n->setAnt1( n->getAnt2() );
-                    n->setAnt2( aux );
+                if (f1 == 1 and f2 == 0) {
+                    ProofNode * aux = n->getAnt1();
+                    n->setAnt1(n->getAnt2());
+                    n->setAnt2(aux);
                 }
             }
             setVisited1(n->getId());
         }
-    }
-    while(!q.empty());
+    } while (not q.empty());
     resetVisited1();
 }
 
-int ProofGraph::cleanProofGraph()
-{
+int ProofGraph::cleanProofGraph() {
     // Remove the unreachable part of the graph
     // Ideally it will be made of subgraphs not connected to the main graph
-    unsigned removed=0;
+    unsigned removed = 0;
     bool done = false;
     unsigned counter = 0;
-    while(!done)
-    {
+    while (not done) {
         done = true;
-        counter ++;
-        for(size_t i=0;i< getGraphSize() ;i++)
-        {
-            if(getNode(i)!=NULL && getNode(i)->getNumResolvents()==0 && getNode(i)!=getRoot())
-            {
+        counter++;
+        for (size_t i = 0; i < getGraphSize(); i++) {
+            if (getNode(i)  and getNode(i)->getNumResolvents() == 0 and getNode(i) != getRoot()) {
                 done = false;
                 removed += removeTree(i);
             }
@@ -470,82 +439,71 @@ int ProofGraph::cleanProofGraph()
 }
 
 //Remove a node from the graph
-void ProofGraph::removeNode(clauseid_t vid)
-{
-    ProofNode* n=getNode(vid);
+void ProofGraph::removeNode(clauseid_t vid) {
+    ProofNode * n = getNode(vid);
     assert(n);
-    if(n->getAnt1()==NULL && n->getAnt2()==NULL) removeLeaf(vid);
-    n->setAnt1(NULL); n->setAnt2(NULL);
-    // Free memory
+    if (n->getAnt1() == nullptr and n->getAnt2() == nullptr) {
+        removeLeaf(vid);
+    }
+    n->setAnt1(nullptr);
+    n->setAnt2(nullptr);
     delete n;
-    // Remove v from proof
-    graph[vid]=NULL;
+    // Remove n from proof
+    graph[vid] = nullptr;
 }
 
-unsigned ProofGraph::removeTree( clauseid_t vid )
-{
+unsigned ProofGraph::removeTree(clauseid_t vid) {
     assert(getNode(vid));
-    assert(getNode(vid)->getNumResolvents() == 0 );
-    unsigned removed=0;
+    assert(getNode(vid)->getNumResolvents() == 0);
+    unsigned removed = 0;
 
     //Go on removing nodes with 0 resolvents
     //Visit graph from root keeping track of edges and nodes
-    std::deque< clauseid_t > q;
-    ProofNode * n;
-    clauseid_t c;
+    std::deque<clauseid_t> q;
     // Better a set than a boolean vector to avoid wasting memory
     std::set<clauseid_t> visit;
-
-    q.push_back( vid );
-    do
-    {
-        c = q.front( );
-        q.pop_front( );
-        assert( c < getGraphSize() );
-        n = getNode(c);
+    q.push_back(vid);
+    do {
+        clauseid_t c = q.front();
+        q.pop_front();
+        assert(c < getGraphSize());
+        ProofNode * n = getNode(c);
         //Remove node if no more resolvents present
-        if( n!= NULL && n->getNumResolvents() == 0 )
-        {
-            if( n->getAnt1()!=NULL )
-            {
-                assert(getNode(n->getAnt1()->getId())==n->getAnt1());
-                q.push_back( n->getAnt1()->getId() );
-                n->getAnt1()->remRes( c );
+        if (n and n->getNumResolvents() == 0) {
+            if (n->getAnt1()) {
+                assert(getNode(n->getAnt1()->getId()) == n->getAnt1());
+                q.push_back(n->getAnt1()->getId());
+                n->getAnt1()->remRes(c);
             }
-            if( n->getAnt2()!=NULL )
-            {
-                assert(getNode(n->getAnt2()->getId())==n->getAnt2());
-                q.push_back( n->getAnt2()->getId() );
-                n->getAnt2()->remRes( c );
+            if (n->getAnt2()) {
+                assert(getNode(n->getAnt2()->getId()) == n->getAnt2());
+                q.push_back(n->getAnt2()->getId());
+                n->getAnt2()->remRes(c);
             }
-            removeNode( c );
+            removeNode(c);
             removed++;
         }
-    }
-    while( !q.empty( ) );
-
+    } while (not q.empty());
     return removed;
 }
 
-clauseid_t ProofGraph::dupliNode( RuleContext& ra )
-{
+clauseid_t ProofGraph::dupliNode(RuleContext & ra) {
     clauseid_t v_id = ra.getV();
-    ProofNode* w = getNode( ra.getW() );
+    ProofNode * w = getNode(ra.getW());
     assert(w);
-    unsigned num_old_res = w->getNumResolvents(); (void)num_old_res;
-    assert( num_old_res > 1);
+    unsigned num_old_res = w->getNumResolvents();
+    assert(num_old_res > 1); (void) num_old_res;
     for (clauseid_t resolvent_id : w->getResolvents()) {
-        ProofNode* res = getNode(resolvent_id); assert(res); (void)res;
-        assert(res->getAnt1()==w || res->getAnt2()==w);
+        ProofNode * res = getNode(resolvent_id);
+        assert(res); (void) res;
+        assert(res->getAnt1() == w or res->getAnt2() == w);
     }
-
-    ProofNode* n=new ProofNode();
-
     // Create node and add to graph vector
-    clauseid_t currId=getGraphSize();
+    ProofNode * n = new ProofNode();
+    clauseid_t currId = getGraphSize();
     n->setId(currId);
     graph.push_back(n);
-    assert(getNode(currId)==n);
+    assert(getNode(currId) == n);
     n->setType(w->getType());
     n->initClause(w->getClause());
     n->setClauseRef(w->getClauseRef());
@@ -559,14 +517,14 @@ clauseid_t ProofGraph::dupliNode( RuleContext& ra )
 
     // The new node replaces w in the context
     // w loses v but keeps everything else
-    ProofNode* v = getNode(v_id);
+    ProofNode * v = getNode(v_id);
     w->remRes(v_id);
     n->addRes(v_id);
-    if(v->getAnt1() == w) v->setAnt1(n);
-    else if(v->getAnt2() == w) v->setAnt2(n);
+    if (v->getAnt1() == w) v->setAnt1(n);
+    else if (v->getAnt2() == w) v->setAnt2(n);
     else throw OsmtInternalException("Error in node duplication");
-    assert( w->getResolvents().find(v_id) == w->getResolvents().end());
-    assert( w->getNumResolvents() == num_old_res - 1);
+    assert(w->getResolvents().find(v_id) == w->getResolvents().end());
+    assert(w->getNumResolvents() == num_old_res - 1);
     // Remember to modify context
     ra.cw = currId;
 

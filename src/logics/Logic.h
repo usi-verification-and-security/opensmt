@@ -1,27 +1,10 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2015 Antti Hyvarinen
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+/*
+ * Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2018-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 
 #ifndef LOGIC_H
@@ -35,6 +18,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 #include "FunctionTools.h"
 #include "TypeUtils.h"
+#include "NatSet.h"
+
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -46,7 +31,6 @@ class Logic {
   public:
     using SubstMap = MapWithKeys<PTRef,PTRef,PTRefHash>;
   protected:
-    static std::size_t abstractValueCount;
     static const char* e_argnum_mismatch;
     static const char* e_bad_constant;
 
@@ -63,6 +47,7 @@ class Logic {
 
     bool isKnownToUser(std::string_view name) const { return name[0] != s_abstract_value_prefix[0]; }
     bool isKnownToUser(SymRef sr) const { return isKnownToUser(getSymName(sr)); }
+    std::size_t abstractValueCount = 0;
     int distinctClassCount;
 
     class DefinedFunctions {
@@ -97,6 +82,18 @@ class Logic {
     SStore              sort_store;
     SymStore            sym_store;
     PtStore             term_store;
+
+    class TermMarks {
+        nat_set & innerSet;
+    public:
+        TermMarks(nat_set & innerSet, unsigned int domainSize) : innerSet(innerSet){
+            innerSet.assure_domain(domainSize);
+            innerSet.reset();
+        }
+        inline void mark(PTId id) { innerSet.insert(Idx(id)); }
+        inline bool isMarked(PTId id) const { return innerSet.contains(Idx(id)); }
+    };
+    mutable nat_set     auxiliaryNatSet;
 
     SSymRef             sym_IndexedSort;
 
@@ -193,6 +190,12 @@ class Logic {
     const Pterm& getPterm     (const PTRef tr)        const { return term_store[tr];  }
     PtermIter   getPtermIter  ()                            { return term_store.getPtermIter(); }
 
+    /*
+     * Provides an efficient data structure for representing a set of terms through "marking".
+     *
+     * Relies on a term invariant that id of a child is lower than id of a parent.
+     */
+    TermMarks getTermMarks(PTId maxTermId) const { return TermMarks(auxiliaryNatSet, Idx(maxTermId) + 1); }
     // Default values for the logic
 
     // Deprecated! Use getDefaultValuePTRef instead
@@ -278,7 +281,8 @@ public:
     void dumpHeaderToFile(std::ostream& dump_out) const;
     void dumpFormulaToFile(std::ostream& dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
     void dumpChecksatToFile(std::ostream& dump_out) const;
-
+    void dumpWithLets(std::ostream & out, PTRef formula) const;
+    std::string dumpWithLets(PTRef formula) const;
     void dumpFunctions(std::ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
     void dumpFunction(std::ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
     void dumpFunction(std::ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }

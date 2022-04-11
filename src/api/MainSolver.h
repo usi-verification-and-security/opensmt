@@ -68,7 +68,7 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver
 {
-  private:
+  protected:
 
     class PushFramesWrapper {
     private:
@@ -98,8 +98,8 @@ class MainSolver
 
 
     std::unique_ptr<Theory>         theory;
-    TermMapper                      term_mapper;
-    THandler                        thandler;
+    std::unique_ptr<TermMapper>     term_mapper;
+    std::unique_ptr<THandler>       thandler;
     std::unique_ptr<SimpSMTSolver>  smt_solver;
     Logic&                          logic;
     PartitionManager                pmanager;
@@ -150,26 +150,25 @@ class MainSolver
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
-    static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
   public:
 
     MainSolver(Logic& logic, SMTConfig& conf, std::string name)
-        :
-        theory(createTheory(logic, conf)),
-        term_mapper(logic),
-        thandler(getTheory(), term_mapper),
-        smt_solver(createInnerSolver(conf, thandler)),
-        logic(thandler.getLogic()),
-        pmanager(logic),
-        config(conf),
-        pfstore(getTheory().pfstore),
-        ts( config, logic, pmanager, term_mapper, *smt_solver ),
-        solver_name {std::move(name)},
-        check_called(0),
-        status(s_Undef),
-        binary_init(false),
-        root_instance(logic.getTerm_true())
+            :
+            theory(createTheory(logic, conf)),
+            term_mapper(new TermMapper(logic)),
+            thandler(new THandler(getTheory(), *term_mapper)),
+            smt_solver(createInnerSolver(conf, *thandler)),
+            logic(thandler->getLogic()),
+            pmanager(logic),
+            config(conf),
+            pfstore(getTheory().pfstore),
+            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
+            solver_name {std::move(name)},
+            check_called(0),
+            status(s_Undef),
+            binary_init(false),
+            root_instance(logic.getTerm_true())
     {
         conf.setUsedForInitiliazation();
         frames.push(pfstore.alloc());
@@ -177,12 +176,37 @@ class MainSolver
         last.push(logic.getTerm_true());
     }
 
+    MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
+               std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
+            :
+            theory(std::move(th)),
+            term_mapper(std::move(tm)),
+            thandler(std::move(thd)),
+            smt_solver(std::move(ss)),
+            logic(thandler->getLogic()),
+            pmanager(logic),
+            config(conf),
+            pfstore(getTheory().pfstore),
+            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
+            solver_name {std::move(name)},
+            check_called(0),
+            status(s_Undef),
+            binary_init(false),
+            root_instance(logic.getTerm_true())
+    {
+        conf.setUsedForInitiliazation();
+        frames.push(pfstore.alloc());
+        PushFrame& last = pfstore[frames.last()];
+        last.push(logic.getTerm_true());
+    }
+
+    virtual ~MainSolver() = default;
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }
     SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
-    THandler &getTHandler() { return thandler; }
+    THandler &getTHandler() { return *thandler; }
     Logic    &getLogic()    { return logic; }
     Theory   &getTheory()   { return *theory; }
     const Theory &getTheory() const { return *theory; }
@@ -204,8 +228,6 @@ class MainSolver
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
     bool  writeFuns_smtlib2 (const char* file) const;
-    bool  writeSolverSplits_smtlib2(const char* file, char** msg) const;
-    void  addToConj(const std::vector<vec<PtAsgn> >& in, vec<PTRef>& out) const; // Add the contents of in as disjuncts to out
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
@@ -215,11 +237,10 @@ class MainSolver
 
     void stop() { ts.solver.stop = true; }
 
-    bool readFormulaFromFile(const char *file);
-
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
+    static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 };
 
 #endif //

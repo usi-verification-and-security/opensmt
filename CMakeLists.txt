@@ -5,8 +5,8 @@ cmake_policy(SET CMP0074 NEW)
 endif()
 
 set(OPENSMT_VERSION_MAJOR 2)
-set(OPENSMT_VERSION_MINOR 2)
-set(OPENSMT_VERSION_PATCH 1)
+set(OPENSMT_VERSION_MINOR 3)
+set(OPENSMT_VERSION_PATCH 2)
 set(OPENSMT_VERSION ${OPENSMT_VERSION_MAJOR}.${OPENSMT_VERSION_MINOR}.${OPENSMT_VERSION_PATCH})
 project(opensmt VERSION ${OPENSMT_VERSION} LANGUAGES CXX)
 
@@ -41,14 +41,29 @@ option(PRINT_UNITS "Print units" OFF)
 option(DEBUG_GC "Debug garbage collection" OFF)
 option(LADEBUG "Debug lookahead" OFF)
 option(PRINT_DECOMPOSED_STATS "Print statistics about decomposed interpolants" OFF)
+option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
+option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
+
 option(ENABLE_LINE_EDITING "Enable line editing with readline or libedit" OFF)
 option(USE_READLINE "Use readline over libedit" OFF)
+
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
-option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanations" OFF)
-option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
+
+option(PACKAGE_TESTS "Build the tests" ON)
+option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
+
+option(MAXIMALLY_STATIC_BINARY "Link to static versions of the libraries as much as reasonably possible" OFF)
+
+if (MAXIMALLY_STATIC_BINARY)
+    MESSAGE("Building maximally static binaries.  Shared libraries and unit tests will not be built")
+    set(FORCE_STATIC_GMP ON)
+    set(BUILD_SHARED_LIBS OFF)
+    set(PACKAGE_TESTS OFF)
+    set(PACKAGE_BENCHMARKS OFF)
+endif(MAXIMALLY_STATIC_BINARY)
 
 find_package(GMP REQUIRED)
 
@@ -143,10 +158,9 @@ endif()
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
 ################# TESTING #############################################
-option(PACKAGE_TESTS "Build the tests" ON)
 if(PACKAGE_TESTS)
-    if (NOT BUILD_STATIC_LIBS)
-      message(FATAL_ERROR "Building tests requires static libraries")
+    if (NOT BUILD_SHARED_LIBS)
+      message(FATAL_ERROR "Building tests requires shared libraries")
     endif()
     if(CMAKE_VERSION VERSION_LESS 3.11)
         MESSAGE(WARNING "Minimum CMAKE version for building tests is 3.11")
@@ -157,7 +171,7 @@ if(PACKAGE_TESTS)
 endif()
 #########################################################################
 ################# BENCHMARKING ##########################################
-option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
+
 if (PACKAGE_BENCHMARKS)
     if(CMAKE_VERSION VERSION_LESS 3.11)
         MESSAGE(WARNING "Minimum CMAKE version for building benchmarking is 3.11")

@@ -191,7 +191,7 @@ struct ProofNode
         return not ant1;
     }
     // 0 if positive, 1 if negative, -1 if not found
-    short                         hasOccurrenceBin( Var );
+    short hasOccurrenceBin(Var) const;
     // true if positive occurrence pivot is in first antecedent
     bool                          checkPolarityAnt();
 
