@@ -1,4 +1,3 @@
-
 (set-logic QF_LRA)
 (set-info :source | SMT-COMP'06 organizers |)
 (set-info :smt-lib-version 2.0)
