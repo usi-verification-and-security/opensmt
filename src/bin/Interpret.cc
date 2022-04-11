@@ -27,9 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include <string>
 #include <sstream>
-#include <ctime>
-#include <cstdlib>
-#include <cassert>
 #include <cstdio>
 #include <CounterRewriter.h>
 
@@ -40,10 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSplitter.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
-
-#include <string>
-#include <sstream>
-#include <cstdarg>
 #include <unistd.h>
 
 /***********************************************************

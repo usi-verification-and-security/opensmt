@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "IteHandler.h"
 #include "RDLTHandler.h"
 #include "IDLTHandler.h"
-#include "CounterRewriter.h"
 #include <thread>
 #include <fcntl.h>
 
