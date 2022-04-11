@@ -65,8 +65,7 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         currentFrame.root = getLogic().mkAnd(flas);
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
-        auto subs_res = computeSubstitutions(coll_f);
-        PTRef finalFla = flaFromSubstitutionResult(subs_res);
+        PTRef finalFla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
         finalFla = rewriteDistincts(getLogic(), finalFla);
         finalFla = rewriteDivMod<LinAlgLogic>(lalogic, finalFla);
         currentFrame.root = equalityRewriter.rewrite(finalFla);

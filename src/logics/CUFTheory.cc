@@ -19,8 +19,7 @@ bool CUFTheory::simplify(const vec<PFRef>& formulas, PartitionManager&, int curr
         PTRef coll_f = getCollateFunction(formulas, curr);
         PTRef trans = getLogic().learnEqTransitivity(coll_f);
         coll_f = getLogic().mkAnd(coll_f, trans);
-        auto subs_res = computeSubstitutions(coll_f);
-        currentFrame.root = flaFromSubstitutionResult(subs_res);
+        currentFrame.root = applySubstitutionBasedSimplificationIfEnabled(coll_f);
     }
     return true;
 }

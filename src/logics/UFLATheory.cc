@@ -11,8 +11,7 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int cu
         throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
-        auto subs_res = computeSubstitutions(coll_f);
-        PTRef fla = flaFromSubstitutionResult(subs_res);
+        PTRef fla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
         PTRef purified = purify(fla);
         PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
         this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
