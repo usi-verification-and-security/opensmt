@@ -1,80 +1,71 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
-
+/*
+ * Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef Common_TreeOps_h
 #define Common_TreeOps_h
 
-#include <unordered_set>
-#include "Vec.h"
-#include "Pterm.h"
+
 #include "Logic.h"
+#include "NatSet.h"
+#include "Pterm.h"
+#include "Vec.h"
+
+#include <unordered_set>
 
 
 template<typename TConfig>
 class TermVisitor {
-    Logic & logic;
+    Logic const & logic;
     TConfig & cfg;
 public:
-    TermVisitor(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
+    TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     void visit(PTRef root) {
+        // Avoid initializations if no traversal will be done
+        if (logic.isVar(root)) {
+            if (cfg.previsit(root))
+                cfg.visit(root);
+            return;
+        }
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
             PTRef term;
             unsigned int nextChild = 0;
         };
-        // MB: Relies on an invariant that id of a child is lower than id of a parent.
-        auto size = Idx(logic.getPterm(root).getId()) + 1;
-        std::vector<char> done;
-        done.resize(size, 0);
+
+        auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
+            auto currentId = logic.getPterm(currentRef).getId();
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
-                done[Idx(logic.getPterm(currentRef).getId())] = 1;
+                termMarks.mark(currentId);
                 continue;
             }
-            assert(not done[Idx(logic.getPterm(currentRef).getId())]);
+            assert(not termMarks.isMarked(currentId));
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
-                if (not done[Idx(logic.getPterm(nextChild).getId())]) {
+                auto childId = logic.getPterm(nextChild).getId();
+                if (not termMarks.isMarked(childId)) {
                     toProcess.push_back(DFSEntry(nextChild));
                 }
                 continue;
             }
             // If we are here, we have already processed all children
-            assert(done[Idx(term.getId())] == 0);
+            assert(not termMarks.isMarked(currentId));
             cfg.visit(currentRef);
-            done[Idx(logic.getPterm(currentRef).getId())] = 1;
+            termMarks.mark(currentId);
             toProcess.pop_back();
         }
     }
@@ -109,10 +100,10 @@ public:
 };
 
 class TopLevelConjunctsConfig : public DefaultVisitorConfig {
-    Logic & logic;
+    Logic const & logic;
     vec<PTRef> & conjuncts;
 public:
-    TopLevelConjunctsConfig(Logic & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
+    TopLevelConjunctsConfig(Logic const & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
 
     bool previsit(PTRef term) override {
         if (not logic.isAnd(term)) {
@@ -123,12 +114,12 @@ public:
     }
 };
 
-inline void topLevelConjuncts(Logic & logic, PTRef fla, vec<PTRef> & res) {
+inline void topLevelConjuncts(Logic const & logic, PTRef fla, vec<PTRef> & res) {
     TopLevelConjunctsConfig config(logic, res);
     TermVisitor<TopLevelConjunctsConfig>(logic, config).visit(fla);
 }
 
-inline vec<PTRef> topLevelConjuncts(Logic & logic, PTRef fla) {
+inline vec<PTRef> topLevelConjuncts(Logic const & logic, PTRef fla) {
     vec<PTRef> res;
     topLevelConjuncts(logic, fla, res);
     return res;

@@ -75,6 +75,7 @@ void STPModel<T>::shiftZero() {
 
 template<class T>
 void STPModel<T>::createModel() {
+    if (graph.isEmpty()) { return; }
     VertexRef start = addStartingPoint();
     bellmanFord(start);
     shiftZero();

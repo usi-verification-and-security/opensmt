@@ -901,7 +901,7 @@ bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const 
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() - 1];
             PTRef movedPartitions = logic.mkAnd(pmanager.getPartitions(A_masks[i] ^ A_masks[i - 1]));
-            propertySatisfied &= VerificationUtils(config, logic).impliesExternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
+            propertySatisfied &= VerificationUtils(config, logic).impliesInternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
             if (not propertySatisfied) {
                 std::cerr << "; Path interpolation does not hold for:\n"
                           << "First interpolant: " << logic.printTerm(previous_itp) << '\n'

@@ -1,6 +1,9 @@
-//
-// Created by prova on 26.04.21.
-//
+/*
+ * Copyright (c) 2021-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef FUNCTION_TOOLS_H
 #define FUNCTION_TOOLS_H

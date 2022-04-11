@@ -16,3 +16,8 @@ void EdgeGraph::clear() {
     incoming.clear();
     outgoing.clear();
 }
+
+bool EdgeGraph::isEmpty() const {
+    assert(incoming.size() == outgoing.size());
+    return incoming.empty();
+}

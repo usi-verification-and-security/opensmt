@@ -1,3 +1,12 @@
+### 2.3.2 (unreleased)
+
+Bug fixes:
+ - STP: Fix crash on problems with no theory variables
+ - UF+Interpolation: Fix bug in congruence graph coloring
+
+Build:
+ - Support building statically linked executable
+
 ### 2.3.1 (2022-03-16)
 
 Bug fixes:

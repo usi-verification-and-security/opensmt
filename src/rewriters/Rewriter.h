@@ -1,6 +1,10 @@
-//
-// Created by Martin Blicha on 10.02.21.
-//
+/*
+ * Copyright (c) 2021-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_REWRITER_H
 #define OPENSMT_REWRITER_H
@@ -26,45 +30,46 @@ public:
             PTRef term;
             unsigned int nextChild = 0;
         };
-        // MB: Relies on an invariant that id of a child is lower than id of a parent.
-        auto size = Idx(logic.getPterm(root).getId()) + 1;
-        std::vector<char> done;
-        done.resize(size, 0);
+        auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
         Map<PTRef, PTRef, PTRefHash> substitutions;
+        vec<PTRef> auxiliaryArgs;
         std::vector<DFSEntry> toProcess;
         toProcess.emplace_back(root);
         while (not toProcess.empty()) {
             auto & currentEntry = toProcess.back();
             PTRef currentRef = currentEntry.term;
-            auto currentId = Idx(logic.getPterm(currentRef).getId());
+            auto currentId = logic.getPterm(currentRef).getId();
             if (not cfg.previsit(currentRef)) {
                 toProcess.pop_back();
-                done[currentId] = 1;
+                termMarks.mark(currentId);
                 continue;
             }
-            assert(not done[currentId]);
+            assert(not termMarks.isMarked(currentId));
             Pterm const & term = logic.getPterm(currentRef);
             unsigned childrenCount = term.size();
             if (currentEntry.nextChild < childrenCount) {
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
-                if (not done[Idx(logic.getPterm(nextChild).getId())]) {
+                auto childId = logic.getPterm(nextChild).getId();
+                if (not termMarks.isMarked(childId)) {
                     toProcess.push_back(DFSEntry(nextChild));
                 }
                 continue;
             }
             // If we are here, we have already processed all children
             assert(not substitutions.has(currentRef));
-            vec<PTRef> newArgs(childrenCount);
+            auxiliaryArgs.capacity(childrenCount);
             bool needsChange = false;
             for (unsigned i = 0; i < childrenCount; ++i) {
                 PTRef target;
                 bool childChanged = substitutions.peek(term[i], target);
                 needsChange |= childChanged;
                 assert(not childChanged or (logic.getSortRef(target) == logic.getSortRef(term[i])));
-                newArgs[i] = childChanged ? target : term[i];
+                PTRef newChild = childChanged ? target : term[i];
+                auxiliaryArgs.push(newChild);
             }
-            PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(newArgs)) : currentRef;
+            PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(auxiliaryArgs)) : currentRef;
+            auxiliaryArgs.clear();
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
 
             PTRef rewritten = cfg.rewrite(newTerm);
@@ -72,7 +77,7 @@ public:
                 assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));
                 substitutions.insert(currentRef, rewritten);
             }
-            done[currentId] = 1;
+            termMarks.mark(currentId);
             toProcess.pop_back();
         }
 

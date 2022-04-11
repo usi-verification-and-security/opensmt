@@ -10,6 +10,8 @@ struct EdgeGraph {
     void addEdge(EdgeRef e, VertexRef from, VertexRef to);
 
     void clear();
+
+    bool isEmpty() const;
 };
 
 #endif //OPENSMT_STPEDGEGRAPH_H

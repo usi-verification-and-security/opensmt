@@ -81,6 +81,18 @@ PTRef PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager
     return requestedPartition;
 }
 
+vec<PTRef> PartitionManager::getPartitions(ipartitions_t const & mask) const {
+    vec<PTRef> res;
+    for (PTRef topLevelPartition : getPartitions()) {
+        int index = getPartitionIndex(topLevelPartition);
+        assert(index >= 0);
+        if (opensmt::tstbit(mask, static_cast<unsigned>(index))) {
+            res.push(topLevelPartition);
+        }
+    }
+    return res;
+}
+
 void
 PartitionManager::addClauseClassMask(CRef c, const ipartitions_t& toadd)
 {
