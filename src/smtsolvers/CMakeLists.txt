@@ -1,10 +1,18 @@
+if(PARALLEL)
+	set(splitter ParallelScatterSplitter)
+else()
+	set(splitter ScatterSplitter)
+endif()
+
 add_library(smtsolvers OBJECT ""
+		${splitter}.cc
+		${splitter}.h
 		LookaheadSMTSolver.cc
 		LookaheadSMTSolver.h
 		LookaheadSplitter.cc
 		LookaheadSplitter.h
-		ScatterSplitter.cc
 		ScatterSplitter.h
+		ScatterSplitter.cc
 		SplitContext.h
 		SplitData.cc
 		SplitData.h
@@ -15,12 +23,12 @@ add_library(smtsolvers OBJECT ""
 target_sources(smtsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.h"
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.h"
+PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${splitter}.h"
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SplitData.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/${splitter}.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SplitData.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryIF.cc"
@@ -48,7 +56,10 @@ install(FILES TheoryInterpolator.h
         DESTINATION ${INSTALL_HEADERS_DIR})
 
 
-install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h
+install(FILES SimpSMTSolver.h CoreSMTSolver.h ${splitter}.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
-target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
+if(PARALLEL)
+	target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
+	target_compile_definitions(smtsolvers PUBLIC -DCUBE_AND_CONQUER)
+endif()
