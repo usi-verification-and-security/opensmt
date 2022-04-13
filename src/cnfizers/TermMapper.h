@@ -61,9 +61,6 @@ class TermMapper {
 
     std::unordered_set<Var> assumptionVars;
 
-    typedef std::map<uint32_t, vec<opensmt::pair<int,int>>> map_frameId_solverBranch;
-    map_frameId_solverBranch frameId_solverBranch;
-
     typedef std::map<Var ,uint32_t> map_var_frameId;
     map_var_frameId var_frameId;
 
@@ -97,12 +94,6 @@ class TermMapper {
     bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
 
     void addAssumptionVar(Var v) { assumptionVars.insert(v); }
-
-    void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
-        frameId_solverBranch[fid] = std::move(solverAddress);
-    }
-
-    vec<opensmt::pair<int,int>> & get_solverBranch(uint32_t fid) { return frameId_solverBranch[fid]; }
 
     void mapEnabledFrameIdToVar(Var v, uint32_t fid) { var_frameId[v] = fid ;}
 
