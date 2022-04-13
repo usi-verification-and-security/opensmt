@@ -126,8 +126,7 @@ int main( int argc, char * argv[] )
         }
     }
 
-    auto channel = std::make_unique<PTPLib::net::Channel>();
-    Interpret interpreter(c, *channel);
+    Interpret interpreter(c);
 
     if (argc - optind == 0) {
         c.setInstanceName("stdin");

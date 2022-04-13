@@ -26,9 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Interpret.h"
 #include "smt2tokens.h"
-#include "MainSolver.h"
 #include "ArithLogic.h"
-#include "MainSplitter.h"
+#include "MainSplitter.hpp"
 #include "LogicFactory.h"
 #include "Substitutor.h"
 
@@ -1086,12 +1085,6 @@ int Interpret::interpFile(char *content){
     return rval;
 }
 
-sstat Interpret::interp_SMT_content(char *content) {
-    int rval = interpFile(content);
-    if (rval != 0)
-        return s_Error;
-    return main_solver->getStatus();
-}
 
 // For reading from pipe
 int Interpret::interpPipe() {
@@ -1358,7 +1351,7 @@ std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) 
         return std::make_unique<MainSplitter>(std::move(th),
                                  std::move(tm),
                                  std::unique_ptr<THandler>(thandler),
-                                 MainSplitter::createInnerSolver(config, *thandler, channel),
+                                 MainSplitter::createInnerSolver(config, *thandler),
                                  *logic,
                                  config,
                                  std::string(logic_name)

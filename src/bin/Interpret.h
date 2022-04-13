@@ -131,7 +131,6 @@ class Interpret {
     SMTConfig &     config;
     std::unique_ptr<Logic> logic;
     std::unique_ptr<MainSolver> main_solver;
-    PTPLib::net::Channel & channel;
 
     bool            f_exit;
 
@@ -186,9 +185,8 @@ class Interpret {
 
   public:
 
-    Interpret(SMTConfig & c, PTPLib::net::Channel & ch)
+    Interpret(SMTConfig & c)
         : config     (c)
-        , channel    (ch)
         , f_exit     (false)
         { }
 
