@@ -271,11 +271,6 @@ CoreSMTSolver::handleUnsat()
     int        backtrack_level;
 
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
-    for(Lit l: conflicting){
-        Var v = var(l);
-        PTRef atom = theory_handler.getTMap().varToPTRef(v);;
-        assert(theory_handler.getLogic().isTheoryTerm(atom));
-    }
 
     assert( max_decision_level <= decisionLevel( ) );
     cancelUntil( max_decision_level );

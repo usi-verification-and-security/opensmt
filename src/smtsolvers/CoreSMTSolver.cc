@@ -89,15 +89,15 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , restart_inc      (c.sat_restart_inc())
     , learntsize_factor((double)1/(double)3)
     , learntsize_inc   ( 1.1 )
-    // More parameters:
-    //
+        // More parameters:
+        //
     , expensive_ccmin  ( true )
     , learntsize_adjust_start_confl (0)
-    // Statistics: (formerly in 'SolverStats')
-    //
+        // Statistics: (formerly in 'SolverStats')
+        //
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
     , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-    // ADDED FOR MINIMIZATION
+        // ADDED FOR MINIMIZATION
     , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
@@ -117,7 +117,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , remove_satisfied      (true)
 #ifdef PEDANTIC_DEBUG
     , max_dl_debug          (0)
-, analyze_cnt           (0)
+    , analyze_cnt           (0)
 #endif
     , conflict_budget       (-1)
     , propagation_budget    (-1)
@@ -302,7 +302,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-            ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -905,8 +905,9 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             // Just give up when fake reason is found -- but clean analyze_toclear
             if (cr == CRef_Fake)
             {
-                for (int j = top; j < analyze_toclear.size(); j++)
+                for (int j = top; j < analyze_toclear.size(); j++) {
                     seen[var(analyze_toclear[j])] = 0;
+                }
                 analyze_toclear.shrink(analyze_toclear.size() - top);
 
                 return false;
@@ -1657,6 +1658,7 @@ static double luby(double y, int x)
     // size of that subsequence:
     int size, seq;
     for (size = 1, seq = 0; size < x+1; seq++, size = 2*size+1);
+
     while (size-1 != x)
     {
         size = (size-1)>>1;

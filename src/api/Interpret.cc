@@ -23,9 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#include <cstdio>
-#include <CounterRewriter.h>
-
 #include "Interpret.h"
 #include "smt2tokens.h"
 #include "ArithLogic.h"
@@ -1305,11 +1302,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         interpolationContext->getSingleInterpolant(itps, partitionings[0]);
     }
 
-    CounterRewriter interesting = CounterRewriter(*logic);
     for (int j = 0; j < itps.size(); j++) {
-        interesting.rewrite(itps[j]);
-        std::cout << "Amount of vars: " << interesting.config.varNumber <<
-            "\nAmount of boolean operators:" << interesting.config.boolNumber << "\n";
         auto itp = logic->pp(itps[j]);
         notify_formatted(false, "%s%s%s",
                          (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
