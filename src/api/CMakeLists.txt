@@ -18,17 +18,20 @@ $<TARGET_OBJECTS:rewriters>
 
 add_library(api OBJECT "")
 
-target_link_libraries(api PUBLIC PTPLib::PTPLib)
+if(PARALLEL)
+    target_link_libraries(api PUBLIC PTPLib::PTPLib)
+    target_compile_definitions(api PUBLIC -DCUBE_AND_CONQUER)
+endif()
 
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
@@ -101,7 +104,7 @@ install(FILES
     Opensmt.h
     smt2tokens.h
     MainSolver.h
-    MainSplitter.h
+    MainSplitter.hpp
     PartitionManager.h
     DESTINATION
     ${INSTALL_HEADERS_DIR}

@@ -16,6 +16,10 @@ if (ENABLE_LINE_EDITING)
 endif()
 
 target_link_libraries(OpenSMT-bin PUBLIC OpenSMT-static)
-target_link_libraries(OpenSMT-bin PUBLIC PTPLib::PTPLib)
+
+if(PARALLEL)
+    target_link_libraries(OpenSMT-bin PUBLIC PTPLib::PTPLib)
+    target_compile_definitions(OpenSMT-bin PUBLIC -DCUBE_AND_CONQUER)
+endif()
 
 install(TARGETS OpenSMT-bin RUNTIME DESTINATION bin)

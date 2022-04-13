@@ -1,24 +1,27 @@
-set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
-set(PTPLib_branch ${branch})
-if(NOT PTPLib_branch )
-  set(PTPLib_branch master)
+if(PARALLEL)
+  set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
+  set(PTPLib_branch ${branch})
+  if(NOT PTPLib_branch)
+    set(PTPLib_branch master)
+  endif()
+
+  message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
+  message("-- PTPLib Branch : ${PTPLib_branch}")
+
+  include(FetchContent)
+  FetchContent_Declare(
+          PTPLib
+          GIT_REPOSITORY ${PTPLib_repository}
+          GIT_TAG ${PTPLib_branch}
+  )
+
+  FetchContent_MakeAvailable(PTPLib)
+
+  add_library(PTPLib::PTPLib ALIAS PTPLib)
+
+  message("-- PTPLib files have been written to: ${PTPLib_SOURCE_DIR}")
+  execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/remove_PTPLib_tests.sh ${PTPLib_SOURCE_DIR} RESULT_VARIABLE res)
 endif()
-message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
-message("-- PTPLib Branch : ${PTPLib_branch}")
-
-include(FetchContent)
-FetchContent_Declare(
-        PTPLib
-        GIT_REPOSITORY ${PTPLib_repository}
-        GIT_TAG ${PTPLib_branch}
-)
-
-FetchContent_MakeAvailable(PTPLib)
-
-add_library(PTPLib::PTPLib ALIAS PTPLib)
-
-message("-- PTPLib files have been written to: ${PTPLib_SOURCE_DIR}")
-execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/remove_PTPLib_tests.sh ${PTPLib_SOURCE_DIR} RESULT_VARIABLE res)
 
 add_subdirectory(proof)
 add_subdirectory(common)
