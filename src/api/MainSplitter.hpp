@@ -125,7 +125,7 @@ public:
         } else if (config.sat_split_type() == spt_lookahead) {
             return std::make_unique<LookaheadSplitter>(config, thandler);
         } else {
-            assert(false);
+            return MainSolver::createInnerSolver(config, thandler);
         }
     }
 
