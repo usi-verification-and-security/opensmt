@@ -296,10 +296,12 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_getvalue: {
-                if (isInitialized()) {
-                    getValue(n.children);
-                } else {
+                if (not isInitialized()) {
                     notify_formatted(true, "Illegal command before set-logic: get-value");
+                } else if (main_solver->getStatus() != s_True) {
+                    notify_formatted(true, "Command get-value called, but solver is not in SAT state");
+                } else {
+                    getValue(n.children);
                 }
                 break;
             }
