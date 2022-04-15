@@ -356,13 +356,7 @@ CRef LookaheadSMTSolver::propagate()
                     std::swap(c[0], c[1]);
                 }
             }
-
-
-            if(c_size == 2){
-                assert(c[1] == false_lit);
-            } else {
-                assert(c[2] == false_lit || (c[1] == false_lit && value(c[2]) == l_False));
-            }
+            assert((c_size == 2 and c[1] == false_lit) or (c[2] == false_lit or (c[1] == false_lit and value(c[2]) == l_False)));
             i++;
 
             // If 0th watch is true, then clause is already satisfied.
