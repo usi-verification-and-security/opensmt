@@ -1,6 +1,9 @@
-//
-// Created by prova on 07.02.19.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Konstantin Britikov <konstantin.britikov@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include "LookaheadSMTSolver.h"
 #include "Proof.h"
