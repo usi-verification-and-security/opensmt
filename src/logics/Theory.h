@@ -159,9 +159,10 @@ class Theory
     inline bool keepPartitions() const { return config.produce_inter(); }
 
     /* Computes the final formula from substitution result.
-     * The formula is the computed formula wiht all subbstitutions conjoined in form of equalities
+     * The formula is the computed formula with all substitutions conjoined in form of equalities
      */
     PTRef flaFromSubstitutionResult(const SubstitutionResult & sr);
+    PTRef applySubstitutionBasedSimplificationIfEnabled(PTRef);
   public:
 
     PushFrameAllocator      pfstore {1024};

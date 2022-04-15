@@ -118,3 +118,7 @@ PTRef Theory::flaFromSubstitutionResult(const Theory::SubstitutionResult & sr) {
     args.push(sr.result);
     return logic.mkAnd(std::move(args));
 }
+
+PTRef Theory::applySubstitutionBasedSimplificationIfEnabled(PTRef root) {
+    return config.do_substitutions() ? flaFromSubstitutionResult(computeSubstitutions(root)) : root;
+}
