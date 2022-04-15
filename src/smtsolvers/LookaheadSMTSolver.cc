@@ -271,8 +271,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
 
 LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
     struct PlainBuildConfig {
-        bool stopCondition(LANode &, int) { return false; }
-        LALoopRes exitState() const { return LALoopRes::unknown; }
+        static bool stopCondition(LANode &, int) { return false; }
+        static LALoopRes exitState() { return LALoopRes::unknown; }
     };
     return buildAndTraverse<LANode, PlainBuildConfig>(PlainBuildConfig()).first;
 };
