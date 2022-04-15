@@ -365,8 +365,8 @@ CRef LookaheadSMTSolver::propagate()
             // Look for new watch:
             for (unsigned k = 3; k < c_size; k++) {
                 if (value(c[k]) != l_False) {
-                    c[2] = c[k];
-                    c[k] = false_lit;
+                    assert(c[2] == false_lit);
+                    std::swap(c[2], c[k]);
                     watches[~c[2]].push(w);
                     goto NextClause;
                 }
