@@ -230,8 +230,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             int curr_dl = decisionLevel();
             uncheckedEnqueue(path[i]);
             lbool res = laPropagateWrapper();
-//            printf("Amount of literals close to propagation: %lu\n", next_s.size());
-//            printf("Number of overall props: %d\n", props);
             // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
             if (res == l_False) {
                 return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
@@ -258,10 +256,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
             }
         }
     }
-//    if(path.size() > 0) {
-//        printf("Propagating: %d\n", path[0]);
-//    }
-//    printf("This is decision level: %d\n", decisionLevel());
     return PathBuildResult::pathbuild_success;
 }
 
@@ -326,7 +320,6 @@ CRef LookaheadSMTSolver::propagate()
 
         for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
         {
-//            props++;
             // Try to avoid inspecting the clause:
 
             // Make sure the false literal is data[1]:
@@ -371,11 +364,7 @@ CRef LookaheadSMTSolver::propagate()
 
             if(c_size > 2 ){
                 if (c[0] == false_lit){
-//                    if(value(c[2]) != l_False){
-//                        c[0] = c[1], c[1] = c[2], c[2] = false_lit;
-//                    } else {
                     c[0] = c[1], c[1] = false_lit;
-//                    }
                 }
                 if (c[1] == false_lit){
                     c[1] = c[2], c[2] = false_lit;
@@ -411,9 +400,6 @@ CRef LookaheadSMTSolver::propagate()
                     goto NextClause;
                 }
             }
-//            if(c[2].x == 176){
-//                cout << "Here";
-//            }
 
             *j++ = w;
             if(value(c[1]) == l_False){
@@ -434,9 +420,6 @@ CRef LookaheadSMTSolver::propagate()
                 }
                 if (value(first) == l_False) // clause is falsified
                 {
-//                    if(cr == 497){
-//                        printf("Here\n");
-//                    }
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -457,7 +440,6 @@ CRef LookaheadSMTSolver::propagate()
                             assert(level(var(c[k])) == 0);
                             assert(reason(var(c[k])) != CRef_Fake);
                             assert(reason(var(c[k])) != CRef_Undef);
-//                            printf("Enqueued: %d\n", var(first));
                             proof->addResolutionStep(reason(var(c[k])), var(c[k]));
                         }
                         CRef unitClause = ca.alloc(vec<Lit>{first});
@@ -466,10 +448,6 @@ CRef LookaheadSMTSolver::propagate()
                         // Necessary for correct functioning of proof logging in analyze()
                         cr = unitClause;
                     }
-//                    printf("Enqueued: %d\n", var(first));
-//                    if(cr == 497){
-//                        printf("Here\n");
-//                    }
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
@@ -524,16 +502,9 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
     tested = true;
-//    int count_pr=0;
-//    int predicted=close_to_prop;
-//    if(close_to_prop==1){
-//        printf("fun");
-//    }
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
     {
             if(next_arr[v] || close_to_prop <= 0) {
-//                count_pr++;
-//                props++;
                 if (!decision[v]) {
                     score->setChecked(v);
 #ifdef LADEBUG
@@ -562,7 +533,6 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                         next_arr[v] = false;
                         close_to_prop--;
                     }
-//                    score->setChecked(v);
                     // It is possible that all variables are assigned here.
                     // In this case it seems that we have a satisfying assignment.
                     // This is in fact a debug check
@@ -609,7 +579,6 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                     printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
 #endif
                     uncheckedEnqueue(l);
-//                    printf("Propagating the literal: %d \n", l.x);
                     lbool res = laPropagateWrapper();
                     if (res == l_False) {
                         best = lit_Undef;
@@ -651,8 +620,6 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                 }
             }
     }
-//    }
-//    printf("Actual props %d vs predicted %d vs remaining %d \n", count_pr, predicted, close_to_prop);
     tested = false;
     best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
