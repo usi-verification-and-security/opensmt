@@ -29,6 +29,11 @@ protected:
         virtual LANode * getParent() { return p; }
         Lit l;
         int d;
+        bool*               next_arr;
+        std::set<Var>       next_init;
+        int                 close_to_prop = 0;
+        bool                before_lookahead = true;
+        bool                tested = true;
         LANode() : l(lit_Undef), d(0) {}
         virtual ~LANode() = default;
         virtual void print_local() const {

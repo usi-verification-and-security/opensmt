@@ -75,6 +75,8 @@ std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a 
 template<class A, class B>
 struct Pair { A first; B second; };
 
+
+
 //=================================================================================================
 // Solver -- the main class:
 
@@ -308,7 +310,6 @@ protected:
     vec<CRef>           clauses;          // List of problem clauses.
     vec<CRef>           learnts;          // List of learnt clauses.
     vec<CRef>           tmp_reas;         // Reasons for minimize_conflicts 2
-    int props = 0;
 #ifdef PEDANTIC_DEBUG
     vec<Clause*>        debug_reasons;    // Reasons for the theory deduced clauses
     Map<Var,int,VarHash> debug_reason_map; // Maps the deduced lit to the clause used to deduce it
@@ -321,9 +322,6 @@ protected:
     vec<bool>           var_seen;
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-    bool*               next_arr;
-    std::set<Var>            next_init;
-    int                 close_to_prop = 0;
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
@@ -344,7 +342,6 @@ protected:
     double              random_seed;      // Used by the random variable selection.
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
-    bool                before_lookahead = true;
 
     ClauseAllocator     ca{512*1024};
 #ifdef CACHE_POLARITY
@@ -382,7 +379,7 @@ protected:
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-    virtual CRef     propagate        ();                                              // Perform unit propagation. Returns possibly conflicting clause.
+    virtual CRef propagate    ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -507,7 +504,7 @@ protected:
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
-    bool tested = true;
+
     //
     // Proof production
     //

@@ -332,18 +332,12 @@ CRef LookaheadSMTSolver::propagate()
             // Make sure the false literal is data[1]:
             CRef     cr        = i->cref;
             Clause&  c         = ca[cr];
-//            if(cr == 497){
-//                printf("Here\n");
-//            }
 
 
 
             unsigned c_size = c.size();
             Lit false_lit = ~p;
 
-            if(!tested){
-                props++;
-            }
             // Try to avoid inspecting the clause:
             if(c_size > 2 && value(c[2]) == l_True){
                 if(!tested) {

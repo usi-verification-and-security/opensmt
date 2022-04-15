@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <algorithm>
 #include <numeric>
+
 // Stress test the theory solver
 void CoreSMTSolver::crashTest(int rounds, Var var_true, Var var_false)
 {

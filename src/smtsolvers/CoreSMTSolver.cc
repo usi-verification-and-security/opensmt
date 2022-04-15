@@ -1,7 +1,9 @@
 /*********************************************************************
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+
 OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
                          2008 - 2012 Roberto Bruttomesso
+
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -9,8 +11,10 @@ without limitation the rights to use, copy, modify, merge, publish,
 distribute, sublicense, and/or sell copies of the Software, and to
 permit persons to whom the Software is furnished to do so, subject to
 the following conditions:
+
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -23,13 +27,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /****************************************************************************************[Solver.C]
 MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
 including without limitation the rights to use, copy, modify, merge, publish, distribute,
 sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all copies or
 substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
 NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
@@ -60,66 +67,66 @@ namespace opensmt {
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-        : config           (c)
-        , theory_handler   (t)
-        , verbosity        (c.verbosity())
-        , init             (false)
-        , stop             (false)
-        // Parameters: (formerly in 'SearchParams')
-        , var_decay        (c.sat_var_decay())
-        , clause_decay     (c.sat_clause_decay())
-        , random_var_freq  (c.sat_random_var_freq())
-        , luby_restart     (c.sat_luby_restart())
-        , ccmin_mode       (c.sat_ccmin_mode())
-        , phase_saving     (c.sat_pcontains())
-        , rnd_pol          (c.sat_rnd_pol())
-        , rnd_init_act     (c.sat_rnd_init_act())
-        , garbage_frac     (c.sat_garbage_frac())
-        , restart_first    (c.sat_restart_first())
-        , restart_inc      (c.sat_restart_inc())
-        , learntsize_factor((double)1/(double)3)
-        , learntsize_inc   ( 1.1 )
-        // More parameters:
-        //
-        , expensive_ccmin  ( true )
-        , learntsize_adjust_start_confl (0)
-        // Statistics: (formerly in 'SolverStats')
-        //
-        , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
-        , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-        // ADDED FOR MINIMIZATION
-        , learnts_size(0) , all_learnts(0)
-        , learnt_theory_conflicts(0)
-        , top_level_lits        (0)
+    : config           (c)
+    , theory_handler   (t)
+    , verbosity        (c.verbosity())
+    , init             (false)
+    , stop             (false)
+    // Parameters: (formerly in 'SearchParams')
+    , var_decay        (c.sat_var_decay())
+    , clause_decay     (c.sat_clause_decay())
+    , random_var_freq  (c.sat_random_var_freq())
+    , luby_restart     (c.sat_luby_restart())
+    , ccmin_mode       (c.sat_ccmin_mode())
+    , phase_saving     (c.sat_pcontains())
+    , rnd_pol          (c.sat_rnd_pol())
+    , rnd_init_act     (c.sat_rnd_init_act())
+    , garbage_frac     (c.sat_garbage_frac())
+    , restart_first    (c.sat_restart_first())
+    , restart_inc      (c.sat_restart_inc())
+    , learntsize_factor((double)1/(double)3)
+    , learntsize_inc   ( 1.1 )
+    // More parameters:
+    //
+    , expensive_ccmin  ( true )
+    , learntsize_adjust_start_confl (0)
+    // Statistics: (formerly in 'SolverStats')
+    //
+    , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
+    , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+    // ADDED FOR MINIMIZATION
+    , learnts_size(0) , all_learnts(0)
+    , learnt_theory_conflicts(0)
+    , top_level_lits        (0)
 
-        , ok                    (true)
-        , conflict_frame        (0)
-        , n_clauses             (0)
-        , cla_inc               (1)
-        , var_inc               (1)
-        , watches               (WatcherDeleted(ca))
-        , qhead                 (0)
-        , simpDB_assigns        (-1)
-        , simpDB_props          (0)
-        , order_heap            (VarOrderLt(activity))
-        , random_seed           (c.getRandomSeed())
-        , progress_estimate     (0)
-        , remove_satisfied      (true)
+    , ok                    (true)
+    , conflict_frame        (0)
+    , n_clauses             (0)
+    , cla_inc               (1)
+    , var_inc               (1)
+    , watches               (WatcherDeleted(ca))
+    , qhead                 (0)
+    , simpDB_assigns        (-1)
+    , simpDB_props          (0)
+    , order_heap            (VarOrderLt(activity))
+    , random_seed           (c.getRandomSeed())
+    , progress_estimate     (0)
+    , remove_satisfied      (true)
 #ifdef PEDANTIC_DEBUG
-        , max_dl_debug          (0)
-    , analyze_cnt           (0)
+    , max_dl_debug          (0)
+, analyze_cnt           (0)
 #endif
-        , conflict_budget       (-1)
-        , propagation_budget    (-1)
-        , asynch_interrupt      (false)
-        , learnt_t_lemmata      (0)
-        , perm_learnt_t_lemmata (0)
-        , luby_i                (0)
-        , luby_k                (1)
-        , cuvti                 (false)
-        , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
+    , conflict_budget       (-1)
+    , propagation_budget    (-1)
+    , asynch_interrupt      (false)
+    , learnt_t_lemmata      (0)
+    , perm_learnt_t_lemmata (0)
+    , luby_i                (0)
+    , luby_k                (1)
+    , cuvti                 (false)
+    , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
 #ifdef STATISTICS
-, preproc_time          (0)
+    , preproc_time          (0)
     , elim_tvars            (0)
 #endif
 { }
@@ -143,24 +150,24 @@ CoreSMTSolver::initialize( )
     //
     switch ( config.sat_polarity_mode )
     {
-        case 0:
-            polarity_mode = polarity_true;
-            break;
-        case 1:
-            polarity_mode = polarity_false;
-            break;
-        case 2:
-            polarity_mode = polarity_rnd;
-            break;
-        case 3:
-            polarity_mode = polarity_user;
-            break; // Polarity is set in
-        case 4:
-            polarity_mode = polarity_user;
-            break; // THandler.C for
-        case 5:
-            polarity_mode = polarity_user;
-            break; // Boolean atoms
+    case 0:
+        polarity_mode = polarity_true;
+        break;
+    case 1:
+        polarity_mode = polarity_false;
+        break;
+    case 2:
+        polarity_mode = polarity_rnd;
+        break;
+    case 3:
+        polarity_mode = polarity_user;
+        break; // Polarity is set in
+    case 4:
+        polarity_mode = polarity_user;
+        break; // THandler.C for
+    case 5:
+        polarity_mode = polarity_user;
+        break; // Boolean atoms
     }
 
     if (config.produce_inter() && !proof) {
@@ -298,7 +305,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original, false);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                            ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+            ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -1158,7 +1165,7 @@ CRef CoreSMTSolver::propagate()
                 uncheckedEnqueue(first, cr);
             }
 
-            NextClause:
+NextClause:
             ;
         }
         ws.shrink(i - j);
@@ -1628,13 +1635,18 @@ double CoreSMTSolver::progressEstimate() const
 
 /*
   Finite subsequences of the Luby-sequence:
+
   0: 1
   1: 1 1 2
   2: 1 1 2 1 1 2 4
   3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
   ...
+
+
+
 static double luby(double y, int x)
 {
+
     // Find the finite subsequence that contains index 'x', and the
     // size of that subsequence:
     int size, seq;
@@ -1645,6 +1657,7 @@ static double luby(double y, int x)
         seq--;
         x = x % size;
     }
+
     return pow(y, seq);
 }
 */
@@ -1795,7 +1808,7 @@ void CoreSMTSolver::clearSearch()
 {
     cancelUntil(0);
 //    if (first_model_found || splits.size() > 1) {
-    theory_handler.backtrack(-1);
+        theory_handler.backtrack(-1);
 //    }
 }
 
