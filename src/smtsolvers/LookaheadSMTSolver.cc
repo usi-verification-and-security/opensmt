@@ -95,7 +95,7 @@ lbool LookaheadSMTSolver::solve_() {
             model[p] = value(p);
         }
     }
-    delete next_arr;
+    delete[] next_arr;
     switch (res) {
         case LALoopRes::unknown_final:
             return l_Undef;
