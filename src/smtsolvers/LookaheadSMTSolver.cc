@@ -55,11 +55,11 @@ Var LookaheadSMTSolver::newVar(bool sign, bool dvar) {
 lbool LookaheadSMTSolver::solve_() {
     declareVarsToTheories();
     before_lookahead = false;
-    next_arr = new bool[nVars()]();
-    auto it = next_init.begin();
-    while(it!=next_init.end()){
-        next_arr[*it] = true;
-        it++;
+    next_arr.clear();
+    next_arr.growTo(nVars(), false);
+
+    for (auto it : next_init) {
+        next_arr[it] = true;
     }
     close_to_prop = next_init.size();
     double nof_conflicts = restart_first;
@@ -84,7 +84,7 @@ lbool LookaheadSMTSolver::solve_() {
             model[p] = value(p);
         }
     }
-    delete[] next_arr;
+
     switch (res) {
         case LALoopRes::unknown_final:
             return l_Undef;
