@@ -9,16 +9,14 @@
 #include "Proof.h"
 
 
-void LookaheadSMTSolver::attachClause(CRef cr)
-{
+void LookaheadSMTSolver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
-    if(c.size() > 2 ){
+    if (c.size() > 2) {
         watches[~c[2]].push(Watcher(cr, c[0]));
-    }
-    else{
+    } else {
         next_init.insert(var(~c[0]));
         next_init.insert(var(~c[1]));
     }
@@ -28,19 +26,15 @@ void LookaheadSMTSolver::attachClause(CRef cr)
 }
 
 
-void LookaheadSMTSolver::detachClause(CRef cr, bool strict)
-{
+void LookaheadSMTSolver::detachClause(CRef cr, bool strict) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
-    if (strict)
-    {
+    if (strict) {
         remove(watches[~c[0]], Watcher(cr, c[1]));
         remove(watches[~c[1]], Watcher(cr, c[0]));
-        if(c.size() > 2 )
+        if (c.size() > 2)
             remove(watches[~c[2]], Watcher(cr, c[0]));
-    }
-    else
-    {
+    } else {
         // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
         watches.smudge(~c[0]);
         watches.smudge(~c[1]);
@@ -148,19 +142,15 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
 #endif
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
-            if (out_learnt.size() == 1)
-            {
+            if (out_learnt.size() == 1) {
                 CRef reason = CRef_Undef;
-                if (logsProofForInterpolation())
-                {
+                if (logsProofForInterpolation()) {
                     CRef crd = ca.alloc(out_learnt, false);
                     proof->endChain(crd);
                     reason = crd;
                 }
                 uncheckedEnqueue(out_learnt[0], reason);
-            }
-            else
-            {
+            } else {
                 CRef crd = ca.alloc(out_learnt, true);
                 if (logsProofForInterpolation()) {
                     proof->endChain(crd);
@@ -226,8 +216,7 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     for (int i = path.size() - 1; i >= 0; i--) {
         newDecisionLevel();
 
-        if (value(path[i]) == l_Undef)
-        {
+        if (value(path[i]) == l_Undef) {
 #ifdef LADEBUG
             printf("I will propagate %d\n", var(path[i]));
 #endif
@@ -315,15 +304,13 @@ CRef LookaheadSMTSolver::propagate()
     int     num_props = 0;
     watches.cleanAll();
 
-    while (qhead < trail.size())
-    {
+    while (qhead < trail.size()) {
         Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         vec<Watcher>&  ws  = watches[p];
         Watcher        *i, *j, *end;
         num_props++;
 
-        for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;)
-        {
+        for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;) {
             // Try to avoid inspecting the clause:
 
             // Make sure the false literal is data[1]:
@@ -336,8 +323,8 @@ CRef LookaheadSMTSolver::propagate()
             Lit false_lit = ~p;
 
             // Try to avoid inspecting the clause:
-            if(c_size > 2 && value(c[2]) == l_True){
-                if(!tested) {
+            if (c_size > 2 and value(c[2]) == l_True) {
+                if (!tested) {
                     if (next_arr[var(~c[0])]) {
                         close_to_prop--;
                     }
@@ -351,8 +338,8 @@ CRef LookaheadSMTSolver::propagate()
                 continue;
             }
 
-            if(value(c[0]) == l_True || value(c[1]) == l_True){
-                if(!tested) {
+            if (value(c[0]) == l_True or value(c[1]) == l_True) {
+                if (!tested) {
                     if (next_arr[var(~c[0])]) {
                         close_to_prop--;
                     }
@@ -406,24 +393,24 @@ CRef LookaheadSMTSolver::propagate()
             }
 
             *j++ = w;
-            if(value(c[1]) == l_False){
-                if(!tested){
-                    if(next_arr[var(~c[0])]){
+            if (value(c[1]) == l_False) {
+                if (!tested) {
+                    if (next_arr[var(~c[0])]) {
                         close_to_prop--;
                     }
-                    if(next_arr[var(~c[1])]){
+                    if (next_arr[var(~c[1])]) {
                         close_to_prop--;
                     }
                     next_arr[var(~c[0])] = false;
                     next_arr[var(~c[1])] = false;
                 } else {
-                    if(before_lookahead){
+                    if (before_lookahead) {
                         next_init.erase(var(~c[0]));
                         next_init.erase(var(~c[1]));
                     }
                 }
-                if (value(first) == l_False) // clause is falsified
-                {
+                if (value(first) == l_False) {
+                    // clause is falsified
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -439,8 +426,7 @@ CRef LookaheadSMTSolver::propagate()
                         //     is not constructed correctly
                         proof->beginChain(cr);
 
-                        for (unsigned k = 1; k < c_size; k++)
-                        {
+                        for (unsigned k = 1; k < c_size; k++) {
                             assert(level(var(c[k])) == 0);
                             assert(reason(var(c[k])) != CRef_Fake);
                             assert(reason(var(c[k])) != CRef_Undef);
@@ -455,17 +441,17 @@ CRef LookaheadSMTSolver::propagate()
                     uncheckedEnqueue(first, cr);
                 }
             } else if (value(c[2]) == l_False) {
-                if(!tested){
-                    if(!next_arr[var(~c[0])]){
+                if (!tested) {
+                    if (!next_arr[var(~c[0])]) {
                         close_to_prop += 1;
                     }
-                    if(!next_arr[var(~c[1])]){
+                    if (!next_arr[var(~c[1])]) {
                         close_to_prop += 1;
                     }
                     next_arr[var(~c[0])] = true;
                     next_arr[var(~c[1])] = true;
                 } else {
-                    if(before_lookahead){
+                    if (before_lookahead) {
                         next_init.insert(var(~c[0]));
                         next_init.insert(var(~c[1]));
                     }
@@ -626,8 +612,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     }
     tested = false;
     best = score->getBest();
-    if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef)
-    {
+    if (static_cast<unsigned int>(trail.size()) == dec_vars and best == lit_Undef) {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
