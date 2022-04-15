@@ -345,21 +345,15 @@ CRef LookaheadSMTSolver::propagate()
                 continue;
             }
 
-            if(c_size > 2 ){
-                if (c[0] == false_lit){
-                    c[0] = c[1], c[1] = false_lit;
-                }
-                if (c[1] == false_lit){
-                    c[1] = c[2], c[2] = false_lit;
+            if (c[0] == false_lit) {
+                std::swap(c[0], c[1]);
+            }
+            if (c_size > 2) {
+                if (c[1] == false_lit) {
+                    std::swap(c[1], c[2]);
                 }
                 if (value(c[0]) == l_False) {
-                    Lit temp = c[0];
-                    c[0] = c[1], c[1] = temp;
-                }
-            }
-            else {
-                if (c[0] == false_lit) {
-                    c[0] = c[1], c[1] = false_lit;
+                    std::swap(c[0], c[1]);
                 }
             }
 
