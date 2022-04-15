@@ -16,8 +16,8 @@
 
 class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
-    ConflQuota confl_quota;
-    int idx;
+    ConflQuota          confl_quota;
+    int                 idx = 0;
     bool*               next_arr;
     std::set<Var>       next_init;
     int                 close_to_prop = 0;
@@ -102,7 +102,10 @@ protected:
     std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
-    LookaheadSMTSolver(SMTConfig&, THandler&);
+    LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
+        : SimpSMTSolver(c, thandler)
+        , score(c.lookahead_score_deep() ? static_cast<std::unique_ptr<LookaheadScore>>(std::make_unique<LookaheadScoreDeep>(assigns, c)) : std::make_unique<LookaheadScoreClassic>(assigns, c))
+    {};
     Var newVar(bool sign, bool dvar) override;
 
     CRef propagate() override;
