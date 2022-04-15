@@ -113,7 +113,6 @@ MainSolver::insertFormula(PTRef root, char** msg)
     root = logic.conjoinExtras(root);
     root = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(root);
 
-
     if (getConfig().produce_inter()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
