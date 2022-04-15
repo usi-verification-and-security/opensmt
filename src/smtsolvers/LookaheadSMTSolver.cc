@@ -319,12 +319,12 @@ CRef LookaheadSMTSolver::propagate()
                 if (!tested) {
                     if (next_arr[var(~c[0])]) {
                         close_to_prop--;
+                        next_arr[var(~c[0])] = false;
                     }
                     if (next_arr[var(~c[1])]) {
                         close_to_prop--;
+                        next_arr[var(~c[1])] = false;
                     }
-                    next_arr[var(~c[0])] = false;
-                    next_arr[var(~c[1])] = false;
                 }
                 *j++ = *i++;
                 continue;
