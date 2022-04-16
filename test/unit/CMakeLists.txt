@@ -213,13 +213,13 @@ target_sources(ArithLogicApiTest
 target_link_libraries(ArithLogicApiTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET ArithLogicApiTest)
 
-add_executable(SortsTest)
-target_sources(SortsTest
+add_executable(TermsTest)
+target_sources(TermsTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Sorts.cc"
         )
 
-target_link_libraries(SortsTest OpenSMT gtest gtest_main)
-gtest_add_tests(TARGET SortsTest)
+target_link_libraries(TermsTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TermsTest)
 
 add_executable(LASolverIncrementalityTest)
 target_sources(LASolverIncrementalityTest
