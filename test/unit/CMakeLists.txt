@@ -216,6 +216,7 @@ gtest_add_tests(TARGET ArithLogicApiTest)
 add_executable(TermsTest)
 target_sources(TermsTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Sorts.cc"
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Visitors.cc"
         )
 
 target_link_libraries(TermsTest OpenSMT gtest gtest_main)
