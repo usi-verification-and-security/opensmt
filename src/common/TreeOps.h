@@ -141,6 +141,7 @@ class Qel {
 // However, the list_out will not contain duplicates.
 //
 template<class T>
+[[deprecated]]
 void getTermsList(const vec<PTRef>& trs, vec<T>& list_out, Logic& logic) {
     vec<Qel<PtChild> > queue;
     Map<PtChild,bool,PtChildHash> seen;
@@ -178,7 +179,9 @@ void getTermsList(const vec<PTRef>& trs, vec<T>& list_out, Logic& logic) {
     }
 }
 
+
 template<class T>
+[[deprecated]]
 void getTermList(PTRef tr, vec<T>& list_out, Logic& logic) {
     getTermsList({tr}, list_out, logic);
 }
