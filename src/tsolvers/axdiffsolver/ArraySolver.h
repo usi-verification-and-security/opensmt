@@ -60,7 +60,7 @@ public:
 
     void computeModel() override;
 
-    void getConflict(bool b, vec<PtAsgn> & vec) override;
+    void getConflict(vec<PtAsgn> & vec) override;
 
     PtAsgn_reason getDeduction() override;
 
@@ -142,8 +142,6 @@ private:
         if (node.secondaryEdge == NodeRef_Undef) { return nodeRef; }
         return getIndexedRepresentative(node.secondaryEdge, index);
     }
-
-    void print(ostream & out) override;
 
 
 };

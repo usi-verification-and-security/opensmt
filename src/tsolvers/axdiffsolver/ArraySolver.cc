@@ -72,7 +72,7 @@ void ArraySolver::computeModel() {
 
 }
 
-void ArraySolver::getConflict(bool b, vec<PtAsgn> & vec) {
+void ArraySolver::getConflict(vec<PtAsgn> & vec) {
 
 }
 
@@ -217,6 +217,3 @@ void ArraySolver::clear() {
     valid = false;
 }
 
-void ArraySolver::print(ostream & out) {
-    throw std::logic_error("Not implemented");
-}

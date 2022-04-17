@@ -25,7 +25,7 @@ public:
 
     const Logic & getLogic() const override;
 
-    PTRef getInterpolant(const ipartitions_t & mask, map<PTRef, icolor_t> *map1, PartitionManager & pmanager) override;
+    PTRef getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> *map1, PartitionManager & pmanager) override;
 
     lbool getPolaritySuggestion(PTRef pt) const override;
 };

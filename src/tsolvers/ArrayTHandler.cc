@@ -41,7 +41,7 @@ const Logic & ArrayTHandler::getLogic() const {
 }
 
 PTRef
-ArrayTHandler::getInterpolant(const ipartitions_t & mask, map<PTRef, icolor_t> *map1, PartitionManager & pmanager) {
+ArrayTHandler::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> *map1, PartitionManager & pmanager) {
     throw std::logic_error("Interpolation not supported yet");
 }
 
