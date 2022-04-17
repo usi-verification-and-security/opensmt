@@ -187,7 +187,6 @@ private:
 
     EnodeStore enode_store;
 
-    bool isValid(PTRef tr) override { return logic.isTheoryEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
     bool isEffectivelyEquality(PTRef tr) const;
     bool isEffectivelyUP(PTRef tr) const;
     bool isEffectivelyDisequality(PTRef tr) const;
@@ -227,7 +226,6 @@ public:
         printStatistics(std::cerr);
 #endif // STATISTICS
     }
-    bool isValid(PTRef tr) override { return logic.isUFEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
     void clearSolver() override { clearModel(); } // Only clear the possible computed values
 
@@ -247,6 +245,8 @@ public:
     bool isConstant(ERef er) const {
         return logic.isConstant(getEnode(er).getTerm());
     }
+
+    bool isValid(PTRef tr) override { return logic.isTheoryEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
 #ifdef STATISTICS
     void printMemStats (ostream &);
