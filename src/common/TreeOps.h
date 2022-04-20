@@ -270,19 +270,19 @@ public:
 };
 
 template<typename TPred>
-static vec<PTRef> subTerms(Logic const & logic, PTRef term, TPred predicate) {
+static vec<PTRef> matchingSubTerms(Logic const & logic, PTRef term, TPred predicate) {
     TermCollectorConfig<TPred> config(predicate);
     TermVisitor<decltype(config)>(logic, config).visit(term);
     return config.extractCollectedTerms();
 }
 
 inline vec<PTRef> subTerms(Logic const & logic, PTRef term) {
-    return subTerms(logic, term, [](PTRef){ return true; });
+    return matchingSubTerms(logic, term, [](PTRef) { return true; });
 }
 
 /* Returns all variables present in the given term */
 inline vec<PTRef> variables(Logic const & logic, PTRef term) {
-    return subTerms(logic, term, [&](PTRef subTerm) { return logic.isVar(subTerm); });
+    return matchingSubTerms(logic, term, [&](PTRef subTerm) { return logic.isVar(subTerm); });
 }
 
 #endif

@@ -77,7 +77,7 @@ TEST_F(VisitorTest, test_GetSubTermsArbitraryPredicate) {
     PTRef plus1 = logic.mkPlus(x,y);
     PTRef plus2 = logic.mkPlus(x,z);
     PTRef fla = logic.mkAnd(logic.mkGeq(plus1, zero), logic.mkGeq(plus2, zero));
-    auto subterms = subTerms(logic, fla, [&](PTRef subterm) { return logic.isPlus(subterm); });
+    auto subterms = matchingSubTerms(logic, fla, [&](PTRef subterm) { return logic.isPlus(subterm); });
     ASSERT_TRUE(subterms.size() == 2);
     EXPECT_TRUE(contains(subterms,plus1));
     EXPECT_TRUE(contains(subterms,plus2));
