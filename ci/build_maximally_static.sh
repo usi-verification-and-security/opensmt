@@ -23,7 +23,7 @@ cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       ${LINKER_OPTIONS} \
       ..
 
-make -j4
+cmake --build . -j 4
 
 strip opensmt
 
