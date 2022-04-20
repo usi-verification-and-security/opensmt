@@ -210,8 +210,8 @@ TEST_F(LogicIteTest, test_IteHandlerNestedIte) {
     PTRef res = handler.rewrite(outer);
     std::cout << logic.pp(res) << std::endl;
     // only 1 variable should be introduced for the single top-level ITE
-    auto atoms = getAtoms(res, logic);
-    ASSERT_EQ(atoms.size(), 5); // 4 original + 1 auxiliary variable
+    auto vars = variables(logic, res);
+    ASSERT_EQ(vars.size(), 5); // 4 original + 1 auxiliary variable
 }
 
 TEST_F(LogicIteTest, test_IteHandlerNestedAndTopLevelAtTheSameTime) {
@@ -228,8 +228,8 @@ TEST_F(LogicIteTest, test_IteHandlerNestedAndTopLevelAtTheSameTime) {
     PTRef res = handler.rewrite(fla);
     std::cout << logic.pp(res) << std::endl;
     // 2 variables should be introduced since the ITE that is nested in the first part is top-level in the second part of the formula
-    auto atoms = getAtoms(res, logic);
-    ASSERT_EQ(atoms.size(), 6); // 4 original + 2 auxiliary variables
+    auto vars = variables(logic, res);
+    ASSERT_EQ(vars.size(), 6); // 4 original + 2 auxiliary variables
 }
 
 TEST_F(LogicIteTest, test_IteHandler_RewriteTwiceSame) {

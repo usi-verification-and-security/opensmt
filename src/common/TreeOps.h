@@ -221,6 +221,7 @@ getVars(PTRef tr, Logic& logic, MapWithKeys<PTRef,bool,PTRefHash>& vars)
     }
 }
 
+[[deprecated]]
 inline std::vector<PTRef>
 getAtoms(PTRef tr, Logic & logic)
 {
