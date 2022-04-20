@@ -1,4 +1,7 @@
-### 2.3.2 (unreleased)
+### 2.4.0 (unreleased)
+
+
+### 2.3.2 (2022-04-20)
 
 Bug fixes:
  - STP: Fix crash on problems with no theory variables
