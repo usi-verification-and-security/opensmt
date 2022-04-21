@@ -4,21 +4,7 @@ else()
 	set(splitter ScatterSplitter)
 endif()
 
-add_library(smtsolvers OBJECT ""
-		${splitter}.cc
-		${splitter}.h
-		LookaheadSMTSolver.cc
-		LookaheadSMTSolver.h
-		LookaheadSplitter.cc
-		LookaheadSplitter.h
-		ScatterSplitter.h
-		ScatterSplitter.cc
-		SplitContext.h
-		SplitData.cc
-		SplitData.h
-		LAScore.h
-		LAScore.cc
-		)
+add_library(smtsolvers OBJECT "")
 
 target_sources(smtsolvers
 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
@@ -34,6 +20,13 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryIF.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Debug.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.h"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.cc"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.h"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SplitContext.h"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LAScore.h"
+PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LAScore.cc"
 )
 
 if(VERBOSE_SAT)
