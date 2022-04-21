@@ -61,7 +61,7 @@ class TermMapper {
 
     std::unordered_set<Var> assumptionVars;
 
-    typedef std::map<Var ,uint32_t> map_var_frameId;
+    using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId var_frameId;
 
   public:

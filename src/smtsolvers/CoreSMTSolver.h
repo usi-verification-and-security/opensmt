@@ -416,7 +416,7 @@ protected:
 
     void     relocAll         (ClauseAllocator& to);
 
-    virtual void shallLearnClauses () { return; } ;            // Check if solver is in clause share mode and leanr clauses
+    virtual void runPeriodic  () { return; }            // Run periodically and delegates clause exposing operation to parallel-splitters.
 
     // Misc:
     //

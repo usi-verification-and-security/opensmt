@@ -16,9 +16,9 @@
 class ParallelScatterSplitter : public ScatterSplitter  {
 public:
     ParallelScatterSplitter(SMTConfig & c, THandler & t);
-    void set_channel(PTPLib::net::Channel & ch) { channel = &ch; }   //SMTS Client owns the channel and should dirctely set the channel in ParallelScatterSpitter
-    PTPLib::net::Channel & getChannel() const { return *channel;};
-    void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should dirctely set the SyncedStream in ParallelScatterSpitter
+    void set_channel(PTPLib::net::Channel & ch) { channel = &ch; }   //SMTS Client owns the channel and should directly set the channel in ParallelScatterSpitter
+    PTPLib::net::Channel & getChannel() const   { return *channel; }
+    void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream in ParallelScatterSpitter
     vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
     void set_solver_branch(std::string solver_branch);
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
@@ -36,14 +36,14 @@ private:
 
     vec<opensmt::pair<int,int>> solverBranch;
     PTPLib::common::synced_stream * syncedStream;
-    typedef std::map<uint32_t, vec<opensmt::pair<int,int>>> map_frameId_solverBranch;
+    using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
     map_frameId_solverBranch frameId_solverBranch;
-    typedef std::map<Var ,uint32_t> map_var_frameId;
+    using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId var_frameId;
 
-    void shallLearnClauses () override;                                       // Check if solver is in clause share mode or single-query mode and then starts clause learning operation
+    void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
 
-    void notifyFoundedResult(lbool const & result) const;                     // OpenSMT signalling to communication channel that it founded a result and will stop
+    void notifyResult(lbool const & result) const;                     // OpenSMT signalling to communication channel that it's found a result and will stop
 
 protected:
 
@@ -53,7 +53,7 @@ protected:
     void notifyEnd() override;
     lbool zeroLevelConflictHandler() override;                                // Common handling of zero-level conflict as it can happen at multiple places
 
-    bool learnSomeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
+    bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
     inline bool isAssumptionVar(Var  v)   const &   { return theory_handler.getTMap().isAssumptionVar(v); }
 

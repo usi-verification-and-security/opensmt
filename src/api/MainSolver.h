@@ -132,7 +132,7 @@ class MainSolver
     sstat solve           ();
 
     virtual sstat solve_(vec<FrameId> & enabledFrames) {
-        return sstat(ts.solve(enabledFrames));
+        return ts.solve(enabledFrames);
     }
 
     sstat giveToSolver(PTRef root, FrameId push_id) {

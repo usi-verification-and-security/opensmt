@@ -195,7 +195,6 @@ class Interpret {
     int interpFile(FILE* in);
     int interpFile(char *content);
     int interpPipe();
-    sstat interp_SMT_content(char *content); // a wrapper around interpFile with return value(Solver Status)
 
     void    execute(const ASTNode* n);
     bool    gotExit() const { return f_exit; }
