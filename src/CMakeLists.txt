@@ -20,8 +20,7 @@ if(PARALLEL)
   add_library(PTPLib::PTPLib ALIAS PTPLib)
 
   message("-- PTPLib files have been written to: ${PTPLib_SOURCE_DIR}")
-  execute_process(COMMAND ${CMAKE_CURRENT_LIST_DIR}/remove_PTPLib_tests.sh ${PTPLib_SOURCE_DIR} RESULT_VARIABLE res)
-endif()
+endif(PARALLEL)
 
 add_subdirectory(proof)
 add_subdirectory(common)

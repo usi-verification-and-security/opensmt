@@ -81,19 +81,19 @@ public:
             dynamic_cast<LookaheadSplitter&>(ts.solver).getSplits());
 
         int i = 0;
-        auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in, vec<PTRef> & out) {
+        auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in) {
+            vec<PTRef> out;
             for (const auto & constr : in) {
                 vec<PTRef> disj_vec;
                 for (PtAsgn pta : constr)
                     disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
                 out.push(logic.mkOr(std::move(disj_vec)));
             }
+            return out;
         };
 
         for (auto const &split : splits) {
-            vec<PTRef> conj_vec;
-
-            addToConjunction(split.constraintsToPTRefs(*thandler), conj_vec);
+            vec<PTRef> conj_vec = addToConjunction(split.constraintsToPTRefs(*thandler));
 
             PTRef problem = logic.mkAnd(conj_vec);
 

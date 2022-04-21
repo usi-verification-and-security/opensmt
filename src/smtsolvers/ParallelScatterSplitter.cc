@@ -5,9 +5,6 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ParallelScatterSplitter.h"
-#include "Proof.h"
-#include "SystemQueries.h"
-#include "ReportUtils.h"
 
 
 ParallelScatterSplitter::ParallelScatterSplitter(SMTConfig & c, THandler & t)
@@ -16,7 +13,7 @@ ParallelScatterSplitter::ParallelScatterSplitter(SMTConfig & c, THandler & t)
     , firstPropagation      (true)
 {
     syncedStream = nullptr;
-    channel = new PTPLib::net::Channel();
+    channel = nullptr;
 }
 
 bool ParallelScatterSplitter::okContinue() const {
@@ -41,11 +38,11 @@ void ParallelScatterSplitter::notifyEnd() {
 
 lbool ParallelScatterSplitter::solve_() {
     lbool result = ScatterSplitter::solve_();
-    notifyFoundedResult(result);
+    notifyResult(result);
     return result;
 }
 
-void ParallelScatterSplitter::notifyFoundedResult(lbool const & result) const
+void ParallelScatterSplitter::notifyResult(lbool const & result) const
 {
     if (not channel->isSolverInParallelMode()) return;
 
@@ -84,7 +81,7 @@ CoreSMTSolver::ConsistencyAction ParallelScatterSplitter::notifyConsistency() {
     return ConsistencyAction::NoOp;
 }
 
-bool ParallelScatterSplitter::learnSomeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
+bool ParallelScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
     int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
     trail_sent = std::max<int>(trail_sent, numTriviallyPropagatedOnDl0-1);
     assert(trail_sent >= 0);
@@ -188,7 +185,7 @@ void ParallelScatterSplitter::set_solver_branch(std::string solver_branch)
     }
 }
 
-void ParallelScatterSplitter::shallLearnClauses()
+void ParallelScatterSplitter::runPeriodic()
 {
     if (not channel->isClauseShareMode() and channel->isSolverInParallelMode()) return;
 
@@ -202,7 +199,7 @@ void ParallelScatterSplitter::shallLearnClauses()
     if (channel->shouldLearnClauses() or not channel->isSolverInParallelMode()) {
         channel->clearShouldLearnClauses();
 
-        if (learnSomeClauses(toPublishLemmas)) {
+        if (exposeClauses(toPublishLemmas)) {
             {
                 std::unique_lock<std::mutex> lk(channel->getMutex());
                 if (not lk.owns_lock()) {
