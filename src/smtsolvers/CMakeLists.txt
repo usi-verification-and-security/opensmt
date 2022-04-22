@@ -1,33 +1,37 @@
-if(PARALLEL)
-	set(splitter ParallelScatterSplitter)
-else()
-	set(splitter ScatterSplitter)
-endif()
-
 add_library(smtsolvers OBJECT "")
 
-target_sources(smtsolvers
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.h"
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${splitter}.h"
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SplitData.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/${splitter}.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SplitData.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryIF.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Debug.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.cc"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SplitContext.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LAScore.h"
-PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LAScore.cc"
+if(PARALLEL)
+	set(PRIVATE_SOURCES_TO_ADD "${CMAKE_CURRENT_SOURCE_DIR}/ParallelScatterSplitter.cc")
+	set(PUBLIC_SOURCES_TO_ADD "${CMAKE_CURRENT_SOURCE_DIR}/ParallelScatterSplitter.h")
+endif()
+
+list(APPEND PRIVATE_SOURCES_TO_ADD
+		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/CoreSMTSolver.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/SplitData.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/TheoryIF.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/TheoryInterpolator.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/Debug.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/SplitContext.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LAScore.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/LAScore.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/Splitter.h"
 )
+list(APPEND PUBLIC_SOURCES_TO_ADD
+		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/GhostSMTSolver.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/SplitData.h"
+)
+
+target_sources(smtsolvers PRIVATE ${PRIVATE_SOURCES_TO_ADD}  PUBLIC ${PUBLIC_SOURCES_TO_ADD} )
 
 if(VERBOSE_SAT)
 	target_compile_definitions(smtsolvers PRIVATE -DVERBOSE_SAT)

@@ -18,7 +18,7 @@
 #endif
 #include "OsmtInternalException.h"
 #include "LookaheadSplitter.h"
-
+#include "Splitter.h"
 
 class MainSplitter : public MainSolver {
 public:
@@ -71,14 +71,7 @@ public:
         assert(config.sat_split_type() != spt_none);
         assert(strcmp(config.output_dir(),"") != 0);
 
-        std::vector<SplitData> const & splits = ( isSplitTypeScatter() ?
-            #ifdef CUBE_AND_CONQUER
-                dynamic_cast<ParallelScatterSplitter&>(ts.solver).getSplits()
-            #else
-                dynamic_cast<ScatterSplitter&>(ts.solver).getSplits()
-            #endif
-            :
-            dynamic_cast<LookaheadSplitter&>(ts.solver).getSplits());
+        std::vector<SplitData> const & splits = dynamic_cast<Splitter&>(ts.solver).getSplits();
 
         int i = 0;
         auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in) {
@@ -131,15 +124,7 @@ public:
 
     std::vector<std::string> getPartitionClauses() {
         std::vector<std::string> partitions;
-        std::vector<SplitData> const & splits = ( isSplitTypeScatter() ?
-            #ifdef CUBE_AND_CONQUER
-                dynamic_cast<ParallelScatterSplitter&>(ts.solver).getSplits()
-            #else
-                dynamic_cast<ScatterSplitter&>(ts.solver).getSplits()
-            #endif
-            :
-            dynamic_cast<LookaheadSplitter&>(ts.solver).getSplits());
-
+        std::vector<SplitData> const & splits = dynamic_cast<Splitter&>(ts.solver).getSplits();
         for (auto const &split : splits) {
             std::vector<vec<PtAsgn>> constraints;
             split.constraintsToPTRefs(*thandler);
