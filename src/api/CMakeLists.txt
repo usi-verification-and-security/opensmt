@@ -27,6 +27,7 @@ set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Interpret.cc"
 )
 
 set(PUBLIC_SOURCES_TO_ADD
@@ -34,6 +35,7 @@ set(PUBLIC_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/PartitionManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/smt2tokens.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Interpret.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/Opensmt.cc"
 )
 
@@ -106,6 +108,7 @@ install(FILES
     MainSolver.h
     MainSplitter.hpp
     PartitionManager.h
+    Interpret.h
     DESTINATION
     ${INSTALL_HEADERS_DIR}
 )
