@@ -8,7 +8,7 @@
 
 
 ParallelScatterSplitter::ParallelScatterSplitter(SMTConfig & c, THandler & t)
-    : ScatterSplitter         (c, t)
+    : ScatterSplitter       (c, t)
     , trail_sent            (0)
     , firstPropagation      (true)
 {

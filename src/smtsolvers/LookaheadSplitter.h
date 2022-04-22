@@ -10,6 +10,7 @@
 
 #include "LookaheadSMTSolver.h"
 #include "SplitData.h"
+#include "Splitter.h"
 
 static inline int getLog2Ceil(int i)
 {
@@ -22,10 +23,14 @@ static inline int getLog2Ceil(int i)
     return r;
 }
 
-class LookaheadSplitter : public LookaheadSMTSolver {
+class LookaheadSplitter : public LookaheadSMTSolver, public Splitter {
 
-private:
-    std::vector<SplitData> splits;
+public:
+    LookaheadSplitter(SMTConfig& c, THandler& thandler)
+    : LookaheadSMTSolver(c, thandler)
+    , Splitter(config, decisions)
+    {}
+
 protected:
     LALoopRes solveLookahead() override;
     class LASplitNode : public LookaheadSMTSolver::LANode {
@@ -73,11 +78,6 @@ protected:
         LALoopRes exitState() const { return LALoopRes::unknown_final; }
         SplitBuildConfig(LookaheadSplitter & splitter_) : splitter(splitter_) {}
     };
-
-public:
-    LookaheadSplitter(SMTConfig& c, THandler& thandler) : LookaheadSMTSolver(c, thandler) {}
-
-    std::vector<SplitData> const & getSplits() const { return splits; }
 };
 
 #endif //OPENSMT_LOOKAHEADSPLITTER_H

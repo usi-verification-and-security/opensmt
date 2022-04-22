@@ -13,7 +13,7 @@
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t)
     : SimpSMTSolver         (c, t)
-    , splitContext          (config, decisions)
+    , Splitter             (c, decisions)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
