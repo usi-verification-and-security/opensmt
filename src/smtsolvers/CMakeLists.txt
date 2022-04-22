@@ -53,10 +53,11 @@ install(FILES TheoryInterpolator.h
         DESTINATION ${INSTALL_HEADERS_DIR})
 
 
-install(FILES SimpSMTSolver.h CoreSMTSolver.h ${splitter}.h
+install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
 
 if(PARALLEL)
+	install(FILES ParallelScatterSplitter.h DESTINATION ${INSTALL_HEADERS_DIR})
 	target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
 	target_compile_definitions(smtsolvers PUBLIC -DCUBE_AND_CONQUER)
-endif()
+endif(PARALLEL)
