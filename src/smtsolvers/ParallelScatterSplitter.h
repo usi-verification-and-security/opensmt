@@ -55,8 +55,6 @@ protected:
 
     bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
-    inline bool isAssumptionVar(Var  v)   const &   { return theory_handler.getTMap().isAssumptionVar(v); }
-
     int getAssumptionLevel(Var v) const;
 
     inline bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
