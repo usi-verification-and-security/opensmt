@@ -78,6 +78,9 @@ public:
     bool preferRandom() const { return split_preference == sppref_rand; }
     bool preferTerm() const { return split_preference == sppref_tterm; }
     bool preferFormula() const { return split_preference == sppref_bterm; }
+    bool preferNotEq() const { return split_preference == sppref_noteq; }
+    bool preferEq() const { return split_preference == sppref_eq; }
+    bool preferTermNotEq() const { return split_preference == sppref_tterm_neq; }
     bool isSplitTypeScatter() const { return split_type == spt_scatter; }
     bool resourceLimitReached(uint64_t decisions) const {
         if (resourceLimitEnabled()) {

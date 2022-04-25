@@ -27,32 +27,54 @@ Var ScatterSplitter::doActivityDecision() {
     Var next = var_Undef;
     while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
         if (order_heap.empty()) {
-            if (splitContext.preferTerm() or splitContext.preferFormula()) {
-                if (discarded.size() > 0) {
-                    next = discarded[0];
-                } else {
-                    next = var_Undef;
-                }
+            if (discarded.size() > 0) {
+                assert(splitContext.isInSplittingCycle());
+                assert([&]() {
+                    for (Var v : discarded) {
+                        if (not isAssumptionVar(v)) {
+                            throw OsmtInternalException(";assert split partition: discarded var was not found in assumption vars");
+                        }
+                    }
+                    return true;
+                }());
+
+                // All available literals are assumption literals.  Instance is satisfiable
             } else {
                 next = var_Undef;
             }
             break;
         } else {
             next = order_heap.removeMin();
-            if (splitContext.isInSplittingCycle() and next != var_Undef) {
-                if (splitContext.preferTerm() and not theory_handler.isDeclared(next)) {
+            if (splitContext.isInSplittingCycle() && next != var_Undef) {
+                if (isAssumptionVar(next)) {
                     discarded.push(next);
                     next = var_Undef;
-                } else if (splitContext.preferFormula() and theory_handler.isDeclared(next)) {
+                    // A hack!: Not branch on lengthy variables (more than 5000), basically not allowing split partition with too many nested loop
+                } else if (this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(next)).length() > 5000) {
+                    discarded.push(next);
+                    next = var_Undef;
+                } else if (splitContext.preferTerm() && !theory_handler.isDeclared(next)) {
+                    discarded.push(next);
+                    next = var_Undef;
+                } else if (splitContext.preferTermNotEq() && (!theory_handler.isDeclared(next) or theory_handler.getLogic().isEquality(theory_handler.varToTerm(next)))) {
+                    discarded.push(next);
+                    next = var_Undef;
+                } else if (splitContext.preferFormula() && theory_handler.isDeclared(next)) {
+                    discarded.push(next);
+                    next = var_Undef;
+                }
+                else if (splitContext.preferNotEq() && theory_handler.getLogic().isEquality(theory_handler.varToTerm(next))) {
+                    discarded.push(next);
+                    next = var_Undef;
+                } else if (splitContext.preferEq() && not theory_handler.getLogic().isEquality(theory_handler.varToTerm(next))) {
                     discarded.push(next);
                     next = var_Undef;
                 }
             }
         }
     }
-    if (splitContext.preferTerm() or splitContext.preferFormula())
-        for (Var v : discarded)
-            order_heap.insert(v);
+    for (Var v : discarded)
+        order_heap.insert(v);
 
     return next;
 }

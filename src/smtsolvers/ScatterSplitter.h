@@ -23,6 +23,7 @@ protected:
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate
+    inline bool isAssumptionVar(Var  v)   const &   { return theory_handler.getTMap().isAssumptionVar(v); }
 
     lbool solve_() override;
     bool branchLitRandom() override;
