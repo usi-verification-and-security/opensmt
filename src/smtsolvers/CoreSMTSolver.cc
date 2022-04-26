@@ -571,6 +571,30 @@ Lit CoreSMTSolver::pickBranchLit()
 
 }
 
+/**
+ * Compute the Glue value, as defined in Audemard & Simon:
+ * Predicting Learnt Clauses Quality in Modern SAT Solvers.
+ * IJCAI 2009.
+ *
+ * @param vector of literals each having a level in vardata
+ * @return min (10, |{level(var(lit))}| \mid lit \in ps)
+ */
+uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
+    levelsInClause.reset();
+    uint32_t numLevels = 0;
+    for (Lit lit: ps) {
+        int level = vardata[var(lit)].level;
+        if (level != 0 and not levelsInClause.contains(level)) {
+            levelsInClause.insert(level);
+            ++ numLevels;
+            if (numLevels >= 10) {
+                break;
+            }
+        }
+    }
+    return numLevels;
+}
+
 /*_________________________________________________________________________________________________
   |
   |  analyze : (confl : CRef) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -1160,18 +1184,22 @@ struct reduceDB_lt
 void CoreSMTSolver::reduceDB()
 {
     int     i, j;
-    double  extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
     sort(learnts, reduceDB_lt(ca));
     // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
-    // and clauses with activity smaller than 'extra_lim':
+    // and clauses with high glue score
+    int extra = 0;
     for (i = j = 0; i < learnts.size(); i++)
     {
         Clause& c = ca[learnts[i]];
-        if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
+        if (c.getGlue() <= 3) {
+            extra++;
+        }
+        if (c.getGlue() > 3 and c.size() > 2 and not locked(c) and (i+extra < learnts.size() / 2)) {
             removeClause(learnts[i]);
-        else
+        } else {
             learnts[j++] = learnts[i];
+        }
     }
     learnts.shrink(i - j);
     checkGarbage();
@@ -1457,7 +1485,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
 
-                CRef cr = ca.alloc(learnt_clause, true);
+                CRef cr = ca.alloc(learnt_clause, true, computeGlue(learnt_clause));
 
                 if (logsProofForInterpolation()) {
                     proof->endChain(cr);
@@ -1488,9 +1516,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
             // if ((learnts.size()-nAssigns()) >= max_learnts)
-            if (nof_learnts >= 0 && learnts.size()-nAssigns() >= nof_learnts) {
+            if (nof_learnts >= 0 and learnts.size() >= nof_learnts) {
                 // Reduce the set of learnt clauses:
                 reduceDB();
+                nof_learnts *= nofLearntsIncrement;
             }
 
             // Early Pruning Call

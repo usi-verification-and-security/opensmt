@@ -140,7 +140,8 @@ class Clause {
         unsigned learnt    : 1;
         unsigned has_extra : 1;
         unsigned reloced   : 1;
-        unsigned size      : 27; }                            header;
+        unsigned glue      : 4;
+        unsigned size      : 23; }                            header;
     union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
@@ -153,6 +154,7 @@ class Clause {
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
+        header.glue = 15;
 
         for (unsigned i = 0; i < (unsigned)ps.size(); i++)
             data[i].lit = ps[i];
@@ -162,6 +164,11 @@ class Clause {
                 data[header.size].act = 0; 
             else 
                 calcAbstraction(); }
+    }
+
+    void setGlue(const uint32_t glue) {
+        assert(glue < 16);
+        header.glue = glue;
     }
 
 public:
@@ -197,6 +204,9 @@ public:
 
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
+    uint32_t     getGlue() const {
+        return header.glue;
+    }
 };
 
 
@@ -223,7 +233,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
 
     template<class Lits>
-    CRef alloc(const Lits& ps, bool learnt = false)
+    CRef alloc(const Lits& ps, bool learnt = false, uint32_t glue = 0)
     {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
@@ -231,7 +241,9 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
 
         CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
         new (lea(cid)) Clause(ps, use_extra, learnt);
-
+        if (learnt) {
+            operator[](cid).setGlue(glue);
+        }
         return cid;
     }
 

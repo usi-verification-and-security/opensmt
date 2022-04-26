@@ -378,10 +378,13 @@ protected:
     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
+    uint32_t computeGlue(vec<Lit> const & ps);
+    nat_set  levelsInClause;
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
     int nof_learnts = 40000;
+    double nofLearntsIncrement = 1.1;
     virtual bool okContinue   () const;                                                // Check search termination conditions
     virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
     virtual void notifyEnd() { }                                                       // Called at the end of the search loop
@@ -709,6 +712,7 @@ inline bool     CoreSMTSolver::locked          (const Clause& c) const
 inline void     CoreSMTSolver::newDecisionLevel()
 {
     trail_lim.push(trail.size());
+    levelsInClause.set_domain(trail_lim.size()+1);
 }
 #else
 inline void     CoreSMTSolver::newDecisionLevel()
