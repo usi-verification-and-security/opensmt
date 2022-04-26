@@ -380,7 +380,8 @@ protected:
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
-    lbool    search           (int nof_conflicts, int nof_learnts);                    // Search for a given number of conflicts.
+    lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
+    int nof_learnts = 40000;
     virtual bool okContinue   () const;                                                // Check search termination conditions
     virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
     virtual void notifyEnd() { }                                                       // Called at the end of the search loop
@@ -497,6 +498,7 @@ protected:
     unsigned           luby_i;                     // Keep track of luby index
     unsigned           luby_k;                     // Keep track of luby k
     std::vector<unsigned> luby_previous;           // Previously computed luby numbers
+    unsigned           lubyFactor = 120;
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp

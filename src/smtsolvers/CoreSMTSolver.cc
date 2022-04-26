@@ -1378,7 +1378,7 @@ void CoreSMTSolver::learntSizeAdjust() {
   |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
   |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
   |________________________________________________________________________________________________@*/
-lbool CoreSMTSolver::search(int nof_conflicts, int nof_learnts)
+lbool CoreSMTSolver::search(int nof_conflicts)
 {
     // Time my executionto search_timer
 //    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
@@ -1705,13 +1705,10 @@ lbool CoreSMTSolver::solve_()
     solves++;
 
     double  nof_conflicts     = restart_first;
-    double  nof_learnts       = nClauses() * learntsize_factor;
     max_learnts               = nClauses() * learntsize_factor;
     learntsize_adjust_confl   = learntsize_adjust_start_confl;
     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
     lbool   status            = l_Undef;
-
-    unsigned last_luby_k = luby_k;
 
     if (verbosity >= 1)
     {
@@ -1745,16 +1742,8 @@ lbool CoreSMTSolver::solve_()
         }
 
         // XXX
-        status = search((int)nof_conflicts, (int)nof_learnts);
+        status = search((int)nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
-        if (config.sat_use_luby_restart) {
-            if (last_luby_k != luby_k) {
-                nof_learnts *= 1.215;
-            }
-            last_luby_k = luby_k;
-        } else {
-            nof_learnts *= learntsize_inc;
-        }
     }
 
     if (status == l_True) {
@@ -1864,7 +1853,7 @@ int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
         else
             luby_previous.push_back( luby_previous[luby_i - (1 << (luby_k - 1))]);
 
-        return luby_previous.back() * restart_first;
+        return luby_previous.back() * lubyFactor;
     }
     // Standard restart
     return nof_conflicts * restart_inc;
