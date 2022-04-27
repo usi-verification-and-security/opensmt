@@ -3,6 +3,10 @@ add_library(smtsolvers OBJECT "")
 if(PARALLEL)
 	set(PRIVATE_SOURCES_TO_ADD "${CMAKE_CURRENT_SOURCE_DIR}/ParallelScatterSplitter.cc")
 	set(PUBLIC_SOURCES_TO_ADD "${CMAKE_CURRENT_SOURCE_DIR}/ParallelScatterSplitter.h")
+
+	install(FILES ParallelScatterSplitter.h DESTINATION ${INSTALL_HEADERS_DIR})
+	target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
+	target_compile_definitions(smtsolvers PUBLIC -DCUBE_AND_CONQUER)
 endif()
 
 list(APPEND PRIVATE_SOURCES_TO_ADD
@@ -55,9 +59,3 @@ install(FILES TheoryInterpolator.h
 
 install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
-
-if(PARALLEL)
-	install(FILES ParallelScatterSplitter.h DESTINATION ${INSTALL_HEADERS_DIR})
-	target_link_libraries(smtsolvers PUBLIC PTPLib::PTPLib)
-	target_compile_definitions(smtsolvers PUBLIC -DCUBE_AND_CONQUER)
-endif(PARALLEL)
