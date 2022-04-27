@@ -95,7 +95,7 @@ protected:
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
     LookaheadSMTSolver(SMTConfig&, THandler&);
-    Var newVar(bool sign, bool dvar) override;
+    Var newVar(bool dvar) override;
 };
 
 // Maintain the tree explicitly.  Each internal node should have the info whether its

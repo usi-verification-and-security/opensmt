@@ -104,7 +104,7 @@ public:
     //
 protected:
     void  addVar_    (Var v); // Ensure that var v exists in the solver
-    virtual Var newVar(bool polarity, bool dvar);//    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    virtual Var newVar(bool dvar); // Add a new variable with parameters specifying variable mode.
 public:
     void    addVar(Var v); // Anounce the existence of a variable to the solver
     bool    addOriginalClause(const vec<Lit> & ps);
@@ -135,7 +135,6 @@ public:
 
     // Variable mode:
     //
-    void    setPolarity    (Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
 
     // Read state:
@@ -209,9 +208,6 @@ public:
     double    learntsize_factor;  // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)
     double    learntsize_inc;     // The limit for learnt clauses is multiplied with this factor each restart.                 (default 1.1)
     bool      expensive_ccmin;    // Controls conflict clause minimization.                                                    (default TRUE)
-    int       polarity_mode;      // Controls which polarity the decision heuristic chooses. See enum below for allowed modes. (default polarity_false)
-
-    enum { polarity_true = 0, polarity_false = 1, polarity_user = 2, polarity_rnd = 3 };
 
     int       learntsize_adjust_start_confl;
     double    learntsize_adjust_inc;
@@ -325,7 +321,6 @@ protected:
     uint64_t            flipIncrement = 10000;
     bool                flipState = false;
     vec<bool>           var_seen;
-    vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 protected:
 #ifdef PEDANTIC_DEBUG
@@ -349,10 +344,6 @@ protected:
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
     ClauseAllocator     ca{512*1024};
-#ifdef CACHE_POLARITY
-    vec<char>           prev_polarity;    // The previous polarity of each variable.
-#endif
-
 
     // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
     // used, exept 'seen' wich is used in several places.
@@ -737,7 +728,6 @@ inline int      CoreSMTSolver::nClauses      ()      const                { retu
 inline int      CoreSMTSolver::nLearnts      ()      const                { return learnts.size(); }
 inline int      CoreSMTSolver::nVars         ()      const                { return vardata.size(); }
 inline int      CoreSMTSolver::nFreeVars     ()      const                { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
-inline void     CoreSMTSolver::setPolarity   (Var v, bool b)              { polarity[v] = b; }
 inline void     CoreSMTSolver::setDecisionVar(Var v, bool b)
 {
     if      ( b && !decision[v]) dec_vars++;

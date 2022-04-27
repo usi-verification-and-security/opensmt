@@ -833,7 +833,6 @@ public:
   char         certifying_solver[256];       // Executable used for certification
 
   // SAT-Solver related parameters
-  int          sat_polarity_mode;            // Polarity mode
   int          sat_theory_polarity_suggestion;  // Should the SAT solver ask the theory solver for var polarity when making a decision
   double       sat_initial_skip_step;        // Initial skip step for tsolver calls
   double       sat_skip_step_factor;         // Increment for skip step

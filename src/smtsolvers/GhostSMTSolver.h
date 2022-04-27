@@ -22,7 +22,7 @@ protected:
     Lit  pickBranchLit     ()          override;
     void newDecisionLevel  ()          override;
     void cancelUntil       (int level) override;
-    Var  newVar            (bool polarity, bool dvar) override;
+    Var  newVar            (bool dvar) override;
     void verifyModel       () override;
 public:
     GhostSMTSolver(SMTConfig& c, THandler& h) : SimpSMTSolver(c, h) {}

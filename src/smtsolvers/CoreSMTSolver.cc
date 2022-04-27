@@ -78,7 +78,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_var_freq  (c.sat_random_var_freq())
     , luby_restart     (c.sat_luby_restart())
     , ccmin_mode       (c.sat_ccmin_mode())
-    , phase_saving     (c.sat_pcontains())
     , rnd_pol          (c.sat_rnd_pol())
     , rnd_init_act     (c.sat_rnd_init_act())
     , garbage_frac     (c.sat_garbage_frac())
@@ -145,30 +144,6 @@ CoreSMTSolver::initialize( )
     tsolvers_time = 0;
     ie_generated = 0;
 #endif
-    //
-    // Set polarity_mode
-    //
-    switch ( config.sat_polarity_mode )
-    {
-    case 0:
-        polarity_mode = polarity_true;
-        break;
-    case 1:
-        polarity_mode = polarity_false;
-        break;
-    case 2:
-        polarity_mode = polarity_rnd;
-        break;
-    case 3:
-        polarity_mode = polarity_user;
-        break; // Polarity is set in
-    case 4:
-        polarity_mode = polarity_user;
-        break; // THandler.C for
-    case 5:
-        polarity_mode = polarity_user;
-        break; // Boolean atoms
-    }
 
     if (config.produce_inter() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
@@ -216,13 +191,13 @@ void CoreSMTSolver::addVar_(Var v)
         return;
     }
     while (v >= nVars())
-        newVar(true, true);
+        newVar(true);
 }
 
 // Creates a new SAT variable in the solver. If 'decision_var' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
 //
-Var CoreSMTSolver::newVar(bool sign, bool dvar)
+Var CoreSMTSolver::newVar(bool dvar)
 {
     int v = nVars();
     watches  .init(mkLit(v, false));
@@ -231,11 +206,9 @@ Var CoreSMTSolver::newVar(bool sign, bool dvar)
     vardata  .push(mkVarData(CRef_Undef, 0));
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
-    polarity .push(sign);
     decision .push();
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
-    polarity    .push((char)sign);
     savedPolarity.push(true);
 
 #if CACHE_POLARITY
@@ -420,8 +393,6 @@ void CoreSMTSolver::cancelUntil(int level)
             assert(assigns[x] != l_Undef);
 #endif
             assigns [x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
-                polarity[x] = sign(trail[c]);
             insertVarOrder(x);
         }
         qhead = trail_lim[level];
@@ -1325,7 +1296,6 @@ void CoreSMTSolver::popBacktrackPoint()
             order_heap  .remove(x);
             // Undoes decision_var ... watches
             decision    .pop();
-            polarity    .pop();
             seen        .pop();
             activity    .pop();
             vardata     .pop();

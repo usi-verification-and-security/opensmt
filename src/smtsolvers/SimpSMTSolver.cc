@@ -98,9 +98,9 @@ void SimpSMTSolver::initialize( )
     }
 }
 
-Var SimpSMTSolver::newVar(bool sign, bool dvar)
+Var SimpSMTSolver::newVar(bool dvar)
 {
-    Var v = CoreSMTSolver::newVar(sign, dvar);
+    Var v = CoreSMTSolver::newVar(dvar);
 
     frozen    .push((char)false);
     eliminated.push((char)false);

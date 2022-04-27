@@ -10,8 +10,8 @@ LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	, score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
 {}
 
-Var LookaheadSMTSolver::newVar(bool sign, bool dvar) {
-    Var v = SimpSMTSolver::newVar(sign, dvar);
+Var LookaheadSMTSolver::newVar(bool dvar) {
+    Var v = SimpSMTSolver::newVar(dvar);
     score->newVar();
     return v;
 }
