@@ -140,8 +140,8 @@ class Clause {
         unsigned learnt    : 1;
         unsigned has_extra : 1;
         unsigned reloced   : 1;
-        unsigned glue      : 2;
-        unsigned size      : 25; }                            header;
+        unsigned glue      : 3;
+        unsigned size      : 24; }                            header;
     union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
@@ -154,7 +154,7 @@ class Clause {
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
-        header.glue = 3;
+        header.glue      = 7;
 
         for (unsigned i = 0; i < (unsigned)ps.size(); i++)
             data[i].lit = ps[i];
@@ -167,7 +167,7 @@ class Clause {
     }
 
     void setGlue(const uint32_t glue) {
-        assert(glue < 4);
+        assert(glue < 8);
         header.glue = glue;
     }
 

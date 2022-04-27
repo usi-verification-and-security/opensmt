@@ -577,7 +577,7 @@ Lit CoreSMTSolver::pickBranchLit()
  * IJCAI 2009.
  *
  * @param vector of literals each having a level in vardata
- * @return min (3, |{level(var(lit))}| \mid lit \in ps)
+ * @return min (4, |{level(var(lit))}| \mid lit \in ps)
  */
 uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
     levelsInClause.reset();
@@ -587,7 +587,7 @@ uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
         if (level != 0 and not levelsInClause.contains(level)) {
             levelsInClause.insert(level);
             ++ numLevels;
-            if (numLevels >= 3) {
+            if (numLevels >= 4) {
                 break;
             }
         }
