@@ -211,11 +211,6 @@ Var CoreSMTSolver::newVar(bool dvar)
     setDecisionVar(v, dvar);
     savedPolarity.push(true);
 
-#if CACHE_POLARITY
-    prev_polarity.push(toInt(l_Undef));
-#endif
-
-
     this->var_seen.push(false);
 
     // MB: Unnecessary call to insertVarOrder. This is already achieved by calling setDecisionVar above
@@ -1044,12 +1039,6 @@ void CoreSMTSolver::uncheckedEnqueue(Lit p, CRef from)
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
-
-    // Added Code
-#if CACHE_POLARITY
-    prev_polarity[var(p)] = assigns[var(p)];
-#endif
-
     trail.push(p);
 }
 
