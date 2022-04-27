@@ -236,4 +236,11 @@ target_sources(NameProtectionTest
         )
 
 target_link_libraries(NameProtectionTest OpenSMT gtest gtest_main)
-gtest_add_tests(TARGET NameProtectionTest)
+
+add_executable(TermPrinterTest)
+target_sources(TermPrinterTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_TermPrinter.cc"
+        )
+
+target_link_libraries(TermPrinterTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TermPrinterTest)

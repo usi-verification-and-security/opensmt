@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSplitter.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
+#include "TermPrinter.h"
 
 #include <string>
 #include <sstream>
@@ -818,7 +819,7 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
         ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
-    ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
+    ss << "    " << TermPrinter(*logic).print(templateFun.getBody()) << ")\n";
     return ss.str();
 }
 
@@ -1310,7 +1311,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     }
 
     for (int j = 0; j < itps.size(); j++) {
-        auto itp = logic->pp(itps[j]);
+        auto itp = TermPrinter(*logic).print(itps[j]);
         notify_formatted(false, "%s%s%s",
                          (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
     }

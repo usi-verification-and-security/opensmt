@@ -51,12 +51,14 @@ const char* Logic::s_sort_bool = "Bool";
 const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
 const char* Logic::s_abstract_value_prefix = "@";
-
+const char Logic::c_let_var_primary_prefix = '?';
+const char Logic::c_let_var_secondary_prefix = 'l';
 
 // The constructor initiates the base logic (Boolean)
 Logic::Logic(opensmt::Logic_t _logicType) :
       logicType(_logicType)
     , distinctClassCount(0)
+    , letVarPrefix(1,c_let_var_primary_prefix)
     , sort_store()
     , term_store(sym_store)
     , sym_IndexedSort(sort_store.newSortSymbol(SortSymbol(tk_indexed, 2, SortSymbol::INTERNAL)))
@@ -698,6 +700,12 @@ PTRef Logic::mkVar(SRef s, const char* name, bool isInterpreted) {
     }
     PTRef ptr = mkFun(sr, {});
     assert (ptr != PTRef_Undef);
+    // The prefix of the names of the local variables introduced with let needs to be changed if
+    // the current prefix is a proper prefix of the new variable's name
+    if (letVarPrefix.size() < strlen(name) and letVarPrefix.compare(0, std::string::npos, name, letVarPrefix.size() == 0)) {
+        char charAfterCurrentPrefix = name[letVarPrefix.size()];
+        letVarPrefix += (charAfterCurrentPrefix != c_let_var_primary_prefix) ? c_let_var_primary_prefix : c_let_var_secondary_prefix;
+    }
 
     return ptr;
 }
