@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Interpret.h"
 #include "smt2tokens.h"
 #include "ArithLogic.h"
-#include "MainSplitter.hpp"
+#include "MainSplitter.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
 
