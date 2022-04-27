@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <MainSplitter.hpp>
+#include <MainSplitter.h>
 
 class SolverBranchBoundary : public ::testing::Test {
 public:
@@ -47,13 +47,12 @@ TEST_F(SolverBranchBoundary, test_SolverBranch) {
             (dynamic_cast<ParallelScatterSplitter&>(mainSplitter->getSMTSolver())).get_solver_branch();
 
     for (int index = 0; index < vars.size(); ++index) {
-        int span = index + 1;
+        int span = index;
         int frameId = index + 1;
         (dynamic_cast<ParallelScatterSplitter&>(mainSplitter->getSMTSolver())).addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), span), frameId);
         mainSplitter->getTermMapper().mapEnabledFrameIdToVar(vars[index], frameId);
 
-        uint32_t mapped_frameId = mainSplitter->getTermMapper().get_FrameId(vars[index]);
-        vec<opensmt::pair<int, int>> const & solverBranch_perVar = (dynamic_cast<ParallelScatterSplitter&>(mainSplitter->getSMTSolver())).get_solverBranch(mapped_frameId);
+        vec<opensmt::pair<int, int>> const & solverBranch_perVar = (dynamic_cast<ParallelScatterSplitter&>(mainSplitter->getSMTSolver())).get_solverBranch(vars[index]);
         ASSERT_EQ(solverBranch_perVar.size(), span);
     }
 
