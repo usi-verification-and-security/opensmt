@@ -1445,8 +1445,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
         CRef confl = propagate();
         if (confl != CRef_Undef) {
             if (conflicts > conflictsUntilFlip) {
-                conflictsUntilFlip += flipIncrement;
                 flipState = not flipState;
+                conflictsUntilFlip += flipState ? 1000 : 10000;
             }
             // CONFLICT
             conflicts++;
