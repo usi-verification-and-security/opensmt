@@ -840,6 +840,11 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
 #endif
 
     PTRef res = PTRef_Undef;
+
+    if (sym_store[sym].commutes()) {
+        termSort(terms);
+    }
+
     if (terms.size() == 0) {
         if (term_store.hasCtermKey(sym)) //cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); //cterm_map[sym];
@@ -860,17 +865,13 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
         PTLKey k;
         k.sym = sym;
         terms.moveTo(k.args);
-        if (sym_store[sym].commutes()) {
-            termSort(k.args);
-        }
-        if (term_store.hasCplxKey(k))
+        if (term_store.hasCplxKey(k)) {
             res = term_store.getFromCplxMap(k);
-        else {
+        } else {
             res = term_store.newTerm(sym, k.args);
             term_store.addToCplxMap(std::move(k), res);
         }
-    }
-    else {
+    } else {
         // Boolean operator
         PTLKey k;
         k.sym = sym;
@@ -882,8 +883,7 @@ Logic::mkFun(SymRef sym, vec<PTRef>&& terms)
             cerr << "duplicate: " << ts << endl;
             ::free(ts);
 #endif
-        }
-        else {
+        } else {
             res = term_store.newTerm(sym, k.args);
             term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
