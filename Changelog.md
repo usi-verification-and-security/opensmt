@@ -1,5 +1,9 @@
 ### 2.4.0 (unreleased)
 
+Performance improvements:
+ - CoreSMTSolver: Use Luby restart scheme
+ - CoreSMTSolver: Sticky polarities with phase flipping
+ - CoreSMTSolver: Do not delete learned clauses with glue score < 4
 
 ### 2.3.2 (2022-04-20)
 
