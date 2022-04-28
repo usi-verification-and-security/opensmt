@@ -1184,7 +1184,8 @@ void CoreSMTSolver::reduceDB()
         if (c.getGlue() <= 3) {
             extra++;
         }
-        if (c.getGlue() > 3 and c.size() > 2 and not locked(c) and (i+extra < learnts.size() / 2)) {
+        if (c.getGlue() > 3 and not locked(c) and (i+extra < learnts.size() / 2)) {
+            assert(c.size() > 2);
             removeClause(learnts[i]);
         } else {
             learnts[j++] = learnts[i];
@@ -1446,7 +1447,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
         if (confl != CRef_Undef) {
             if (conflicts > conflictsUntilFlip) {
                 flipState = not flipState;
-                conflictsUntilFlip += flipState ? 1000 : 10000;
+                conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
             }
             // CONFLICT
             conflicts++;
