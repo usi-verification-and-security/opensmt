@@ -245,7 +245,6 @@ public:
   static const char* o_random_var_freq;
   static const char* o_luby_restart;
   static const char* o_ccmin_mode;
-  static const char* o_phase_saving;
   static const char* o_rnd_pol;
   static const char* o_rnd_init_act;
   static const char* o_garbage_frac;
@@ -545,9 +544,6 @@ public:
   int sat_ccmin_mode() const
     { return optionTable.has(o_ccmin_mode) ?
         optionTable[o_ccmin_mode]->getValue().numval : 2; }
-  int sat_pcontains() const
-    { return optionTable.has(o_phase_saving) ?
-        optionTable[o_phase_saving]->getValue().numval : 2; }
   int sat_rnd_pol() const
     { return optionTable.has(o_rnd_pol) ?
         optionTable[o_rnd_pol]->getValue().numval > 0 : 0; }

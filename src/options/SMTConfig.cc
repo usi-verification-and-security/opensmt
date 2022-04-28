@@ -462,7 +462,6 @@ const char* SMTConfig::o_clause_decay  = ":clause-decay";
 const char* SMTConfig::o_random_var_freq= ":random-var-freq";
 const char* SMTConfig::o_luby_restart  = ":luby-restart";
 const char* SMTConfig::o_ccmin_mode    = ":ccmin-mode";
-const char* SMTConfig::o_phase_saving  = ":phase-saving";
 const char* SMTConfig::o_rnd_pol       = ":rnd-pol";
 const char* SMTConfig::o_rnd_init_act  = ":rnd-init-act";
 const char* SMTConfig::o_sat_dump_rnd_inter = ":sat-num-rnd-itps";
