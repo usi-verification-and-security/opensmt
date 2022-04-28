@@ -272,9 +272,9 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         for(Lit l : resolvedUnits) {
             original.push(l);
         }
-        CRef inputClause = ca.alloc(original, false);
+        CRef inputClause = ca.alloc(original);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+                ps.size() == 0 ? CRef_Undef : ca.alloc(ps);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -302,7 +302,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
     }
     else
     {
-        CRef clauseToAttach = logsProofForInterpolation ? inOutCRefs.second : ca.alloc(ps, false);
+        CRef clauseToAttach = logsProofForInterpolation ? inOutCRefs.second : ca.alloc(ps);
         inOutCRefs.second = clauseToAttach;
         clauses.push(clauseToAttach);
         attachClause(clauseToAttach);
@@ -698,8 +698,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             }
             else
             {
-                bool learnt_ = config.sat_temporary_learn;
-                ctr = ca.alloc(r, learnt_);
+                ctr = config.sat_temporary_learn ? ca.alloc(r, {true, computeGlue(r)}) : ca.alloc(r);
                 learnts.push(ctr);
                 attachClause(ctr);
                 undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ctr));
@@ -877,7 +876,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             }
             else
             {
-                ct = ca.alloc(r, config.sat_temporary_learn);
+                ct = config.sat_temporary_learn ? ca.alloc(r, {true, computeGlue(r)}) : ca.alloc(r);
                 learnts.push(ct);
                 if (config.isIncremental() != 0)
                     undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ct));
@@ -1465,7 +1464,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             if (learnt_clause.size() == 1) {
                 CRef reason = CRef_Undef;
                 if (logsProofForInterpolation()) {
-                    CRef cr = ca.alloc(learnt_clause, false);
+                    CRef cr = ca.alloc(learnt_clause);
                     proof->endChain(cr);
                     reason = cr;
                 }
@@ -1475,7 +1474,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
 
-                CRef cr = ca.alloc(learnt_clause, true, computeGlue(learnt_clause));
+                CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
 
                 if (logsProofForInterpolation()) {
                     proof->endChain(cr);

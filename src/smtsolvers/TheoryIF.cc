@@ -116,7 +116,7 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     std::vector<PropagationData> propData;
 
     auto processNewClause = [&] (auto const & clause) {
-        CRef cr = ca.alloc(clause, false);
+        CRef cr = ca.alloc(clause);
         attachClause(cr);
         clauses.push(cr);
         if (logsProofForInterpolation()) {
@@ -266,7 +266,7 @@ CoreSMTSolver::handleUnsat()
     {
         if (logsProofForInterpolation()) {
             // All conflicting atoms are dec-level 0
-            CRef confl = ca.alloc(conflicting, config.sat_temporary_learn);
+            CRef confl = config.sat_temporary_learn ? ca.alloc(conflicting, {true, computeGlue(conflicting)}) : ca.alloc(conflicting);
             proof->newTheoryClause(confl);
             this->finalizeProof(confl);
         }
@@ -283,9 +283,8 @@ CoreSMTSolver::handleUnsat()
         confl = ca.alloc(conflicting);
     }
     // Learn theory lemma
-    else
-    {
-        confl = ca.alloc(conflicting, config.sat_temporary_learn);
+    else {
+        confl = config.sat_temporary_learn ? ca.alloc(conflicting, {true, computeGlue(conflicting)}) : ca.alloc(conflicting);
         learnts.push(confl);
         attachClause(confl);
         claBumpActivity(ca[confl]);
@@ -316,7 +315,7 @@ CoreSMTSolver::handleUnsat()
         CRef reason = CRef_Undef;
         if (logsProofForInterpolation())
         {
-            CRef cr = ca.alloc(learnt_clause, false);
+            CRef cr = ca.alloc(learnt_clause);
             proof->endChain(cr);
             reason = cr;
         }
@@ -326,7 +325,7 @@ CoreSMTSolver::handleUnsat()
         learnts_size += learnt_clause.size( );
         all_learnts ++;
 
-        CRef cr = ca.alloc(learnt_clause, true, computeGlue(learnt_clause));
+        CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
 
         if (logsProofForInterpolation()) {
             proof->endChain(cr);
