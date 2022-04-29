@@ -92,6 +92,7 @@ class Logic {
         }
         inline void mark(PTId id) { innerSet.insert(Idx(id)); }
         inline bool isMarked(PTId id) const { return innerSet.contains(Idx(id)); }
+        inline bool isInDomain(PTId id) const { return Idx(id) < innerSet.get_domain(); }
     };
     mutable nat_set     auxiliaryNatSet;
 
