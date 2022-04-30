@@ -28,6 +28,7 @@ public:
 
     inline vec<opensmt::pair<int,int>> const & get_solverBranch(Var v) { return frameId_solverBranch[theory_handler.getTMap().get_FrameId(v)]; }
 
+    void enterSplittingCycle() { splitContext.enterSplittingCycle(); }
 
 private:
     PTPLib::net::Channel *  channel;
