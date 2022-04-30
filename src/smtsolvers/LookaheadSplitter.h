@@ -23,12 +23,12 @@ static inline int getLog2Ceil(int i)
     return r;
 }
 
-class LookaheadSplitter : public LookaheadSMTSolver, public Splitter {
+class LookaheadSplitter : public LookaheadSMTSolver, virtual public Splitter {
 
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler)
-    : LookaheadSMTSolver(c, thandler)
-    , Splitter(config, decisions)
+    : Splitter(c, decisions)
+    , LookaheadSMTSolver(c, thandler)
     {}
 
 protected:

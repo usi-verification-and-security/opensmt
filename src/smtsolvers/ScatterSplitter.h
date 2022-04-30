@@ -13,7 +13,7 @@
 #include "SplitContext.h"
 #include "Splitter.h"
 
-class ScatterSplitter : public SimpSMTSolver, public Splitter {
+class ScatterSplitter : public SimpSMTSolver, virtual public Splitter {
 
 public:
     ScatterSplitter(SMTConfig & c, THandler & t);
