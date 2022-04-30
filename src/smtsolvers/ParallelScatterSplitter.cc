@@ -39,7 +39,7 @@ void ParallelScatterSplitter::notifyEnd() {
 
 lbool ParallelScatterSplitter::solve_() {
     assert(config.sat_split_type() == spt_scatter);
-    lbool result = ScatterSplitter::solve_();
+    lbool result = CoreSMTSolver::solve_();
     notifyResult(result);
     return result;
 }
