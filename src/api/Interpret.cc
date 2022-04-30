@@ -596,7 +596,9 @@ bool Interpret::checkSat() {
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
         else if (o_split != spt_none) {
+#ifndef CUBE_AND_CONQUER
             writeSplits(name);
+#endif
         }
         free(name);
     }
