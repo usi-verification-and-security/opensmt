@@ -23,7 +23,7 @@
 class MainSplitter : public MainSolver {
 public:
 
-    bool isSplitTypeScatter() const { return config.sat_split_type() == spt_scatter; }
+    bool isSplitTypeScatter() const { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeScatter(); }
 
     MainSplitter(std::unique_ptr<Theory> t,std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> th,
                  std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
@@ -66,6 +66,11 @@ public:
         }
         return MainSolver::solve_(enabledFrames);
     }
+
+    sstat solve() {
+        assert(config.sat_split_type() != spt_none);
+        return MainSolver::solve();
+    };
 #endif
     void writeSplits(std::string const & baseName) const {
         assert(config.sat_split_type() != spt_none);
