@@ -22,6 +22,10 @@ public:
     {}
 
     std::vector<SplitData> const & getSplits() { return splitContext.getSplits(); }
+
+    bool isSplitTypeScatter()   { return splitContext.isSplitTypeScatter(); }
+
+    bool isSplitTypeLookahead() { return splitContext.isSplitTypeLookahead(); }
 };
 
 #endif //OPENSMT_SPLITTER_H
