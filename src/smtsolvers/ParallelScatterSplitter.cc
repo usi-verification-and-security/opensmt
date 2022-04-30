@@ -8,7 +8,8 @@
 
 
 ParallelScatterSplitter::ParallelScatterSplitter(SMTConfig & c, THandler & t)
-    : ScatterSplitter       (c, t)
+    : Splitter              (c, decisions)
+    , ScatterSplitter       (c, t)
     , trail_sent            (0)
     , firstPropagation      (true)
 {
@@ -37,6 +38,7 @@ void ParallelScatterSplitter::notifyEnd() {
 }
 
 lbool ParallelScatterSplitter::solve_() {
+    assert(config.sat_split_type() == spt_scatter);
     lbool result = ScatterSplitter::solve_();
     notifyResult(result);
     return result;
