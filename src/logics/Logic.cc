@@ -427,47 +427,33 @@ Logic::mkIte(vec<PTRef>&& args)
 
 // Check if arguments contain trues or a false and return the simplified
 // term
-PTRef Logic::mkAnd(vec<PTRef>&& args) {
+PTRef Logic::mkAnd(vec<PTRef> && args) {
     if (args.size() == 0) { return getTerm_true(); }
-    // Remove duplicates
-    vec<PtAsgn> tmp_args;
-    tmp_args.capacity(args.size());
-    for (int i = 0; i < args.size(); i++) {
-        if (!hasSortBool(args[i])) {
-            return PTRef_Undef;
-        }
-        if (isNot(args[i])) {
-            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
-        } else {
-            tmp_args.push(PtAsgn(args[i], l_True));
-        }
-    }
-    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    // Remove duplicates and simplify
+    assert(getNumberOfTerms() > 0);
+    TermMarks tm = getPrivateTermMarks(PTId{static_cast<uint32_t>(getNumberOfTerms()-1)});
     int i, j;
-    PtAsgn p = PtAsgn_Undef;
-    for (i = 0, j = 0; i < tmp_args.size(); i++) {
-        if (isFalse(tmp_args[i].tr)) {
-            assert(tmp_args[i].sgn == l_True);
+    for (i = j = 0; i < args.size(); i++) {
+        PTRef tr = args[i];
+        if (isTrue(tr)) {
+            continue;
+        } else if (isFalse(tr)) {
             return getTerm_false();
-        } else if (isTrue(tmp_args[i].tr)) { // skip
-            assert(tmp_args[i].sgn == l_True);
-        } else if (p == tmp_args[i]) { // skip
-        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
-            return getTerm_false();
-        } else {
-            tmp_args[j++] = p = tmp_args[i];
+        } else if (not tm.isMarked(getPterm(tr).getId())) {
+            // Check if the atom appears negated in the clause
+            PTId negatedId = getPterm(mkNot(tr)).getId();
+            if (tm.isInDomain(negatedId) and tm.isMarked(negatedId)) {
+                return getTerm_false();
+            }
+            args[j++] = args[i];
+            tm.mark(getPterm(tr).getId());
         }
     }
-    tmp_args.shrink(i - j);
-    if (tmp_args.size() == 0) {
+    args.shrink(i-j);
+    if (args.size() == 0) {
         return getTerm_true();
-    } else if (tmp_args.size() == 1) {
-        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
-    }
-    args.clear();
-    args.capacity(tmp_args.size());
-    for (PtAsgn tmp_arg : tmp_args) {
-        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
+    } else if (args.size() == 1) {
+        return args[0];
     }
     return mkFun(getSym_and(), std::move(args));
 }
@@ -475,44 +461,29 @@ PTRef Logic::mkAnd(vec<PTRef>&& args) {
 PTRef Logic::mkOr(vec<PTRef> && args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
-    vec<PtAsgn> tmp_args;
-    tmp_args.capacity(args.size());
-    for (int i = 0; i < args.size(); i++) {
-        if (!hasSortBool(args[i])) {
-            return PTRef_Undef;
-        }
-        if (isNot(args[i])) {
-            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
-        } else {
-            tmp_args.push(PtAsgn(args[i], l_True));
-        }
-    }
-    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    assert(getNumberOfTerms() > 0);
+    TermMarks tm = getPrivateTermMarks(PTId{static_cast<uint32_t>(getNumberOfTerms()-1)});
     int i, j;
-    PtAsgn p = PtAsgn_Undef;
-    for (i = 0, j = 0; i < tmp_args.size(); i++) {
-        if (isTrue(tmp_args[i].tr)) {
-            assert(tmp_args[i].sgn == l_True);
+    for (i = j = 0; i < args.size(); i++) {
+        PTRef tr = args[i];
+        if (isTrue(tr)) {
             return getTerm_true();
-        } else if (isFalse(tmp_args[i].tr)) { // skip
-            assert(tmp_args[i].sgn == l_True);
-        } else if (p == tmp_args[i]) { // skip
-        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
-            return getTerm_true();
-        } else {
-            tmp_args[j++] = p = tmp_args[i];
+        } else if (isFalse(tr)) {
+            continue;
+        } else if (not tm.isMarked(getPterm(tr).getId())) {
+            PTId negatedId = getPterm(mkNot(tr)).getId();
+            if (tm.isInDomain(negatedId) and tm.isMarked(negatedId)) {
+                return getTerm_true(); // A tautology
+            }
+            args[j++] = args[i];
+            tm.mark(getPterm(tr).getId());
         }
     }
-    tmp_args.shrink(i - j);
-    if (tmp_args.size() == 0) {
+    args.shrink(i-j);
+    if (args.size() == 0) {
         return getTerm_false();
-    } else if (tmp_args.size() == 1) {
-        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
-    }
-    args.clear();
-    args.capacity(tmp_args.size());
-    for (PtAsgn tmp_arg : tmp_args) {
-        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
+    } else if (args.size() == 1) {
+        return args[0];
     }
     return mkFun(getSym_or(), std::move(args));
 }
