@@ -5,21 +5,24 @@ if(PARALLEL)
     set(PTPLib_branch master)
   endif()
 
-  message("-- OpenSMT is fetching PTPLib from " ${PTPLib_repository})
-  message("-- PTPLib Branch : ${PTPLib_branch}")
+  message(STATUS "OpenSMT is fetching PTPLib from " ${PTPLib_repository})
+  message(STATUS "PTPLib Branch : ${PTPLib_branch}")
 
   include(FetchContent)
+  Set(FETCHCONTENT_QUIET FALSE)
   FetchContent_Declare(
           PTPLib
           GIT_REPOSITORY ${PTPLib_repository}
           GIT_TAG ${PTPLib_branch}
+          GIT_SHALLOW true
+          GIT_PROGRESS true
   )
 
   FetchContent_MakeAvailable(PTPLib)
 
   add_library(PTPLib::PTPLib ALIAS PTPLib)
 
-  message("-- PTPLib files have been written to: ${PTPLib_SOURCE_DIR}")
+  message(STATUS "PTPLib include: ${PTPLib_SOURCE_DIR}/include")
 endif(PARALLEL)
 
 add_subdirectory(proof)
