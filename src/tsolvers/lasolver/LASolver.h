@@ -153,6 +153,8 @@ private:
 
     // Most-infeasible branching heuristic
     LVRef splitOnMostInfeasible(vec<LVRef> const &) const;
+    // Random branching heuristic
+    LVRef splitOnRandom(vec<LVRef> const &) const;
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
     TRes cutFromProof();
