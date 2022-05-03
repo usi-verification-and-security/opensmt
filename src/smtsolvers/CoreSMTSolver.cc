@@ -52,11 +52,35 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 
 #include "Proof.h"
 #include "SystemQueries.h"
 #include "ReportUtils.h"
+
+#if defined(_MSC_VER)
+#define release_assert(a) \
+    do { \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4127)) \
+        if (!(a)) {\
+    __pragma(warning(pop)) \
+            fprintf(stderr, "*** ASSERTION FAILURE in %s() [%s:%d]: %s\n", \
+            __FUNCTION__, __FILE__, __LINE__, #a); \
+            abort(); \
+        } \
+    } while (0)
+#else
+#define release_assert(a) \
+    do { \
+        if (!(a)) {\
+            fprintf(stderr, "*** ASSERTION FAILURE in %s() [%s:%d]: %s\n", \
+            __FUNCTION__, __FILE__, __LINE__, #a); \
+            abort(); \
+        } \
+    } while (0)
+#endif
 
 namespace opensmt {
     extern bool stop;
@@ -574,10 +598,13 @@ Lit CoreSMTSolver::pickBranchLit()
  * @param vector of literals each having a level in vardata
  * @return min (4, |{level(var(lit))}| \mid lit \in ps)
  */
-uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
+template<class T>
+uint32_t CoreSMTSolver::computeGlue(T const & ps) {
     levelsInClause.reset();
     uint32_t numLevels = 0;
-    for (Lit lit: ps) {
+    const uint32_t sz = ps.size();
+    for (uint32_t i = 0; i < sz; i ++) {
+        const Lit lit = ps[i];
         int level = vardata[var(lit)].level;
         if (level != 0 and not levelsInClause.contains(level)) {
             levelsInClause.insert(level);
@@ -636,6 +663,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (c.learnt()) {
             claBumpActivity(c);
+            const uint32_t newGlue = computeGlue(c);
+            if (newGlue < c.getGlue()) c.setGlue(newGlue);
         }
 
         for (unsigned j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
@@ -1379,7 +1408,108 @@ void CoreSMTSolver::learntSizeAdjust() {
     }
 }
 
+bool CoreSMTSolver::vivify_if_needed()
+{
+    if (conflicts < next_vivify) return ok;
+    next_vivify = conflicts*1.1 + 30000;
+    vivif_lit_rem = 0;
+    vivif_cl_rem = 0;
+    uint32_t vivif_tried = 0;
 
+    release_assert(decisionLevel() == 0);
+    release_assert(ok);
+    for(auto& vd: vardata) vd.reason = CRef_Undef;
+
+    uint32_t j = 0;
+    uint32_t i = 0;
+    for(; i < learnts.size(); i++) {
+        auto const& offs = learnts[i];
+        if (!ok) {
+            learnts[j++] = offs;
+            continue;
+        }
+        release_assert(trail.size() == qhead);
+
+        Clause& cl = ca[offs];
+        if (cl.getGlue() > 2 || cl.getVivif()) {
+            learnts[j++] = offs;
+            continue;
+        }
+
+        vivif_tried++;
+        cl.setVivif(true);
+        if (vivify_one_clause(cl, offs)) {
+            learnts[j++] = offs;
+        } else {
+            ca.free(offs);
+        }
+    }
+    learnts.shrink(i-j);
+
+    if (verbosity)
+        std::cout << "; Vivification finished."
+        << " Tried: " << vivif_tried
+        << " Lit rem: " << vivif_lit_rem << std::endl;
+
+    return ok;
+}
+
+
+// returns TRUE if we need to keep the clause
+bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
+{
+    release_assert(cl.size() > 0);
+    release_assert(decisionLevel() == 0);
+    release_assert(ok);
+
+    vivif_tmp_lits.resize(cl.size());
+    for(uint32_t i = 0 ; i < cl.size() ; i++) vivif_tmp_lits[i] = cl[i];
+    //std::random_shuffle(vivif_tmp_lits.begin(), vivif_tmp_lits.end());
+    vivif_new.clear();
+
+    newDecisionLevel();
+
+    for(uint32_t at = 0; at < vivif_tmp_lits.size(); at++) {
+        const auto l = vivif_tmp_lits[at];
+        if (value(l) == l_True) {
+            cancelUntil(0);
+            detachClause(offs);
+            return true;
+        } else if (value(l) == l_False) {
+            continue;
+        }
+
+        vivif_new.push_back(l);
+        enqueue(~l);
+        auto const confl = propagate();
+        if (confl != CRef_Undef) break;
+    }
+    cancelUntil(0);
+
+    if (vivif_new.size() == cl.size()) return true;
+    vivif_lit_rem += cl.size() - vivif_new.size();
+
+    assert(at > 0);
+    if (vivif_new.size() == 1) {
+        detachClause(offs, true);
+        enqueue(vivif_new[0]);
+        const auto confl = propagate();
+        if (confl != CRef_Undef) {
+            ok = false;
+            if (verbosity) std::cout << "; vivification lead to UNSAT" << std::endl;
+        }
+        vivif_cl_rem++;
+        return false;
+    } else {
+        detachClause(offs, true);
+        // No need to detach&reattach, only lits 1&2 are attached.
+        cl.shrink(cl.size()-vivif_new.size());
+        for(uint32_t i = 0; i < vivif_new.size(); i++) cl[i] = vivif_new[i];
+        attachClause(offs);
+    }
+
+    return true;
+}
 
 /*_________________________________________________________________________________________________
   |
@@ -1440,8 +1570,11 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (okContinue()) {
+    if (ok) {
+        if (!vivify_if_needed()) return l_False;
+    }
 
+    while (okContinue()) {
         CRef confl = propagate();
         if (confl != CRef_Undef) {
             if (conflicts > conflictsUntilFlip) {
@@ -1449,6 +1582,19 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
             }
             // CONFLICT
+            if (conflicts % 1000 == 999) {
+                uint64_t units = 0;
+                if (trail_lim.size() == 0) units = trail.size();
+                else units = trail_lim[0];
+
+                if (verbosity)
+                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "K"
+                    << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "K"
+                    << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "K"
+                    << " units: " << std::setw(5) << units
+                    << std::endl;
+            }
+
             conflicts++;
             conflictC++;
             if (decisionLevel() == 0) {
