@@ -10,7 +10,6 @@
 
 #include "MainSolver.h"
 #include "SplitData.h"
-#include <cmath>
 #ifdef CUBE_AND_CONQUER
     #include "ParallelScatterSplitter.h"
 #else
@@ -19,6 +18,8 @@
 #include "OsmtInternalException.h"
 #include "LookaheadSplitter.h"
 #include "Splitter.h"
+
+#include <cmath>
 
 class MainSplitter : public MainSolver {
 public:
@@ -128,24 +129,23 @@ public:
     }
 
     std::vector<std::string> getPartitionClauses() {
+        assert(config.sat_split_type() != spt_none);
         std::vector<std::string> partitions;
         std::vector<SplitData> const & splits = dynamic_cast<Splitter&>(ts.solver).getSplits();
-        for (auto const &split : splits) {
-            std::vector<vec<PtAsgn>> constraints;
-            split.constraintsToPTRefs(*thandler);
-            vec<PTRef> clauses;
-            for (auto const &constraint : constraints) {
-                vec<PTRef> clause;
-                for (auto const &ptAsgn : constraint) {
-                    PTRef pt =
-                            ptAsgn.sgn == l_True ?
-                            ptAsgn.tr :
-                            logic.mkNot(ptAsgn.tr);
-                    clause.push(pt);
-                }
-                clauses.push(logic.mkOr(clause));
+        auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in) {
+            vec<PTRef> out;
+            for (const auto & constr : in) {
+                vec<PTRef> disj_vec;
+                for (PtAsgn pta : constr)
+                    disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
+                out.push(logic.mkOr(std::move(disj_vec)));
             }
-            partitions.push_back(logic.dumpWithLets(logic.mkAnd(clauses)));
+            return out;
+        };
+        for (auto const &split : splits) {
+            vec<PTRef> conj_vec = addToConjunction(split.constraintsToPTRefs(*thandler));
+            PTRef problem = logic.mkAnd(conj_vec);
+            partitions.push_back(logic.dumpWithLets(problem));
         }
         return partitions;
     }
