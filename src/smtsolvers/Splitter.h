@@ -21,11 +21,15 @@ public:
     : splitContext(c, d)
     {}
 
-    std::vector<SplitData> const & getSplits() { return splitContext.getSplits(); }
+    std::vector<SplitData>      const & getSplits() { return splitContext.getSplits(); }
 
-    bool isSplitTypeScatter()   { return splitContext.isSplitTypeScatter(); }
+    bool isSplitTypeScatter()   const  { return splitContext.isSplitTypeScatter(); }
 
-    bool isSplitTypeLookahead() { return splitContext.isSplitTypeLookahead(); }
+    bool isSplitTypeLookahead()  const { return splitContext.isSplitTypeLookahead(); }
+
+    bool isSplitTypeNone()       const { return splitContext.isSplitTypeNone(); }
+
+    void resetSplitType() { splitContext.resetSplitType(); }
 };
 
 #endif //OPENSMT_SPLITTER_H
