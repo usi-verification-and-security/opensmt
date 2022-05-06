@@ -28,7 +28,15 @@ public:
 
     inline vec<opensmt::pair<int,int>> const & get_solverBranch(Var v) { return frameId_solverBranch[theory_handler.getTMap().get_FrameId(v)]; }
 
-    void enterSplittingCycle() { splitContext.enterSplittingCycle(); }
+    void enterSplittingCycle()          { splitContext.enterSplittingCycle(); }
+
+    bool isSplitTypeNone()     const    { return splitContext.isSplitTypeNone(); }
+
+    void resetSplitType()               { splitContext.resetSplitType(); }
+
+    void setSplitTypeScatter()          { splitContext.setSplitTypeScatter(); }
+
+    int getSplitTypeValue() const       { return splitContext.getSplitTypeValue(); }
 
 private:
     PTPLib::net::Channel *  channel;
@@ -44,8 +52,6 @@ private:
     map_var_frameId var_frameId;
 
     void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
-
-    void notifyResult(lbool const & result) const;                     // OpenSMT signalling to communication channel that it's found a result and will stop
 
 protected:
 

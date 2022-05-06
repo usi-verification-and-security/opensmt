@@ -83,6 +83,10 @@ public:
     bool preferTermNotEq() const { return split_preference == sppref_tterm_neq; }
     bool isSplitTypeScatter() const { return split_type == spt_scatter; }
     bool isSplitTypeLookahead() const { return split_type == spt_lookahead; }
+    bool isSplitTypeNone() const { return split_type == spt_none; }
+    void resetSplitType() { split_type = spt_none; }
+    void setSplitTypeScatter() { split_type = spt_scatter; }
+    int getSplitTypeValue() const & { return split_type.t; }
     bool resourceLimitReached(uint64_t decisions) const {
         if (resourceLimitEnabled()) {
             if (useTimeAsResourceLimit()) {

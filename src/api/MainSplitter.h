@@ -24,40 +24,32 @@
 class MainSplitter : public MainSolver {
 public:
 
-    bool isSplitTypeScatter() const { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeScatter(); }
+    bool isSplitTypeScatter() const & { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeScatter(); }
+
+    bool isSplitTypeNone() const & { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeNone(); }
 
     MainSplitter(std::unique_ptr<Theory> t,std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> th,
                  std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
                  :
                  MainSolver(std::move(t), std::move(tm), std::move(th), std::move(ss),logic,config, std::move(name))
-                 {
-#ifdef CUBE_AND_CONQUER
-                     if (isSplitTypeScatter())
-                         if (not (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).getChannel().isSolverInParallelMode()) {
-                             PTPLib::net::Header header = PTPLib::net::Header();
-                             header.emplace(PTPLib::common::Param.NAME, config.getInstanceName());
-                             header.emplace(PTPLib::common::Param.NODE, "[]");
-                             (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).getChannel().set_current_header(header);
-                         }
-#endif
-                 }
+                 {}
 
 #ifdef CUBE_AND_CONQUER
     PTPLib::net::Channel & getChannel()  { return (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).getChannel(); }
 
     void notifyResult(sstat const & result)
     {
-        if (result not_eq s_Undef) {
+        if (result != s_Undef) {
             getChannel().setShallStop();
             getChannel().notify_all();
+            status = result;
         }
     }
 
     sstat check() override {
         //push frames size should match with length of the solver branch
-        if (isSplitTypeScatter())
-            if (frames.size() != static_cast<std::size_t>((dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1))
-                throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: Inconsistency in push frames size and length of the solver address");
+        if (frames.size() != static_cast<std::size_t>((dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1))
+            throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: Inconsistency in push frames size and length of the solver address");
 
         sstat res = MainSolver::check();
         notifyResult(res);
@@ -65,27 +57,25 @@ public:
     }
 
     sstat solve_(vec<FrameId> & enabledFrames) override {
-        if (isSplitTypeScatter()) {
-            vec<opensmt::pair<int, int>> const & solverBranch = (dynamic_cast<ParallelScatterSplitter &>(getSMTSolver())).get_solver_branch();
-            for (int i = 0; i < enabledFrames.size(); i++) {
-                if (enabledFrames.size() > solverBranch.size() + 1)
-                    throw PTPLib::common::Exception(__FILE__, __LINE__,
-                                                    ";assert: inconsistency in solverBranch length and enabled_frame size: " +
-                                                    std::to_string(enabledFrames.size()));
-                if (i > 0) {
-                    (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
-                }
+        vec<opensmt::pair<int, int>> const & solverBranch = (dynamic_cast<ParallelScatterSplitter &>(getSMTSolver())).get_solver_branch();
+        for (int i = 0; i < enabledFrames.size(); i++) {
+            if (enabledFrames.size() > solverBranch.size() + 1)
+                throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                ";assert: inconsistency in solverBranch length and enabled_frame size: " +
+                                                std::to_string(enabledFrames.size()) + " solverBranch size: "+ std::to_string(solverBranch.size()));
+            if (i > 0) {
+                (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
             }
         }
         return MainSolver::solve_(enabledFrames);
     }
+#endif
+
 
     sstat solve() {
-        assert(config.sat_split_type() != spt_none);
         return MainSolver::solve();
     };
 
-#endif
     void writeSplits(std::string const & baseName) const {
         assert(config.sat_split_type() != spt_none);
         assert(strcmp(config.output_dir(),"") != 0);
@@ -142,7 +132,7 @@ public:
     }
 
     std::vector<std::string> getPartitionClauses() {
-        assert(config.sat_split_type() != spt_none);
+        assert(not isSplitTypeNone());
         std::vector<std::string> partitions;
         std::vector<SplitData> const & splits = dynamic_cast<Splitter&>(ts.solver).getSplits();
         auto addToConjunction = [this](std::vector<vec<PtAsgn>> const & in) {

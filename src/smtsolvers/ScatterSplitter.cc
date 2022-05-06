@@ -92,18 +92,20 @@ bool ScatterSplitter::okContinue() const {
 }
 
 void ScatterSplitter::notifyEnd() {
-    auto [data, result] = createSplitAndBlockAssumptions();
-    splitContext.insertSplitData(std::move(data));
-    assert(result == l_False);
-    (void)result;
+    if (config.sat_split_type() == spt_scatter) {
+        auto[data, result] = createSplitAndBlockAssumptions();
+        splitContext.insertSplitData(std::move(data));
+        assert(result == l_False);
+        (void) result;
+    }
     opensmt::stop = true;
 }
 
 lbool ScatterSplitter::solve_() {
-    assert(config.sat_split_type() == spt_scatter);
-    splitContext.reset(decisions);
-    splitContext.enterInitCycle(decisions);
-
+    if (config.sat_split_type() == spt_scatter) {
+        splitContext.reset(decisions);
+        splitContext.enterInitCycle(decisions);
+    }
     return CoreSMTSolver::solve_();
 }
 

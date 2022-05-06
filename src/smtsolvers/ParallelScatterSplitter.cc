@@ -24,34 +24,26 @@ bool ParallelScatterSplitter::okContinue() const {
         channel->setShouldStop();
         return false;
     } else if (static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber() - 1) {
-        channel->setShouldStop();
         return false;
     }
     return true;
 }
 void ParallelScatterSplitter::notifyEnd() {
-    auto [data, result] = ScatterSplitter::createSplitAndBlockAssumptions();
-    splitContext.insertSplitData(std::move(data));
-    assert(result == l_False);
-    (void)result;
+    if (isSplitTypeScatter()) {
+        auto[data, result] = createSplitAndBlockAssumptions();
+        splitContext.insertSplitData(std::move(data));
+        assert(result == l_False);
+        (void) result;
+    }
     channel->setShouldStop();
 }
 
 lbool ParallelScatterSplitter::solve_() {
-    assert(config.sat_split_type() == spt_scatter);
-    lbool result = CoreSMTSolver::solve_();
-    notifyResult(result);
-    return result;
-}
-
-void ParallelScatterSplitter::notifyResult(lbool const & result) const
-{
-    if (not channel->isSolverInParallelMode()) return;
-
-    if (result not_eq l_Undef) {
-        channel->setShallStop();
-        channel->notify_all();
+    if (isSplitTypeScatter()) {
+        splitContext.reset(decisions);
+        splitContext.enterInitCycle(decisions);
     }
+    return CoreSMTSolver::solve_();
 }
 
 lbool ParallelScatterSplitter::zeroLevelConflictHandler() {
@@ -62,7 +54,6 @@ lbool ParallelScatterSplitter::zeroLevelConflictHandler() {
         return CoreSMTSolver::zeroLevelConflictHandler();
     }
 }
-
 
 CoreSMTSolver::ConsistencyAction ParallelScatterSplitter::notifyConsistency() {
     if (not splitContext.isInSplittingCycle() and splitContext.shouldEnterSplittingCycle(decisions)) {
@@ -121,15 +112,20 @@ bool ParallelScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & le
                 if (isPrefix(solverBranch_perVar, get_solver_branch())) {
                     int result = solverBranch_perVar.size();
                     assert([&]() {
-                        if (result > get_solver_branch().size()) {
-                            std::scoped_lock<std::mutex> s_lk(channel->getMutex());
-                            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
-                                channel->get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
-                        }
+                    if (result <= 0)
+                    {
+                        std::scoped_lock<std::mutex> s_lk(channel->getMutex());
+                        throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is less than zero " +
+                                                                            channel->get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
+                    }
+                    if (result > get_solver_branch().size()) {
+                        std::scoped_lock<std::mutex> s_lk(channel->getMutex());
+                        throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
+                            channel->get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
+                    }
                         return true;
                     }());
 
-                    assert(result > 0);
                     level = std::max<int>(level, result);
                     continue;
                 } else {
@@ -189,7 +185,7 @@ void ParallelScatterSplitter::set_solver_branch(std::string solver_branch)
 
 void ParallelScatterSplitter::runPeriodic()
 {
-    if (not channel->isClauseShareMode() and channel->isSolverInParallelMode()) return;
+    if (not channel->isClauseShareMode()) return;
 
     if (firstPropagation) {
         assert(decisionLevel() == 0);
@@ -198,7 +194,7 @@ void ParallelScatterSplitter::runPeriodic()
     }
 
     std::vector<PTPLib::net::Lemma> toPublishLemmas;
-    if (channel->shouldLearnClauses() or not channel->isSolverInParallelMode()) {
+    if (channel->shouldLearnClauses()) {
         channel->clearShouldLearnClauses();
 
         if (exposeClauses(toPublishLemmas)) {
@@ -210,11 +206,9 @@ void ParallelScatterSplitter::runPeriodic()
                 }
                 channel->insert_learned_clause(std::move(toPublishLemmas));
             }
-#ifdef SMTS_ACTIVELOG
             if (syncedStream)
                 syncedStream->println(channel->isColorMode() ? PTPLib::common::Color::FG_Green : PTPLib::common::Color::FG_DEFAULT,
                            "[t SEARCH ] -------------- add learned clauses to channel buffer, Size : ", toPublishLemmas.size());
-#endif
         }
     }
 }
