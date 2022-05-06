@@ -43,13 +43,25 @@ public:
                  }
 
 #ifdef CUBE_AND_CONQUER
+    PTPLib::net::Channel & getChannel()  { return (dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).getChannel(); }
+
+    void notifyResult(sstat const & result)
+    {
+        if (result not_eq s_Undef) {
+            getChannel().setShallStop();
+            getChannel().notify_all();
+        }
+    }
+
     sstat check() override {
         //push frames size should match with length of the solver branch
         if (isSplitTypeScatter())
             if (frames.size() != static_cast<std::size_t>((dynamic_cast<ParallelScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1))
                 throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: Inconsistency in push frames size and length of the solver address");
 
-        return MainSolver::check();
+        sstat res = MainSolver::check();
+        notifyResult(res);
+        return res;
     }
 
     sstat solve_(vec<FrameId> & enabledFrames) override {
@@ -72,6 +84,7 @@ public:
         assert(config.sat_split_type() != spt_none);
         return MainSolver::solve();
     };
+
 #endif
     void writeSplits(std::string const & baseName) const {
         assert(config.sat_split_type() != spt_none);
