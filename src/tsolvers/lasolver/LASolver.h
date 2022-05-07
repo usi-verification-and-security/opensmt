@@ -127,6 +127,7 @@ private:
 
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
+    double seed = 123;
 
     LABoundStore::BoundInfo addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);
@@ -151,10 +152,8 @@ private:
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 
-    // Most-infeasible branching heuristic
-    LVRef splitOnMostInfeasible(vec<LVRef> const &) const;
-    // Random branching heuristic
-    LVRef splitOnRandom(vec<LVRef> const &) const;
+    // Random splitting heuristic
+    LVRef splitOnRandom(vec<LVRef> const &);
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
     TRes cutFromProof();

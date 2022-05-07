@@ -12,6 +12,7 @@
 #include "ModelBuilder.h"
 #include "LIAInterpolator.h"
 #include "CutCreator.h"
+#include "Random.h"
 
 #include <unordered_set>
 
@@ -349,40 +350,8 @@ void LASolver::declareAtom(PTRef leq_tr)
     setKnown(leq_tr);
 }
 
-LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
-    opensmt::Real maxDistance = 0;
-    LVRef chosen = LVRef::Undef;
-    for (LVRef x : varsToFix) {
-        Delta val = simplex.getValuation(x);
-        assert(not val.hasDelta());
-        assert(not val.R().isInteger());
-        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
-        if (distance > maxDistance) {
-            maxDistance = std::move(distance);
-            chosen = x;
-        }
-    }
-    return chosen;
-}
-
-namespace {
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double &seed) {
-        seed *= 1389796;
-        int q = (int) (seed / 2147483647);
-        seed -= (double) q * 2147483647;
-        return seed / 2147483647;
-    }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double &seed, int size) {
-        return (int) (drand(seed) * size);
-    }
-}
-
-LVRef LASolver::splitOnRandom(vec<LVRef> const & varsToFix) const {
-    static double seed = 123;
-    int pick = irand(seed, varsToFix.size());
+LVRef LASolver::splitOnRandom(vec<LVRef> const & varsToFix) {
+    int pick = opensmt::irand(seed, varsToFix.size());
     return varsToFix[pick];
 }
 
@@ -410,8 +379,6 @@ TRes LASolver::checkIntegersAndSplit() {
         }
     }
 
-//    static double seed = 123;
-//    LVRef chosen = drand(seed) < 0.4 ? splitOnRandom(varsToFix) : splitOnMostInfeasible(varsToFix);
     LVRef chosen = splitOnRandom(varsToFix);
 
     assert(chosen != LVRef::Undef);

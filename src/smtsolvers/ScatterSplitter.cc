@@ -24,7 +24,7 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
-    return ((not splitContext.isInSplittingCycle() and drand(random_seed) < random_var_freq) or
+    return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
             (splitContext.isInSplittingCycle() and splitContext.preferRandom()))
            and not order_heap.empty();
 }

@@ -62,6 +62,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SolverTypes.h"
 
 #include "Timer.h"
+#include "Random.h"
 
 class Proof;
 class ModelBuilder;
@@ -368,7 +369,7 @@ protected:
     Var doRandomDecision();
     Lit choosePolarity(Var next);
     virtual Var doActivityDecision();
-    virtual bool branchLitRandom() { return drand(random_seed) < random_var_freq && !order_heap.empty(); }
+    virtual bool branchLitRandom() { return opensmt::drand(random_seed) < random_var_freq && !order_heap.empty(); }
     virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
@@ -433,28 +434,6 @@ protected:
 
     //ADDED FOR MINIMIZATION
     void     printClause      ( vec< Lit > & );
-
-    // Static helpers:
-    //
-
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed)
-    {
-        seed *= 1389796;
-        int q = (int)(seed / 2147483647);
-        seed -= (double)q * 2147483647;
-        return seed / 2147483647;
-    }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size)
-    {
-        return (int)(drand(seed) * size);
-    }
-
-
-    //=================================================================================================
-    // Added Code
 
 public:
 

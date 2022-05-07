@@ -204,7 +204,7 @@ Var CoreSMTSolver::newVar(bool dvar)
     watches  .init(mkLit(v, true));
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
-    activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+    activity .push(rnd_init_act ? opensmt::drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     decision .push();
     trail    .capacity(v+1);
@@ -510,7 +510,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 Var CoreSMTSolver::doRandomDecision() {
     Var next = var_Undef;
     if (branchLitRandom()) {
-        next = order_heap[irand(random_seed,order_heap.size())];
+        next = order_heap[opensmt::irand(random_seed,order_heap.size())];
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++;
     }
