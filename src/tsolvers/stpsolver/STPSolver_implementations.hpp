@@ -96,6 +96,11 @@ void STPSolver<T>::declareAtom(PTRef tr) {
 }
 
 template<class T>
+bool STPSolver<T>::wouldDeduce(PtAsgn asgn) {
+    return true;
+}
+
+template<class T>
 bool STPSolver<T>::assertLit(PtAsgn asgn) {
     // Actually asserting an atom to the solver - adding a new constraint to the current set
     // asgn.tr is the atom to add

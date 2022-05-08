@@ -1161,6 +1161,10 @@ bool Egraph::assertLit(PtAsgn pta)
     return res;
 }
 
+
+bool Egraph::wouldDeduce(PtAsgn pta) {
+    return true;
+};
 //=================================================================================================
 // Garbage Collection methods:
 

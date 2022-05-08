@@ -135,6 +135,11 @@ void EmptySolver::computeModel( )
 {
 }
 
+
+bool EmptySolver::wouldDeduce( PtAsgn p ){
+    return true;
+};
+
 #ifdef PRODUCE_PROOF
 Enode * EmptySolver::getInterpolants( )
 {

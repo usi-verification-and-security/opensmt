@@ -50,6 +50,8 @@ public:
 
     bool assertLit(PtAsgn asgn) override;
 
+    bool wouldDeduce(PtAsgn asgn) override;
+
     void pushBacktrackPoint() override;
 
     void popBacktrackPoint() override;

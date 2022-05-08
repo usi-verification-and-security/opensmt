@@ -50,6 +50,7 @@ public:
   bool                check               ( bool );
   bool                belongsToT          ( Enode * );
   void                computeModel        ( );
+  bool                wouldDeduce         ( PtAsgn );
 #ifdef PRODUCE_PROOF
   Enode *             getInterpolants     ( );
 #endif

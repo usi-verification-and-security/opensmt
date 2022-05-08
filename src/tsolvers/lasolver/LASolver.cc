@@ -414,8 +414,6 @@ bool LASolver::assertLit(PtAsgn asgn)
 {
     assert(asgn.sgn != l_Undef);
 
-//    printf("Assert %d\n", debug_assert_count++);
-
     // Special cases of the "inequalitites"
     if (logic.isTrue(asgn.tr) && asgn.sgn == l_True) {
         generalTSolverStats.sat_calls ++;
@@ -627,12 +625,43 @@ bool LASolver::setStatus( LASolverStatus s )
     return getStatus( );
 }
 
+void LASolver::checkDeduction() {
+    vec<uint> deduced;
+    for(int i = 0; i < decision_trace.size(); i++){
+        if((!hasPolarity(decision_trace[i].tr)) && wouldDeduce(decision_trace[i])){
+            deduced.push(getVarId(getVarForLeq(decision_trace[i].tr)));
+        }
+    }
+    printf("Checked deduction");
+}
+
+bool LASolver::wouldDeduce(PtAsgn asgn) {
+    assert(status != INIT);
+    assert(logic.isLeq(asgn.tr));
+    assert(not hasPolarity(asgn.tr));
+    LVRef v = getVarForLeq(asgn.tr);
+    LABoundRef boundRef = asgn.sgn == l_False ? getBoundRefPair(asgn.tr).neg : getBoundRefPair(asgn.tr).pos;
+    LABound const & bound = boundStore[boundRef];
+    auto searchForUnassignedBound = [this, &bound, &v](BoundT type) {
+        int newId = bound.getIdx().x + (type == bound_l ? -1 : 1);
+        while (newId >= 0 and newId <= boundStore.getBounds(v).size() - 1) {
+            LABoundRef candidateRef = boundStore.getBoundByIdx(v, newId);
+            if (boundStore[candidateRef].getType() == type){
+                return (not hasPolarity(getAsgnByBound(candidateRef).tr));
+            }
+            newId = newId + (type == bound_l ? -1 : 1);
+        }
+        return false;
+    };
+
+    return searchForUnassignedBound(bound.getType());
+
+}
 
 void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
-
     const LABound& bound = boundStore[br];
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {

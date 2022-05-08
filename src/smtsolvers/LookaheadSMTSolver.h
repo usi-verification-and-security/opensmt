@@ -19,7 +19,9 @@ protected:
     ConflQuota          confl_quota;
     int                 idx = 0;
     vec<bool>           next_arr;
+    vec<bool>           bound_arr;
     int                 close_to_prop = 0;
+    int fun_props;
     bool                tested = false;
 
     // -----------------------------------------------------------------------------------------
