@@ -131,6 +131,15 @@ public:
     void    toDimacs     (const char* file, Lit p, Lit q);
     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
 
+    // Vivification
+    std::vector<Lit> vivif_tmp_lits;
+    std::vector<Lit> vivif_new;
+    bool     vivify_if_needed();
+    bool     vivify_one_clause(Clause& cl, CRef offs);
+    uint64_t next_vivify = 25000;
+    uint64_t vivif_lit_rem = 0;
+    uint64_t vivif_cl_rem = 0;
+
     // Variable mode:
     //
     void    setDecisionVar (Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
