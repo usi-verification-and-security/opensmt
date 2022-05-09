@@ -581,10 +581,13 @@ Lit CoreSMTSolver::pickBranchLit()
  * @param vector of literals each having a level in vardata
  * @return min (4, |{level(var(lit))}| \mid lit \in ps)
  */
-uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
+template<class T>
+uint32_t CoreSMTSolver::computeGlue(T const & ps) {
     levelsInClause.reset();
     uint32_t numLevels = 0;
-    for (Lit lit: ps) {
+    const uint32_t sz = ps.size();
+    for (uint32_t i = 0; i < sz; i ++) {
+        const Lit lit = ps[i];
         int level = vardata[var(lit)].level;
         if (level != 0 and not levelsInClause.contains(level)) {
             levelsInClause.insert(level);
@@ -643,6 +646,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (c.learnt()) {
             claBumpActivity(c);
+            const uint32_t newGlue = computeGlue(c);
+            if (newGlue < c.getGlue()) c.setGlue(newGlue);
         }
 
         for (unsigned j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
