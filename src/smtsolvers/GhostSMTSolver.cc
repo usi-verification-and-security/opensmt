@@ -6,6 +6,8 @@
 
 #include "ReportUtils.h"
 
+#include "Random.h"
+
 #include <utility>
 
 bool GhostSMTSolver::isGhost(Lit l)

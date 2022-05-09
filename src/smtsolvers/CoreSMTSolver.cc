@@ -58,6 +58,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SystemQueries.h"
 #include "ReportUtils.h"
 
+#include "Random.h"
+
 namespace opensmt {
     extern bool stop;
 }

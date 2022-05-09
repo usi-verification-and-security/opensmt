@@ -9,9 +9,7 @@
 #include "Proof.h"
 #include "SystemQueries.h"
 #include "ReportUtils.h"
-
-#include "SystemQueries.h"
-#include "ReportUtils.h"
+#include "Random.h"
 
 namespace opensmt
 {
