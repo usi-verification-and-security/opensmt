@@ -61,6 +61,29 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Random.h"
 
+#if defined(_MSC_VER)
+#define release_assert(a) \
+    do { \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4127)) \
+        if (!(a)) {\
+    __pragma(warning(pop)) \
+            fprintf(stderr, "*** ASSERTION FAILURE in %s() [%s:%d]: %s\n", \
+            __FUNCTION__, __FILE__, __LINE__, #a); \
+            abort(); \
+        } \
+    } while (0)
+#else
+#define release_assert(a) \
+    do { \
+        if (!(a)) {\
+            fprintf(stderr, "*** ASSERTION FAILURE in %s() [%s:%d]: %s\n", \
+            __FUNCTION__, __FILE__, __LINE__, #a); \
+            abort(); \
+        } \
+    } while (0)
+#endif
+
 namespace opensmt {
     extern bool stop;
 }
@@ -1364,7 +1387,108 @@ void CoreSMTSolver::learntSizeAdjust() {
     }
 }
 
+bool CoreSMTSolver::vivify_if_needed()
+{
+    if (conflicts < next_vivify) return ok;
+    next_vivify = conflicts*1.1 + 30000;
+    vivif_lit_rem = 0;
+    vivif_cl_rem = 0;
+    uint32_t vivif_tried = 0;
 
+    release_assert(decisionLevel() == 0);
+    release_assert(ok);
+    for(auto& vd: vardata) vd.reason = CRef_Undef;
+
+    uint32_t j = 0;
+    uint32_t i = 0;
+    for(; i < learnts.size(); i++) {
+        auto const& offs = learnts[i];
+        if (!ok) {
+            learnts[j++] = offs;
+            continue;
+        }
+        release_assert(trail.size() == qhead);
+
+        Clause& cl = ca[offs];
+        if (cl.getGlue() > 2 || cl.getVivif()) {
+            learnts[j++] = offs;
+            continue;
+        }
+
+        vivif_tried++;
+        cl.setVivif(true);
+        if (vivify_one_clause(cl, offs)) {
+            learnts[j++] = offs;
+        } else {
+            ca.free(offs);
+        }
+    }
+    learnts.shrink(i-j);
+
+    if (verbosity)
+        std::cout << "; Vivification finished."
+        << " Tried: " << vivif_tried
+        << " Lit rem: " << vivif_lit_rem << std::endl;
+
+    return ok;
+}
+
+
+// returns TRUE if we need to keep the clause
+bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
+{
+    release_assert(cl.size() > 0);
+    release_assert(decisionLevel() == 0);
+    release_assert(ok);
+
+    vivif_tmp_lits.resize(cl.size());
+    for(uint32_t i = 0 ; i < cl.size() ; i++) vivif_tmp_lits[i] = cl[i];
+    //std::random_shuffle(vivif_tmp_lits.begin(), vivif_tmp_lits.end());
+    vivif_new.clear();
+
+    newDecisionLevel();
+
+    for(uint32_t at = 0; at < vivif_tmp_lits.size(); at++) {
+        const auto l = vivif_tmp_lits[at];
+        if (value(l) == l_True) {
+            cancelUntil(0);
+            detachClause(offs);
+            return true;
+        } else if (value(l) == l_False) {
+            continue;
+        }
+
+        vivif_new.push_back(l);
+        enqueue(~l);
+        auto const confl = propagate();
+        if (confl != CRef_Undef) break;
+    }
+    cancelUntil(0);
+
+    if (vivif_new.size() == cl.size()) return true;
+    vivif_lit_rem += cl.size() - vivif_new.size();
+
+    assert(at > 0);
+    if (vivif_new.size() == 1) {
+        detachClause(offs, true);
+        enqueue(vivif_new[0]);
+        const auto confl = propagate();
+        if (confl != CRef_Undef) {
+            ok = false;
+            if (verbosity) std::cout << "; vivification lead to UNSAT" << std::endl;
+        }
+        vivif_cl_rem++;
+        return false;
+    } else {
+        detachClause(offs, true);
+        // No need to detach&reattach, only lits 1&2 are attached.
+        cl.shrink(cl.size()-vivif_new.size());
+        for(uint32_t i = 0; i < vivif_new.size(); i++) cl[i] = vivif_new[i];
+        attachClause(offs);
+    }
+
+    return true;
+}
 
 /*_________________________________________________________________________________________________
   |
@@ -1425,8 +1549,11 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    while (okContinue()) {
+    if (ok) {
+        if (!vivify_if_needed()) return l_False;
+    }
 
+    while (okContinue()) {
         CRef confl = propagate();
         if (confl != CRef_Undef) {
             if (conflicts > conflictsUntilFlip) {
