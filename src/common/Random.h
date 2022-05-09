@@ -1,6 +1,9 @@
-//
-// Created by Antti Hyvarinen on 07.05.22.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_RANDOM_H
 #define OPENSMT_RANDOM_H
