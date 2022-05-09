@@ -84,6 +84,7 @@ SimpSMTSolver::~SimpSMTSolver( )
 void SimpSMTSolver::initialize( )
 {
     CoreSMTSolver::initialize( );
+    if (config.verbosity()) verbosity = true;
 
     if (config.produce_inter()) {
         if (config.sat_preprocess_booleans != 0

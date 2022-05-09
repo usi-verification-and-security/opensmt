@@ -94,7 +94,7 @@ int main( int argc, char * argv[] )
 
     SMTConfig c;
     bool pipe = false;
-    while ((opt = getopt(argc, argv, "hdpir:")) != -1) {
+    while ((opt = getopt(argc, argv, "hdpir:v")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -112,6 +112,9 @@ int main( int argc, char * argv[] )
                 break;
             case 'i':
                 c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                break;
+            case 'v':
+                c.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
                 break;
             case 'p':
                 pipe = true;

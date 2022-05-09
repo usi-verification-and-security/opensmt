@@ -52,6 +52,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 
 #include "Proof.h"
@@ -1455,6 +1456,19 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
             }
             // CONFLICT
+            if (conflicts % 1000 == 999) {
+                uint64_t units = 0;
+                if (trail_lim.size() == 0) units = trail.size();
+                else units = trail_lim[0];
+
+                if (verbosity)
+                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "K"
+                    << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "K"
+                    << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "K"
+                    << " units: " << std::setw(5) << units
+                    << std::endl;
+            }
+
             conflicts++;
             conflictC++;
             if (decisionLevel() == 0) {
