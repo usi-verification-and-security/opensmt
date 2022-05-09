@@ -2,7 +2,7 @@
 #define LABOUNDREFS_H
 #include "osmtinttypes.h"
 #include <ostream>
-#include <cassert>
+#include "OpensmtAssert.h"
 
 struct BoundT {
     char t;

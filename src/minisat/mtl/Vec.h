@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_Vec_h
 #define Minisat_Vec_h
 
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <new>
 #include <initializer_list>
 #include <vector>

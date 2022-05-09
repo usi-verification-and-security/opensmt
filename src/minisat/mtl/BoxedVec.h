@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define BoxedVec_h
 
 #include <cstdlib>
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <new>
 
 //=================================================================================================

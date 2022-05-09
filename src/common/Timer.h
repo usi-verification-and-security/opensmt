@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <ostream>
 #include <iostream>
-#include <assert.h>
+#include "OpensmtAssert.h"
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -114,14 +114,12 @@ class StopWatch {
         if (getrusage(RUSAGE_SELF, &tmp_rusage) == 0) {
             time_start = OSMTTimeVal(tmp_rusage);
         }
-        else assert(false);
     }
     ~StopWatch()
     {
         if (getrusage(RUSAGE_SELF, &tmp_rusage) == 0) {
             timer += OSMTTimeVal(tmp_rusage) - time_start;
         }
-        else assert(false);
     }
 };
 

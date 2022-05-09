@@ -55,6 +55,8 @@ option(BUILD_EXECUTABLES "Build executables" ON)
 option(PACKAGE_TESTS "Build the tests" ON)
 option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)
 
+option(OSMT_ASSERT_THROWS "Assert throws an exception" OFF)
+
 option(MAXIMALLY_STATIC_BINARY "Link to static versions of the libraries as much as reasonably possible" OFF)
 
 if (MAXIMALLY_STATIC_BINARY)
@@ -153,6 +155,10 @@ endif()
 
 if (MATRIX_DEBUG)
     add_definitions(-DENABLE_MATRIX_TRACE)
+endif()
+
+if (OSMT_ASSERT_THROWS)
+    add_definitions(-DOSMT_ASSERT_THROWS)
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})

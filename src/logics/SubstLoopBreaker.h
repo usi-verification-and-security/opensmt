@@ -8,7 +8,7 @@
 #include <PTRef.h>
 #include <Sort.h>
 #include <Alloc.h>
-#include <assert.h>
+#include "OpensmtAssert.h"
 #include <PtStructs.h>
 #include <Logic.h>
 

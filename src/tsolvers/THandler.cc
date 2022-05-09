@@ -11,7 +11,7 @@
 #include "ModelBuilder.h"
 
 #include <sys/wait.h>
-#include <assert.h>
+#include "OpensmtAssert.h"
 #include <sstream>
 
 void THandler::backtrack(int lev)

@@ -9,7 +9,7 @@
 
 #include <gmpxx.h>
 
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <set>
 
 namespace opensmt {

@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include <cassert>
+#include "OpensmtAssert.h"
 
 #ifndef OPENSMT_MODEL_H
 #define OPENSMT_MODEL_H

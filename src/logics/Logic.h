@@ -20,7 +20,7 @@
 #include "TypeUtils.h"
 #include "NatSet.h"
 
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <cstring>
 #include <cstdlib>
 

@@ -35,7 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 %{
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <vector>
 #include <list>
 #include <string>

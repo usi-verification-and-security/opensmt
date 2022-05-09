@@ -8,7 +8,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #define FAST_RATIONALS_H
 #include <string>
 #include <gmpxx.h>
-#include <cassert>
+#include "OpensmtAssert.h"
 #include <climits>
 #include "Vec.h"
 #include <stack>
