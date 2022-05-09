@@ -1,6 +1,8 @@
-//
-// Created by prova on 09.05.22.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #include <gtest/gtest.h>
 #include "SolverTypes.h"
