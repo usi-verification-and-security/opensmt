@@ -199,7 +199,8 @@ public:
     Lit&         operator [] (int i)         { return data[i].lit; }
     Lit          operator [] (int i) const   { return data[i].lit; }
     operator const Lit* (void) const         { return (Lit*)data; }
-
+    Lit const *  begin() const               { return &data[0].lit; }
+    Lit const *  end() const                 { return &data[0].lit + static_cast<unsigned>(header.size); }
     float&       activity    ()              { assert(header.has_extra); return data[header.size].act; }
     uint32_t     abstraction () const        { assert(header.has_extra); return data[header.size].abs; }
 
