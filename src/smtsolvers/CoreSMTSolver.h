@@ -369,7 +369,7 @@ protected:
     Var doRandomDecision();
     Lit choosePolarity(Var next);
     virtual Var doActivityDecision();
-    virtual bool branchLitRandom() { return opensmt::drand(random_seed) < random_var_freq && !order_heap.empty(); }
+    virtual bool branchLitRandom();
     virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.

@@ -517,6 +517,10 @@ Var CoreSMTSolver::doRandomDecision() {
     return next;
 }
 
+bool CoreSMTSolver::branchLitRandom() {
+    return opensmt::drand(random_seed) < random_var_freq && !order_heap.empty();
+}
+
 Var CoreSMTSolver::doActivityDecision() {
     Var next = var_Undef;
     while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
