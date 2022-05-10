@@ -1458,8 +1458,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             // CONFLICT
             if (verbosity and conflicts % 1000 == 999) {
                 uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
-
-                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
+                std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
                     << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
                     << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
                     << " units: " << std::setw(5) << units
