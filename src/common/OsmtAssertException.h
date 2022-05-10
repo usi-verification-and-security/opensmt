@@ -1,6 +1,9 @@
-//
-// Created by prova on 13.05.20.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Masoud Asadzade <masoud.asadzade@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifdef OSMT_ASSERT_EXCEPTION_H
 #else

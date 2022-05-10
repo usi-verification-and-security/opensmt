@@ -1,6 +1,9 @@
-//
-// Created by usi on 09.05.22.
-//
+/*
+ * Copyright (c) 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Masoud Asadzade <masoud.asadzade@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_OPENSMTASSERT_H
 #define OPENSMT_OPENSMTASSERT_H
