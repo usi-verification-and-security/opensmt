@@ -195,3 +195,9 @@ if (ENABLE_LINE_EDITING AND USE_READLINE)
           "As these libraries are covered under the GPL, so will the resulting binary of OpenSMT.")
 endif()
 
+if (OSMT_ASSERT_THROWS)
+    message(WARNING "OpenSMT will be built with an option that turns `assert` statements into `throw`s of "
+            "`OsmtAssertException`s.  This setup is recommended only when debugging OpenSMT API in an "
+            "environment where detecting assertion failures is difficult, such as when running the "
+            "API in a client over the network.  Be warned.")
+endif()
