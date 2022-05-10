@@ -1456,12 +1456,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
             }
             // CONFLICT
-            if (conflicts % 1000 == 999) {
-                uint64_t units = 0;
-                if (trail_lim.size() == 0) units = trail.size();
-                else units = trail_lim[0];
+            if (verbosity and conflicts % 1000 == 999) {
+                uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
 
-                if (verbosity)
                     std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "K"
                     << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "K"
                     << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "K"
