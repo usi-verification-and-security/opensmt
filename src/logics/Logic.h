@@ -84,18 +84,21 @@ class Logic {
     PtStore             term_store;
 
     class TermMarks {
-        nat_set & innerSet;
+        SafeNatSet & innerSet;
     public:
-        TermMarks(nat_set & innerSet, unsigned int domainSize) : innerSet(innerSet){
+        TermMarks(SafeNatSet & innerSet, unsigned int domainSize) : innerSet(innerSet) {
             innerSet.assure_domain(domainSize);
             innerSet.reset();
+        }
+        ~TermMarks() {
+            innerSet.release();
         }
         inline void mark(PTId id) { innerSet.insert(Idx(id)); }
         inline bool isMarked(PTId id) const { return innerSet.contains(Idx(id)); }
         inline bool isInDomain(PTId id) const { return Idx(id) < innerSet.get_domain(); }
     };
-    mutable nat_set     auxiliaryNatSet;
-    mutable nat_set     privateNatSet;
+    mutable SafeNatSet  auxiliaryNatSet;
+    mutable SafeNatSet  privateNatSet;
 
     SSymRef             sym_IndexedSort;
 
@@ -196,6 +199,8 @@ class Logic {
      * Provides an efficient data structure for representing a set of terms through "marking".
      *
      * Relies on a term invariant that id of a child is lower than id of a parent.
+     *
+     * Do not use recursively.
      */
     TermMarks getTermMarks(PTId maxTermId) const { return TermMarks(auxiliaryNatSet, Idx(maxTermId) + 1); }
 private:
