@@ -29,7 +29,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <ostream>
 #include <iostream>
-#include "OpensmtAssert.h"
 #include <sys/time.h>
 #include <sys/resource.h>
 
