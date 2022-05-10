@@ -95,6 +95,7 @@ class Logic {
         inline bool isInDomain(PTId id) const { return Idx(id) < innerSet.get_domain(); }
     };
     mutable nat_set     auxiliaryNatSet;
+    mutable nat_set     privateNatSet;
 
     SSymRef             sym_IndexedSort;
 
@@ -197,6 +198,9 @@ class Logic {
      * Relies on a term invariant that id of a child is lower than id of a parent.
      */
     TermMarks getTermMarks(PTId maxTermId) const { return TermMarks(auxiliaryNatSet, Idx(maxTermId) + 1); }
+private:
+    TermMarks getPrivateTermMarks(PTId maxTermId) const { return TermMarks(privateNatSet, Idx(maxTermId) + 1); }
+public:
     // Default values for the logic
 
     // Deprecated! Use getDefaultValuePTRef instead
