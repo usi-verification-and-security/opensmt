@@ -37,20 +37,7 @@ void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     ptermToLavar[Idx(id_neg)] = lv;
 }
 
-void LAVarMapper::addLeqVar(PTRef leq_tr, LVRef v)
-{
-    Pterm const & leq_t = logic.getPterm(leq_tr);
-    int idx = Idx(leq_t.getId());
-    for (int i = leqToLavar.size(); i <= idx; i++) {
-        leqToLavar.push(LVRef::Undef);
-    }
-    assert(leqToLavar[idx] == LVRef::Undef);
-    leqToLavar[idx] = v;
-}
-
 LVRef  LAVarMapper::getVarByPTId(PTId i) const { return ptermToLavar[Idx(i)]; }
-
-LVRef  LAVarMapper::getVarByLeqId(PTId i) const { return leqToLavar[Idx(i)]; }
 
 bool LAVarMapper::hasVar(PTRef tr) const { return hasVar(logic.getPterm(tr).getId()); }
 
@@ -77,7 +64,6 @@ bool LAVarMapper::isNegated(PTRef tr) const {
 }
 
 void LAVarMapper::clear() {
-    this->leqToLavar.clear();
     this->laVarToPTRef.clear();
     this->ptermToLavar.clear();
 }

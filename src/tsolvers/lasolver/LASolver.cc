@@ -29,8 +29,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     bool sum_term_is_negated = laVarMapper.isNegated(sum_tr);
 
-    LVRef v = laVarMapper.getVarByLeqId(logic.getPterm(leq_tr).getId());
-    assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
+    LVRef v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
 
     LABoundStore::BoundInfo bi;
     LABoundRef br_pos;
@@ -242,6 +241,12 @@ bool LASolver::hasVar(PTRef expr) {
     return laVarMapper.hasVar(id);
 }
 
+LVRef LASolver::getVarForLeq(PTRef ref) const {
+    assert(logic.isLeq(ref));
+    auto [constant, term] = logic.leqToConstantAndTerm(ref);
+    return laVarMapper.getVarByPTId(logic.getPterm(term).getId());
+}
+
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     assert(logic.isLinearTerm(expr_in));
@@ -340,8 +345,7 @@ void LASolver::declareAtom(PTRef leq_tr)
         //    status = INCREMENT;
         assert( status == SAT );
         PTRef term = logic.getPterm(leq_tr)[1];
-        LVRef v = exprToLVar(term);
-        laVarMapper.addLeqVar(leq_tr, v);
+        exprToLVar(term); // MB: We need to build the representation, but we don't actually need the result
         updateBound(leq_tr);
     }
     // DEBUG check
@@ -562,9 +566,7 @@ void LASolver::initSolver()
             PTRef term = leq_t[1];
 
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
-            LVRef v = exprToLVar(term);
-
-            laVarMapper.addLeqVar(leq_tr, v);
+            exprToLVar(term); // MB: We need to build the representation, but we don't actually need the result
 
             // Assumes that the LRA variable has been already declared
             setBound(leq_tr);
