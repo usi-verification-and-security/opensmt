@@ -731,6 +731,33 @@ inline bool     CoreSMTSolver::withinBudget() const
            (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
 }
 
+/**
+ * Compute the Glue value, as defined in Audemard & Simon:
+ * Predicting Learnt Clauses Quality in Modern SAT Solvers.
+ * IJCAI 2009.
+ *
+ * @param vector of literals each having a level in vardata
+ * @return min (4, |{level(var(lit))}| \mid lit \in ps)
+ */
+template<class T>
+uint32_t CoreSMTSolver::computeGlue(T const & ps) {
+    levelsInClause.reset();
+    uint32_t numLevels = 0;
+    const uint32_t sz = ps.size();
+    for (uint32_t i = 0; i < sz; i ++) {
+        const Lit lit = ps[i];
+        int level = vardata[var(lit)].level;
+        if (level != 0 and not levelsInClause.contains(level)) {
+            levelsInClause.insert(level);
+            ++ numLevels;
+            if (numLevels >= 4) {
+                break;
+            }
+        }
+    }
+    return numLevels;
+}
+
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
