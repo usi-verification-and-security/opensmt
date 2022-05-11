@@ -1,6 +1,9 @@
-//
-// Created by prova on 06.09.19.
-//
+/*
+ *  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2019-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_LAVARMAPPER_H
 #define OPENSMT_LAVARMAPPER_H
