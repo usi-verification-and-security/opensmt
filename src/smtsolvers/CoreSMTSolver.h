@@ -743,9 +743,7 @@ template<class T>
 uint32_t CoreSMTSolver::computeGlue(T const & ps) {
     levelsInClause.reset();
     uint32_t numLevels = 0;
-    const uint32_t sz = ps.size();
-    for (uint32_t i = 0; i < sz; i ++) {
-        const Lit lit = ps[i];
+    for (Lit lit : ps) {
         int level = vardata[var(lit)].level;
         if (level != 0 and not levelsInClause.contains(level)) {
             levelsInClause.insert(level);
