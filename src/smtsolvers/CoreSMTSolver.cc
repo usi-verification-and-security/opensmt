@@ -1389,7 +1389,9 @@ void CoreSMTSolver::learntSizeAdjust() {
 
 bool CoreSMTSolver::vivify_if_needed()
 {
-    if (conflicts < next_vivify) return ok;
+    if (conflicts < next_vivify) {
+        return ok;
+    }
     next_vivify = conflicts*1.1 + 30000;
     vivif_lit_rem = 0;
     vivif_cl_rem = 0;
@@ -1397,26 +1399,28 @@ bool CoreSMTSolver::vivify_if_needed()
 
     release_assert(decisionLevel() == 0);
     release_assert(ok);
-    for(auto& vd: vardata) vd.reason = CRef_Undef;
+    for (auto & vd: vardata) {
+        vd.reason = CRef_Undef;
+    }
 
     uint32_t j = 0;
     uint32_t i = 0;
-    for(; i < learnts.size(); i++) {
-        auto const& offs = learnts[i];
+    for (; i < learnts.size(); i++) {
+        CRef offs = learnts[i];
         if (!ok) {
             learnts[j++] = offs;
             continue;
         }
         release_assert(trail.size() == qhead);
 
-        Clause& cl = ca[offs];
-        if (cl.getGlue() > 2 || cl.getVivif()) {
+        Clause & cl = ca[offs];
+        if (cl.getGlue() > 2 || cl.isVivified()) {
             learnts[j++] = offs;
             continue;
         }
 
         vivif_tried++;
-        cl.setVivif(true);
+        cl.setVivified();
         if (vivify_one_clause(cl, offs)) {
             learnts[j++] = offs;
         } else {
@@ -1425,10 +1429,11 @@ bool CoreSMTSolver::vivify_if_needed()
     }
     learnts.shrink(i-j);
 
-    if (verbosity)
+    if (verbosity) {
         std::cout << "; Vivification finished."
-        << " Tried: " << vivif_tried
-        << " Lit rem: " << vivif_lit_rem << std::endl;
+                  << " Tried: " << vivif_tried
+                  << " Lit rem: " << vivif_lit_rem << std::endl;
+    }
 
     return ok;
 }
@@ -1441,15 +1446,15 @@ bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
     release_assert(decisionLevel() == 0);
     release_assert(ok);
 
-    vivif_tmp_lits.resize(cl.size());
-    for(uint32_t i = 0 ; i < cl.size() ; i++) vivif_tmp_lits[i] = cl[i];
+    vivif_tmp_lits.clear();
+    vivif_tmp_lits.insert(vivif_tmp_lits.end(), cl.begin(), cl.end());
+
     //std::random_shuffle(vivif_tmp_lits.begin(), vivif_tmp_lits.end());
     vivif_new.clear();
 
     newDecisionLevel();
 
-    for(uint32_t at = 0; at < vivif_tmp_lits.size(); at++) {
-        const auto l = vivif_tmp_lits[at];
+    for (Lit l : vivif_tmp_lits) {
         if (value(l) == l_True) {
             cancelUntil(0);
             detachClause(offs);
@@ -1460,8 +1465,10 @@ bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
 
         vivif_new.push_back(l);
         enqueue(~l);
-        auto const confl = propagate();
-        if (confl != CRef_Undef) break;
+        CRef confl = propagate();
+        if (confl != CRef_Undef) {
+            break;
+        }
     }
     cancelUntil(0);
 
@@ -1483,7 +1490,9 @@ bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
         detachClause(offs, true);
         // No need to detach&reattach, only lits 1&2 are attached.
         cl.shrink(cl.size()-vivif_new.size());
-        for(uint32_t i = 0; i < vivif_new.size(); i++) cl[i] = vivif_new[i];
+        for (uint32_t i = 0; i < vivif_new.size(); i++) {
+            cl[i] = vivif_new[i];
+        }
         attachClause(offs);
     }
 

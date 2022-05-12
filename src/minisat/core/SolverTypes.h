@@ -210,11 +210,11 @@ public:
         assert(glue < 8);
         header.glue = glue;
     }
-    bool         getVivif() const {
+    bool isVivified() const {
         return header.vivifed;
     }
-    void         setVivif(bool val) {
-        header.vivifed = val;
+    void setVivified() {
+        header.vivifed = true;
     }
 };
 
