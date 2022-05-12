@@ -137,7 +137,7 @@ protected:
     void  setPolarity(PTRef tr, lbool p);
     lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
     void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
-    bool  hasPolarity(PTRef tr)          { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
+    bool  hasPolarity(PTRef tr) const    { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
 
     // Method for storing information about deductions (Derived solvers should use this and not manipulate fields themselves)
     void storeDeduction(PtAsgn_reason ded) {
