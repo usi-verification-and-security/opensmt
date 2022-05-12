@@ -1458,7 +1458,7 @@ bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
         if (value(l) == l_True) {
             cancelUntil(0);
             detachClause(offs);
-            return true;
+            return false;
         } else if (value(l) == l_False) {
             continue;
         }
