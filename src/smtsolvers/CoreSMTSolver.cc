@@ -1475,7 +1475,8 @@ bool CoreSMTSolver::vivify_one_clause(Clause& cl, CRef offs)
     if (vivif_new.size() == cl.size()) return true;
     vivif_lit_rem += cl.size() - vivif_new.size();
 
-//    assert(at > 0);
+    assert(not vivif_new.empty());
+
     if (vivif_new.size() == 1) {
         detachClause(offs, true);
         enqueue(vivif_new[0]);
