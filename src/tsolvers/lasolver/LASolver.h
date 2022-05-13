@@ -131,7 +131,7 @@ private:
 
     LABoundStore::BoundInfo addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);
-    LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
+    LVRef registerArithmeticTerm(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
     void storeExplanation(Simplex::Explanation &&explanationBounds);
 
     std::unique_ptr<Tableau::Polynomial> expressionToLVarPoly(PTRef term);

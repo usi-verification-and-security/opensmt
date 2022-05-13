@@ -279,8 +279,9 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 
 
 //
-// Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
-// where x is a real variable or ite, and p_i are products of a real variable or ite and a real constant
+// Registers an arithmetic Pterm (polynomial) with the solver.
+// We may assume that the term is of one of the following forms,
+// where x is a variable or ite, and p_i are products of a variable or ite and a constant
 //
 // (1) x
 // (2a) (* x -1)
@@ -289,7 +290,8 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 // (4a) (* x -1) + p_1 + ... + p_n
 // (4b) (* -1 x) + p_1 + ... + p_n
 //
-LVRef LASolver::exprToLVar(PTRef expr) {
+// Returns internalized reference for the term
+LVRef LASolver::registerArithmeticTerm(PTRef expr) {
     LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
@@ -345,7 +347,7 @@ void LASolver::declareAtom(PTRef leq_tr)
         //    status = INCREMENT;
         assert( status == SAT );
         PTRef term = logic.getPterm(leq_tr)[1];
-        exprToLVar(term); // MB: We need to build the representation, but we don't actually need the result
+        registerArithmeticTerm(term);
         updateBound(leq_tr);
     }
     // DEBUG check
@@ -566,7 +568,7 @@ void LASolver::initSolver()
             PTRef term = leq_t[1];
 
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
-            exprToLVar(term); // MB: We need to build the representation, but we don't actually need the result
+            registerArithmeticTerm(term);
 
             // Assumes that the LRA variable has been already declared
             setBound(leq_tr);
