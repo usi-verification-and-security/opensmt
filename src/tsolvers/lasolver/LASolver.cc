@@ -12,6 +12,7 @@
 #include "ModelBuilder.h"
 #include "LIAInterpolator.h"
 #include "CutCreator.h"
+#include "Random.h"
 
 #include <unordered_set>
 
@@ -28,8 +29,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     bool sum_term_is_negated = laVarMapper.isNegated(sum_tr);
 
-    LVRef v = laVarMapper.getVarByLeqId(logic.getPterm(leq_tr).getId());
-    assert(v == laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId()));
+    LVRef v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
 
     LABoundStore::BoundInfo bi;
     LABoundRef br_pos;
@@ -241,6 +241,12 @@ bool LASolver::hasVar(PTRef expr) {
     return laVarMapper.hasVar(id);
 }
 
+LVRef LASolver::getVarForLeq(PTRef ref) const {
+    assert(logic.isLeq(ref));
+    auto [constant, term] = logic.leqToConstantAndTerm(ref);
+    return laVarMapper.getVarByPTId(logic.getPterm(term).getId());
+}
+
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     assert(logic.isLinearTerm(expr_in));
@@ -273,8 +279,9 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 
 
 //
-// Get a possibly new LAVar for a PTRef term.  We may assume that the term is of one of the following forms,
-// where x is a real variable or ite, and p_i are products of a real variable or ite and a real constant
+// Registers an arithmetic Pterm (polynomial) with the solver.
+// We may assume that the term is of one of the following forms,
+// where x is a variable or ite, and p_i are products of a variable or ite and a constant
 //
 // (1) x
 // (2a) (* x -1)
@@ -283,7 +290,8 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 // (4a) (* x -1) + p_1 + ... + p_n
 // (4b) (* -1 x) + p_1 + ... + p_n
 //
-LVRef LASolver::exprToLVar(PTRef expr) {
+// Returns internalized reference for the term
+LVRef LASolver::registerArithmeticTerm(PTRef expr) {
     LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
@@ -339,8 +347,7 @@ void LASolver::declareAtom(PTRef leq_tr)
         //    status = INCREMENT;
         assert( status == SAT );
         PTRef term = logic.getPterm(leq_tr)[1];
-        LVRef v = exprToLVar(term);
-        laVarMapper.addLeqVar(leq_tr, v);
+        registerArithmeticTerm(term);
         updateBound(leq_tr);
     }
     // DEBUG check
@@ -349,20 +356,9 @@ void LASolver::declareAtom(PTRef leq_tr)
     setKnown(leq_tr);
 }
 
-LVRef LASolver::splitOnMostInfeasible(vec<LVRef> const & varsToFix) const {
-    opensmt::Real maxDistance = 0;
-    LVRef chosen = LVRef::Undef;
-    for (LVRef x : varsToFix) {
-        Delta val = simplex.getValuation(x);
-        assert(not val.hasDelta());
-        assert(not val.R().isInteger());
-        opensmt::Real distance = std::min(val.R().ceil() - val.R(), val.R() - val.R().floor());
-        if (distance > maxDistance) {
-            maxDistance = std::move(distance);
-            chosen = x;
-        }
-    }
-    return chosen;
+LVRef LASolver::splitOnRandom(vec<LVRef> const & varsToFix) {
+    int pick = opensmt::irand(seed, varsToFix.size());
+    return varsToFix[pick];
 }
 
 TRes LASolver::checkIntegersAndSplit() {
@@ -389,7 +385,7 @@ TRes LASolver::checkIntegersAndSplit() {
         }
     }
 
-    LVRef chosen = splitOnMostInfeasible(varsToFix);
+    LVRef chosen = splitOnRandom(varsToFix);
 
     assert(chosen != LVRef::Undef);
     auto splitLowerVal = simplex.getValuation(chosen).R().floor();
@@ -572,9 +568,7 @@ void LASolver::initSolver()
             PTRef term = leq_t[1];
 
             // Ensure that all variables exists, build the polynomial, and update the occurrences.
-            LVRef v = exprToLVar(term);
-
-            laVarMapper.addLeqVar(leq_tr, v);
+            registerArithmeticTerm(term);
 
             // Assumes that the LRA variable has been already declared
             setBound(leq_tr);

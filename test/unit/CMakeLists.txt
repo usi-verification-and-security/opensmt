@@ -237,3 +237,11 @@ target_sources(NameProtectionTest
 
 target_link_libraries(NameProtectionTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET NameProtectionTest)
+
+add_executable(SATSolverTypesTest)
+target_sources(SATSolverTypesTest
+PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SATSolverTypes.cc"
+)
+
+target_link_libraries(SATSolverTypesTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET SATSolverTypesTest)

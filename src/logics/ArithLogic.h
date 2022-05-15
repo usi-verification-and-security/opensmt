@@ -6,18 +6,14 @@
 
 class LANonLinearException : std::runtime_error
 {
+    std::string msg;
 public:
     LANonLinearException(const char* reason_) : runtime_error(reason_) {
+        msg = "Term " + std::string(reason_) + " is non-linear";
     }
-    virtual const char* what() const noexcept
-    {
-        char* out;
-        int chars_written = asprintf(&out, "Term %s is non-linear", std::runtime_error::what());
-        assert(chars_written >= 0);
-        (void) chars_written;
-        return out;
+    virtual const char* what() const noexcept override {
+        return msg.c_str();
     }
-    ~LANonLinearException() = default;
 };
 
 class ArithDivisionByZeroException : public std::runtime_error

@@ -377,7 +377,7 @@ protected:
     Var doRandomDecision();
     Lit choosePolarity(Var next);
     virtual Var doActivityDecision();
-    virtual bool branchLitRandom() { return drand(random_seed) < random_var_freq && !order_heap.empty(); }
+    virtual bool branchLitRandom();
     virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
@@ -385,7 +385,8 @@ protected:
     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
-    uint32_t computeGlue(vec<Lit> const & ps);
+    template<class T>
+    uint32_t computeGlue(T const & ps);
     nat_set  levelsInClause;
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
@@ -442,28 +443,6 @@ protected:
 
     //ADDED FOR MINIMIZATION
     void     printClause      ( vec< Lit > & );
-
-    // Static helpers:
-    //
-
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed)
-    {
-        seed *= 1389796;
-        int q = (int)(seed / 2147483647);
-        seed -= (double)q * 2147483647;
-        return seed / 2147483647;
-    }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size)
-    {
-        return (int)(drand(seed) * size);
-    }
-
-
-    //=================================================================================================
-    // Added Code
 
 public:
 
@@ -759,6 +738,31 @@ inline bool     CoreSMTSolver::withinBudget() const
     return !asynch_interrupt &&
            (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
            (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
+}
+
+/**
+ * Compute the Glue value, as defined in Audemard & Simon:
+ * Predicting Learnt Clauses Quality in Modern SAT Solvers.
+ * IJCAI 2009.
+ *
+ * @param vector of literals each having a level in vardata
+ * @return min (4, |{level(var(lit))}| \mid lit \in ps)
+ */
+template<class T>
+uint32_t CoreSMTSolver::computeGlue(T const & ps) {
+    levelsInClause.reset();
+    uint32_t numLevels = 0;
+    for (Lit lit : ps) {
+        int level = vardata[var(lit)].level;
+        if (level != 0 and not levelsInClause.contains(level)) {
+            levelsInClause.insert(level);
+            ++ numLevels;
+            if (numLevels >= 4) {
+                break;
+            }
+        }
+    }
+    return numLevels;
 }
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a

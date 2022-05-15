@@ -127,10 +127,11 @@ private:
 
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
+    double seed = 123;
 
     LABoundStore::BoundInfo addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);
-    LVRef exprToLVar(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
+    LVRef registerArithmeticTerm(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.  Returns the LAVar for the term.
     void storeExplanation(Simplex::Explanation &&explanationBounds);
 
     std::unique_ptr<Tableau::Polynomial> expressionToLVarPoly(PTRef term);
@@ -147,12 +148,12 @@ private:
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
-    LVRef getVarForLeq(PTRef ref)  const  { return laVarMapper.getVarByLeqId(logic.getPterm(ref).getId()); }
+    LVRef getVarForLeq(PTRef ref)  const;
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 
-    // Most-infeasible branching heuristic
-    LVRef splitOnMostInfeasible(vec<LVRef> const &) const;
+    // Random splitting heuristic
+    LVRef splitOnRandom(vec<LVRef> const &);
     TRes checkIntegersAndSplit();
     bool isModelInteger (LVRef v) const;
     TRes cutFromProof();

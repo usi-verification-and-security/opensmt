@@ -6,6 +6,8 @@
 
 #include "ReportUtils.h"
 
+#include "Random.h"
+
 #include <utility>
 
 bool GhostSMTSolver::isGhost(Lit l)
@@ -90,7 +92,7 @@ GhostSMTSolver::pickRandomBranchVar() {
     if (order_heap.empty())
         return var_Undef;
     else
-        return order_heap[irand(random_seed,order_heap.size())];
+        return order_heap[opensmt::irand(random_seed,order_heap.size())];
 }
 
 // Activity based decision:
@@ -151,7 +153,7 @@ GhostSMTSolver::pickBranchLit() {
     opensmt::StopWatch s(branchTimer);
 #endif
 
-    if ((drand(random_seed) < random_var_freq) && !order_heap.empty()) {
+    if ((opensmt::drand(random_seed) < random_var_freq) && !order_heap.empty()) {
         Var v = pickRandomBranchVar();
         if (v != var_Undef && value(v) == l_Undef) {
             Lit l = pickBranchPolarity(v);

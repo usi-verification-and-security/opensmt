@@ -82,6 +82,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
     } while (0)
 #endif
 
+#include "Random.h"
+
+
 namespace opensmt {
     extern bool stop;
 }
@@ -228,7 +231,7 @@ Var CoreSMTSolver::newVar(bool dvar)
     watches  .init(mkLit(v, true));
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
-    activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+    activity .push(rnd_init_act ? opensmt::drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     decision .push();
     trail    .capacity(v+1);
@@ -534,11 +537,15 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 Var CoreSMTSolver::doRandomDecision() {
     Var next = var_Undef;
     if (branchLitRandom()) {
-        next = order_heap[irand(random_seed,order_heap.size())];
+        next = order_heap[opensmt::irand(random_seed,order_heap.size())];
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++;
     }
     return next;
+}
+
+bool CoreSMTSolver::branchLitRandom() {
+    return opensmt::drand(random_seed) < random_var_freq && !order_heap.empty();
 }
 
 Var CoreSMTSolver::doActivityDecision() {
@@ -590,30 +597,6 @@ Lit CoreSMTSolver::pickBranchLit()
 
 }
 
-/**
- * Compute the Glue value, as defined in Audemard & Simon:
- * Predicting Learnt Clauses Quality in Modern SAT Solvers.
- * IJCAI 2009.
- *
- * @param vector of literals each having a level in vardata
- * @return min (4, |{level(var(lit))}| \mid lit \in ps)
- */
-uint32_t CoreSMTSolver::computeGlue(vec<Lit> const & ps) {
-    levelsInClause.reset();
-    uint32_t numLevels = 0;
-    for (Lit lit: ps) {
-        int level = vardata[var(lit)].level;
-        if (level != 0 and not levelsInClause.contains(level)) {
-            levelsInClause.insert(level);
-            ++ numLevels;
-            if (numLevels >= 4) {
-                break;
-            }
-        }
-    }
-    return numLevels;
-}
-
 /*_________________________________________________________________________________________________
   |
   |  analyze : (confl : CRef) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -660,6 +643,8 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         if (c.learnt()) {
             claBumpActivity(c);
+            const uint32_t newGlue = computeGlue(c);
+            if (newGlue < c.getGlue()) c.setGlue(newGlue);
         }
 
         for (unsigned j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++)
@@ -1577,6 +1562,15 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
             }
             // CONFLICT
+            if (verbosity and conflicts % 1000 == 999) {
+                uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
+                std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
+                    << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
+                    << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
+                    << " units: " << std::setw(5) << units
+                    << std::endl;
+            }
+
             conflicts++;
             conflictC++;
             if (decisionLevel() == 0) {
