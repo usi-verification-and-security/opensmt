@@ -1405,7 +1405,7 @@ bool CoreSMTSolver::vivify_if_needed()
 
     uint32_t j = 0;
     uint32_t i = 0;
-    for (; i < learnts.size(); i++) {
+    for (; i < learnts.size_(); i++) {
         CRef offs = learnts[i];
         if (!ok) {
             learnts[j++] = offs;
