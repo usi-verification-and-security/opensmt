@@ -153,11 +153,10 @@ class Interpret {
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
     void                        writeState(const char* fname);
-    void                        writeSplits(const char* fname);
     bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
-    bool                        checkSat();
+    virtual bool                checkSat();
     void                        getValue(const std::vector<ASTNode*>* term);
     void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
@@ -181,7 +180,7 @@ class Interpret {
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
     PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 
-    std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name);
+    virtual std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name);
 
   public:
 
