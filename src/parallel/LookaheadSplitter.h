@@ -27,7 +27,7 @@ class LookaheadSplitter : public LookaheadSMTSolver, virtual public Splitter {
 
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler)
-    : Splitter(c, decisions)
+    : Splitter(c)
     , LookaheadSMTSolver(c, thandler)
     {}
 
