@@ -59,20 +59,22 @@ endif()
 install(FILES ScatterSplitter.h PreInterpret.h MainSplitter.h DESTINATION ${INSTALL_HEADERS_DIR})
 
 #build splitter executable**********************************************************************************************
-add_executable(OpenSMT-bin-splitter opensmtSplitter.cc)
-set_target_properties(OpenSMT-bin-splitter PROPERTIES
-		NO_SYSTEM_FROM_IMPORTED true
-		OUTPUT_NAME opensmt-splitter
-		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-if (ENABLE_LINE_EDITING)
-	if (NOT USE_READLINE)
-		find_package(LibEdit REQUIRED)
-		target_link_libraries(OpenSMT-bin-splitter PUBLIC LibEdit::LibEdit)
-	else()
-		find_package(Readline REQUIRED)
-		target_link_libraries(OpenSMT-bin-splitter PUBLIC Readline::Readline)
+if (BUILD_EXECUTABLES)
+	add_executable(OpenSMT-bin-splitter opensmtSplitter.cc)
+	set_target_properties(OpenSMT-bin-splitter PROPERTIES
+			NO_SYSTEM_FROM_IMPORTED true
+			OUTPUT_NAME opensmt-splitter
+			RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+	if (ENABLE_LINE_EDITING)
+		if (NOT USE_READLINE)
+			find_package(LibEdit REQUIRED)
+			target_link_libraries(OpenSMT-bin-splitter PUBLIC LibEdit::LibEdit)
+		else()
+			find_package(Readline REQUIRED)
+			target_link_libraries(OpenSMT-bin-splitter PUBLIC Readline::Readline)
+		endif()
 	endif()
-endif()
 
-#link splitter executable against OpenSMT-static, PTPLib and parallel library*******************************************
-target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-static PTPLib::PTPLib parallel)
+	#link splitter executable against OpenSMT-static, PTPLib and parallel library*******************************************
+	target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-static PTPLib::PTPLib parallel)
+endif(BUILD_EXECUTABLES)
