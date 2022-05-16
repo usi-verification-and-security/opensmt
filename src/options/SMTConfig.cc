@@ -519,6 +519,7 @@ const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
 const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";
 const char* SMTConfig::o_sat_solver_limit = ":solver-limit";
 const char* SMTConfig::o_global_declarations = ":global-declarations";
+const char* SMTConfig::o_sat_split_mode     = ":split-mode";
 
 char* SMTConfig::server_host=NULL;
 uint16_t SMTConfig::server_port = 0;
