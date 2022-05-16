@@ -19,7 +19,7 @@ class SplitContext {
 
     // splitting state vars
     SpType   split_type;
-
+    int      solver_limit;
     bool     split_on;
     int      split_num;
     SpUnit   split_units;
@@ -34,11 +34,11 @@ class SplitContext {
     bool useTimeAsResourceLimit() const { return resource_units == SpUnit::time; }
     bool useTimeAsSplitLimit() const { return split_units == SpUnit::time; }
 
-    bool splitLimitReached(uint64_t decisions) const {
-        return useTimeAsSplitLimit() ? (cpuTime() >= split_next) : (decisions >= split_next);
+    bool splitLimitReached(uint64_t search_counter) const {
+        return useTimeAsSplitLimit() ? (cpuTime() >= split_next) : (search_counter >= split_next);
     }
-    void setNextSplitLimit(uint64_t decisions, double tuneLimit) {
-        auto split_baseline = (useTimeAsSplitLimit()) ? cpuTime() : static_cast<double>(decisions);
+    void setNextSplitLimit(uint64_t search_counter, double tuneLimit) {
+        auto split_baseline = (useTimeAsSplitLimit()) ? cpuTime() : static_cast<double>(search_counter);
         split_next = split_baseline + std::max(0.0, tuneLimit);
     }
 
@@ -47,27 +47,29 @@ public:
 
     int getCurrentSplitCount() const { return splits.size(); }
     bool hasCurrentSplits() const { return not splits.empty(); }
-    void enterInitCycle(uint64_t decisions) {
+    void enterInitCycle(uint64_t search_counter) {
         split_on = false;
-        setNextSplitLimit(decisions, initTune);
+        setNextSplitLimit(search_counter, initTune);
     }
 
-    void enterTuningCycle(uint64_t decisions) {
+    void enterTuningCycle(uint64_t search_counter) {
         split_on = false;
-        setNextSplitLimit(decisions, midTune);
+        setNextSplitLimit(search_counter, midTune);
     }
 
     void enterSplittingCycle() {
         split_on = true;
     }
 
-    bool shouldEnterSplittingCycle(uint64_t decisions) const {
-        return splitLimitReached(decisions);
+    bool shouldEnterSplittingCycle(uint64_t search_counter) const {
+        return splitLimitReached(search_counter);
     }
 
     bool isInSplittingCycle() const {
         return split_on;
     }
+
+    int solverLimit() const { return solver_limit; }
 
     int splitTargetNumber() const { return split_num; }
     void insertSplitData(SplitData && data) {
@@ -87,41 +89,42 @@ public:
     void resetSplitType() { split_type = spt_none; }
     void setSplitTypeScatter() { split_type = spt_scatter; }
     int getSplitTypeValue() const & { return split_type.t; }
-    bool resourceLimitReached(uint64_t decisions) const {
+    bool resourceLimitReached(uint64_t search_counter) const {
         if (resourceLimitEnabled()) {
             if (useTimeAsResourceLimit()) {
                 return time(nullptr) >= next_resource_limit;
             } else {
-                return decisions >= next_resource_limit;
+                return search_counter >= next_resource_limit;
             }
         }
         return false;
     }
 
-    void setNextResourceLimit(uint64_t decisions) {
+    void setNextResourceLimit(uint64_t search_counter) {
         if (resource_limit == -1) {
             return;
         }
-        next_resource_limit = useTimeAsResourceLimit() ? cpuTime() + resource_limit : decisions + resource_limit;
+        next_resource_limit = useTimeAsResourceLimit() ? cpuTime() + resource_limit : search_counter + resource_limit;
     }
 
-    void reset(uint64_t decisions) {
-        assert(config.sat_split_units() == SpUnit::time or config.sat_split_units() == SpUnit::decisions);
-        assert(config.sat_resource_units() == SpUnit::time or config.sat_resource_units() == SpUnit::decisions);
+    void reset(uint64_t search_counter) {
+        assert(config.sat_split_units() == SpUnit::time or config.sat_split_units() == SpUnit::search_counter);
+        assert(config.sat_resource_units() == SpUnit::time or config.sat_resource_units() == SpUnit::search_counter);
         resource_units        = config.sat_resource_units();
         resource_limit        = config.sat_resource_limit();
-        setNextResourceLimit(decisions);
+        setNextResourceLimit(search_counter);
         split_type       = config.sat_split_type();
         split_on         = false;
         split_num        = config.sat_split_num();
         split_units      = config.sat_split_units();
         initTune         = config.sat_split_inittune();
         midTune          = config.sat_split_midtune();
-        split_next       = split_units == SpUnit::time ? initTune + cpuTime() : initTune + decisions;
+        split_next       = split_units == SpUnit::time ? initTune + cpuTime() : initTune + search_counter;
         split_preference = config.sat_split_preference();
+        solver_limit     = config.sat_solver_limit();
     }
 
-    SplitContext(const SMTConfig & config, uint64_t decisions) : config(config) { reset(decisions); }
+    SplitContext(const SMTConfig & config) : config(config) { reset(0); }
 };
 
 

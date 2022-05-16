@@ -17,8 +17,8 @@ protected:
     SplitContext splitContext;
 
 public:
-    Splitter(SMTConfig & c, uint64_t & d)
-    : splitContext(c, d)
+    Splitter(SMTConfig & c)
+    : splitContext(c)
     {}
 
     std::vector<SplitData>      const & getSplits() { return splitContext.getSplits(); }
