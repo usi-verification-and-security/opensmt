@@ -1344,7 +1344,7 @@ void CoreSMTSolver::popBacktrackPoint()
     assert( isOK( ) );
 }
 
-bool CoreSMTSolver::okContinue() const
+bool CoreSMTSolver::okContinue()
 {
     return not opensmt::stop;
 }

@@ -204,7 +204,7 @@ static const struct SpType spt_none      = { 0 };
 static const struct SpType spt_lookahead = { 1 };
 static const struct SpType spt_scatter   = { 2 };
 
-enum class SpUnit : char { decisions, time };
+enum class SpUnit : char { search_counter, time };
 
 static const struct SpPref sppref_tterm = { 0 };
 static const struct SpPref sppref_blind = { 1 };
@@ -311,6 +311,7 @@ public:
   static const char* o_sat_solver_limit;
   static const char* o_global_declarations;
 
+  static const char* o_sat_split_mode;
 private:
 
   static const char* s_err_not_str;
@@ -629,11 +630,11 @@ public:
       if (optionTable.has(o_sat_resource_units)) {
           const char* type = optionTable[o_sat_resource_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return SpUnit::decisions;
+              return SpUnit::search_counter;
           else if (strcmp(type, spts_time) == 0)
               return SpUnit::time;
       }
-      return SpUnit::decisions;
+      return SpUnit::search_counter;
     }
 
   bool respect_logic_partitioning_hints() const
@@ -720,11 +721,11 @@ public:
       if (optionTable.has(o_sat_split_units)) {
           const char* type = optionTable[o_sat_split_units]->getValue().strval;
           if (strcmp(type, spts_decisions) == 0)
-              return SpUnit::decisions;
+              return SpUnit::search_counter;
           else if (strcmp(type, spts_time) == 0)
               return SpUnit::time;
       }
-      return SpUnit::decisions;
+      return SpUnit::search_counter;
   }
 
   double sat_split_inittune() const {
@@ -816,6 +817,13 @@ public:
    int sat_solver_limit() const
    { return optionTable.has(o_sat_solver_limit) ?
         optionTable[o_sat_solver_limit]->getValue().numval : 0; }
+
+    bool sat_split_mode() const {
+        if (optionTable.has(o_sat_split_mode)) {
+            return optionTable[o_sat_split_mode]->getValue().numval != 0;
+        }
+        return false;
+    }
 
 //  int          produce_stats;                // Should print statistics ?
   int          print_stats;                  // Should print statistics ?
