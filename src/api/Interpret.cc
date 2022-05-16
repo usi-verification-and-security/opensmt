@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Interpret.h"
 #include "smt2tokens.h"
 #include "ArithLogic.h"
-#include "MainSplitter.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
 
@@ -595,11 +594,6 @@ bool Interpret::checkSat() {
         char* name = config.dump_state();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
-        else if (o_split != spt_none) {
-#ifndef CUBE_AND_CONQUER
-            writeSplits(name);
-#endif
-        }
         free(name);
     }
 
@@ -833,16 +827,6 @@ void Interpret::writeState(const char* filename)
 
     if (!rval) {
         notify_formatted("%s", msg);
-    }
-}
-
-void Interpret::writeSplits(const char* filename)
-{
-    try {
-        dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
-    }
-    catch (OsmtApiException const & e) {
-        std::cout << "While writing splits: " << e.what() << std::endl;
     }
 }
 
@@ -1342,23 +1326,7 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
 }
 
 std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
-
-    if (config.sat_split_type() == spt_none) {
-        return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
-    }
-    else {
-        auto th = MainSolver::createTheory(*logic, config);
-        auto tm = std::make_unique<TermMapper>(*logic);
-        auto thandler = new THandler(*th, *tm);
-        return std::make_unique<MainSplitter>(std::move(th),
-                                 std::move(tm),
-                                 std::unique_ptr<THandler>(thandler),
-                                 MainSplitter::createInnerSolver(config, *thandler),
-                                 *logic,
-                                 config,
-                                 std::string(logic_name)
-                                 + " splitter");
-    }
+    return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
 }
 
 
