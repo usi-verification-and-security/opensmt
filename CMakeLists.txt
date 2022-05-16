@@ -51,6 +51,7 @@ option(USE_READLINE "Use readline over libedit" OFF)
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(BUILD_EXECUTABLES "Build executables" ON)
+option(PARALLEL "Build splitter executables" OFF)
 
 option(PACKAGE_TESTS "Build the tests" ON)
 option(PACKAGE_BENCHMARKS "Build the benchmarks" OFF)

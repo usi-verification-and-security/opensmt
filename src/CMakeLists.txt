@@ -1,30 +1,3 @@
-if(PARALLEL)
-  set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
-  set(PTPLib_branch ${branch})
-  if(NOT PTPLib_branch)
-    set(PTPLib_branch master)
-  endif()
-
-  message(STATUS "OpenSMT is fetching PTPLib from " ${PTPLib_repository})
-  message(STATUS "PTPLib Branch : ${PTPLib_branch}")
-
-  include(FetchContent)
-  Set(FETCHCONTENT_QUIET FALSE)
-  FetchContent_Declare(
-          PTPLib
-          GIT_REPOSITORY ${PTPLib_repository}
-          GIT_TAG ${PTPLib_branch}
-          GIT_SHALLOW true
-          GIT_PROGRESS true
-  )
-
-  FetchContent_MakeAvailable(PTPLib)
-
-  add_library(PTPLib::PTPLib ALIAS PTPLib)
-
-  message(STATUS "PTPLib include: ${PTPLib_SOURCE_DIR}/include")
-endif(PARALLEL)
-
 add_subdirectory(proof)
 add_subdirectory(common)
 add_subdirectory(cnfizers)
@@ -45,4 +18,8 @@ add_subdirectory(rewriters)
 add_subdirectory(interpolation)
 if (BUILD_EXECUTABLES)
   add_subdirectory(bin)
+endif()
+
+if (PARALLEL)
+  add_subdirectory(parallel)
 endif()
