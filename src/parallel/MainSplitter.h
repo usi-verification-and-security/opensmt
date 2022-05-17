@@ -31,7 +31,7 @@ public:
                  {}
 
     PTPLib::net::Channel & getChannel()  { return (dynamic_cast<ScatterSplitter&>(getSMTSolver())).getChannel(); }
-
+    ScatterSplitter & getScatterSplitter()  { return dynamic_cast<ScatterSplitter&>(getSMTSolver()) ;}
     void notifyResult(sstat const & result)
     {
         if (result != s_Undef) {
@@ -41,11 +41,13 @@ public:
     }
 
     sstat check() override {
-        if (not config.sat_solver_limit())
-        //push frames size should match with length of the solver branch
-            if (frames.size() != static_cast<std::size_t>((dynamic_cast<ScatterSplitter&>(getSMTSolver())).get_solver_branch().size() + 1))
-                throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: Inconsistency in push frames size and length of the solver address");
-
+        if (not config.sat_solver_limit()) {
+            //push frames size should match with length of the solver branch
+            if (frames.size() !=
+                static_cast<std::size_t>((dynamic_cast<ScatterSplitter &>(getSMTSolver())).get_solver_branch().size() +1))
+                throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                ";assert: Inconsistency in push frames size and length of the solver address");
+        }
         sstat res = MainSolver::check();
         notifyResult(res);
         status = res;
@@ -55,12 +57,13 @@ public:
     sstat solve_(vec<FrameId> & enabledFrames) override {
         if (not config.sat_solver_limit()) {
             vec<opensmt::pair<int, int>> const & solverBranch = (dynamic_cast<ScatterSplitter &>(getSMTSolver())).get_solver_branch();
+            if (enabledFrames.size() > solverBranch.size() + 1) {
+                throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                ";assert: inconsistency in solverBranch length and enabled_frame size: " +
+                                                std::to_string(enabledFrames.size()) + " solverBranch size: " +
+                                                std::to_string(solverBranch.size()));
+            }
             for (int i = 0; i < enabledFrames.size(); i++) {
-                if (enabledFrames.size() > solverBranch.size() + 1)
-                    throw PTPLib::common::Exception(__FILE__, __LINE__,
-                                                    ";assert: inconsistency in solverBranch length and enabled_frame size: " +
-                                                    std::to_string(enabledFrames.size()) + " solverBranch size: " +
-                                                    std::to_string(solverBranch.size()));
                 if (i > 0) {
                     (dynamic_cast<ScatterSplitter &>(getSMTSolver())).addBranchToFrameId(
                             opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
@@ -69,7 +72,7 @@ public:
         }
         sstat res = MainSolver::solve_(enabledFrames);
         if (dynamic_cast<Splitter&>(ts.solver).getSplits().size() >= 1 and res == s_False)
-            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: At least one split is created and while conflict encountered!");
+            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: At least one split is created but splitter returned unsatisfiable.");
         return res;
     }
 
@@ -77,7 +80,7 @@ public:
     sstat solve() {
         sstat res = MainSolver::solve();
         if (dynamic_cast<Splitter&>(ts.solver).getSplits().size() >= 1 and res == s_False)
-            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: At least one split is created and while conflict encountered!");
+            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: At least one split is created but splitter returned unsatisfiable");
         return res;
     };
 

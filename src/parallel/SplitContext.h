@@ -46,7 +46,7 @@ class SplitContext {
 public:
 
     int getCurrentSplitCount() const { return splits.size(); }
-    bool hasCurrentSplits() const { return not splits.empty(); }
+    bool hasSplits() const { return not splits.empty(); }
     void enterInitCycle(uint64_t search_counter) {
         split_on = false;
         setNextSplitLimit(search_counter, initTune);
@@ -78,11 +78,6 @@ public:
     std::vector<SplitData> const & getSplits() const { return splits; }
 
     bool preferRandom() const { return split_preference == sppref_rand; }
-    bool preferTerm() const { return split_preference == sppref_tterm; }
-    bool preferFormula() const { return split_preference == sppref_bterm; }
-    bool preferNotEq() const { return split_preference == sppref_noteq; }
-    bool preferEq() const { return split_preference == sppref_eq; }
-    bool preferTermNotEq() const { return split_preference == sppref_tterm_neq; }
     bool isSplitTypeScatter() const { return split_type == spt_scatter; }
     bool isSplitTypeLookahead() const { return split_type == spt_lookahead; }
     bool isSplitTypeNone() const { return split_type == spt_none; }

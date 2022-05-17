@@ -27,7 +27,7 @@ add_library(parallel OBJECT "")
 target_link_libraries(parallel PUBLIC PTPLib::PTPLib)
 list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.cc"
-		"${CMAKE_CURRENT_SOURCE_DIR}/PreInterpret.cc"
+		"${CMAKE_CURRENT_SOURCE_DIR}/SplitterInterpret.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/SplitData.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.h"
@@ -38,21 +38,9 @@ list(APPEND PRIVATE_SOURCES_TO_ADD
 list(APPEND PUBLIC_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/MainSplitter.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.h"
-		"${CMAKE_CURRENT_SOURCE_DIR}/PreInterpret.h"
+		"${CMAKE_CURRENT_SOURCE_DIR}/SplitterInterpret.h"
 )
 target_sources(parallel PRIVATE ${PRIVATE_SOURCES_TO_ADD}  PUBLIC ${PUBLIC_SOURCES_TO_ADD} )
-
-if(VERBOSE_SAT)
-	target_compile_definitions(parallel PRIVATE -DVERBOSE_SAT)
-endif()
-
-if(DEBUG_LOOKAHEAD)
-	target_compile_definitions(parallel PRIVATE -DLADEBUG)
-endif()
-
-if(PRINT_UNITS)
-	target_compile_definitions(parallel PRIVATE -DREPORT_DL1_THLITS)
-endif()
 
 
 #Define OpenSMT-splitter-static library which contains OpenSMT-static, parallel and PTPLib******************************
@@ -69,7 +57,7 @@ if (BUILD_STATIC_LIBS)
 	target_link_libraries(OpenSMT-splitter-static PUBLIC OpenSMT-static parallel)
 	install(TARGETS OpenSMT-splitter-static ARCHIVE DESTINATION lib)
 endif()
-install(FILES PreInterpret.h DESTINATION ${INSTALL_HEADERS_DIR})
+install(FILES SplitterInterpret.h DESTINATION ${INSTALL_HEADERS_DIR})
 
 
 
@@ -91,5 +79,5 @@ if (BUILD_EXECUTABLES)
 	endif()
 
 #link splitter executable against OpenSMT-splitter-static, PTPLib and parallel library**********************************
-	target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-splitter-static parallel)
+	target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-splitter-static)
 endif(BUILD_EXECUTABLES)
