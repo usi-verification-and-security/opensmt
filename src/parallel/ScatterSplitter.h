@@ -19,7 +19,7 @@
 class ScatterSplitter :  public SimpSMTSolver, public Splitter {
 public:
     ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
-    PTPLib::net::Channel & getChannel() const   { return channel; }
+
     void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream
 
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
@@ -43,7 +43,6 @@ public:
 
 private:
     int search_counter;
-    PTPLib::net::Channel &  channel;
     int                     trail_sent = 0;
     bool                    firstPropagation = true;
     int                     numTriviallyPropagatedOnDl0;

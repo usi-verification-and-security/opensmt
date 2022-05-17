@@ -24,7 +24,7 @@ private:
 
     inline bool isSplitTypeNone()    const &       { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeNone(); }
 
-    inline PTPLib::net::Channel & getChannel()     { return (dynamic_cast<ScatterSplitter&>(getSMTSolver())).getChannel(); }
+    inline PTPLib::net::Channel & getChannel() const { return getSplitter().getChannel(); }
 
     inline ScatterSplitter & getScatterSplitter()  { return dynamic_cast<ScatterSplitter&>(getSMTSolver()); }
 
