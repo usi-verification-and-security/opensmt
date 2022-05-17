@@ -29,6 +29,7 @@ jobs:
                 environment:
                     CMAKE_BUILD_TYPE: Debug
                     ENABLE_LINE_EDITING: ON
+                    PARALLEL: "yes"
             - run:
                 name: Release build gcc
                 command: ./ci/run_travis_commands.sh
