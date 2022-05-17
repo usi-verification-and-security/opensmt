@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ScatterSplitter.h"
-
+#include "Random.h"
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
 : SimpSMTSolver         (c, t)
@@ -14,7 +14,7 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Chann
 {}
 
 bool ScatterSplitter::branchLitRandom() {
-    return ((not splitContext.isInSplittingCycle() and drand(random_seed) < random_var_freq) or
+    return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
             (splitContext.isInSplittingCycle() and splitContext.preferRandom()))
            and not order_heap.empty();
 }

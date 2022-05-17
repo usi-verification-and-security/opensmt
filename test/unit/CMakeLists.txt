@@ -245,4 +245,3 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SATSolverTypes.cc"
 
 target_link_libraries(SATSolverTypesTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SATSolverTypesTest)
-gtest_add_tests(TARGET NameProtectionTest)
