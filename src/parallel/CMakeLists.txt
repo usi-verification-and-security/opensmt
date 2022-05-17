@@ -55,8 +55,23 @@ if(PRINT_UNITS)
 endif()
 
 
-#install opensmt's parallel api for SMTS's Client usage*****************************************************************
-install(FILES ScatterSplitter.h PreInterpret.h MainSplitter.h DESTINATION ${INSTALL_HEADERS_DIR})
+#Define OpenSMT-splitter-static library which contains OpenSMT-static, parallel and PTPLib******************************
+#Usage: SMTS
+if (BUILD_STATIC_LIBS)
+	add_library(OpenSMT-splitter-static STATIC "")
+	set_target_properties(OpenSMT-splitter-static PROPERTIES
+			OUTPUT_NAME opensmt-split
+			NO_SYSTEM_FROM_IMPORTED true
+			VERSION ${OPENSMT_VERSION}
+			ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+			)
+
+	target_link_libraries(OpenSMT-splitter-static PUBLIC OpenSMT-static parallel)
+	install(TARGETS OpenSMT-splitter-static ARCHIVE DESTINATION lib)
+endif()
+install(FILES PreInterpret.h DESTINATION ${INSTALL_HEADERS_DIR})
+
+
 
 #build splitter executable**********************************************************************************************
 if (BUILD_EXECUTABLES)
@@ -75,6 +90,6 @@ if (BUILD_EXECUTABLES)
 		endif()
 	endif()
 
-	#link splitter executable against OpenSMT-static, PTPLib and parallel library*******************************************
-	target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-static PTPLib::PTPLib parallel)
+#link splitter executable against OpenSMT-splitter-static, PTPLib and parallel library**********************************
+	target_link_libraries(OpenSMT-bin-splitter PUBLIC OpenSMT-splitter-static parallel)
 endif(BUILD_EXECUTABLES)
