@@ -8,8 +8,8 @@
 
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
-: Splitter              (c)
-, SimpSMTSolver         (c, t)
+: SimpSMTSolver         (c, t)
+, Splitter              (c)
 , channel               (ch)
 {}
 
