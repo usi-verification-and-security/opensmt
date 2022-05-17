@@ -9,8 +9,7 @@
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
 : SimpSMTSolver         (c, t)
-, Splitter              (c)
-, channel               (ch)
+, Splitter              (c, ch)
 {}
 
 bool ScatterSplitter::branchLitRandom() {

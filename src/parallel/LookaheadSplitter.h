@@ -26,9 +26,9 @@ static inline int getLog2Ceil(int i)
 class LookaheadSplitter : public LookaheadSMTSolver, public Splitter {
 
 public:
-    LookaheadSplitter(SMTConfig& c, THandler& thandler)
+    LookaheadSplitter(SMTConfig& c, THandler& thandler, PTPLib::net::Channel & ch)
     : LookaheadSMTSolver(c, thandler)
-    , Splitter(c)
+    , Splitter(c, ch)
     {}
 
 protected:

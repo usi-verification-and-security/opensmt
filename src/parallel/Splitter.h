@@ -11,6 +11,8 @@
 #include "SplitData.h"
 #include "SplitContext.h"
 
+#include <PTPLib/net/Channel.hpp>
+
 class Splitter {
 
 private:
@@ -18,10 +20,12 @@ private:
 
 protected:
     SplitContext splitContext;
+    PTPLib::net::Channel &  channel;
 
 public:
-    Splitter(SMTConfig & c)
+    Splitter(SMTConfig & c, PTPLib::net::Channel & ch)
     : splitContext(c)
+    , channel(ch)
     {}
 
     std::vector<SplitData>      const & getSplits() { return splitContext.getSplits(); }
@@ -35,6 +39,8 @@ public:
     void resetSplitType() { splitContext.resetSplitType(); }
 
     vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
+
+    PTPLib::net::Channel & getChannel() const   { return channel; }
 
     void set_solver_branch(std::string & solver_branch)
     {
