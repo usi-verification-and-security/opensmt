@@ -13,6 +13,9 @@
 
 class Splitter {
 
+private:
+    vec<opensmt::pair<int,int>> solverBranch;
+
 protected:
     SplitContext splitContext;
 
@@ -30,6 +33,27 @@ public:
     bool isSplitTypeNone()       const { return splitContext.isSplitTypeNone(); }
 
     void resetSplitType() { splitContext.resetSplitType(); }
+
+    vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
+
+    void set_solver_branch(std::string & solver_branch)
+    {
+        solverBranch.clear();
+        solver_branch.erase(std::remove(solver_branch.begin(), solver_branch.end(), ' '), solver_branch.end());
+        std::string const delimiter = "," ;
+        size_t beg, pos = 0;
+        uint16_t counter = 0;
+        uint16_t temp = 0;
+        while ((beg = solver_branch.find_first_not_of(delimiter, pos)) != std::string::npos)
+        {
+            pos = solver_branch.find_first_of(delimiter, beg + 1);
+            int index = stoi(solver_branch.substr(beg, pos - beg));
+            if (counter % 2 == 1) {
+                solverBranch.push({temp, index});
+            } else temp = index;
+            counter++;
+        }
+    }
 };
 
 #endif //PARALLEL_SPLITTER_H

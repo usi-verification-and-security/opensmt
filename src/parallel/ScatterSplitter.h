@@ -21,8 +21,7 @@ public:
     ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
     PTPLib::net::Channel & getChannel() const   { return channel; }
     void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream
-    vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
-    void set_solver_branch(std::string & solver_branch);
+
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
         frameIdToSolverBranch[fid] = std::move(solverAddress);
     }
@@ -49,7 +48,6 @@ private:
     bool                    firstPropagation = true;
     int                     numTriviallyPropagatedOnDl0;
 
-    vec<opensmt::pair<int,int>> solverBranch;
     PTPLib::common::synced_stream * syncedStream = nullptr;
     using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
     map_frameId_solverBranch frameIdToSolverBranch;
