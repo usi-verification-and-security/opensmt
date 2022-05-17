@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef SPLITTERINTERPRET_H
-#define SPLITTERINTERPRET_H
+#ifndef PARALLEL_SPLITTERINTERPRET_H
+#define PARALLEL_SPLITTERINTERPRET_H
 
 #include "MainSplitter.h"
 #include "Interpret.h"
@@ -32,4 +32,4 @@ private:
     MainSolver&     getMainSplitter() { return *main_solver; }
 };
 
-#endif
+#endif //PARALLEL_SPLITTERINTERPRET_H

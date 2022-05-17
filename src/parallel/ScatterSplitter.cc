@@ -8,14 +8,10 @@
 
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
-    : Splitter              (c)
-    , SimpSMTSolver         (c, t)
-    , trail_sent            (0)
-    , firstPropagation      (true)
-    , channel               (ch)
-{
-    syncedStream = nullptr;
-}
+: Splitter              (c)
+, SimpSMTSolver         (c, t)
+, channel               (ch)
+{}
 
 bool ScatterSplitter::branchLitRandom() {
     return ((not splitContext.isInSplittingCycle() and drand(random_seed) < random_var_freq) or
@@ -193,6 +189,7 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
     int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
     trail_sent = std::max<int>(trail_sent, numTriviallyPropagatedOnDl0-1);
     assert(trail_sent >= 0);
+    auto & logic = theory_handler.getLogic();
     for (int i = this->trail_sent; i < trail_max; i++) {
         this->trail_sent++;
         Lit l = trail[i];
@@ -200,16 +197,16 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         if (isAssumptionVar(v)) {
             continue;
         }
-        PTRef pt = this->theory_handler.varToTerm(v);
-        std::string str = this->theory_handler.getLogic().dumpWithLets(pt);
+        auto pt = this->theory_handler.varToTerm(v);
+        std::string str = logic.dumpWithLets(pt);
         assert([&](std::string_view clause_str) {
             if (clause_str.find(".frame") != std::string::npos) {
                 throw PTPLib::common::Exception(__FILE__, __LINE__,"assert: frame caught in trail");
             }
             return true;
         }(str));
-        pt = sign(l) ? this->theory_handler.getLogic().mkNot(pt) : pt;
-        learnedLemmas.emplace_back(PTPLib::net::Lemma(this->theory_handler.getLogic().dumpWithLets(pt), 0));
+        pt = sign(l) ? logic.mkNot(pt) : pt;
+        learnedLemmas.emplace_back(PTPLib::net::Lemma(logic.dumpWithLets(pt), 0));
     }
 
     for (CRef cr : learnts) {
@@ -264,7 +261,7 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         }
         if (hasForeignAssumption or clause.size() > 3)
             continue;
-        std::string str = this->theory_handler.getLogic().dumpWithLets(theory_handler.getLogic().mkOr(clause));
+        std::string str = logic.dumpWithLets(theory_handler.getLogic().mkOr(clause));
 
         learnedLemmas.emplace_back(PTPLib::net::Lemma(str, level));
         assert([&](std::string_view clause_str) {

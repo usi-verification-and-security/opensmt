@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef OPENSMT_SPLITDATA_H
-#define OPENSMT_SPLITDATA_H
+#ifndef PARALLEL_SPLITDATA_H
+#define PARALLEL_SPLITDATA_H
 
 #include "SolverTypes.h"
 #include "THandler.h"
@@ -38,4 +38,4 @@ public:
     std::vector<vec<PtAsgn>> constraintsToPTRefs(const THandler& thandler) const { return toPTRefs(constraints, thandler); }
 };
 
-#endif //OPENSMT_SPLITDATA_H
+#endif //PARALLEL_SPLITDATA_H

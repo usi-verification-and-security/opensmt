@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef OPENSMT_LOOKAHEADSPLITTER_H
-#define OPENSMT_LOOKAHEADSPLITTER_H
+#ifndef PARALLEL_LOOKAHEADSPLITTER_H
+#define PARALLEL_LOOKAHEADSPLITTER_H
 
 #include "LookaheadSMTSolver.h"
 #include "SplitData.h"
@@ -80,4 +80,4 @@ protected:
     };
 };
 
-#endif //OPENSMT_LOOKAHEADSPLITTER_H
+#endif //PARALLEL_LOOKAHEADSPLITTER_H

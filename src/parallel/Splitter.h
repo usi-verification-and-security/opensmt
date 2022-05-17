@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef OPENSMT_SPLITTER_H
-#define OPENSMT_SPLITTER_H
+#ifndef PARALLEL_SPLITTER_H
+#define PARALLEL_SPLITTER_H
 
 #include "SplitData.h"
 #include "SplitContext.h"
@@ -32,4 +32,4 @@ public:
     void resetSplitType() { splitContext.resetSplitType(); }
 };
 
-#endif //OPENSMT_SPLITTER_H
+#endif //PARALLEL_SPLITTER_H

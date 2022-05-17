@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef OPENSMT_SPLITCONTEXT_H
-#define OPENSMT_SPLITCONTEXT_H
+#ifndef PARALLEL_SPLITCONTEXT_H
+#define PARALLEL_SPLITCONTEXT_H
 
 #include "SMTConfig.h"
 #include "SystemQueries.h"
@@ -123,4 +123,4 @@ public:
 };
 
 
-#endif //OPENSMT_SPLITCONTEXT_H
+#endif //PARALLEL_SPLITCONTEXT_H
