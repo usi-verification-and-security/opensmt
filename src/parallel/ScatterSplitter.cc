@@ -50,24 +50,8 @@ Var ScatterSplitter::doActivityDecision() {
                 if (isAssumptionVar(next)) {
                     discarded.push(next);
                     next = var_Undef;
-                    // A hack!: Not branch on lengthy variables (more than 5000), basically not allowing split partition with too many nested loop
+                    // A hack!: Not branch on lengthy variables (more than 5000), basically not allowing split partition with too many nested lets
                 } else if (this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(next)).length() > 5000) {
-                    discarded.push(next);
-                    next = var_Undef;
-                } else if (splitContext.preferTerm() && !theory_handler.isDeclared(next)) {
-                    discarded.push(next);
-                    next = var_Undef;
-                } else if (splitContext.preferTermNotEq() && (!theory_handler.isDeclared(next) or theory_handler.getLogic().isEquality(theory_handler.varToTerm(next)))) {
-                    discarded.push(next);
-                    next = var_Undef;
-                } else if (splitContext.preferFormula() && theory_handler.isDeclared(next)) {
-                    discarded.push(next);
-                    next = var_Undef;
-                }
-                else if (splitContext.preferNotEq() && theory_handler.getLogic().isEquality(theory_handler.varToTerm(next))) {
-                    discarded.push(next);
-                    next = var_Undef;
-                } else if (splitContext.preferEq() && not theory_handler.getLogic().isEquality(theory_handler.varToTerm(next))) {
                     discarded.push(next);
                     next = var_Undef;
                 }
@@ -143,7 +127,7 @@ bool ScatterSplitter::okContinue() {
         return false;
     } else if (getChannel().shouldStop()) {
         return false;
-    } else if (conflicts % 1000 == 0 and splitContext.resourceLimitReached(decisions)) {
+    } else if (conflicts % 1000 == 0 and splitContext.resourceLimitReached(search_counter)) {
         getChannel().setShouldStop();
         return false;
     } else if (static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber() - 1) {
@@ -159,8 +143,7 @@ void ScatterSplitter::notifyEnd() {
         auto[data, result] = createSplitAndBlockAssumptions();
         splitContext.insertSplitData(std::move(data));
         if (result != l_False)
-            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: result not l_False while partitioning");
-       (void) result;
+            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: Instance not unsatisfiable after creating last partition.");
     }
     getChannel().setShouldStop();
 }
@@ -176,7 +159,7 @@ lbool ScatterSplitter::solve_() {
 }
 
 lbool ScatterSplitter::zeroLevelConflictHandler() {
-    if (splitContext.hasCurrentSplits()) {
+    if (splitContext.hasSplits()) {
         getChannel().setShouldStop();
         return l_Undef;
     } else {
@@ -193,7 +176,7 @@ CoreSMTSolver::ConsistencyAction ScatterSplitter::notifyConsistency() {
         return ConsistencyAction::BacktrackToZero;
     }
     if (splitContext.isInSplittingCycle() and scatterLevel()) {
-        auto [data, result] = createSplitAndBlockAssumptions();
+        auto[data, result] = createSplitAndBlockAssumptions();
         splitContext.insertSplitData(std::move(data));
         if (result == l_False) { // Rest is unsat
             getChannel().setShouldStop();
@@ -240,21 +223,20 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
             Lit l = c[j];
             Var v = var(l);
             if (isAssumptionVar(v)) {
-                vec<opensmt::pair<int, int>> const & solverBranch_perVar = get_solverBranch(v);
+                vec<opensmt::pair<int, int>> const & solverBranch_perVar = getSolverBranch(v);
                 if (isPrefix(solverBranch_perVar, get_solver_branch())) {
                     int result = solverBranch_perVar.size();
                     assert([&]() {
-                    if (result <= 0)
-                    {
-                        std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
-                        throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is less than zero " +
+                        if (result <= 0) {
+                            std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
+                            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is less than zero " +
                                 getChannel().get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
-                    }
-                    if (result > get_solver_branch().size()) {
-                        std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
-                        throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
+                        }
+                        if (result > get_solver_branch().size()) {
+                            std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
+                            throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
                                 getChannel().get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
-                    }
+                        }
                         return true;
                     }());
 
@@ -296,11 +278,11 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
     return not learnedLemmas.empty();
 }
 
-void ScatterSplitter::set_solver_branch(std::string solver_branch)
+void ScatterSplitter::set_solver_branch(std::string & solver_branch)
 {
     solverBranch.clear();
     solver_branch.erase(std::remove(solver_branch.begin(), solver_branch.end(), ' '), solver_branch.end());
-    std::string const delimiter{ "," };
+    std::string const delimiter = "," ;
     size_t beg, pos = 0;
     uint16_t counter = 0;
     uint16_t temp = 0;

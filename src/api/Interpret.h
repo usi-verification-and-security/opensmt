@@ -156,7 +156,7 @@ class Interpret {
     bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);
-    virtual bool                checkSat();
+    virtual sstat               checkSat();
     void                        getValue(const std::vector<ASTNode*>* term);
     void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);

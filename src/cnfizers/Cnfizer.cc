@@ -89,14 +89,6 @@ Cnfizer::solve(vec<FrameId>& en_frames)
     // elements are in the same order.  We simply invert the
     // corresponding literals
     for (const FrameId fid : en_frames) {
-        assert([&](FrameId fid) {
-            uint32_t prevId = UINT32_MAX;
-            if (prevId != UINT32_MAX and fid.id <= prevId) {
-                throw OsmtInternalException("en_frame order is not increasing");
-            }
-            prevId = fid.id;
-            return true;
-        }(fid));
         assumps[fid.id] = ~assumps[fid.id];
         tmap.mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id);
     }

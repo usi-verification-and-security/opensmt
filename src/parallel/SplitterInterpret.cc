@@ -5,14 +5,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "PreInterpret.h"
+#include "SplitterInterpret.h"
 
 /***********************************************************
- * Class defining Pre-Interpreter
+ * Class defining Splitter-Interpreter
  * Usage: Parallel solver
  ***********************************************************/
 
-void PreInterpret::writeSplits(const char* filename)
+void SplitterInterpret::writeSplits(const char* filename)
 {
     try {
         dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
@@ -22,15 +22,16 @@ void PreInterpret::writeSplits(const char* filename)
     }
 }
 
-bool PreInterpret::checkSat() {
+sstat SplitterInterpret::checkSat() {
     char* name = config.dump_state();
-    if (Interpret::checkSat() and strcmp(config.output_dir(),"") != 0) {
+    sstat res = Interpret::checkSat();
+    if (res == s_Undef and strcmp(config.output_dir(),"") != 0) {
         writeSplits(name);
     }
-    return true;
+    return res;
 }
 
-std::unique_ptr<MainSolver> PreInterpret::createMainSolver(const char* logic_name) {
+std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logic_name) {
     assert(config.sat_split_type() != spt_none);
     auto th = MainSolver::createTheory(*logic, config);
     auto tm = std::make_unique<TermMapper>(*logic);

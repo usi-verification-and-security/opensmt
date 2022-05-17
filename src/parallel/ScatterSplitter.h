@@ -20,15 +20,15 @@ class ScatterSplitter :  public SimpSMTSolver, virtual public Splitter {
 public:
     ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
     PTPLib::net::Channel & getChannel() const   { return channel; }
-    void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream in ParallelScatterSpitter
+    void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream
     vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
-    void set_solver_branch(std::string solver_branch);
+    void set_solver_branch(std::string & solver_branch);
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
-        frameId_solverBranch[fid] = std::move(solverAddress);
+        frameIdToSolverBranch[fid] = std::move(solverAddress);
     }
     void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid);
 
-    inline vec<opensmt::pair<int,int>> const & get_solverBranch(Var v) { return frameId_solverBranch[theory_handler.getTMap().get_FrameId(v)]; }
+    inline vec<opensmt::pair<int,int>> const & getSolverBranch(Var v) { return frameIdToSolverBranch[theory_handler.getTMap().get_FrameId(v)]; }
 
     void enterSplittingCycle()          { splitContext.enterSplittingCycle(); }
 
@@ -52,7 +52,7 @@ private:
     vec<opensmt::pair<int,int>> solverBranch;
     PTPLib::common::synced_stream * syncedStream;
     using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
-    map_frameId_solverBranch frameId_solverBranch;
+    map_frameId_solverBranch frameIdToSolverBranch;
     using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId var_frameId;
 

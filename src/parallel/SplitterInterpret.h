@@ -5,29 +5,29 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef API_PREINTERPRET_H
-#define API_PREINTERPRET_H
+#ifndef SPLITTERINTERPRET_H
+#define SPLITTERINTERPRET_H
 
 #include "MainSplitter.h"
 #include "Interpret.h"
 
-class PreInterpret : public Interpret {
+class SplitterInterpret : public Interpret {
 private:
     PTPLib::net::Channel & channel;
 
   protected:
     void                          writeSplits(const char* filename);
     std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name) override;
-    bool                          checkSat()                               override;
+    sstat                          checkSat()                              override;
 
   public:
 
-    PreInterpret(SMTConfig & c, PTPLib::net::Channel & ch)
+    SplitterInterpret(SMTConfig & c, PTPLib::net::Channel & ch)
     : Interpret(c)
     , channel(ch)
     { }
 
-    virtual ~PreInterpret() = default;
+    virtual ~SplitterInterpret() = default;
 
     MainSolver&     getMainSplitter() { return *main_solver; }
 };

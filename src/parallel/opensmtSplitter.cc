@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "PreInterpret.h"
+#include "SplitterInterpret.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -43,7 +43,7 @@ void        catcher            ( int );
  *                                                                           *
 \*****************************************************************************/
 
-void interpretInteractive(PreInterpret & interpret);
+void interpretInteractive(SplitterInterpret & interpret);
 
 int main( int argc, char * argv[] )
 {
@@ -103,7 +103,7 @@ int main( int argc, char * argv[] )
         }
     }
     auto channel = std::make_unique<PTPLib::net::Channel>();
-    PreInterpret interpreter(c, *channel);
+    SplitterInterpret interpreter(c, *channel);
 
     if (argc - optind == 0) {
         c.setInstanceName("stdin");
@@ -143,11 +143,11 @@ int main( int argc, char * argv[] )
 }
 
 #ifndef ENABLE_LINE_EDITING
-void interpretInteractive(PreInterpret & interpret) {
+void interpretInteractive(SplitterInterpret & interpret) {
     interpret.interpPipe();
 }
 #else
-void interpretInteractive(PreInterpret & interpret) {
+void interpretInteractive(SplitterInterpret & interpret) {
     char* line_read = nullptr;
     bool done = false;
     int par = 0;

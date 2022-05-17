@@ -564,7 +564,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     return PTRef_Undef;
 }
 
-bool Interpret::checkSat() {
+sstat Interpret::checkSat() {
     sstat res;
     res = main_solver->check();
 
@@ -597,7 +597,7 @@ bool Interpret::checkSat() {
         free(name);
     }
 
-    return true;
+    return res;
 }
 
 void Interpret::push(int n) {
