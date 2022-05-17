@@ -18,6 +18,7 @@
 class SplitData {
     std::vector<vec<Lit>>  constraints;    // The split constraints
     std::vector<vec<Lit>>  learnts;        // The learnt clauses
+    std::vector<vec<Lit>>  split_assumptions;
 
     static char* litToString(Lit);
     template<class C> char* clauseToString(C const &);
@@ -34,8 +35,20 @@ public:
         constraints.emplace_back(std::move(cstr));
     }
 
+    template<class C> void addSplitAssumptions(const C& sa) {
+        vec<Lit> vl;
+        for (Lit l : sa) {
+            vl.push(l);
+        }
+        split_assumptions.emplace_back(std::move(vl));
+    }
+
     char* splitToString();
     std::vector<vec<PtAsgn>> constraintsToPTRefs(const THandler& thandler) const { return toPTRefs(constraints, thandler); }
+
+    std::vector<vec<Lit>> & getSplitAssumptions()               { return split_assumptions; }
+
+    vec<Lit> &              getSplitAssumption(std::size_t i)   { return split_assumptions[i]; }
 };
 
 #endif //PARALLEL_SPLITDATA_H
