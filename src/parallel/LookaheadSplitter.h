@@ -27,8 +27,8 @@ class LookaheadSplitter : public LookaheadSMTSolver, public Splitter {
 
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler)
-    : Splitter(c)
-    , LookaheadSMTSolver(c, thandler)
+    : LookaheadSMTSolver(c, thandler)
+    , Splitter(c)
     {}
 
 protected:
