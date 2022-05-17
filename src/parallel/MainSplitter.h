@@ -5,8 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef MAINSPLITTER_H
-#define MAINSPLITTER_H
+#ifndef PARALLEL_MAINSPLITTER_H
+#define PARALLEL_MAINSPLITTER_H
 
 #include "MainSolver.h"
 #include "SplitData.h"
@@ -56,4 +56,4 @@ public:
 };
 
 
-#endif //MAINSPLITTER_H
+#endif //PARALLEL_MAINSPLITTER_H

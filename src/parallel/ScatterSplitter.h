@@ -4,8 +4,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#ifndef OPENSMT_SCATTERSPLITTER_H
-#define OPENSMT_SCATTERSPLITTER_H
+#ifndef PARALLEL_SCATTERSPLITTER_H
+#define PARALLEL_SCATTERSPLITTER_H
 
 #include "SimpSMTSolver.h"
 #include "SplitData.h"
@@ -45,12 +45,12 @@ public:
 private:
     int search_counter;
     PTPLib::net::Channel &  channel;
-    int                     trail_sent;
-    bool                    firstPropagation;
+    int                     trail_sent = 0;
+    bool                    firstPropagation = true;
     int                     numTriviallyPropagatedOnDl0;
 
     vec<opensmt::pair<int,int>> solverBranch;
-    PTPLib::common::synced_stream * syncedStream;
+    PTPLib::common::synced_stream * syncedStream = nullptr;
     using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
     map_frameId_solverBranch frameIdToSolverBranch;
     using map_var_frameId = std::map<Var ,uint32_t>;
@@ -90,4 +90,4 @@ protected:
 };
 
 
-#endif //OPENSMT_SCATTERSPLITTER_H
+#endif //PARALLEL_SCATTERSPLITTER_H
