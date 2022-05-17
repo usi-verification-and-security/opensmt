@@ -80,7 +80,6 @@ bool ScatterSplitter::scatterLevel() {
 }
 
 opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
-    assert(splitContext.getCurrentSplitCount() == splitContext.getCurrentSplitAssumptionsCount(splitContext.getCurrentSplitCount()-1));
     SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit> split_assumption;
@@ -273,25 +272,6 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         c.mark(3);
     }
     return not learnedLemmas.empty();
-}
-
-void ScatterSplitter::set_solver_branch(std::string & solver_branch)
-{
-    solverBranch.clear();
-    solver_branch.erase(std::remove(solver_branch.begin(), solver_branch.end(), ' '), solver_branch.end());
-    std::string const delimiter = "," ;
-    size_t beg, pos = 0;
-    uint16_t counter = 0;
-    uint16_t temp = 0;
-    while ((beg = solver_branch.find_first_not_of(delimiter, pos)) != std::string::npos)
-    {
-        pos = solver_branch.find_first_of(delimiter, beg + 1);
-        int index = stoi(solver_branch.substr(beg, pos - beg));
-        if (counter % 2 == 1) {
-            solverBranch.push({temp, index});
-        } else temp = index;
-        counter++;
-    }
 }
 
 void ScatterSplitter::runPeriodic()
