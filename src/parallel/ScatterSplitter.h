@@ -16,7 +16,7 @@
 #include <PTPLib/common/Exception.hpp>
 #include <PTPLib/common/Printer.hpp>
 
-class ScatterSplitter :  public SimpSMTSolver, virtual public Splitter {
+class ScatterSplitter :  public SimpSMTSolver, public Splitter {
 public:
     ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
     PTPLib::net::Channel & getChannel() const   { return channel; }
@@ -59,7 +59,6 @@ private:
     void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
 
 protected:
-    std::vector<vec<Lit>> split_assumptions;
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate

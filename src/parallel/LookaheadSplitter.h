@@ -23,7 +23,7 @@ static inline int getLog2Ceil(int i)
     return r;
 }
 
-class LookaheadSplitter : public LookaheadSMTSolver, virtual public Splitter {
+class LookaheadSplitter : public LookaheadSMTSolver, public Splitter {
 
 public:
     LookaheadSplitter(SMTConfig& c, THandler& thandler)

@@ -13,7 +13,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead() {
 
     if (result == LALoopRes::unknown_final) {
         copySplits(*node);
-        assert(static_cast<int>(splitContext.getCurrentSplitCount()) == config.sat_split_num());
+        assert(static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber());
     }
 
     return result;

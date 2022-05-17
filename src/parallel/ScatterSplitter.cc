@@ -80,7 +80,7 @@ bool ScatterSplitter::scatterLevel() {
 }
 
 opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
-    assert(splitContext.getCurrentSplitCount() == static_cast<int>(split_assumptions.size()));
+    assert(splitContext.getCurrentSplitCount() == splitContext.getCurrentSplitAssumptionsCount(splitContext.getCurrentSplitCount()-1));
     SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit> split_assumption;
@@ -95,10 +95,10 @@ opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions()
         // space
         constraints_negated.push(~l);
     }
-    split_assumptions.emplace_back(std::move(split_assumption));
-    for (size_t i = 0; i < split_assumptions.size()-1; i++) {
+    splitData.addSplitAssumptions(split_assumption);
+    for (size_t i = 0; i < splitData.getSplitAssumptions().size()-1; i++) {
         vec<Lit> tmp;
-        for (auto tr : split_assumptions[i]) {
+        for (auto tr : splitData.getSplitAssumption(i)) {
             tmp.push(~tr);
         }
         splitData.addConstraint(tmp);

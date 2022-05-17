@@ -45,7 +45,8 @@ class SplitContext {
     std::vector<SplitData> splits;
 public:
 
-    int getCurrentSplitCount() const { return splits.size(); }
+    std::size_t getCurrentSplitCount() const { return splits.size(); }
+    std::size_t getCurrentSplitAssumptionsCount(std::size_t i)  { return splits[i].getSplitAssumptions().size(); }
     bool hasSplits() const { return not splits.empty(); }
     void enterInitCycle(uint64_t search_counter) {
         split_on = false;
