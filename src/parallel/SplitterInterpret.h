@@ -29,7 +29,13 @@ private:
 
     virtual ~SplitterInterpret() = default;
 
-    MainSolver&     getMainSplitter() { return *main_solver; }
+    int interpSMTContent(char *content, std::string solver_branch=std::string());
+
+    inline MainSplitter & getMainSplitter() { return dynamic_cast<MainSplitter&>(getMainSolver()); };
+
+    inline Splitter & getScatterSplitter() {
+        return dynamic_cast<Splitter&>(getMainSplitter().getSMTSolver());
+    }
 };
 
 #endif //PARALLEL_SPLITTERINTERPRET_H
