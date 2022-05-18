@@ -1344,7 +1344,7 @@ void CoreSMTSolver::popBacktrackPoint()
     assert( isOK( ) );
 }
 
-bool CoreSMTSolver::okContinue()
+bool CoreSMTSolver::okContinue() const
 {
     return not opensmt::stop;
 }
@@ -1427,6 +1427,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #endif
     while (okContinue()) {
 
+        search_counter++;
         CRef confl = propagate();
         runPeriodic();
         if (confl != CRef_Undef) {
