@@ -16,7 +16,7 @@ void MainSplitter::notifyResult(sstat const & result)
 }
 
 sstat MainSplitter::check() {
-    if (not config.sat_solver_limit()) {
+    if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
         //push frames size should match with length of the solver branch
         if (frames.size() !=
             static_cast<std::size_t>(getSplitter().get_solver_branch().size() + 1))
@@ -30,7 +30,7 @@ sstat MainSplitter::check() {
 }
 
 sstat MainSplitter::solve_(vec<FrameId> & enabledFrames) {
-    if (not config.sat_solver_limit()) {
+    if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
         vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().get_solver_branch();
         if (enabledFrames.size() > solverBranch.size() + 1) {
             throw PTPLib::common::Exception(__FILE__, __LINE__,
