@@ -51,6 +51,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Release
+                    PARALLEL: "yes"
 
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
