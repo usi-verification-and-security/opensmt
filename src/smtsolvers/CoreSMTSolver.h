@@ -88,6 +88,7 @@ protected:
     bool      verbosity;
     bool      init;
     enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
+    int search_counter;
 public:
     bool stop = false;
 
@@ -384,7 +385,7 @@ protected:
     lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
     int nof_learnts = 40000;
     double nofLearntsIncrement = 1.1;
-    virtual bool okContinue   () ;                                                     // Check search termination conditions
+    virtual bool okContinue   () const;                                                // Check search termination conditions
     virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
     virtual void notifyEnd() { }                                                       // Called at the end of the search loop
     void     learntSizeAdjust ();                                                      // Adjust learnts size and print something

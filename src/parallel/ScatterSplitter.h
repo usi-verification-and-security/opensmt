@@ -39,10 +39,8 @@ public:
 
     int getSplitTypeValue() const       { return splitContext.getSplitTypeValue(); }
 
-    int getSearchCounter()  const       { return search_counter; }
 
 private:
-    int search_counter;
     int                     trail_sent = 0;
     bool                    firstPropagation = true;
     int                     numTriviallyPropagatedOnDl0;
@@ -64,7 +62,7 @@ protected:
     lbool solve_() override;
     bool branchLitRandom() override;
     Var doActivityDecision() override;
-    bool okContinue() override;
+    bool okContinue() const override;
     ConsistencyAction notifyConsistency() override;
     void notifyEnd() override;
     lbool zeroLevelConflictHandler() override;                                // Common handling of zero-level conflict as it can happen at multiple places

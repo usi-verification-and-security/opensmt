@@ -115,7 +115,7 @@ bool ScatterSplitter::excludeAssumptions(vec<Lit> const & neg_constrs) {
 }
 
 
-bool ScatterSplitter::okContinue() {
+bool ScatterSplitter::okContinue() const {
 
     if (splitContext.solverLimit() and splitContext.solverLimit() == search_counter and not config.sat_split_mode()) {
         return false;
@@ -127,7 +127,6 @@ bool ScatterSplitter::okContinue() {
     } else if (static_cast<int>(splitContext.getCurrentSplitCount()) == splitContext.splitTargetNumber() - 1) {
         return false;
     }
-    search_counter++;
     return true;
 }
 void ScatterSplitter::notifyEnd() {
