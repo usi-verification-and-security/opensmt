@@ -32,18 +32,20 @@ sstat SplitterInterpret::checkSat() {
 }
 
 std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logic_name) {
-    assert(config.sat_split_type() != spt_none);
-    auto th = MainSolver::createTheory(*logic, config);
-    auto tm = std::make_unique<TermMapper>(*logic);
-    auto thandler = new THandler(*th, *tm);
-    return std::make_unique<MainSplitter>(std::move(th),
-                             std::move(tm),
-                             std::unique_ptr<THandler>(thandler),
-                             MainSplitter::createInnerSolver(config, *thandler, channel),
-                             *logic,
-                             config,
-                             std::string(logic_name)
-                             + " splitter");
+    if (config.sat_split_type() != spt_none) {
+        auto th = MainSolver::createTheory(*logic, config);
+        auto tm = std::make_unique<TermMapper>(*logic);
+        auto thandler = new THandler(*th, *tm);
+        return std::make_unique<MainSplitter>(std::move(th),
+                                              std::move(tm),
+                                              std::unique_ptr<THandler>(thandler),
+                                              MainSplitter::createInnerSolver(config, *thandler, channel),
+                                              *logic,
+                                              config,
+                                              std::string(logic_name)
+                                              + " splitter");
+    } else
+        return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
 }
 
 
