@@ -120,6 +120,7 @@ jobs:
                     cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
+                    PARALLEL: "yes"
 
     build-macos:
         macos:
