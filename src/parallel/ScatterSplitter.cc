@@ -214,8 +214,7 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         int level = 0;
         vec<PTRef> clause;
         bool hasForeignAssumption = false;
-        for (unsigned int j = 0; j < c.size(); j++) {
-            Lit l = c[j];
+        for (Lit l : c) {
             Var v = var(l);
             if (isAssumptionVar(v)) {
                 vec<opensmt::pair<int, int>> const & solverBranch_perVar = getSolverBranch(v);
