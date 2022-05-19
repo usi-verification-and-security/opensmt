@@ -18,6 +18,9 @@ jobs:
                   name: apt-get update
                   command: sudo apt-get update
             - run:
+                  name: install dependencies
+                  command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 python3-pip cython
+            - run:
                   name: Install linter
                   command: |
                       pip3 install cpplint
