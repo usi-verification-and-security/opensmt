@@ -31,12 +31,16 @@ sstat SplitterInterpret::checkSat() {
     return res;
 }
 
-int SplitterInterpret::interpSMTContent(char *content, std::string solver_branch) {
+sstat SplitterInterpret::interpSMTContent(char *content, std::string solver_branch) {
 
     if (not solver_branch.empty())
         getScatterSplitter().set_solver_branch(solver_branch);
 
-    return Interpret::interpFile(content);
+    int rval = Interpret::interpFile(content);
+    if (rval != 0)
+        return s_Error;
+    else
+        return getMainSplitter().getStatus();
 }
 
 std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logic_name) {

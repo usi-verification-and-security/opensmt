@@ -29,7 +29,7 @@ private:
 
     virtual ~SplitterInterpret() = default;
 
-    int interpSMTContent(char *content, std::string solver_branch=std::string());
+    sstat interpSMTContent(char *content, std::string solver_branch=std::string());
 
     inline MainSplitter & getMainSplitter() { return dynamic_cast<MainSplitter&>(getMainSolver()); };
 
