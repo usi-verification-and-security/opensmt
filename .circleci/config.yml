@@ -193,6 +193,10 @@ jobs:
 workflows:
   build-test:
       jobs:
+        - lint:
+          filters: &filters-build-test
+            tags:
+              only: /^v.*/
         - build-starexec:
           filters: &filters-build-test
             tags:
