@@ -24,17 +24,6 @@ jobs:
                   name: install model validation environment
                   command: ./regression_models/bin/setup-env.sh
             - run:
-                  name: Debug build gcc
-                  command: ./ci/run_travis_commands.sh
-                  environment:
-                      CMAKE_BUILD_TYPE: Debug
-                      ENABLE_LINE_EDITING: ON
-            - run:
-                  name: Release build gcc
-                  command: ./ci/run_travis_commands.sh
-                  environment:
-                      CMAKE_BUILD_TYPE: Release
-            - run:
                   name: Install clang
                   command: |
                       sudo apt-get install clang
