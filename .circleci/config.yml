@@ -35,7 +35,7 @@ jobs:
             - run:
                   name: Run linter
                   command: |
-                      cpplint --recursive --filter=-build,-cmake-build-debug --help ./*
+                      cpplint --recursive --filter=-build,-cmake-build-debug ./*
 
     build-recent:
         docker:
