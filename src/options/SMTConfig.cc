@@ -410,7 +410,7 @@ bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*&
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
         const char* val = value.getValue().strval;
         if (strcmp(val, spts_time) != 0 &&
-                strcmp(val, spts_decisions) != 0)
+            strcmp(val, spts_search_counter) != 0)
         { msg = s_err_unknown_units; return false; }
     }
     if (optionTable.has(name))
