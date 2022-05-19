@@ -186,7 +186,7 @@ static const char* const spts_lookahead = "lookahead";
 static const char* const spts_scatter   = "scattering";
 static const char* const spts_none      = "none";
 
-static const char* const spts_decisions = "decisions";
+static const char* const spts_search_counter = "search_counter";
 static const char* const spts_time      = "time";
 
 static const char* const spprefs_tterm   = "tterm";
@@ -629,7 +629,7 @@ public:
   SpUnit sat_resource_units() const {
       if (optionTable.has(o_sat_resource_units)) {
           const char* type = optionTable[o_sat_resource_units]->getValue().strval;
-          if (strcmp(type, spts_decisions) == 0)
+          if (strcmp(type, spts_search_counter) == 0)
               return SpUnit::search_counter;
           else if (strcmp(type, spts_time) == 0)
               return SpUnit::time;
@@ -720,7 +720,7 @@ public:
   SpUnit sat_split_units() const {
       if (optionTable.has(o_sat_split_units)) {
           const char* type = optionTable[o_sat_split_units]->getValue().strval;
-          if (strcmp(type, spts_decisions) == 0)
+          if (strcmp(type, spts_search_counter) == 0)
               return SpUnit::search_counter;
           else if (strcmp(type, spts_time) == 0)
               return SpUnit::time;
