@@ -39,6 +39,7 @@ public:
 
     int getSplitTypeValue() const       { return splitContext.getSplitTypeValue(); }
 
+    int getSearchCounter()  const       {  return search_counter; }
 
 private:
     int                     trail_sent = 0;
