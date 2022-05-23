@@ -240,10 +240,21 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
                     break;
                 }
 // Second algorithm of how to correctly publish clauses so that they do not include assumption literals.
-// Issue: https://github.com/MasoudAsadzade/OpenSMT2/issues/1
+// https://github.com/usi-verification-and-security/opensmt/issues/499
+//                auto getAssumptionLevel = [this](Var const & v) {
+//                    assert(isAssumptionVar(v));
+//                    int level = 0;
+//                    for (Lit p : assumptions) {
+//                        if (sign(p)) {
+//                            ++level;
+//                            if (var(p) == v)
+//                                return level;
+//                        }
+//                    }
+//                    return -1;
+//                };
 //                int result = getAssumptionLevel(v);
 //                if (result >= 1) {
-//                    assert(result >= 1);
 //                    level = std::max<int>(level, result);
 //                    continue;
 //                } else {
@@ -299,20 +310,6 @@ void ScatterSplitter::runPeriodic()
                            "[t SEARCH ] -------------- add learned clauses to channel buffer, Size : ", toPublishLemmas.size());
         }
     }
-}
-
-int ScatterSplitter::getAssumptionLevel(Var v) const
-{
-    assert(isAssumptionVar(v));
-    int level = 0;
-    for (Lit p : assumptions) {
-        if (sign(p)) {
-            ++level;
-            if (var(p) == v)
-                return level;
-        }
-    }
-    return -1;
 }
 
 void ScatterSplitter::addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid) {
