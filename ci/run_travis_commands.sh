@@ -9,11 +9,6 @@ if [ ! -z ${CMAKE_CXX_COMPILER} ]; then
     COMPILER_OPTION="-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
 fi
 
-if [ x"${PARALLEL}" == x"yes" ]; then
-    shouldCompile=true
-else
-    shouldCompile=false
-fi
 cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       -DCMAKE_CXX_FLAGS="${FLAGS}" \
       -DUSE_READLINE:BOOL=${USE_READLINE} \
@@ -21,7 +16,7 @@ cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       -DCMAKE_INSTALL_PREFIX=${OSMT_INSTALL} \
       -DPACKAGE_BENCHMARKS=${PACKAGE_BENCHMARKS} \
       ${COMPILER_OPTION} \
-      -DPARALLEL=${shouldCompile} \
+      -DPARALLEL:BOOL=${PARALLEL} \
       ..
 
 make -j4
@@ -30,7 +25,7 @@ make install
 if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
     cd ../regression && ./run-test-notiming.sh ../build/opensmt;
     cd ../regression_itp && ./run-tests.sh ../build/opensmt;
-    if [ x"${PARALLEL}" == x"yes" ]; then
+    if [[ "${PARALLEL}" == "ON" ]]; then
       cd ../regression_splitting && ./bin/run-tests.sh ../build/opensmt-splitter;
     fi
     cd ../regression_pipe && ./run-tests.sh ../build/opensmt;

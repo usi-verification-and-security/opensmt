@@ -11,6 +11,7 @@ jobs:
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
+                PARALLEL: OFF
 
         steps:
             - checkout
@@ -29,7 +30,7 @@ jobs:
                 environment:
                     CMAKE_BUILD_TYPE: Debug
                     ENABLE_LINE_EDITING: ON
-                    PARALLEL: "yes"
+                    PARALLEL: ON
             - run:
                 name: Release build gcc
                 command: ./ci/run_travis_commands.sh
@@ -51,7 +52,7 @@ jobs:
                 command: ./ci/run_travis_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Release
-                    PARALLEL: "yes"
+                    PARALLEL: ON
 
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
@@ -120,7 +121,7 @@ jobs:
                     cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
                 environment:
                     CMAKE_BUILD_TYPE: Release
-                    PARALLEL: "yes"
+                    PARALLEL: ON
 
     build-macos:
         macos:
@@ -144,6 +145,7 @@ jobs:
                     CMAKE_BUILD_TYPE: Release
                     FLAGS: -Wall -Wextra -Werror
                     OSMT_INSTALL: ~/osmt-install
+                    PARALLEL: ON
 
 workflows:
   build-test:
