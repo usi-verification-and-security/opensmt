@@ -70,8 +70,6 @@ protected:
 
     bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
-    int getAssumptionLevel(Var v) const;
-
     inline bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
     {
         if (prefix.size() > full.size())
