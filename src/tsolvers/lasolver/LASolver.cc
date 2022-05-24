@@ -210,12 +210,6 @@ const Delta LASolver::overBound(LVRef v) const
 }
 */
 
-void LASolver::setBound(PTRef leq_tr)
-{
-//    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
-
-    addBound(leq_tr);
-}
 
 opensmt::Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
@@ -568,7 +562,7 @@ void LASolver::initSolver()
             registerArithmeticTerm(term);
 
             // Assumes that the LRA variable has been already declared
-            setBound(leq_tr);
+            addBound(leq_tr);
         }
         boundStore.buildBounds(); // Bounds are needed for gaussian elimination
 

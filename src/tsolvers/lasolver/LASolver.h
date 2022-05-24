@@ -84,7 +84,6 @@ private:
 
     LASolverStats laSolverStats;
 
-    void setBound(PTRef leq);
     bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
 
     PTRef getVarPTRef(LVRef v) const {
