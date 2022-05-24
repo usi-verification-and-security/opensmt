@@ -49,12 +49,8 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     }
     int br_pos_idx = boundStore[br_pos].getId();
     int br_neg_idx = boundStore[br_neg].getId();
-
-    int tid = Idx(logic.getPterm(leq_tr).getId());
-    if (LeqToLABoundRefPair.size() <= tid) {
-        LeqToLABoundRefPair.growTo(tid + 1);
-    }
-    LeqToLABoundRefPair[tid] = LABoundRefPair{br_pos, br_neg};
+    assert(LeqToLABoundRefPair.find(leq_tr) == LeqToLABoundRefPair.end());
+    LeqToLABoundRefPair.insert({leq_tr, LABoundRefPair{br_pos, br_neg}});
 
     if (LABoundRefToLeqAsgn.size() <= std::max(br_pos_idx, br_neg_idx)) {
         LABoundRefToLeqAsgn.growTo(std::max(br_pos_idx, br_neg_idx) + 1);
@@ -67,12 +63,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 void LASolver::updateBound(PTRef tr)
 {
     // If the bound already exists, do nothing.
-    int id = Idx(logic.getPterm(tr).getId());
-
-    if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
-        return;
-    }
+    if (LeqToLABoundRefPair.find(tr) != LeqToLABoundRefPair.end()) { return; }
 
     LABoundStore::BoundInfo bi = addBound(tr);
     boundStore.updateBound(bi);

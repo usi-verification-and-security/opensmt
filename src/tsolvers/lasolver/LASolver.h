@@ -69,11 +69,10 @@ private:
 
     vec<PtAsgn>          LABoundRefToLeqAsgn;
     PtAsgn getAsgnByBound(LABoundRef br) const;
-    vec<LABoundRefPair>  LeqToLABoundRefPair;
-    LABoundRefPair getBoundRefPair(const PTRef leq) const {
-        auto index = Idx(logic.getPterm(leq).getId());
-        assert(index < LeqToLABoundRefPair.size_());
-        return LeqToLABoundRefPair[index];
+    std::unordered_map<PTRef, LABoundRefPair, PTRefHash>  LeqToLABoundRefPair;
+    LABoundRefPair getBoundRefPair(PTRef leq) const {
+        assert(LeqToLABoundRefPair.find(leq) != LeqToLABoundRefPair.end());
+        return LeqToLABoundRefPair.at(leq);
     }
 
     // Possible internal states of the solver
