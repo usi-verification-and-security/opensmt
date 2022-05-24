@@ -29,7 +29,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
 
     bool sum_term_is_negated = laVarMapper.isNegated(sum_tr);
 
-    LVRef v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
+    LVRef v = getVarForTerm(sum_tr);
 
     LABoundStore::BoundInfo bi;
     LABoundRef br_pos;
@@ -236,23 +236,20 @@ void LASolver::markVarAsInt(LVRef v) {
 }
 
 bool LASolver::hasVar(PTRef expr) {
-    expr =  laVarMapper.isNegated(expr) ? logic.mkNeg(expr) : expr;
-    PTId id = logic.getPterm(expr).getId();
-    return laVarMapper.hasVar(id);
+    return laVarMapper.hasVar(expr);
 }
 
 LVRef LASolver::getVarForLeq(PTRef ref) const {
     assert(logic.isLeq(ref));
     auto [constant, term] = logic.leqToConstantAndTerm(ref);
-    return laVarMapper.getVarByPTId(logic.getPterm(term).getId());
+    return getVarForTerm(term);
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
 
     assert(logic.isLinearTerm(expr_in));
-    PTId id = logic.getPterm(expr_in).getId();
 
-    if (laVarMapper.hasVar(id)) {
+    if (laVarMapper.hasVar(expr_in)) {
         return getVarForTerm(expr_in);
     }
 
@@ -964,7 +961,7 @@ TRes LASolver::cutFromProof() {
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
-        LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+        LVRef lvar = this->getVarForTerm(var);
         Delta val = this->simplex.getValuation(lvar);
         assert(not val.hasDelta());
         return val.R();
@@ -999,7 +996,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
             if (not laVarMapper.hasVar(var)) { // LASolver does not have any constraints on this LA var
                 continue;
             }
-            LVRef v = laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+            LVRef v = getVarForTerm(var);
             auto value = simplex.getValuation(v);
             eqClasses[value].push(var);
         }

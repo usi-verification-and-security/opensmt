@@ -12,6 +12,8 @@
 #include "Pterm.h"
 #include "Vec.h"
 
+#include <unordered_map>
+
 class ArithLogic;
 
 
@@ -28,7 +30,7 @@ class ArithLogic;
 class LAVarMapper {
 private:
     /** Mapping of linear Pterms to LVRefs */
-    vec<LVRef>      ptermToLavar;
+    std::unordered_map<PTRef, LVRef, PTRefHash> ptermToLavar;
 
     /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
     vec<PTRef>      laVarToPTRef;
@@ -39,9 +41,8 @@ public:
 
     void   registerNewMapping(LVRef lv, PTRef e_orig);
 
-    LVRef  getVarByPTId(PTId i) const;
+    LVRef  getVar(PTRef) const;
 
-    bool   hasVar(PTId i) const;
     bool   hasVar(PTRef tr) const;
 
     inline PTRef getVarPTRef(LVRef ref) const { return laVarToPTRef[ref.x]; }

@@ -149,7 +149,7 @@ private:
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const;
-    LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
+    LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVar(ref); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 
     // Random splitting heuristic
