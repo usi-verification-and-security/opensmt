@@ -95,15 +95,6 @@ public:
     }
 };
 
-class HermiteNormalForm {
-public:
-    struct HNFOperationsResult {
-        SparseColMatrix operations;
-        uint32_t HNFdimension;
-    };
-    HNFOperationsResult operator() (SparseColMatrix &&) const;
-};
-
 struct SparseLinearSystem {
     SparseColMatrix A;
     std::vector<FastRational> rhs;
