@@ -22,13 +22,6 @@ public:
 
     void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream
 
-    void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
-        frameIdToSolverBranch[fid] = std::move(solverAddress);
-    }
-    void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid);
-
-    inline vec<opensmt::pair<int,int>> const & getSolverBranch(Var v) { return frameIdToSolverBranch[theory_handler.getTMap().get_FrameId(v)]; }
-
     void enterSplittingCycle()          { splitContext.enterSplittingCycle(); }
 
     bool isSplitTypeNone()     const    { return splitContext.isSplitTypeNone(); }
@@ -41,16 +34,19 @@ public:
 
     int getSearchCounter()  const       {  return search_counter; }
 
+    void mapEnabledFrameIdToVar(Var v, uint32_t fid, uint32_t & prevId) override;
+
 private:
     int                     trail_sent = 0;
     bool                    firstPropagation = true;
     int                     numTriviallyPropagatedOnDl0;
 
-    PTPLib::common::synced_stream * syncedStream = nullptr;
-    using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
-    map_frameId_solverBranch frameIdToSolverBranch;
     using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId var_frameId;
+
+    std::unordered_set<Var> assumptionVars;
+
+    PTPLib::common::synced_stream * syncedStream = nullptr;
 
     void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
 
@@ -58,7 +54,7 @@ protected:
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate
-    inline bool isAssumptionVar(Var  v)   const &   { return theory_handler.getTMap().isAssumptionVar(v); }
+    bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
 
     lbool solve_() override;
     bool branchLitRandom() override;
@@ -70,7 +66,7 @@ protected:
 
     bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
-    inline bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
+    bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
     {
         if (prefix.size() > full.size())
             return false;
@@ -80,6 +76,10 @@ protected:
         }
         return true;
     }
+
+    uint32_t get_FrameId(Var v) { return var_frameId[v]; }
+
+    void addAssumptionVar(Var v) override { assumptionVars.insert(v); }
 };
 
 

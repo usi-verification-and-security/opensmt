@@ -38,12 +38,12 @@ TEST_F(SolverBranchBoundary, test_SolverBranch) {
     smt_solver->set_solver_branch(solver_branch);
 
     vec<opensmt::pair<int, int>> const& solverBranch = smt_solver->get_solver_branch();
-
+    uint32_t prevId = UINT32_MAX;
     for (int index = 0; index < vars.size(); ++index) {
         int span = index;
         int frameId = index + 1;
         smt_solver->addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), span), frameId);
-        term_mapper->mapEnabledFrameIdToVar(vars[index], frameId);
+        smt_solver->mapEnabledFrameIdToVar(vars[index], frameId, prevId);
 
         vec<opensmt::pair<int, int>> const & solverBranch_perVar = smt_solver->getSolverBranch(vars[index]);
         ASSERT_EQ(solverBranch_perVar.size(), span);
