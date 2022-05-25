@@ -90,12 +90,8 @@ Cnfizer::solve(vec<FrameId>& en_frames)
     // corresponding literals
     uint32_t prevId = UINT32_MAX;
     for (const FrameId fid : en_frames) {
-        if (prevId != UINT32_MAX and fid.id <= prevId) {
-            throw OsmtInternalException("en_frame order is not increasing");
-        }
-        prevId = fid.id;
         assumps[fid.id] = ~assumps[fid.id];
-        tmap.mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id);
+        solver.mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id, prevId);
     }
 
     // Filter out the lit_Trues and lit_Falses used as empty values
@@ -374,7 +370,7 @@ bool Cnfizer::addClause(const vec<Lit> & c_in)
         Lit l = this->getOrCreateLiteralFor(current_frame_term);
         Var v = var(l);
         tmap.setFrozen(v);
-        tmap.addAssumptionVar(v);
+        solver.addAssumptionVar(v);
         c.push(l);
     }
 

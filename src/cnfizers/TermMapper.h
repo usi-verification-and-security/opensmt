@@ -59,11 +59,6 @@ class TermMapper {
     // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for the same term.
     Var addBinding(PTRef tr);
 
-    std::unordered_set<Var> assumptionVars;
-
-    using map_var_frameId = std::map<Var ,uint32_t>;
-    map_var_frameId var_frameId;
-
   public:
     TermMapper(Logic& l) : var_cnt(0), logic(l) {}
 
@@ -90,14 +85,6 @@ class TermMapper {
     PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
 
     int  nVars()          const { return varToTerm.size(); }
-
-    bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
-
-    void addAssumptionVar(Var v) { assumptionVars.insert(v); }
-
-    void mapEnabledFrameIdToVar(Var v, uint32_t fid) { var_frameId[v] = fid ;}
-
-    uint32_t get_FrameId(Var v) { return var_frameId[v]; }
 };
 
 #endif

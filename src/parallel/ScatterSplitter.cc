@@ -10,7 +10,9 @@
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
 : SimpSMTSolver         (c, t)
 , Splitter              (c, ch)
-{}
+{
+    setCallBack([&](Var v) { return this->get_FrameId(v); });
+}
 
 bool ScatterSplitter::branchLitRandom() {
     return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
@@ -312,11 +314,10 @@ void ScatterSplitter::runPeriodic()
     }
 }
 
-void ScatterSplitter::addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid) {
-    vec<opensmt::pair<int,int>> addrVector;
-    addrVector.capacity(solver_branch.size());
-    for (auto el : solver_branch) {
-        addrVector.push(el);
+void ScatterSplitter::mapEnabledFrameIdToVar(Var v, uint32_t fid, uint32_t & prevId) {
+    if (prevId != UINT32_MAX and fid <= prevId) {
+        throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: en_frame order is not increasing");
     }
-    mapSolverBranchToFrameId(fid, std::move(addrVector));
+    prevId = fid;
+    var_frameId[v] = fid ;
 }
