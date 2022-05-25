@@ -9,10 +9,9 @@
 #define OPENSMT_LAVARMAPPER_H
 
 #include "LARefs.h"
+#include "Map.h"
 #include "Pterm.h"
 #include "Vec.h"
-
-#include <unordered_map>
 
 class ArithLogic;
 
@@ -30,7 +29,7 @@ class ArithLogic;
 class LAVarMapper {
 private:
     /** Mapping of linear Pterms to LVRefs */
-    std::unordered_map<PTRef, LVRef, PTRefHash> ptermToLavar;
+    Map<PTRef, LVRef, PTRefHash> ptermToLavar;
 
     /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
     vec<PTRef>      laVarToPTRef;

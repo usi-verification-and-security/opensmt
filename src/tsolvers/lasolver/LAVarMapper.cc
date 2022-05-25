@@ -29,13 +29,13 @@ void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     PTRef neg = logic.mkNeg(e_orig);
     assert(!hasVar(e_orig));
 
-    ptermToLavar.insert({e_orig, lv});
-    ptermToLavar.insert({neg, lv});
+    ptermToLavar.insert(e_orig, lv);
+    ptermToLavar.insert(neg, lv);
 }
 
-LVRef LAVarMapper::getVar(PTRef term) const { assert(hasVar(term)); return ptermToLavar.at(term); }
+LVRef LAVarMapper::getVar(PTRef term) const { assert(hasVar(term)); return ptermToLavar[term]; }
 
-bool LAVarMapper::hasVar(PTRef tr) const { return ptermToLavar.find(tr) != ptermToLavar.end(); }
+bool LAVarMapper::hasVar(PTRef tr) const { return ptermToLavar.has(tr); }
 
 bool LAVarMapper::isNegated(PTRef tr) const {
     if (logic.isNumConst(tr))
