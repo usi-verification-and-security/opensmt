@@ -62,7 +62,7 @@ namespace ite {
     {
         unsigned n_nodes;
         static unsigned iteNodeWord32Size(bool internalNode) {
-            return sizeof(Node) + (internalNode ? sizeof(Node::Tail) : 0);
+            return (sizeof(Node) + (internalNode ? sizeof(Node::Tail) : 0)) / sizeof(uint32_t);
         }
     public:
         void clear() override { n_nodes = 0; RegionAllocator::clear(); }
