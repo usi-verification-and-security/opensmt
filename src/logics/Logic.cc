@@ -23,6 +23,18 @@
 
 using namespace std;
 
+namespace {
+struct LessThanPTRefIgnoreNot {
+    Logic & logic;
+    LessThanPTRefIgnoreNot(Logic & logic) : logic{logic} {}
+    bool operator() (PTRef first, PTRef second) {
+        auto firstVal = logic.isNot(first) ? logic.getPterm(first)[0].x : first.x;
+        auto secondVal = logic.isNot(second) ? logic.getPterm(second)[0].x : second.x;
+        return firstVal < secondVal;
+    }
+};
+}
+
 /***********************************************************
  * Class defining logic
  ***********************************************************/
@@ -430,44 +442,26 @@ Logic::mkIte(vec<PTRef>&& args)
 PTRef Logic::mkAnd(vec<PTRef>&& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
-    vec<PtAsgn> tmp_args;
-    tmp_args.capacity(args.size());
-    for (int i = 0; i < args.size(); i++) {
-        if (!hasSortBool(args[i])) {
-            return PTRef_Undef;
-        }
-        if (isNot(args[i])) {
-            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
-        } else {
-            tmp_args.push(PtAsgn(args[i], l_True));
-        }
-    }
-    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    sort(args, LessThanPTRefIgnoreNot(*this));
     int i, j;
     PtAsgn p = PtAsgn_Undef;
-    for (i = 0, j = 0; i < tmp_args.size(); i++) {
-        if (isFalse(tmp_args[i].tr)) {
-            assert(tmp_args[i].sgn == l_True);
+    for (i = 0, j = 0; i < args.size(); i++) {
+        if (isFalse(args[i])) {
             return getTerm_false();
-        } else if (isTrue(tmp_args[i].tr)) { // skip
-            assert(tmp_args[i].sgn == l_True);
-        } else if (p == tmp_args[i]) { // skip
-        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
-            return getTerm_false();
+        } else if (isTrue(args[i])) { // skip
         } else {
-            tmp_args[j++] = p = tmp_args[i];
+            PtAsgn arg = toPtAsgn(args[i]);
+            if (arg == p) { continue; }
+            if (arg.tr == p.tr) { assert(arg.sgn != p.sgn); return getTerm_false(); }
+            args[j++] = args[i];
+            p = arg;
         }
     }
-    tmp_args.shrink(i - j);
-    if (tmp_args.size() == 0) {
+    args.shrink(i - j);
+    if (args.size() == 0) {
         return getTerm_true();
-    } else if (tmp_args.size() == 1) {
-        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
-    }
-    args.clear();
-    args.capacity(tmp_args.size());
-    for (PtAsgn tmp_arg : tmp_args) {
-        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
+    } else if (args.size() == 1) {
+        return args[0];
     }
     return mkFun(getSym_and(), std::move(args));
 }
@@ -475,44 +469,26 @@ PTRef Logic::mkAnd(vec<PTRef>&& args) {
 PTRef Logic::mkOr(vec<PTRef> && args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
-    vec<PtAsgn> tmp_args;
-    tmp_args.capacity(args.size());
-    for (int i = 0; i < args.size(); i++) {
-        if (!hasSortBool(args[i])) {
-            return PTRef_Undef;
-        }
-        if (isNot(args[i])) {
-            tmp_args.push(PtAsgn(getPterm(args[i])[0], l_False));
-        } else {
-            tmp_args.push(PtAsgn(args[i], l_True));
-        }
-    }
-    std::sort(tmp_args.begin(), tmp_args.end(), LessThan_PtAsgn());
+    sort(args, LessThanPTRefIgnoreNot(*this));
     int i, j;
     PtAsgn p = PtAsgn_Undef;
-    for (i = 0, j = 0; i < tmp_args.size(); i++) {
-        if (isTrue(tmp_args[i].tr)) {
-            assert(tmp_args[i].sgn == l_True);
+    for (i = 0, j = 0; i < args.size(); i++) {
+        if (isTrue(args[i])) {
             return getTerm_true();
-        } else if (isFalse(tmp_args[i].tr)) { // skip
-            assert(tmp_args[i].sgn == l_True);
-        } else if (p == tmp_args[i]) { // skip
-        } else if (p.tr == tmp_args[i].tr && p.sgn != tmp_args[i].sgn) {
-            return getTerm_true();
+        } else if (isFalse(args[i])) { // skip
         } else {
-            tmp_args[j++] = p = tmp_args[i];
+            PtAsgn arg = toPtAsgn(args[i]);
+            if (arg == p) { continue; }
+            if (arg.tr == p.tr) { assert(arg.sgn != p.sgn); return getTerm_true(); }
+            args[j++] = args[i];
+            p = arg;
         }
     }
-    tmp_args.shrink(i - j);
-    if (tmp_args.size() == 0) {
+    args.shrink(i - j);
+    if (args.size() == 0) {
         return getTerm_false();
-    } else if (tmp_args.size() == 1) {
-        return tmp_args[0].sgn == l_True ? tmp_args[0].tr : mkNot(tmp_args[0].tr);
-    }
-    args.clear();
-    args.capacity(tmp_args.size());
-    for (PtAsgn tmp_arg : tmp_args) {
-        args.push(tmp_arg.sgn == l_True ? tmp_arg.tr : mkNot(tmp_arg.tr));
+    } else if (args.size() == 1) {
+        return args[0];
     }
     return mkFun(getSym_or(), std::move(args));
 }

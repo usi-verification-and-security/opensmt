@@ -238,6 +238,8 @@ protected:
     bool isInternalSort(SRef) const;
     void newUninterpretedSortHandler(SRef);
 
+    PtAsgn toPtAsgn(PTRef ref) const { return isNot(ref) ? PtAsgn(getPterm(ref)[0], l_False) : PtAsgn(ref, l_True); }
+
 public:
 
     // General disequalities
