@@ -1,6 +1,9 @@
-//
-// Created by prova on 23.11.20.
-//
+/*
+ *  Copyright (c) 2020, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include <benchmark/benchmark.h>
 #include <Real.h>
