@@ -47,7 +47,7 @@ TRes ArraySolver::check(bool complete) {
     if (not valid) {
         assert(nodes.empty() and rootsMap.empty());
         for (ERef arrayTerm : arrayTerms) {
-            ERef root = egraph.getRoot(arrayTerm);
+            ERef root = getRoot(arrayTerm);
             if (rootsMap.find(root) == rootsMap.end()) {
                 NodeRef nodeRef {static_cast<unsigned int>(nodes.size())};
                 nodes.emplace_back(root);
@@ -155,9 +155,9 @@ void ArraySolver::makeWeakRepresentative(NodeRef nodeRef) {
 void ArraySolver::merge(ERef storeTerm) {
     assert(logic.isArrayStore(logic.getSymRef(egraph.ERefToTerm(storeTerm))));
     ERef arrayTerm = getArrayFromStore(storeTerm);
-    ERef indexTerm = egraph.getRoot(getIndexFromStore(storeTerm));
-    NodeRef arrayNode = getNodeRef(egraph.getRoot(arrayTerm));
-    NodeRef storeNode = getNodeRef(egraph.getRoot(storeTerm));
+    ERef indexTerm = getRoot(getIndexFromStore(storeTerm));
+    NodeRef arrayNode = getNodeRef(getRoot(arrayTerm));
+    NodeRef storeNode = getNodeRef(getRoot(storeTerm));
     if (arrayNode == storeNode) { return; }
     makeWeakRepresentative(arrayNode);
     if (getRepresentative(storeNode) == arrayNode) {
