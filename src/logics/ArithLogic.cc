@@ -328,11 +328,12 @@ bool ArithLogic::isNumTerm(PTRef tr) const
 PTRef ArithLogic::mkNeg(PTRef tr)
 {
     assert(!isNeg(tr)); // MB: The invariant now is that there is no "Minus" node
-    if (isConstant(tr)) {
+    SymRef symref = getSymRef(tr);
+    if (isConstant(symref)) {
         const opensmt::Number& v = getNumConst(tr);
         return mkConst(getSortRef(tr), -v);
     }
-    if (isPlus(tr)) {
+    if (isPlus(symref)) {
         vec<PTRef> args;
         args.capacity(getPterm(tr).size());
         // Note: Do this in two phases to avoid calling mkNeg that invalidates the Pterm reference
@@ -343,9 +344,19 @@ PTRef ArithLogic::mkNeg(PTRef tr)
         for (PTRef & tr_arg: args) {
             tr_arg = mkNeg(tr_arg);
         }
-        PTRef tr_n = mkFun(yieldsSortInt(tr) ? get_sym_Int_PLUS() : get_sym_Real_PLUS(), std::move(args));
+        PTRef tr_n = mkFun(symref, std::move(args));
         return tr_n;
     }
+    if (isTimes(symref)) { // constant * var-like
+        assert(getPterm(tr).size() == 2);
+        auto [var, constant] = splitTermToVarAndConst(tr);
+        return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
+    }
+    if (isNumVarLike(symref)) {
+        auto sortRef = getSortRef(symref);
+        return mkFun(getTimesForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
+    }
+    assert(false); // MB: All cases should be covered, but let's have a default just in case.
     PTRef mo = yieldsSortInt(tr) ? getTerm_IntMinusOne() : getTerm_RealMinusOne();
     return mkTimes(mo, tr);
 }
