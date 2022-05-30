@@ -21,6 +21,7 @@ cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       -DMAXIMALLY_STATIC_BINARY=YES\
       ${COMPILER_OPTION} \
       ${LINKER_OPTIONS} \
+      -DPARALLEL:BOOL=${PARALLEL} \
       ..
 
 cmake --build . -j 4
@@ -30,3 +31,9 @@ strip opensmt
 tar jcf opensmt.tar.bz2 opensmt
 
 echo "Placed stripped, maximally static binary in $(pwd)/opensmt.tar.bz2"
+
+if [[ "${PARALLEL}" == "ON" ]]; then
+  strip opensmt-splitter
+  tar jcf opensmt-splitter.tar.bz2 opensmt-splitter
+  echo "Opensmt-Splitter placed stripped, maximally static binary in $(pwd)/opensmt-splitter.tar.bz2"
+fi
