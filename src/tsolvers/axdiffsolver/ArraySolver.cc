@@ -57,6 +57,7 @@ TRes ArraySolver::check(bool complete) {
         for (ERef store : storeTerms) {
             merge(store);
         }
+        valid = true;
     }
     if (not checkReadOverWeakEq()) {
         return TRes::UNSAT;
