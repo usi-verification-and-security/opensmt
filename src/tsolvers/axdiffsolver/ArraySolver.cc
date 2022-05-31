@@ -203,7 +203,13 @@ bool ArraySolver::checkReadOverWeakEq() {
                     NodeRef arrayFirst = getNodeRef(getRoot(getArrayFromSelect(first)));
                     NodeRef arraySecond = getNodeRef(getRoot(getArrayFromSelect(second)));
                     if (arrayFirst == arraySecond or getIndexedRepresentative(arrayFirst, entry.first) == getIndexedRepresentative(arraySecond, entry.first)) {
-                        return false;
+                        bool mergable = egraph.canBeMerged(first, second);
+                        // if the selects are unmergable, we have a conflict and have to remember the reason
+                        if (not mergable) {
+                            // TODO: remember the conflict clause
+//                            throw std::logic_error("Not implemented yet!");
+                            return false;
+                        }
                     }
                 }
             }
