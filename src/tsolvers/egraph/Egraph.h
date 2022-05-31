@@ -336,6 +336,8 @@ public:
     // Non-recursive declare term
     void      declareTerm         (PTRef);
 
+    bool canBeMerged(ERef first, ERef second) const;
+
 private:
 
     std::unordered_set<PTRef, PTRefHash> declared;
