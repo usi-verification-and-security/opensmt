@@ -1,5 +1,13 @@
 #!/bin/bash
 
+function run_with_lib() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        DYLD_LIBRARY_PATH=$1 $2 $3
+    else
+        LD_LIBRARY_PATH=$1 $2 $3
+    fi
+}
+
 workdir=$(cd $(dirname $0); pwd)/work
 
 usage="Usage: $0 [-h] <hash1> <hash2>"
@@ -54,17 +62,17 @@ fi
 TMPDIR=$(mktemp -d)
 trap "rm -rf ${TMPDIR}" EXIT
 
-tests=`LD_LIBRARY_PATH=$lib1 $benchmark1 --benchmark_list_tests`
+tests=`run_with_lib $lib1 $benchmark1 --benchmark_list_tests`
 
 echo "Running benchmark $benchmark1 three times and saving the last" >&2
 for ((j=0; j < 3; j++)); do
-    LD_LIBRARY_PATH=$lib1 $benchmark1 --benchmark_format=csv \
+    run_with_lib $lib1 $benchmark1 --benchmark_format=csv \
         |csvcut -c 'name,real_time' > $TMPDIR/bm1.csv
 done
 
 echo "Running benchmark $benchmark2 three times and saving the last" >&2
 for ((i=0; i < 3; i++)); do
-    LD_LIBRARY_PATH=$lib2 $benchmark2 --benchmark_format=csv \
+    run_with_lib $lib2 $benchmark2 --benchmark_format=csv \
         |csvcut -c 'name,real_time' > $TMPDIR/bm2.csv
 done
 
