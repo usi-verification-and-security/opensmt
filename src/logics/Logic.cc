@@ -442,7 +442,7 @@ Logic::mkIte(vec<PTRef>&& args)
 PTRef Logic::mkAnd(vec<PTRef>&& args) {
     if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
-    sort(args, LessThanPTRefIgnoreNot(*this));
+    std::sort(args.begin(), args.end(), LessThanPTRefIgnoreNot(*this));
     int i, j;
     PtAsgn p = PtAsgn_Undef;
     for (i = 0, j = 0; i < args.size(); i++) {
@@ -469,7 +469,7 @@ PTRef Logic::mkAnd(vec<PTRef>&& args) {
 PTRef Logic::mkOr(vec<PTRef> && args) {
     if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
-    sort(args, LessThanPTRefIgnoreNot(*this));
+    std::sort(args.begin(), args.end(), LessThanPTRefIgnoreNot(*this));
     int i, j;
     PtAsgn p = PtAsgn_Undef;
     for (i = 0, j = 0; i < args.size(); i++) {
