@@ -294,13 +294,12 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
 
 void ScatterSplitter::runPeriodic()
 {
-    if (not getChannel().isClauseShareMode()) return;
     if (firstPropagation) {
         assert(decisionLevel() == 0);
         firstPropagation = false;
         numTriviallyPropagatedOnDl0 = trail.size();
     }
-
+    if (not getChannel().isClauseShareMode()) return;
     std::vector<PTPLib::net::Lemma> toPublishLemmas;
     if (getChannel().shouldLearnClauses()) {
         getChannel().clearShouldLearnClauses();
