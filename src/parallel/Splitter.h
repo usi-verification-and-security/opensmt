@@ -17,7 +17,6 @@ class Splitter {
 
 private:
     vec<opensmt::pair<int,int>> solverBranch;
-    std::function<uint32_t(Var)>  get_FrameId;
 
 protected:
     SplitContext splitContext;
@@ -25,15 +24,13 @@ protected:
     using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
     map_frameId_solverBranch frameIdToSolverBranch;
     using map_var_frameId = std::map<Var ,uint32_t>;
-    map_var_frameId var_frameId;
+    map_var_frameId varToFrameId;
 
 public:
     Splitter(SMTConfig & c, PTPLib::net::Channel & ch)
     : splitContext(c)
     , channel(ch)
     {}
-
-    void setCallBack(std::function<uint32_t(Var)> func) { get_FrameId = func; }
 
     std::vector<SplitData>      const & getSplits() { return splitContext.getSplits(); }
 
@@ -47,15 +44,14 @@ public:
 
     PTPLib::net::Channel & getChannel() const   { return channel; }
 
-    void set_solver_branch(std::string & solver_branch);
+    inline void setSolverBranch(vec<opensmt::pair<int,int>> && vec) { solverBranch = std::move(vec); }
 
     void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid);
 
     void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress);
 
-    vec<opensmt::pair<int,int>> const &  get_solver_branch()  const  { return solverBranch; }
+    vec<opensmt::pair<int,int>> const &  getSolverBranch()  const  { return solverBranch; }
 
-    vec<opensmt::pair<int,int>> const & getSolverBranch(Var v);
 };
 
 #endif //PARALLEL_SPLITTER_H

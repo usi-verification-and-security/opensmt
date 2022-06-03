@@ -23,6 +23,7 @@ void SplitterInterpret::writeSplits(const char* filename)
 }
 
 sstat SplitterInterpret::checkSat() {
+    getSplitter().setSolverBranch(std::move(solverBranch));
     char* name = config.dump_state();
     sstat res = Interpret::checkSat();
     if (res == s_Undef and strcmp(config.output_dir(),"") != 0) {
@@ -31,10 +32,8 @@ sstat SplitterInterpret::checkSat() {
     return res;
 }
 
-sstat SplitterInterpret::interpSMTContent(char *content, std::string solver_branch) {
-
-    if (not solver_branch.empty())
-        getScatterSplitter().set_solver_branch(solver_branch);
+sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec) {
+    solverBranch = std::move(vec);
 
     int rval = Interpret::interpFile(content);
     if (rval != 0)

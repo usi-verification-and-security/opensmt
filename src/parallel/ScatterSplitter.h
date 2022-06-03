@@ -80,6 +80,8 @@ protected:
     uint32_t get_FrameId(Var v) { return var_frameId[v]; }
 
     void addAssumptionVar(Var v) override { assumptionVars.insert(v); }
+
+    vec<opensmt::pair<int,int>> const & getBranchOfVar(Var v);
 };
 
 
