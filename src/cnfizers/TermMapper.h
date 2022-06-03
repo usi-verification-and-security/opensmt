@@ -31,9 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PTRef.h"
 #include "Logic.h"
 
-#include <unordered_set>
-#include <map>
-
 class TermMapper {
   private:
     int         var_cnt;

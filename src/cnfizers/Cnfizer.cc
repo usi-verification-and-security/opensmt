@@ -89,7 +89,7 @@ Cnfizer::solve(vec<FrameId>& en_frames)
     // elements are in the same order.  We simply invert the
     // corresponding literals
     uint32_t prevId = UINT32_MAX;
-    for (const FrameId fid : en_frames) {
+    for (FrameId fid : en_frames) {
         assumps[fid.id] = ~assumps[fid.id];
         solver.mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id, prevId);
     }

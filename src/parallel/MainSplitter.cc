@@ -19,7 +19,7 @@ sstat MainSplitter::check() {
     if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
         //push frames size should match with length of the solver branch
         if (frames.size() !=
-            static_cast<std::size_t>(getSplitter().get_solver_branch().size() + 1))
+            static_cast<std::size_t>(getSplitter().getSolverBranch().size() + 1))
             throw PTPLib::common::Exception(__FILE__, __LINE__,
                                             ";assert: Inconsistency in push frames size and length of the solver address");
     }
@@ -31,7 +31,7 @@ sstat MainSplitter::check() {
 
 sstat MainSplitter::solve_(vec<FrameId> & enabledFrames) {
     if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
-        vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().get_solver_branch();
+        vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().getSolverBranch();
         if (enabledFrames.size() > solverBranch.size() + 1) {
             throw PTPLib::common::Exception(__FILE__, __LINE__,
                                             ";assert: inconsistency in solverBranch length and enabled_frame size: " +
