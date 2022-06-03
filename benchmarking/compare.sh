@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 workdir=$(cd $(dirname $0); pwd)/work
 
@@ -56,11 +56,17 @@ trap "rm -rf ${TMPDIR}" EXIT
 
 tests=`LD_LIBRARY_PATH=$lib1 $benchmark1 --benchmark_list_tests`
 
-LD_LIBRARY_PATH=$lib1 $benchmark1 --benchmark_format=csv \
-    |csvcut -c 'name,real_time' > $TMPDIR/bm1.csv
+echo "Running benchmark $benchmark1 three times and saving the last" >&2
+for ((j=0; j < 3; j++)); do
+    LD_LIBRARY_PATH=$lib1 $benchmark1 --benchmark_format=csv \
+        |csvcut -c 'name,real_time' > $TMPDIR/bm1.csv
+done
 
-LD_LIBRARY_PATH=$lib2 $benchmark2 --benchmark_format=csv \
-    |csvcut -c 'name,real_time' > $TMPDIR/bm2.csv
+echo "Running benchmark $benchmark2 three times and saving the last" >&2
+for ((i=0; i < 3; i++)); do
+    LD_LIBRARY_PATH=$lib2 $benchmark2 --benchmark_format=csv \
+        |csvcut -c 'name,real_time' > $TMPDIR/bm2.csv
+done
 
 echo "set term pngcairo color"
 
