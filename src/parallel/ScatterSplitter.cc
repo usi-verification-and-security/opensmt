@@ -30,7 +30,7 @@ Var ScatterSplitter::doActivityDecision() {
                 assert([&]() {
                     for (Var v : discarded) {
                         if (not isAssumptionVar(v)) {
-                            throw PTPLib::common::Exception(__FILE__,__LINE__,";assert split partition: discarded var was not found in assumption vars");
+                            throw PTPLib::common::Exception(__FILE__,__LINE__,";unable to split: all available variables have too long representations");
                         }
                     }
                     return true;
@@ -48,7 +48,7 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                     // A hack!: Not branch on lengthy variables (more than 5000), basically not allowing split partition with too many nested lets
-                } else if (this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(next)).length() > 5000) {
+                } else if (this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(next)).length() > PTPLib::common::STATS.MAX_SIZE) {
                     discarded.push(next);
                     next = var_Undef;
                 }
@@ -215,11 +215,18 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         int level = 0;
         vec<PTRef> clause;
         bool hasForeignAssumption = false;
+        bool hasBulkyLit = false;
+        std::size_t varSize = 0;
         for (Lit l : c) {
             Var v = var(l);
+            varSize += this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(v)).length();
+            if (varSize > PTPLib::common::STATS.MAX_SIZE) {
+                hasBulkyLit = true;
+                break;
+            }
             if (isAssumptionVar(v)) {
-                vec<opensmt::pair<int, int>> const & solverBranch_perVar = getSolverBranch(v);
-                if (isPrefix(solverBranch_perVar, get_solver_branch())) {
+                vec<opensmt::pair<int, int>> const & solverBranch_perVar = getBranchOfVar(v);
+                if (isPrefix(solverBranch_perVar, getSolverBranch())) {
                     int result = solverBranch_perVar.size();
                     assert([&]() {
                         if (result <= 0) {
@@ -227,7 +234,7 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
                             throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is less than zero " +
                                 getChannel().get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
                         }
-                        if (result > get_solver_branch().size()) {
+                        if (result > getSolverBranch().size()) {
                             std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
                             throw PTPLib::common::Exception(__FILE__, __LINE__, ";assert: level is greater than solver address length " +
                                 getChannel().get_current_header().at(PTPLib::common::Param.NODE)+ std::to_string(result));
@@ -268,10 +275,11 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
             pt = sign(l) ? theory_handler.getLogic().mkNot(pt) : pt;
             clause.push(pt);
         }
-        if (hasForeignAssumption or clause.size() > 3)
+        if (hasBulkyLit or hasForeignAssumption or clause.size() > 3)
             continue;
         std::string str = logic.dumpWithLets(theory_handler.getLogic().mkOr(clause));
-
+        if (str.length() > PTPLib::common::STATS.MAX_SIZE)
+            continue;
         learnedLemmas.emplace_back(PTPLib::net::Lemma(str, level));
         assert([&](std::string_view clause_str) {
             if (clause_str.find(".frame") != std::string::npos) {
@@ -287,7 +295,6 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
 void ScatterSplitter::runPeriodic()
 {
     if (not getChannel().isClauseShareMode()) return;
-
     if (firstPropagation) {
         assert(decisionLevel() == 0);
         firstPropagation = false;
