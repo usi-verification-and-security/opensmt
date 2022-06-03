@@ -14,6 +14,7 @@
 class SplitterInterpret : public Interpret {
 private:
     PTPLib::net::Channel & channel;
+    vec<opensmt::pair<int,int>> solverBranch;
 
   protected:
     void                          writeSplits(const char* filename);
@@ -29,11 +30,11 @@ private:
 
     virtual ~SplitterInterpret() = default;
 
-    sstat interpSMTContent(char *content, std::string solver_branch=std::string());
+    sstat interpSMTContent(char *content, vec<opensmt::pair<int,int>> &&);
 
     inline MainSplitter & getMainSplitter() { return dynamic_cast<MainSplitter&>(getMainSolver()); };
 
-    inline Splitter & getScatterSplitter() {
+    inline Splitter & getSplitter() {
         return dynamic_cast<Splitter&>(getMainSplitter().getSMTSolver());
     }
 };

@@ -10,9 +10,7 @@
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
 : SimpSMTSolver         (c, t)
 , Splitter              (c, ch)
-{
-    setCallBack([&](Var v) { return this->get_FrameId(v); });
-}
+{}
 
 bool ScatterSplitter::branchLitRandom() {
     return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
@@ -326,4 +324,8 @@ void ScatterSplitter::mapEnabledFrameIdToVar(Var v, uint32_t fid, uint32_t & pre
     }
     prevId = fid;
     var_frameId[v] = fid ;
+}
+
+vec<opensmt::pair<int,int>> const & ScatterSplitter::getBranchOfVar(Var v) {
+    return frameIdToSolverBranch[get_FrameId(v)];
 }
