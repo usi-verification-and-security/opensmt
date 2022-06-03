@@ -25,7 +25,7 @@ using namespace std;
 
 namespace {
 struct LessThanPTRefIgnoreNot {
-    Logic & logic;
+    Logic const & logic;
     LessThanPTRefIgnoreNot(Logic & logic) : logic{logic} {}
     bool operator() (PTRef first, PTRef second) {
         auto firstVal = logic.isNot(first) ? logic.getPterm(first)[0].x : first.x;
@@ -440,7 +440,6 @@ Logic::mkIte(vec<PTRef>&& args)
 // Check if arguments contain trues or a false and return the simplified
 // term
 PTRef Logic::mkAnd(vec<PTRef>&& args) {
-    if (args.size() == 0) { return getTerm_true(); }
     // Remove duplicates
     std::sort(args.begin(), args.end(), LessThanPTRefIgnoreNot(*this));
     int i, j;
@@ -467,7 +466,6 @@ PTRef Logic::mkAnd(vec<PTRef>&& args) {
 }
 
 PTRef Logic::mkOr(vec<PTRef> && args) {
-    if (args.size() == 0) { return getTerm_false(); }
     // Remove duplicates
     std::sort(args.begin(), args.end(), LessThanPTRefIgnoreNot(*this));
     int i, j;
