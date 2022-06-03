@@ -276,8 +276,6 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         if (hasBulkyLit or hasForeignAssumption or clause.size() > 3)
             continue;
         std::string str = logic.dumpWithLets(theory_handler.getLogic().mkOr(clause));
-        if (str.length() > PTPLib::common::STATS.MAX_SIZE)
-            continue;
         learnedLemmas.emplace_back(PTPLib::net::Lemma(str, level));
         assert([&](std::string_view clause_str) {
             if (clause_str.find(".frame") != std::string::npos) {

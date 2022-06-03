@@ -1,5 +1,5 @@
 #Fetch and add PTPLib**********************************************************************************************************
-set(PTPLib_repository "https://github.com/usi-verification-and-security/partition-channel.git")
+set(PTPLib_repository "https://github.com/usi-verification-and-security/ptplib.git")
 set(PTPLib_branch ${branch})
 if(NOT PTPLib_branch)
 	set(PTPLib_branch master)
