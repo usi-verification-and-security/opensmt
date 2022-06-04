@@ -77,19 +77,34 @@ PTRef rewriteMaxArity(Logic & logic, const PTRef root, T doNotRewrite) {
             else if (logic.isAtom(t[i])) {
                 assert(!cache.has(t[i]));
                 cache.insert(t[i], t[i]);
+            } else {
+                assert(false);
             }
         }
         if (unprocessed_children)
             continue;
 
         unprocessed_ptrefs.pop();
-        PTRef result = PTRef_Undef;
-        assert(logic.isBooleanOperator(tr));
+        SymRef symRef = t.symb();
+        assert(logic.isBooleanOperator(symRef));
 
-        if (logic.isAnd(tr) || logic.isOr(tr)) {
+        PTRef result = PTRef_Undef;
+        if (logic.isAnd(symRef) or logic.isOr(symRef)) {
             result = ::mergeAndOrArgs(logic, tr, cache, doNotRewrite);
-        } else {
-            result = tr;
+        } else if (logic.isNot(symRef)) {
+            PTRef child = t[0];
+            PTRef newChild = cache[child];
+            result = child == newChild ? tr : logic.mkNot(newChild);
+        } else { // general connective
+            vec<PTRef> newArgs;
+            newArgs.capacity(t.size());
+            bool changed = false;
+            for (PTRef child : t) {
+                PTRef newChild = cache[child];
+                changed |= (newChild != child);
+                newArgs.push(newChild);
+            }
+            result = changed ? logic.insertTerm(symRef, std::move(newArgs)) : tr;
         }
         assert(result != PTRef_Undef);
         assert(!cache.has(tr));
