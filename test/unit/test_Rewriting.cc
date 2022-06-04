@@ -45,6 +45,21 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
     ASSERT_EQ(res, logic.mkAnd(args));
 }
 
+TEST(Rewriting_test, test_RewriteClassicUnderNegation)
+{
+    Logic logic{opensmt::Logic_t::QF_UF};
+    PTRef a = logic.mkBoolVar("a");
+    PTRef b = logic.mkBoolVar("b");
+    PTRef c = logic.mkBoolVar("c");
+    PTRef positive = logic.mkAnd(a, logic.mkAnd(b,c));
+    PTRef negative = logic.mkNot(positive);
+    // (not (and a (and b c)))
+    // is equivalent to (not (and a b c))
+    PTRef res = ::rewriteMaxArityClassic(logic, negative);
+//    std::cout << logic.printTerm(res) << std::endl;
+    ASSERT_EQ(res, logic.mkNot(logic.mkAnd({a,b,c})));
+}
+
 TEST(Rewriting_test, test_RewriteEquality)
 {
     ArithLogic logic{opensmt::Logic_t::QF_LRA};
