@@ -160,6 +160,7 @@ protected:
     std::unique_ptr<Explainer> explainer;
 
     friend class EgraphModelBuilder;
+    friend class ArraySolver;
 private:
     /*
      * fields and methods related to parent vectors

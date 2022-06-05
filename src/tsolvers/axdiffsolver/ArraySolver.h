@@ -16,12 +16,12 @@ inline bool operator!=(NodeRef a, NodeRef b) { return a.id != b.id; }
 
 
 struct ArrayNode {
-    ERef term; // TODO: check if this is needed
-    ERef primaryIndex;
-    NodeRef primaryEdge;
-    NodeRef secondaryEdge;
+    ERef primaryStore {ERef_Undef};
+    NodeRef primaryEdge {NodeRef_Undef};
+    NodeRef secondaryEdge {NodeRef_Undef};
+    ERef secondaryStore {ERef_Undef};
 
-    ArrayNode(ERef term) : term(term), primaryIndex(ERef_Undef), primaryEdge(NodeRef_Undef), secondaryEdge(NodeRef_Undef) {}
+    ArrayNode() {}
 };
 
 class ArraySolver : public TSolver {
@@ -70,15 +70,93 @@ public:
 
     bool isValid(PTRef tr) override;
 
+/*
+* Internal methods for traversing weak equivalence graph
+*/
+private:
+    using IndicesCollection = std::unordered_set<ERef, ERefHash>;
+    using ExplanationCollection = std::unordered_set<PtAsgn, PtAsgnHash>;
+
+    class Traversal {
+        ArraySolver & solver;
+    public:
+        Traversal(ArraySolver & solver) : solver(solver) {}
+
+        ArraySolver & getSolver() const { return solver; }
+
+        ArrayNode & getNode(NodeRef ref) const { return solver.getNode(ref); }
+
+        ERef getRoot(ERef term) const { return solver.getRoot(term); }
+
+        NodeRef findSecondaryNode(NodeRef node, ERef index) const;
+
+        unsigned countSecondaryEdges(NodeRef start, ERef index) const;
+        unsigned countPrimaryEdges(NodeRef start) const;
+
+        std::unordered_set<ERef, ERefHash> computeStoreIndices(NodeRef, NodeRef, ERef);
+
+        ERef getIndexOfPrimaryEdge(ArrayNode const & node) const {
+            return solver.getIndexOfPrimaryEdge(node);
+        }
+    };
+
+    class Cursor {
+        Traversal traversal;
+        NodeRef node;
+    public:
+        Cursor(ArraySolver & solver, NodeRef node) : traversal(solver), node(node) {}
+
+        NodeRef currentNodeRef() const { return node; }
+
+        ArrayNode & getNode(NodeRef ref) const { return traversal.getNode(ref); }
+
+        unsigned countSecondaryEdges(ERef index) const { return traversal.countSecondaryEdges(node, index); }
+        unsigned countPrimaryEdges() const { return traversal.countPrimaryEdges(node); }
+
+        void collectOneSecondary(ERef index, IndicesCollection & indices);
+        void collectOverPrimaries(NodeRef destination, IndicesCollection & indices);
+    };
+
+    class ExplanationCursor {
+        Traversal & traversal;
+        NodeRef node;
+        ERef term;
+    public:
+        ExplanationCursor(Traversal & traversal, NodeRef node, ERef term) : traversal(traversal), node(node), term(term) {}
+
+        NodeRef getNode() const { return node; }
+
+        void collectPrimaries(ExplanationCursor & destination, IndicesCollection & indices, ExplanationCollection & explanations);
+        void collectOnePrimary(IndicesCollection & indices, ExplanationCollection & explanations);
+        void collectOneSecondary(ERef index, IndicesCollection & indices, ExplanationCollection & explanations);
+    };
  /*
  * Internal methods for manipulating weak equivalence graph
  */
 private:
-    bool checkReadOverWeakEq();
+    struct LemmaConditions {
+        PTRef equality;
+        std::unordered_set<PTRef, PTRefHash> undecidedEqualities;
+    };
+
+    std::vector<LemmaConditions> lemmas;
+
+    PTRef getEquality(ERef lhs, ERef rhs);
+
+    bool isFalsified(PTRef equality);
+    bool isSatisfied(PTRef equality);
+
+    void computeExplanation(PTRef equality);
+
+    ExplanationCollection explainWeakEquivalencePath(ERef array1, ERef array2, ERef index);
+
+    void collectLemmaConditions();
+
+    void buildWeakEq();
 
     void merge(ERef);
 
-    void mergeSecondary(NodeRef, NodeRef, Map<ERef, bool, ERefHash> & forbiddenIndices);
+    void mergeSecondary(NodeRef, NodeRef, ERef, Map<ERef, bool, ERefHash> & forbiddenIndices);
 
     void clear();
 
@@ -118,7 +196,11 @@ private:
         return nodes[ref.id];
     }
 
-    NodeRef getNodeRef(ERef root) {
+    ArrayNode const & getNode(NodeRef ref) const {
+        return nodes[ref.id];
+    }
+
+    NodeRef getNodeRef(ERef root) const {
         auto it = rootsMap.find(root);
         assert(it != rootsMap.end());
         return it->second;
@@ -135,15 +217,17 @@ private:
         return nodeRef;
     }
 
+    ERef getIndexOfPrimaryEdge(ArrayNode const & node) const {
+        return getRoot(getIndexFromStore(node.primaryStore));
+    }
+
     NodeRef getIndexedRepresentative(NodeRef nodeRef, ERef index) {
         ArrayNode & node = getNode(nodeRef);
         if (node.primaryEdge == NodeRef_Undef) { return nodeRef; }
-        if (node.primaryIndex != index) { return getIndexedRepresentative(node.primaryEdge, index); }
+        if (getIndexOfPrimaryEdge(node) != index) { return getIndexedRepresentative(node.primaryEdge, index); }
         if (node.secondaryEdge == NodeRef_Undef) { return nodeRef; }
         return getIndexedRepresentative(node.secondaryEdge, index);
     }
-
-
 };
 
 
