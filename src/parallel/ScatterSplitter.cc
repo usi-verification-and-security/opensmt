@@ -194,16 +194,17 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         if (isAssumptionVar(v)) {
             continue;
         }
-        auto pt = this->theory_handler.varToTerm(v);
+        auto pt = sign(l) ? logic.mkNot(this->theory_handler.varToTerm(v)) : this->theory_handler.varToTerm(v);
         std::string str = logic.dumpWithLets(pt);
+        if (str.length() > PTPLib::common::STATS.MAX_SIZE)
+            continue;
         assert([&](std::string_view clause_str) {
             if (clause_str.find(".frame") != std::string::npos) {
                 throw PTPLib::common::Exception(__FILE__, __LINE__,"assert: frame caught in trail");
             }
             return true;
         }(str));
-        pt = sign(l) ? logic.mkNot(pt) : pt;
-        learnedLemmas.emplace_back(PTPLib::net::Lemma(logic.dumpWithLets(pt), 0));
+        learnedLemmas.emplace_back(PTPLib::net::Lemma(str, 0));
     }
 
     for (CRef cr : learnts) {
@@ -217,7 +218,8 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         std::size_t varSize = 0;
         for (Lit l : c) {
             Var v = var(l);
-            varSize += this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(v)).length();
+            PTRef pt = theory_handler.varToTerm(v);
+            varSize += this->theory_handler.getLogic().dumpWithLets(pt).length();
             if (varSize > PTPLib::common::STATS.MAX_SIZE) {
                 hasBulkyLit = true;
                 break;
@@ -269,7 +271,6 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
 //                    break;
 //                }
             }
-            PTRef pt = theory_handler.varToTerm(v);
             pt = sign(l) ? theory_handler.getLogic().mkNot(pt) : pt;
             clause.push(pt);
         }
