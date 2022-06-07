@@ -14,11 +14,13 @@
 class SplitterInterpret : public Interpret {
 private:
     PTPLib::net::Channel & channel;
+    bool search = false;
 
   protected:
     void                          writeSplits(const char* filename);
     std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name) override;
-    sstat                          checkSat()                              override;
+    sstat                         checkSat()                               override;
+    void                          exit()                                   override  { return; }
 
   public:
 
@@ -29,7 +31,7 @@ private:
 
     virtual ~SplitterInterpret() = default;
 
-    sstat interpSMTContent(char *content, vec<opensmt::pair<int,int>> &&, bool);
+    sstat interpSMTContent(char *content, vec<opensmt::pair<int,int>> &&, bool, bool);
 
     inline MainSplitter & getMainSplitter() { return dynamic_cast<MainSplitter&>(getMainSolver()); };
 

@@ -168,7 +168,7 @@ class Interpret {
     PTRef                       resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
     bool                        storeDefinedFun(std::string const & fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
 
-    void                        exit();
+    virtual void                exit();
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
 
