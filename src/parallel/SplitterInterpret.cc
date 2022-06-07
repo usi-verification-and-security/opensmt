@@ -23,6 +23,9 @@ void SplitterInterpret::writeSplits(const char* filename)
 }
 
 sstat SplitterInterpret::checkSat() {
+    if (not search)
+        return s_Undef;
+
     char* name = config.dump_state();
     sstat res = Interpret::checkSat();
     if (res == s_Undef and strcmp(config.output_dir(),"") != 0) {
@@ -31,7 +34,8 @@ sstat SplitterInterpret::checkSat() {
     return res;
 }
 
-sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec, bool shouldUpdateSolverBranch) {
+sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec, bool shouldUpdateSolverBranch, bool s) {
+    search = s;
     if (shouldUpdateSolverBranch)
         getSplitter().setSolverBranch(std::forward<::vec<opensmt::pair<int,int>>>(vec));
 
