@@ -43,7 +43,7 @@ PTRef instantiateReadOverStore(Logic & logic, PTRef fla) {
     return logic.mkAnd(std::move(instantiatedAxioms));
 }
 
-bool ArrayTheory::simplify(const vec<PFRef>& formulas, PartitionManager &pmanager, int curr)
+bool ArrayTheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
 {
     // TODO: simplify select over store on the same index
     auto & currentFrame = pfstore[formulas[curr]];
