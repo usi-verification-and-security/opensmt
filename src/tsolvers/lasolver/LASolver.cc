@@ -636,26 +636,28 @@ void LASolver::checkDeduction() {
 }
 
 bool LASolver::wouldDeduce(PtAsgn asgn) {
-    assert(status != INIT);
+    if(status != INIT){
     assert(logic.isLeq(asgn.tr));
-    assert(not hasPolarity(asgn.tr));
-    LVRef v = getVarForLeq(asgn.tr);
-    LABoundRef boundRef = asgn.sgn == l_False ? getBoundRefPair(asgn.tr).neg : getBoundRefPair(asgn.tr).pos;
-    LABound const & bound = boundStore[boundRef];
-    auto searchForUnassignedBound = [this, &bound, &v](BoundT type) {
-        int newId = bound.getIdx().x + (type == bound_l ? -1 : 1);
-        while (newId >= 0 and newId <= boundStore.getBounds(v).size() - 1) {
-            LABoundRef candidateRef = boundStore.getBoundByIdx(v, newId);
-            if (boundStore[candidateRef].getType() == type){
-                return (not hasPolarity(getAsgnByBound(candidateRef).tr));
-            }
-            newId = newId + (type == bound_l ? -1 : 1);
-        }
-        return false;
-    };
+    if(not hasPolarity(asgn.tr)){
+      LVRef v = getVarForLeq(asgn.tr);
+      LABoundRef boundRef = asgn.sgn == l_False ? getBoundRefPair(asgn.tr).neg : getBoundRefPair(asgn.tr).pos;
+      LABound const & bound = boundStore[boundRef];
+      auto searchForUnassignedBound = [this, &bound, &v](BoundT type) {
+          int newId = bound.getIdx().x + (type == bound_l ? -1 : 1);
+          while (newId >= 0 and newId <= boundStore.getBounds(v).size() - 1) {
+              LABoundRef candidateRef = boundStore.getBoundByIdx(v, newId);
+              if (boundStore[candidateRef].getType() == type){
+                  return (not hasPolarity(getAsgnByBound(candidateRef).tr));
+              }
+              newId = newId + (type == bound_l ? -1 : 1);
+          }
+          return false;
+      };
 
-    return searchForUnassignedBound(bound.getType());
-
+      return searchForUnassignedBound(bound.getType());
+    }
+    }
+    return false;
 }
 
 void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)

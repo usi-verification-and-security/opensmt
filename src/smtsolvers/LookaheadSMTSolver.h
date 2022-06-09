@@ -19,8 +19,11 @@ protected:
     ConflQuota          confl_quota;
     int                 idx = 0;
     vec<bool>           next_arr;
+    vec<bool>           init_arr;
     vec<bool>           bound_arr;
     int                 close_to_prop = 0;
+    int                 init_close_to_prop = 0;
+    int                 bound_prop = 0;
     int fun_props;
     bool                tested = false;
 
@@ -109,7 +112,6 @@ public:
     Var newVar(bool sign, bool dvar) override;
 
     CRef propagate() override;
-
     void detachClause(CRef cr, bool strict) override;
 
     void attachClause(CRef cr) override;
