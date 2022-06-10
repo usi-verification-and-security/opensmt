@@ -98,7 +98,6 @@ using namespace osmttokens;
 "write-state"      { yyget_lval(yyscanner)->tok = { t_writestate }; return TK_WRSTATE;       }
 "read-state"       { yyget_lval(yyscanner)->tok = { t_readstate }; return TK_RDSTATE;       }
 "simplify"         { yyget_lval(yyscanner)->tok = { t_simplify }; return TK_SIMPLIFY;      }
-"write-funs"       { yyget_lval(yyscanner)->tok = { t_writefuns }; return TK_WRFUNS;       }
 "echo"             { yyget_lval(yyscanner)->tok = { t_echo }; return TK_ECHO; }
 
 ":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }

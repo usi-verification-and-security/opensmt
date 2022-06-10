@@ -363,18 +363,12 @@ SRef Logic::declareUninterpretedSort(const std::string & name) {
 PTRef Logic::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, SymbolMatcher symbolMatcher) {
     SymRef sref = term_store.lookupSymbol(s, args, symbolMatcher, sortRef);
     if (sref == SymRef_Undef) {
-        if (defined_functions.has(s)) {
-            auto const & tpl = defined_functions[s];
-            return instantiateFunctionTemplate(tpl, args);
+        std::string argSortsString;
+        for (int i = 0; i < args.size(); i++) {
+            PTRef tr = args[i];
+            argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
         }
-        else {
-            std::string argSortsString;
-            for (int i = 0; i < args.size(); i++) {
-                PTRef tr = args[i];
-                argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
-            }
-            throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " + printSort(sortRef) : "") + "'");
-        }
+        throw OsmtApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString + (sortRef != SRef_Undef ?  "/ " + printSort(sortRef) : "") + "'");
     }
     assert(sref != SymRef_Undef);
     PTRef rval = insertTerm(sref, std::move(args));
@@ -790,14 +784,6 @@ SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> 
     }
     SymRef sr = sym_store.newSymb(fname.c_str(), comb_args, symbolConfig);
     return sr;
-}
-
-bool Logic::defineFun(const char* fname, const vec<PTRef>& args, SRef rsort, PTRef tr)
-{
-    if (defined_functions.has(fname))
-        return false; // already there
-    defined_functions.insert(fname, TemplateFunction(fname, args, rsort, tr));
-    return true;
 }
 
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef>&& terms)
@@ -1394,11 +1380,6 @@ Logic::dumpFunction(ostream& dump_out, const TemplateFunction& tpl_fun)
     dump_out << ")\n";
 }
 
-PTRef Logic::instantiateFunctionTemplate(const char * name, vec<PTRef> const & args) {
-    assert(defined_functions.has(name));
-    return instantiateFunctionTemplate(defined_functions[name], args);
-}
-
 PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args) {
     auto const & targs = tmplt.getArgs();
     if (args.size() != targs.size()) {
@@ -1483,11 +1464,6 @@ SRef Logic::getUniqueArgSort(SymRef sr) const {
     }
     return res;
 }
-
-
-void Logic::dumpFunctions(ostream& dump_out) { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
-void Logic::dumpFunction(ostream& dump_out, const char* tpl_name) { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
-void Logic::dumpFunction(ostream& dump_out, const std::string s) { dumpFunction(dump_out, s.c_str()); }
 
 // The Boolean connectives
 SymRef        Logic::getSym_true      ()              const { return sym_TRUE;     }

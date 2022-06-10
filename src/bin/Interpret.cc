@@ -330,15 +330,6 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
-            case t_writefuns: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: write-funs");
-                } else {
-                    const char *filename = (**(n.children->begin())).getValue();
-                    main_solver->writeFuns_smtlib2(filename);
-                }
-                break;
-            }
             case t_echo: {
                 const char *str = (**(n.children->begin())).getValue();
                 notify_formatted(false, "%s", str);
@@ -418,11 +409,19 @@ PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & s
     SRef sr = sortFromASTNode(sort);
     PTRef tr = PTRef_Undef;
     try {
-        tr = logic->resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+        tr = resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
     } catch (OsmtApiException & e) {
         reportError(e.what());
     }
     return tr;
+}
+
+PTRef Interpret::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, SymbolMatcher symbolMatcher) {
+    if (defined_functions.has(s)) {
+        auto const & tpl = defined_functions[s];
+        return logic->instantiateFunctionTemplate(tpl, std::move(args));
+    }
+    return logic->resolveTerm(s, std::move(args), sortRef, symbolMatcher);
 }
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
@@ -430,8 +429,6 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     if (t == TERM_T) {
         const char* name = (**(term.children->begin())).getValue();
 //        comment_formatted("Processing term %s", name);
-        vec<SymRef> params;
-        //PTRef tr = logic->resolveTerm(name, vec_ptr_empty, &msg);
         PTRef tr = PTRef_Undef;
         try {
             tr = logic->mkConst(name);
@@ -461,7 +458,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                 return tr;
             }
             try {
-                tr = logic->resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+                tr = resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
             } catch (OsmtApiException & e) {
                 reportError(e.what());
             }
@@ -486,7 +483,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
 
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic->resolveTerm(name, std::move(args));
+            tr = resolveTerm(name, std::move(args));
         } catch (ArithDivisionByZeroException &ex) {
             reportError(ex.what());
         } catch (OsmtApiException &e) {
@@ -961,7 +958,7 @@ bool Interpret::defineFun(const ASTNode& n)
         notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
         return false;
     }
-    bool rval = logic->defineFun(fname, arg_trs, ret_sort, tr);
+    bool rval = storeDefinedFun(fname, arg_trs, ret_sort, tr);
     if (rval) notify_success();
     else {
         notify_formatted(true, "define-fun failed");
@@ -969,6 +966,13 @@ bool Interpret::defineFun(const ASTNode& n)
     }
 
     return rval;
+}
+
+bool Interpret::storeDefinedFun(std::string const & fname, const vec<PTRef> & args, SRef ret_sort, const PTRef tr) {
+    if (defined_functions.has(fname)) { return false; }
+
+    defined_functions.insert(fname, TemplateFunction(fname, args, ret_sort, tr));
+    return true;
 }
 
 

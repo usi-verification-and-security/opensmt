@@ -50,32 +50,6 @@ class Logic {
     std::size_t abstractValueCount = 0;
     int distinctClassCount;
 
-    class DefinedFunctions {
-        std::unordered_map<std::string,TemplateFunction> defined_functions;
-        std::vector<std::string> defined_functions_names;
-
-    public:
-        bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
-
-        void insert(const std::string& name, TemplateFunction && templ) {
-            assert(not has(name));
-            defined_functions_names.emplace_back(name);
-            defined_functions[name] = std::move(templ);
-        }
-
-        TemplateFunction & operator[](const char* name) {
-            assert(has(name));
-            return defined_functions[name];
-        }
-
-        void getKeys(vec<const char*> & keys_out) {
-            for (auto k : defined_functions_names) {
-                keys_out.push(strdup(k.c_str()));
-            }
-        }
-    };
-    DefinedFunctions defined_functions;
-
     vec<bool>           constants;
 
 
@@ -268,7 +242,6 @@ public:
     SymRef      declareFun_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::Chainable); }
     SymRef      declareFun_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) { return declareFun(s, rsort, args, SymConf::Pairwise); }
 
-    bool        defineFun     (const char* fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
     void        instantiateFunctions(SRef);
 
     bool        hasSortSymbol(SortSymbol const &);
@@ -283,12 +256,8 @@ public:
     void dumpChecksatToFile(std::ostream& dump_out) const;
     void dumpWithLets(std::ostream & out, PTRef formula) const;
     std::string dumpWithLets(PTRef formula) const;
-    void dumpFunctions(std::ostream& dump_out);// { vec<const char*> names; defined_functions.getKeys(names); for (int i = 0; i < names.size(); i++) dumpFunction(dump_out, names[i]); }
-    void dumpFunction(std::ostream& dump_out, const char* tpl_name);// { if (defined_functions.has(tpl_name)) dumpFunction(dump_out, defined_functions[tpl_name]); else printf("; Error: function %s is not defined\n", tpl_name); }
-    void dumpFunction(std::ostream& dump_out, const std::string s);// { dumpFunction(dump_out, s.c_str()); }
 
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
-    PTRef instantiateFunctionTemplate(const char * name, vec<PTRef> const & args);
 
     SSymRef       getSortSymIndexed()              const { return sym_IndexedSort; }
 

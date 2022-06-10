@@ -35,6 +35,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unordered_map>
 
+class DefinedFunctions {
+    std::unordered_map<std::string,TemplateFunction> defined_functions;
+    std::vector<std::string> defined_functions_names;
+
+public:
+    bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
+
+    void insert(const std::string& name, TemplateFunction && templ) {
+        assert(not has(name));
+        defined_functions_names.emplace_back(name);
+        defined_functions[name] = std::move(templ);
+    }
+
+    TemplateFunction & operator[](const char* name) {
+        assert(has(name));
+        return defined_functions[name];
+    }
+
+    void getKeys(vec<const char*> & keys_out) {
+        for (auto k : defined_functions_names) {
+            keys_out.push(strdup(k.c_str()));
+        }
+    }
+};
 
 class LetBinder {
     PTRef currentValue;
@@ -114,6 +138,7 @@ class Interpret {
                                             // partition to it name.
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
+    DefinedFunctions defined_functions;
 
     void                        initializeLogic(opensmt::Logic_t logicType);
     bool                        isInitialized() const { return logic != nullptr; }
@@ -138,6 +163,8 @@ class Interpret {
     void                        pop(int);
 
     PTRef                       parseTerm(const ASTNode& term, LetRecords& letRecords);
+    PTRef                       resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
+    bool                        storeDefinedFun(std::string const & fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
 
     void                        exit();
     void                        getInterpolants(const ASTNode& n);

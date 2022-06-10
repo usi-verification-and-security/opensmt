@@ -81,10 +81,10 @@ TEST_F(TemplateTest, test_functionTemplate) {
 
 TEST_F(TemplateTest, test_template) {
     FunctionSignature fs("f", {a1, a2}, s);
-    logic.defineFun("f", {a1, a2}, logic.getSort_bool(), logic.mkEq(a1, a2));
-    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate("f", {}));
-    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate("f", {a1, logic.getTerm_true()}));
-    PTRef res = logic.instantiateFunctionTemplate("f", {b1,b2});
+    TemplateFunction temp("f", {a1, a2}, logic.getSort_bool(), logic.mkEq(a1, a2));
+    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate(temp, {}));
+    ASSERT_ANY_THROW(logic.instantiateFunctionTemplate(temp, {a1, logic.getTerm_true()}));
+    PTRef res = logic.instantiateFunctionTemplate(temp, {b1,b2});
     PTRef ref = logic.mkEq(b1, b2);
     ASSERT_EQ(res, ref);
 }

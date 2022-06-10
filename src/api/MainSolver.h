@@ -227,7 +227,6 @@ class MainSolver
     sstat getStatus       () const { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
     bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
-    bool  writeFuns_smtlib2 (const char* file) const;
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

@@ -70,7 +70,6 @@ namespace osmttokens {
         t_writestate,
         t_readstate,
         t_simplify,
-        t_writefuns,
         t_let,
         t_echo
     };
@@ -148,7 +147,6 @@ namespace osmttokens {
         {t_writestate, "write-state"},
         {t_readstate, "read-state"},
         {t_simplify, "simplify"},
-        {t_writefuns, "write-funs"},
         {t_let, "let"},
         {t_echo, "echo"}
     };
