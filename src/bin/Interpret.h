@@ -32,20 +32,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "SymRef.h"
 #include "Logic.h"
 #include "MainSolver.h"
+#include "ScopedVector.h"
 
 #include <unordered_map>
 
 class DefinedFunctions {
     std::unordered_map<std::string,TemplateFunction> defined_functions;
-    std::vector<std::string> defined_functions_names;
+    opensmt::ScopedVector<std::string> scopedNames;
 
 public:
     bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
 
-    void insert(const std::string& name, TemplateFunction && templ) {
+    void insert(const std::string& name, TemplateFunction && templ, bool scoped = false) {
         assert(not has(name));
-        defined_functions_names.emplace_back(name);
         defined_functions[name] = std::move(templ);
+        if (scoped) { scopedNames.push(name); }
     }
 
     TemplateFunction & operator[](const char* name) {
@@ -53,10 +54,12 @@ public:
         return defined_functions[name];
     }
 
-    void getKeys(vec<const char*> & keys_out) {
-        for (auto k : defined_functions_names) {
-            keys_out.push(strdup(k.c_str()));
-        }
+    void pushScope() { scopedNames.pushScope(); }
+
+    void popScope() {
+        scopedNames.popScope([&](std::string const & name) {
+            defined_functions.erase(name);
+        });
     }
 };
 

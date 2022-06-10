@@ -613,6 +613,7 @@ void Interpret::push(int n) {
             notify_formatted(true, "Incorrect push command, value is negative.");
         } else {
             while (n--) {
+                defined_functions.pushScope();
                 main_solver->push();
             }
             notify_success();
@@ -626,7 +627,10 @@ void Interpret::pop(int n) {
             notify_formatted(true, "Incorrect pop command, value is negative.");
         } else {
             bool success = true;
-            while (n-- and success) { success = main_solver->pop(); }
+            while (n-- and success) {
+                success = main_solver->pop();
+                if (success) { defined_functions.popScope(); }
+            }
             if (success) {
                 notify_success();
             } else {
@@ -971,7 +975,7 @@ bool Interpret::defineFun(const ASTNode& n)
 bool Interpret::storeDefinedFun(std::string const & fname, const vec<PTRef> & args, SRef ret_sort, const PTRef tr) {
     if (defined_functions.has(fname)) { return false; }
 
-    defined_functions.insert(fname, TemplateFunction(fname, args, ret_sort, tr));
+    defined_functions.insert(fname, TemplateFunction(fname, args, ret_sort, tr), true); // TODO: ask config if defined are scoped
     return true;
 }
 
