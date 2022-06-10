@@ -41,15 +41,15 @@ class DefinedFunctions {
     opensmt::ScopedVector<std::string> scopedNames;
 
 public:
-    bool has(const std::string& name) const { return defined_functions.find(name) != defined_functions.end(); }
+    bool has(std::string const & name) const { return defined_functions.find(name) != defined_functions.end(); }
 
-    void insert(const std::string& name, TemplateFunction && templ, bool scoped = false) {
+    void insert(std::string const & name, TemplateFunction && templ, bool scoped = false) {
         assert(not has(name));
         defined_functions[name] = std::move(templ);
         if (scoped) { scopedNames.push(name); }
     }
 
-    TemplateFunction & operator[](const char* name) {
+    TemplateFunction & operator[](char const * name) {
         assert(has(name));
         return defined_functions[name];
     }
