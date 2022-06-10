@@ -975,7 +975,8 @@ bool Interpret::defineFun(const ASTNode& n)
 bool Interpret::storeDefinedFun(std::string const & fname, const vec<PTRef> & args, SRef ret_sort, const PTRef tr) {
     if (defined_functions.has(fname)) { return false; }
 
-    defined_functions.insert(fname, TemplateFunction(fname, args, ret_sort, tr), true); // TODO: ask config if defined are scoped
+    bool scoped = not config.declarations_are_global();
+    defined_functions.insert(fname, TemplateFunction(fname, args, ret_sort, tr), scoped);
     return true;
 }
 

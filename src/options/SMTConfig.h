@@ -303,6 +303,7 @@ public:
   static const char* o_output_dir;
   static const char* o_ghost_vars;
   static const char* o_sat_solver_limit;
+  static const char* o_global_declarations;
 
 private:
 
@@ -613,6 +614,10 @@ public:
   int sat_dump_rnd_inter() const
     { return optionTable.has(o_sat_dump_rnd_inter) ?
         optionTable[o_sat_dump_rnd_inter]->getValue().numval : 2; }
+
+    bool declarations_are_global() const {
+      return optionTable.has(o_global_declarations) ? optionTable[o_global_declarations]->getValue().numval > 0 : false;
+  }
 
   SpUnit sat_resource_units() const {
       if (optionTable.has(o_sat_resource_units)) {
