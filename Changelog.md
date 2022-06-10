@@ -1,5 +1,8 @@
 ### 2.4.0 (unreleased)
 
+Bug fixes:
+ - Fix handling of scoped `define-fun`s in incremental mode
+
 Performance improvements:
  - CoreSMTSolver: Use Luby restart scheme
  - CoreSMTSolver: Sticky polarities with phase flipping
