@@ -6,6 +6,8 @@
 
 #include "TreeOps.h"
 
+#include <numeric>
+
 static SolverDescr descr_ax_solver("Array Solver", "Solver for Theory of Arrays");
 
 ArraySolver::ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config) :
@@ -71,7 +73,11 @@ TRes ArraySolver::check(bool complete) {
         }
     }
     if (complete) {
-        // TODO: if full check, and we have some undecided literal in lemmas, we need to create a split clause to inform SAT solver that we need more information
+        if (lemmas.empty()) {
+            return checkExtensionality();
+        } else {
+            // TODO: if full check, and we have some undecided literal in lemmas, we need to create a split clause to inform SAT solver that we need more information
+        }
     }
     return TRes::SAT;
 }
@@ -137,6 +143,11 @@ Logic & ArraySolver::getLogic() {
 
 bool ArraySolver::isValid(PTRef tr) {
     return egraph.isValid(tr);
+}
+
+void ArraySolver::getNewSplits(vec<PTRef> & splits) {
+    splitondemand.copyTo(splits);
+    splitondemand.clear();
 }
 
 
@@ -217,7 +228,7 @@ void ArraySolver::buildWeakEq() {
         ERef root = getRoot(arrayTerm);
         if (rootsMap.find(root) == rootsMap.end()) {
             NodeRef nodeRef {static_cast<unsigned int>(nodes.size())};
-            nodes.emplace_back();
+            nodes.emplace_back(root);
             rootsMap.insert({root, nodeRef});
         }
     }
@@ -226,6 +237,167 @@ void ArraySolver::buildWeakEq() {
     }
     collectLemmaConditions();
     valid = true;
+}
+
+void ArraySolver::computeSelectsInfo() {
+    for (ERef select : selectTerms) {
+        ERef index = getRoot(getIndexFromSelect(select));
+        NodeRef arrayNode = getNodeRef(getRoot(getArrayFromSelect(select)));
+        NodeRef weakIRepresentative = getIndexedRepresentative(arrayNode, index);
+        this->selectsInfo[weakIRepresentative].insert({index, select});
+    }
+}
+
+namespace {
+struct ExtensionalityInfo {
+    using IndexValueMap = std::unordered_map<ERef, ERef, ERefHash>;
+
+    NodeRef weakEqRoot;
+    std::unordered_map<ERef, NodeRef, ERefHash> weakIRoots;
+    IndexValueMap indexValueMap;
+
+    void erase(ERef index) {
+        indexValueMap.erase(index);
+        weakIRoots.erase(index);
+    }
+};
+
+bool operator==(ExtensionalityInfo const & first, ExtensionalityInfo const & second) {
+    if (first.weakEqRoot != second.weakEqRoot) { return false; }
+    if (first.weakIRoots.size() != second.weakIRoots.size()) { return false; }
+    if (first.indexValueMap.size() != second.indexValueMap.size()) { return false; }
+    return first.weakIRoots == second.weakIRoots and first.indexValueMap == second.indexValueMap;
+}
+
+struct ExtensionalityInfoHash {
+    uint32_t operator()(ExtensionalityInfo const & info) const {
+        std::hash<uint32_t> hasher{};
+        uint32_t res = hasher(info.weakEqRoot.id);
+        res = std::accumulate(info.weakIRoots.begin(), info.weakIRoots.end(), res, [&](uint32_t acc, auto const & entry) {
+            return acc ^ hasher(entry.first.x + entry.second.id);
+        });
+        res = std::accumulate(info.indexValueMap.begin(), info.indexValueMap.end(), res, [&](uint32_t acc, auto const & entry) {
+            return acc ^ hasher(entry.first.x + entry.second.x);
+        });
+        return res;
+    }
+};
+
+}
+
+TRes ArraySolver::checkExtensionality() {
+    if (selectsInfo.empty()) { computeSelectsInfo(); }
+
+    std::unordered_map<NodeRef, ExtensionalityInfo, NodeRefHash> extensionalityInfos;
+    std::unordered_map<ExtensionalityInfo, NodeRef, ExtensionalityInfoHash> inverseExtensionalityInfos;
+    vec<opensmt::pair<NodeRef, NodeRef>> equalitiesToPropagate;
+
+    vec<NodeRef> queue;
+    queue.capacity(this->rootsMap.size());
+    for (auto const & entry : this->rootsMap) {
+        queue.push(entry.second);
+    }
+
+    while (queue.size() > 0) {
+        NodeRef const current = queue.last();
+        if (extensionalityInfos.find(current) != extensionalityInfos.end()) {
+            queue.pop();
+            continue;
+        }
+        ArrayNode const & node = getNode(current);
+        if (node.primaryEdge != NodeRef_Undef and extensionalityInfos.find(node.primaryEdge) == extensionalityInfos.end()) {
+            queue.push(node.primaryEdge);
+            continue;
+        }
+        queue.pop();
+        ExtensionalityInfo extensionalityInfo;
+        NodeRef const weakEqRoot = getRepresentative(current);
+        if (current == weakEqRoot) { // Root of weak-eq class
+            extensionalityInfo.weakEqRoot = current;
+            auto it = selectsInfo.find(current);
+            assert(it != selectsInfo.end());
+            auto const & selects = it->second;
+            for (auto && [index, value] : selects) {
+                extensionalityInfo.indexValueMap.insert({index, getRoot(value)});
+            }
+        } else { // not weak-eq root
+            ERef primaryIndex = getRoot(getIndexFromStore(node.primaryStore));
+            assert(extensionalityInfos.find(node.primaryEdge) != extensionalityInfos.end());
+            // Select are the same as primary parent, except possibly at primary index
+            extensionalityInfo = extensionalityInfos.at(node.primaryEdge);
+            extensionalityInfo.erase(primaryIndex);
+
+            NodeRef weakIRoot = getIndexedRepresentative(current, primaryIndex);
+            assert(selectsInfo.find(weakIRoot) != selectsInfo.end());
+            auto const & weakIRootSelects = selectsInfo.at(weakIRoot);
+            auto it = weakIRootSelects.find(primaryIndex);
+            if (it != weakIRootSelects.end()) {
+                ERef valueAtPrimaryIndex = it->second;
+                extensionalityInfo.indexValueMap.insert({primaryIndex, valueAtPrimaryIndex});
+            } else {
+                extensionalityInfo.weakIRoots.insert({primaryIndex, weakIRoot});
+            }
+        }
+
+        auto it = inverseExtensionalityInfos.find(extensionalityInfo);
+        if (it != inverseExtensionalityInfos.end()) {
+            equalitiesToPropagate.push({current, it->second});
+            it->second = current;
+        } else {
+            inverseExtensionalityInfos.insert({extensionalityInfo, current});
+        }
+        extensionalityInfos.insert({current, std::move(extensionalityInfo)});
+    }
+
+    for (auto const & entry : equalitiesToPropagate) {
+        PTRef extensionalityClause = computeExtensionalityClause(entry.first, entry.second);
+        assert(logic.isOr(extensionalityClause));
+        // TODO: handle conflicts better
+        bool allFalsified = true;
+        for (PTRef lit : logic.getPterm(extensionalityClause)) {
+            PTRef atom = logic.isNot(lit) ? logic.getPterm(lit)[0] : lit;
+            assert(logic.isEquality(atom));
+            allFalsified = allFalsified and (logic.isNot(lit) ? isSatisfied(atom) : isFalsified(atom));
+        }
+        if (allFalsified) {
+            has_explanation = true;
+            for (PTRef lit : logic.getPterm(extensionalityClause)) {
+                if (logic.isNot(lit)) {
+                    explanation.push({logic.getPterm(lit)[0], l_True});
+                } else {
+                    explanation.push({lit, l_False});
+                }
+            }
+            splitondemand.clear();
+            return TRes::UNSAT;
+        }
+        splitondemand.push(extensionalityClause);
+    }
+    return TRes::SAT;
+}
+
+PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
+    Traversal traversal(*this);
+    ExplanationCollection explanationCollection;
+    IndicesCollection indicesCollection;
+    ExplanationCursor source(traversal, n1, getNode(n1).term);
+    ExplanationCursor destination(traversal, n2, getNode(n2).term);
+    source.collectPrimaries(destination, indicesCollection, explanationCollection);
+    for (ERef index : indicesCollection) {
+        explainWeakCongruencePath(n1, n2, index, explanationCollection);
+    }
+
+    vec<PTRef> args;
+    args.capacity(explanationCollection.size());
+    for (PtAsgn lit : explanationCollection) {
+        // Explanation collection holds the antecedent for n1 and n2 being equal
+        // For the clause we negate the antecedent literals
+        assert(lit.sgn != l_Undef);
+        args.push(lit.sgn == l_True ? logic.mkNot(lit.tr) : lit.tr);
+    }
+    args.push(getEquality(getNode(n1).term, getNode(n2).term));
+
+    return logic.mkOr(std::move(args));
 }
 
 void ArraySolver::collectLemmaConditions() {
@@ -325,10 +497,7 @@ void ArraySolver::computeExplanation(PTRef equality) {
     auto conflictExplanation = explainWeakEquivalencePath(array1, array2, getRoot(index1));
     // collect literals explaining why index1 is equivalent to index2 in Egraph
     if (index1 != index2) {
-        auto indexExplanation = egraph.explainer->explain(index1, index2);
-        for (PtAsgn lit : indexExplanation) {
-            conflictExplanation.insert(lit);
-        }
+        recordExplanationOfEgraphEquivalence(index1, index2, conflictExplanation);
     }
     this->has_explanation = true;
     this->explanation.clear();
@@ -372,9 +541,55 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
 
 void ArraySolver::clear() {
     lemmas.clear();
+    selectsInfo.clear();
     nodes.clear();
     rootsMap.clear();
     valid = false;
+}
+
+void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection const & other) {
+    for (PtAsgn element : other) {
+        main.insert(element);
+    }
+}
+
+void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationColletion) const {
+    assert(getRoot(lhs) == getRoot(rhs));
+    auto egraphExplanation = egraph.explainer->explain(lhs, rhs);
+    for (PtAsgn lit : egraphExplanation) {
+        explanationColletion.insert(lit);
+    }
+}
+
+void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection) {
+    assert(getRoot(index) == index);
+    NodeRef sourceRepresentative = getIndexedRepresentative(source, index);
+    NodeRef targetRepresentative = getIndexedRepresentative(target, index);
+    if (sourceRepresentative == targetRepresentative) {
+        auto subexplanation = explainWeakEquivalencePath(getNode(source).term, getNode(target).term, index);
+        merge(explanationCollection, subexplanation);
+        return;
+    }
+    assert(selectsInfo.count(sourceRepresentative) > 0);
+    assert(selectsInfo.count(targetRepresentative) > 0);
+    // get select for left-hand-side
+    ERef sourceSelect = selectsInfo.find(sourceRepresentative)->second.at(index);
+    ERef targetSelect = selectsInfo.find(targetRepresentative)->second.at(index);
+
+    auto explainPathToSelect = [&](ERef select, ERef arrayTerm) {
+        ERef selectArray = getArrayFromSelect(select);
+        auto subexplanation = explainWeakEquivalencePath(arrayTerm, selectArray, index);
+        merge(explanationCollection, subexplanation);
+        recordExplanationOfEgraphEquivalence(index, getIndexFromSelect(select), explanationCollection);
+    };
+
+    explainPathToSelect(sourceSelect, getNode(source).term);
+    explainPathToSelect(targetSelect, getNode(target).term);
+
+    assert(getRoot(sourceSelect) == getRoot(targetSelect));
+    if (sourceSelect != targetSelect) {
+        recordExplanationOfEgraphEquivalence(sourceSelect, targetSelect, explanationCollection);
+    }
 }
 
 //////////// Cursor traversing the graph of weak equivalence
@@ -510,10 +725,7 @@ void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destin
     }
     if (this->term != destination.term) {
         // Same array node but not same ETerm
-        auto explanation = traversal.getSolver().egraph.explainer->explain(this->term, destination.term);
-        for (auto literal : explanation) {
-            explanations.insert(literal);
-        }
+        traversal.getSolver().recordExplanationOfEgraphEquivalence(this->term, destination.term, explanations);
     }
 }
 
@@ -527,10 +739,7 @@ void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indic
     }
     assert(solver.getNodeRef(solver.getRoot(source)) == this->node);
     if (this->term != source) {
-        auto expl = solver.egraph.explainer->explain(this->term, source);
-        for (auto lit : expl) {
-            explanations.insert(lit);
-        }
+        solver.recordExplanationOfEgraphEquivalence(this->term, source, explanations);
     }
     indices.insert(traversal.getSolver().getIndexFromStore(store)); // TODO: Should this be the index or its root?
     this->node = traversal.getNode(this->node).primaryEdge;

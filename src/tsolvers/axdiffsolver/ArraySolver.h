@@ -14,14 +14,21 @@ const struct NodeRef NodeRef_Undef = {UINT32_MAX};
 inline bool operator==(NodeRef a, NodeRef b) { return a.id == b.id; }
 inline bool operator!=(NodeRef a, NodeRef b) { return a.id != b.id; }
 
+struct NodeRefHash {
+    uint32_t operator()(NodeRef ref) const {
+        return ref.id;
+    }
+};
+
 
 struct ArrayNode {
+    ERef term {ERef_Undef};
     ERef primaryStore {ERef_Undef};
     NodeRef primaryEdge {NodeRef_Undef};
     NodeRef secondaryEdge {NodeRef_Undef};
     ERef secondaryStore {ERef_Undef};
 
-    ArrayNode() {}
+    explicit ArrayNode(ERef term) : term(term) {}
 };
 
 class ArraySolver : public TSolver {
@@ -69,6 +76,8 @@ public:
     Logic & getLogic() override;
 
     bool isValid(PTRef tr) override;
+
+    void getNewSplits(vec<PTRef> & splits) override;
 
 /*
 * Internal methods for traversing weak equivalence graph
@@ -141,6 +150,9 @@ private:
 
     std::vector<LemmaConditions> lemmas;
 
+    using SelectsInfo = std::unordered_map<NodeRef, std::unordered_map<ERef, ERef, ERefHash>, NodeRefHash>;
+    SelectsInfo selectsInfo;
+
     PTRef getEquality(ERef lhs, ERef rhs);
 
     bool isFalsified(PTRef equality);
@@ -148,9 +160,22 @@ private:
 
     void computeExplanation(PTRef equality);
 
+    PTRef computeExtensionalityClause(NodeRef n1, NodeRef n2);
+
+    void explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection);
+
     ExplanationCollection explainWeakEquivalencePath(ERef array1, ERef array2, ERef index);
 
+    // Helper
+    static void merge(ArraySolver::ExplanationCollection & main, ExplanationCollection const & other);
+
+    void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationColletion) const;
+
     void collectLemmaConditions();
+
+    void computeSelectsInfo();
+
+    TRes checkExtensionality();
 
     void buildWeakEq();
 
