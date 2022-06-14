@@ -14,7 +14,7 @@
 class SplitterInterpret : public Interpret {
 private:
     PTPLib::net::Channel & channel;
-    bool search = false;
+    bool search = true;
 
   protected:
     void                          writeSplits(const char* filename);
