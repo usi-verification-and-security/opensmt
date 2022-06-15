@@ -23,15 +23,13 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #include "TermMapper.h"
 //
 // Create the binding to a variable for the reference tr.  tr can be
 // negated, in which case the binding is created to (not tr).  Safe to
 // call several times for both tr and (not tr)
 //
-Var TermMapper::addBinding(PTRef tr)
-{
+Var TermMapper::addBinding(PTRef tr) {
     assert(tr != PTRef_Undef);
     assert(varToTerm.size() == var_cnt);
     PTRef tr_p; // The purified term
@@ -52,7 +50,7 @@ Var TermMapper::addBinding(PTRef tr)
     return v;
 }
 
-void TermMapper::getTerm(PTRef r, PTRef& p, bool& sgn) const {
+void TermMapper::getTerm(PTRef r, PTRef &p, bool &sgn) const {
     sgn = false;
     while (logic.getPterm(r).symb() == logic.getSym_not()) {
         r = logic.getPterm(r)[0];
@@ -67,11 +65,12 @@ Lit TermMapper::getLit(PTRef r) const {
     getTerm(r, p, sgn);
     Var v = var_Undef;
     bool found = peekVar(p, v);
-    assert(found); (void)found;
+    assert(found);
+    (void)found;
     return mkLit(v, sgn);
 }
 
-void TermMapper::getVar(PTRef r, PTRef& p, Var& v) const {
+void TermMapper::getVar(PTRef r, PTRef &p, Var &v) const {
     bool sgn;
     getTerm(r, p, sgn);
     v = var_Undef;
@@ -91,16 +90,15 @@ const Lit TermMapper::getOrCreateLit(PTRef ptr) {
     Var v = var_Undef;
     getTerm(ptr, p_tr, sgn);
     peekVar(p_tr, v);
-    if (v == var_Undef)
-    {
+    if (v == var_Undef) {
         assert(logic.hasSortBool(p_tr));
         v = this->addBinding(p_tr);
     }
-    Lit l = mkLit (v, sgn);
+    Lit l = mkLit(v, sgn);
     return l;
 }
 
-bool TermMapper::peekVar(PTRef positiveTerm, Var& v) const {
+bool TermMapper::peekVar(PTRef positiveTerm, Var &v) const {
     assert(not logic.isNot(positiveTerm));
     auto id = Idx(toId(positiveTerm));
     v = id < termToVar.size_() ? termToVar[id] : var_Undef;
@@ -113,5 +111,3 @@ PTRef TermMapper::toPositive(PTRef term) const {
     getTerm(term, pos, sign);
     return pos;
 }
-
-
