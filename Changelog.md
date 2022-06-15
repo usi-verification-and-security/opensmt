@@ -8,6 +8,9 @@ Performance improvements:
  - CoreSMTSolver: Sticky polarities with phase flipping
  - CoreSMTSolver: Do not delete learned clauses with glue score < 4
 
+New features:
+ - A library for use in parallel SMT solving
+
 ### 2.3.2 (2022-04-20)
 
 Bug fixes:
