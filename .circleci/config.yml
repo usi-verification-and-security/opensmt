@@ -1,5 +1,30 @@
 version: 2.1
 jobs:
+    formatter:
+        docker:
+            - image: cimg/base:stable
+              auth:
+                  username: mydockerhub-user
+                  password: $DOCKERHUB_PASSWORD
+              environment:
+                  CMAKE_BUILD_TYPE: Release
+                  FLAGS: -Wall -Wextra -Werror
+                  OSMT_INSTALL: ~/osmt-install
+                  USE_READLINE: OFF
+                  PARALLEL: OFF
+
+        steps:
+            - checkout
+            - run:
+                  name: apt-get update
+                  command: sudo apt-get update
+            - run:
+                  name: install dependencies
+                  command: sudo apt-get install clang-format
+            - run:
+                  name: run clang formatter
+                  command: cat .clang-files | xargs clang-format --Werror --dry-run
+
     build-recent:
         docker:
           - image: cimg/base:stable
@@ -150,13 +175,20 @@ jobs:
 workflows:
   build-test:
       jobs:
+        - formatter
         - build-starexec:
-          filters: &filters-build-test
-            tags:
-              only: /^v.*/
+            requires:
+                - formatter
+            filters: &filters-build-test
+                tags:
+                    only: /^v.*/
         - build-recent:
-          filters:
-            <<: *filters-build-test
+              requires:
+                  - formatter
+              filters:
+                <<: *filters-build-test
         - build-macos:
-          filters:
-            <<: *filters-build-test
+              requires:
+                  - formatter
+              filters:
+                <<: *filters-build-test
