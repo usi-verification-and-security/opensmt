@@ -177,18 +177,12 @@ workflows:
       jobs:
         - formatter
         - build-starexec:
-            requires:
-                - formatter
             filters: &filters-build-test
                 tags:
                     only: /^v.*/
         - build-recent:
-              requires:
-                  - formatter
               filters:
                 <<: *filters-build-test
         - build-macos:
-              requires:
-                  - formatter
               filters:
                 <<: *filters-build-test
