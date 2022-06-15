@@ -806,11 +806,11 @@ bool LASolver::isModelInteger(LVRef v) const
 
 PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const {
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
-    if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
-    else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
-    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor())); }
-    else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
-    else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
+    if (itpAlgorithm == ItpAlgorithm::itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
+    else if (itpAlgorithm == ItpAlgorithm::itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
+    else if (itpAlgorithm == ItpAlgorithm::itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor().c_str())); }
+    else if (itpAlgorithm == ItpAlgorithm::itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
+    else if (itpAlgorithm == ItpAlgorithm::itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
     else {
         assert(false); // Incorrect value in config
         return interpolator.getFarkasInterpolant();

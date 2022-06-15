@@ -245,12 +245,12 @@ bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
 
 void MainSolver::printFramesAsQuery() const
 {
-    char* base_name = config.dump_query_name();
-    if (base_name == NULL)
+    auto base_name = config.dump_query_name();
+    if (base_name.empty())
         getTheory().printFramesAsQuery(frames.getFrameReferences(), std::cout);
     else {
         char* s_file_name;
-        int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
+        int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name.c_str(), check_called);
         (void)chars_written;
         std::ofstream stream;
         stream.open(s_file_name);
@@ -258,7 +258,6 @@ void MainSolver::printFramesAsQuery() const
         stream.close();
         free(s_file_name);
     }
-    free(base_name);
 }
 
 sstat MainSolver::check()

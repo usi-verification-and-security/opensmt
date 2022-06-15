@@ -189,17 +189,17 @@ public:
 
     void checkInterAlgo() const;
 
-    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_mcmillan; }
 
-    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_pudlak; }
 
-    bool usingMcMillanPrimeInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp; }
+    bool usingMcMillanPrimeInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_mcmillanp; }
 
-    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
+    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_ps; }
 
-    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_psw; }
 
-    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == ItpAlgorithm::itp_alg_pss; }
 
     int verbose() const { return config.verbosity(); }
 
@@ -211,7 +211,7 @@ public:
 
     bool needProofStatistics() const {
         ItpAlgorithm ia = config.getBooleanInterpolationAlgorithm();
-        return ((ia == itp_alg_ps) or (ia == itp_alg_psw) or (ia == itp_alg_pss));
+        return ((ia == ItpAlgorithm::itp_alg_ps) or (ia == ItpAlgorithm::itp_alg_psw) or (ia == ItpAlgorithm::itp_alg_pss));
     }
 
     bool verifyPartialInterpolant(ProofNode const &);

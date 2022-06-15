@@ -39,12 +39,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Class defining interpreter
  ***********************************************************/
 
-Interpret::~Interpret() {
-    for (int i = 0; i < term_names.size(); ++i) {
-        free(term_names[i]);
-    }
-}
-
 PTRef
 Interpret::getParsedFormula()
 {
@@ -52,77 +46,60 @@ Interpret::getParsedFormula()
     return root;
 }
 
-void Interpret::setInfo(ASTNode& n) {
-    assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
+void Interpret::setInfo(ASTNode const & n) {
+    assert(n.getType() == ASTType::UATTR_T || n.getType() == ASTType::PATTR_T);
 
-    char* name = NULL;
-    if (n.getValue() == NULL) {
-        ASTNode& an = **(n.children->begin());
-        assert(an.getType() == UATTR_T || an.getType() == PATTR_T);
-        name = strdup(an.getValue());
+    std::string name;
+    if (n.getValue().empty()) {
+        ASTNode const & an = n.children[0];
+        assert(an.getType() == ASTType::UATTR_T || an.getType() == ASTType::PATTR_T);
+        name = an.getValue();
     }
     else // Normal option
-        name = strdup(n.getValue());
+        name = n.getValue();
 
     Info value(n);
 
-    config.setInfo(name, value);
-    free(name);
+    config.setInfo(std::move(name), value);
 }
 
-void Interpret::getInfo(ASTNode& n) {
-    assert(n.getType() == INFO_T);
-
-    const char* name;
-
-    if (n.getValue() != NULL)
-        name = n.getValue();
-    else {
-        assert(n.children != NULL);
-        name = (**(n.children->begin())).getValue();
-    }
+void Interpret::getInfo(ASTNode const & n) {
+    assert(n.getType() == ASTType::INFO_T);
+    assert(n.getValue().empty() or not n.children.empty());
+    std::string const & name = n.getValue().empty() ? "" : n.children[0].getValue();
 
     const Info& value = config.getInfo(name);
 
     if (value.isEmpty())
-        notify_formatted(true, "no value for info %s", name);
+        notify_formatted(true, "no value for info %s", name.c_str());
     else {
         auto val_str = value.toString();
-        notify_formatted(false, "%s %s", name, val_str.c_str());
+        notify_formatted(false, "%s %s", name.c_str(), val_str.c_str());
     }
 }
 
-void Interpret::setOption(ASTNode& n) {
-    assert(n.getType() == OPTION_T);
-    char* name  = NULL;
-
-    if (n.getValue() == NULL)  {
-        // Attribute
-        ASTNode& an = **(n.children->begin());
-        assert(an.getType() == UATTR_T || an.getType() == PATTR_T);
-        name = strdup(an.getValue());
-    }
-    else // Normal option
-        name = strdup(n.getValue());
+void Interpret::setOption(ASTNode const & n) {
+    assert(n.getType() == ASTType::OPTION_T);
+    assert(not n.getValue().empty() or not n.children.empty());
+    std::string const & name = n.getValue().empty() ? n.children[0].getValue() : n.getValue();
 
     SMTOption value(n);
     const char* msg = "ok";
     bool rval = config.setOption(name, value, msg);
     if (rval == false)
-        notify_formatted(true, "set-option failed for %s: %s", name, msg);
-    free(name);
+        notify_formatted(true, "set-option failed for %s: %s", name.c_str(), msg);
 }
 
-void Interpret::getOption(ASTNode& n) {
-    assert(n.getType() == UATTR_T || n.getType() == PATTR_T );
+void Interpret::getOption(ASTNode const & n) {
+    assert(n.getType() == ASTType::UATTR_T || n.getType() == ASTType::PATTR_T );
 
-    assert(n.getValue() != NULL);
-    const char* name = n.getValue();
+    assert(not n.getValue().empty());
+    std::string const & name = n.getValue();
 
     const SMTOption& value = config.getOption(name);
 
     if (value.isEmpty())
-        notify_formatted(true, "No value for attr %s", name);
+        notify_formatted(true, "No value for attr %s", name.c_str());
     else {
         auto str_val = value.toString();
         notify_formatted(false, "%s",str_val.c_str());
@@ -137,20 +114,20 @@ using opensmt::Logic_t;
 using opensmt::getLogicFromString;
 using namespace osmttokens;
 
-void Interpret::interp(ASTNode& n) {
-    assert(n.getType() == CMD_T);
+void Interpret::interp(ASTNode const & n) {
+    assert(n.getType() == ASTType::CMD_T);
     const smt2token cmd = n.getToken();
     try {
         switch (cmd.x) {
             case t_setlogic: {
-                ASTNode &logic_n = **(n.children->begin());
-                const char *logic_name = logic_n.getValue();
+                ASTNode const & logic_n = *n.children.begin();
+                std::string const & logic_name = logic_n.getValue();
                 if (isInitialized()) {
                     notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
                 } else {
                     auto logic_type = getLogicFromString(logic_name);
                     if (logic_type == Logic_t::UNDEF) {
-                        notify_formatted(true, "unknown logic %s", logic_name);
+                        notify_formatted(true, "unknown logic %s", logic_name.c_str());
                         break;
                     }
                     initializeLogic(logic_type);
@@ -161,37 +138,35 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_setinfo: {
-                setInfo(**(n.children->begin()));
+                setInfo(n.children[0]);
                 notify_success();
                 break;
             }
             case t_getinfo: {
-                getInfo(**(n.children->begin()));
+                getInfo(n.children[0]);
                 break;
             }
             case t_setoption: {
-                setOption(**(n.children->begin()));
+                setOption(n.children[0]);
                 notify_success();
                 break;
             }
             case t_getoption: {
-                getOption(**(n.children->begin()));
+                getOption(n.children[0]);
                 break;
             }
             case t_declaresort: {
                 if (isInitialized()) {
-                    assert(n.children and n.children->size() == 2);
-                    auto it = n.children->begin();
-                    ASTNode & symbolNode = **it;
-                    assert(symbolNode.getType() == SYM_T or symbolNode.getType() == QSYM_T);
-                    ++it;
-                    ASTNode & numNode = **it;
-                    assert(numNode.getType() == NUM_T);
-                    int arity = atoi(numNode.getValue()); // MB: TODO: take care of out-of-range input
+                    assert(n.children.size() == 2);
+                    ASTNode const & symbolNode = n.children[0];
+                    assert(symbolNode.getType() == ASTType::SYM_T or symbolNode.getType() == ASTType::QSYM_T);
+                    ASTNode const & numNode = n.children[1];
+                    assert(numNode.getType() == ASTType::NUM_T);
+                    int arity = std::stoi(numNode.getValue()); // MB: TODO: take care of out-of-range input
                     SortSymbol symbol(symbolNode.getValue(), arity);
                     SSymRef ssref;
                     if (logic->peekSortSymbol(symbol, ssref)) {
-                        notify_formatted(true, "sort %s already declared", symbolNode.getValue());
+                        notify_formatted(true, "sort %s already declared", symbolNode.getValue().c_str());
                     } else {
                         logic->declareSortSymbol(std::move(symbol));
                         notify_success();
@@ -218,7 +193,7 @@ void Interpret::interp(ASTNode& n) {
             case t_assert: {
                 if (isInitialized()) {
                     sstat status;
-                    ASTNode &asrt = **(n.children->begin());
+                    ASTNode const &asrt = n.children[0];
                     LetRecords letRecords;
                     PTRef tr = parseTerm(asrt, letRecords);
                     if (tr == PTRef_Undef)
@@ -323,14 +298,14 @@ void Interpret::interp(ASTNode& n) {
                         if (status == s_Error)
                             notify_formatted(true, "write-state");
                     } else {
-                        writeState((**(n.children->begin())).getValue());
+                        writeState(n.children[0].getValue());
                     }
                 }
                 break;
             }
             case t_echo: {
-                const char *str = (**(n.children->begin())).getValue();
-                notify_formatted(false, "%s", str);
+                std::string const & str = n.children[0].getValue();
+                notify_formatted(false, "%s", str.c_str());
                 break;
             }
             case t_push: {
@@ -338,7 +313,7 @@ void Interpret::interp(ASTNode& n) {
                     notify_formatted(true, "Illegal command before set-logic: push");
                 } else {
                     try {
-                        int num = std::stoi((**(n.children->begin())).getValue());
+                        int num = std::stoi(n.children[0].getValue());
                         push(num);
                     } catch (std::out_of_range const & e) {
                         notify_formatted(true, "Illegal push command: %s", e.what());
@@ -351,8 +326,7 @@ void Interpret::interp(ASTNode& n) {
                     notify_formatted(true, "Illegal command before set-logic: pop");
                 } else {
                     try {
-                        std::string str((**(n.children->begin())).getValue());
-                        int num = std::stoi(str);
+                        int num = std::stoi(n.children[0].getValue());
                         pop(num);
                     } catch (std::out_of_range const &ex) {
                         notify_formatted(true, "Illegal pop command: %s", ex.what());
@@ -375,23 +349,23 @@ void Interpret::interp(ASTNode& n) {
 }
 
 
-bool Interpret::addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords) {
+bool Interpret::addLetFrame(std::vector<std::string> const & names, vec<PTRef> const& args, LetRecords& letRecords) {
     assert(names.size() == args.size());
     if (names.size() > 1) {
         // check that they are pairwise distinct;
-        std::unordered_set<const char*, StringHash, Equal<const char*>> namesAsSet(names.begin(), names.end());
-        if (namesAsSet.size() != names.size_()) {
+        std::unordered_set<std::string> namesAsSet(names.begin(), names.end());
+        if (namesAsSet.size() != names.size()) {
             comment_formatted("Overloading let variables makes no sense");
             return false;
         }
     }
     for (int i = 0; i < names.size(); ++i) {
-        const char* name = names[i];
-        if (logic->hasSym(name) && logic->getSym(logic->symNameToRef(name)[0]).noScoping()) {
-            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name);
+        std::string const & name = names[i];
+        if (logic->hasSym(name.c_str()) && logic->getSym(logic->symNameToRef(name.c_str())[0]).noScoping()) {
+            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name.c_str());
             return false;
         }
-        letRecords.addBinding(name, args[i]);
+        letRecords.addBinding(name.c_str(), args[i]);
     }
     return true;
 }
@@ -424,39 +398,37 @@ PTRef Interpret::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, Sym
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     ASTType t = term.getType();
-    if (t == TERM_T) {
-        const char* name = (**(term.children->begin())).getValue();
+    if (t == ASTType::TERM_T) {
+        std::string const & name = term.children[0].getValue();
 //        comment_formatted("Processing term %s", name);
         PTRef tr = PTRef_Undef;
         try {
-            tr = logic->mkConst(name);
+            tr = logic->mkConst(name.c_str());
         } catch (OsmtApiException const & e) {
-            comment_formatted("While processing %s: %s", name, e.what());
+            comment_formatted("While processing %s: %s", name.c_str(), e.what());
         }
         return tr;
     }
 
-    else if (t == QID_T) {
-        if ((**(term.children->begin())).getType() == AS_T) {
-            auto const & as_node = **(term.children->begin());
-            ASTNode const * symbolNode = (*as_node.children)[0];
-            bool isQuoted = symbolNode->getType() == QSYM_T;
-            const char * name = (*as_node.children)[0]->getValue();
-            ASTNode const & sortNode = *(*as_node.children)[1];
-            assert(name != nullptr);
-            PTRef tr = resolveQualifiedIdentifier(name, sortNode, isQuoted);
+    else if (t == ASTType::QID_T) {
+        if (term.children[0].getType() == ASTType::AS_T) {
+            ASTNode const & as_node = term.children[0];
+            ASTNode const & symbolNode = as_node.children[0];
+            bool isQuoted = symbolNode.getType() == ASTType::QSYM_T;
+            std::string const & name = as_node.children[0].getValue();
+            ASTNode const & sortNode = as_node.children[1];
+            assert(not name.empty());
+            PTRef tr = resolveQualifiedIdentifier(name.c_str(), sortNode, isQuoted);
             return tr;
         } else {
-            ASTNode const * symbolNode = (*(term.children->begin()));
-            char const * name = symbolNode->getValue();
-            bool isQuoted = symbolNode->getType() == QSYM_T;
-            assert(name != nullptr);
-            PTRef tr = letNameResolve(name, letRecords);
+            ASTNode const & symbolNode = term.children[0];
+            std::string const & name = symbolNode.getValue();
+            bool isQuoted = symbolNode.getType() == ASTType::QSYM_T;
+            PTRef tr = letNameResolve(name.c_str(), letRecords);
             if (tr != PTRef_Undef) {
                 return tr;
-            }
-            try {
-                tr = resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+            } try {
+                tr = resolveTerm(name.c_str(), {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
             } catch (OsmtApiException & e) {
                 reportError(e.what());
             }
@@ -464,63 +436,63 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         }
     }
 
-    else if ( t == LQID_T ) {
+    else if ( t == ASTType::LQID_T ) {
         // Multi-argument term
-        auto node_iter = term.children->begin();
+        assert(term.children.size() > 1);
+        auto const & astArgs = opensmt::span(&term.children[1], term.children.size()-1);
+        std::string const & name = term.children[0].getValue();
         vec<PTRef> args;
-        const char* name = (**node_iter).getValue(); node_iter++;
-        // Parse the arguments
-        for (; node_iter != term.children->end(); node_iter++) {
-            PTRef arg_term = parseTerm(**node_iter, letRecords);
-            if (arg_term == PTRef_Undef)
+        for (auto const & arg : astArgs) {
+            PTRef arg_tr = parseTerm(arg, letRecords);
+            if (arg_tr == PTRef_Undef) {
                 return PTRef_Undef;
-            else
-                args.push(arg_term);
+            } else {
+                args.push(arg_tr);
+            }
         }
+
         assert(args.size() > 0);
 
         PTRef tr = PTRef_Undef;
         try {
-            tr = resolveTerm(name, std::move(args));
+            tr = resolveTerm(name.c_str(), std::move(args));
         } catch (ArithDivisionByZeroException &ex) {
             reportError(ex.what());
         } catch (OsmtApiException &e) {
             reportError(e.what());
         }
         return tr;
-    }
-
-    else if (t == LET_T) {
-        auto ch = term.children->begin();
-        auto vbl = (**ch).children->begin();
+    } else if (t == ASTType::LET_T) {
+        assert(term.children.size() == 2);
+        std::vector<ASTNode> const & varList = term.children[0].children;
+        ASTNode const & letBoundedTerm = term.children[1];
         vec<PTRef> tmp_args;
-        vec<char*> names;
+        std::vector<std::string> names;
+
         // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
         class Guard {
             LetRecords& rec;
-            vec<char*>& names;
+            std::vector<std::string> &names;
         public:
-            Guard(LetRecords& rec, vec<char*>& names): rec(rec), names(names) { rec.pushFrame(); }
-            ~Guard() { rec.popFrame(); for (int i = 0; i < names.size(); i++) { free(names[i]); }}
+            Guard(LetRecords& rec, std::vector<std::string> & names): rec(rec), names(names) { rec.pushFrame(); }
+            ~Guard() { rec.popFrame(); }
         } scopeGuard(letRecords, names);
         // First read the term declarations in the let statement
-        while (vbl != (**ch).children->end()) {
-            PTRef let_tr = parseTerm(**((**vbl).children->begin()), letRecords);
+        for (auto const & varListEl : varList) {
+            PTRef let_tr = parseTerm(varListEl.children[0], letRecords);
             if (let_tr == PTRef_Undef) return PTRef_Undef;
             tmp_args.push(let_tr);
-            char* name = strdup((**vbl).getValue());
-            names.push(name);
-            vbl++;
+            names.push_back(varListEl.getValue());
         }
+
         // Only then insert them to the table
         bool success = addLetFrame(names, tmp_args, letRecords);
         if (not success) {
             comment_formatted("Let name addition failed");
             return PTRef_Undef;
         }
-        ch++;
         // This is now constructed with the let declarations context in let_branch
-        PTRef tr = parseTerm(**(ch), letRecords);
+        PTRef tr = parseTerm(letBoundedTerm, letRecords);
         if (tr == PTRef_Undef) {
             comment_formatted("Failed in parsing the let scoped term");
             return PTRef_Undef;
@@ -528,34 +500,34 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         return tr;
     }
 
-    else if (t == BANG_T) {
-        assert(term.children->size() == 2);
-        auto ch = term.children->begin();
-        ASTNode& named_term = **ch;
-        ASTNode& attr_l = **(++ ch);
-        assert(attr_l.getType() == GATTRL_T);
-        assert(attr_l.children->size() == 1);
-        ASTNode& name_attr = **(attr_l.children->begin());
+    else if (t == ASTType::BANG_T) {
+        assert(term.children.size() == 2);
+
+        ASTNode const & named_term = term.children[0];
+        ASTNode const & attr_l = term.children[1];
+        assert(attr_l.getType() == ASTType::GATTRL_T);
+        assert(attr_l.children.size() == 1);
+        ASTNode const & name_attr = attr_l.children[0];
 
         PTRef tr = parseTerm(named_term, letRecords);
         if (tr == PTRef_Undef) return tr;
 
-        if (strcmp(name_attr.getValue(), ":named") == 0) {
-            ASTNode& sym = **(name_attr.children->begin());
-            assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
-            if (nameToTerm.has(sym.getValue())) {
-                notify_formatted(true, "name %s already exists", sym.getValue());
+        if (name_attr.getValue() == ":named") {
+            ASTNode const & sym = name_attr.children[0];
+            assert(sym.getType() == ASTType::SYM_T or sym.getType() == ASTType::QSYM_T);
+            if (nameToTerm.has(sym.getValue().c_str())) {
+                notify_formatted(true, "name %s already exists", sym.getValue().c_str());
                 return PTRef_Undef;
             }
-            char* name = strdup(sym.getValue());
+            std::string name = sym.getValue();
             // MB: term_names becomes the owner of the string and is responsible for deleting
-            term_names.push(name);
-            nameToTerm.insert(name, tr);
+            term_names.push_back(name);
+            nameToTerm.insert(name.c_str(), tr);
             if (!termToNames.has(tr)) {
                 vec<const char*> v;
                 termToNames.insert(tr, v);
             }
-            termToNames[tr].push(name);
+            termToNames[tr].push(name.c_str());
         }
         return tr;
     }
@@ -591,10 +563,9 @@ sstat Interpret::checkSat() {
     if (res == s_Undef) {
         const SMTOption& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
-        char* name = config.dump_state();
+        std::string name = config.dump_state();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
-        free(name);
     }
 
     return res;
@@ -649,8 +620,8 @@ bool Interpret::getAssignment() {
     std::stringstream ss;
     ss << '(';
     for (int i = 0; i < term_names.size(); i++) {
-        const char* name = term_names[i];
-        PTRef tr = nameToTerm[name];
+        std::string const & name = term_names[i];
+        PTRef tr = nameToTerm[name.c_str()];
         lbool val = main_solver->getTermValue(tr);
         ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown"))
             << ')' << (i < term_names.size() - 1 ? " " : "");
@@ -661,13 +632,12 @@ bool Interpret::getAssignment() {
     return true;
 }
 
-void Interpret::getValue(const std::vector<ASTNode*>* terms)
+void Interpret::getValue(std::vector<ASTNode> const & terms)
 {
     auto model = main_solver->getModel();
     Logic& logic = main_solver->getLogic();
     std::vector<opensmt::pair<PTRef,PTRef>> values;
-    for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
-        const ASTNode& term = **term_it;
+    for (auto const & term : terms) {
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
@@ -675,7 +645,7 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
             auto pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str.c_str());
         } else
-            comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
+            comment_formatted("Error parsing the term %s", term.children[0].getValue().c_str());
     }
     printf("(");
     for (auto const & valPair : values) {
@@ -818,12 +788,12 @@ std::string Interpret::printDefinitionSmtlib(TemplateFunction const & templateFu
     return ss.str();
 }
 
-void Interpret::writeState(const char* filename)
+void Interpret::writeState(std::string const & filename)
 {
     char* msg;
     bool rval;
 
-    rval = main_solver->writeSolverState_smtlib2(filename, &msg);
+    rval = main_solver->writeSolverState_smtlib2(filename.c_str(), &msg);
 
     if (!rval) {
         notify_formatted("%s", msg);
@@ -832,13 +802,12 @@ void Interpret::writeState(const char* filename)
 
 bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
 {
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    ASTNode const & args_node = **(it++);
-    ASTNode const & ret_node  = **(it++);
-    assert(it == n.children->end());
+    assert(n.children.size() == 3);
+    ASTNode const & name_node = n.children[0];
+    ASTNode const & args_node = n.children[1];
+    ASTNode const & ret_node = n.children[2];
 
-    const char* fname = name_node.getValue();
+    std::string const & fname = name_node.getValue();
 
     vec<SRef> args;
 
@@ -846,16 +815,16 @@ bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<S
     if (retSort != SRef_Undef) {
         args.push(retSort);
     } else {
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname.c_str());
         return false;
     }
 
-    for (auto childNode : *(args_node.children)) {
-        SRef argSort = sortFromASTNode(*childNode);
+    for (auto const & childNode : args_node.children) {
+        SRef argSort = sortFromASTNode(childNode);
         if (argSort != SRef_Undef) {
             args.push(argSort);
         } else {
-            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(*childNode).name.c_str(), fname);
+            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(childNode).name.c_str(), fname.c_str());
             return false;
         }
     }
@@ -869,31 +838,31 @@ bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<S
     SymRef rval = logic->declareFun(fname, rsort, args2);
 
     if (rval == SymRef_Undef) {
-        comment_formatted("Error while declare-fun %s", fname);
+        comment_formatted("Error while declare-fun %s", fname.c_str());
         return false;
     }
     user_declarations.push(rval);
     return true;
 }
 
-bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_sort)
+bool Interpret::declareConst(ASTNode const & n) //(const char* fname, const SRef ret_sort)
 {
-    assert(n.children and n.children->size() == 3);
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    it++; // args_node
-    ASTNode const & ret_node = **(it++);
-    const char* fname = name_node.getValue();
+    assert(n.children.size() == 3);
+    ASTNode const & name_node = n.children[0];
+    // n.children[1] is the args node, which is empty
+    ASTNode const & ret_node = n.children[2];
+
+    std::string const & fname = name_node.getValue();
     SRef ret_sort = sortFromASTNode(ret_node);
     if (ret_sort == SRef_Undef) {
-        notify_formatted(true, "Failed to declare constant %s", fname);
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
+        notify_formatted(true, "Failed to declare constant %s", fname.c_str());
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname.c_str());
         return false;
     }
 
     SymRef rval = logic->declareFun(fname, ret_sort, {});
     if (rval == SymRef_Undef) {
-        comment_formatted("Error while declare-const %s", fname);
+        comment_formatted("Error while declare-const %s", fname.c_str());
         return false;
     }
     user_declarations.push(rval);
@@ -903,26 +872,25 @@ bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_so
 
 bool Interpret::defineFun(const ASTNode& n)
 {
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    ASTNode const & args_node = **(it++);
-    ASTNode const & ret_node  = **(it++);
-    ASTNode const & term_node = **(it++);
-    assert(it == n.children->end());
+    assert(n.children.size() == 4);
 
-    const char* fname = name_node.getValue();
+    ASTNode const & name_node = n.children[0];
+    ASTNode const & args_node = n.children[1];
+    ASTNode const & ret_node = n.children[2];
+    ASTNode const & term_node = n.children[3];
+
+    std::string const & fname = name_node.getValue();
 
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
-    for (auto childNodePtr : *args_node.children) {
-        ASTNode const & childNode = *childNodePtr;
-        assert(childNode.children->size() == 1);
+    for (auto const & childNode : args_node.children) {
+        assert(childNode.children.size() == 1);
         std::string varName = childNode.getValue();
-        ASTNode const & sortNode = **(childNode.children->begin());
+        ASTNode const & sortNode = childNode.children[0];
         SRef sortRef = sortFromASTNode(sortNode);
         if (sortRef == SRef_Undef) {
-            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname);
+            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname.c_str());
             return false;
         }
         arg_sorts.push(sortRef);
@@ -933,7 +901,7 @@ bool Interpret::defineFun(const ASTNode& n)
     // The return sort
     SRef ret_sort = sortFromASTNode(ret_node);
     if (ret_sort == SRef_Undef) {
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
+        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname.c_str());
         return false;
     }
     sstat status;
@@ -1042,11 +1010,9 @@ void Interpret::notify_success() {
 }
 
 void Interpret::execute(const ASTNode* r) {
-    auto i = r->children->begin();
-    for (; i != r->children->end() && !f_exit; i++) {
-        interp(**i);
-        delete *i;
-        *i = nullptr;
+    for (auto const & command : r->children) {
+        if (f_exit) break;
+        interp(command);
     }
 }
 
@@ -1188,47 +1154,49 @@ int Interpret::interpPipe() {
 
 SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
     auto type = node.getType();
-    if (type == SYM_T or type == QSYM_T) {
+    if (type == ASTType::SYM_T or type == ASTType::QSYM_T) {
         return {node.getValue(), 0};
     } else {
-        assert(type == LID_T and node.children and not node.children->empty());
-        ASTNode const & name = **(node.children->begin());
-        return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
+        assert(type == ASTType::LID_T and not node.children.empty());
+        ASTNode const & name = node.children[0];
+        return {name.getValue(), static_cast<unsigned int>(node.children.size() - 1)};
     }
 }
 
 SRef Interpret::sortFromASTNode(ASTNode const & node) const {
     auto type = node.getType();
-    if (type == SYM_T or type == QSYM_T) {
+    if (type == ASTType::SYM_T or type == ASTType::QSYM_T) {
         SortSymbol symbol(node.getValue(), 0);
         SSymRef symRef;
         bool known = logic->peekSortSymbol(symbol, symRef);
         if (not known) { return SRef_Undef; }
         return logic->getSort(symRef, {});
     } else {
-        assert(type == LID_T and node.children and not node.children->empty());
-        ASTNode const & name = **(node.children->begin());
-        SortSymbol symbol(name.getValue(), node.children->size() - 1);
+        assert(type == ASTType::LID_T and not node.children.empty());
+        ASTNode const & name = node.children[0];
+        SortSymbol symbol(name.getValue(), node.children.size() - 1);
         SSymRef symRef;
         bool known = logic->peekSortSymbol(symbol, symRef);
         if (not known) { return SRef_Undef; }
         vec<SRef> args;
-        for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
-            SRef argSortRef = sortFromASTNode(**it);
+        auto astArgs = opensmt::span(&node.children[1], node.children.size()-1);
+        for (auto const & astArg : astArgs) {
+            SRef argSortRef = sortFromASTNode(astArg);
             if (argSortRef == SRef_Undef) { return SRef_Undef; }
             args.push(argSortRef);
         }
         return logic->getSort(symRef, std::move(args));
     }
-    assert(type == LID_T and node.children and not node.children->empty());
-    ASTNode const & name = **(node.children->begin());
-    SortSymbol symbol(name.getValue(), node.children->size() - 1);
+    assert(type == ASTType::LID_T and not node.children.empty());
+    ASTNode const & name = node.children[0];
+    SortSymbol symbol(name.getValue(), node.children.size() - 1);
     SSymRef symRef;
     bool known = logic->peekSortSymbol(symbol, symRef);
     if (not known) { return SRef_Undef; }
     vec<SRef> args;
-    for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
-        SRef argSortRef = sortFromASTNode(**it);
+    auto astSortArgs = opensmt::span(&node.children[1], node.children.size()-1);
+    for (auto const & astSortArg : astSortArgs) {
+        SRef argSortRef = sortFromASTNode(astSortArg);
         if (argSortRef == SRef_Undef) { return SRef_Undef; }
         args.push(argSortRef);
     }
@@ -1237,7 +1205,7 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
 
 void Interpret::getInterpolants(const ASTNode& n)
 {
-    auto exps = *n.children;
+    auto const & exps = n.children;
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
@@ -1245,8 +1213,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         letRecords.addBinding(key, nameToTerm[key]);
     }
 
-    for (auto e : exps) {
-        ASTNode& c = *e;
+    for (auto const & c : exps) {
         PTRef tr = parseTerm(c, letRecords);
 //        printf("Itp'ing a term %s\n", logic->pp(tr));
         grouping.push(tr);
@@ -1325,8 +1292,8 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
 
-std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
-    return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+std::unique_ptr<MainSolver> Interpret::createMainSolver(std::string const & logic_name) {
+    return std::make_unique<MainSolver>(*logic, config, logic_name + " solver");
 }
 
 

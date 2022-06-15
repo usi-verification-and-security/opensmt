@@ -30,55 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <sstream>
 
-void ASTNode::print(std::ostream& o, int indent) {
-        for (int i = 0; i < indent; i++)
-            printf(" ");
-        o << "<type: " << typeToStr() << ", value: " << (val != NULL ?  val : "NULL") << ">" << std::endl;
-        if (children == NULL) return;
-        for (auto i = children->begin(); i != children->end(); i++)
-            (*i)->print(o, indent+1);
-}
-
-const char* ASTNode::typestr[] = {
-      "command"         , "command-list"                // CMD
-    , "symbol"          , "symbol-list"                 // SYM
-    , "number"          , "number_list"                 // NUM
-    , "sort"            , "sort-list"                   // SORT
-    , "sorted-var"      , "sorted-var-list"             // SV
-    , "user-attr"       , "user-attr-list"              // UATTR
-    , "predef-attr"     , "predef-attr-list"            // PATTR
-    , "gen-attr"        , "gen-attr-list"               // GATTR
-    , "spec-const"      , "spec-const-list"             // SPECC
-    , "s-expr"          , "s-expr-list"                 // SEXPR
-    , "identifier"      , "identifier-list"             // ID
-    , "long-identifier" , "long-identifier-list"        // LID
-    , "decimal"         , "decimal-list"                // DEC
-    , "hex"             , "hex-list"                    // HEX
-    , "binary"          , "binary-list"                 // BIN
-    , "string"          , "string-list"                 // STR
-    , "as"              , "as-list"                     // AS
-    , "var-binding"     , "var-binding-list"            // VARB
-    , "term"            , "term-list"                   // TERM
-    , "qualified-id"    , "qualified-id-list"           // QID
-    , "long-qual-id"    , "long-qual-id-list"           // LQID
-    , "let"             , "let-list"                    // LET
-    , "forall"          , "forall-list"                 // FORALL
-    , "exists"          , "exists-list"                 // EXISTS
-    , "!"               , "!-list"                      // BANG
-    , "sort-sym-decl"   , "sort-sym-decl-list"          // SSYMD
-    , "fun-sym-decl"    , "fun-sym-decl-list"           // FSYMD
-    , "par-fun-sym-decl", "par-fun-sym-decl-list"       // PFSYMD
-    , "pf-2nd"          , "pf-2nd-list"                 // PFID
-    , "theory-attr"     , "theory-attr-list"            // TATTR
-    , "theory-decl"     , "theory-decl-list"            // TDECL
-    , "logic-attr"      , "logic-attr-list"             // LATTR
-    , "logic"           , "logic-list"                  // LOGIC
-    , "bool"            , "bool-list"                   // BOOL
-    , "option"          , "option-list"                 // OPTION
-    , "info-flag"       , "info-flag-list"              // INFO
-};
-
-
 /*********************************************************************
  * Generic configuration class, used for both set-info and set-option
  *********************************************************************/
@@ -89,61 +40,60 @@ ConfValue::ConfValue(const char* s) {
 }
 
 ConfValue::ConfValue(const ASTNode& s_expr_n) {
-    if (s_expr_n.getType() == SEXPRL_T) {
+    if (s_expr_n.getType() == ASTType::SEXPRL_T) {
         type = O_LIST;
         configs = new std::list<ConfValue*>;
-        for (auto i = s_expr_n.children->begin(); i != s_expr_n.children->end(); i++)
-            configs->push_back(new ConfValue(**i));
-    }
-    else if (s_expr_n.getType() == SYM_T) {
+        for (auto const & i : s_expr_n.children) {
+            configs->push_back(new ConfValue(i));
+        }
+    } else if (s_expr_n.getType() == ASTType::SYM_T) {
         type   = O_SYM;
-        strval = strdup(s_expr_n.getValue());
-    }
-    else if (s_expr_n.getType() == SPECC_T) {
-        ASTNode& spn = **(s_expr_n.children->begin());
-        if (spn.getType() == NUM_T) {
+        strval = s_expr_n.getValue();
+    } else if (s_expr_n.getType() == ASTType::SPECC_T) {
+        assert(s_expr_n.children.size() > 0);
+        ASTNode const & spn = s_expr_n.children[0];
+        if (spn.getType() == ASTType::NUM_T) {
            type = O_NUM;
-           numval = atoi(spn.getValue());
-        }
-        else if (spn.getType() == DEC_T) {
+           numval = std::stoi(spn.getValue());
+        } else if (spn.getType() == ASTType::DEC_T) {
             type = O_DEC;
-            char* end;
-            decval = strtod(spn.getValue(), &end);
-            assert(end != NULL);
-        }
-        else if (spn.getType() == HEX_T) {
+            decval = std::stod(spn.getValue());
+        } else if (spn.getType() == ASTType::HEX_T) {
             type = O_HEX;
             std::string tmp(spn.getValue());
             tmp.erase(0,2);
             char* end;
             unumval = strtoul(tmp.c_str(), &end, 16);
-            assert(end != NULL);
+            assert(end);
         }
-        else if (spn.getType() == BIN_T) {
+        else if (spn.getType() == ASTType::BIN_T) {
             type = O_BIN;
             std::string tmp(spn.getValue());
             tmp.erase(0,2);
             char* end;
             unumval = strtoul(tmp.c_str(), &end, 2);
-            assert(end != NULL);
+            assert(end);
         }
-        else if (spn.getType() == STR_T) {
+        else if (spn.getType() == ASTType::STR_T) {
             type = O_STR;
-            strval = strdup(spn.getValue());
+            strval = spn.getValue();
         }
-        else assert(false);
-    }
-    else if (s_expr_n.getType() == UATTR_T) {
+        else {
+            assert(false);
+        }
+    } else if (s_expr_n.getType() == ASTType::UATTR_T) {
         type = O_ATTR;
-        strval = strdup(s_expr_n.getValue());
+        strval = s_expr_n.getValue();
     }
-    else assert(false); //Not implemented
+    else {
+        assert(false); //Not implemented
+    }
 }
 
 ConfValue::ConfValue(const ConfValue& other) {
     type = other.type;
     if (type == O_NUM) numval = other.numval;
-    else if (type == O_STR) strval = strdup(other.strval);
+    else if (type == O_STR) strval = other.strval;
     else if (type == O_DEC) decval = other.decval;
     else if (type == O_LIST) {
         configs = new std::list<ConfValue*>;
@@ -151,13 +101,13 @@ ConfValue::ConfValue(const ConfValue& other) {
             configs->push_back(new ConfValue(*value));
     }
     else if (type == O_SYM)
-        strval = strdup(other.strval);
+        strval = other.strval;
     else if (type == O_HEX)
         unumval = other.unumval;
     else if (type == O_BIN)
         unumval = other.unumval;
     else if (type == O_ATTR)
-        strval = strdup(other.strval);
+        strval = other.strval;
     else if (type == O_BOOL)
         numval = other.numval;
     else if (type == O_EMPTY)
@@ -169,7 +119,7 @@ ConfValue& ConfValue::operator=(const ConfValue& other)
 {
     type = other.type;
     if (type == O_NUM) numval = other.numval;
-    else if (type == O_STR) strval = strdup(other.strval);
+    else if (type == O_STR) strval = other.strval;
     else if (type == O_DEC) decval = other.decval;
     else if (type == O_LIST) {
         configs = new std::list<ConfValue*>;
@@ -177,13 +127,13 @@ ConfValue& ConfValue::operator=(const ConfValue& other)
             configs->push_back(new ConfValue(*value));
     }
     else if (type == O_SYM)
-        strval = strdup(other.strval);
+        strval = other.strval;
     else if (type == O_HEX)
         unumval = other.unumval;
     else if (type == O_BIN)
         unumval = other.unumval;
     else if (type == O_ATTR)
-        strval = strdup(other.strval);
+        strval = other.strval;
     else if (type == O_BOOL)
         numval = other.numval;
     else if (type == O_EMPTY)
@@ -192,23 +142,13 @@ ConfValue& ConfValue::operator=(const ConfValue& other)
     return *this;
 }
 
-ConfValue::~ConfValue()
-{
-    if (type == O_STR && strval != NULL) {
-        free(strval);
-        strval = NULL;
-    }
-    else if (type == O_EMPTY)
-        free(strval);
-    else if (type == O_LIST) {
-        for (auto * value : *configs)
+ConfValue::~ConfValue() {
+    if (type == O_LIST) {
+        for (auto * value : *configs) {
             delete value;
+        }
         delete configs;
     }
-    else if (type == O_SYM)
-        free(strval);
-    else if (type == O_ATTR)
-        free(strval);
 }
 
 std::string ConfValue::toString() const {
@@ -255,20 +195,19 @@ std::string ConfValue::toString() const {
  ***********************************************************/
 
 Info::Info(ASTNode const & n) {
-    assert(n.getType() == UATTR_T or n.getType() == PATTR_T);
-    if (n.children == NULL) {
+    assert(n.getType() == ASTType::UATTR_T or n.getType() == ASTType::PATTR_T);
+    if (n.children.empty()) {
         value.type = O_EMPTY;
         return;
-    }
-    else {
+    } else {
         // child is attribute_value
-        ASTNode const & child = **(n.children->begin());
+        ASTNode const & child = n.children[0];
 
-        if (child.getType() == SPECC_T or child.getType() == SEXPRL_T) {
+        if (child.getType() == ASTType::SPECC_T or child.getType() == ASTType::SEXPRL_T) {
             value = ConfValue(child);
         }
-        else if (child.getType() == SYM_T or child.getType() == QSYM_T) {
-            value.strval = strdup(child.getValue());
+        else if (child.getType() == ASTType::SYM_T or child.getType() == ASTType::QSYM_T) {
+            value.strval = child.getValue();
             value.type = O_STR;
         }
         else assert(false);
@@ -285,55 +224,52 @@ Info::Info(const Info& other)
  ***********************************************************/
 
 SMTOption::SMTOption(ASTNode const & n) {
-    assert(n.children);
+    assert(not n.children.empty());
 
-    ASTNode const & child = **(n.children->begin());
+    ASTNode const & child = n.children[0];
 
-    if (child.getType() == BOOL_T) {
+    if (child.getType() == ASTType::BOOL_T) {
         value.type   = O_BOOL;
-        value.numval = strcmp(child.getValue(), "true") == 0 ? 1 : 0;
+        value.numval = child.getValue() == "true" ? 1 : 0;
         return;
     }
-    if (child.getType() == STR_T) {
+    if (child.getType() == ASTType::STR_T) {
         value.type   = O_STR;
-        value.strval = strdup(child.getValue());
+        value.strval = child.getValue();
         return;
     }
-    if (child.getType() == NUM_T) {
+    if (child.getType() == ASTType::NUM_T) {
         value.type   = O_NUM;
-        value.numval = atoi(child.getValue());
+        value.numval = std::stoi(child.getValue());
         return;
     }
 
-    if (child.getType() == DEC_T) {
+    if (child.getType() == ASTType::DEC_T) {
         value.type   = O_DEC;
-        sscanf(child.getValue(), "%lf", &value.decval);
+        value.decval = std::stod(child.getValue());
     }
-    assert(child.getType() == UATTR_T or child.getType() == PATTR_T);
+    assert(child.getType() == ASTType::UATTR_T or child.getType() == ASTType::PATTR_T);
     // The option is an attribute
 
-    if (not child.children) {
+    if (child.children.empty()) {
         value.type = O_EMPTY;
         return;
-    }
-    else {
+    } else {
         // n is now attribute_value
-        ASTNode const & attributeValue = **(child.children->begin());
+        ASTNode const & attributeValue = child.children[0];
 
-        if (attributeValue.getType() == SPECC_T or attributeValue.getType() == SEXPRL_T) {
+        if (attributeValue.getType() == ASTType::SPECC_T or attributeValue.getType() == ASTType::SEXPRL_T) {
             value = ConfValue(attributeValue);
         }
-        else if (attributeValue.getType() == SYM_T) {
-            if (strcmp(attributeValue.getValue(), "true") == 0) {
+        else if (attributeValue.getType() == ASTType::SYM_T) {
+            if (attributeValue.getValue() == "true") {
                 value.type = O_BOOL;
                 value.numval = 1;
-            }
-            else if (strcmp(attributeValue.getValue(), "false") == 0) {
+            } else if (attributeValue.getValue() == "false") {
                 value.type = O_BOOL;
                 value.numval = 0;
-            }
-            else {
-                value.strval = strdup(attributeValue.getValue());
+            } else {
+                value.strval = attributeValue.getValue();
                 value.type = O_STR;
             }
             return;
@@ -345,7 +281,7 @@ SMTOption::SMTOption(ASTNode const & n) {
 //---------------------------------------------------------------------------------
 // SMTConfig
 
-bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*& msg) {
+bool SMTConfig::setOption(std::string const & name, const SMTOption& value, const char*& msg) {
     msg = "ok";
     if (usedForInitialization && isPreInitializationOption(name)) {
         msg = "Option cannot be changed at this point";
@@ -353,11 +289,11 @@ bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*&
     }
     // Special options:
     // stats_out
-    if (strcmp(name, o_stats_out) == 0) {
+    if (name == o_stats_out) {
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        if (!optionTable.has(name))
+        if (optionTable.find(name) == optionTable.end())
             stats_out.open(value.getValue().strval, std::ios_base::out);
-        else if (strcmp(optionTable[name]->getValue().strval, value.getValue().strval) != 0) {
+        else if (optionTable[name]->getValue().strval != value.getValue().strval) {
             if (stats_out.is_open()) {
                 stats_out.close();
                 stats_out.open(value.getValue().strval, std::ios_base::out);
@@ -367,79 +303,80 @@ bool SMTConfig::setOption(const char* name, const SMTOption& value, const char*&
     }
 
     // produce stats
-    if (strcmp(name, o_produce_stats) == 0) {
+    if (name == o_produce_stats) {
         if (value.getValue().type != O_BOOL) { msg = s_err_not_bool; return false; }
         if (value.getValue().numval == 1) {
             // Gets set to true
-            if (!optionTable.has(o_stats_out)) {
-                if (!optionTable.has(o_produce_stats) || optionTable[o_produce_stats]->getValue().numval == 0) {
+            if (optionTable.find(o_stats_out) == optionTable.end()) {
+                if (optionTable.find(o_produce_stats) == optionTable.end() || optionTable[o_produce_stats]->getValue().numval == 0) {
                     // Insert the default value
                     insertOption(o_stats_out, new SMTOption("/dev/stdout"));
-                }
-                else if (optionTable.has(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1)
+                } else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats]->getValue().numval == 1) {
                     assert(false);
+                }
             }
             else { } // No action required
 
             if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out]->getValue().strval, std::ios_base::out);
         }
-        else if (optionTable.has(o_produce_stats) && optionTable[o_produce_stats]->getValue().numval == 1) {
+        else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats]->getValue().numval == 1) {
             // gets set to false and was previously true
-            if (optionTable.has(o_stats_out)) {
-                if (optionTable[o_stats_out]->getValue().numval == 0) assert(false);
+            if (optionTable.find(o_stats_out) != optionTable.end()) {
+                if (optionTable.at(o_stats_out)->getValue().numval == 0) assert(false);
                 else if (stats_out.is_open()) stats_out.close();
             }
         }
     }
 
-    if (strcmp(name, o_random_seed) == 0) {
+    if (name == o_random_seed) {
         if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
         int seed = value.getValue().numval;
         if (seed == 0) { msg = s_err_seed_zero; return false; }
     }
 
-    if (strcmp(name, o_sat_split_type) == 0) {
+    if (name == o_sat_split_type) {
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        const char* val = value.getValue().strval;
-        if (strcmp(val, spts_lookahead) != 0 &&
-                strcmp(val, spts_scatter) != 0 &&
-                strcmp(val, spts_none) != 0)
-        { msg = s_err_unknown_split; return false; }
+        std::string val = value.getValue().strval;
+        if (val != spts_lookahead && val != spts_scatter && val != spts_none) {
+            msg = s_err_unknown_split;
+            return false;
+        }
     }
-    if (strcmp(name, o_sat_split_units) == 0) {
+    if (name == o_sat_split_units) {
         if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        const char* val = value.getValue().strval;
-        if (strcmp(val, spts_time) != 0 &&
-            strcmp(val, spts_search_counter) != 0)
-        { msg = s_err_unknown_units; return false; }
+        std::string val = value.getValue().strval;
+        if (val != spts_time && val != spts_search_counter) {
+            msg = s_err_unknown_units;
+            return false;
+        }
     }
-    if (optionTable.has(name))
-        optionTable.remove(name);
+    auto itr = optionTable.find(name);
+    if (itr != optionTable.end()) {
+        optionTable.erase(itr);
+    }
     insertOption(name, new SMTOption(value));
     return true;
 }
 
-const SMTOption& SMTConfig::getOption(const char* name) const {
-    if (optionTable.has(name))
-        return *optionTable[name];
+const SMTOption& SMTConfig::getOption(std::string const & name) const {
+    auto itr = optionTable.find(name);
+    if (itr != optionTable.end())
+        return *itr->second;
     else
         return option_Empty;
 }
 
-bool SMTConfig::setInfo(const char* name_, const Info& value) {
-    if (infoTable.has(name_))
-        infoTable.remove(name_);
-    Info* value_new = new Info(value);
-    char* name = strdup(name_);
-    infos.push(value_new);
-    info_names.push(name);
-    infoTable.insert(name, value_new);
+bool SMTConfig::setInfo(std::string && name_, const Info& value) {
+    if (infoTable.find(name_) != infoTable.end())
+        infoTable.erase(infoTable.find(name_));
+    infos.emplace_back(Info(value));
+    infoTable.insert({name_, &infos.back()});
     return true;
 }
 
-const Info& SMTConfig::getInfo(const char* name) const {
-    if (infoTable.has(name))
-        return *infoTable[name];
+const Info& SMTConfig::getInfo(std::string const & name) const {
+    if (infoTable.find(name) != infoTable.end())
+        return *infoTable.at(name);
     else
         return info_Empty;
 }

@@ -151,9 +151,9 @@ private:
 
     icolor_t resolveABColor() const;
 
-    bool usingStrong()  const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_strong; }
-    bool usingWeak()    const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_weak; }
-    bool usingRandom()  const { return config.getEUFInterpolationAlgorithm() == itp_euf_alg_random; }
+    bool usingStrong()  const { return config.getEUFInterpolationAlgorithm() == ItpAlgorithm::itp_euf_alg_strong; }
+    bool usingWeak()    const { return config.getEUFInterpolationAlgorithm() == ItpAlgorithm::itp_euf_alg_weak; }
+    bool usingRandom()  const { return config.getEUFInterpolationAlgorithm() == ItpAlgorithm::itp_euf_alg_random; }
 
     bool getSubpaths(const path_t &, path_t &, path_t &, path_t &);
 
