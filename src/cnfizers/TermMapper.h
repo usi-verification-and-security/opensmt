@@ -23,24 +23,22 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #ifndef TERMMAPPER_H
 #define TERMMAPPER_H
-#include "Map.h"
-#include "SolverTypes.h"
-#include "PTRef.h"
 #include "Logic.h"
+#include "Map.h"
+#include "PTRef.h"
 
 class TermMapper {
-  private:
-    int         var_cnt;
-    Logic&      logic;
-    vec<bool>   frozen;
-    vec<PTRef>  varToTerm; // Mapping Var -> PTRef using var's index
-    vec<Var>    termToVar; // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
+private:
+    int var_cnt;
+    Logic &logic;
+    vec<bool> frozen;
+    vec<PTRef> varToTerm; // Mapping Var -> PTRef using var's index
+    vec<Var> termToVar;   // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
 
     // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
-    void getTerm(PTRef tr, PTRef& tr_pos, bool& sgn) const;
+    void getTerm(PTRef tr, PTRef &tr_pos, bool &sgn) const;
 
     // Given a term returns the positive version of the term.
     PTRef toPositive(PTRef term) const;
@@ -48,20 +46,21 @@ class TermMapper {
     PTId toId(PTRef term) const { return logic.getPterm(term).getId(); }
 
     // Giver a term computes the positive term and SAT variable correspoding to the positive term.
-    void getVar(PTRef, PTRef&, Var&) const;
+    void getVar(PTRef, PTRef &, Var &) const;
 
-    // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and returns true.
-    bool peekVar(PTRef positiveTerm, Var& v) const;
+    // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and returns
+    // true.
+    bool peekVar(PTRef positiveTerm, Var &v) const;
 
-    // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for the same term.
+    // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for
+    // the same term.
     Var addBinding(PTRef tr);
 
-  public:
-    TermMapper(Logic& l) : var_cnt(0), logic(l) {}
+public:
+    TermMapper(Logic &l) : var_cnt(0), logic(l) {}
 
     void setFrozen(Var v) { frozen[v] = true; }
-    bool isFrozen(Var v)  { return frozen[v]; }
-
+    bool isFrozen(Var v) { return frozen[v]; }
 
     /*
      * Returns a SAT literal corresponding to the giver BOOLEAN term.
@@ -72,16 +71,23 @@ class TermMapper {
     const Lit getOrCreateLit(PTRef ptr);
 
     // Returns the variable corresponding to the term. The connection must already exist.
-    Var  getVar(PTRef)    const;
+    Var getVar(PTRef) const;
     // Returns the literal corresponding to the term. The connection must already exist.
-    Lit  getLit(PTRef)    const;
+    Lit getLit(PTRef) const;
     // Test if the given term already has an assigned SAT variable
-    bool hasLit(PTRef tr) const { Var v = var_Undef; peekVar(toPositive(tr), v); return v != var_Undef; }
+    bool hasLit(PTRef tr) const {
+        Var v = var_Undef;
+        peekVar(toPositive(tr), v);
+        return v != var_Undef;
+    }
 
     // Returns the term to which the given variable has been assigned. The connection must already exist.
-    PTRef varToPTRef(Var v) const { assert(v >= 0); return varToTerm[v]; }
+    PTRef varToPTRef(Var v) const {
+        assert(v >= 0);
+        return varToTerm[v];
+    }
 
-    int  nVars()          const { return varToTerm.size(); }
+    int nVars() const { return varToTerm.size(); }
 };
 
 #endif
