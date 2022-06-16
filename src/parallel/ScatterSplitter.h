@@ -50,6 +50,7 @@ private:
     PTPLib::common::synced_stream * syncedStream = nullptr;
 
     PtermNodeCounter nodeCounter;
+    PTPLib::common::StoppableWatch expose_watch;
 
     void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
 

@@ -12,7 +12,9 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Chann
 : SimpSMTSolver         (c, t)
 , Splitter              (c, ch)
 , nodeCounter           (t.getLogic(), PTPLib::common::STATS.MAX_SIZE)
-{}
+{
+    expose_watch.start();
+}
 
 bool ScatterSplitter::branchLitRandom() {
     return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
@@ -318,19 +320,24 @@ void ScatterSplitter::runPeriodic()
     if (not getChannel().isClauseShareMode()) return;
     std::vector<PTPLib::net::Lemma> toPublishLemmas;
     if (getChannel().shouldLearnClauses()) {
-
-        if (exposeClauses(toPublishLemmas)) {
-            {
-                std::unique_lock<std::mutex> lk(getChannel().getMutex());
-                if (not lk.owns_lock()) {
-                    throw PTPLib::common::Exception(__FILE__, __LINE__,
-                                                    ";assert: clause Learning couldn't take the lock");
+        if (expose_watch.elapsed_time_second() > 15) {
+            if (exposeClauses(toPublishLemmas)) {
+                {
+                    std::unique_lock<std::mutex> lk(getChannel().getMutex());
+                    if (not lk.owns_lock()) {
+                        throw PTPLib::common::Exception(__FILE__, __LINE__,
+                                                        ";assert: clause Learning couldn't take the lock");
+                    }
+                    getChannel().insert_learned_clause(std::move(toPublishLemmas));
                 }
-                getChannel().insert_learned_clause(std::move(toPublishLemmas));
+                if (syncedStream)
+                    syncedStream->println(getChannel().isColorMode() ? PTPLib::common::Color::FG_Green
+                                                                     : PTPLib::common::Color::FG_DEFAULT,
+                                          "[t SEARCH ] -------------- add learned clauses to channel buffer, Size : ",
+                                          toPublishLemmas.size());
             }
-            if (syncedStream)
-                syncedStream->println(getChannel().isColorMode() ? PTPLib::common::Color::FG_Green : PTPLib::common::Color::FG_DEFAULT,
-                           "[t SEARCH ] -------------- add learned clauses to channel buffer, Size : ", toPublishLemmas.size());
+            expose_watch.reset();
+            expose_watch.start();
         }
     }
 }
