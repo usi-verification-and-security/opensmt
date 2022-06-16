@@ -18,7 +18,7 @@
 
 class ScatterSplitter :  public SimpSMTSolver, public Splitter {
 public:
-    ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch);
+    ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch);
 
     void set_syncedStream(PTPLib::common::synced_stream & ss) { syncedStream = &ss; }  //SMTS Client owns the SyncedStream and should directly set the SyncedStream
 

@@ -81,7 +81,7 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
     }
 }
 
-std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & config, THandler & thandler, PTPLib::net::Channel & ch) {
+std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & config, THandler & thandler, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch) {
     if (config.sat_split_type() == spt_scatter) {
         return std::make_unique<ScatterSplitter>(config, thandler, ch);
     } else if (config.sat_split_type() == spt_lookahead) {
