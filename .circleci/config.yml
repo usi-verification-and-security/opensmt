@@ -6,12 +6,6 @@ jobs:
               auth:
                   username: mydockerhub-user
                   password: $DOCKERHUB_PASSWORD
-              environment:
-                  CMAKE_BUILD_TYPE: Release
-                  FLAGS: -Wall -Wextra -Werror
-                  OSMT_INSTALL: ~/osmt-install
-                  USE_READLINE: OFF
-                  PARALLEL: OFF
 
         steps:
             - checkout
@@ -177,12 +171,12 @@ workflows:
       jobs:
         - formatter
         - build-starexec:
-            filters: &filters-build-test
-                tags:
-                    only: /^v.*/
+          filters: &filters-build-test
+            tags:
+              only: /^v.*/
         - build-recent:
-              filters:
-                <<: *filters-build-test
+          filters:
+            <<: *filters-build-test
         - build-macos:
-              filters:
-                <<: *filters-build-test
+          filters:
+            <<: *filters-build-test
