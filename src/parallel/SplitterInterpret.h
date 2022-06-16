@@ -13,7 +13,7 @@
 
 class SplitterInterpret : public Interpret {
 private:
-    PTPLib::net::Channel & channel;
+    PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & channel;
     bool search = true;
 
   protected:
@@ -24,7 +24,7 @@ private:
 
   public:
 
-    SplitterInterpret(SMTConfig & c, PTPLib::net::Channel & ch)
+    SplitterInterpret(SMTConfig & c, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
     : Interpret(c)
     , channel(ch)
     { }

@@ -102,7 +102,7 @@ int main( int argc, char * argv[] )
                 return 0;
         }
     }
-    auto channel = std::make_unique<PTPLib::net::Channel>();
+    auto channel = std::make_unique<PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma>>();
     SplitterInterpret interpreter(c, *channel);
 
     if (argc - optind == 0) {

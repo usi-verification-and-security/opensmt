@@ -7,7 +7,7 @@
 #include "ScatterSplitter.h"
 #include "Random.h"
 
-ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel & ch)
+ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
 : SimpSMTSolver         (c, t)
 , Splitter              (c, ch)
 {}

@@ -24,7 +24,7 @@ private:
 
     inline bool isSplitTypeNone()    const &       { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeNone(); }
 
-    inline PTPLib::net::Channel & getChannel() const { return getSplitter().getChannel(); }
+    inline PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & getChannel() const { return getSplitter().getChannel(); }
 
     inline ScatterSplitter & getScatterSplitter()  { return dynamic_cast<ScatterSplitter&>(getSMTSolver()); }
 
@@ -50,7 +50,7 @@ public:
 
     void writeSplits(std::string const &)  const;
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel &);
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
 
     inline TermMapper& getTermMapper() const { return *term_mapper;}
 };
