@@ -11,6 +11,7 @@
 #include "SplitData.h"
 #include "SplitContext.h"
 #include "Splitter.h"
+#include "TreeOps.h"
 
 #include <PTPLib/net/Channel.hpp>
 #include <PTPLib/common/Exception.hpp>
@@ -47,6 +48,8 @@ private:
     std::unordered_set<Var> assumptionVars;
 
     PTPLib::common::synced_stream * syncedStream = nullptr;
+
+    PtermNodeCounter nodeCounter;
 
     void runPeriodic() override;                                       // Check if solver is in clause share mode to starts clause exposing operation
 

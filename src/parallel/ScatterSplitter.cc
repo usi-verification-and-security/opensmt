@@ -6,10 +6,12 @@
  */
 #include "ScatterSplitter.h"
 #include "Random.h"
+#include "TreeOps.h"
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
 : SimpSMTSolver         (c, t)
 , Splitter              (c, ch)
+, nodeCounter           (t.getLogic(), PTPLib::common::STATS.MAX_SIZE)
 {}
 
 bool ScatterSplitter::branchLitRandom() {
@@ -45,10 +47,14 @@ Var ScatterSplitter::doActivityDecision() {
                 if (isAssumptionVar(next)) {
                     discarded.push(next);
                     next = var_Undef;
-                    // A hack!: Not branch on lengthy variables (more than 5000), basically not allowing split partition with too many nested lets
-                } else if (this->theory_handler.getLogic().dumpWithLets(theory_handler.varToTerm(next)).length() > PTPLib::common::STATS.MAX_SIZE) {
-                    discarded.push(next);
-                    next = var_Undef;
+                } else {
+                    PTRef tr = theory_handler.varToTerm(next);
+                    nodeCounter.visit(tr);
+                    if (nodeCounter.limitReached()) {
+                        // Do not branch on lengthy variables to avoid oversized terms
+                        discarded.push(next);
+                        next = var_Undef;
+                    }
                 }
             }
         }
@@ -195,9 +201,11 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
             continue;
         }
         auto pt = sign(l) ? logic.mkNot(this->theory_handler.varToTerm(v)) : this->theory_handler.varToTerm(v);
-        std::string str = logic.dumpWithLets(pt);
-        if (str.length() > PTPLib::common::STATS.MAX_SIZE)
+        nodeCounter.visit(pt);
+        if (nodeCounter.limitReached())
             continue;
+
+        std::string str = logic.dumpWithLets(pt);
         assert([&](std::string_view clause_str) {
             if (clause_str.find(".frame") != std::string::npos) {
                 throw PTPLib::common::Exception(__FILE__, __LINE__,"assert: frame caught in trail");
@@ -215,15 +223,16 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         vec<PTRef> clause;
         bool hasForeignAssumption = false;
         bool hasBulkyLit = false;
-        std::size_t varSize = 0;
         for (Lit l : c) {
             Var v = var(l);
             PTRef pt = theory_handler.varToTerm(v);
-            varSize += this->theory_handler.getLogic().dumpWithLets(pt).length();
-            if (varSize > PTPLib::common::STATS.MAX_SIZE) {
+            nodeCounter.visit(pt);
+
+            if (nodeCounter.limitReached()) {
                 hasBulkyLit = true;
                 break;
             }
+
             if (isAssumptionVar(v)) {
                 vec<opensmt::pair<int, int>> const & solverBranch_perVar = getBranchOfVar(v);
                 if (isPrefix(solverBranch_perVar, getSolverBranch())) {
