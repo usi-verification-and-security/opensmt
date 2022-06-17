@@ -356,9 +356,8 @@ PTRef ArithLogic::mkNeg(PTRef tr)
         auto sortRef = getSortRef(symref);
         return mkFun(getTimesForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
     }
-    assert(false); // MB: All cases should be covered, but let's have a default just in case.
-    PTRef mo = yieldsSortInt(tr) ? getTerm_IntMinusOne() : getTerm_RealMinusOne();
-    return mkTimes(mo, tr);
+    // MB: All cases should be covered
+    throw OsmtInternalException("Failed attempt to negate a term");
 }
 
 PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
@@ -460,9 +459,17 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     return tr;
 }
 
-PTRef ArithLogic::mkTimes(vec<PTRef> && args)
-{
+PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     SRef returnSort = checkArithSortCompatible(args);
+    if (args.size() == 2) { // MB: Multiplication by -1 as negation is more efficient
+        PTRef minusOne = getMinusOneForSort(returnSort);
+       if (minusOne == args[0]) {
+           return mkNeg(args[1]);
+       } else if (minusOne == args[1]) {
+           return mkNeg(args[0]);
+       }
+       // else continue the usual normalization
+    }
     vec<PTRef> flatten_args;
     // Flatten possible internal multiplications
     for (PTRef arg : args) {
