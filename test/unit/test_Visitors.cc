@@ -82,3 +82,32 @@ TEST_F(VisitorTest, test_GetSubTermsArbitraryPredicate) {
     EXPECT_TRUE(contains(subterms,plus1));
     EXPECT_TRUE(contains(subterms,plus2));
 }
+
+TEST_F(VisitorTest, test_PtermNodeCounter) {
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef plus1 = logic.mkPlus(x, y);
+    PTRef plus2 = logic.mkPlus(x, z);
+    PTRef fla = logic.mkAnd(logic.mkGeq(plus1, zero), logic.mkGeq(plus2, zero));
+
+    for (auto limit : {UINT32_MAX, 2u, 9u, 10u}) {
+        PtermNodeCounter counter(logic, limit);
+        counter.visit(fla);
+        if (limit < 10) {
+            ASSERT_TRUE(counter.limitReached());
+        } else {
+            ASSERT_EQ(counter.getCount(), 9);
+            ASSERT_FALSE(counter.limitReached());
+        }
+    }
+
+    for (auto tr : {plus1, plus2, fla, fla}) {
+        PtermNodeCounter counter(logic, 4u);
+        counter.visit(tr);
+        if (tr == plus1 or tr == plus2) {
+            ASSERT_FALSE(counter.limitReached());
+            ASSERT_EQ(counter.getCount(), 3);
+        } else {
+            ASSERT_TRUE(counter.limitReached());
+        }
+    }
+}

@@ -286,4 +286,48 @@ inline vec<PTRef> variables(Logic const & logic, PTRef term) {
     return matchingSubTerms(logic, term, [&](PTRef subTerm) { return logic.isVar(subTerm); });
 }
 
+class PtermNodeCounterConfig : public DefaultVisitorConfig {
+    friend class PtermNodeCounter;
+    uint32_t nodeCounter = 0;
+    uint32_t maxNodes;
+    std::unordered_map<PTRef,uint32_t,PTRefHash> & countLookup;
+    using Cache = std::pair<uint32_t, std::unordered_map<PTRef,uint32_t,PTRefHash>>;
+public:
+    PtermNodeCounterConfig(Cache & cache) : maxNodes(cache.first), countLookup(cache.second) {}
+    bool limitReached() const { return nodeCounter >= maxNodes; }
+    void visit(PTRef tr) override {
+        auto it = countLookup.find(tr);
+        if (it != countLookup.end()) {
+            if (it->second >= maxNodes) {
+                nodeCounter = std::max(nodeCounter, maxNodes);
+            }
+        } else {
+            ++ nodeCounter;
+        }
+    }
+    bool previsit(PTRef tr) override {
+        auto it = countLookup.find(tr);
+        if (it != countLookup.end() and it->second >= maxNodes) {
+            nodeCounter = std::max(nodeCounter, it->second);
+        }
+        return (nodeCounter < maxNodes);
+    }
+    uint32_t getCount() const { return nodeCounter; }
+};
+
+class PtermNodeCounter : public TermVisitor<PtermNodeCounterConfig> {
+    PtermNodeCounterConfig::Cache cache;
+    PtermNodeCounterConfig cfg;
+public:
+    PtermNodeCounter(Logic const & logic, int countUntil) : TermVisitor<PtermNodeCounterConfig>(logic, cfg), cache(countUntil, std::unordered_map<PTRef,uint32_t,PTRefHash>()), cfg(cache) {}
+    void visit(PTRef root) override {
+        cfg.nodeCounter = 0;
+        TermVisitor<PtermNodeCounterConfig>::visit(root);
+        if (cache.second.find(root) == cache.second.end()) {
+            cache.second.insert({root, getCount()});
+        }
+    }
+    bool limitReached() const { return cfg.limitReached(); }
+    uint32_t getCount() const { return cfg.getCount(); }
+};
 #endif
