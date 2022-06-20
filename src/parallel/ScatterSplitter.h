@@ -39,7 +39,7 @@ public:
 private:
     int                     trail_sent = 0;
     bool                    firstPropagation = true;
-    int                     numTriviallyPropagatedOnDl0;
+    int                     numTriviallyPropagatedOnDl0 = 0;
 
     using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId var_frameId;
