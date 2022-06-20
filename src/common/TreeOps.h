@@ -25,7 +25,7 @@ class TermVisitor {
 public:
     TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
-    void visit(PTRef root) {
+    virtual void visit(PTRef root) {
         // Avoid initializations if no traversal will be done
         if (logic.isVar(root)) {
             if (cfg.previsit(root))
