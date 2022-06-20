@@ -73,9 +73,8 @@ int main( int argc, char * argv[] )
     int opt;
 
     SMTConfig c;
-    char * option;
     bool pipe = false;
-    while ((opt = getopt(argc, argv, "hodpir:")) != -1) {
+    while ((opt = getopt(argc, argv, "hdpir:")) != -1) {
         switch (opt) {
 
             case 'h':
@@ -96,9 +95,6 @@ int main( int argc, char * argv[] )
                 break;
             case 'p':
                 pipe = true;
-                break;
-            case 'o':
-                option = optarg;
                 break;
             default: /* '?' */
                 fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
@@ -143,7 +139,7 @@ int main( int argc, char * argv[] )
                 channel->setClauseShareMode();
                 PTPLib::net::Header header;
                 header[PTPLib::common::Param.NODE] = "[]";
-                header[PTPLib::common::Param.NAME] = "test";
+                header[PTPLib::common::Param.NAME] = c.getInstanceName();
                 channel->set_current_header(header);
                 interpreter.interpFile(fin);
             }
