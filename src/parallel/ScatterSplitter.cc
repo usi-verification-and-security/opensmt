@@ -48,8 +48,7 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                 } else {
-                    PTRef tr = theory_handler.varToTerm(next);
-                    nodeCounter.visit(tr);
+                    nodeCounter.visit(theory_handler.varToTerm(next));
                     if (nodeCounter.limitReached()) {
                         // Do not branch on lengthy variables to avoid oversized terms
                         discarded.push(next);
