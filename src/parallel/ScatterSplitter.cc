@@ -187,19 +187,20 @@ CoreSMTSolver::ConsistencyAction ScatterSplitter::notifyConsistency() {
     return ConsistencyAction::NoOp;
 }
 
-bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
-    int trail_max = this->trail_lim.size() == 0 ? this->trail.size() : this->trail_lim[0];
+void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
+    int trail_max = trail_lim.size() == 0 ? trail.size() : trail_lim[0];
     trail_sent = std::max<int>(trail_sent, numTriviallyPropagatedOnDl0-1);
     assert(trail_sent >= 0);
     auto & logic = theory_handler.getLogic();
-    for (int i = this->trail_sent; i < trail_max; i++) {
-        this->trail_sent++;
+    int numUnitClauses = trail_max - trail_sent;
+    int unitClauseIncrement = std::max(1, (numUnitClauses)/100);
+    for (int i = this->trail_sent; i < trail_max; i+=unitClauseIncrement) {
         Lit l = trail[i];
         Var v = var(l);
         if (isAssumptionVar(v)) {
             continue;
         }
-        auto pt = sign(l) ? logic.mkNot(this->theory_handler.varToTerm(v)) : this->theory_handler.varToTerm(v);
+        auto pt = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
         nodeCounter.visit(pt);
         if (nodeCounter.limitReached())
             continue;
@@ -214,6 +215,11 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         learnedLemmas.emplace_back(PTPLib::net::Lemma(str, 0));
     }
 
+    trail_sent = trail_max;
+}
+
+void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
+    auto & logic = theory_handler.getLogic();
     for (CRef cr : learnts) {
         Clause &c = this->ca[cr];
         if (c.size() > static_cast<unsigned int>(3 + assumptions.size()) || c.mark() == 3)
@@ -294,6 +300,11 @@ bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLem
         }(str));
         c.mark(3);
     }
+}
+
+bool ScatterSplitter::exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas) {
+    exposeUnitClauses(learnedLemmas);
+    exposeLongerClauses(learnedLemmas);
     return not learnedLemmas.empty();
 }
 

@@ -67,6 +67,8 @@ protected:
     void notifyEnd() override;
     lbool zeroLevelConflictHandler() override;                                // Common handling of zero-level conflict as it can happen at multiple places
 
+    void exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
+    void exposeLongerClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
     bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
     bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
