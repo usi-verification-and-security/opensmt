@@ -1,12 +1,18 @@
 #Fetch and add PTPLib**********************************************************************************************************
 set(PTPLib_repository "https://github.com/usi-verification-and-security/ptplib.git")
 set(PTPLib_branch ${branch})
+string(ASCII 27 ESCAPE)
+set(TM [0m)
 if(NOT PTPLib_branch)
+	set(PINK [35m)
+	message(STATUS "${ESCAPE}${PINK} You can choose which branch of PTPLib to fetch by: ${ESCAPE}${TM} ${ESCAPE}${PINK}-Dbranch=<branch>${ESCAPE}${TM}")
 	set(PTPLib_branch master)
 endif()
 
-message(STATUS "OpenSMT is fetching PTPLib from " ${PTPLib_repository})
-message(STATUS "PTPLib Branch : ${PTPLib_branch}")
+set(GREEN [32m)
+set(BLUE [34m)
+message(STATUS "${ESCAPE}${GREEN} PTPLib Repository: ${ESCAPE}${TM} ${ESCAPE}${BLUE}${PTPLib_repository}${ESCAPE}${TM}")
+message(STATUS "${ESCAPE}${GREEN} PTPLib BRANCH: ${ESCAPE}${TM}${ESCAPE}${BLUE}${PTPLib_branch}${ESCAPE}${TM}")
 
 include(FetchContent)
 Set(FETCHCONTENT_QUIET FALSE)
