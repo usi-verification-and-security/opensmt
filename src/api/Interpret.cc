@@ -814,7 +814,7 @@ std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFu
         ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
-    ss << "    " << logic->pp(templateFun.getBody()) << ")\n";
+    ss << "    " << logic->printTerm(templateFun.getBody()) << ")\n";
     return ss.str();
 }
 
