@@ -805,10 +805,10 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     return ss.str();
 }
 
-std::string Interpret::printDefinitionSmtlib(const TemplateFunction & templateFun) const {
+std::string Interpret::printDefinitionSmtlib(TemplateFunction const & templateFun) const {
     std::stringstream ss;
     ss << "  (define-fun " << templateFun.getName() << " (";
-    const vec<PTRef>& args = templateFun.getArgs();
+    vec<PTRef> const & args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
         auto sortString = logic->printSort(logic->getSortRef(args[i]));
         ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
