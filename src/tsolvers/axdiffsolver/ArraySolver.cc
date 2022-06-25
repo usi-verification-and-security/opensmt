@@ -328,12 +328,16 @@ TRes ArraySolver::checkExtensionality() {
             extensionalityInfo.erase(primaryIndex);
 
             NodeRef weakIRoot = getIndexedRepresentative(current, primaryIndex);
-            assert(selectsInfo.find(weakIRoot) != selectsInfo.end());
-            auto const & weakIRootSelects = selectsInfo.at(weakIRoot);
-            auto it = weakIRootSelects.find(primaryIndex);
-            if (it != weakIRootSelects.end()) {
-                ERef valueAtPrimaryIndex = getRoot(it->second);
-                extensionalityInfo.indexValueMap.insert({primaryIndex, valueAtPrimaryIndex});
+            auto selectsInfoIt = selectsInfo.find(weakIRoot);
+            if (selectsInfoIt != selectsInfo.end()) {
+                auto const & weakIRootSelects = selectsInfoIt->second;
+                auto it = weakIRootSelects.find(primaryIndex);
+                if (it != weakIRootSelects.end()) {
+                    ERef valueAtPrimaryIndex = getRoot(it->second);
+                    extensionalityInfo.indexValueMap.insert({primaryIndex, valueAtPrimaryIndex});
+                } else {
+                    extensionalityInfo.weakIRoots.insert({primaryIndex, weakIRoot});
+                }
             } else {
                 extensionalityInfo.weakIRoots.insert({primaryIndex, weakIRoot});
             }
