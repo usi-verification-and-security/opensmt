@@ -332,7 +332,7 @@ TRes ArraySolver::checkExtensionality() {
             auto const & weakIRootSelects = selectsInfo.at(weakIRoot);
             auto it = weakIRootSelects.find(primaryIndex);
             if (it != weakIRootSelects.end()) {
-                ERef valueAtPrimaryIndex = it->second;
+                ERef valueAtPrimaryIndex = getRoot(it->second);
                 extensionalityInfo.indexValueMap.insert({primaryIndex, valueAtPrimaryIndex});
             } else {
                 extensionalityInfo.weakIRoots.insert({primaryIndex, weakIRoot});
@@ -533,7 +533,7 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
     cursor1.collectPrimaries(cursor2, storeIndices, explanations);
     for (ERef storeIndex : storeIndices) {
         PTRef eq = getEquality(storeIndex, index);
-        assert(isFalsified(eq));
+//        assert(isFalsified(eq));
         explanations.insert(PtAsgn(eq, l_False));
     }
     return explanations;
@@ -718,6 +718,7 @@ void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destin
     }
     while (count2 > count1) {
         destination.collectOnePrimary(indices, explanations);
+        --count2;
     }
     while (this->node != destination.node) {
         this->collectOnePrimary(indices, explanations);
