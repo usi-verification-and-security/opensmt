@@ -160,7 +160,7 @@ void ArraySolver::makeIndexedWeakRepresentative(NodeRef nodeRef) {
     NodeRef secondaryRef = node.secondaryEdge;
     if (secondaryRef != NodeRef_Undef) {
         if (getIndexOfPrimaryEdge(getNode(secondaryRef)) != getIndexOfPrimaryEdge(node)) {
-            node.secondaryEdge = getNode(secondaryRef).primaryEdge; // TODO: Does this affects secondary store?
+            node.secondaryEdge = getNode(secondaryRef).primaryEdge;
             makeIndexedWeakRepresentative(nodeRef);
         } else {
             makeIndexedWeakRepresentative(secondaryRef);
@@ -182,9 +182,10 @@ void ArraySolver::makeWeakRepresentative(NodeRef nodeRef) {
         getNode(parentRef).primaryEdge = nodeRef;
         getNode(parentRef).primaryStore = node.primaryStore;
         node.primaryEdge = NodeRef_Undef;
-        node.primaryStore = ERef_Undef;
         // Make representative for i-weak equivalence class
         makeIndexedWeakRepresentative(nodeRef);
+        // Information about primary store is needed in "makeIndexedWeakRepresentative"!
+        node.primaryStore = ERef_Undef;
     }
 }
 
