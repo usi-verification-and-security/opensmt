@@ -245,13 +245,13 @@ private:
     }
 
     ERef getIndexOfPrimaryEdge(ArrayNode const & node) const {
-        return getRoot(getIndexFromStore(node.primaryStore));
+        return getIndexFromStore(node.primaryStore);
     }
 
     NodeRef getIndexedRepresentative(NodeRef nodeRef, ERef index) {
         ArrayNode & node = getNode(nodeRef);
         if (node.primaryEdge == NodeRef_Undef) { return nodeRef; }
-        if (getIndexOfPrimaryEdge(node) != index) { return getIndexedRepresentative(node.primaryEdge, index); }
+        if (getRoot(getIndexOfPrimaryEdge(node)) != index) { return getIndexedRepresentative(node.primaryEdge, index); }
         if (node.secondaryEdge == NodeRef_Undef) { return nodeRef; }
         return getIndexedRepresentative(node.secondaryEdge, index);
     }

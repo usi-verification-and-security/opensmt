@@ -172,7 +172,7 @@ void ArraySolver::makeIndexedWeakRepresentative(NodeRef nodeRef) {
     ArrayNode & node = getNode(nodeRef);
     NodeRef secondaryRef = node.secondaryEdge;
     if (secondaryRef != NodeRef_Undef) {
-        if (getIndexOfPrimaryEdge(getNode(secondaryRef)) != getIndexOfPrimaryEdge(node)) {
+        if (getRoot(getIndexOfPrimaryEdge(getNode(secondaryRef))) != getRoot(getIndexOfPrimaryEdge(node))) {
             node.secondaryEdge = getNode(secondaryRef).primaryEdge;
             makeIndexedWeakRepresentative(nodeRef);
         } else {
@@ -224,7 +224,7 @@ void ArraySolver::merge(ERef storeTerm) {
 void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, Map<ERef, bool, ERefHash> & forbiddenIndices) {
     if (nodeRef == root) { return; }
     ArrayNode & node = getNode(nodeRef);
-    ERef primaryIndex = getIndexOfPrimaryEdge(node);
+    ERef primaryIndex = getRoot(getIndexOfPrimaryEdge(node));
     assert(getRoot(primaryIndex) == primaryIndex);
     if (not forbiddenIndices.has(primaryIndex) and getIndexedRepresentative(nodeRef, primaryIndex) != root) {
         makeIndexedWeakRepresentative(nodeRef);
@@ -633,8 +633,7 @@ unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef ind
     NodeRef currentRef = start;
     while(getNode(currentRef).primaryEdge != NodeRef_Undef) {
         auto const & currentNode = getNode(currentRef);
-        auto primaryIndex = solver.getIndexOfPrimaryEdge(currentNode);
-        assert(getRoot(primaryIndex) == primaryIndex);
+        auto primaryIndex = getRoot(solver.getIndexOfPrimaryEdge(currentNode));
         if (primaryIndex == index) {
             if (currentNode.secondaryEdge == NodeRef_Undef) {
                 break;
@@ -651,7 +650,7 @@ unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef ind
 
 NodeRef ArraySolver::Traversal::findSecondaryNode(NodeRef nodeRef, ERef index) const {
     assert(getRoot(index) == index);
-    while (getNode(nodeRef).primaryEdge != NodeRef_Undef and getIndexOfPrimaryEdge(getNode(nodeRef)) != index) {
+    while (getNode(nodeRef).primaryEdge != NodeRef_Undef and getRoot(getIndexOfPrimaryEdge(getNode(nodeRef))) != index) {
         nodeRef = getNode(nodeRef).primaryEdge;
     }
     return nodeRef;
