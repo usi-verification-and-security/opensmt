@@ -160,6 +160,8 @@ private:
 
     void computeExplanation(PTRef equality);
 
+    ExplanationCollection readOverWeakEquivalenceLemma(PTRef equality);
+
     PTRef computeExtensionalityClause(NodeRef n1, NodeRef n2);
 
     void explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection);

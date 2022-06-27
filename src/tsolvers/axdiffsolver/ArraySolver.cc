@@ -76,7 +76,20 @@ TRes ArraySolver::check(bool complete) {
         if (lemmas.empty()) {
             return checkExtensionality();
         } else {
-            // TODO: if full check, and we have some undecided literal in lemmas, we need to create a split clause to inform SAT solver that we need more information
+            for (auto const & lemma : this->lemmas) {
+                auto clause = readOverWeakEquivalenceLemma(lemma.equality);
+                assert(not std::all_of(clause.begin(), clause.end(), [this](PtAsgn lit) {
+                    return lit.sgn == l_False ? isFalsified(lit.tr) : isSatisfied(lit.tr);
+                }));
+                vec<PTRef> args;
+                args.capacity(clause.size());
+                for (PtAsgn lit : clause) {
+                    // MB: To obtain clause, we need to negate the literals of the conflict
+                    PTRef arg = lit.sgn == l_True ? logic.mkNot(lit.tr) : lit.tr;
+                    args.push(arg);
+                }
+                splitondemand.push(logic.mkOr(std::move(args)));
+            }
         }
     }
     return TRes::SAT;
@@ -488,6 +501,16 @@ std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(N
 }
 
 void ArraySolver::computeExplanation(PTRef equality) {
+    auto conflictExplanation = readOverWeakEquivalenceLemma(equality);
+    this->has_explanation = true;
+    this->explanation.clear();
+    for (auto lit : conflictExplanation) {
+        this->explanation.push(lit);
+    }
+}
+
+// MB: Actually, this returns the conflict, not the lemma!! TODO: Fix terminology
+ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceLemma(PTRef equality) {
     assert(logic.isEquality(equality));
     PTRef lhs = logic.getPterm(equality)[0];
     PTRef rhs = logic.getPterm(equality)[1];
@@ -499,17 +522,13 @@ void ArraySolver::computeExplanation(PTRef equality) {
     ERef index2 = egraph.termToERef(logic.getPterm(rhs)[1]);
 
     // collect literals explaining why array1 is weakly equivalent to array2
-    auto conflictExplanation = explainWeakEquivalencePath(array1, array2, getRoot(index1));
+    auto lemma = explainWeakEquivalencePath(array1, array2, getRoot(index1));
     // collect literals explaining why index1 is equivalent to index2 in Egraph
     if (index1 != index2) {
-        recordExplanationOfEgraphEquivalence(index1, index2, conflictExplanation);
+        recordExplanationOfEgraphEquivalence(index1, index2, lemma);
     }
-    conflictExplanation.insert({equality, l_False});
-    this->has_explanation = true;
-    this->explanation.clear();
-    for (auto lit : conflictExplanation) {
-        this->explanation.push(lit);
-    }
+    lemma.insert({equality, l_False});
+    return lemma;
 }
 
 /*
