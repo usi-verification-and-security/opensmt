@@ -37,22 +37,22 @@ class Smt2newContext {
     char*                       buffer;
     int                         buffer_sz;
     int                         buffer_cap;
-    ASTNode*                    root;
+    std::unique_ptr<ASTNode>    root;
   public:
     void*                       scanner;
     int                         result;
     FILE*                       is;
     char*                       ib;
     bool                        interactive;
-    inline const ASTNode*       getRoot() { return root; };
+    inline ASTNode const &      getRoot() { return *root; };
 
     Smt2newContext(FILE* in) :
        buffer_sz(0)
      , buffer_cap(1)
-     , root(NULL)
+     , root(nullptr)
      , result(0)
      , is(in)
-     , ib(NULL)
+     , ib(nullptr)
      , interactive(false)
     {
         init_scanner();
@@ -62,9 +62,9 @@ class Smt2newContext {
     Smt2newContext(char* in_s) :
        buffer_sz(0)
      , buffer_cap(1)
-     , root(NULL)
+     , root(nullptr)
      , result(0)
-     , is(NULL)
+     , is(nullptr)
      , ib(in_s)
      , interactive(true)
     {
@@ -74,7 +74,6 @@ class Smt2newContext {
 
     ~Smt2newContext() {
         destroy_scanner();
-        delete root;
         free(buffer);
     }
 
@@ -95,8 +94,8 @@ class Smt2newContext {
         buffer_sz = 0;
     }
 
-    void insertRoot(ASTNode* n) {
-        root = n;
+    void insertRoot(std::unique_ptr<ASTNode> n) {
+        root = std::move(n);
     }
 
     void prettyPrint(std::ostream& o) {

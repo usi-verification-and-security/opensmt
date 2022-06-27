@@ -86,11 +86,11 @@ public:
 };
 
 class LetRecords {
-    std::unordered_map<const char*, LetBinder, StringHash, Equal<const char*> > letBinders;
-    std::vector<const char*> knownBinders;
+    std::unordered_map<std::string, LetBinder> letBinders;
+    std::vector<std::string> knownBinders;
     std::vector<std::size_t> frameLimits;
 
-    bool has(const char* name) const { return letBinders.count(name) != 0; }
+    bool has(std::string const & name) const { return letBinders.find(name) != letBinders.end(); }
 public:
     PTRef getOrUndef(const char* letSymbol) const {
         auto it = letBinders.find(letSymbol);
@@ -104,7 +104,7 @@ public:
         auto limit = frameLimits.back();
         frameLimits.pop_back();
         while (knownBinders.size() > limit) {
-            const char* binder = knownBinders.back();
+            std::string binder = knownBinders.back();
             knownBinders.pop_back();
             assert(this->has(binder));
             auto& values = letBinders.at(binder);
@@ -116,7 +116,7 @@ public:
         }
     }
 
-    void addBinding(const char* name, PTRef arg) {
+    void addBinding(std::string const & name, PTRef arg) {
         knownBinders.push_back(name);
         if (not this->has(name)) {
             letBinders.insert(std::make_pair(name, LetBinder(arg)));
@@ -135,8 +135,7 @@ class Interpret {
     bool            f_exit;
 
     // Named terms for getting variable values
-    MapWithKeys<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
-    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
+    std::unordered_map<std::string,PTRef> nameToTerm;
     std::vector<std::string> term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
                                             // partition to it name.
     vec<PTRef>      assertions;
@@ -157,7 +156,7 @@ class Interpret {
     bool                        declareConst(ASTNode const & n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(ASTNode const & n);
     virtual sstat               checkSat();
-    void                        getValue(std::vector<ASTNode> const & term);
+    void                        getValue(std::vector<std::unique_ptr<ASTNode>> const & term);
     void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
     std::string                 printDefinitionSmtlib(const TemplateFunction &templateFun) const;
@@ -193,7 +192,7 @@ class Interpret {
     int interpFile(char *content);
     int interpPipe();
 
-    void    execute(const ASTNode* n);
+    void    execute(ASTNode const & n);
     bool    gotExit() const { return f_exit; }
 
     ValPair getValue       (PTRef tr) const;

@@ -189,12 +189,12 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
-    config.setBooleanInterpolationAlgorithm(itp_alg_pudlak);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_pudlak);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillanp);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillanp);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));

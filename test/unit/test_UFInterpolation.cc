@@ -165,7 +165,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
@@ -194,7 +194,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
@@ -233,7 +233,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
@@ -273,7 +273,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
@@ -351,7 +351,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
@@ -383,7 +383,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
     // change the interpolation algorithm
-    config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
+    config.setEUFInterpolationAlgorithm(ItpAlgorithm::itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
