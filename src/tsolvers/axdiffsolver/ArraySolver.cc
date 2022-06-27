@@ -553,9 +553,11 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
     ExplanationCursor cursor2(traversal, node2, array2);
     while (count1 > count2) {
         cursor1.collectOneSecondary(index, storeIndices, explanations);
+        --count1;
     }
     while (count2 > count1) {
         cursor2.collectOneSecondary(index, storeIndices, explanations);
+        --count2;
     }
     while (traversal.findSecondaryNode(cursor1.getNode(), index) != traversal.findSecondaryNode(cursor2.getNode(), index)) {
         cursor1.collectOneSecondary(index, storeIndices, explanations);
@@ -593,7 +595,7 @@ void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, Expla
 }
 
 void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection) {
-    assert(getRoot(index) == index);
+    index = getRoot(index);
     NodeRef sourceRepresentative = getIndexedRepresentative(source, index);
     NodeRef targetRepresentative = getIndexedRepresentative(target, index);
     if (sourceRepresentative == targetRepresentative) {
