@@ -504,6 +504,7 @@ void ArraySolver::computeExplanation(PTRef equality) {
     if (index1 != index2) {
         recordExplanationOfEgraphEquivalence(index1, index2, conflictExplanation);
     }
+    conflictExplanation.insert({equality, l_False});
     this->has_explanation = true;
     this->explanation.clear();
     for (auto lit : conflictExplanation) {
@@ -511,6 +512,12 @@ void ArraySolver::computeExplanation(PTRef equality) {
     }
 }
 
+/*
+ * Explains why the two input arrays are weakly equivalent on index "index".
+ * Since they are weakly equivalent on "index", the selects "array1[index]" and "array2[index]" must have the same value.
+ *
+ * @returns The collection of literals that guarantees the i-weak equivalence
+ */
 ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef array1, ERef array2, ERef index) {
     assert(getRoot(index) == index);
     NodeRef node1 = getNodeRef(getRoot(array1));
