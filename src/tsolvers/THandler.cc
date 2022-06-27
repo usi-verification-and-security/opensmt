@@ -140,6 +140,7 @@ void THandler::getConflict (
         PtAsgn const & ei = explanation[i];
         assert(ei.sgn == l_True || ei.sgn == l_False);
         Var v = ptrefToVar(ei.tr);
+        assert(v != var_Undef);
         bool negate = ei.sgn == l_False;
         Lit l = mkLit(v, !negate);
         conflict.push(l);
