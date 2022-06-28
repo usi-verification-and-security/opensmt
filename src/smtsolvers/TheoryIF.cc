@@ -171,6 +171,11 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             propData.push_back(PropagationData{.lit = implied, .reason = cr});
             res = TPropRes::Propagate;
         } else {
+            // MB: ensure that that the first literal is not falsified
+            if (value(splitClause[0]) == l_False and impliedIndex != -1) {
+                std::swap(splitClause[0],splitClause[impliedIndex]);
+            }
+
             processNewClause(splitClause);
             if (satisfied == 0) {
                 if (res != TPropRes::Propagate) {
