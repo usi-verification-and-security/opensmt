@@ -391,6 +391,7 @@ TRes ArraySolver::checkExtensionality() {
         }
         if (allFalsified) {
             has_explanation = true;
+            explanation.clear();
             for (PTRef lit : logic.getPterm(extensionalityClause)) {
                 if (logic.isNot(lit)) {
                     explanation.push({logic.getPterm(lit)[0], l_True});
@@ -590,6 +591,9 @@ void ArraySolver::clear() {
     nodes.clear();
     rootsMap.clear();
     valid = false;
+
+    has_explanation = false;
+    explanation.clear();
 }
 
 void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection const & other) {
