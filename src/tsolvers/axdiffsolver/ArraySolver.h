@@ -45,6 +45,7 @@ class ArraySolver : public TSolver {
 
     bool valid = false;
 
+    vec<PtAsgn> assertedLiterals;
 
 public:
     ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config);

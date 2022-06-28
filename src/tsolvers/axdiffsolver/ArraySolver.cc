@@ -27,6 +27,8 @@ void ArraySolver::clearSolver() {
 
 bool ArraySolver::assertLit(PtAsgn literal) {
     if (logic.isEquality(literal.tr)) {
+        setPolarity(literal.tr, literal.sgn);
+        assertedLiterals.push(literal);
         if (literal.sgn == l_True) {
             clear();
         } else if (literal.sgn == l_False) {
@@ -48,11 +50,21 @@ bool ArraySolver::assertLit(PtAsgn literal) {
 }
 
 void ArraySolver::pushBacktrackPoint() {
+    backtrack_points.push(assertedLiterals.size_());
     TSolver::pushBacktrackPoint();
 }
 
 void ArraySolver::popBacktrackPoint() {
     clear();
+    assert(backtrack_points.size() > 0);
+    auto lastSize = backtrack_points.last();
+    backtrack_points.pop();
+    while (assertedLiterals.size_() > lastSize) {
+        auto lit = assertedLiterals.last();
+        assertedLiterals.pop();
+        clearPolarity(lit.tr);
+    }
+
     TSolver::popBacktrackPoint();
 }
 
@@ -467,11 +479,11 @@ PTRef ArraySolver::getEquality(ERef lhs, ERef rhs) {
 }
 
 bool ArraySolver::isFalsified(PTRef equality) {
-    return egraph.hasPolarity(equality) and egraph.getPolarity(equality) == l_False;
+    return this->hasPolarity(equality) and this->getPolarity(equality) == l_False;
 }
 
 bool ArraySolver::isSatisfied(PTRef equality) {
-    return egraph.hasPolarity(equality) and egraph.getPolarity(equality) == l_True;
+    return this->hasPolarity(equality) and this->getPolarity(equality) == l_True;
 }
 
 /*
