@@ -320,6 +320,7 @@ void CoreSMTSolver::attachClause(CRef cr)
 {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
+    assert(value(c[0]) != l_False or value(c[1]) != l_False);
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
     if (c.learnt()) learnts_literals += c.size();
