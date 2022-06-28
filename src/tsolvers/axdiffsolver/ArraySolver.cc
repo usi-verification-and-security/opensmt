@@ -586,11 +586,11 @@ void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection cons
     }
 }
 
-void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationColletion) const {
+void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const {
     assert(getRoot(lhs) == getRoot(rhs));
     auto egraphExplanation = egraph.explainer->explain(lhs, rhs);
     for (PtAsgn lit : egraphExplanation) {
-        explanationColletion.insert(lit);
+        explanationCollection.insert(lit);
     }
 }
 
@@ -774,7 +774,7 @@ void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indic
     if (this->term != source) {
         solver.recordExplanationOfEgraphEquivalence(this->term, source, explanations);
     }
-    indices.insert(traversal.getSolver().getIndexFromStore(store)); // TODO: Should this be the index or its root?
+    indices.insert(traversal.getSolver().getIndexFromStore(store)); // MB: This must be the real index, not its root!
     this->node = traversal.getNode(this->node).primaryEdge;
     this->term = target;
 }

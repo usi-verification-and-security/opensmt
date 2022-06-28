@@ -171,7 +171,7 @@ private:
     // Helper
     static void merge(ArraySolver::ExplanationCollection & main, ExplanationCollection const & other);
 
-    void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationColletion) const;
+    void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const;
 
     void collectLemmaConditions();
 
