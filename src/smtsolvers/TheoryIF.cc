@@ -186,8 +186,16 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     }
     assert(res != TPropRes::Undef);
     if (res == TPropRes::Propagate) {
+        assert(std::all_of(propData.begin(), propData.end(), [this](auto const & datum){
+            return value(var(datum.lit)) == l_Undef;
+        }));
         for (auto [litToPropogate, reason] : propData) {
-            uncheckedEnqueue(litToPropogate, reason);
+            // MB: same literal can be added multiple times, coming from different clauses
+            if (value(litToPropogate) == l_Undef) {
+                uncheckedEnqueue(litToPropogate, reason);
+            } else {
+                assert(value(litToPropogate) == l_True);
+            }
         }
     }
     return res;
