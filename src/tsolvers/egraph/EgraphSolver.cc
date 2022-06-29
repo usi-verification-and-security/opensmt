@@ -1025,10 +1025,6 @@ void Egraph::undoDisequality(ERef x)
 #endif
 }
 
-bool Egraph::canBeMerged(ERef first, ERef second) const {
-    Expl tmp;
-    return not unmergeable(first, second, tmp);
-}
 
 bool Egraph::unmergeable(ERef x, ERef y, Expl& r) const
 {
