@@ -1,4 +1,5 @@
 (set-logic QF_AX)
+(set-info :status sat)
 (declare-sort I 0)
 (declare-sort E 0)
 (declare-fun a () (Array I E))
