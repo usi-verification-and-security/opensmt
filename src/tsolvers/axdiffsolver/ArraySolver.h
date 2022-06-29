@@ -1,12 +1,56 @@
-//
-// Created by Martin Blicha on 22.11.21.
-//
+/*
+ *  Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_ARRAYSOLVER_H
 #define OPENSMT_ARRAYSOLVER_H
 
 #include "TSolver.h"
 #include "Egraph.h"
+
+/*
+ * This is an implementation of a theory solver for the theory of arrays with extensionality.
+ * It is based on the idea of weak equivalence of arrays as presented in the paper
+ * "Weakly Equivalent Arrays" (https://link.springer.com/chapter/10.1007/978-3-319-24246-0_8).
+ * The implementation follows from a large part the implementation in SMTInterpol
+ * (https://github.com/ultimate-pa/smtinterpol), and differs significantly from the description in the paper.
+ *
+ * The main data structure is a weak equivalence graph where nodes represent array terms and they are connected by two
+ * types of edges:
+ *  1. Strong edges, when the terms are equal in the current context (known from Egraph)
+ *  2. Weak edges that connects a `store` term with the underlying array term.
+ *
+ *  In fact, in the implementation, the WE-graph is re-build when the context of strong equivalence changes
+ *  (new equality is asserted to Egraph). Thus, the nodes in WE-graph actually represents whole equivalence classes
+ *  (not individual terms).
+ *
+ *  Two arrays are weakly equivalent if they are connected by a path in the graph. If two arrays are weakly equivalent
+ *  then they can different only on finitely many indices. In fact, they can differ only on the indices of store terms
+ *  correspoding to the weak edges on the path.
+ *
+ *  To check consistency of the axioms of the theory of arrays, even finer concept is used: i-weak equivalence
+ *  (for index i). Two arrays are i-weakly equivalent if they are connected by a path that does not use index i
+ *  (nor any index equivalent to i). If this is the case, then the two arrays must have the same value at index i.
+ *  This is captured by first types of lemmas: read-over-weak-eq.
+ *  The second types of lemmas are extensionality lemmas which captures the situation when two arrays actually have
+ *  the same elements, then they must be considered equal. This condition is harder to check, but in the end can be
+ *  detected from WE-graph: if there is a path between two arrays such that they are weakly CONGRUENT on all store
+ *  indices of tha path.
+ *  Weak congruence is a weaker concept than weak equivalence.
+ *  For example, "a" and "(store a i (select a i))" are weakly congruent on i, but not weakly equivalent on i.
+ *  The implementation uses a trick how to detect if two arrays are weakly congruent, but then it uses the proper
+ *  definition to actually collect the conditions and build the extensionality lemma.
+ *
+ *  NOTE: The paper distinguishes the cases when element theory is stably infinite or not.
+ *  Our implementation for now assumes that the element theory IS stably infinite.
+ *
+ *  The implementation also assumes that for each store term `(store a i v)` the instance of the identity
+ *  select-over-store axiom has been added to the formula: `(= v (select i (store a i v)))`.
+ *  This is currently done in the preprocessing.
+ */
 
 struct NodeRef { unsigned int id; };
 const struct NodeRef NodeRef_Undef = {UINT32_MAX};
@@ -20,29 +64,40 @@ struct NodeRefHash {
     }
 };
 
-
+/*
+ * Node in the WE-graph.
+ * It remembers
+ * 1. The corresponding array term (root of its equivalence class)
+ * 2. Parent node following the primary edge and store term that is the cause of this edge
+ * 3. Node following the secondary edge and the store term that is the cause of this edge
+ */
 struct ArrayNode {
     ERef term {ERef_Undef};
-    ERef primaryStore {ERef_Undef};
     NodeRef primaryEdge {NodeRef_Undef};
+    ERef primaryStore {ERef_Undef};
     NodeRef secondaryEdge {NodeRef_Undef};
     ERef secondaryStore {ERef_Undef};
 
     explicit ArrayNode(ERef term) : term(term) {}
 };
 
+/*
+ * Class representing both the theory solver and the the WE-graph (MB: This should probably be split)
+ */
 class ArraySolver : public TSolver {
     Logic & logic;
-    Egraph & egraph;
+    Egraph & egraph; // MB: Array solver needs egraph to be able to work with the current (strong) equivalence context
 
     using Terms = std::set<ERef>;
     Terms arrayTerms;
     Terms storeTerms;
     Terms selectTerms;
 
+    // WE-graph
     std::vector<ArrayNode> nodes;
     std::unordered_map<ERef, NodeRef, ERefHash> rootsMap;
 
+    // Whether or not WE-graph has been built for current context
     bool valid = false;
 
     vec<PtAsgn> assertedLiterals;
@@ -87,6 +142,10 @@ private:
     using IndicesCollection = std::unordered_set<ERef, ERefHash>;
     using ExplanationCollection = std::unordered_set<PtAsgn, PtAsgnHash>;
 
+    /*
+     * Helper class for traversing the WE-graph.
+     * Maybe this should actually properly represent the WE-graph instead of ArraySolver having the WE-graph representation
+     */
     class Traversal {
         ArraySolver & solver;
     public:
@@ -110,6 +169,10 @@ private:
         }
     };
 
+    /*
+     * Represents a position in the WE-graph and can move towards the root of (i-)weak equivalence class
+     * while collecting store indices encountered.
+     */
     class Cursor {
         Traversal traversal;
         NodeRef node;
@@ -127,6 +190,9 @@ private:
         void collectOverPrimaries(NodeRef destination, IndicesCollection & indices);
     };
 
+    /*
+     * Similar to Cursor, but also collects explanations why terms are (weakly or strongly) equivalent.
+     */
     class ExplanationCursor {
         Traversal & traversal;
         NodeRef node;
@@ -140,8 +206,9 @@ private:
         void collectOnePrimary(IndicesCollection & indices, ExplanationCollection & explanations);
         void collectOneSecondary(ERef index, IndicesCollection & indices, ExplanationCollection & explanations);
     };
+
  /*
- * Internal methods for manipulating weak equivalence graph
+ * Internal methods for bulding weak equivalence graph and computing lemma consequences of the graph
  */
 private:
     struct LemmaConditions {
@@ -161,7 +228,7 @@ private:
 
     void computeExplanation(PTRef equality);
 
-    ExplanationCollection readOverWeakEquivalenceLemma(PTRef equality);
+    ExplanationCollection readOverWeakEquivalenceConflict(PTRef equality);
 
     PTRef computeExtensionalityClause(NodeRef n1, NodeRef n2);
 
@@ -169,8 +236,7 @@ private:
 
     ExplanationCollection explainWeakEquivalencePath(ERef array1, ERef array2, ERef index);
 
-    // Helper
-    static void merge(ArraySolver::ExplanationCollection & main, ExplanationCollection const & other);
+    static void merge(ExplanationCollection & main, ExplanationCollection const & other);
 
     void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const;
 

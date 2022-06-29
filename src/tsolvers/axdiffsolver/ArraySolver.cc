@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 22.11.21.
-//
+/*
+ *  Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "ArraySolver.h"
 
@@ -16,9 +19,7 @@ ArraySolver::ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config) :
     egraph(egraph)
     { }
 
-ArraySolver::~ArraySolver() {
-
-}
+ArraySolver::~ArraySolver() = default;
 
 void ArraySolver::clearSolver() {
     clear();
@@ -29,9 +30,10 @@ bool ArraySolver::assertLit(PtAsgn literal) {
     if (logic.isEquality(literal.tr)) {
         setPolarity(literal.tr, literal.sgn);
         assertedLiterals.push(literal);
-        if (literal.sgn == l_True) {
+        if (literal.sgn == l_True) { // Strong equivalence context has changed -> reset
             clear();
         } else if (literal.sgn == l_False) {
+            // For asserted disequality check current read-over-weak-eq lemmas to see if any is now completly falsified
             for (auto & lemma : lemmas) {
                 auto & undecided = lemma.undecidedEqualities;
                 auto it = undecided.find(literal.tr);
@@ -89,14 +91,15 @@ TRes ArraySolver::check(bool complete) {
             return checkExtensionality();
         } else {
             for (auto const & lemma : this->lemmas) {
-                auto clause = readOverWeakEquivalenceLemma(lemma.equality);
-                assert(not std::all_of(clause.begin(), clause.end(), [this](PtAsgn lit) {
+                auto conflict = readOverWeakEquivalenceConflict(lemma.equality);
+                assert(not std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn lit) {
                     return lit.sgn == l_False ? isFalsified(lit.tr) : isSatisfied(lit.tr);
                 }));
                 vec<PTRef> args;
-                args.capacity(clause.size());
-                for (PtAsgn lit : clause) {
-                    // MB: To obtain clause, we need to negate the literals of the conflict
+                args.capacity(conflict.size());
+                for (PtAsgn lit : conflict) {
+                    assert(lit.sgn != l_Undef);
+                    // MB: To obtain lemma, we need to negate the literals of the conflict
                     PTRef arg = lit.sgn == l_True ? logic.mkNot(lit.tr) : lit.tr;
                     args.push(arg);
                 }
@@ -247,6 +250,9 @@ void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, Map<
     mergeSecondary(node.primaryEdge, root, store, forbiddenIndices);
 }
 
+/*
+ * Build the WE-graph for current context and compute weak-over-read-eq lemmas that need to be valid.
+ */
 void ArraySolver::buildWeakEq() {
     assert(not valid);
     assert(nodes.empty() and rootsMap.empty() and lemmas.empty());
@@ -431,6 +437,11 @@ PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
     return logic.mkOr(std::move(args));
 }
 
+/*
+ * Somewhat naive way how to compute all read-over-weak-eq lemmas for current WE-graph.
+ *
+ * Every pair of selects with weakly-equivalent array terms needs a correspoding lemma.
+ */
 void ArraySolver::collectLemmaConditions() {
     std::unordered_map<ERef, vec<ERef>, ERefHash> indicesToSelects;
     for (ERef select : selectTerms) {
@@ -514,7 +525,7 @@ std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(N
 }
 
 void ArraySolver::computeExplanation(PTRef equality) {
-    auto conflictExplanation = readOverWeakEquivalenceLemma(equality);
+    auto conflictExplanation = readOverWeakEquivalenceConflict(equality);
     this->has_explanation = true;
     this->explanation.clear();
     for (auto lit : conflictExplanation) {
@@ -522,8 +533,11 @@ void ArraySolver::computeExplanation(PTRef equality) {
     }
 }
 
-// MB: Actually, this returns the conflict, not the lemma!! TODO: Fix terminology
-ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceLemma(PTRef equality) {
+/*
+ * Compute the literals representing the negation of a read-over-weak-eq lemma, i.e., the conflict, for the given
+ * equality in the current context.
+ */
+ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceConflict(PTRef equality) {
     assert(logic.isEquality(equality));
     PTRef lhs = logic.getPterm(equality)[0];
     PTRef rhs = logic.getPterm(equality)[1];
@@ -540,12 +554,13 @@ ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceLemma(PTR
     if (index1 != index2) {
         recordExplanationOfEgraphEquivalence(index1, index2, lemma);
     }
+    // add literal asserting that the selects are not equal
     lemma.insert({equality, l_False});
     return lemma;
 }
 
 /*
- * Explains why the two input arrays are weakly equivalent on index "index".
+ * Explain why the two input arrays are weakly equivalent on index "index".
  * Since they are weakly equivalent on "index", the selects "array1[index]" and "array2[index]" must have the same value.
  *
  * @returns The collection of literals that guarantees the i-weak equivalence
@@ -579,7 +594,6 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
     cursor1.collectPrimaries(cursor2, storeIndices, explanations);
     for (ERef storeIndex : storeIndices) {
         PTRef eq = getEquality(storeIndex, index);
-//        assert(isFalsified(eq));
         explanations.insert(PtAsgn(eq, l_False));
     }
     return explanations;
@@ -602,6 +616,9 @@ void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection cons
     }
 }
 
+/*
+ * Collect the explanation from Egraph why two terms are equivalent
+ */
 void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const {
     assert(getRoot(lhs) == getRoot(rhs));
     auto egraphExplanation = egraph.explainer->explain(lhs, rhs);
@@ -621,7 +638,7 @@ void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef
     }
     assert(selectsInfo.count(sourceRepresentative) > 0);
     assert(selectsInfo.count(targetRepresentative) > 0);
-    // get select for left-hand-side
+
     ERef sourceSelect = selectsInfo.find(sourceRepresentative)->second.at(index);
     ERef targetSelect = selectsInfo.find(targetRepresentative)->second.at(index);
 
@@ -640,8 +657,6 @@ void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef
         recordExplanationOfEgraphEquivalence(sourceSelect, targetSelect, explanationCollection);
     }
 }
-
-//////////// Cursor traversing the graph of weak equivalence
 
 unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef index) const {
     assert(getRoot(index) == index);
