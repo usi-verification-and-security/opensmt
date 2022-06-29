@@ -34,6 +34,14 @@ void LookaheadSMTSolver::attachClause(CRef cr) {
             init_arr[var(~c[1])] = true;
             init_close_to_prop++;
         }
+//        if(!next_arr[var(~c[0])]){
+//          next_arr[var(~c[0])] = true;
+//          close_to_prop++;
+//        }
+//        if(!next_arr[var(~c[1])]){
+//          next_arr[var(~c[1])] = true;
+//          close_to_prop++;
+//        }
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -75,12 +83,15 @@ lbool LookaheadSMTSolver::solve_() {
 
     bound_prop = bound_arr.size();
     double nof_conflicts = restart_first;
+    check_counter = 0;
 
     LALoopRes res = LALoopRes::unknown;
     for(int i = 0; i<next_arr.size(); i++){
       if(next_arr[i]){
-        init_arr[i] = true;
-        init_close_to_prop++;
+        if(!init_arr[i]){
+          init_arr[i] = true;
+          init_close_to_prop++;
+        }
       }
       else{
         if (init_arr[i])
@@ -88,6 +99,7 @@ lbool LookaheadSMTSolver::solve_() {
           close_to_prop++;
       }
     }
+
 
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
@@ -155,6 +167,9 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
 #ifdef LADEBUG
             printf("Conflict: I would need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
 #endif
+            if(out_btlevel < decisionLevel()){
+              reset_props = true;
+            }
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
@@ -171,6 +186,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
             diff = true;
         }
         if (!diff) {
+            check_counter++;
             TPropRes res = checkTheory(true);
             if (res == TPropRes::Unsat) {
 #ifdef LADEBUG
@@ -207,7 +223,6 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
  */
 LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode const & n) {
     tested = false;
-    cancelUntil(0);
 
     vec<Lit> path;
     LANode const * curr = &n;
@@ -218,50 +233,100 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         curr = parent;
         parent = curr->p;
     }
-    close_to_prop = init_close_to_prop;
-    for(int i = 0; i<next_arr.size(); i++){
-      next_arr[i] = init_arr[i];
-    }
+//    printf("Cancel counter: %d \n", cancel_counter);
 
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
-    for (int i = path.size() - 1; i >= 0; i--)
-    {
+    if(path.size() <= decisionLevel() || reset_props ){
+      reset_props = false;
+      cancelUntil(0);
+//      cancel_counter++;
+      close_to_prop = init_close_to_prop;
+      for(int i = 0; i<next_arr.size(); i++){
+        next_arr[i] = init_arr[i];
+      }
+      for (int i = path.size() - 1; i >= 0; i--) {
         newDecisionLevel();
 
         if (value(path[i]) == l_Undef) {
 #ifdef LADEBUG
-            printf("I will propagate %d\n", var(path[i]));
+          printf("I will propagate %d\n", var(path[i]));
 #endif
-            int curr_dl = decisionLevel();
-            uncheckedEnqueue(path[i]);
-            lbool res = laPropagateWrapper();
-            // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-            if (res == l_False) {
-                return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-            } else if (res == l_Undef) {
-                cancelUntil(0);
-                return PathBuildResult::pathbuild_restart; // Do a restart
+          int curr_dl = decisionLevel();
+          uncheckedEnqueue(path[i]);
+          lbool res = laPropagateWrapper();
+          // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+          if (res == l_False) {
+            return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+          } else if (res == l_Undef) {
+            cancelUntil(0);
+            close_to_prop = init_close_to_prop;
+            for(int i = 0; i<next_arr.size(); i++){
+              next_arr[i] = init_arr[i];
             }
-            if (curr_dl != decisionLevel()) {
-                return PathBuildResult::pathbuild_unsat;
-            }
+            return PathBuildResult::pathbuild_restart; // Do a restart
+          }
+          if (curr_dl != decisionLevel()) {
+            return PathBuildResult::pathbuild_unsat;
+          }
         } else {
 #ifdef LADEBUG
-            printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+          printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
 #endif
-            if (value(path[i]) == l_False) {
+        if (value(path[i]) == l_False) {
 #ifdef LADEBUG
-                printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
-                printf("Marking the subtree false:\n");
-                n->print();
+            printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+            printf("Marking the subtree false:\n");
+            n->print();
 #endif
-                return PathBuildResult::pathbuild_unsat;
-            } else {
-                assert(value(path[i]) == l_True);
-            }
+            return PathBuildResult::pathbuild_unsat;
+          } else {
+            assert(value(path[i]) == l_True);
+          }
         }
+      }
+    } else {
+      for (int i = path.size() - decisionLevel() - 1; i >= 0; i--) {
+        newDecisionLevel();
+
+        if (value(path[i]) == l_Undef) {
+#ifdef LADEBUG
+          printf("I will propagate %d\n", var(path[i]));
+#endif
+          int curr_dl = decisionLevel();
+          uncheckedEnqueue(path[i]);
+          lbool res = laPropagateWrapper();
+          // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+          if (res == l_False) {
+            return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+          } else if (res == l_Undef) {
+            cancelUntil(0);
+            close_to_prop = init_close_to_prop;
+            for(int i = 0; i<next_arr.size(); i++){
+              next_arr[i] = init_arr[i];
+            }
+            return PathBuildResult::pathbuild_restart; // Do a restart
+          }
+          if (curr_dl != decisionLevel()) {
+            return PathBuildResult::pathbuild_unsat;
+          }
+        } else {
+#ifdef LADEBUG
+          printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+          if (value(path[i]) == l_False) {
+#ifdef LADEBUG
+            printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+            printf("Marking the subtree false:\n");
+            n->print();
+#endif
+            return PathBuildResult::pathbuild_unsat;
+          } else {
+            assert(value(path[i]) == l_True);
+          }
+        }
+      }
     }
     return PathBuildResult::pathbuild_success;
 }
@@ -348,24 +413,6 @@ CRef LookaheadSMTSolver::propagate()
             }
 
             if (value(c[0]) == l_True or value(c[1]) == l_True) {
-//                if (!tested) {
-//                    if (next_arr[var(~c[0])]) {
-//                        close_to_prop--;
-//                    }
-//                    if (next_arr[var(~c[1])]) {
-//                        close_to_prop--;
-//                    }
-//                    if (bound_arr[var(~c[0])]){
-//                      bound_prop--;
-//                    }
-//                    if (bound_arr[var(~c[1])]){
-//                      bound_prop--;
-//                    }
-//                    next_arr[var(~c[0])] = false;
-//                    next_arr[var(~c[1])] = false;
-//                    bound_arr[var(~c[0])] = false;
-//                    bound_arr[var(~c[1])] = false;
-//                }
                 *j++ = *i++;
                 continue;
             }
@@ -475,8 +522,8 @@ CRef LookaheadSMTSolver::propagate()
 std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() {
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
-//    printf("Level: %d \n", decisionLevel());
-//    printf("Close to prop: %d \n", close_to_prop);
+    printf("Level: %d \n", decisionLevel());
+    printf("Close to prop: %d \n", close_to_prop);
     tested = true;
     if (laPropagateWrapper() == l_False) {
 #ifdef LADEBUG
@@ -500,83 +547,88 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #endif
     tested = true;
     assert(close_to_prop >= 0);
+//    printf("Close to bound: %d \n", bound_prop);
     bound_prop = 0;
     for (int i = 0; i<bound_arr.size(); i++) {
-        PTRef pt_r = theory_handler.varToTerm(i);
-        bound_arr[i] = theory_handler.checkLitProp(PtAsgn(pt_r, l_False)) && theory_handler.checkLitProp(PtAsgn(pt_r, l_True));
-        if(bound_arr[i]){
-          bound_prop++;
-        }
+      PTRef pt_r = theory_handler.varToTerm(i);
+      bound_arr[i] = theory_handler.checkLitProp(PtAsgn(pt_r, l_False)) && theory_handler.checkLitProp(PtAsgn(pt_r, l_True));
+      if(bound_arr[i]){
+        bound_prop++;
+      }
     }
+//    int derivations = 0;
     for (Var v(idx % nVars()); !score->isAlreadyChecked(v) && (close_to_prop!=0 || bound_prop!=0); v = Var((idx + (++i)) % nVars())) {
-          if (next_arr[v] || bound_arr[v]) {
-              if (!decision[v]) {
-                  score->setChecked(v);
-  #ifdef LADEBUG
-                  cout << "Not a decision variable: " << v << "("
-                       << theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)) << ")\n";
-  #endif
-                  continue;
-              }
-              if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0) {
-                  respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
-              }
-              if (respect_logic_partitioning_hints && !okToPartition(v)) {
-                  skipped_vars_due_to_logic++;
-                  std::cout << "Skipping " << v << " since logic says it's not good\n";
-                  continue; // Skip the vars that the logic considers bad to split on
-              }
 
-  #ifdef LADEBUG
-                  printf("Checking var %d\n", v);
-  #endif
-              Lit best = score->getBest();
-              if (value(v) != l_Undef or (best != lit_Undef and score->safeToSkip(v, best))) {
-  #ifdef LADEBUG
-                  printf("  Var is safe to skip due to %s\n",
-                         value(v) != l_Undef ? "being assigned" : "having low upper bound");
-  #endif
-                  if (value(v) != l_Undef and next_arr[v]) {
-                    next_arr[v] = false;
-                    close_to_prop--;
-                  }
-                  if (value(v) != l_Undef and bound_arr[v]) {
-                    bound_arr[v] = false;
-                    bound_prop--;
-                  }
-                  // It is possible that all variables are assigned here.
-                  // In this case it seems that we have a satisfying assignment.
-                  // This is in fact a debug check
-                  if (static_cast<unsigned int>(trail.size()) == dec_vars) {
-  #ifdef LADEBUG
-                      printf("All vars set?\n");
-  #endif
+      if (next_arr[v] || bound_arr[v]) {
+          if (!decision[v]) {
+            score->setChecked(v);
+    #ifdef LADEBUG
+            cout << "Not a decision variable: " << v << "("
+                 << theory_handler.getLogic().printTerm(theory_handler.varToTerm(v)) << ")\n";
+    #endif
+            continue;
+          }
+          if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0) {
+            respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+          }
+          if (respect_logic_partitioning_hints && !okToPartition(v)) {
+            skipped_vars_due_to_logic++;
+            std::cout << "Skipping " << v << " since logic says it's not good\n";
+            continue; // Skip the vars that the logic considers bad to split on
+          }
+#ifdef LADEBUG
+          printf("Checking var %d\n", v);
+#endif
+          Lit best = score->getBest();
+          if (value(v) != l_Undef or (best != lit_Undef and score->safeToSkip(v, best))) {
+#ifdef LADEBUG
+            printf("  Var is safe to skip due to %s\n",
+                   value(v) != l_Undef ? "being assigned" : "having low upper bound");
+#endif
+            if (value(v) != l_Undef and next_arr[v]) {
+              next_arr[v] = false;
+              close_to_prop--;
+            }
+            if (value(v) != l_Undef and bound_arr[v]) {
+              bound_arr[v] = false;
+              bound_prop--;
+            }
+            // It is possible that all variables are assigned here.
+            // In this case it seems that we have a satisfying assignment.
+            // This is in fact a debug check
+            if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+#ifdef LADEBUG
+              printf("All vars set?\n");
+#endif
 
-                      if (checkTheory(true) != TPropRes::Decide)
-                          return {laresult::la_tl_unsat, best}; // Problem is trivially unsat
-                      assert(checkTheory(true) == TPropRes::Decide);
-  #ifndef NDEBUG
-                      for (int j = 0; j < clauses.size(); j++) {
-                          Clause &c = ca[clauses[j]];
-                          unsigned k;
-                          for (k = 0; k < c.size(); k++) {
-                              if (value(c[k]) == l_True) {
-                                  break;
-                              }
-                          }
-                          assert(k < c.size());
-                      }
-  #endif
-                      best = lit_Undef;
-                      return {laresult::la_sat, best}; // Stands for SAT
+              check_counter++;
+              if (checkTheory(true) != TPropRes::Decide)
+                return {laresult::la_tl_unsat, best}; // Problem is trivially unsat
+              assert(checkTheory(true) == TPropRes::Decide);
+#ifndef NDEBUG
+              for (int j = 0; j < clauses.size(); j++) {
+                Clause &c = ca[clauses[j]];
+                unsigned k;
+                for (k = 0; k < c.size(); k++) {
+                  if (value(c[k]) == l_True) {
+                    break;
                   }
-                  continue;
+                }
+                assert(k < c.size());
               }
-              if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-                  std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
-                  respect_logic_partitioning_hints = false;
-                  continue;
-              }
+#endif
+              best = lit_Undef;
+              return {laresult::la_sat, best}; // Stands for SAT
+            }
+            continue;
+          }
+          if (trail.size() == nVars() + skipped_vars_due_to_logic) {
+            std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
+            respect_logic_partitioning_hints = false;
+            continue;
+          }
+
+
               count++;
 //              printf("%d\n", i);
               int p0 = 0, p1 = 0;
@@ -599,6 +651,10 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                       return {laresult::la_tl_unsat, best};
                   } else if (res == l_Undef) {
                       cancelUntil(0);
+                      close_to_prop = init_close_to_prop;
+                      for(int i = 0; i<next_arr.size(); i++){
+                        next_arr[i] = init_arr[i];
+                      }
                       return {laresult::la_restart, best};
                   }
                   // Else we go on
@@ -611,7 +667,12 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
   #ifdef LADEBUG
                       printf(" -> Propagation resulted in backtrack\n");
   #endif
+//                      printf("Variable: %d, Round: %d\n", v, score->getLatestRound());
+//                      derivations++;
+//                      if(derivations>close_to_prop/10){
+//                        derivations=0;
                       score->updateRound();
+//                      }
                       break;
                   } else {
   #ifdef LADEBUG
@@ -623,6 +684,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                   }
                   polarity == 0 ? p0 = ss : p1 = ss;
                   // Update also the clause deletion heuristic?
+//                  cancel_counter++;
                   cancelUntil(decisionLevel() - 1);
               }
               if (value(v) == l_Undef) {
@@ -676,7 +738,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #ifdef LADEBUG
               printf("All vars set?\n");
 #endif
-
+              check_counter++;
               if (checkTheory(true) != TPropRes::Decide)
                 return {laresult::la_tl_unsat, best}; // Problem is trivially unsat
               assert(checkTheory(true) == TPropRes::Decide);
@@ -723,6 +785,10 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
               return {laresult::la_tl_unsat, best};
             } else if (res == l_Undef) {
               cancelUntil(0);
+              close_to_prop = init_close_to_prop;
+              for(int i = 0; i<next_arr.size(); i++){
+                next_arr[i] = init_arr[i];
+              }
               return {laresult::la_restart, best};
             }
             // Else we go on
@@ -735,7 +801,11 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #ifdef LADEBUG
             printf(" -> Propagation resulted in backtrack\n");
 #endif
+//            derivations++;
+//            if(derivations>5){
+//              derivations=0;
             score->updateRound();
+//            }
             break;
           } else {
 #ifdef LADEBUG
@@ -747,20 +817,14 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
           }
           polarity == 0 ? p0 = ss : p1 = ss;
           // Update also the clause deletion heuristic?
+//          cancel_counter++;
           cancelUntil(decisionLevel() - 1);
         }
           if (value(v) == l_Undef) {
 #ifdef LADEBUG
           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-//          if(p0 > 0 && p1 > 0){
-//            if(!next_arr[v]){
-//              if(!bound_arr[v])
-//                close_to_prop++;
-//              next_arr[v] = true;
-//            }
-//          }
-
+            assert(p0 == 1 and p1 == 1);
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
             break;
@@ -770,6 +834,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 
     tested = false;
     best = score->getBest();
+    printf("Best: %d\n", var(best));
     if (static_cast<unsigned int>(trail.size()) == dec_vars and best == lit_Undef) {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");

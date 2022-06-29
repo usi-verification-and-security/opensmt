@@ -24,8 +24,10 @@ protected:
     int                 close_to_prop = 0;
     int                 init_close_to_prop = 0;
     int                 bound_prop = 0;
-    int fun_props;
+    int                 cancel_counter = 0;
+    int                 fun_props;
     bool                tested = false;
+    bool                reset_props = false;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
