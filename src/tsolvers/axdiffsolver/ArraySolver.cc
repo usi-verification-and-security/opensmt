@@ -77,7 +77,7 @@ TRes ArraySolver::check(bool complete) {
     if (not valid) {
         buildWeakEq();
     }
-    for (auto const & lemma : this->lemmas) {
+    for (auto const & lemma : lemmas) {
         if (lemma.undecidedEqualities.empty()) {
             has_explanation = true;
             computeExplanation(lemma.equality);
@@ -88,7 +88,7 @@ TRes ArraySolver::check(bool complete) {
         if (lemmas.empty()) {
             return checkExtensionality();
         } else {
-            for (auto const & lemma : this->lemmas) {
+            for (auto const & lemma : lemmas) {
                 auto conflict = readOverWeakEquivalenceConflict(lemma.equality);
                 assert(not std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn lit) {
                     return lit.sgn == l_False ? isFalsified(lit.tr) : isSatisfied(lit.tr);
@@ -270,7 +270,7 @@ void ArraySolver::computeSelectsInfo() {
         ERef index = getRoot(getIndexFromSelect(select));
         NodeRef arrayNode = getNodeRef(getRoot(getArrayFromSelect(select)));
         NodeRef weakIRepresentative = getIndexedRepresentative(arrayNode, index);
-        this->selectsInfo[weakIRepresentative].insert({index, select});
+        selectsInfo[weakIRepresentative].insert({index, select});
     }
 }
 
@@ -319,8 +319,8 @@ TRes ArraySolver::checkExtensionality() {
     vec<opensmt::pair<NodeRef, NodeRef>> equalitiesToPropagate;
 
     vec<NodeRef> queue;
-    queue.capacity(this->rootsMap.size());
-    for (auto const & entry : this->rootsMap) {
+    queue.capacity(rootsMap.size());
+    for (auto const & entry : rootsMap) {
         queue.push(entry.second);
     }
 
@@ -508,10 +508,10 @@ std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(N
 
 void ArraySolver::computeExplanation(PTRef equality) {
     auto conflictExplanation = readOverWeakEquivalenceConflict(equality);
-    this->has_explanation = true;
-    this->explanation.clear();
+    has_explanation = true;
+    explanation.clear();
     for (auto lit : conflictExplanation) {
-        this->explanation.push(lit);
+        explanation.push(lit);
     }
 }
 
@@ -728,7 +728,7 @@ void ArraySolver::ExplanationCursor::collectOneSecondary(
     IndicesCollection & indices,
     ExplanationCollection & explanations) {
 
-    NodeRef secondaryRef = traversal.findSecondaryNode(this->node, index);
+    NodeRef secondaryRef = traversal.findSecondaryNode(node, index);
     ERef secondaryStore = traversal.getNode(secondaryRef).secondaryStore;
     assert(secondaryStore != ERef_Undef);
     auto & solver = traversal.getSolver();
@@ -746,32 +746,32 @@ void ArraySolver::ExplanationCursor::collectOneSecondary(
     }
     assert(traversal.findSecondaryNode(source, index) == secondaryRef);
     ExplanationCursor cursor(traversal, source, sourceTerm);
-    this->collectPrimaries(cursor, indices, explanations);
-    this->node = target;
-    this->term = targetTerm;
+    collectPrimaries(cursor, indices, explanations);
+    node = target;
+    term = targetTerm;
     indices.insert(solver.getIndexFromStore(secondaryStore));
 }
 
 void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destination,
                                                       IndicesCollection & indices,
                                                       ExplanationCollection & explanations) {
-    auto count1 = traversal.countPrimaryEdges(this->node);
+    auto count1 = traversal.countPrimaryEdges(node);
     auto count2 = traversal.countPrimaryEdges(destination.node);
     while (count1 > count2) {
-        this->collectOnePrimary(indices, explanations);
+        collectOnePrimary(indices, explanations);
         --count1;
     }
     while (count2 > count1) {
         destination.collectOnePrimary(indices, explanations);
         --count2;
     }
-    while (this->node != destination.node) {
-        this->collectOnePrimary(indices, explanations);
+    while (node != destination.node) {
+        collectOnePrimary(indices, explanations);
         destination.collectOnePrimary(indices, explanations);
     }
-    if (this->term != destination.term) {
+    if (term != destination.term) {
         // Same array node but not same ETerm
-        traversal.getSolver().recordExplanationOfEgraphEquivalence(this->term, destination.term, explanations);
+        traversal.getSolver().recordExplanationOfEgraphEquivalence(term, destination.term, explanations);
     }
 }
 
@@ -780,14 +780,14 @@ void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indic
     ERef store = traversal.getNode(node).primaryStore;
     ERef source = store;
     ERef target = solver.getArrayFromStore(store);
-    if (solver.getNodeRef(solver.getRoot(source)) != this->node) {
+    if (solver.getNodeRef(solver.getRoot(source)) != node) {
         std::swap(source, target);
     }
-    assert(solver.getNodeRef(solver.getRoot(source)) == this->node);
-    if (this->term != source) {
-        solver.recordExplanationOfEgraphEquivalence(this->term, source, explanations);
+    assert(solver.getNodeRef(solver.getRoot(source)) == node);
+    if (term != source) {
+        solver.recordExplanationOfEgraphEquivalence(term, source, explanations);
     }
     indices.insert(traversal.getSolver().getIndexFromStore(store)); // MB: This must be the real index, not its root!
-    this->node = traversal.getNode(this->node).primaryEdge;
-    this->term = target;
+    node = traversal.getNode(node).primaryEdge;
+    term = target;
 }
