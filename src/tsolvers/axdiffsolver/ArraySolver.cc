@@ -154,7 +154,7 @@ void ArraySolver::declareAtom(PTRef tr) {
     TermCollectorConfig config(logic, arrayTerms, storeTerms, selectTerms, egraph);
     TermVisitor<TermCollectorConfig>(logic, config).visit(tr);
 
-    if(logic.isEquality(tr)) {
+    if (logic.isEquality(tr)) {
         setKnown(tr);
     }
 }
