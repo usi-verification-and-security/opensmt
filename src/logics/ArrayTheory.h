@@ -26,7 +26,7 @@ public:
     virtual const Logic&      getLogic() const override { return logic; }
     virtual ArrayTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const ArrayTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
+    virtual bool simplify(vec<PFRef> const &, PartitionManager &, int) override;
 };
 
 
