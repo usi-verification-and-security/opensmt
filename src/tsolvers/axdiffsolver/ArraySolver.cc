@@ -245,7 +245,7 @@ void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, Map<
 }
 
 /*
- * Build the WE-graph for current context and compute weak-over-read-eq lemmas that need to be valid.
+ * Build the WE-graph for current context and compute read-over-weak-eq lemmas that need to be valid.
  */
 void ArraySolver::buildWeakEq() {
     assert(not valid);
@@ -434,7 +434,7 @@ PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
 /*
  * Somewhat naive way how to compute all read-over-weak-eq lemmas for current WE-graph.
  *
- * Every pair of selects with weakly-equivalent array terms needs a correspoding lemma.
+ * Every pair of selects with weakly-equivalent array terms needs a corresponding lemma.
  */
 void ArraySolver::collectLemmaConditions() {
     std::unordered_map<ERef, vec<ERef>, ERefHash> indicesToSelects;
@@ -770,7 +770,7 @@ void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destin
         destination.collectOnePrimary(indices, explanations);
     }
     if (term != destination.term) {
-        // Same array node but not same ETerm
+        // Same array node but not same Enode
         traversal.getSolver().recordExplanationOfEgraphEquivalence(term, destination.term, explanations);
     }
 }

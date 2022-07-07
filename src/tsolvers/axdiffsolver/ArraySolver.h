@@ -23,22 +23,22 @@
  *  1. Strong edges, when the terms are equal in the current context (known from Egraph)
  *  2. Weak edges that connects a `store` term with the underlying array term.
  *
- *  In fact, in the implementation, the WE-graph is re-build when the context of strong equivalence changes
+ *  In fact, in the implementation, the WE-graph is re-built when the context of strong equivalence changes
  *  (new equality is asserted to Egraph). Thus, the nodes in WE-graph actually represents whole equivalence classes
  *  (not individual terms).
  *
- *  Two arrays are weakly equivalent if they are connected by a path in the graph. If two arrays are weakly equivalent
- *  then they can different only on finitely many indices. In fact, they can differ only on the indices of store terms
- *  correspoding to the weak edges on the path.
+ *  Two arrays are weakly equivalent if they are connected by a path in the WE-graph. If two arrays are weakly equivalent
+ *  then they can differ only on finitely many indices. In fact, they can differ only on the indices of store terms
+ *  corresponding to the weak edges on the path.
  *
  *  To check consistency of the axioms of the theory of arrays, even finer concept is used: i-weak equivalence
  *  (for index i). Two arrays are i-weakly equivalent if they are connected by a path that does not use index i
  *  (nor any index equivalent to i). If this is the case, then the two arrays must have the same value at index i.
  *  This is captured by first types of lemmas: read-over-weak-eq.
- *  The second types of lemmas are extensionality lemmas which captures the situation when two arrays actually have
- *  the same elements, then they must be considered equal. This condition is harder to check, but in the end can be
+ *  The second types of lemmas are extensionality lemmas which captures that when two arrays actually have
+ *  the same elements, then the arrays are equal. This condition is harder to check, but in the end can be
  *  detected from WE-graph: if there is a path between two arrays such that they are weakly CONGRUENT on all store
- *  indices of tha path.
+ *  indices of that path.
  *  Weak congruence is a weaker concept than weak equivalence.
  *  For example, "a" and "(store a i (select a i))" are weakly congruent on i, but not weakly equivalent on i.
  *  The implementation uses a trick how to detect if two arrays are weakly congruent, but then it uses the proper
@@ -82,7 +82,7 @@ struct ArrayNode {
 };
 
 /*
- * Class representing both the theory solver and the the WE-graph (MB: This should probably be split)
+ * Class representing both the theory solver and the WE-graph (MB: This should probably be split)
  */
 class ArraySolver : public TSolver {
     Logic & logic;
