@@ -220,9 +220,7 @@ void ArraySolver::merge(ERef storeTerm) {
     if (arrayNode == storeNode) { return; }
     makeWeakRepresentative(arrayNode);
     if (getRepresentative(storeNode) == arrayNode) {
-        Map<ERef, bool, ERefHash> forbiddenIndices;
-        forbiddenIndices.insert(indexTerm, true);
-        mergeSecondary(storeNode, arrayNode, storeTerm, forbiddenIndices);
+        mergeSecondary(storeNode, arrayNode, storeTerm, std::unordered_set<ERef,ERefHash>({indexTerm}));
     } else {
         // new primary edge
         getNode(arrayNode).primaryEdge = storeNode;
@@ -230,18 +228,18 @@ void ArraySolver::merge(ERef storeTerm) {
     }
 }
 
-void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, Map<ERef, bool, ERefHash> & forbiddenIndices) {
+void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, std::unordered_set<ERef,ERefHash> && forbiddenIndices) {
     if (nodeRef == root) { return; }
     ArrayNode & node = getNode(nodeRef);
     ERef primaryIndex = getRoot(getIndexOfPrimaryEdge(nodeRef));
     assert(getRoot(primaryIndex) == primaryIndex);
-    if (not forbiddenIndices.has(primaryIndex) and getIndexedRepresentative(nodeRef, primaryIndex) != root) {
+    if (forbiddenIndices.find(primaryIndex) == forbiddenIndices.end() and getIndexedRepresentative(nodeRef, primaryIndex) != root) {
         makeIndexedWeakRepresentative(nodeRef);
         node.secondaryEdge = root;
         node.secondaryStore = store;
     }
-    forbiddenIndices.insert(primaryIndex, true);
-    mergeSecondary(node.primaryEdge, root, store, forbiddenIndices);
+    forbiddenIndices.insert(primaryIndex);
+    mergeSecondary(node.primaryEdge, root, store, std::move(forbiddenIndices));
 }
 
 /*

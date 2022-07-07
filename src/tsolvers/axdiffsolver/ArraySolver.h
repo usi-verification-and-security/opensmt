@@ -248,7 +248,7 @@ private:
 
     void merge(ERef);
 
-    void mergeSecondary(NodeRef, NodeRef, ERef, Map<ERef, bool, ERefHash> & forbiddenIndices);
+    void mergeSecondary(NodeRef, NodeRef, ERef, std::unordered_set<ERef, ERefHash> && forbiddenIndices);
 
     void clear();
 
