@@ -145,13 +145,13 @@ private:
      * Maybe this should actually properly represent the WE-graph instead of ArraySolver having the WE-graph representation
      */
     class Traversal {
-        ArraySolver & solver;
+        ArraySolver const & solver;
     public:
-        Traversal(ArraySolver & solver) : solver(solver) {}
+        Traversal(ArraySolver const & solver) : solver(solver) {}
 
-        ArraySolver & getSolver() const { return solver; }
+        ArraySolver const & getSolver() const { return solver; }
 
-        ArrayNode & getNode(NodeRef ref) const { return solver.getNode(ref); }
+        ArrayNode const & getNode(NodeRef ref) const { return solver.getNode(ref); }
 
         ERef getRoot(ERef term) const { return solver.getRoot(term); }
 
@@ -160,9 +160,9 @@ private:
         unsigned countSecondaryEdges(NodeRef start, ERef index) const;
         unsigned countPrimaryEdges(NodeRef start) const;
 
-        std::unordered_set<ERef, ERefHash> computeStoreIndices(NodeRef, NodeRef, ERef);
+        std::unordered_set<ERef, ERefHash> computeStoreIndices(NodeRef, NodeRef, ERef) const;
 
-        ERef getIndexOfPrimaryEdge(ArrayNode const & node) const {
+        ERef getIndexOfPrimaryEdge(NodeRef node) const {
             return solver.getIndexOfPrimaryEdge(node);
         }
     };
@@ -173,16 +173,16 @@ private:
      */
     class Cursor {
         Traversal traversal;
-        NodeRef node;
+        NodeRef currentNodeRef;
     public:
-        Cursor(ArraySolver & solver, NodeRef node) : traversal(solver), node(node) {}
+        Cursor(ArraySolver const & solver, NodeRef node) : traversal(solver), currentNodeRef(node) {}
 
-        NodeRef currentNodeRef() const { return node; }
+        NodeRef getCurrentNodeRef() const { return currentNodeRef; }
 
-        ArrayNode & getNode(NodeRef ref) const { return traversal.getNode(ref); }
+        ArrayNode const & getNode(NodeRef ref) const { return traversal.getNode(ref); }
 
-        unsigned countSecondaryEdges(ERef index) const { return traversal.countSecondaryEdges(node, index); }
-        unsigned countPrimaryEdges() const { return traversal.countPrimaryEdges(node); }
+        unsigned countSecondaryEdges(ERef index) const { return traversal.countSecondaryEdges(currentNodeRef, index); }
+        unsigned countPrimaryEdges() const { return traversal.countPrimaryEdges(currentNodeRef); }
 
         void collectOneSecondary(ERef index, IndicesCollection & indices);
         void collectOverPrimaries(NodeRef destination, IndicesCollection & indices);
@@ -219,7 +219,7 @@ private:
     using SelectsInfo = std::unordered_map<NodeRef, std::unordered_map<ERef, ERef, ERefHash>, NodeRefHash>;
     SelectsInfo selectsInfo;
 
-    PTRef getEquality(ERef lhs, ERef rhs) { return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs)); }
+    PTRef getEquality(ERef lhs, ERef rhs, Logic & logic) const { return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs)); }
 
     bool isFalsified(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_False; }
     bool isSatisfied(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_True; }
@@ -238,7 +238,7 @@ private:
 
     void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const;
 
-    void collectLemmaConditions();
+    std::vector<LemmaConditions> collectLemmaConditions(Logic & logic) const;
 
     void computeSelectsInfo();
 
@@ -309,14 +309,14 @@ private:
         return nodeRef;
     }
 
-    ERef getIndexOfPrimaryEdge(ArrayNode const & node) const {
-        return getIndexFromStore(node.primaryStore);
+    ERef getIndexOfPrimaryEdge(NodeRef node) const {
+        return getIndexFromStore(getNode(node).primaryStore);
     }
 
-    NodeRef getIndexedRepresentative(NodeRef nodeRef, ERef index) {
-        ArrayNode & node = getNode(nodeRef);
+    NodeRef getIndexedRepresentative(NodeRef nodeRef, ERef index) const {
+        ArrayNode const & node = getNode(nodeRef);
         if (node.primaryEdge == NodeRef_Undef) { return nodeRef; }
-        if (getRoot(getIndexOfPrimaryEdge(node)) != index) { return getIndexedRepresentative(node.primaryEdge, index); }
+        if (getRoot(getIndexOfPrimaryEdge(nodeRef)) != index) { return getIndexedRepresentative(node.primaryEdge, index); }
         if (node.secondaryEdge == NodeRef_Undef) { return nodeRef; }
         return getIndexedRepresentative(node.secondaryEdge, index);
     }

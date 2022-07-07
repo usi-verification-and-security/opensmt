@@ -181,7 +181,7 @@ void ArraySolver::makeIndexedWeakRepresentative(NodeRef nodeRef) {
     ArrayNode & node = getNode(nodeRef);
     NodeRef secondaryRef = node.secondaryEdge;
     if (secondaryRef != NodeRef_Undef) {
-        if (getRoot(getIndexOfPrimaryEdge(getNode(secondaryRef))) != getRoot(getIndexOfPrimaryEdge(node))) {
+        if (getRoot(getIndexOfPrimaryEdge(secondaryRef)) != getRoot(getIndexOfPrimaryEdge(nodeRef))) {
             node.secondaryEdge = getNode(secondaryRef).primaryEdge;
             makeIndexedWeakRepresentative(nodeRef);
         } else {
@@ -233,7 +233,7 @@ void ArraySolver::merge(ERef storeTerm) {
 void ArraySolver::mergeSecondary(NodeRef nodeRef, NodeRef root, ERef store, Map<ERef, bool, ERefHash> & forbiddenIndices) {
     if (nodeRef == root) { return; }
     ArrayNode & node = getNode(nodeRef);
-    ERef primaryIndex = getRoot(getIndexOfPrimaryEdge(node));
+    ERef primaryIndex = getRoot(getIndexOfPrimaryEdge(nodeRef));
     assert(getRoot(primaryIndex) == primaryIndex);
     if (not forbiddenIndices.has(primaryIndex) and getIndexedRepresentative(nodeRef, primaryIndex) != root) {
         makeIndexedWeakRepresentative(nodeRef);
@@ -261,7 +261,7 @@ void ArraySolver::buildWeakEq() {
     for (ERef store : storeTerms) {
         merge(store);
     }
-    collectLemmaConditions();
+    lemmas = collectLemmaConditions(logic);
     valid = true;
 }
 
@@ -426,7 +426,7 @@ PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
         assert(lit.sgn != l_Undef);
         args.push(lit.sgn == l_True ? logic.mkNot(lit.tr) : lit.tr);
     }
-    args.push(getEquality(getNode(n1).term, getNode(n2).term));
+    args.push(getEquality(getNode(n1).term, getNode(n2).term, logic));
 
     return logic.mkOr(std::move(args));
 }
@@ -436,54 +436,51 @@ PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
  *
  * Every pair of selects with weakly-equivalent array terms needs a corresponding lemma.
  */
-void ArraySolver::collectLemmaConditions() {
+std::vector<ArraySolver::LemmaConditions> ArraySolver::collectLemmaConditions(Logic & logic) const {
     std::unordered_map<ERef, vec<ERef>, ERefHash> indicesToSelects;
     for (ERef select : selectTerms) {
-        ERef index = getIndexFromSelect(select);
-        ERef root = egraph.getRoot(index);
+        ERef root = getRoot(getIndexFromSelect(select));
         indicesToSelects[root].push(select);
     }
-    for (auto const & entry : indicesToSelects) {
-        ERef index = entry.first;
-        auto const & selects = entry.second;
+    std::vector<LemmaConditions> lemmas;
+    for (auto const & [index, selects] : indicesToSelects) {
         if (selects.size() < 2) { continue; }
         // TODO: Figure out better way how to compute all candidates for lemmas
-        for (auto firstIt = selects.begin(); firstIt != selects.end(); ++firstIt) {
-            ERef first = *firstIt;
+        for (auto first : selects) {
             ERef firstRoot = getRoot(first);
-            for (auto secondIt = selects.begin(); secondIt != firstIt; ++secondIt) {
+            for (auto secondIt = selects.begin(); *secondIt != first; ++secondIt) {
                 ERef second = *secondIt;
                 if (firstRoot == getRoot(second)) { continue; } // The selects are already the same, no lemma needed
                 NodeRef arrayFirst = getNodeRef(getRoot(getArrayFromSelect(first)));
                 NodeRef arraySecond = getNodeRef(getRoot(getArrayFromSelect(second)));
                 if (arrayFirst == arraySecond or getIndexedRepresentative(arrayFirst, index) == getIndexedRepresentative(arraySecond, index)) {
-                    LemmaConditions lemmaConditions;
-                    PTRef equalityOfSelects = getEquality(first, second);
-                    lemmaConditions.equality = equalityOfSelects;
+                    std::unordered_set<PTRef, PTRefHash> undecidedEqualities;
+                    PTRef equalityOfSelects = getEquality(first, second, logic);
                     if (not isFalsified(equalityOfSelects)) {
                         assert(not isSatisfied(equalityOfSelects));
-                        lemmaConditions.undecidedEqualities.insert(equalityOfSelects);
+                        undecidedEqualities.insert(equalityOfSelects);
                     }
                     auto storeIndices = Traversal(*this).computeStoreIndices(arrayFirst, arraySecond, index);
                     for (ERef storeIndex : storeIndices) {
                         assert(storeIndex != index);
-                        PTRef equalityOfIndices = getEquality(index, storeIndex);
+                        PTRef equalityOfIndices = getEquality(index, storeIndex, logic);
                         if (not isFalsified(equalityOfIndices)) {
                             assert(not isSatisfied(equalityOfIndices));
-                            lemmaConditions.undecidedEqualities.insert(equalityOfIndices);
+                            undecidedEqualities.insert(equalityOfIndices);
                         }
                     }
-                    this->lemmas.push_back(std::move(lemmaConditions));
+                    lemmas.emplace_back(LemmaConditions{equalityOfSelects, std::move(undecidedEqualities)});
                 }
             }
         }
     }
+    return lemmas;
 }
 
 /*
  * Collect the store indices on the path from array1 to array2 using only indices different from index.
  */
-std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(NodeRef array1, NodeRef array2, ERef index) {
+std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(NodeRef array1, NodeRef array2, ERef index) const {
     assert(index == getRoot(index));
     Cursor cursor1(getSolver(), array1);
     Cursor cursor2(getSolver(), array2);
@@ -498,11 +495,11 @@ std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(N
         cursor2.collectOneSecondary(index, indices);
         --steps2;
     }
-    while (findSecondaryNode(cursor1.currentNodeRef(), index) != findSecondaryNode(cursor2.currentNodeRef(), index)) {
+    while (findSecondaryNode(cursor1.getCurrentNodeRef(), index) != findSecondaryNode(cursor2.getCurrentNodeRef(), index)) {
         cursor1.collectOneSecondary(index, indices);
         cursor2.collectOneSecondary(index, indices);
     }
-    cursor1.collectOverPrimaries(cursor2.currentNodeRef(), indices);
+    cursor1.collectOverPrimaries(cursor2.getCurrentNodeRef(), indices);
     return indices;
 }
 
@@ -575,7 +572,7 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
     }
     cursor1.collectPrimaries(cursor2, storeIndices, explanations);
     for (ERef storeIndex : storeIndices) {
-        PTRef eq = getEquality(storeIndex, index);
+        PTRef eq = getEquality(storeIndex, index, logic);
         explanations.insert(PtAsgn(eq, l_False));
     }
     return explanations;
@@ -646,7 +643,7 @@ unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef ind
     NodeRef currentRef = start;
     while(getNode(currentRef).primaryEdge != NodeRef_Undef) {
         auto const & currentNode = getNode(currentRef);
-        auto primaryIndex = getRoot(solver.getIndexOfPrimaryEdge(currentNode));
+        auto primaryIndex = getRoot(solver.getIndexOfPrimaryEdge(currentRef));
         if (primaryIndex == index) {
             if (currentNode.secondaryEdge == NodeRef_Undef) {
                 break;
@@ -663,14 +660,14 @@ unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef ind
 
 NodeRef ArraySolver::Traversal::findSecondaryNode(NodeRef nodeRef, ERef index) const {
     assert(getRoot(index) == index);
-    while (getNode(nodeRef).primaryEdge != NodeRef_Undef and getRoot(getIndexOfPrimaryEdge(getNode(nodeRef))) != index) {
+    while (getNode(nodeRef).primaryEdge != NodeRef_Undef and getRoot(getIndexOfPrimaryEdge(nodeRef)) != index) {
         nodeRef = getNode(nodeRef).primaryEdge;
     }
     return nodeRef;
 }
 
 void ArraySolver::Cursor::collectOneSecondary(ERef index, IndicesCollection & indices) {
-    NodeRef secondaryNode = traversal.findSecondaryNode(this->node, index);
+    NodeRef secondaryNode = traversal.findSecondaryNode(currentNodeRef, index);
     ERef store = getNode(secondaryNode).secondaryStore;
     auto & solver = traversal.getSolver();
     ERef array = solver.getArrayFromStore(store);
@@ -678,10 +675,10 @@ void ArraySolver::Cursor::collectOneSecondary(ERef index, IndicesCollection & in
     NodeRef storeNode = solver.getNodeRef(solver.getRoot(store));
     if (traversal.findSecondaryNode(arrayNode, index) == secondaryNode) {
         collectOverPrimaries(arrayNode, indices);
-        this->node = storeNode;
+        currentNodeRef = storeNode;
     } else if (traversal.findSecondaryNode(storeNode, index) == secondaryNode) {
         collectOverPrimaries(storeNode, indices);
-        this->node = arrayNode;
+        currentNodeRef = arrayNode;
     } else {
         // TODO: change to assert and avoid the second check after verifying this is true
         throw std::logic_error("Unreachable!");
@@ -705,20 +702,20 @@ void ArraySolver::Cursor::collectOverPrimaries(NodeRef destination, IndicesColle
     auto steps2 = Cursor(traversal.getSolver(),destination).countPrimaryEdges();
     // if one needs more step than the other, follow the primary edges until the steps equal
     while (steps1 > steps2) {
-        indices.insert(traversal.getIndexOfPrimaryEdge(getNode(this->node)));
-        this->node = getNode(this->node).primaryEdge;
+        indices.insert(traversal.getIndexOfPrimaryEdge(currentNodeRef));
+        currentNodeRef = getNode(currentNodeRef).primaryEdge;
         steps1--;
     }
     while (steps2 > steps1) {
-        indices.insert(traversal.getIndexOfPrimaryEdge(getNode(destination)));
+        indices.insert(traversal.getIndexOfPrimaryEdge(destination));
         destination = getNode(destination).primaryEdge;
         steps2--;
     }
     // now follow the primary edge from both nodes until the common ancestor is found
-    while (this->node != destination) {
-        indices.insert(traversal.getIndexOfPrimaryEdge(getNode(this->node)));
-        indices.insert(traversal.getIndexOfPrimaryEdge(getNode(destination)));
-        this->node = getNode(this->node).primaryEdge;
+    while (currentNodeRef != destination) {
+        indices.insert(traversal.getIndexOfPrimaryEdge(currentNodeRef));
+        indices.insert(traversal.getIndexOfPrimaryEdge(destination));
+        currentNodeRef = getNode(currentNodeRef).primaryEdge;
         destination = getNode(destination).primaryEdge;
     }
 }
