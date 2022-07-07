@@ -192,11 +192,11 @@ private:
      * Similar to Cursor, but also collects explanations why terms are (weakly or strongly) equivalent.
      */
     class ExplanationCursor {
-        Traversal & traversal;
+        Traversal const & traversal;
         NodeRef node;
         ERef term;
     public:
-        ExplanationCursor(Traversal & traversal, NodeRef node, ERef term) : traversal(traversal), node(node), term(term) {}
+        ExplanationCursor(Traversal const & traversal, NodeRef node, ERef term) : traversal(traversal), node(node), term(term) {}
 
         NodeRef getNode() const { return node; }
 
