@@ -8,14 +8,14 @@
 #include "DistinctRewriter.h"
 #include "TreeOps.h"
 
-vec<PTRef> collectStores(Logic & logic, PTRef fla) {
+vec<PTRef> collectStores(Logic const & logic, PTRef fla) {
     class CollectStoresConfig : public DefaultVisitorConfig {
-        Logic & logic;
+        Logic const & logic;
 
     public:
         vec<PTRef> stores;
 
-        CollectStoresConfig(Logic & logic) : logic(logic) {}
+        CollectStoresConfig(Logic const & logic) : logic(logic) {}
 
         void visit(PTRef term) override {
             if (logic.isArrayStore(logic.getSymRef(term))) {

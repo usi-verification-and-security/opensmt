@@ -223,8 +223,8 @@ private:
 
     PTRef getEquality(ERef lhs, ERef rhs);
 
-    bool isFalsified(PTRef equality);
-    bool isSatisfied(PTRef equality);
+    bool isFalsified(PTRef equality) const;
+    bool isSatisfied(PTRef equality) const;
 
     void computeExplanation(PTRef equality);
 
@@ -304,7 +304,7 @@ private:
 
     void makeIndexedWeakRepresentative(NodeRef);
 
-    NodeRef getRepresentative(NodeRef nodeRef) {
+    NodeRef getRepresentative(NodeRef nodeRef) const {
         while (getNode(nodeRef).primaryEdge != NodeRef_Undef) {
             nodeRef = getNode(nodeRef).primaryEdge;
         }

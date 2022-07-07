@@ -238,7 +238,7 @@ public:
 
     PTRef ERefToTerm(ERef er) const { return getEnode(er).getTerm(); }
 
-    ERef termToERef(PTRef p) { return enode_store.getERef(p); }
+    ERef termToERef(PTRef p) const { return enode_store.getERef(p); }
 
     ERef getRoot(ERef er) const { return getEnode(er).getRoot(); }
 

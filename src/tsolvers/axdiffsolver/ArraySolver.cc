@@ -133,14 +133,14 @@ PtAsgn_reason ArraySolver::getDeduction() {
 
 void ArraySolver::declareAtom(PTRef tr) {
     class TermCollectorConfig : public DefaultVisitorConfig {
-        Logic & logic;
+        Logic const & logic;
         ArraySolver::Terms & arrayTerms;
         ArraySolver::Terms & storeTerms;
         ArraySolver::Terms & selectTerms;
-        Egraph & egraph;
+        Egraph const & egraph;
 
     public:
-        TermCollectorConfig(Logic & logic, Terms & arrayTerms, Terms & storeTerms, Terms & selectTerms, Egraph & egraph)
+        TermCollectorConfig(Logic const & logic, Terms & arrayTerms, Terms & storeTerms, Terms & selectTerms, Egraph const & egraph)
         : logic(logic), arrayTerms(arrayTerms), storeTerms(storeTerms), selectTerms(selectTerms), egraph(egraph) {}
 
         void visit(PTRef term) override {
@@ -490,11 +490,11 @@ PTRef ArraySolver::getEquality(ERef lhs, ERef rhs) {
     return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs));
 }
 
-bool ArraySolver::isFalsified(PTRef equality) {
+bool ArraySolver::isFalsified(PTRef equality) const {
     return this->hasPolarity(equality) and this->getPolarity(equality) == l_False;
 }
 
-bool ArraySolver::isSatisfied(PTRef equality) {
+bool ArraySolver::isSatisfied(PTRef equality) const {
     return this->hasPolarity(equality) and this->getPolarity(equality) == l_True;
 }
 

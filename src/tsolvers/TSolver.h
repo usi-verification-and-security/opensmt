@@ -135,7 +135,7 @@ protected:
 
     // Methods for querying and modifying infromation about known polarities
     void  setPolarity(PTRef tr, lbool p);
-    lbool getPolarity(PTRef tr)          { return polarityMap[tr]; }
+    lbool getPolarity(PTRef tr) const    { return polarityMap[tr]; }
     void  clearPolarity(PTRef tr)        { polarityMap[tr] = l_Undef; }
     bool  hasPolarity(PTRef tr) const    { if (polarityMap.has(tr)) { return polarityMap[tr] != l_Undef; } else return false; }
 
