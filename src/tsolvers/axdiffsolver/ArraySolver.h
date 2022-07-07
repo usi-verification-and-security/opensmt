@@ -184,8 +184,8 @@ private:
         unsigned countSecondaryEdges(ERef index) const { return traversal.countSecondaryEdges(currentNodeRef, index); }
         unsigned countPrimaryEdges() const { return traversal.countPrimaryEdges(currentNodeRef); }
 
-        void collectOneSecondary(ERef index, IndicesCollection & indices);
-        void collectOverPrimaries(NodeRef destination, IndicesCollection & indices);
+        void collectOneSecondary(IndicesCollection & indices, ERef index);
+        void collectOverPrimaries(IndicesCollection & indices, NodeRef destination);
     };
 
     /*
@@ -236,7 +236,7 @@ private:
 
     static void merge(ExplanationCollection & main, ExplanationCollection const & other);
 
-    void recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const;
+    void recordExplanationOfEgraphEquivalence(ExplanationCollection & explanationCollection, ERef lhs, ERef rhs) const;
 
     std::vector<LemmaConditions> collectLemmaConditions(Logic & logic) const;
 

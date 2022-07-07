@@ -488,18 +488,18 @@ std::unordered_set<ERef, ERefHash> ArraySolver::Traversal::computeStoreIndices(N
     auto steps1 = cursor1.countSecondaryEdges(index);
     auto steps2 = cursor2.countSecondaryEdges(index);
     while (steps1 > steps2) {
-        cursor1.collectOneSecondary(index, indices);
+        cursor1.collectOneSecondary(indices, index);
         --steps1;
     }
     while (steps2 > steps1) {
-        cursor2.collectOneSecondary(index, indices);
+        cursor2.collectOneSecondary(indices, index);
         --steps2;
     }
     while (findSecondaryNode(cursor1.getCurrentNodeRef(), index) != findSecondaryNode(cursor2.getCurrentNodeRef(), index)) {
-        cursor1.collectOneSecondary(index, indices);
-        cursor2.collectOneSecondary(index, indices);
+        cursor1.collectOneSecondary(indices, index);
+        cursor2.collectOneSecondary(indices, index);
     }
-    cursor1.collectOverPrimaries(cursor2.getCurrentNodeRef(), indices);
+    cursor1.collectOverPrimaries(indices, cursor2.getCurrentNodeRef());
     return indices;
 }
 
@@ -531,7 +531,7 @@ ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceConflict(
     auto lemma = explainWeakEquivalencePath(array1, array2, getRoot(index1));
     // collect literals explaining why index1 is equivalent to index2 in Egraph
     if (index1 != index2) {
-        recordExplanationOfEgraphEquivalence(index1, index2, lemma);
+        recordExplanationOfEgraphEquivalence(lemma, index1, index2);
     }
     // add literal asserting that the selects are not equal
     lemma.insert({equality, l_False});
@@ -598,7 +598,7 @@ void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection cons
 /*
  * Collect the explanation from Egraph why two terms are equivalent
  */
-void ArraySolver::recordExplanationOfEgraphEquivalence(ERef lhs, ERef rhs, ExplanationCollection & explanationCollection) const {
+void ArraySolver::recordExplanationOfEgraphEquivalence(ExplanationCollection & explanationCollection, ERef lhs, ERef rhs) const {
     assert(getRoot(lhs) == getRoot(rhs));
     auto egraphExplanation = egraph.explainer->explain(lhs, rhs);
     for (PtAsgn lit : egraphExplanation) {
@@ -625,7 +625,7 @@ void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef
         ERef selectArray = getArrayFromSelect(select);
         auto subexplanation = explainWeakEquivalencePath(arrayTerm, selectArray, index);
         merge(explanationCollection, subexplanation);
-        recordExplanationOfEgraphEquivalence(index, getIndexFromSelect(select), explanationCollection);
+        recordExplanationOfEgraphEquivalence(explanationCollection, index, getIndexFromSelect(select));
     };
 
     explainPathToSelect(sourceSelect, getNode(source).term);
@@ -633,7 +633,7 @@ void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef
 
     assert(getRoot(sourceSelect) == getRoot(targetSelect));
     if (sourceSelect != targetSelect) {
-        recordExplanationOfEgraphEquivalence(sourceSelect, targetSelect, explanationCollection);
+        recordExplanationOfEgraphEquivalence(explanationCollection, sourceSelect, targetSelect);
     }
 }
 
@@ -666,7 +666,7 @@ NodeRef ArraySolver::Traversal::findSecondaryNode(NodeRef nodeRef, ERef index) c
     return nodeRef;
 }
 
-void ArraySolver::Cursor::collectOneSecondary(ERef index, IndicesCollection & indices) {
+void ArraySolver::Cursor::collectOneSecondary(IndicesCollection & indices, ERef index) {
     NodeRef secondaryNode = traversal.findSecondaryNode(currentNodeRef, index);
     ERef store = getNode(secondaryNode).secondaryStore;
     auto & solver = traversal.getSolver();
@@ -674,10 +674,10 @@ void ArraySolver::Cursor::collectOneSecondary(ERef index, IndicesCollection & in
     NodeRef arrayNode = solver.getNodeRef(solver.getRoot(array));
     NodeRef storeNode = solver.getNodeRef(solver.getRoot(store));
     if (traversal.findSecondaryNode(arrayNode, index) == secondaryNode) {
-        collectOverPrimaries(arrayNode, indices);
+        collectOverPrimaries(indices, arrayNode);
         currentNodeRef = storeNode;
     } else if (traversal.findSecondaryNode(storeNode, index) == secondaryNode) {
-        collectOverPrimaries(storeNode, indices);
+        collectOverPrimaries(indices, storeNode);
         currentNodeRef = arrayNode;
     } else {
         // TODO: change to assert and avoid the second check after verifying this is true
@@ -696,7 +696,7 @@ unsigned int ArraySolver::Traversal::countPrimaryEdges(NodeRef start) const {
     return count;
 }
 
-void ArraySolver::Cursor::collectOverPrimaries(NodeRef destination, IndicesCollection & indices) {
+void ArraySolver::Cursor::collectOverPrimaries(IndicesCollection & indices, NodeRef destination) {
     // compute the steps to the common root
     auto steps1 = countPrimaryEdges();
     auto steps2 = Cursor(traversal.getSolver(),destination).countPrimaryEdges();
@@ -768,7 +768,7 @@ void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destin
     }
     if (term != destination.term) {
         // Same array node but not same Enode
-        traversal.getSolver().recordExplanationOfEgraphEquivalence(term, destination.term, explanations);
+        traversal.getSolver().recordExplanationOfEgraphEquivalence(explanations, term, destination.term);
     }
 }
 
@@ -782,7 +782,7 @@ void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indic
     }
     assert(solver.getNodeRef(solver.getRoot(source)) == node);
     if (term != source) {
-        solver.recordExplanationOfEgraphEquivalence(term, source, explanations);
+        solver.recordExplanationOfEgraphEquivalence(explanations, term, source);
     }
     indices.insert(traversal.getSolver().getIndexFromStore(store)); // MB: This must be the real index, not its root!
     node = traversal.getNode(node).primaryEdge;
