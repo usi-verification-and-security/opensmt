@@ -105,7 +105,7 @@ class ArraySolver : public TSolver {
 public:
     ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config);
 
-    ~ArraySolver() override;
+    ~ArraySolver() = default;
 
     void clearSolver() override;
 
@@ -124,8 +124,6 @@ public:
     void computeModel() override;
 
     void getConflict(vec<PtAsgn> & vec) override;
-
-    PtAsgn_reason getDeduction() override;
 
     void declareAtom(PTRef tr) override;
 
@@ -221,10 +219,10 @@ private:
     using SelectsInfo = std::unordered_map<NodeRef, std::unordered_map<ERef, ERef, ERefHash>, NodeRefHash>;
     SelectsInfo selectsInfo;
 
-    PTRef getEquality(ERef lhs, ERef rhs);
+    PTRef getEquality(ERef lhs, ERef rhs) { return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs)); }
 
-    bool isFalsified(PTRef equality) const;
-    bool isSatisfied(PTRef equality) const;
+    bool isFalsified(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_False; }
+    bool isSatisfied(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_True; }
 
     void computeExplanation(PTRef equality);
 

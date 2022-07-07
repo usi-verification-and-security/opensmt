@@ -19,8 +19,6 @@ ArraySolver::ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config) :
     egraph(egraph)
     { }
 
-ArraySolver::~ArraySolver() = default;
-
 void ArraySolver::clearSolver() {
     clear();
     TSolver::clearSolver();
@@ -125,10 +123,6 @@ void ArraySolver::getConflict(vec<PtAsgn> & vec) {
     for (auto lit : explanation) {
         vec.push(lit);
     }
-}
-
-PtAsgn_reason ArraySolver::getDeduction() {
-    return TSolver::getDeduction();
 }
 
 void ArraySolver::declareAtom(PTRef tr) {
@@ -484,18 +478,6 @@ void ArraySolver::collectLemmaConditions() {
             }
         }
     }
-}
-
-PTRef ArraySolver::getEquality(ERef lhs, ERef rhs) {
-    return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs));
-}
-
-bool ArraySolver::isFalsified(PTRef equality) const {
-    return this->hasPolarity(equality) and this->getPolarity(equality) == l_False;
-}
-
-bool ArraySolver::isSatisfied(PTRef equality) const {
-    return this->hasPolarity(equality) and this->getPolarity(equality) == l_True;
 }
 
 /*

@@ -24,27 +24,3 @@ ArrayTHandler::ArrayTHandler(SMTConfig & c, Logic & l)
     tsolvers[my_id.id] = arraySolver;
     solverSchedule.push(my_id.id);
 }
-
-ArrayTHandler::~ArrayTHandler() {
-}
-
-void ArrayTHandler::clearSolver() {
-    TSolverHandler::clearSolver();
-}
-
-Logic & ArrayTHandler::getLogic() {
-    return logic;
-}
-
-const Logic & ArrayTHandler::getLogic() const {
-    return logic;
-}
-
-PTRef
-ArrayTHandler::getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) {
-    throw std::logic_error("Interpolation not supported yet");
-}
-
-lbool ArrayTHandler::getPolaritySuggestion(PTRef pt) const {
-    return TSolverHandler::getPolaritySuggestion(pt);
-}

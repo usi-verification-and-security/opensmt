@@ -17,17 +17,14 @@ class ArrayTHandler : public TSolverHandler {
 public:
     ArrayTHandler(SMTConfig & c, Logic & l);
 
-    ~ArrayTHandler() override;
+    ~ArrayTHandler() override = default;
 
-    void clearSolver() override;
+    Logic & getLogic() override { return logic; };
 
-    Logic & getLogic() override;
+    Logic const & getLogic() const override { return logic; }
 
-    const Logic & getLogic() const override;
+    PTRef getInterpolant(const ipartitions_t & , std::map<PTRef, icolor_t> *, PartitionManager &) override { throw OsmtInternalException("Interpolation not supported yet"); };
 
-    PTRef getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> *map1, PartitionManager & pmanager) override;
-
-    lbool getPolaritySuggestion(PTRef pt) const override;
 };
 
 
