@@ -233,7 +233,7 @@ private:
 
     PTRef computeExtensionalityClause(NodeRef n1, NodeRef n2);
 
-    void explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection);
+    void explainWeakCongruencePath(ExplanationCollection & explanationCollection, NodeRef source, NodeRef target, ERef index);
 
     ExplanationCollection explainWeakEquivalencePath(ERef array1, ERef array2, ERef index);
 

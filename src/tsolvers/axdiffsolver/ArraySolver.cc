@@ -416,7 +416,7 @@ PTRef ArraySolver::computeExtensionalityClause(NodeRef n1, NodeRef n2) {
     ExplanationCursor destination(traversal, n2, getNode(n2).term);
     source.collectPrimaries(destination, indicesCollection, explanationCollection);
     for (ERef index : indicesCollection) {
-        explainWeakCongruencePath(n1, n2, index, explanationCollection);
+        explainWeakCongruencePath(explanationCollection, n1, n2, index);
     }
 
     vec<PTRef> args;
@@ -607,7 +607,7 @@ void ArraySolver::recordExplanationOfEgraphEquivalence(ExplanationCollection & e
     }
 }
 
-void ArraySolver::explainWeakCongruencePath(NodeRef source, NodeRef target, ERef index, ExplanationCollection & explanationCollection) {
+void ArraySolver::explainWeakCongruencePath(ExplanationCollection & explanationCollection, NodeRef source, NodeRef target, ERef index) {
     index = getRoot(index);
     NodeRef sourceRepresentative = getIndexedRepresentative(source, index);
     NodeRef targetRepresentative = getIndexedRepresentative(target, index);
