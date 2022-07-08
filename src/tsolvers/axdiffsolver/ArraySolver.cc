@@ -467,7 +467,7 @@ std::vector<ArraySolver::LemmaConditions> ArraySolver::collectLemmaConditions(Lo
                             undecidedEqualities.insert(equalityOfIndices);
                         }
                     }
-                    lemmas.emplace_back(LemmaConditions{equalityOfSelects, std::move(undecidedEqualities)});
+                    lemmas.emplace_back(equalityOfSelects, std::move(undecidedEqualities));
                 }
             }
         }

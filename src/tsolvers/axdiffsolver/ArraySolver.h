@@ -212,6 +212,9 @@ private:
     struct LemmaConditions {
         PTRef equality;
         std::unordered_set<PTRef, PTRefHash> undecidedEqualities;
+    public:
+        LemmaConditions(PTRef equality, std::unordered_set<PTRef, PTRefHash> && undecidedEqualities)
+            : equality(equality), undecidedEqualities(std::move(undecidedEqualities)) {}
     };
 
     std::vector<LemmaConditions> lemmas;
