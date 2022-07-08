@@ -203,10 +203,10 @@ void ArraySolver::makeWeakRepresentative(NodeRef nodeRef) {
         // Invert primary edge
         getNode(parentRef).primaryEdge = nodeRef;
         getNode(parentRef).primaryStore = node.primaryStore;
-        node.primaryEdge = NodeRef_Undef;
         // Make representative for i-weak equivalence class
-        makeIndexedWeakRepresentative(nodeRef);
         // Information about primary store is needed in "makeIndexedWeakRepresentative"!
+        makeIndexedWeakRepresentative(nodeRef);
+        node.primaryEdge = NodeRef_Undef;
         node.primaryStore = ERef_Undef;
     }
 }
