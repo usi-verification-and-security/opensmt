@@ -443,7 +443,7 @@ std::vector<ArraySolver::LemmaConditions> ArraySolver::collectLemmaConditions(Lo
         ERef root = getRoot(getIndexFromSelect(select));
         indicesToSelects[root].push(select);
     }
-    std::vector<LemmaConditions> lemmas;
+    std::vector<LemmaConditions> newLemmas;
     for (auto const & [index, selects] : indicesToSelects) {
         if (selects.size() < 2) { continue; }
         // TODO: Figure out better way how to compute all candidates for lemmas
@@ -470,12 +470,12 @@ std::vector<ArraySolver::LemmaConditions> ArraySolver::collectLemmaConditions(Lo
                             undecidedEqualities.insert(equalityOfIndices);
                         }
                     }
-                    lemmas.emplace_back(equalityOfSelects, std::move(undecidedEqualities));
+                    newLemmas.emplace_back(equalityOfSelects, std::move(undecidedEqualities));
                 }
             }
         }
     }
-    return lemmas;
+    return newLemmas;
 }
 
 /*
