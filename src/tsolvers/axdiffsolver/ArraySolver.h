@@ -133,9 +133,9 @@ public:
 
     void getNewSplits(vec<PTRef> & splits) override;
 
-/*
-* Internal methods for traversing weak equivalence graph
-*/
+    /*
+     * Internal methods for traversing weak equivalence graph
+     */
 private:
     using IndicesCollection = std::unordered_set<ERef, ERefHash>;
     using ExplanationCollection = std::unordered_set<PtAsgn, PtAsgnHash>;
