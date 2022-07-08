@@ -193,12 +193,15 @@ private:
      */
     class ExplanationCursor {
         Traversal const & traversal;
-        NodeRef node;
-        ERef term;
+        struct CurrentNode {
+            NodeRef ref = NodeRef_Undef;
+            ERef term = ERef_Undef;
+        };
+        CurrentNode currentNode;
     public:
-        ExplanationCursor(Traversal const & traversal, NodeRef node, ERef term) : traversal(traversal), node(node), term(term) {}
+        ExplanationCursor(Traversal const & traversal, NodeRef node, ERef term) : traversal(traversal), currentNode{node, term} {}
 
-        NodeRef getNode() const { return node; }
+        NodeRef getCurrentNodeRef() const { return currentNode.ref; }
 
         void collectPrimaries(ExplanationCursor & destination, IndicesCollection & indices, ExplanationCollection & explanations);
         void collectOnePrimary(IndicesCollection & indices, ExplanationCollection & explanations);

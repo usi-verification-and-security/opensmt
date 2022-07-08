@@ -567,7 +567,7 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
         cursor2.collectOneSecondary(index, storeIndices, explanations);
         --count2;
     }
-    while (traversal.findSecondaryNode(cursor1.getNode(), index) != traversal.findSecondaryNode(cursor2.getNode(), index)) {
+    while (traversal.findSecondaryNode(cursor1.getCurrentNodeRef(), index) != traversal.findSecondaryNode(cursor2.getCurrentNodeRef(), index)) {
         cursor1.collectOneSecondary(index, storeIndices, explanations);
         cursor2.collectOneSecondary(index, storeIndices, explanations);
     }
@@ -726,7 +726,7 @@ void ArraySolver::ExplanationCursor::collectOneSecondary(
     IndicesCollection & indices,
     ExplanationCollection & explanations) {
 
-    NodeRef secondaryRef = traversal.findSecondaryNode(node, index);
+    NodeRef secondaryRef = traversal.findSecondaryNode(currentNode.ref, index);
     ERef secondaryStore = traversal.getNode(secondaryRef).secondaryStore;
     assert(secondaryStore != ERef_Undef);
     auto & solver = traversal.getSolver();
@@ -745,16 +745,15 @@ void ArraySolver::ExplanationCursor::collectOneSecondary(
     assert(traversal.findSecondaryNode(source, index) == secondaryRef);
     ExplanationCursor cursor(traversal, source, sourceTerm);
     collectPrimaries(cursor, indices, explanations);
-    node = target;
-    term = targetTerm;
+    currentNode = {target, targetTerm};
     indices.insert(solver.getIndexFromStore(secondaryStore));
 }
 
 void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destination,
                                                       IndicesCollection & indices,
                                                       ExplanationCollection & explanations) {
-    auto count1 = traversal.countPrimaryEdges(node);
-    auto count2 = traversal.countPrimaryEdges(destination.node);
+    auto count1 = traversal.countPrimaryEdges(currentNode.ref);
+    auto count2 = traversal.countPrimaryEdges(destination.currentNode.ref);
     while (count1 > count2) {
         collectOnePrimary(indices, explanations);
         --count1;
@@ -763,29 +762,28 @@ void ArraySolver::ExplanationCursor::collectPrimaries(ExplanationCursor & destin
         destination.collectOnePrimary(indices, explanations);
         --count2;
     }
-    while (node != destination.node) {
+    while (currentNode.ref != destination.currentNode.ref) {
         collectOnePrimary(indices, explanations);
         destination.collectOnePrimary(indices, explanations);
     }
-    if (term != destination.term) {
+    if (currentNode.term != destination.currentNode.term) {
         // Same array node but not same Enode
-        traversal.getSolver().recordExplanationOfEgraphEquivalence(explanations, term, destination.term);
+        traversal.getSolver().recordExplanationOfEgraphEquivalence(explanations, currentNode.term, destination.currentNode.term);
     }
 }
 
 void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indices, ExplanationCollection & explanations) {
     auto const & solver = traversal.getSolver();
-    ERef store = traversal.getNode(node).primaryStore;
+    ERef store = traversal.getNode(currentNode.ref).primaryStore;
     ERef source = store;
     ERef target = solver.getArrayFromStore(store);
-    if (solver.getNodeRef(solver.getRoot(source)) != node) {
+    if (solver.getNodeRef(solver.getRoot(source)) != currentNode.ref) {
         std::swap(source, target);
     }
-    assert(solver.getNodeRef(solver.getRoot(source)) == node);
-    if (term != source) {
-        solver.recordExplanationOfEgraphEquivalence(explanations, term, source);
+    assert(solver.getNodeRef(solver.getRoot(source)) == currentNode.ref);
+    if (currentNode.term != source) {
+        solver.recordExplanationOfEgraphEquivalence(explanations, currentNode.term, source);
     }
     indices.insert(traversal.getSolver().getIndexFromStore(store)); // MB: This must be the real index, not its root!
-    node = traversal.getNode(node).primaryEdge;
-    term = target;
+    currentNode = {traversal.getNode(currentNode.ref).primaryEdge, target};
 }
