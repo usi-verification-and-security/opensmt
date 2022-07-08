@@ -639,7 +639,7 @@ unsigned int ArraySolver::Traversal::countSecondaryEdges(NodeRef start, ERef ind
     assert(getRoot(index) == index);
     unsigned count = 0;
     NodeRef currentRef = start;
-    while(getNode(currentRef).primaryEdge != NodeRef_Undef) {
+    while (getNode(currentRef).primaryEdge != NodeRef_Undef) {
         auto const & currentNode = getNode(currentRef);
         auto primaryIndex = getRoot(solver.getIndexOfPrimaryEdge(currentRef));
         if (primaryIndex == index) {

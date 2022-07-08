@@ -205,9 +205,9 @@ private:
         void collectOneSecondary(ERef index, IndicesCollection & indices, ExplanationCollection & explanations);
     };
 
- /*
- * Internal methods for bulding weak equivalence graph and computing lemma consequences of the graph
- */
+    /*
+     * Internal methods for building weak equivalence graph and computing lemma consequences of the graph
+     */
 private:
     struct LemmaConditions {
         PTRef equality;
