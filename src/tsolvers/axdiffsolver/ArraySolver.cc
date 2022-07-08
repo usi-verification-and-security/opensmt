@@ -31,7 +31,7 @@ bool ArraySolver::assertLit(PtAsgn literal) {
         if (literal.sgn == l_True) { // Strong equivalence context has changed -> reset
             clear();
         } else if (literal.sgn == l_False) {
-            // For asserted disequality check current read-over-weak-eq lemmas to see if any is now completly falsified
+            // For asserted disequality check current read-over-weak-eq lemmas to see if any is now completely falsified
             for (auto & lemma : lemmas) {
                 auto & undecided = lemma.undecidedEqualities;
                 auto it = undecided.find(literal.tr);
