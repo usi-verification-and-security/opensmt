@@ -380,17 +380,20 @@ TRes ArraySolver::checkExtensionality() {
     for (auto const & entry : equalitiesToPropagate) {
         PTRef extensionalityClause = computeExtensionalityClause(entry.first, entry.second);
         assert(logic.isOr(extensionalityClause));
-        // TODO: handle conflicts better
-        bool allFalsified = true;
-        for (PTRef lit : logic.getPterm(extensionalityClause)) {
-            PTRef atom = logic.isNot(lit) ? logic.getPterm(lit)[0] : lit;
-            assert(logic.isEquality(atom));
-            allFalsified = allFalsified and (logic.isNot(lit) ? isSatisfied(atom) : isFalsified(atom));
-        }
+        // TODO: handle conflicts better: We pass literals twice now.
+        // TODO: looks like the above graph traversal could be terminated early if a clause is all-falsified
+        Pterm & literals = logic.getPterm(extensionalityClause);
+        bool allFalsified = std::all_of(literals.begin(), literals.end(),
+                                        [this](PTRef lit) {
+                                            bool negated = logic.isNot(lit);
+                                            PTRef atom = negated ? logic.getPterm(lit)[0] : lit;
+                                            assert(logic.isEquality(atom));
+                                            return negated ? isSatisfied(atom) : isFalsified(atom);
+                                        });
         if (allFalsified) {
             has_explanation = true;
             explanation.clear();
-            for (PTRef lit : logic.getPterm(extensionalityClause)) {
+            for (PTRef lit : literals) {
                 if (logic.isNot(lit)) {
                     explanation.push({logic.getPterm(lit)[0], l_True});
                 } else {
