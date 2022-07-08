@@ -240,8 +240,6 @@ private:
 
     ExplanationCollection explainWeakEquivalencePath(ERef array1, ERef array2, ERef index);
 
-    static void merge(ExplanationCollection & main, ExplanationCollection const & other);
-
     void recordExplanationOfEgraphEquivalence(ExplanationCollection & explanationCollection, ERef lhs, ERef rhs) const;
 
     std::vector<LemmaConditions> collectLemmaConditions(Logic & logic) const;

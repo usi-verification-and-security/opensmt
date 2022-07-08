@@ -590,12 +590,6 @@ void ArraySolver::clear() {
     explanation.clear();
 }
 
-void ArraySolver::merge(ExplanationCollection & main, ExplanationCollection const & other) {
-    for (PtAsgn element : other) {
-        main.insert(element);
-    }
-}
-
 /*
  * Collect the explanation from Egraph why two terms are equivalent
  */
@@ -612,8 +606,7 @@ void ArraySolver::explainWeakCongruencePath(ExplanationCollection & explanationC
     NodeRef sourceRepresentative = getIndexedRepresentative(source, index);
     NodeRef targetRepresentative = getIndexedRepresentative(target, index);
     if (sourceRepresentative == targetRepresentative) {
-        auto subexplanation = explainWeakEquivalencePath(getNode(source).term, getNode(target).term, index);
-        merge(explanationCollection, subexplanation);
+        explanationCollection.merge(explainWeakEquivalencePath(getNode(source).term, getNode(target).term, index));
         return;
     }
     assert(selectsInfo.count(sourceRepresentative) > 0);
@@ -624,8 +617,7 @@ void ArraySolver::explainWeakCongruencePath(ExplanationCollection & explanationC
 
     auto explainPathToSelect = [&](ERef select, ERef arrayTerm) {
         ERef selectArray = getArrayFromSelect(select);
-        auto subexplanation = explainWeakEquivalencePath(arrayTerm, selectArray, index);
-        merge(explanationCollection, subexplanation);
+        explanationCollection.merge(explainWeakEquivalencePath(arrayTerm, selectArray, index));
         recordExplanationOfEgraphEquivalence(explanationCollection, index, getIndexFromSelect(select));
     };
 
