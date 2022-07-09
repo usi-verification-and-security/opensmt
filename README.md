@@ -13,7 +13,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 OpenSMT2 is an SMT solver written in C++. It supports reading files in [SMT-LIB2](http://smtlib.cs.uiowa.edu) format and the theories
-`QF_UF`, `QF_LRA`, `QF_RDL`, and `QF_LIA`.  The system also provides an
+`QF_UF`, `QF_RDL`, `QF_IDL`, `QF_LRA`, `QF_LIA`, `QF_UFLRA`, `QF_UFLIA` and `QF_AX`.  The system also provides an
 API; the distribution includes a minimal example how to use the API.
 
 ## Building from source
@@ -79,7 +79,8 @@ The install directory can be customized using cmake variable CMAKE_INSTALL_PREFI
 This installs the library in the folder `<INSTALL_DIR>/lib` and puts the necessary header files in the folder `<INSTALL_DIR>/include/opensmt`.
 
 ## Capabilities and usage examples
-OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT currently supports the following SMT-LIB logics: `QF_UF`, `QF_LRA`, `QF_RDL`, `QF_IDL`, and `QF_LIA`, both in a single-query and an incremental mode.
+OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT currently supports the following SMT-LIB logics: `QF_UF`, `QF_RDL`, `QF_IDL`, `QF_LRA`, `QF_LIA`, `QF_UFLRA` and `QF_UFLIA`, both in a single-query and an incremental mode.
+Support for `QF_AX` is preliminary and only in a single-query mode.
 
 To run OpenSMT on a SMT-LIB2 file (.smt2) simply pass the path to the file as an argument to the executable:
 ```
