@@ -10,6 +10,7 @@ Performance improvements:
 
 New features:
  - A library for use in parallel SMT solving
+ - Support for the theory of arrays with extensionality (QF_AX)
 
 ### 2.3.2 (2022-04-20)
 
