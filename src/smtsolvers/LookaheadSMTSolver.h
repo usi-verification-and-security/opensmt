@@ -24,7 +24,7 @@ protected:
     int                 close_to_prop = 0;
     int                 init_close_to_prop = 0;
     int                 bound_prop = 0;
-    int                 cancel_counter = 0;
+    int                 check_counter = 0;
     int                 fun_props;
     bool                tested = false;
     bool                reset_props = false;
@@ -91,6 +91,7 @@ protected:
 
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
+    virtual void cancelUntil  (int level); // Backtrack until a certain level.
     virtual LALoopRes solveLookahead();
     std::pair<laresult,Lit> lookaheadLoop();
     lbool solve_() override; // Does not change the formula
