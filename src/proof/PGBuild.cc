@@ -87,7 +87,7 @@ ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proo
     return n;
 }
 
-void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
+void ProofGraph::buildProofGraph(const Proof & proof) {
     if (verbose()) { std::cerr << "# " << "Proof graph building begin" << '\n'; }
     if (verbose() > 0) {
         uint64_t mem_used = memUsed();
@@ -95,9 +95,6 @@ void ProofGraph::buildProofGraph(const Proof & proof, int varCount) {
     }
 
     const double initTime=cpuTime();
-    // Nominal number of variables
-    assert(varCount > 0);
-    num_vars_limit = varCount;
     max_id_variable=0;
 
     av_cla_size=0; max_cla_size=0;

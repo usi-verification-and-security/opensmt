@@ -215,14 +215,14 @@ public:
             , Logic & logic
             , TermMapper const & termMapper
             , Proof const &   proof
-			, int             varCount)
+			)
 : config   ( c )
 , logic_ ( logic )
 , termMapper(termMapper)
 {
 		mpz_init(visited_1);
 		mpz_init(visited_2);
-		buildProofGraph(proof, varCount);
+		buildProofGraph(proof);
 }
 
 	~ProofGraph()
@@ -366,7 +366,7 @@ public:
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
 
 private:
-    void buildProofGraph(Proof const & proof, int varCount);
+    void buildProofGraph(Proof const & proof);
     ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, Proof const & proof); // Helper method for building the proof graph
 
     inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
@@ -394,7 +394,6 @@ private:
     unsigned                       max_id_variable;             // Highest value for a variable
     std::vector<Lit> assumedLiterals;
 
-    int                            num_vars_limit;               // Number of variables in the problem (not nec in the proof)
 
     // Info on graph dimension
     int    num_nodes;

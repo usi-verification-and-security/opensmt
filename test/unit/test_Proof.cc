@@ -171,8 +171,7 @@ TEST_F(ReductionTest, test_recyclePivots) {
     proof.addResolutionStep(nd, var(d));
     proof.endChain(CRef_Undef);
 
-    int nVars = 4;
-    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -231,8 +230,7 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents) {
     proof.addResolutionStep(ne, var(e));
     proof.endChain(CRef_Undef);
 
-    int nVars = 5;
-    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -293,8 +291,7 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents_AfterPhaseOneRepla
     proof.addResolutionStep(ne, var(e));
     proof.endChain(CRef_Undef);
 
-    int nVars = 5;
-    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -337,8 +334,7 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure) {
     proof.addResolutionStep(nd, var(d));
     proof.endChain(CRef_Undef);
 
-    int nVars = 5;
-    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);
@@ -404,8 +400,7 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
     proof.addResolutionStep(nc, var(c));
     proof.endChain(CRef_Undef);
 
-    int nVars = 5;
-    ProofGraph pg(config, theory.getLogic(), termMapper, proof, nVars);
+    ProofGraph pg(config, theory.getLogic(), termMapper, proof);
     pg.fillProofGraph();
     pg.checkProof(true);
 //    pg.printProofAsDotty(std::cout);

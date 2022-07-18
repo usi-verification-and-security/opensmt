@@ -96,8 +96,6 @@ void ProofGraph::transfProofForReduction( )
 		std::cerr << "# ------------------------------------" << '\n';
 		std::cerr << "# Structural properties" << '\n';
 		std::cerr << "# ---------------------" << '\n';
-		std::cerr << "# Nominal num proof variables: ";
-		fprintf( stderr, "%-10d\n", num_vars_limit );
 		std::cerr << "# Actual num proof variables.: ";
 		fprintf( stderr, "%-10d %-10d\n", numvars, (int)proof_variables.size() );
 		std::cerr << "# Nodes......................: ";

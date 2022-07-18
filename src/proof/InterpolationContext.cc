@@ -842,9 +842,9 @@ void SingleInterpolationComputationContext::setLeafMcMillanPrimeLabeling(ProofNo
 /************************ INTERPOLATION CONTEXT ************************************************************/
 
 InterpolationContext::InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & proof,
-                                           PartitionManager & pmanager, int n)
+                                           PartitionManager & pmanager)
         : config(c), theory(th), termMapper(termMapper), logic(th.getLogic()), pmanager(pmanager),
-          proof_graph{new ProofGraph(c, th.getLogic(), termMapper, proof, n)} {
+          proof_graph{new ProofGraph(c, th.getLogic(), termMapper, proof)} {
     ensureNoLiteralsWithoutPartition();
     if (c.proof_reduce()) {
         reduceProofGraph();
