@@ -87,6 +87,12 @@ public:
         return varToTerm[v];
     }
 
+    PTRef litToPTRef(Lit l) const {
+        Var v = var(l);
+        PTRef atom = varToPTRef(v);
+        return sign(l) ? logic.mkNot(atom) : atom;
+    }
+
     int nVars() const { return varToTerm.size(); }
 };
 
