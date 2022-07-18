@@ -7,8 +7,8 @@
 #include <MainSolver.h>
 #include "VerificationUtils.h"
 
-bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask, SMTConfig & config, Logic & logic) {
-    return VerificationUtils(config, logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
+bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask, Logic & logic) {
+    return VerificationUtils(logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
 }
 
 class UFInterpolationTest : public ::testing::Test {
@@ -43,7 +43,7 @@ protected:
     SymRef f, g, p;
 
     bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask) {
-        return ::verifyInterpolant(itp, pManager, Amask, config, logic);
+        return ::verifyInterpolant(itp, pManager, Amask, logic);
     }
 };
 
@@ -445,7 +445,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
 //    std::cout << logic.printTerm(interpolants[0]) << std::endl;
-    EXPECT_TRUE(::verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask, config, logic));
+    EXPECT_TRUE(::verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask, logic));
 }
 
 TEST_F(UFInterpolationTest, test_DistinctInA){

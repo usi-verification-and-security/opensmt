@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <ArithLogic.h>
-#include "VerificationUtils.h"
 #include <FarkasInterpolator.h>
+#include <VerificationUtils.h>
 
 class LRAInterpolationTest : public ::testing::Test {
 protected:
@@ -19,11 +19,10 @@ protected:
         x4 = logic.mkRealVar("x4");
     }
     ArithLogic logic;
-    SMTConfig config;
     PTRef x, y, x1, x2, x3, x4;
 
     bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
-        return VerificationUtils(config, logic).verifyInterpolantInternal(A, B, itp);
+        return VerificationUtils(logic).verifyInterpolantInternal(A, B, itp);
     }
 };
 

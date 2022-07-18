@@ -455,7 +455,7 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolantA(ProofNode 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(std::move(restricted_clause)));
     PTRef implicant = logic.mkAnd({pmanager.getPartition(A_mask, PartitionManager::part::A), cl_ptref});
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, getPartialInterpolant(n));
+    bool res = VerificationUtils(logic).impliesInternal(implicant, getPartialInterpolant(n));
     assert(res);
     return res;
 }
@@ -483,7 +483,7 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolantB(ProofNode 
     PTRef cl_ptref = logic.mkNot(logic.mkOr(std::move(restricted_clause)));
     PTRef implicant = logic.mkAnd(pmanager.getPartition(A_mask, PartitionManager::part::B), cl_ptref);
 
-    bool res = VerificationUtils(config, logic).impliesExternal(implicant, logic.mkNot(getPartialInterpolant(n)));
+    bool res = VerificationUtils(logic).impliesInternal(implicant, logic.mkNot(getPartialInterpolant(n)));
     assert(res);
     return res;
 }
@@ -901,7 +901,7 @@ bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, const 
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() - 1];
             PTRef movedPartitions = logic.mkAnd(pmanager.getPartitions(A_masks[i] ^ A_masks[i - 1]));
-            propertySatisfied &= VerificationUtils(config, logic).impliesInternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
+            propertySatisfied &= VerificationUtils(logic).impliesInternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
             if (not propertySatisfied) {
                 std::cerr << "; Path interpolation does not hold for:\n"
                           << "First interpolant: " << logic.printTerm(previous_itp) << '\n'
@@ -933,7 +933,7 @@ void InterpolationContext::transformProofForCNFInterpolants() {
 bool InterpolationContext::verifyInterpolant(PTRef itp, const ipartitions_t & A_mask) const {
     PTRef partA = pmanager.getPartition(A_mask, PartitionManager::part::A);
     PTRef partB = pmanager.getPartition(A_mask, PartitionManager::part::B);
-    bool sound = VerificationUtils(config, logic).verifyInterpolantInternal(partA, partB, itp);
+    bool sound = VerificationUtils(logic).verifyInterpolantInternal(partA, partB, itp);
     return sound;
 }
 

@@ -1,22 +1,19 @@
-//
-// Created by Martin Blicha on 29.07.20.
-//
+/*
+ *  Copyright (c) 2020-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_VERIFICATIONUTILS_H
 #define OPENSMT_VERIFICATIONUTILS_H
 
-#include "SMTConfig.h"
 #include "Logic.h"
 
 class VerificationUtils {
-    SMTConfig const & config;
     Logic & logic;
 public:
-    VerificationUtils(SMTConfig const & config, Logic & logic) : config(config), logic(logic) {}
-
-    bool impliesExternal(PTRef, PTRef) const; // Check the result with an external solver
-
-    bool verifyInterpolantExternal(PTRef partA, PTRef partB, PTRef itp) const; // Verify interpolant using an external solver
+    VerificationUtils(Logic & logic) : logic(logic) {}
 
     bool verifyInterpolantInternal(PTRef partA, PTRef partB, PTRef itp); // Verify interpolant internally, using OpenSMT's MainSolver
 

@@ -41,7 +41,7 @@ protected:
     PTRef A_part, B_part;
 
     bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
-        return VerificationUtils(config, logic).verifyInterpolantInternal(A, B, itp);
+        return VerificationUtils(logic).verifyInterpolantInternal(A, B, itp);
     }
 };
 
@@ -113,7 +113,7 @@ protected:
     PTRef A_part, B_part;
 
     bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
-        return VerificationUtils(config, logic).verifyInterpolantInternal(A, B, itp);
+        return VerificationUtils(logic).verifyInterpolantInternal(A, B, itp);
     }
 };
 
@@ -161,7 +161,7 @@ protected:
     PTRef A_part, B_part;
 
     bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
-        return VerificationUtils(config, logic).verifyInterpolantInternal(A, B, itp);
+        return VerificationUtils(logic).verifyInterpolantInternal(A, B, itp);
     }
 };
 
