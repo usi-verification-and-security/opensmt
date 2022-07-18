@@ -157,18 +157,6 @@ void ProofGraph::printClause(ProofNode* n, std::ostream & os)
 	}
 }
 
-void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & c) {
-    if ( c.size( ) == 0 ) out << "-";
-    if ( c.size( ) > 1 ) out << "(or ";
-    for (unsigned i = 0; i < c.size(); i++)
-    {
-        Var v = var(c[i]);
-        if ( v <= 1 ) continue;
-        out << (sign(c[i])?"(not ":"") << logic_.printTerm(termMapper.varToPTRef(v)) << (sign(c[i])?") ":" ");
-    }
-    if ( c.size( ) > 1 ) out << ")";
-}
-
 void ProofGraph::printRuleApplicationStatus()
 {
 	std::cerr << "# Rules application status " << '\n';
