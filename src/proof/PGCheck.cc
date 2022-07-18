@@ -21,102 +21,55 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include "PG.h"
 
 #include "OsmtInternalException.h"
+#include "VerificationUtils.h"
 
 #include <deque>
-#include <sys/wait.h>
-#include <unistd.h>
 
 
 void ProofGraph::verifyLeavesInconsistency( )
 {
-	if( verbose() > 0 ) { std::cerr << "# Verifying unsatisfiability of the set of proof leaves" << std::endl; }
+    if (verbose() > 0) { std::cerr << "# Verifying unsatisfiability of the set of proof leaves" << std::endl; }
 
 	std::vector<clauseid_t> proofleaves;
-	clauseid_t id,id1,id2;
 	std::vector<clauseid_t> q;
-	ProofNode * node = NULL;
-	std::vector<unsigned>* visited_count_ = new std::vector<unsigned>(getGraphSize(),0);
-	std::vector<unsigned>& visited_count = *visited_count_;
-	// Building DFS vector
+	std::vector<unsigned> visited_count(getGraphSize(), 0u);
 	q.push_back(getRoot()->getId());
-	do
-	{
-		id = q.back();
-		node = getNode(id);
-		assert(node);
-		visited_count[id]++;
-		q.pop_back();
+    do {
+        clauseid_t id = q.back();
+        ProofNode * node = getNode(id);
+        assert(node);
+        visited_count[id]++;
+        q.pop_back();
 
-		// All resolvents have been visited
-		if(id == getRoot()->getId() || visited_count[id] == node->getNumResolvents())
-		{
-			if(!node->isLeaf())
-			{
-				id1 = node->getAnt1()->getId();
-				id2 = node->getAnt2()->getId();
-				// Enqueue antecedents
-				assert( visited_count[id1] < node->getAnt1()->getNumResolvents() );
-				assert( visited_count[id2] < node->getAnt2()->getNumResolvents() );
-				q.push_back(id1); q.push_back(id2);
-			}
-			else proofleaves.push_back(id);
-		}
+        // All resolvents have been visited
+        if (id == getRoot()->getId() or visited_count[id] == node->getNumResolvents()) {
+            if (not node->isLeaf()) {
+                clauseid_t id1 = node->getAnt1()->getId();
+                clauseid_t id2 = node->getAnt2()->getId();
+                // Enqueue antecedents
+                assert(visited_count[id1] < node->getAnt1()->getNumResolvents());
+                assert(visited_count[id2] < node->getAnt2()->getNumResolvents());
+                q.push_back(id1);
+                q.push_back(id2);
+            } else {
+                proofleaves.push_back(id);
+            }
+        }
+    } while (!q.empty());
+
+    vec<PTRef> clauses;
+	for (clauseid_t leaf_id : leaves_ids) {
+        auto const & clause = getNode(leaf_id)->getClause();
+        vec<PTRef> lits;
+        for (Lit l : clause) {
+            lits.push(termMapper.litToPTRef(l));
+        }
+        clauses.push(logic_.mkOr(std::move(lits)));
 	}
-	while(!q.empty());
-	delete visited_count_;
-
-	// First stage: print declarations
-	const char * name = "verifyinconsistency_leaves.smt2";
-	std::ofstream dump_out( name );
-	logic_.dumpHeaderToFile( dump_out );
-
-	unsigned added = 0;
-	for ( unsigned i = 0 ; i < proofleaves.size( ) ; i ++ )
-	{
-		if(added == 0)
-		{
-			dump_out << "(assert " << '\n';
-			dump_out << "(and" << '\n';
-			added++;
-		}
-		printClause( dump_out, getNode(proofleaves[ i ])->getClause());
-		dump_out << '\n';
-	}
-	if(added > 0) dump_out << "))" << '\n';
-
-	dump_out << "(check-sat)" << '\n';
-	dump_out << "(exit)" << '\n';
-	dump_out.close( );
-
-	// Check !
-	bool tool_res;
-	if ( int pid = fork() )
-	{
-		int status;
-		waitpid(pid, &status, 0);
-		switch ( WEXITSTATUS( status ) )
-		{
-		case 0:
-			tool_res = false;
-			break;
-		case 1:
-			tool_res = true;
-			break;
-		default:
-			perror( "# Error: Certifying solver returned weird answer (should be 0 or 1)" );
-			exit( EXIT_FAILURE );
-		}
-	}
-	else
-	{
-		execlp( config.certifying_solver, config.certifying_solver, name, NULL );
-		perror( "Error: Certifying solver had some problems (check that it is reachable and executable)" );
-		exit( EXIT_FAILURE );
-	}
-	if ( tool_res == true )
-		throw std::logic_error("External tool says the set of proof leaves is satisfiable");
-
-	remove(name);
+    bool unsat = VerificationUtils(logic_).impliesInternal(logic_.mkAnd(std::move(clauses)), logic_.getTerm_false());
+    if (not unsat) {
+        throw std::logic_error("The set of proof leaves is satisfiable!");
+    }
 }
 
 
