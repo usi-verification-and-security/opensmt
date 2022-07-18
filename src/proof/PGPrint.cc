@@ -169,29 +169,6 @@ void ProofGraph::printClause(std::ostream & out, std::vector<Lit> const & c) {
     if ( c.size( ) > 1 ) out << ")";
 }
 
-void ProofGraph::printProofNode(clauseid_t vid)
-{
-	ProofNode* v=getNode(vid);
-	if(v==NULL)
-	{
-		std::cerr << vid << " removed"<< '\n'<<'\n';
-		return;
-	}
-	std::cerr << "Node id: " << v->getId() << "   Type: " << v->getType();
-	if(v->getAnt1()!=NULL && v->getAnt2()!=NULL)
-	{
-		std::cerr << "   Parents: " << v->getAnt1()->getId() << " " << v->getAnt2()->getId() << "   Pivot: " << v->getPivot();
-	}
-	std::cerr << "   Clause: ";
-	for(size_t i=0;i<v->getClauseSize();i++)
-	{
-		if(sign(v->getClause()[i])) std::cerr << "~";
-		//FIXME std::cerr << thandler.varToEnode( var(v->getClause()[i]) ) << " ";
-	}
-	std::cerr << '\n';
-
-}
-
 void ProofGraph::printRuleApplicationStatus()
 {
 	std::cerr << "# Rules application status " << '\n';

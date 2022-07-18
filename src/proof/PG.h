@@ -297,7 +297,6 @@ public:
     std::set<clauseid_t> const & getLeaves() const { return leaves_ids; };
     std::set<Var> const & getVariables() const { return proof_variables; }
 
-    void              printProofNode        ( clauseid_t );
     void              printClause           (std::ostream&, std::vector<Lit> const& lits);
     void              printClause           ( ProofNode * );
     void              printClause           ( ProofNode *, std::ostream & );
