@@ -602,7 +602,11 @@ void ArraySolver::recordExplanationOfEgraphEquivalence(ExplanationCollection & e
 }
 
 void ArraySolver::explainWeakCongruencePath(ExplanationCollection & explanationCollection, NodeRef source, NodeRef target, ERef index) {
-    index = getRoot(index);
+    ERef indexRoot = getRoot(index);
+    if (index != indexRoot) {
+        recordExplanationOfEgraphEquivalence(explanationCollection, index, indexRoot);
+        index = indexRoot;
+    }
     NodeRef sourceRepresentative = getIndexedRepresentative(source, index);
     NodeRef targetRepresentative = getIndexedRepresentative(target, index);
     if (sourceRepresentative == targetRepresentative) {
