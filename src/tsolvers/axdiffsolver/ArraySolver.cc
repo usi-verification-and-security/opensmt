@@ -339,10 +339,11 @@ TRes ArraySolver::checkExtensionality() {
         if (current == weakEqRoot) { // Root of weak-eq class
             extensionalityInfo.weakEqRoot = current;
             auto it = selectsInfo.find(current);
-            assert(it != selectsInfo.end());
-            auto const & selects = it->second;
-            for (auto && [index, value] : selects) {
-                extensionalityInfo.indexValueMap.insert({index, getRoot(value)});
+            if (it != selectsInfo.end()) {
+                auto const & selects = it->second;
+                for (auto && [index, value] : selects) {
+                    extensionalityInfo.indexValueMap.insert({index, getRoot(value)});
+                }
             }
         } else { // not weak-eq root
             ERef primaryIndex = getRoot(getIndexFromStore(node.primaryStore));
