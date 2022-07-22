@@ -1,4 +1,7 @@
-### 2.4.0 (unreleased)
+### 2.4.1 (unreleased)
+
+
+### 2.4.0 (2022-07-22)
 
 Bug fixes:
  - Fix handling of scoped `define-fun`s in incremental mode
