@@ -82,9 +82,7 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     sortToEquality.insert(sort_BOOL, sym_EQ);
     sortToDisequality.insert(sort_BOOL, sym_DISTINCT);
     sortToIte.insert(sort_BOOL, sym_ITE);
-    if (hasArrays()) {
-        sym_ArraySort = sort_store.newSortSymbol(SortSymbol("Array", 2, SortSymbol::INTERNAL));
-    }
+    sym_ArraySort = sort_store.newSortSymbol(SortSymbol("Array", 2, SortSymbol::INTERNAL));
 }
 
 Logic::~Logic() = default;
