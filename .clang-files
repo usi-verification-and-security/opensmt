@@ -1,2 +1,3 @@
 ./src/cnfizers/TermMapper.cc
 ./src/cnfizers/TermMapper.h
+./src/proof/PGCheck.cc
