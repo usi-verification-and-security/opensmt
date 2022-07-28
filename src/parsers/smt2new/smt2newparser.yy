@@ -25,12 +25,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 %define api.pure
+%lex-param { void * myScanner }
 %define parse.error verbose
 %define api.prefix {smt2new}
+%code provides
+{
+  // Tell Flex the expected prototype of yylex.
+  //#define YY_DECL int smt2newlex (SMT2NEWSTYPE *yylval, SMT2NEWLTYPE *yylloc)
+  // Declare the scanner.
+  //YY_DECL;
+
+  int smt2newlex(SMT2NEWSTYPE* lvalp, SMT2NEWLTYPE* llocp, void * myScanner);
+
+  void smt2newerror(SMT2NEWLTYPE* locp, Smt2newContext* context, const char * s )
+  {
+    if (context->interactive)
+      printf("At interactive input: %s\n", s);
+    else
+      printf("At line %d: %s\n", locp->first_line, s);
+  }
+
+  #define myScanner context->scanner
+}
+
 %locations
 %defines
 %parse-param { Smt2newContext* context }
-%lex-param { void* scanner }
 
 %{
 #include <cstdio>
@@ -40,7 +60,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 
 #include "smt2newcontext.h"
-#include "smt2newparser.hh"
 #include "smt2tokens.h"
 
 using ASTNode_up = std::unique_ptr<ASTNode>;
@@ -50,18 +69,6 @@ using string_up = std::unique_ptr<std::string>;
 
 std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::make_unique<std::string>(s); }
 
-int smt2newlex(YYSTYPE* lvalp, YYLTYPE* llocp, void* scanner);
-
-void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
-{
-  if (context->interactive)
-    printf("At interactive input: %s\n", s);
-  else
-    printf( "At line %d: %s\n", locp->first_line, s );
-//  exit( 1 );
-}
-
-#define scanner context->scanner
 
 /* Overallocation to prevent stack overflow */
 #define YYMAXDEPTH 1024 * 1024
