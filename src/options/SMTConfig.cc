@@ -180,7 +180,7 @@ std::string ConfValue::toString() const {
 
 Info::Info(ASTNode const & n) {
     assert(n.getType() == ASTType::UATTR_T or n.getType() == ASTType::PATTR_T);
-    if (n.children->empty()) {
+    if (not n.children or n.children->empty()) {
         value.type = O_EMPTY;
         return;
     } else {
@@ -235,7 +235,7 @@ SMTOption::SMTOption(ASTNode const & n) {
     assert(child.getType() == ASTType::UATTR_T or child.getType() == ASTType::PATTR_T);
     // The option is an attribute
 
-    if (child.children->empty()) {
+    if (not child.children or child.children->empty()) {
         value.type = O_EMPTY;
         return;
     } else {

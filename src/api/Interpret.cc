@@ -50,7 +50,7 @@ void Interpret::setInfo(ASTNode const & n) {
     assert(n.getType() == ASTType::UATTR_T || n.getType() == ASTType::PATTR_T);
 
     std::string name;
-    if (n.hasValue()) {
+    if (not n.hasValue()) {
         ASTNode const & an = *(*n.children)[0];
         assert(an.getType() == ASTType::UATTR_T || an.getType() == ASTType::PATTR_T);
         name = an.getValue();
@@ -64,7 +64,7 @@ void Interpret::setInfo(ASTNode const & n) {
 void Interpret::getInfo(ASTNode const & n) {
     assert(n.getType() == ASTType::INFO_T);
     assert(n.hasValue() or n.children->size() == 1);
-    std::string const & name = n.hasValue() ? (*(*n.children)[0]).getValue() : n.getValue();
+    std::string const & name = n.hasValue() ? n.getValue() : (*(*n.children)[0]).getValue();
 
     const Info& value = config.getInfo(name);
 
@@ -136,8 +136,11 @@ void Interpret::interp(ASTNode const & n) {
                 break;
             }
             case t_setinfo:
-            case t_setoption : {
                 setInfo(*(*n.children)[0]);
+                notify_success();
+                break;
+            case t_setoption : {
+                setOption(*(*n.children)[0]);
                 notify_success();
                 break;
             }
