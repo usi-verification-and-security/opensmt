@@ -50,7 +50,7 @@ Var TermMapper::addBinding(PTRef tr) {
     return v;
 }
 
-void TermMapper::getTerm(PTRef r, PTRef &p, bool &sgn) const {
+void TermMapper::getTerm(PTRef r, PTRef & p, bool & sgn) const {
     sgn = false;
     while (logic.getPterm(r).symb() == logic.getSym_not()) {
         r = logic.getPterm(r)[0];
@@ -70,7 +70,7 @@ Lit TermMapper::getLit(PTRef r) const {
     return mkLit(v, sgn);
 }
 
-void TermMapper::getVar(PTRef r, PTRef &p, Var &v) const {
+void TermMapper::getVar(PTRef r, PTRef & p, Var & v) const {
     bool sgn;
     getTerm(r, p, sgn);
     v = var_Undef;
@@ -98,7 +98,7 @@ const Lit TermMapper::getOrCreateLit(PTRef ptr) {
     return l;
 }
 
-bool TermMapper::peekVar(PTRef positiveTerm, Var &v) const {
+bool TermMapper::peekVar(PTRef positiveTerm, Var & v) const {
     assert(not logic.isNot(positiveTerm));
     auto id = Idx(toId(positiveTerm));
     v = id < termToVar.size_() ? termToVar[id] : var_Undef;

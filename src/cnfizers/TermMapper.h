@@ -32,13 +32,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class TermMapper {
 private:
     int var_cnt;
-    Logic &logic;
+    Logic & logic;
     vec<bool> frozen;
     vec<PTRef> varToTerm; // Mapping Var -> PTRef using var's index
     vec<Var> termToVar;   // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
 
     // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
-    void getTerm(PTRef tr, PTRef &tr_pos, bool &sgn) const;
+    void getTerm(PTRef tr, PTRef & tr_pos, bool & sgn) const;
 
     // Given a term returns the positive version of the term.
     PTRef toPositive(PTRef term) const;
@@ -50,14 +50,14 @@ private:
 
     // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and returns
     // true.
-    bool peekVar(PTRef positiveTerm, Var &v) const;
+    bool peekVar(PTRef positiveTerm, Var & v) const;
 
     // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for
     // the same term.
     Var addBinding(PTRef tr);
 
 public:
-    TermMapper(Logic &l) : var_cnt(0), logic(l) {}
+    TermMapper(Logic & l) : var_cnt(0), logic(l) {}
 
     void setFrozen(Var v) { frozen[v] = true; }
     bool isFrozen(Var v) { return frozen[v]; }

@@ -4,3 +4,6 @@ BasedOnStyle:  LLVM
 ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -4
+PointerAlignment: Middle
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: WithoutElse
