@@ -26,14 +26,13 @@ along with Periplo. If not, see <http://www.gnu.org/licenses/>.
 #include <deque>
 
 
-void ProofGraph::verifyLeavesInconsistency( )
-{
+void ProofGraph::verifyLeavesInconsistency() {
     if (verbose() > 0) { std::cerr << "# Verifying unsatisfiability of the set of proof leaves" << std::endl; }
 
-	std::vector<clauseid_t> proofleaves;
-	std::vector<clauseid_t> q;
-	std::vector<unsigned> visited_count(getGraphSize(), 0u);
-	q.push_back(getRoot()->getId());
+    std::vector<clauseid_t> proofleaves;
+    std::vector<clauseid_t> q;
+    std::vector<unsigned> visited_count(getGraphSize(), 0u);
+    q.push_back(getRoot()->getId());
     do {
         clauseid_t id = q.back();
         ProofNode * node = getNode(id);
@@ -58,14 +57,15 @@ void ProofGraph::verifyLeavesInconsistency( )
     } while (!q.empty());
 
     vec<PTRef> clauses;
-	for (clauseid_t leaf_id : leaves_ids) {
+    for (clauseid_t leaf_id : leaves_ids) {
         auto const & clause = getNode(leaf_id)->getClause();
         vec<PTRef> lits;
+        lits.capacity(clause.size());
         for (Lit l : clause) {
             lits.push(termMapper.litToPTRef(l));
         }
         clauses.push(logic_.mkOr(std::move(lits)));
-	}
+    }
     bool unsat = VerificationUtils(logic_).impliesInternal(logic_.mkAnd(std::move(clauses)), logic_.getTerm_false());
     if (not unsat) {
         throw std::logic_error("The set of proof leaves is satisfiable!");
