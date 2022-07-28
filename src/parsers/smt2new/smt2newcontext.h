@@ -104,6 +104,6 @@ class Smt2newContext {
     }
 };
 
-int smt2newparse(Smt2newContext*);
+int yyparse(Smt2newContext*);
 
 #endif

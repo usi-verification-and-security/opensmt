@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 %define api.pure
 %lex-param { void * myScanner }
 %define parse.error verbose
-%define api.prefix {smt2new}
 %code provides
 {
   // Tell Flex the expected prototype of yylex.
@@ -35,10 +34,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // Declare the scanner.
   //YY_DECL;
 
-  int smt2newlex(SMT2NEWSTYPE* lvalp, SMT2NEWLTYPE* llocp, void * myScanner);
+  int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, void * myScanner);
 
-  void smt2newerror(SMT2NEWLTYPE* locp, Smt2newContext* context, const char * s )
-  {
+  inline void yyerror(YYLTYPE* locp, Smt2newContext* context, const char * s ) {
     if (context->interactive)
       printf("At interactive input: %s\n", s);
     else

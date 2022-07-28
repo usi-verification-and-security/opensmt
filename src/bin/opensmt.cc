@@ -203,7 +203,7 @@ void interpretInteractive(Interpret & interpret) {
                 // Parsing should be done from a string that I get from the readline
                 // library.
                 Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
+                int rval = yyparse(&context);
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {

@@ -24,7 +24,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-%option prefix="smt2new"
 %option reentrant
 %option bison-bridge
 %option bison-locations

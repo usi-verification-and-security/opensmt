@@ -1009,7 +1009,7 @@ void Interpret::execute(ASTNode const & r) {
 
 int Interpret::interpFile(FILE* in) {
     Smt2newContext context(in);
-    int rval = smt2newparse(&context);
+    int rval = yyparse(&context);
 
     if (rval != 0) return rval;
 
@@ -1020,7 +1020,7 @@ int Interpret::interpFile(FILE* in) {
 
 int Interpret::interpFile(char *content){
     Smt2newContext context(content);
-    int rval = smt2newparse(&context);
+    int rval = yyparse(&context);
 
     if (rval != 0) return rval;
     ASTNode const & r = context.getRoot();
@@ -1122,7 +1122,7 @@ int Interpret::interpPipe() {
 
                     i = -1; // will be incremented to 0 by the loop condition.
                     Smt2newContext context(buf_out);
-                    int rval = smt2newparse(&context);
+                    int rval = yyparse(&context);
                     if (rval != 0)
                         notify_formatted(true, "scanner");
                     else {
