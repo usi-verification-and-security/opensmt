@@ -249,12 +249,10 @@ void ProofGraph::checkProof(bool check_clauses) {
         if (isSetVisited1(u) && !isSetVisited2(u)) {
             std::cerr << "Node " << u << " is unreachable going top-down" << '\n';
             throw OsmtInternalException();
-            ;
         }
         if (!isSetVisited1(u) && isSetVisited2(u)) {
             std::cerr << "Node " << u << " is unreachable going bottom-up" << '\n';
             throw OsmtInternalException();
-            ;
         }
     }
 
@@ -263,7 +261,6 @@ void ProofGraph::checkProof(bool check_clauses) {
         if (not isSetVisited1(leave_id)) {
             std::cerr << "Detached leaf" << leave_id << '\n';
             throw OsmtInternalException();
-            ;
         }
     }
 
