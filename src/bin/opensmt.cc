@@ -207,7 +207,7 @@ void interpretInteractive(Interpret & interpret) {
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
-                    const ASTNode* r = context.getRoot();
+                    ASTNode const & r = context.getRoot();
                     interpret.execute(r);
                     done = interpret.gotExit();
                 }
