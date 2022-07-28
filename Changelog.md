@@ -1,5 +1,10 @@
-### 2.4.1 (unreleased)
+### 2.4.2 (unreleased)
 
+
+### 2.4.1 (2022-07-28)
+
+Bug fixes:
+ - Logic: Fix use of uninitialized value
 
 ### 2.4.0 (2022-07-22)
 
