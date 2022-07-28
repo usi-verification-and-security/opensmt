@@ -311,7 +311,8 @@ attribute_value: spec_const
         {
             auto tmp = std::make_unique<ASTVec>();
             tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::SPECC_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp)); }
+            $$ = new ASTNode(ASTType::SPECC_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
+        }
     | symbol
         {
             $$ = $1;
