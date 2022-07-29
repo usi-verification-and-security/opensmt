@@ -45,11 +45,10 @@ if [ -z $solver ] || [ ! -f $solver ]; then
     exit $1
 fi
 
+TMPDIR=$(mktemp -d)
 # Note: set to `true' to prevent deletion of temporary files
 keep=false
 trap "if [ x$keep == xtrue ]; then echo 'keeping output in ${TMPDIR}'; else rm -rf ${TMPDIR}; fi" EXIT
-
-TMPDIR=$(mktemp -d)
 
 numSplits=$(ls $inputs/*.smt2 |wc -l)
 if [ $numSplits -eq 0 ]; then
