@@ -84,7 +84,7 @@ ln -s $TMPDIR/$symlinkPath $symlinkPath || exit 1
 
 file=$(constructInstance $base $patch)
 
-solverResult=$($solver $file 2>/dev/null)
+solverResult=$($solver $file 2>/dev/null | grep -v '^;')
 
 if [ x"$solverResult" != x"unknown" ]; then
     if [ x"$solverResult" == x"unsat" ]; then
