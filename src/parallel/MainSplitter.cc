@@ -62,7 +62,7 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
 
     int i = 0;
     for (auto const &split : splits) {
-        auto conj_vec = addToConjunction(split.constraintsToPTRefs(*thandler));
+        auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
         auto problem = logic.mkAnd(conj_vec);
         auto zeroPadNumber = [](int number, unsigned long targetLength) {
             std::string s = std::to_string(number);
@@ -96,7 +96,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() {
     std::vector<std::string> partitions;
     auto const & splits = getSplitter().getSplits();
     for (auto const &split : splits) {
-        auto conj_vec = addToConjunction(split.constraintsToPTRefs(*thandler));
+        auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
         auto problem = logic.mkAnd(conj_vec);
         partitions.push_back(logic.dumpWithLets(problem));
     }

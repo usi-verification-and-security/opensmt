@@ -86,23 +86,22 @@ bool ScatterSplitter::scatterLevel() {
 opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
     SplitData splitData;
     vec<Lit> constraints_negated;
-    vec<Lit> split_assumption;
-    // Add the literals on the decision levels
+    // Add the literals on the decision levels.
     for (int i = assumptions.size(); i < decisionLevel(); i++) {
         Lit l = trail[trail_lim[i]];
-        splitData.addConstraint<vec<Lit>>({l});
         // Remember this literal in the split assumptions vector of the
         // SAT solver
-        split_assumption.push(l);
+        splitData.addSplitAssumptions(vec<Lit>{l});
         // This will be added to the SAT formula to exclude the search
         // space
         constraints_negated.push(~l);
     }
-    splitData.addSplitAssumptions(split_assumption);
-    for (size_t i = 0; i < splitData.getSplitAssumptions().size()-1; i++) {
+    for (SplitData const & previousSplit : splitContext.getSplits()) {
+        auto const & previousAssumptions = previousSplit.peekSplitAssumptions();
         vec<Lit> tmp;
-        for (auto tr : splitData.getSplitAssumption(i)) {
-            tmp.push(~tr);
+        for (auto const & clause : previousAssumptions) {
+            assert(clause.size() == 1);
+            tmp.push(~clause[0]);
         }
         splitData.addConstraint(tmp);
     }
