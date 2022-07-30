@@ -87,21 +87,25 @@ opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions()
     SplitData splitData;
     vec<Lit> constraints_negated;
     vec<Lit> split_assumption;
-    // Add the literals on the decision levels
-    for (int i = assumptions.size(); i < decisionLevel(); i++) {
-        Lit l = trail[trail_lim[i]];
-        splitData.addConstraint<vec<Lit>>({l});
-        // Remember this literal in the split assumptions vector of the
-        // SAT solver
-        split_assumption.push(l);
-        // This will be added to the SAT formula to exclude the search
-        // space
-        constraints_negated.push(~l);
+    // Add the literals on the decision levels.
+    // Note: do not add an empty clause for the last instance!
+    if (assumptions.size() < decisionLevel()) {
+        for (int i = assumptions.size(); i < decisionLevel(); i++) {
+            Lit l = trail[trail_lim[i]];
+            // Remember this literal in the split assumptions vector of the
+            // SAT solver
+            split_assumption.push(l);
+            // This will be added to the SAT formula to exclude the search
+            // space
+            constraints_negated.push(~l);
+        }
+        splitData.addSplitAssumptions(split_assumption);
     }
-    splitData.addSplitAssumptions(split_assumption);
-    for (size_t i = 0; i < splitData.getSplitAssumptions().size()-1; i++) {
+    for (SplitData const & previousSplit : splitContext.getSplits()) {
+        auto const & previousAssumptions = previousSplit.peekSplitAssumptions();
+        assert(previousAssumptions.size() == 1);
         vec<Lit> tmp;
-        for (auto tr : splitData.getSplitAssumption(i)) {
+        for (auto tr : previousAssumptions[0]) {
             tmp.push(~tr);
         }
         splitData.addConstraint(tmp);

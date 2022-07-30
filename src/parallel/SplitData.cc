@@ -104,9 +104,8 @@ char* SplitData::splitToString()
     return buf;
 }
 
-std::vector<vec<PtAsgn>> SplitData::toPTRefs(std::vector<vec<Lit>> const & in, THandler const & theory_handler)
+void SplitData::addClausesToPtAsgns(std::vector<vec<PtAsgn>> & out, std::vector<vec<Lit>> const & in, THandler const & theory_handler)
 {
-    std::vector<vec<PtAsgn>> out;
     for (const vec<Lit>& c : in) {
         out.emplace_back();
         vec<PtAsgn>& out_clause = out[out.size()-1];
@@ -116,5 +115,4 @@ std::vector<vec<PtAsgn>> SplitData::toPTRefs(std::vector<vec<Lit>> const & in, T
             out_clause.push(pta);
         }
     }
-    return out;
 }
