@@ -11,19 +11,18 @@
 
 #include "Logic.h"
 
-template<typename TConfig>
-class Rewriter {
+template <typename TConfig> class Rewriter {
 protected:
     Logic & logic;
     TConfig & cfg;
+
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     virtual PTRef rewrite(PTRef root) {
-        // MB: If term has no children then single call to config is enough; this can save memory allocations if successful
-        if (logic.isVar(root)) {
-            return cfg.previsit(root) ? cfg.rewrite(root) : root;
-        }
+        // MB: If term has no children then single call to config is enough;
+        // this can save memory allocations if successful
+        if (logic.isVar(root)) { return cfg.previsit(root) ? cfg.rewrite(root) : root; }
 
         struct DFSEntry {
             DFSEntry(PTRef term) : term(term) {}
@@ -51,9 +50,7 @@ public:
                 PTRef nextChild = term[currentEntry.nextChild];
                 ++currentEntry.nextChild;
                 auto childId = logic.getPterm(nextChild).getId();
-                if (not termMarks.isMarked(childId)) {
-                    toProcess.push_back(DFSEntry(nextChild));
-                }
+                if (not termMarks.isMarked(childId)) { toProcess.push_back(DFSEntry(nextChild)); }
                 continue;
             }
             // If we are here, we have already processed all children
@@ -89,14 +86,15 @@ public:
 
 class DefaultRewriterConfig {
 public:
-    virtual bool previsit(PTRef) { return true; } // should continue visiting
+    virtual bool previsit(PTRef) { return true; }      // should continue visiting
     virtual PTRef rewrite(PTRef term) { return term; } // don't do anything
 };
 
 class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
     DefaultRewriterConfig config;
+
 public:
     NoOpRewriter(Logic & logic) : Rewriter<DefaultRewriterConfig>(logic, config) {}
 };
 
-#endif //OPENSMT_REWRITER_H
+#endif // OPENSMT_REWRITER_H

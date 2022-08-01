@@ -12,12 +12,11 @@
 class DistinctRewriteConfig : public DefaultRewriterConfig {
 protected:
     Logic & logic;
+
 public:
     DistinctRewriteConfig(Logic & logic) : logic(logic) {}
 
-    bool previsit(PTRef term) override {
-        return logic.hasSortBool(term);
-    }
+    bool previsit(PTRef term) override { return logic.hasSortBool(term); }
 
     PTRef rewrite(PTRef ptr) override {
         if (logic.isDisequality(ptr) and doRewriteDistinct(ptr)) {
@@ -38,50 +37,41 @@ public:
         return ptr;
     }
 
-    virtual bool doRewriteDistinct(PTRef) const {
-        return true;
-    }
+    virtual bool doRewriteDistinct(PTRef) const { return true; }
 };
-
 
 class KeepTopLevelDistinctRewriteConfig : public DistinctRewriteConfig {
 public:
     using TopLevelDistincts = std::unordered_set<PTRef, PTRefHash>;
-    KeepTopLevelDistinctRewriteConfig(Logic & logic, std::unordered_set<PTRef, PTRefHash> topLevelDistincts):
-        DistinctRewriteConfig(logic),
-        topLevelDistincts(std::move(topLevelDistincts))
-        {}
+    KeepTopLevelDistinctRewriteConfig(Logic & logic, std::unordered_set<PTRef, PTRefHash> topLevelDistincts)
+        : DistinctRewriteConfig(logic), topLevelDistincts(std::move(topLevelDistincts)) {}
 
     bool doRewriteDistinct(PTRef dist) const override {
         return topLevelDistincts.find(dist) == topLevelDistincts.end();
     }
+
 private:
-     TopLevelDistincts topLevelDistincts;
+    TopLevelDistincts topLevelDistincts;
 };
 
 class DistinctRewriter : public Rewriter<DistinctRewriteConfig> {
     DistinctRewriteConfig config;
+
 public:
-    DistinctRewriter(Logic & logic): Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
+    DistinctRewriter(Logic & logic) : Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
 };
 
 class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig> {
     KeepTopLevelDistinctRewriteConfig config;
+
 public:
     using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
-    KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts):
-        Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
-        config(logic, std::move(topLevelDistincts))
-        {}
+    KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts)
+        : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config), config(logic, std::move(topLevelDistincts)) {}
 };
 
-
-inline PTRef rewriteDistincts(Logic & logic, PTRef fla) {
-    return DistinctRewriter(logic).rewrite(fla);
-}
+inline PTRef rewriteDistincts(Logic & logic, PTRef fla) { return DistinctRewriter(logic).rewrite(fla); }
 
 PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla);
 
-
-
-#endif //OPENSMT_DISTINCTREWRITER_H
+#endif // OPENSMT_DISTINCTREWRITER_H

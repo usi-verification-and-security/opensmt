@@ -5,15 +5,15 @@
 #ifndef OPENSMT_DIVMODREWRITER_H
 #define OPENSMT_DIVMODREWRITER_H
 
-#include "PTRef.h"
-
 #include "Rewriter.h"
+
 #include "ArithLogic.h"
+#include "PTRef.h"
 
 #include "OsmtApiException.h"
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 class DivModConfig : public DefaultRewriterConfig {
     ArithLogic & logic;
@@ -49,9 +49,7 @@ public:
             auto it = divModCache.find({dividend, divisor});
             bool inCache = (it != divModCache.end());
             DivModPair divMod = inCache ? it->second : freshDivModPair(dividend, divisor);
-            if (not inCache) {
-                divModCache.insert({{dividend, divisor}, divMod});
-            }
+            if (not inCache) { divModCache.insert({{dividend, divisor}, divMod}); }
             PTRef divVar = divMod.div;
             PTRef modVar = divMod.mod;
             PTRef rewritten = logic.isIntDiv(symRef) ? divVar : modVar;
@@ -63,13 +61,9 @@ public:
                 auto upperBound = abs(divisorVal) - 1;
                 // dividend = divVar * divisor + modVar
                 // 0 <= modVar <= |dividend| - 1
-                definitions.push(logic.mkAnd(
-                        logic.mkEq(dividend, logic.mkPlus(logic.mkTimes(divisor, divVar), modVar)),
-                        logic.mkAnd(
-                                logic.mkLeq(logic.getTerm_IntZero(), modVar),
-                                logic.mkLeq(modVar, logic.mkIntConst(upperBound))
-                        )
-                ));
+                definitions.push(logic.mkAnd(logic.mkEq(dividend, logic.mkPlus(logic.mkTimes(divisor, divVar), modVar)),
+                                             logic.mkAnd(logic.mkLeq(logic.getTerm_IntZero(), modVar),
+                                                         logic.mkLeq(modVar, logic.mkIntConst(upperBound)))));
             }
             return rewritten;
         }
@@ -86,6 +80,7 @@ public:
 class DivModRewriter : Rewriter<DivModConfig> {
     ArithLogic & logic;
     DivModConfig config;
+
 public:
     DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
 
@@ -102,9 +97,6 @@ public:
 };
 
 // Simple single-use version
-inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) {
-    return DivModRewriter(logic).rewrite(root);
-}
+inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) { return DivModRewriter(logic).rewrite(root); }
 
-
-#endif //OPENSMT_DIVMODEREWRITER_H
+#endif // OPENSMT_DIVMODEREWRITER_H
