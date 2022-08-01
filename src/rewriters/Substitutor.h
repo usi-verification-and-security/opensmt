@@ -8,8 +8,6 @@
 #ifndef OPENSMT_SUBSTITUTOR_H
 #define OPENSMT_SUBSTITUTOR_H
 
-#endif // OPENSMT_SUBSTITUTOR_H
-
 #include "Rewriter.h"
 
 class SubstitutionConfig : public DefaultRewriterConfig {
@@ -34,3 +32,5 @@ public:
     Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs)
         : Rewriter<SubstitutionConfig>(logic, config), config(substs) {}
 };
+
+#endif // OPENSMT_SUBSTITUTOR_H
