@@ -1,3 +1,9 @@
 ./src/cnfizers/TermMapper.cc
 ./src/cnfizers/TermMapper.h
 ./src/proof/PGCheck.cc
+./src/rewriters/ArithmeticEqualityRewriter.h
+./src/rewriters/DistinctRewriter.h
+./src/rewriters/DistinctRewriter.cc
+./src/rewriters/DivModRewriter.h
+./src/rewriters/Rewriter.h
+./src/rewriters/Substitutor.h
