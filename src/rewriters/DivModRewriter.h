@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 03.02.21.
-//
+/*
+ * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_DIVMODREWRITER_H
 #define OPENSMT_DIVMODREWRITER_H

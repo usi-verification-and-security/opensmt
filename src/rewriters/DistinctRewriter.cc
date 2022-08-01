@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 04.05.21.
-//
+/*
+ * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "DistinctRewriter.h"
 #include "TreeOps.h"
