@@ -46,7 +46,7 @@ public:
 
     sstat solve();
 
-    std::vector<std::string> getPartitionClauses();
+    std::vector<std::string> getPartitionClauses() const;
 
     void writeSplits(std::string const &)  const;
 
