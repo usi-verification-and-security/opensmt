@@ -60,10 +60,9 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
     assert(config.sat_split_type() != spt_none);
     auto const & splits = getSplitter().getSplits();
 
+    auto splitStrings = getPartitionClauses();
     int i = 0;
-    for (auto const &split : splits) {
-        auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
-        auto problem = logic.mkAnd(conj_vec);
+    for (auto const &splitString : splitStrings) {
         auto zeroPadNumber = [](int number, unsigned long targetLength) {
             std::string s = std::to_string(number);
             return std::string(targetLength - std::min(targetLength, s.length()), '0') + s;
@@ -73,7 +72,7 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
         std::ofstream outFile;
         outFile.open(name);
         if (outFile.is_open()) {
-            logic.dumpFormulaToFile(outFile, problem);
+            outFile << "(assert " << splitString << ")\n";
             outFile.close();
         } else {
             throw OsmtApiException("Failed to open file " + name);
@@ -91,7 +90,7 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
     }
 }
 
-std::vector<std::string> MainSplitter::getPartitionClauses() {
+std::vector<std::string> MainSplitter::getPartitionClauses() const {
     assert(not isSplitTypeNone());
     std::vector<std::string> partitions;
     auto const & splits = getSplitter().getSplits();
