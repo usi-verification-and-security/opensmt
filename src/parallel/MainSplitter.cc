@@ -107,31 +107,47 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
     }
 
 //    assert(
-        [this](vec<PTRef> const & conjVec) {
+        [this](vec<PTRef> const & partitions) {
             bool res = true;
             VerificationUtils verifier(logic);
-            for (int i = 0; i < conjVec.size(); i++) {
-                for (int j = i + 1; j < conjVec.size(); j++) {
-                    if (not verifier.impliesInternal(logic.mkAnd(conjVec[i], conjVec[j]), logic.getTerm_false())) {
-                        std::string error = "Non-exclusive partitions: (and " + logic.pp(conjVec[i]) + " " + logic.pp(conjVec[j]) + ") is satisfiable";
+            for (int i = 0; i < partitions.size(); i++) {
+                for (int j = i + 1; j < partitions.size(); j++) {
+                    if (not verifier.impliesInternal(logic.mkAnd(partitions[i], partitions[j]), logic.getTerm_false())) {
+                        std::string error = "Partitions share models: (and " + logic.pp(partitions[i]) + " " + logic.pp(partitions[j]) + ") is satisfiable";
                         std::cout << error << std::endl;
-                        throw OsmtInternalException(error);
+                        throwWithLocationInfo(error);
                         res = false;
                     }
                 }
             }
             vec<PTRef> partitionCoverageQuery;
-            partitionCoverageQuery.capacity(conjVec.size());
-            for (PTRef tr : conjVec) {
+            partitionCoverageQuery.capacity(partitions.size());
+            for (PTRef tr : partitions) {
                 partitionCoverageQuery.push(logic.mkNot(tr));
             }
-            // TODO: Implement the check conjVec.size() < config.sat_split_num() => \neg conjVec implies \neg \phi
-            if (conjVec.size() == config.sat_split_num()) {
+            if (partitions.size() == config.sat_split_num()) {
+                // The partitions need to cover the full search space.  The conjunction of the negated partitions must be unsatisfiable
                 if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
                     std::string error = "Non-covering partitioning: " + logic.pp(logic.mkAnd(partitionCoverageQuery)) + " is satisfiable";
                     std::cout << error << std::endl;
-                    throw OsmtInternalException(error);
+                    throwWithLocationInfo(error);
                     res = false;
+                }
+            } else {
+                // The partial partitioning must be satisfiable
+                if (verifier.impliesInternal(logic.mkOr(partitions), logic.getTerm_false())) {
+                    std::string error = "Unsatisfiable partial partitioning: " + logic.pp(logic.mkOr(partitions));
+                    std::cout << error << std::endl;
+                    throwWithLocationInfo(error);
+                    res = false;
+                } else {
+                    // Removing the models of the partial partitions from the root instance must yield unsat
+                    if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(root_instance.getRoot()))) {
+                        std::string error = "Non-covering partial partitioning: partial partitions do not exclude all models of original instance";
+                        std::cout << error << std::endl;
+                        throwWithLocationInfo(error);
+                        res = false;
+                    }
                 }
             }
             return res;
