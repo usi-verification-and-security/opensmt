@@ -6,6 +6,7 @@
  */
 
 #include "MainSplitter.h"
+#include "VerificationUtils.h"
 
 void MainSplitter::notifyResult(sstat const & result)
 {
@@ -92,13 +93,44 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
 
 std::vector<std::string> MainSplitter::getPartitionClauses() const {
     assert(not isSplitTypeNone());
-    std::vector<std::string> partitions;
     auto const & splits = getSplitter().getSplits();
+    vec<PTRef> partitionsTr;
+    partitionsTr.capacity(splits.size());
     for (auto const &split : splits) {
         auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
-        auto problem = logic.mkAnd(conj_vec);
-        partitions.push_back(logic.dumpWithLets(problem));
+        partitionsTr.push(logic.mkAnd(conj_vec));
     }
+
+    std::vector<std::string> partitions;
+    for (PTRef tr : partitionsTr) {
+        partitions.push_back(logic.dumpWithLets(tr));
+    }
+
+    assert(
+        [this](vec<PTRef> const & conjVec) {
+            bool res = true;
+            VerificationUtils verifier(logic);
+            for (int i = 0; i < conjVec.size(); i++) {
+                for (int j = i + 1; j < conjVec.size(); j++) {
+                    if (not verifier.impliesInternal(logic.mkAnd(conjVec[i], conjVec[j]), logic.getTerm_false())) {
+                        std::cout << "Non-exclusive partitions: (and " << logic.pp(conjVec[i]) << " " << logic.pp(conjVec[j]) << " is satisfiable" << std::endl;
+                        res = false;
+                    }
+                }
+            }
+            vec<PTRef> partitionCoverageQuery;
+            partitionCoverageQuery.capacity(conjVec.size());
+            for (PTRef tr : conjVec) {
+                partitionCoverageQuery.push(logic.mkNot(tr));
+            }
+            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
+                std::cout << "Non-covering partitioning: " << logic.pp(logic.mkAnd(partitionCoverageQuery)) << " is satisfiable" << std::endl;
+                res = false;
+            }
+            return res;
+        }(partitionsTr)
+    );
+
     return partitions;
 }
 
