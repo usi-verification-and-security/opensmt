@@ -106,14 +106,16 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
         partitions.push_back(logic.dumpWithLets(tr));
     }
 
-    assert(
+//    assert(
         [this](vec<PTRef> const & conjVec) {
             bool res = true;
             VerificationUtils verifier(logic);
             for (int i = 0; i < conjVec.size(); i++) {
                 for (int j = i + 1; j < conjVec.size(); j++) {
                     if (not verifier.impliesInternal(logic.mkAnd(conjVec[i], conjVec[j]), logic.getTerm_false())) {
-                        std::cout << "Non-exclusive partitions: (and " << logic.pp(conjVec[i]) << " " << logic.pp(conjVec[j]) << " is satisfiable" << std::endl;
+                        std::string error = "Non-exclusive partitions: (and " + logic.pp(conjVec[i]) + " " + logic.pp(conjVec[j]) + ") is satisfiable";
+                        std::cout << error << std::endl;
+                        throw OsmtInternalException(error);
                         res = false;
                     }
                 }
@@ -123,13 +125,18 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
             for (PTRef tr : conjVec) {
                 partitionCoverageQuery.push(logic.mkNot(tr));
             }
-            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
-                std::cout << "Non-covering partitioning: " << logic.pp(logic.mkAnd(partitionCoverageQuery)) << " is satisfiable" << std::endl;
-                res = false;
+            // TODO: Implement the check conjVec.size() < config.sat_split_num() => \neg conjVec implies \neg \phi
+            if (conjVec.size() == config.sat_split_num()) {
+                if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
+                    std::string error = "Non-covering partitioning: " + logic.pp(logic.mkAnd(partitionCoverageQuery)) + " is satisfiable";
+                    std::cout << error << std::endl;
+                    throw OsmtInternalException(error);
+                    res = false;
+                }
             }
             return res;
-        }(partitionsTr)
-    );
+        }(partitionsTr);
+//    );
 
     return partitions;
 }
@@ -138,8 +145,9 @@ vec<PTRef> MainSplitter::addToConjunction(std::vector<vec<PtAsgn>> const & in) c
     vec<PTRef> out;
     for (const auto & constr : in) {
         vec<PTRef> disj_vec;
-        for (const auto & pta : constr)
+        for (const auto & pta : constr) {
             disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
+        }
         out.push(logic.mkOr(std::move(disj_vec)));
     }
     return out;
