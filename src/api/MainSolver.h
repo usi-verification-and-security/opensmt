@@ -115,9 +115,6 @@ class MainSolver
     sstat          status;           // The status of the last solver call (initially s_Undef)
     unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
 
-
-    bool          binary_init; // Was the formula loaded from .osmt2
-
     class FContainer {
         PTRef   root;
 
@@ -171,7 +168,6 @@ class MainSolver
             solver_name {std::move(name)},
             check_called(0),
             status(s_Undef),
-            binary_init(false),
             root_instance(logic.getTerm_true())
     {
         conf.setUsedForInitiliazation();
@@ -195,7 +191,6 @@ class MainSolver
             solver_name {std::move(name)},
             check_called(0),
             status(s_Undef),
-            binary_init(false),
             root_instance(logic.getTerm_true())
     {
         conf.setUsedForInitiliazation();
