@@ -134,10 +134,6 @@ MainSolver::insertFormula(PTRef root, char** msg)
 
 sstat MainSolver::simplifyFormulas()
 {
-    if (binary_init)
-        return s_Undef;
-
-
     status = s_Undef;
 
     vec<PTRef> coll_f;
