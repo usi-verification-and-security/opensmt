@@ -15,10 +15,28 @@ PTRef IteHandler::rewrite(PTRef root) {
 
 PTRef IteHandler::getAuxVarFor(PTRef ite) {
     assert(logic.isIte(ite));
-    std::string name(".ite");
+    std::string name(itePrefix);
     name += std::to_string(ite.x);
     name += suffix;
     return logic.mkVar(logic.getSortRef(ite), name.c_str());
+}
+
+PTRef IteHandler::getIteTermFor(Logic const & logic, PTRef auxVar) {
+
+    std::string const & name = logic.getSymName(auxVar);
+    assert(name.compare(0, itePrefix.size(), itePrefix) == 0);
+    std::string numberStr;
+    for (auto it = name.begin() + itePrefix.size(); it != name.end(); ++it) {
+        if ('0' <= *it and *it <= '9') {
+            numberStr += *it;
+        } else {
+            break;
+        }
+    }
+    auto number = static_cast<uint32_t>(std::stoi(numberStr));
+    PTRef ite = { number };
+    assert(logic.isIte(ite));
+    return ite;
 }
 
 PTRef IteHandler::replaceItes(PTRef root) {

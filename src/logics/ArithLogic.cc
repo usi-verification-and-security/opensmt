@@ -7,6 +7,8 @@
 #include "FastRational.h"
 #include "OsmtInternalException.h"
 #include "OsmtApiException.h"
+#include "IteHandler.h"
+#include "DivModRewriter.h"
 #include <memory>
 #include <sstream>
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
@@ -632,6 +634,7 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkIntConst(intMod);
     }
+    divsAndModsSeen = true;
     return mkFun(sym_Int_MOD, {dividend, divisor});
 }
 
@@ -652,6 +655,7 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
         auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
         return mkIntConst(intDiv);
     }
+    divsAndModsSeen = true;
     return mkFun(sym_Int_DIV, std::move(args));
 }
 
@@ -959,6 +963,30 @@ ArithLogic::getDefaultValuePTRef(const SRef sref) const
         return Logic::getDefaultValuePTRef(sref);
 }
 
+PTRef ArithLogic::removeAuxVars(PTRef tr) {
+    // Note: Since ites are removed first and div/mod's then, it is important to first reintroduce div/mod's and then ites
+    class AuxSymbolMatcherConfig : DefaultRewriterConfig {
+        ArithLogic & logic;
+    public:
+        AuxSymbolMatcherConfig(ArithLogic & logic) : logic(logic) {}
+        bool previsit(PTRef) override { return true; }
+        PTRef rewrite(PTRef tr) override {
+            if (not logic.isVar(tr)) return tr; // Only variables can match
+            auto symName = std::string_view(logic.getSymName(tr));
+            if (symName.compare(0, DivModConfig::divPrefix.size(), DivModConfig::divPrefix) == 0) {
+                return DivModConfig::getDivTermFor(logic, tr);
+            } else if (symName.compare(0, DivModConfig::divPrefix.size(), DivModConfig::modPrefix) == 0){
+                return DivModConfig::getModTermFor(logic, tr);
+            }
+            return tr;
+        }
+    };
+    if (divsAndModsSeen) {
+        AuxSymbolMatcherConfig config(*this);
+        tr = Rewriter(*this, config).rewrite(tr);
+    }
+    return Logic::removeAuxVars(tr);
+}
 
 // Handle the printing of real constants that are negative and the
 // rational constants

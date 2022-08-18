@@ -14,6 +14,8 @@
 #include "PTRef.h"
 
 #include "OsmtApiException.h"
+#include "OsmtInternalException.h"
+#include "TypeUtils.h"
 
 #include <string>
 #include <unordered_map>
@@ -29,17 +31,45 @@ class DivModConfig : public DefaultRewriterConfig {
     std::unordered_map<std::pair<PTRef, PTRef>, DivModPair, PTRefPairHash> divModCache;
     vec<PTRef> definitions;
 
-    const char * divPrefix = ".div";
-    const char * modPrefix = ".mod";
-
     DivModPair freshDivModPair(PTRef dividend, PTRef divisor) {
         std::string id = "_" + std::to_string(dividend.x) + "_" + std::to_string(divisor.x);
-        std::string divName = divPrefix + id;
-        std::string modName = modPrefix + id;
+        std::string divName(divPrefix);
+        divName += id;
+        std::string modName(modPrefix);
+        modName += id;
         return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
     }
 
+    static opensmt::pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name,
+                                                             std::string_view const prefix) {
+        std::string dividendNumberStr;
+        std::string divisorNumberStr;
+        bool parsingDividend = true;
+        for (auto it = name.begin() + prefix.size() + 1; it != name.end(); ++it) {
+            if (parsingDividend and '0' <= *it and *it <= '9') {
+                dividendNumberStr += *it;
+            } else if (not parsingDividend and '0' <= *it and *it <= '9') {
+                divisorNumberStr += *it;
+            } else if (*it == '_') {
+                assert([](bool parsingDividend, std::string_view const name) {
+                    if (not parsingDividend) {
+                        throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }(parsingDividend, name));
+                parsingDividend = false;
+            }
+        }
+        return {{static_cast<uint32_t>(std::stoi(dividendNumberStr))},
+                {static_cast<uint32_t>(std::stoi(divisorNumberStr))}};
+    }
+
 public:
+    static std::string_view constexpr divPrefix = ".div";
+    static std::string_view constexpr modPrefix = ".mod";
+
     DivModConfig(ArithLogic & logic) : logic(logic) {}
 
     PTRef rewrite(PTRef term) override {
@@ -77,6 +107,22 @@ public:
         for (PTRef def : definitions) {
             out.push(def);
         }
+    }
+
+    // Inverse operator from auxVar to Div Term
+    static PTRef getDivTermFor(ArithLogic & logic, PTRef auxVar) {
+        std::string const & name = logic.getSymName(auxVar);
+        assert(name.compare(0, divPrefix.size(), divPrefix) == 0);
+        auto [dividendTr, divisorTr] = getDividendAndDivisor(name, divPrefix);
+        return logic.mkIntDiv(dividendTr, divisorTr);
+    }
+
+    // Inverse operator from auxVar to Mod Term
+    static PTRef getModTermFor(ArithLogic & logic, PTRef auxVar) {
+        std::string const & name = logic.getSymName(auxVar);
+        assert(name.compare(0, modPrefix.size(), modPrefix) == 0);
+        auto [dividendTr, divisorTr] = getDividendAndDivisor(name, modPrefix);
+        return logic.mkMod(dividendTr, divisorTr);
     }
 };
 
