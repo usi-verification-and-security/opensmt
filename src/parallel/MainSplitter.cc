@@ -126,7 +126,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
                 partitionCoverageQuery.push(logic.mkNot(tr));
             }
             if (partitions.size() == config.sat_split_num()) {
-                // The partitions need to cover the full search space.  The conjunction of the negated partitions must be unsatisfiable
+                // The partitions need to cover the full search space, i.e., the conjunction of the negated partitions must be unsatisfiable
                 if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
                     std::string error = "Non-covering partitioning: " + logic.pp(logic.mkAnd(partitionCoverageQuery)) + " is satisfiable";
                     std::cout << error << std::endl;
@@ -143,7 +143,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
                 } else {
                     // Removing the models of the partial partitions from the root instance must yield unsat
                     if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(root_instance.getRoot()))) {
-                        std::string error = "Non-covering partial partitioning: partial partitions do not exclude all models of original instance";
+                        std::string error = "Non-covering partial partitioning: partial partitions do not contain all models of original instance";
                         std::cout << error << std::endl;
                         throwWithLocationInfo(error);
                         res = false;
