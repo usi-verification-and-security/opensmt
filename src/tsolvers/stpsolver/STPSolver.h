@@ -70,6 +70,7 @@ public:
 
     bool isValid(PTRef tr) override;
 
+    bool isKnown(PTRef tr) override { return mapper.getEdgeRef(tr) != EdgeRef_Undef; }
 };
 
 #include "STPSolver_implementations.hpp"

@@ -185,7 +185,7 @@ public:
     virtual void  informNewSplit(PTRef) { };
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
-    bool         isKnown(PTRef tr);
+    virtual bool isKnown(PTRef tr);
     void         setKnown(PTRef tr);
 
     virtual void printStatistics(std::ostream & os);
