@@ -7,6 +7,7 @@
 #include "ScatterSplitter.h"
 #include "Random.h"
 #include "TreeOps.h"
+#include "InverseIteRewriter.h"
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
 : SimpSMTSolver         (c, t)
@@ -48,7 +49,8 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                 } else {
-                    nodeCounter.visit(theory_handler.varToTerm(next));
+                    PTRef iteExpandedTerm = InverseIteRewriter(theory_handler.getLogic()).rewrite(theory_handler.varToTerm(next));
+                    nodeCounter.visit(iteExpandedTerm);
                     if (nodeCounter.limitReached()) {
                         // Do not branch on lengthy variables to avoid oversized terms
                         discarded.push(next);
@@ -199,7 +201,8 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
         if (isAssumptionVar(v)) {
             continue;
         }
-        auto pt = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        auto ptWithAuxVars = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
         nodeCounter.visit(pt);
         if (nodeCounter.limitReached())
             continue;
@@ -229,7 +232,8 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
         bool hasBulkyLit = false;
         for (Lit l : c) {
             Var v = var(l);
-            PTRef pt = theory_handler.varToTerm(v);
+            PTRef ptWithAuxVars = theory_handler.varToTerm(v);
+            PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
             nodeCounter.visit(pt);
 
             if (nodeCounter.limitReached()) {
