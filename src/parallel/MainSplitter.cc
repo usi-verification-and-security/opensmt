@@ -7,6 +7,7 @@
 
 #include "MainSplitter.h"
 #include "VerificationUtils.h"
+#include "InverseIteRewriter.h"
 
 void MainSplitter::notifyResult(sstat const & result)
 {
@@ -102,7 +103,8 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
     }
 
     std::vector<std::string> partitions;
-    for (PTRef tr : partitionsTr) {
+    for (PTRef trWithAuxVars : partitionsTr) {
+        PTRef tr = InverseIteRewriter(logic).rewrite(trWithAuxVars);
         partitions.push_back(logic.dumpWithLets(tr));
     }
 
