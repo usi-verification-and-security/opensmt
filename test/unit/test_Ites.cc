@@ -271,9 +271,11 @@ TEST_F(LogicIteTest, test_IteHandler_Inverse) {
     PTRef P = logic.mkUninterpFun(PSym, {fla});
     PTRef P2 = logic.mkUninterpFun(PSym, {inner});
     PTRef PConj = logic.mkAnd({P, P2});
-    PTRef res = IteHandler(logic).rewrite(fla);
 
+    PTRef res = IteHandler(logic).rewrite(fla);
     PTRef res2 = IteHandler(logic).rewrite(PConj);
+    PTRef res3 = IteHandler(logic, 0).rewrite(fla);
+    PTRef res4 = IteHandler(logic, 0).rewrite(PConj);
 
     class AuxIteSymbolMatcher {
         Logic const & logic;
@@ -282,12 +284,14 @@ TEST_F(LogicIteTest, test_IteHandler_Inverse) {
         bool operator () (PTRef tr) { return std::string(logic.getSymName(tr)).compare(0, IteHandler::itePrefix.size(), IteHandler::itePrefix) == 0; }
     };
 
-    for (PTRef root : {res, res2}) {
+    for (PTRef root : {res, res2, res3, res4}) {
         auto auxIteSymbolMatcherPredicate = AuxIteSymbolMatcher(logic);
         auto auxIteSymbolMatcherConfig = TermCollectorConfig(auxIteSymbolMatcherPredicate);
         PTRef rootWithItes = InverseIteRewriter(logic).rewrite(root);
         TermVisitor(logic, auxIteSymbolMatcherConfig).visit(rootWithItes);
         auto auxIteTerms = auxIteSymbolMatcherConfig.extractCollectedTerms();
         ASSERT_EQ(auxIteTerms.size(), 0);
+        std::cout << logic.pp(root) << std::endl;
+        std::cout << logic.pp(rootWithItes) << std::endl;
     }
 }
