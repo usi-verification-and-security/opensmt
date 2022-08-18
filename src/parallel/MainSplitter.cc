@@ -102,7 +102,8 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
     }
 
     std::vector<std::string> partitions;
-    for (PTRef tr : partitionsTr) {
+    for (PTRef trWithAuxVars : partitionsTr) {
+        PTRef tr = logic.removeAuxVars(trWithAuxVars);
         partitions.push_back(logic.dumpWithLets(tr));
     }
 

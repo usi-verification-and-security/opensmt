@@ -48,11 +48,19 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                 } else {
-                    nodeCounter.visit(theory_handler.varToTerm(next));
+                    PTRef auxTerm = theory_handler.varToTerm(next);
+                    nodeCounter.visit(auxTerm);
                     if (nodeCounter.limitReached()) {
-                        // Do not branch on lengthy variables to avoid oversized terms
                         discarded.push(next);
                         next = var_Undef;
+                    } else {
+                        PTRef auxExpandedTerm = theory_handler.getLogic().removeAuxVars(auxTerm);
+                        nodeCounter.visit(auxExpandedTerm);
+                        if (nodeCounter.limitReached()) {
+                            // Do not branch on lengthy variables to avoid oversized terms
+                            discarded.push(next);
+                            next = var_Undef;
+                        }
                     }
                 }
             }
@@ -199,7 +207,12 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
         if (isAssumptionVar(v)) {
             continue;
         }
-        auto pt = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        auto ptWithAuxVars = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        nodeCounter.visit(ptWithAuxVars);
+        if (nodeCounter.limitReached()) {
+            continue;
+        }
+        PTRef pt = theory_handler.getLogic().removeAuxVars(ptWithAuxVars);
         nodeCounter.visit(pt);
         if (nodeCounter.limitReached())
             continue;
@@ -229,7 +242,13 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
         bool hasBulkyLit = false;
         for (Lit l : c) {
             Var v = var(l);
-            PTRef pt = theory_handler.varToTerm(v);
+            PTRef ptWithAuxVars = theory_handler.varToTerm(v);
+            nodeCounter.visit(ptWithAuxVars);
+            if (nodeCounter.limitReached()) {
+                hasBulkyLit = true;
+                break;
+            }
+            PTRef pt = theory_handler.getLogic().removeAuxVars(ptWithAuxVars);
             nodeCounter.visit(pt);
 
             if (nodeCounter.limitReached()) {
