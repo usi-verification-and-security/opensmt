@@ -49,12 +49,19 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                 } else {
-                    PTRef iteExpandedTerm = InverseIteRewriter(theory_handler.getLogic()).rewrite(theory_handler.varToTerm(next));
-                    nodeCounter.visit(iteExpandedTerm);
+                    PTRef auxTerm = theory_handler.varToTerm(next);
+                    nodeCounter.visit(auxTerm);
                     if (nodeCounter.limitReached()) {
-                        // Do not branch on lengthy variables to avoid oversized terms
                         discarded.push(next);
                         next = var_Undef;
+                    } else {
+                        PTRef iteExpandedTerm = InverseIteRewriter(theory_handler.getLogic()).rewrite(auxTerm);
+                        nodeCounter.visit(iteExpandedTerm);
+                        if (nodeCounter.limitReached()) {
+                            // Do not branch on lengthy variables to avoid oversized terms
+                            discarded.push(next);
+                            next = var_Undef;
+                        }
                     }
                 }
             }
@@ -202,6 +209,10 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
             continue;
         }
         auto ptWithAuxVars = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        nodeCounter.visit(ptWithAuxVars);
+        if (nodeCounter.limitReached()) {
+            continue;
+        }
         PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
         nodeCounter.visit(pt);
         if (nodeCounter.limitReached())
@@ -233,6 +244,11 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
         for (Lit l : c) {
             Var v = var(l);
             PTRef ptWithAuxVars = theory_handler.varToTerm(v);
+            nodeCounter.visit(ptWithAuxVars);
+            if (nodeCounter.limitReached()) {
+                hasBulkyLit = true;
+                break;
+            }
             PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
             nodeCounter.visit(pt);
 
