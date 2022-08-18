@@ -106,7 +106,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
         partitions.push_back(logic.dumpWithLets(tr));
     }
 
-//    assert(
+    assert(
         [this](vec<PTRef> const & partitions) {
             bool res = true;
             VerificationUtils verifier(logic);
@@ -151,8 +151,8 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
                 }
             }
             return res;
-        }(partitionsTr);
-//    );
+        }(partitionsTr)
+    );
 
     return partitions;
 }
