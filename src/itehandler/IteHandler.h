@@ -27,6 +27,10 @@ public:
     IteHandler(Logic & logic, unsigned long partitionNumber) : logic(logic), suffix('_' + std::to_string(partitionNumber)) {}
 
     PTRef rewrite(PTRef root);
+
+    static PTRef getIteTermFor(Logic const & logic, PTRef auxVar); // The inverse of getAuxVarFor
+
+    static std::string_view constexpr itePrefix = ".ite";
 };
 
 #endif //OPENSMT_ITEHANDLER_H
