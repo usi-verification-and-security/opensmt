@@ -7,7 +7,6 @@
 #include "ScatterSplitter.h"
 #include "Random.h"
 #include "TreeOps.h"
-#include "InverseIteRewriter.h"
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
 : SimpSMTSolver         (c, t)
@@ -55,8 +54,8 @@ Var ScatterSplitter::doActivityDecision() {
                         discarded.push(next);
                         next = var_Undef;
                     } else {
-                        PTRef iteExpandedTerm = InverseIteRewriter(theory_handler.getLogic()).rewrite(auxTerm);
-                        nodeCounter.visit(iteExpandedTerm);
+                        PTRef auxExpandedTerm = theory_handler.getLogic().removeAuxVars(auxTerm);
+                        nodeCounter.visit(auxExpandedTerm);
                         if (nodeCounter.limitReached()) {
                             // Do not branch on lengthy variables to avoid oversized terms
                             discarded.push(next);
@@ -213,7 +212,7 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
         if (nodeCounter.limitReached()) {
             continue;
         }
-        PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
+        PTRef pt = theory_handler.getLogic().removeAuxVars(ptWithAuxVars);
         nodeCounter.visit(pt);
         if (nodeCounter.limitReached())
             continue;
@@ -249,7 +248,7 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
                 hasBulkyLit = true;
                 break;
             }
-            PTRef pt = InverseIteRewriter(theory_handler.getLogic()).rewrite(ptWithAuxVars);
+            PTRef pt = theory_handler.getLogic().removeAuxVars(ptWithAuxVars);
             nodeCounter.visit(pt);
 
             if (nodeCounter.limitReached()) {

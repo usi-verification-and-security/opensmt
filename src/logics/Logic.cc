@@ -14,6 +14,7 @@
 #include "OsmtInternalException.h"
 #include "Substitutor.h"
 #include "smt2tokens.h"
+#include "IteHandler.h"
 
 #include <iostream>
 #include <map>
@@ -48,7 +49,6 @@ const char* Logic::tk_ite      = "ite";
 const char* Logic::tk_indexed  = "_";
 
 const char* Logic::s_sort_bool = "Bool";
-const char* Logic::s_ite_prefix = ".oite";
 const char* Logic::s_framev_prefix = ".frame";
 const char* Logic::s_abstract_value_prefix = "@";
 
@@ -1263,6 +1263,24 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
         return mkAnd(std::move(implications));
     else
         return getTerm_true();
+}
+
+PTRef Logic::removeAuxVars(PTRef tr) {
+    class AuxSymbolMatcherConfig : DefaultRewriterConfig {
+        Logic const & logic;
+        bool match(PTRef tr) const {
+            if (not logic.isVar(tr)) return false; // Only variables can match
+            auto symName = std::string_view(logic.getSymName(tr));
+            return symName.compare(0, IteHandler::itePrefix.size(), IteHandler::itePrefix) == 0;
+        }
+    public:
+        AuxSymbolMatcherConfig(Logic const & logic) : logic(logic) {}
+        bool previsit(PTRef) override { return true; }
+        PTRef rewrite(PTRef tr) override { return (match(tr)) ? IteHandler::getIteTermFor(logic, tr) : tr; }
+    };
+    AuxSymbolMatcherConfig config(*this);
+    Rewriter rewriter(*this, config);
+    return rewriter.rewrite(tr);
 }
 
 void

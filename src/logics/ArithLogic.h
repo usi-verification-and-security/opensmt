@@ -102,10 +102,11 @@ protected:
     SymRef              sym_Int_ITE;
     SymRef              sym_Int_DISTINCT;
 
+    bool divsAndModsSeen = false;
 public:
     ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
-
+    bool             hasDivsAndMods() const { return divsAndModsSeen; }
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
@@ -369,6 +370,8 @@ public:
 
     opensmt::pair<lbool,SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
     void termSort(vec<PTRef> &v) const override;
+
+    PTRef removeAuxVars(PTRef) override;
 
     std::string printTerm_(PTRef tr, bool ext, bool s) const override;
 

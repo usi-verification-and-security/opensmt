@@ -6,7 +6,7 @@
 #include <ArithLogic.h>
 #include <IteToSwitch.h>
 #include <IteHandler.h>
-#include <InverseIteRewriter.h>
+#include <TreeOps.h>
 
 class LogicIteTest: public ::testing::Test {
 public:
@@ -287,7 +287,7 @@ TEST_F(LogicIteTest, test_IteHandler_Inverse) {
     for (PTRef root : {res, res2, res3, res4}) {
         auto auxIteSymbolMatcherPredicate = AuxIteSymbolMatcher(logic);
         auto auxIteSymbolMatcherConfig = TermCollectorConfig(auxIteSymbolMatcherPredicate);
-        PTRef rootWithItes = InverseIteRewriter(logic).rewrite(root);
+        PTRef rootWithItes = logic.removeAuxVars(root);
         TermVisitor(logic, auxIteSymbolMatcherConfig).visit(rootWithItes);
         auto auxIteTerms = auxIteSymbolMatcherConfig.extractCollectedTerms();
         ASSERT_EQ(auxIteTerms.size(), 0);

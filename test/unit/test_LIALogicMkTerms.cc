@@ -4,6 +4,9 @@
 
 #include <gtest/gtest.h>
 #include <ArithLogic.h>
+#include "DivModRewriter.h"
+#include "IteHandler.h"
+#include "TreeOps.h"
 
 class LIALogicMkTermsTest: public ::testing::Test {
 protected:
@@ -150,4 +153,53 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_AlreadyNormalized) {
     PTRef eq1 = logic.mkEq(logic.mkPlus(logic.mkTimes(x, two), logic.mkTimes(y, three)), logic.getTerm_IntOne());
     ASSERT_NE(eq1, logic.getTerm_false());
     EXPECT_EQ(logic.getSymRef(eq1), logic.get_sym_Int_EQ());
+}
+
+TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
+
+    static constexpr std::initializer_list<std::string_view> prefixes = {IteHandler::itePrefix, DivModConfig::divPrefix, DivModConfig::modPrefix};
+
+
+    auto hasAuxSymbols = [this](PTRef tr) {
+        class AuxSymbolMatcher {
+            ArithLogic const & logic;
+
+        public:
+            AuxSymbolMatcher(ArithLogic const & logic) : logic(logic) {}
+            bool operator()(PTRef tr) {
+                std::string_view const name = logic.getSymName(tr);
+                return std::any_of(prefixes.begin(), prefixes.end(), [&name](std::string_view const prefix) {
+                    return name.compare(0, prefix.size(), prefix) == 0;
+                });
+            };
+        };
+        auto predicate = AuxSymbolMatcher(logic);
+        auto config = TermCollectorConfig(predicate);
+        TermVisitor(logic, config).visit(tr);
+        return config.extractCollectedTerms().size() > 0;
+    };
+
+    PTRef a = logic.mkIntVar("a");
+    PTRef c = logic.mkIntConst(5);
+    PTRef modTerm = logic.mkMod(a, c);
+    PTRef term = logic.mkEq(logic.getTerm_IntZero(), modTerm);
+
+    PTRef res = logic.mkIntVar("res");
+    PTRef cond = logic.mkBoolVar("cond");
+    PTRef divTerm = logic.mkIntDiv(a, c);
+    PTRef ite = logic.mkIte(cond, modTerm, divTerm);
+    PTRef eq = logic.mkEq(res, ite);
+
+    PTRef nested = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(ite, c));
+
+    for (PTRef tr : {term, eq, nested}) {
+
+        PTRef termWithAux = DivModRewriter(logic).rewrite(IteHandler(logic).rewrite(tr));
+        ASSERT_TRUE(hasAuxSymbols(termWithAux));
+
+        PTRef termWithoutAux = logic.removeAuxVars(termWithAux);
+        std::cout << logic.pp(termWithoutAux) << std::endl;
+        ASSERT_FALSE(hasAuxSymbols(termWithoutAux));
+    }
+
 }
