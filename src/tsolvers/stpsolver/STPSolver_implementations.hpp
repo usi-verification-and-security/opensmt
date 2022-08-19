@@ -62,7 +62,8 @@ void STPSolver<T>::declareAtom(PTRef tr) {
     // Ignore everything else other than atoms of the form "x - y <= c"; i.e., variable minus variable is less or equal
     // to some constant
 
-    if (isKnown(tr)) { return; }
+    if (isInformed(tr)) { return; }
+    setInformed(tr);
     setKnown(tr);
 
     auto parsed = parseRef(tr);
