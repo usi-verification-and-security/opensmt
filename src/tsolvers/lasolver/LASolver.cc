@@ -352,8 +352,6 @@ void LASolver::declareAtom(PTRef leq_tr)
     }
     // DEBUG check
     isProperLeq(leq_tr);
-
-    setInformed(leq_tr);
 }
 
 LVRef LASolver::splitOnRandom(vec<LVRef> const & varsToFix) {
