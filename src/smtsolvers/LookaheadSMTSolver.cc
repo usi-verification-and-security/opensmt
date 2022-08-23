@@ -677,7 +677,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     #ifdef LADEBUG
                         printf(" -> Propagation resulted in backtrack\n");
     #endif
-                        derivations++;
+                      derivations++;
                       if(derivations>5 || value(best) != l_Undef){
                           derivations=0;
                           score->updateRound();
