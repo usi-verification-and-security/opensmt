@@ -17,14 +17,20 @@
 
 class SplitData {
     std::vector<vec<Lit>>  constraints;    // The constraints are the assumptions from previous splits
-    std::vector<vec<Lit>>  learnts;        // The learnt clauses
     std::vector<vec<Lit>>  split_assumptions; // The assumptions in this split
 
-    static char* litToString(Lit);
-    template<class C> char* clauseToString(C const &);
-    char* clauseToString(const vec<Lit>&);
-    static int getLitSize(Lit l);
-    static void addClausesToPtAsgns(std::vector<vec<PtAsgn>> & out, std::vector<vec<Lit>> const & in, THandler const & thandler);
+    static void addClausesToPtAsgns(std::vector<vec<PtAsgn>> & out, std::vector<vec<Lit>> const & in, THandler const & thandler) {
+        for (vec<Lit> const & c : in) {
+            vec<PtAsgn> outClause;
+            outClause.capacity(c.size());
+            for (Lit l : c) {
+                PTRef tr = thandler.varToTerm(var(l));
+                PtAsgn pta(tr, sign(l) ? l_False : l_True);
+                outClause.push(pta);
+            }
+            out.push_back(std::move(outClause));
+        }
+    }
 
 public:
     template<class C> void addConstraint(const C& c) {
@@ -43,7 +49,6 @@ public:
         split_assumptions.emplace_back(std::move(vl));
     }
 
-    char* splitToString();
     std::vector<vec<PtAsgn>> splitToPtAsgns(const THandler& thandler) const {
         std::vector<vec<PtAsgn>> out;
         addClausesToPtAsgns(out, constraints, thandler);
