@@ -152,7 +152,8 @@ lbool Egraph::getPolaritySuggestion(PTRef p)
     if (term.size() > 2) { return l_Undef; } // For now focus on 2 arguments
     PTRef lhs = term[0];
     PTRef rhs = term[1];
-    assert(enode_store.has(lhs) && enode_store.has(rhs));
+    // isInformed may be `true` for an equality term but `false` for its argument terms when the equality is over
+    // Booleans (and therefore handled by the SAT solver), and appears inside an uninterpreted function.
     if (!enode_store.has(lhs) || !enode_store.has(rhs)) { return l_Undef; }
     ERef e_lhs = termToERef(lhs);
     ERef e_rhs = termToERef(rhs);
