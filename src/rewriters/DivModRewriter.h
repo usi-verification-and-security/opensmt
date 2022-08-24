@@ -31,7 +31,6 @@ class DivModConfig : public DefaultRewriterConfig {
     std::unordered_map<std::pair<PTRef, PTRef>, DivModPair, PTRefPairHash> divModCache;
     vec<PTRef> definitions;
 
-
     DivModPair freshDivModPair(PTRef dividend, PTRef divisor) {
         std::string id = "_" + std::to_string(dividend.x) + "_" + std::to_string(divisor.x);
         std::string divName(divPrefix);
@@ -41,7 +40,8 @@ class DivModConfig : public DefaultRewriterConfig {
         return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
     }
 
-    static opensmt::pair<PTRef,PTRef> getDividendAndDivisor(std::string_view const name, std::string_view const prefix) {
+    static opensmt::pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name,
+                                                             std::string_view const prefix) {
         std::string dividendNumberStr;
         std::string divisorNumberStr;
         bool parsingDividend = true;
@@ -51,22 +51,20 @@ class DivModConfig : public DefaultRewriterConfig {
             } else if (not parsingDividend and '0' <= *it and *it <= '9') {
                 divisorNumberStr += *it;
             } else if (*it == '_') {
-                assert(
-                        [](bool parsingDividend, std::string_view const name) {
-                            if (not parsingDividend) {
-                                throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
-                                return false;
-                            } else {
-                                return true;
-                            }
-                        }(parsingDividend, name)
-                );
+                assert([](bool parsingDividend, std::string_view const name) {
+                    if (not parsingDividend) {
+                        throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }(parsingDividend, name));
                 parsingDividend = false;
             }
         }
-        return {{static_cast<uint32_t>(std::stoi(dividendNumberStr))}, {static_cast<uint32_t>(std::stoi(divisorNumberStr))}};
+        return {{static_cast<uint32_t>(std::stoi(dividendNumberStr))},
+                {static_cast<uint32_t>(std::stoi(divisorNumberStr))}};
     }
-
 
 public:
     static std::string_view constexpr divPrefix = ".div";
@@ -126,7 +124,6 @@ public:
         auto [dividendTr, divisorTr] = getDividendAndDivisor(name, modPrefix);
         return logic.mkMod(dividendTr, divisorTr);
     }
-
 };
 
 class DivModRewriter : Rewriter<DivModConfig> {
