@@ -46,20 +46,6 @@ void TSolver::pushBacktrackPoint()
     assert(deductions_last.size() == deductions_lim.size());
 }
 
-bool TSolver::isKnown(PTRef tr)
-{
-    uint32_t tid = Idx(getLogic().getPterm(tr).getId());
-    return tid < known_preds.size_() && known_preds[tid];
-}
-
-void TSolver::setKnown(PTRef tr) {
-    auto tid = Idx(getLogic().getPterm(tr).getId());
-    while (known_preds.size_() <= tid) {
-        known_preds.push(false);
-    }
-    known_preds[tid] = true;
-}
-
 // MB: setPolarity and clearPolarity moved to .C file to remove the macros from the header
 
 void  TSolver::setPolarity(PTRef tr, lbool p)

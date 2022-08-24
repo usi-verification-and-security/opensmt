@@ -185,13 +185,10 @@ public:
     virtual void  informNewSplit(PTRef) { };
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
-    bool         isKnown(PTRef tr);
-    void         setKnown(PTRef tr);
+    bool isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
 
     virtual void printStatistics(std::ostream & os);
-
 protected:
-    bool                        isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
     void                        setInformed(PTRef tr) { informed_PTRefs.insert(tr, true); }
     const vec<PTRef> &          getInformed() { return informed_PTRefs.getKeys(); }
     bool                        has_explanation;  // Does the solver have an explanation (conflict detected)
@@ -199,7 +196,6 @@ protected:
     SMTConfig &                 config;           // Reference to configuration
     vec< size_t >               backtrack_points; // Keeps track of backtrack points
 
-    vec<bool>     known_preds; // List of known PTRefs with boolean return value (that can be asserted)
 private:
     MapWithKeys<PTRef,bool,PTRefHash>   informed_PTRefs;
 };

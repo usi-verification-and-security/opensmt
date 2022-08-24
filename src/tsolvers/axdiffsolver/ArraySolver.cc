@@ -155,7 +155,7 @@ void ArraySolver::declareAtom(PTRef tr) {
     TermVisitor<TermCollectorConfig>(logic, config).visit(tr);
 
     if (logic.isEquality(tr)) {
-        setKnown(tr);
+        setInformed(tr);
     }
 }
 

@@ -33,7 +33,7 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
         int idx = solverSchedule[i];
         assert(tsolvers[idx] != nullptr);
         tsolvers[idx]->pushBacktrackPoint();
-        if (!tsolvers[idx]->isKnown(asgn.tr)) {
+        if (!tsolvers[idx]->isInformed(asgn.tr)) {
             continue;
         }
         bool res_new = tsolvers[idx]->assertLit(asgn);

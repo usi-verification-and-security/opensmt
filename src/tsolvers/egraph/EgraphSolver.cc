@@ -275,7 +275,7 @@ void Egraph::declareTerm(PTRef tr) {
     }
 
     if (logic.hasSortBool(tr)) {
-        setKnown(tr);
+        setInformed(tr);
     }
 }
 
