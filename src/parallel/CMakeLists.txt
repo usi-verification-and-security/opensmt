@@ -35,7 +35,6 @@ list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/SplitterInterpret.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.cc"
-		"${CMAKE_CURRENT_SOURCE_DIR}/SplitData.cc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSplitter.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/SplitContext.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/SplitData.h"
