@@ -1162,6 +1162,10 @@ bool Egraph::assertLit(PtAsgn pta)
     return res;
 }
 
+
+bool Egraph::wouldDeduce(PtAsgn pta) {
+    return isKnown(pta.tr);
+};
 //=================================================================================================
 // Garbage Collection methods:
 

@@ -271,7 +271,6 @@ CoreSMTSolver::handleUnsat()
     int        backtrack_level;
 
     theory_handler.getConflict(conflicting, vardata, max_decision_level);
-    assert(std::none_of(conflicting.begin(), conflicting.end(), [this](Lit l) { return value(l) == l_Undef; }));
 
     assert( max_decision_level <= decisionLevel( ) );
     cancelUntil( max_decision_level );

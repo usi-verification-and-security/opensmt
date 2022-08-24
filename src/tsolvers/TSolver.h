@@ -130,6 +130,7 @@ protected:
     vec<size_t>                 deductions_lim;  // Keeps track of deductions done up to a certain point
     vec<size_t>                 deductions_last; // Keeps track of deductions done up to a certain point
     vec<PTRef>                  suggestions;     // List of suggestions for decisions
+    vec<bool>                   props;
 
     TSolverStats                generalTSolverStats;
 
@@ -165,6 +166,8 @@ public:
     virtual void clearSolver();
 
     virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
+    virtual bool                wouldDeduce         (PtAsgn) = 0              ;
+
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point
     virtual void                popBacktrackPoint   ( )                       ;  // Backtrack to last saved point
     virtual void                popBacktrackPoints  ( unsigned int )          ;  // Backtrack given number of points

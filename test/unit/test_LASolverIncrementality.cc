@@ -43,3 +43,52 @@ TEST_F(LASolverIncrementalityTest, test_Incrementality) {
     res = solver.check(true);
     ASSERT_EQ(res, TRes::UNSAT);
 }
+
+
+TEST_F(LASolverIncrementalityTest, test_Propagation) {
+
+    // x >= 1
+    PTRef c1 = logic.getTerm_RealOne();
+    PTRef x = logic.mkRealVar("x");
+    PTRef constr1 = logic.mkGeq(x, c1);
+    solver.declareAtom(constr1);
+    solver.assertLit({constr1, l_True});
+    auto rest = solver.check(true);
+    ASSERT_EQ(rest, TRes::SAT);
+
+
+    // x <= 10
+    PTRef c2 = logic.mkRealConst(10);
+    PTRef constr2 = logic.mkLeq(x, c2);
+    solver.declareAtom(constr2);
+
+    // x <= 7
+    PTRef c3 = logic.mkRealConst(7);
+    PTRef constr3 = logic.mkLeq(x, c3);
+    solver.declareAtom(constr3);
+
+    // x >= 2
+    PTRef c4 = logic.mkRealConst(2);
+    PTRef constr4 = logic.mkGeq(x, c4);
+    solver.declareAtom(constr4);
+
+    PtAsgn prLit1 = PtAsgn(constr3, l_True);
+    bool res = solver.wouldDeduce(prLit1);
+    ASSERT_EQ(res, true);
+
+    PtAsgn prLit2 = PtAsgn(constr3, l_False);
+    res = solver.wouldDeduce(prLit2);
+    ASSERT_EQ(res, true);
+
+    PtAsgn prLit3 = PtAsgn(constr2, l_True);
+    res = solver.wouldDeduce(prLit3);
+    ASSERT_EQ(res, false);
+
+    PtAsgn prLit4 = PtAsgn(constr4, l_True);
+    res = solver.wouldDeduce(prLit4);
+    ASSERT_EQ(res, false);
+
+    PtAsgn prLit5 = PtAsgn(constr4, l_False);
+    res = solver.wouldDeduce(prLit5);
+    ASSERT_EQ(res, true);
+}

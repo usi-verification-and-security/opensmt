@@ -65,4 +65,6 @@ test/pursuit-safety-15_simplified_0.smt2
 test/push_test.smt2
 verifyinterp_A.smt2
 verifyinterp_B.smt2
-
+lookahead.smt2
+proof.smt2
+random_lookahead.smt2

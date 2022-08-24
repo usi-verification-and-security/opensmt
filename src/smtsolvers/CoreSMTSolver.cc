@@ -81,6 +81,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , random_var_freq  (c.sat_random_var_freq())
     , luby_restart     (c.sat_luby_restart())
     , ccmin_mode       (c.sat_ccmin_mode())
+    , phase_saving     (c.sat_pcontains())
     , rnd_pol          (c.sat_rnd_pol())
     , rnd_init_act     (c.sat_rnd_init_act())
     , garbage_frac     (c.sat_garbage_frac())
@@ -88,15 +89,15 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , restart_inc      (c.sat_restart_inc())
     , learntsize_factor((double)1/(double)3)
     , learntsize_inc   ( 1.1 )
-      // More parameters:
-      //
+        // More parameters:
+        //
     , expensive_ccmin  ( true )
     , learntsize_adjust_start_confl (0)
-      // Statistics: (formerly in 'SolverStats')
-      //
+        // Statistics: (formerly in 'SolverStats')
+        //
     , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
     , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-      // ADDED FOR MINIMIZATION
+        // ADDED FOR MINIMIZATION
     , learnts_size(0) , all_learnts(0)
     , learnt_theory_conflicts(0)
     , top_level_lits        (0)
@@ -147,6 +148,30 @@ CoreSMTSolver::initialize( )
     tsolvers_time = 0;
     ie_generated = 0;
 #endif
+    //
+    // Set polarity_mode
+    //
+    switch ( config.sat_polarity_mode )
+    {
+    case 0:
+        polarity_mode = polarity_true;
+        break;
+    case 1:
+        polarity_mode = polarity_false;
+        break;
+    case 2:
+        polarity_mode = polarity_rnd;
+        break;
+    case 3:
+        polarity_mode = polarity_user;
+        break; // Polarity is set in
+    case 4:
+        polarity_mode = polarity_user;
+        break; // THandler.C for
+    case 5:
+        polarity_mode = polarity_user;
+        break; // Boolean atoms
+    }
 
     if (config.produce_inter() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
@@ -277,7 +302,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                ps.size() == 0 ? CRef_Undef : ca.alloc(ps);
+                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -494,6 +519,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     }
 
     const bool res = theory_handler.assertLits(trail);
+//    theory_handler.checkLitProps(trail);
 #ifdef PEDANTIC_DEBUG
     theory_handler.checkTrailConsistency(trail);
 #endif
@@ -560,7 +586,7 @@ Lit CoreSMTSolver::pickBranchLit()
 {
     Var next = var_Undef;
 
-   // Pick a variable either randomly or based on activity
+    // Pick a variable either randomly or based on activity
     next = doRandomDecision();
     // Activity based decision
     if (next == var_Undef || value(next) != l_Undef || !decision[next])
@@ -880,8 +906,9 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             // Just give up when fake reason is found -- but clean analyze_toclear
             if (cr == CRef_Fake)
             {
-                for (int j = top; j < analyze_toclear.size(); j++)
-                seen[var(analyze_toclear[j])] = 0;
+                for (int j = top; j < analyze_toclear.size(); j++) {
+                    seen[var(analyze_toclear[j])] = 0;
+                }
                 analyze_toclear.shrink(analyze_toclear.size() - top);
 
                 return false;

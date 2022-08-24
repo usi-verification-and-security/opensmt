@@ -75,6 +75,7 @@ public:
     virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     virtual TRes    check(bool);
     virtual vec<PTRef> getSplitClauses();
+    bool    wouldDeduce       (PtAsgn);
 private:
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;

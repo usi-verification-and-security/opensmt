@@ -1,6 +1,9 @@
-//
-// Created by prova on 07.02.19.
-//
+/*
+ * Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Konstantin Britikov <konstantin.britikov@usi.ch>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_LOOKAHEADSMTSOLVER_H
 #define OPENSMT_LOOKAHEADSMTSOLVER_H
@@ -13,8 +16,18 @@
 
 class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
-    ConflQuota confl_quota;
-    int idx;
+    ConflQuota          confl_quota;
+    int                 idx = 0;
+    vec<bool>           next_arr;
+    vec<bool>           init_arr;
+    vec<bool>           bound_arr;
+    int                 close_to_prop = 0;
+    int                 init_close_to_prop = 0;
+    int                 bound_prop = 0;
+    int                 check_counter = 0;
+    int                 fun_props;
+    bool                tested = false;
+    bool                reset_props = false;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -78,6 +91,7 @@ protected:
 
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
+    virtual void cancelUntil  (int level); // Backtrack until a certain level.
     virtual LALoopRes solveLookahead();
     std::pair<laresult,Lit> lookaheadLoop();
     lbool solve_() override; // Does not change the formula
@@ -94,8 +108,16 @@ protected:
     std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
-    LookaheadSMTSolver(SMTConfig&, THandler&);
-    Var newVar(bool dvar) override;
+    LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
+        : SimpSMTSolver(c, thandler)
+        , score(c.lookahead_score_deep() ? static_cast<std::unique_ptr<LookaheadScore>>(std::make_unique<LookaheadScoreDeep>(assigns, c)) : std::make_unique<LookaheadScoreClassic>(assigns, c))
+    {};
+    Var newVar(bool sign, bool dvar) override;
+
+    CRef propagate() override;
+    void detachClause(CRef cr, bool strict) override;
+
+    void attachClause(CRef cr) override;
 };
 
 // Maintain the tree explicitly.  Each internal node should have the info whether its
