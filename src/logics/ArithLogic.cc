@@ -634,7 +634,6 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkIntConst(intMod);
     }
-    divsAndModsSeen = true;
     return mkFun(sym_Int_MOD, {dividend, divisor});
 }
 
@@ -655,7 +654,6 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
         auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
         return mkIntConst(intDiv);
     }
-    divsAndModsSeen = true;
     return mkFun(sym_Int_DIV, std::move(args));
 }
 
@@ -980,10 +978,9 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
             return tr;
         }
     };
-    if (divsAndModsSeen) {
-        AuxSymbolMatcherConfig config(*this);
-        tr = Rewriter(*this, config).rewrite(tr);
-    }
+    // Note: this has negligible impact on performance, no need to check if there are divs or mods
+    AuxSymbolMatcherConfig config(*this);
+    tr = Rewriter(*this, config).rewrite(tr);
     return Logic::removeAuxVars(tr);
 }
 

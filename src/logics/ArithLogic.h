@@ -102,11 +102,9 @@ protected:
     SymRef              sym_Int_ITE;
     SymRef              sym_Int_DISTINCT;
 
-    bool divsAndModsSeen = false;
 public:
     ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
-    bool             hasDivsAndMods() const { return divsAndModsSeen; }
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }
