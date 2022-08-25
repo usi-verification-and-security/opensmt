@@ -104,15 +104,15 @@ char* SplitData::splitToString()
     return buf;
 }
 
-void SplitData::addClausesToPtAsgns(std::vector<vec<PtAsgn>> & out, std::vector<vec<Lit>> const & in, THandler const & theory_handler)
-{
-    for (const vec<Lit>& c : in) {
-        out.emplace_back();
-        vec<PtAsgn>& out_clause = out[out.size()-1];
+void SplitData::addClausesToPtAsgns(std::vector<vec<PtAsgn>> & out, std::vector<vec<Lit>> const & in, THandler const & theory_handler) {
+    for (vec<Lit> const & c : in) {
+        vec<PtAsgn> outClause;
+        outClause.capacity(c.size());
         for (Lit l : c) {
             PTRef tr = theory_handler.varToTerm(var(l));
             PtAsgn pta(tr, sign(l) ? l_False : l_True);
-            out_clause.push(pta);
+            outClause.push(pta);
         }
+        out.push_back(std::move(outClause));
     }
 }
