@@ -965,11 +965,10 @@ ArithLogic::getDefaultValuePTRef(const SRef sref) const
 
 PTRef ArithLogic::removeAuxVars(PTRef tr) {
     // Note: Since ites are removed first and div/mod's then, it is important to first reintroduce div/mod's and then ites
-    class AuxSymbolMatcherConfig : DefaultRewriterConfig {
+    class AuxSymbolMatcherConfig : public DefaultRewriterConfig {
         ArithLogic & logic;
     public:
         AuxSymbolMatcherConfig(ArithLogic & logic) : logic(logic) {}
-        bool previsit(PTRef) override { return true; }
         PTRef rewrite(PTRef tr) override {
             if (not logic.isVar(tr)) return tr; // Only variables can match
             auto symName = std::string_view(logic.getSymName(tr));

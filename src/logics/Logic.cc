@@ -1266,7 +1266,7 @@ PTRef Logic::learnEqTransitivity(PTRef formula)
 }
 
 PTRef Logic::removeAuxVars(PTRef tr) {
-    class AuxSymbolMatcherConfig : DefaultRewriterConfig {
+    class AuxSymbolMatcherConfig : public DefaultRewriterConfig {
         Logic const & logic;
         bool match(PTRef tr) const {
             if (not logic.isVar(tr)) return false; // Only variables can match
@@ -1275,7 +1275,6 @@ PTRef Logic::removeAuxVars(PTRef tr) {
         }
     public:
         AuxSymbolMatcherConfig(Logic const & logic) : logic(logic) {}
-        bool previsit(PTRef) override { return true; }
         PTRef rewrite(PTRef tr) override { return (match(tr)) ? IteHandler::getIteTermFor(logic, tr) : tr; }
     };
     AuxSymbolMatcherConfig config(*this);

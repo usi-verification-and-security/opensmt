@@ -33,7 +33,7 @@ PTRef IteHandler::getIteTermFor(Logic const & logic, PTRef auxVar) {
             break;
         }
     }
-    auto number = static_cast<uint32_t>(std::stoi(numberStr));
+    auto number = static_cast<uint32_t>(std::stoul(numberStr));
     PTRef ite = { number };
     assert(logic.isIte(ite));
     return ite;

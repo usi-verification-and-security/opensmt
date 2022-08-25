@@ -51,19 +51,13 @@ class DivModConfig : public DefaultRewriterConfig {
             } else if (not parsingDividend and '0' <= *it and *it <= '9') {
                 divisorNumberStr += *it;
             } else if (*it == '_') {
-                assert([](bool parsingDividend, std::string_view const name) {
-                    if (not parsingDividend) {
-                        throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }(parsingDividend, name));
+                if (not parsingDividend)
+                    throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
                 parsingDividend = false;
             }
         }
-        return {{static_cast<uint32_t>(std::stoi(dividendNumberStr))},
-                {static_cast<uint32_t>(std::stoi(divisorNumberStr))}};
+        return {{static_cast<uint32_t>(std::stoul(dividendNumberStr))},
+                {static_cast<uint32_t>(std::stoul(divisorNumberStr))}};
     }
 
 public:

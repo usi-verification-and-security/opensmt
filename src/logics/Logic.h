@@ -383,7 +383,6 @@ public:
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 
-public:
     virtual PTRef removeAuxVars(PTRef tr);
 
     bool hasQuotableChars(std::string const & name) const;
