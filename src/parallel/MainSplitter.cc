@@ -158,8 +158,9 @@ vec<PTRef> MainSplitter::addToConjunction(std::vector<vec<PtAsgn>> const & in) c
     vec<PTRef> out;
     for (const auto & constr : in) {
         vec<PTRef> disj_vec;
-        for (const auto & pta : constr)
+        for (const auto & pta : constr) {
             disj_vec.push(pta.sgn == l_True ? pta.tr : logic.mkNot(pta.tr));
+        }
         out.push(logic.mkOr(std::move(disj_vec)));
     }
     return out;
