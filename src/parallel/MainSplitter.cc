@@ -6,6 +6,7 @@
  */
 
 #include "MainSplitter.h"
+#include "VerificationUtils.h"
 
 void MainSplitter::notifyResult(sstat const & result)
 {
@@ -92,13 +93,64 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
 
 std::vector<std::string> MainSplitter::getPartitionClauses() const {
     assert(not isSplitTypeNone());
-    std::vector<std::string> partitions;
     auto const & splits = getSplitter().getSplits();
+    vec<PTRef> partitionsTr;
+    partitionsTr.capacity(splits.size());
     for (auto const &split : splits) {
         auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
-        auto problem = logic.mkAnd(conj_vec);
-        partitions.push_back(logic.dumpWithLets(problem));
+        partitionsTr.push(logic.mkAnd(conj_vec));
     }
+
+    std::vector<std::string> partitions;
+    for (PTRef tr : partitionsTr) {
+        partitions.push_back(logic.dumpWithLets(tr));
+    }
+
+    assert(
+        [this](vec<PTRef> const & partitions) {
+            bool ok = true;
+            std::string error;
+            VerificationUtils verifier(logic);
+            for (int i = 0; i < partitions.size(); i++) {
+                for (int j = i + 1; j < partitions.size(); j++) {
+                    if (not verifier.impliesInternal(logic.mkAnd(partitions[i], partitions[j]), logic.getTerm_false())) {
+                        error += "[Partitions share models: (and " + logic.pp(partitions[i]) + " " + logic.pp(partitions[j]) + ") is satisfiable] ";
+                        ok = false;
+                    }
+                }
+            }
+            vec<PTRef> partitionCoverageQuery;
+            partitionCoverageQuery.capacity(partitions.size());
+            for (PTRef tr : partitions) {
+                partitionCoverageQuery.push(logic.mkNot(tr));
+            }
+            if (partitions.size() == config.sat_split_num()) {
+                // The partitions need to cover the full search space, i.e., the conjunction of the negated partitions must be unsatisfiable
+                if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
+                    error += "[Non-covering partitioning: " + logic.pp(logic.mkAnd(partitionCoverageQuery)) + " is satisfiable] ";
+                    ok = false;
+                }
+            } else {
+                // The partial partitioning must be satisfiable
+                if (verifier.impliesInternal(logic.mkOr(partitions), logic.getTerm_false())) {
+                    error += "[Unsatisfiable partial partitioning: " + logic.pp(logic.mkOr(partitions)) + "] ";
+                    ok = false;
+                } else {
+                    // Removing the models of the partial partitions from the root instance must yield unsat
+                    if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(root_instance.getRoot()))) {
+                        error += "[Non-covering partial partitioning: partial partitions do not contain all models of original instance] ";
+                        ok = false;
+                    }
+                }
+            }
+            if (not ok) {
+                std::cout << error << std::endl;
+                throwWithLocationInfo(error);
+            }
+            return ok;
+        }(partitionsTr)
+    );
+
     return partitions;
 }
 
