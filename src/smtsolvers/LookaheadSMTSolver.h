@@ -112,7 +112,7 @@ public:
         : SimpSMTSolver(c, thandler)
         , score(c.lookahead_score_deep() ? static_cast<std::unique_ptr<LookaheadScore>>(std::make_unique<LookaheadScoreDeep>(assigns, c)) : std::make_unique<LookaheadScoreClassic>(assigns, c))
     {};
-    Var newVar(bool sign, bool dvar) override;
+    Var newVar(bool dvar);
 
     CRef propagate() override;
     void detachClause(CRef cr, bool strict) override;

@@ -133,6 +133,8 @@ public:
 
     void getNewSplits(vec<PTRef> & splits) override;
 
+    bool wouldDeduce(PtAsgn ptr) override {return false;};
+
     /*
      * Internal methods for traversing weak equivalence graph
      */

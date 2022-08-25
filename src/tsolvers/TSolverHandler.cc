@@ -31,7 +31,7 @@ bool TSolverHandler::wouldDeduce(PtAsgn asgn){
     for (int i = 0; i < solverSchedule.size(); i++) {
         int idx = solverSchedule[i];
         assert(tsolvers[idx] != nullptr);
-        if(tsolvers[idx]->isKnown(asgn.tr)){
+        if(tsolvers[idx]->isInformed(asgn.tr)){
             bool res_new = tsolvers[idx]->wouldDeduce(asgn);
             res = res_new;
             return res;

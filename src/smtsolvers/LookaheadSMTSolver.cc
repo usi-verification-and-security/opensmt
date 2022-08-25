@@ -19,11 +19,11 @@
 #include "Proof.h"
 #include<iterator> // for back_inserter
 
-LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
-        : SimpSMTSolver(c, thandler)
-        , idx(0)
-        , score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
-{}
+//LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
+//        : SimpSMTSolver(c, thandler)
+//        , idx(0)
+//        , score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
+//{}
 
 
 
@@ -177,7 +177,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
             if (out_learnt.size() == 1) {
                 uncheckedEnqueue(out_learnt[0]);
             } else {
-                CRef crd = ca.alloc(out_learnt, true);
+                CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
                 if (logsProofForInterpolation()) {
                     proof->endChain(crd);
                 }
@@ -567,7 +567,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     }
     int derivations = 0;
     Var oldBest, newBest;
-    if(close_to_prop > 0){
+    if(close_to_prop + bound_prop > 0){
       for (Var v(idx % nVars()); (close_to_prop!=0 || bound_prop!=0) && !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
         if (next_arr[v] || bound_arr[v]) {
             if (!decision[v]) {
@@ -842,7 +842,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
       }
     }
     tested = false;
-    best = score->getBest();
+    Lit best = score->getBest();
 //    printf("Best: %d\n", var(best));
     if (static_cast<unsigned int>(trail.size()) == dec_vars and best == lit_Undef) {
 #ifdef LADEBUG
@@ -861,7 +861,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     if (!okToPartition(var(best))) {
         unadvised_splits++;
     }
-    return laresult::la_ok;
+    return {laresult::la_ok, best};
 }
 
 

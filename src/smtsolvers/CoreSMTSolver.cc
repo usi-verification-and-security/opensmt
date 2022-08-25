@@ -2,27 +2,27 @@
 Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
 
 OpenSMT2 -- Copyright (C) 2012 - 2016 Antti Hyvarinen
-                         2008 - 2012 Roberto Bruttomesso
+    2008 - 2012 Roberto Bruttomesso
 
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+                                                             "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+                                                                  permit persons to whom the Software is furnished to do so, subject to
+        the following conditions:
 
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+                                         WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                                             *********************************************************************/
 
 
 /****************************************************************************************[Solver.C]
@@ -61,7 +61,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Random.h"
 
-namespace opensmt {
+                                         namespace opensmt {
     extern bool stop;
 }
 
@@ -71,66 +71,65 @@ namespace opensmt {
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     : config           (c)
-    , theory_handler   (t)
-    , verbosity        (c.verbosity())
-    , init             (false)
-    , stop             (false)
-    // Parameters: (formerly in 'SearchParams')
-    , var_decay        (c.sat_var_decay())
-    , clause_decay     (c.sat_clause_decay())
-    , random_var_freq  (c.sat_random_var_freq())
-    , luby_restart     (c.sat_luby_restart())
-    , ccmin_mode       (c.sat_ccmin_mode())
-    , phase_saving     (c.sat_pcontains())
-    , rnd_pol          (c.sat_rnd_pol())
-    , rnd_init_act     (c.sat_rnd_init_act())
-    , garbage_frac     (c.sat_garbage_frac())
-    , restart_first    (c.sat_restart_first())
-    , restart_inc      (c.sat_restart_inc())
-    , learntsize_factor((double)1/(double)3)
-    , learntsize_inc   ( 1.1 )
-        // More parameters:
-        //
-    , expensive_ccmin  ( true )
-    , learntsize_adjust_start_confl (0)
-        // Statistics: (formerly in 'SolverStats')
-        //
-    , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
-    , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-        // ADDED FOR MINIMIZATION
-    , learnts_size(0) , all_learnts(0)
-    , learnt_theory_conflicts(0)
-    , top_level_lits        (0)
+      , theory_handler   (t)
+      , verbosity        (c.verbosity())
+      , init             (false)
+      , stop             (false)
+      // Parameters: (formerly in 'SearchParams')
+      , var_decay        (c.sat_var_decay())
+      , clause_decay     (c.sat_clause_decay())
+      , random_var_freq  (c.sat_random_var_freq())
+      , luby_restart     (c.sat_luby_restart())
+      , ccmin_mode       (c.sat_ccmin_mode())
+      , rnd_pol          (c.sat_rnd_pol())
+      , rnd_init_act     (c.sat_rnd_init_act())
+      , garbage_frac     (c.sat_garbage_frac())
+      , restart_first    (c.sat_restart_first())
+      , restart_inc      (c.sat_restart_inc())
+      , learntsize_factor((double)1/(double)3)
+      , learntsize_inc   ( 1.1 )
+      // More parameters:
+      //
+      , expensive_ccmin  ( true )
+      , learntsize_adjust_start_confl (0)
+      // Statistics: (formerly in 'SolverStats')
+      //
+      , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflicts_last_update(0)
+      , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+      // ADDED FOR MINIMIZATION
+      , learnts_size(0) , all_learnts(0)
+      , learnt_theory_conflicts(0)
+      , top_level_lits        (0)
 
-    , ok                    (true)
-    , conflict_frame        (0)
-    , n_clauses             (0)
-    , cla_inc               (1)
-    , var_inc               (1)
-    , watches               (WatcherDeleted(ca))
-    , qhead                 (0)
-    , simpDB_assigns        (-1)
-    , simpDB_props          (0)
-    , order_heap            (VarOrderLt(activity))
-    , random_seed           (c.getRandomSeed())
-    , progress_estimate     (0)
-    , remove_satisfied      (true)
+      , ok                    (true)
+      , conflict_frame        (0)
+      , n_clauses             (0)
+      , cla_inc               (1)
+      , var_inc               (1)
+      , watches               (WatcherDeleted(ca))
+      , qhead                 (0)
+      , simpDB_assigns        (-1)
+      , simpDB_props          (0)
+      , order_heap            (VarOrderLt(activity))
+      , random_seed           (c.getRandomSeed())
+      , progress_estimate     (0)
+      , remove_satisfied      (true)
 #ifdef PEDANTIC_DEBUG
-    , max_dl_debug          (0)
-    , analyze_cnt           (0)
+      , max_dl_debug          (0)
+      , analyze_cnt           (0)
 #endif
-    , conflict_budget       (-1)
-    , propagation_budget    (-1)
-    , asynch_interrupt      (false)
-    , learnt_t_lemmata      (0)
-    , perm_learnt_t_lemmata (0)
-    , luby_i                (0)
-    , luby_k                (1)
-    , cuvti                 (false)
-    , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
+      , conflict_budget       (-1)
+      , propagation_budget    (-1)
+      , asynch_interrupt      (false)
+      , learnt_t_lemmata      (0)
+      , perm_learnt_t_lemmata (0)
+      , luby_i                (0)
+      , luby_k                (1)
+      , cuvti                 (false)
+      , proof                 (config.produce_inter() ? new Proof(ca ) : nullptr )
 #ifdef STATISTICS
-    , preproc_time          (0)
-    , elim_tvars            (0)
+      , preproc_time          (0)
+      , elim_tvars            (0)
 #endif
 { }
 
@@ -148,30 +147,6 @@ CoreSMTSolver::initialize( )
     tsolvers_time = 0;
     ie_generated = 0;
 #endif
-    //
-    // Set polarity_mode
-    //
-    switch ( config.sat_polarity_mode )
-    {
-    case 0:
-        polarity_mode = polarity_true;
-        break;
-    case 1:
-        polarity_mode = polarity_false;
-        break;
-    case 2:
-        polarity_mode = polarity_rnd;
-        break;
-    case 3:
-        polarity_mode = polarity_user;
-        break; // Polarity is set in
-    case 4:
-        polarity_mode = polarity_user;
-        break; // THandler.C for
-    case 5:
-        polarity_mode = polarity_user;
-        break; // Boolean atoms
-    }
 
     if (config.produce_inter() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
@@ -302,7 +277,7 @@ bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef,
         }
         CRef inputClause = ca.alloc(original);
         CRef outputClause = resolvedUnits.empty() ? inputClause :
-                ps.size() == 0 ? CRef_Undef : ca.alloc(ps, false);
+                            ps.size() == 0 ? CRef_Undef : ca.alloc(ps);
         inOutCRefs = {inputClause, outputClause};
         proof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
@@ -519,14 +494,13 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     }
 
     const bool res = theory_handler.assertLits(trail);
-//    theory_handler.checkLitProps(trail);
 #ifdef PEDANTIC_DEBUG
     theory_handler.checkTrailConsistency(trail);
 #endif
     // Flush conflict if unsat
     if ( !res )
     {
-//    assert(false);
+        //    assert(false);
         vec< Lit > conflicting;
         int        max_decision_level;
 #ifdef PEDANTIC_DEBUG
@@ -845,9 +819,9 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         }
     }
     cleanup.clear();
-//    for (int i = 0; i < out_learnt.size(); i++)
-//        printf("%d ", out_learnt[i]);
-//    printf("\n");
+    //    for (int i = 0; i < out_learnt.size(); i++)
+    //        printf("%d ", out_learnt[i]);
+    //    printf("\n");
 }
 
 
@@ -906,9 +880,8 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             // Just give up when fake reason is found -- but clean analyze_toclear
             if (cr == CRef_Fake)
             {
-                for (int j = top; j < analyze_toclear.size(); j++) {
+                for (int j = top; j < analyze_toclear.size(); j++)
                     seen[var(analyze_toclear[j])] = 0;
-                }
                 analyze_toclear.shrink(analyze_toclear.size() - top);
 
                 return false;
@@ -1153,7 +1126,7 @@ CRef CoreSMTSolver::propagate()
                 uncheckedEnqueue(first, cr);
             }
 
-NextClause:
+        NextClause:
             ;
         }
         ws.shrink(i - j);
@@ -1333,7 +1306,7 @@ void CoreSMTSolver::popBacktrackPoint()
             watches.clean(mkLit(x, true));
             watches.clean(mkLit(x, false));
             // Remove variable from translation tables
-//      theory_handler->clearVar( x );
+            //      theory_handler->clearVar( x );
         }
         else if (op.getType() == undo_stack_el::NEWUNIT) ; // Do nothing
         else if (op.getType() == undo_stack_el::NEWCLAUSE)
@@ -1448,7 +1421,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     //
     // Decrease activity for booleans
     //
-//    boolVarDecActivity( );
+    //    boolVarDecActivity( );
 
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
@@ -1467,10 +1440,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             if (verbosity and conflicts % 1000 == 999) {
                 uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
                 std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
-                    << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
-                    << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
-                    << " units: " << std::setw(5) << units
-                    << std::endl;
+                          << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
+                          << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
+                          << " units: " << std::setw(5) << units
+                          << std::endl;
             }
 
             conflicts++;
@@ -1538,14 +1511,14 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             // Early Pruning Call
             // Step 1: check if the current assignment is theory-consistent
             switch (checkTheory(false, conflictC)) {
-                case TPropRes::Unsat:
-                    return zeroLevelConflictHandler();
-                case TPropRes::Propagate:
-                    continue; // Theory conflict: time for bcp
-                case TPropRes::Decide:
-                    break; // Sat and no deductions: go ahead
-                default:
-                    assert( false );
+            case TPropRes::Unsat:
+                return zeroLevelConflictHandler();
+            case TPropRes::Propagate:
+                continue; // Theory conflict: time for bcp
+            case TPropRes::Decide:
+                break; // Sat and no deductions: go ahead
+            default:
+                assert( false );
             }
 
             Lit next = lit_Undef;
@@ -1573,16 +1546,16 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
             if (next == lit_Undef) {
                 switch (notifyConsistency()) {
-                    case ConsistencyAction::BacktrackToZero:
-                        cancelUntil(0);
-                        break;
-                    case ConsistencyAction::ReturnUndef:
-                        return l_Undef;
-                    case ConsistencyAction::SkipToSearchBegin:
-                        continue;
-                    case ConsistencyAction::NoOp:
-                    default:
-                        ;
+                case ConsistencyAction::BacktrackToZero:
+                    cancelUntil(0);
+                    break;
+                case ConsistencyAction::ReturnUndef:
+                    return l_Undef;
+                case ConsistencyAction::SkipToSearchBegin:
+                    continue;
+                case ConsistencyAction::NoOp:
+                default:
+                    ;
                 }
                 // Assumptions done and the solver is in consistent state
                 // New variable decision:
@@ -1721,7 +1694,7 @@ void CoreSMTSolver::declareVarsToTheories()
 
 lbool CoreSMTSolver::solve_()
 {
-//    opensmt::PrintStopWatch watch("solve time", cerr);
+    //    opensmt::PrintStopWatch watch("solve time", cerr);
 
     for (Lit l : this->assumptions) {
         this->addVar_(var(l));
@@ -1805,9 +1778,9 @@ lbool CoreSMTSolver::solve_()
 void CoreSMTSolver::clearSearch()
 {
     cancelUntil(0);
-//    if (first_model_found || splits.size() > 1) {
-        theory_handler.backtrack(-1);
-//    }
+    //    if (first_model_found || splits.size() > 1) {
+    theory_handler.backtrack(-1);
+    //    }
 }
 
 lbool CoreSMTSolver::zeroLevelConflictHandler() {
@@ -1864,9 +1837,9 @@ void CoreSMTSolver::garbageCollect()
     ClauseAllocator to(ca.size() - ca.wasted());
 
     relocAll(to);
-//    if (verbosity >= 2)
-//        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",
-//               ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
+    //    if (verbosity >= 2)
+    //        fprintf(stderr, "; |  Garbage collection:   %12d bytes => %12d bytes             |\n",
+    //               ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
 }
 
@@ -1922,17 +1895,17 @@ void CoreSMTSolver::printStatistics( ostream & os )
     os << "; Top level literals.......: " << top_level_lits << endl;
     os << "; Search time..............: " << search_timer.getTime() << " s" << endl;
     if ( config.sat_preprocess_booleans != 0
-            || config.sat_preprocess_theory != 0 )
+        || config.sat_preprocess_theory != 0 )
         os << "; Preprocessing time.......: " << preproc_time << " s" << endl;
     if ( config.sat_preprocess_theory != 0 )
         os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
     os << "; TSolvers time............: " << tsolvers_time << " s" << endl;
-//  if ( config.sat_lazy_dtc != 0 )
-//    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
+    //  if ( config.sat_lazy_dtc != 0 )
+    //    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
     os << "; Init clauses.............: " << clauses.size() << endl;
     os << "; Variables................: " << nVars() << endl;
     if (config.sat_split_type() != spt_none)
-    os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
+        os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
 }
 #endif // STATISTICS
 
