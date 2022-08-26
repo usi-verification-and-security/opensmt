@@ -17,8 +17,7 @@ private:
     bool search = true;
 
   protected:
-    void                          writeSplits(const char* filename);
-    std::unique_ptr<MainSolver>   createMainSolver(const char* logic_name) override;
+    void                          writeSplits(std::string const & filename);
     sstat                         checkSat()                               override;
     void                          exit()                                   override  { return; }
 
