@@ -43,6 +43,8 @@ private:
         throw OsmtInternalException(getChannel().get_current_header().at(PTPLib::common::Param.NODE + " " + str));
     }
 
+    bool verifyPartitions(vec<PTRef> const & partitions) const;
+
 public:
     MainSplitter(std::unique_ptr<Theory> t,std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> th,
                  std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
