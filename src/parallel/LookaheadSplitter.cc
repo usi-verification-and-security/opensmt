@@ -28,15 +28,13 @@ bool LookaheadSplitter::createSplitLookahead(LASplitNode & n)
     printf("; Outputing an instance:\n; ");
     Lit p = lit_Undef;
     for (int i = 0; i < decisionLevel(); i++) {
-        vec<Lit> tmp;
         Lit l = trail[trail_lim[i]];
         if (p != l) {
             // In cases where the LA solver couldn't propagate due to
             // literal being already assigned, the literal may be
             // duplicated.  Do not report duplicates.
-            tmp.push(l);
             printf("%s%d ", sign(l) ? "-" : "", var(l));
-            sd.addConstraint(std::move(tmp));
+            sd.addConstraint({l});
         }
         p = l;
     }
