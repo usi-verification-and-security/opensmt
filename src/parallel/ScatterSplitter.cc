@@ -48,6 +48,8 @@ Var ScatterSplitter::doActivityDecision() {
                     discarded.push(next);
                     next = var_Undef;
                 } else {
+                    // Do not branch on lengthy variables to avoid oversized terms.
+                    // Note: for better performance, term is filter in two phases, without and with auxes
                     PTRef auxTerm = theory_handler.varToTerm(next);
                     nodeCounter.visit(auxTerm);
                     if (nodeCounter.limitReached()) {
@@ -57,7 +59,6 @@ Var ScatterSplitter::doActivityDecision() {
                         PTRef auxExpandedTerm = theory_handler.getLogic().removeAuxVars(auxTerm);
                         nodeCounter.visit(auxExpandedTerm);
                         if (nodeCounter.limitReached()) {
-                            // Do not branch on lengthy variables to avoid oversized terms
                             discarded.push(next);
                             next = var_Undef;
                         }
@@ -208,6 +209,7 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
             continue;
         }
         auto ptWithAuxVars = sign(l) ? logic.mkNot(theory_handler.varToTerm(v)) : theory_handler.varToTerm(v);
+        // Note: for better performance, term is filter in two phases, without and with auxes
         nodeCounter.visit(ptWithAuxVars);
         if (nodeCounter.limitReached()) {
             continue;
@@ -243,6 +245,7 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
         for (Lit l : c) {
             Var v = var(l);
             PTRef ptWithAuxVars = theory_handler.varToTerm(v);
+            // Note: for better performance, term is filter in two phases, without and with auxes
             nodeCounter.visit(ptWithAuxVars);
             if (nodeCounter.limitReached()) {
                 hasBulkyLit = true;
