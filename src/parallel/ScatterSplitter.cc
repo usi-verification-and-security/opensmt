@@ -111,7 +111,7 @@ opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions()
             assert(clause.size() == 1);
             tmp.push(~clause[0]);
         }
-        splitData.addConstraint(tmp);
+        splitData.addConstraint(std::move(tmp));
     }
 
     cancelUntil(0);

@@ -33,23 +33,15 @@ class SplitData {
     }
 
 public:
-    template<class C> void addConstraint(const C& c) {
-        vec<Lit> cstr;
-        for (Lit l : c) {
-            cstr.push(l);
-        }
-        constraints.emplace_back(std::move(cstr));
+    void addConstraint(vec<Lit> && c) {
+        constraints.emplace_back(std::move(c));
     }
 
-    template<class C> void addSplitAssumptions(const C& sa) {
-        vec<Lit> vl;
-        for (Lit l : sa) {
-            vl.push(l);
-        }
-        split_assumptions.emplace_back(std::move(vl));
+    void addSplitAssumptions(vec<Lit> && sa) {
+        split_assumptions.emplace_back(std::move(sa));
     }
 
-    std::vector<vec<PtAsgn>> splitToPtAsgns(const THandler& thandler) const {
+    [[nodiscard]] std::vector<vec<PtAsgn>> splitToPtAsgns(THandler const & thandler) const {
         std::vector<vec<PtAsgn>> out;
         addClausesToPtAsgns(out, constraints, thandler);
         addClausesToPtAsgns(out, split_assumptions, thandler);
@@ -57,9 +49,7 @@ public:
     }
 
     std::vector<vec<Lit>> & getSplitAssumptions()               { return split_assumptions; }
-    std::vector<vec<Lit>> const & peekSplitAssumptions() const  { return split_assumptions; }
-
-    vec<Lit> &              getSplitAssumption(std::size_t i)   { return split_assumptions[i]; }
+    [[nodiscard]] std::vector<vec<Lit>> const & peekSplitAssumptions() const  { return split_assumptions; }
 };
 
 #endif //PARALLEL_SPLITDATA_H

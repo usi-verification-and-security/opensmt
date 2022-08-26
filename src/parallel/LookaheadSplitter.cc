@@ -36,7 +36,7 @@ bool LookaheadSplitter::createSplitLookahead(LASplitNode & n)
             // duplicated.  Do not report duplicates.
             tmp.push(l);
             printf("%s%d ", sign(l) ? "-" : "", var(l));
-            sd.addConstraint(tmp);
+            sd.addConstraint(std::move(tmp));
         }
         p = l;
     }
