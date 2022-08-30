@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
+#include "handwritten.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -145,7 +146,13 @@ int main( int argc, char * argv[] )
                 opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" );
             }
             else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
-                interpreter.interpFile(fin);
+                std::filebuf fb;
+                fb.open(filename, std::ios::in);
+                std::istream is(&fb);
+                HandWrittenParser parser(is);
+                parser.parse();
+
+//                interpreter.interpFile(fin);
             }
             else
                 opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );
