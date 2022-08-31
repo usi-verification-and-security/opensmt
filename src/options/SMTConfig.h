@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <list>
 #include <string>
 #include <fstream>
+#include <memory>
 
 enum class ASTType {
       CMD_T      , CMDL_T
