@@ -69,16 +69,7 @@ int main( int argc, char * argv[] )
 {
     signal( SIGTERM, opensmt::catcher );
     signal( SIGINT , opensmt::catcher );
-
-    //
-    // This trick (copied from Main.C of MiniSAT) is to allow
-    // the repeatability of experiments that might be compromised
-    // by the floating point unit approximations on doubles
-    //
-#if defined(__linux__)
-    fpu_control_t oldcw, newcw;
-    _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
-#endif
+    
 
 #ifdef PEDANTIC_DEBUG
     cerr << "; pedantic assertion checking enabled (very slow)" << endl;
