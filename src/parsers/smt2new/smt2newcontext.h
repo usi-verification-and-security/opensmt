@@ -57,9 +57,6 @@ struct SExpr : public GeneralNode {
 
 struct AttributeValueNode : public GeneralNode {
     std::variant<SpecConstNode, SymbolNode, std::vector<SExpr*>> value;
-    AttributeValueNode(SpecConstNode && n) : value(std::move(n)) {}
-    AttributeValueNode(SymbolNode && n) : value(std::move(n)) {}
-    AttributeValueNode(std::vector<SExpr*> n) : value(std::move(n)) {}
 };
 
 struct AttributeNode : public GeneralNode {
@@ -91,29 +88,13 @@ struct Attribute : public OptionNode { AttributeNode value; };
 
 class CommandNode : public GeneralNode {};
 
-class SetLogic : public CommandNode {
-    SymbolNode logic;
-public:
-    SetLogic(SymbolNode && logic) : logic(std::move(logic)) {}
-};
+struct SetLogic : public CommandNode { SymbolNode logic; };
+struct SetOption : public CommandNode { OptionNode option; };
+struct SetInfo : public CommandNode { AttributeNode attribute; };
 
-class SetOption : public CommandNode {
-    OptionNode option;
-public:
-    SetOption(OptionNode && option) : option(std::move(option)) {}
-};
-
-class SetInfo : public CommandNode {
-    AttributeNode attribute;
-public:
-    SetInfo(AttributeNode && attribute) : attribute(std::move(attribute)) {}
-};
-
-class DeclareSort : public CommandNode {
+struct DeclareSort : public CommandNode {
     SymbolNode symbol;
     std::string num;
-public:
-    DeclareSort(SymbolNode && symbol, std::string && num) : symbol(std::move(symbol)), num(std::move(num)) {}
 };
 
 struct SortNode : public GeneralNode {
@@ -131,52 +112,29 @@ struct QualIdentifierNode : public GeneralNode {
     SortNode * returnSort = nullptr;
 };
 
-class DefineSort : public CommandNode {
+struct DefineSort : public CommandNode {
     SymbolNode name;
     std::vector<SymbolNode> argumentSorts;
     SortNode sort;
-public:
-    DefineSort(SymbolNode && name, std::vector<SymbolNode> && argumentSorts, SortNode && sort)
-        : name(std::move(name))
-        , argumentSorts(std::move(argumentSorts))
-        , sort(std::move(sort))
-        {}
 };
 
-class DeclareFun : public CommandNode {
+struct DeclareFun : public CommandNode {
     SymbolNode name;
     std::vector<SortNode*> argumentSorts;
     SortNode returnSort;
-public:
-    DeclareFun(SymbolNode && name, std::vector<SortNode*> && argumentSorts, SortNode && returnSort)
-        : name(std::move(name))
-        , argumentSorts(std::move(argumentSorts))
-        , returnSort(std::move(returnSort))
-        {}
 };
 
-class DeclareConst : public CommandNode {
+struct DeclareConst : public CommandNode {
     std::variant<SymbolNode,SpecConstNode> name;
     SortNode sort;
-public:
-    DeclareConst(SymbolNode && name, SortNode && sort) : name(std::move(name)), sort(std::move(sort)) {}
-    DeclareConst(SpecConstNode && name, SortNode && sort) : name(std::move(name)), sort(std::move(sort)) {}
 };
 
 class TermNode : public GeneralNode {};
 
-class NormalTermNode : public TermNode {
+struct NormalTermNode : public TermNode {
     std::variant<SpecConstNode,IdentifierNode> head;
     SortNode * returnSort = nullptr;
     std::vector<TermNode*> arguments;
-public:
-    NormalTermNode(SpecConstNode && head) : head(std::move(head)) {}
-    NormalTermNode(IdentifierNode && head, SortNode * returnSort, std::vector<TermNode*> && arguments)
-        : head(std::move(head))
-        , returnSort(returnSort)
-        , arguments(std::move(arguments))
-    {}
-    SortNode * getSortIfKnown() { return returnSort; }
 };
 
 struct VarBindingNode : public GeneralNode {

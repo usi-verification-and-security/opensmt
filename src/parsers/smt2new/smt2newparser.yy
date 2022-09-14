@@ -159,19 +159,19 @@ command_list:
     ;
 
 command: '(' TK_SETLOGIC symbol ')'
-        { $$ = new SetLogic(std::move(*$3)); }
+        { $$ = new SetLogic {{}, std::move(*$3)}; }
     | '(' TK_SETOPTION option ')'
-        { $$ = new SetOption(std::move(*$3)); }
+        { $$ = new SetOption {{}, std::move(*$3)}; }
     | '(' TK_SETINFO attribute ')'
-        { $$ = new SetInfo(std::move(*$3)); }
+        { $$ = new SetInfo {{}, std::move(*$3)}; }
     | '(' TK_DECLARESORT symbol TK_NUM ')'
-        { $$ = new DeclareSort(std::move(*$3), std::move(*$4)); }
+        { $$ = new DeclareSort {{}, std::move(*$3), std::move(*$4)}; }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
-        { $$ = new DefineSort(std::move(*$3), std::move(*$5), std::move(*$7)); }
+        { $$ = new DefineSort {{}, std::move(*$3), std::move(*$5), std::move(*$7)}; }
     | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
-        { $$ = new DeclareFun(std::move(*$3), std::move(*$5), std::move(*$7)); }
+        { $$ = new DeclareFun {{}, std::move(*$3), std::move(*$5), std::move(*$7)}; }
     | '(' TK_DECLARECONST const_val sort ')'
-        { $$ = new DeclareConst(std::move(*$3), std::move(*$4)); }
+        { $$ = new DeclareConst {{}, std::move(*$3), std::move(*$4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
         { $$ = new DefineFun {{}, std::move(*$3), std::move(*$5), std::move(*$7), std::move(*$8)}; }
     | '(' TK_PUSH TK_NUM ')'
@@ -217,21 +217,21 @@ attribute_list:
     ;
 
 attribute: TK_KEY
-        { $$ = new AttributeNode { {}, false, std::move(*$1), AttributeValueNode{std::vector<SExpr*>{}} }; }
+        { $$ = new AttributeNode { {}, false, std::move(*$1), {{}, std::vector<SExpr*>{}} }; }
     | TK_KEY attribute_value
         { $$ = new AttributeNode { {}, false, std::move(*$1), std::move(*$2) }; }
     | predef_key
-        { $$ = new AttributeNode { {}, true, std::move(*$1), AttributeValueNode{std::vector<SExpr*>{}} }; }
+        { $$ = new AttributeNode { {}, true, std::move(*$1), {{}, std::vector<SExpr*>{}} }; }
     | predef_key attribute_value
         { $$ = new AttributeNode { {}, true, std::move(*$1), std::move(*$2) }; }
     ;
 
 attribute_value: spec_const
-        { $$ = new AttributeValueNode {std::move(*$1)}; }
+        { $$ = new AttributeValueNode {{}, std::move(*$1)}; }
     | symbol
-        { $$ = new AttributeValueNode {std::move(*$1)}; }
+        { $$ = new AttributeValueNode {{}, std::move(*$1)}; }
     | '(' s_expr_list ')'
-        { $$ = new AttributeValueNode {std::move(*$2)}; }
+        { $$ = new AttributeValueNode {{}, std::move(*$2)}; }
     ;
 
 identifier: symbol
@@ -328,9 +328,9 @@ term_list:
     ;
 
 term: spec_const
-        { $$ = new NormalTermNode(std::move(*$1)); }
+        { $$ = new NormalTermNode {{}, std::move(*$1), nullptr, std::vector<TermNode*>{}}; }
     | qual_identifier
-        { $$ = new NormalTermNode(std::move($1->identifier), $1->returnSort, {}); delete $1; }
+        { $$ = new NormalTermNode {{}, std::move($1->identifier), $1->returnSort, {}}; delete $1; }
     | '(' qual_identifier term term_list ')'
         {
             auto tmp = std::vector<TermNode*>();
@@ -339,7 +339,7 @@ term: spec_const
                 tmp.emplace_back(std::move(c));
             }
             delete $4;
-            $$ = new NormalTermNode(std::move($2->identifier), $2->returnSort, std::move(tmp));
+            $$ = new NormalTermNode {{}, std::move($2->identifier), $2->returnSort, std::move(tmp)};
         }
     | '(' TK_LET '(' var_binding_list ')' term ')'
         { $$ = new LetTermNode {{}, std::move(*$6), std::move(*$4)}; }
