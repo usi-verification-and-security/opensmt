@@ -1013,9 +1013,9 @@ int Interpret::interpFile(FILE* in) {
 
     if (rval != 0) return rval;
     return 0;
-    const ASTNode & r = context.getRoot();
-    execute(r);
-    return rval;
+//    const ASTNode & r = context.getRoot();
+//    execute(r);
+//    return rval;
 }
 
 int Interpret::interpFile(char *content){
@@ -1023,8 +1023,8 @@ int Interpret::interpFile(char *content){
     int rval = yyparse(&context);
 
     if (rval != 0) return rval;
-    ASTNode const & r = context.getRoot();
-    execute(r);
+//    ASTNode const & r = context.getRoot();
+//    execute(r);
     return rval;
 }
 
@@ -1126,8 +1126,8 @@ int Interpret::interpPipe() {
                     if (rval != 0)
                         notify_formatted(true, "scanner");
                     else {
-                        ASTNode const & r = context.getRoot();
-                        execute(r);
+//                        ASTNode const & r = context.getRoot();
+//                        execute(r);
                         done = f_exit;
                     }
                     free(buf_out);
