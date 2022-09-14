@@ -53,10 +53,37 @@ struct SymbolNode : public GeneralNode {
 
 struct SExpr : public GeneralNode {
     std::variant<SpecConstNode,SymbolNode,std::string,std::vector<SExpr*>> data;
+    ~SExpr() {
+        struct Qel {
+            SExpr * node;
+            uint32_t processed;
+        };
+        std::vector<Qel> queue;
+        queue.emplace_back(Qel{this, static_cast<uint32_t>(0)});
+        while (not queue.empty()) {
+            auto & [node, processed] = queue.back();
+            auto children = std::get_if<std::vector<SExpr *>>(&node->data);
+            if (children and processed < children->size()) {
+                ++processed;
+                queue.emplace_back(Qel{(*children)[processed - 1], 0});
+            }
+            assert(not children or processed == children->size());
+            assert(node);
+            delete node;
+            queue.pop_back();
+        }
+    }
 };
 
 struct AttributeValueNode : public GeneralNode {
     std::variant<SpecConstNode, SymbolNode, std::vector<SExpr*>> value;
+    ~AttributeValueNode() {
+        if (auto vec = std::get_if<std::vector<SExpr*>>(&value)) {
+            for (auto el : *vec) {
+                delete el;
+            }
+        }
+    }
 };
 
 struct AttributeNode : public GeneralNode {
