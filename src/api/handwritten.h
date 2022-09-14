@@ -4,11 +4,14 @@
 
 #ifndef OPENSMT_HANDWRITTEN_H
 #define OPENSMT_HANDWRITTEN_H
+#include "smt2tokens.h"
+
 #include <cassert>
 #include <istream>
 #include <string>
 #include <variant>
 #include <vector>
+
 
 class OsmtParserException: public std::exception {
     std::string msg;
@@ -17,14 +20,25 @@ public:
     virtual const char* what() const noexcept override { return msg.c_str(); }
 };
 
+class Expr {};
+class EmptyExpr : public Expr {};
+class DeclareFun : public Expr {};
+
+struct Token {
+    std::string name;
+    osmttokens::token token;
+    opensmt::pair<uint32_t, uint32_t> pos = {0, 0};
+    Expr * parsedType = nullptr;
+};
+
 struct SExpr {
-    std::variant<std::string,std::vector<SExpr*>> data;
+    std::variant<Token,std::vector<SExpr*>> data;
     std::string toString() const {
-        if (auto str_p = std::get_if<std::string>(&data)) {
-            return *str_p;
+        if (auto token_p = std::get_if<Token>(&data)) {
+            return (token_p->name);
         } else if (auto vec_p = std::get_if<std::vector<SExpr*>>(&data)) {
             std::string out = "(";
-            for (int i = 0; i != vec_p->size(); ++i) {
+            for (unsigned long i = 0; i != vec_p->size(); ++i) {
                 out += (*vec_p)[i]->toString() + (i == vec_p->size()-1 ? "" : " ");
             }
             out += ")";
@@ -68,11 +82,22 @@ class SExprParser {
         }
     }
 
-    std::string parseToken() {
+    osmttokens::token resolveToken(std::string const & name) {
+        if (osmttokens::nameToToken.find(name) != osmttokens::nameToToken.end()) {
+            return osmttokens::nameToToken.at(name);
+        } else {
+            return osmttokens::t_none;
+        }
+    }
+
+    Token parseToken() {
         std::string result;
         skipWhitespace();
+        opensmt::pair<uint32_t, uint32_t> tokenStartPos {line, column};
         bool inQuotedSymbol = token == '|';
         bool inString = token == '"';
+        bool isString = inString;
+
         if (inQuotedSymbol) {
             advance(false);
         }
@@ -89,7 +114,8 @@ class SExprParser {
             result.push_back(c);
             advance(not inString and not inQuotedSymbol);
         }
-        return result;
+        osmttokens::token type = isString ? osmttokens::t_STRING : resolveToken(result);
+        return {result, type, tokenStartPos};
     }
 
     void parseError(std::string const & error) {
@@ -165,7 +191,7 @@ public:
             }
             assert(not children or processed == children->size());
             assert(node);
-            op(*node);
+            op(node);
             queue.pop_back();
         }
     }
@@ -174,22 +200,54 @@ public:
         class Counter {
             uint32_t count = 0;
         public:
-            void operator() (SExpr &) {
+            void operator() (SExpr *) {
                 ++ count;
             }
             uint32_t getCount() const { return count; }
         };
-        Counter counter;
+        class Deleter {
+        public:
+            void operator() (SExpr * e) {
+                delete e;
+            }
+        };
+
+        class Printer {
+            void error(Token * token, std::string const & msg) {
+                std::cout << "At line "
+                          << std::to_string(token->pos.first)
+                          << " column "
+                          << std::to_string(token->pos.second)
+                          << ", "
+                          << token->name << " " << msg << std::endl;
+            }
+        public:
+            Expr * operator() (SExpr * e) {
+                if (auto expr_p = std::get_if<std::vector<SExpr*>>(&e->data)) {
+                    if (expr_p->empty()) { return new EmptyExpr(); }
+                    if (auto token_p = std::get_if<Token>(&((*expr_p)[0])->data)) {
+                        if (token_p->token == osmttokens::t_declarefun) {
+                            if (expr_p->size() != 3) { error(token_p, "expected 3 arguments"); }
+                        }
+                    }
+                }
+                return nullptr;
+            }
+        };
+//        Counter counter;
+        Printer printer;
+        Deleter deleter;
         while (not parser.isEOF()) {
             try {
                 auto sexpr = parser.parseExpr();
-                traverse(sexpr, counter);
+                traverse(sexpr, printer);
+                traverse(sexpr, deleter);
             } catch (OsmtParserException const & e) {
                 std::cout << e.what() << std::endl;
                 break;
             }
         }
-        std::cout << std::to_string(counter.getCount()) << std::endl;
+//        std::cout << std::to_string(counter.getCount()) << std::endl;
     }
 };
 #endif // OPENSMT_HANDWRITTEN_H
