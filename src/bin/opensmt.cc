@@ -26,7 +26,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
-#include "handwritten.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -149,10 +148,7 @@ int main( int argc, char * argv[] )
                 std::filebuf fb;
                 fb.open(filename, std::ios::in);
                 std::istream is(&fb);
-                HandWrittenParser parser(is);
-                parser.parse();
-
-//                interpreter.interpFile(fin);
+                interpreter.interpFile(fin);
             }
             else
                 opensmt_error2( filename, " extension not recognized. Please use one in { smt2, cnf } or stdin (smtlib2 is assumed)" );

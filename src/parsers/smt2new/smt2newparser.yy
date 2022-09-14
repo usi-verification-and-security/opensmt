@@ -74,15 +74,36 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
 
 %union
 {
-  std::string *                str;
-  ASTNode *                    snode;
+  SortNode * n_sort;
+  IdentifierNode * n_identifier;
+  QualIdentifierNode * n_qualIdentifier;
+  VarBindingNode * n_varBinding;
+  std::vector<VarBindingNode> * n_varBindingList;
+  std::vector<SortNode*> * n_sortList;
+  std::vector<std::string> * n_numeralList;
+  AttributeNode * n_attribute;
+  AttributeValueNode * n_attributeValue;
+  SpecConstNode * n_specConst;
+  SExpr * sexpr;
+  SymbolNode * n_symbol;
+  CommandNode * n_command;
+  TermNode * n_term;
+  SortedVarNode * n_sortedVar;
+  std::vector<SortedVarNode> * n_sortedVarList;
+  std::vector<TermNode*> * n_termList;
+  std::vector<AttributeNode> * n_attributeList;
+  std::vector<CommandNode *> * n_commandList;
+  std::vector<SymbolNode> * n_symbolList;
+  std::vector<SExpr*> * sexpr_list;
+  std::string * str;
+  bool n_bool;
+  OptionNode * n_option;
+  ASTNode * snode;
   std::vector<std::unique_ptr<ASTNode>> * snode_list;
-  osmttokens::smt2token        tok;
+  osmttokens::smt2token tok;
 }
 
 %destructor { delete $$; } <str>
-%destructor { delete $$; } <snode>
-%destructor { if ($$) { delete $$; } } <snode_list>
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
@@ -94,437 +115,265 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
 
 %type <str> TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
-%type <snode> symbol identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
-%type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
-%type <snode> b_value option info_flag
+%type <n_sort> sort
+%type <n_identifier> identifier
+%type <n_qualIdentifier> qual_identifier
+%type <n_varBinding> var_binding
+%type <n_term> term
+%type <n_sortedVar> sorted_var
+%type <n_command> command
+%type <n_symbol> symbol const_val
+%type <sexpr> s_expr
+%type <n_specConst> spec_const
+%type <n_attribute> attribute
+%type <n_attributeValue> attribute_value
+%type <n_sortList> sort_list
+%type <n_varBindingList> var_binding_list
+%type <n_termList> term_list
+%type <n_attributeList> attribute_list
+%type <n_sortedVarList> sorted_var_list
+%type <n_symbolList> symbol_list
+%type <n_commandList> command_list
+%type <sexpr_list> s_expr_list
+%type <n_numeralList> numeral_list
+%type <n_bool> b_value
+%type <str> info_flag
+%type <n_option> option
 
 %start script
 
 %%
 
-script: command_list { context->insertRoot(std::make_unique<ASTNode>(ASTType::CMDL_T, osmttokens::smt2token{osmttokens::t_none}, mkUniqueStr("main-script"), ASTVec_up($1))); };
+script: command_list { context->insertRoot(std::move(*$1)); };
 
 symbol: TK_SYM
-        { $$ = new ASTNode(ASTType::SYM_T, {osmttokens::t_none}, string_up($1)); }
+        { $$ = new SymbolNode{{}, {std::move(*$1)}, false}; }
     | TK_QSYM
-        { $$ = new ASTNode(ASTType::QSYM_T, {osmttokens::t_none}, string_up($1)); }
+        { $$ = new SymbolNode {{}, {std::move(*$1)}, true}; }
     ;
 
 command_list:
-        { $$ = new ASTVec(); }
+        { $$ = new std::vector<CommandNode*>(); }
     | command_list command
-        { (*$1).emplace_back(ASTNode_up($2)); $$ = $1; }
+        { (*$1).emplace_back($2); $$ = $1; }
     ;
 
 command: '(' TK_SETLOGIC symbol ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::CMD_T, $2, mkUniqueStr(""), std::move(tmp));
-        }
+        { $$ = new SetLogic(std::move(*$3)); }
     | '(' TK_SETOPTION option ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::CMD_T, $2, mkUniqueStr(""), std::move(tmp));
-        }
+        { $$ = new SetOption(std::move(*$3)); }
     | '(' TK_SETINFO attribute ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::CMD_T, $2, mkUniqueStr(""), std::move(tmp));
-        }
+        { $$ = new SetInfo(std::move(*$3)); }
     | '(' TK_DECLARESORT symbol TK_NUM ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($4)));
-            $$ = new ASTNode(ASTType::CMD_T,
-                             $2,
-                             mkUniqueStr(""),
-                             std::move(tmp));
-        }
+        { $$ = new DeclareSort(std::move(*$3), std::move(*$4)); }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SYML_T, osmttokens::smt2token{osmttokens::t_none}, mkUniqueStr(""), ASTVec_up($5)));
-            tmp->push_back(ASTNode_up($7));
-            $$ = new ASTNode(ASTType::CMD_T, $2, mkUniqueStr(""), std::move(tmp));
-        }
-
+        { $$ = new DefineSort(std::move(*$3), std::move(*$5), std::move(*$7)); }
     | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SORTL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($5)));
-            tmp->push_back(ASTNode_up($7));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new DeclareFun(std::move(*$3), std::move(*$5), std::move(*$7)); }
     | '(' TK_DECLARECONST const_val sort ')'
-        {
-            // todo: drop the second child?
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SORTL_T));
-            tmp->push_back(ASTNode_up($4));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new DeclareConst(std::move(*$3), std::move(*$4)); }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SVL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($5)));
-            tmp->push_back(ASTNode_up($7));
-            tmp->push_back(ASTNode_up($8));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new DefineFun {{}, std::move(*$3), std::move(*$5), std::move(*$7), std::move(*$8)}; }
     | '(' TK_PUSH TK_NUM ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new PushNode {{}, std::stoi(*$3)}; delete $3; }
     | '(' TK_POP TK_NUM ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new PopNode {{}, std::stoi(*$3)}; delete $3; }
     | '(' TK_ASSERT term ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new AssertNode{{}, std::move(*$3)}; }
     | '(' TK_CHECKSAT ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
+        { $$ = new CheckSatNode(); }
     | '(' TK_GETASSERTIONS ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
+        { $$ = new GetAssertions(); }
     | '(' TK_GETPROOF ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
+        { $$ = new GetProof() ; }
     | '(' TK_GETITPS term_list ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, ASTVec_up($3));
-        }
-    | '(' TK_WRSTATE TK_STR ')'
-        {
-            // todo: TK_{WR,RD}STATE and TK_WRFUNS is not implemented and is not part of the standard
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
-    | '(' TK_RDSTATE TK_STR ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
-    | '(' TK_WRFUNS TK_STR ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new GetInterpolants {{}, std::move(*$3)}; }
     | '(' TK_GETUNSATCORE ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
-    | '(' TK_GETVALUE '(' term term_list ')' ')'
-        {
-            // todo: insert first $4 and then extend with $5?
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, ASTVec_up($5));
-            $$->children->insert($$->children->begin(), ASTNode_up($4));
-        }
+        { $$ = new GetUnsatCore(); }
+    | '(' TK_GETVALUE '(' term_list ')' ')'
+        { $$ = new GetValue { {}, std::move(*$4) }; }
     | '(' TK_GETMODEL ')'
-            {
-                $$ = new ASTNode(ASTType::CMD_T, $2);
-            }
+            { $$ = new GetModel(); }
     | '(' TK_GETASSIGNMENT ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
+        { $$ = new GetAssignment(); }
     | '(' TK_GETOPTION TK_KEY ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new GetOption{ {}, std::move(*$3) }; }
     | '(' TK_GETOPTION predef_key ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::PATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new GetOption{ {}, std::move(*$3) }; }
     | '(' TK_GETINFO info_flag ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new GetInfo{ {}, std::move(*$3) }; }
     | '(' TK_SIMPLIFY ')'
-        {
-            $$ = new ASTNode(ASTType::CMD_T, $2);
-        }
+        { $$ = new Simplify(); }
     | '(' TK_EXIT ')'
-        { $$ = new ASTNode(ASTType::CMD_T, $2); }
+        { $$ = new Exit(); }
     | '(' TK_ECHO TK_STR ')'
-        {
-            // todo: consider using ASTNode's string instead of vector
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($3)));
-            $$ = new ASTNode(ASTType::CMD_T, $2, nullptr, std::move(tmp));
-        }
+        { $$ = new Echo{ {}, std::move(*$3) }; }
     ;
 
 attribute_list:
-        { $$ = new ASTVec{}; }
+        { $$ = new std::vector<AttributeNode>(); }
     | attribute_list attribute
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back(std::move(*$2)); $$ = $1; }
     ;
 
 attribute: TK_KEY
-        { $$ = new ASTNode(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new AttributeNode { {}, false, std::move(*$1), AttributeValueNode{std::vector<SExpr*>{}} }; }
     | TK_KEY attribute_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new AttributeNode { {}, false, std::move(*$1), std::move(*$2) }; }
     | predef_key
-        { $$ = new ASTNode(ASTType::PATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new AttributeNode { {}, true, std::move(*$1), AttributeValueNode{std::vector<SExpr*>{}} }; }
     | predef_key attribute_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::PATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new AttributeNode { {}, true, std::move(*$1), std::move(*$2) }; }
     ;
 
 attribute_value: spec_const
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::SPECC_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new AttributeValueNode {std::move(*$1)}; }
     | symbol
-        {
-            $$ = $1;
-        }
+        { $$ = new AttributeValueNode {std::move(*$1)}; }
     | '(' s_expr_list ')'
-        {
-            $$ = new ASTNode(ASTType::SEXPRL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($2));
-        }
+        { $$ = new AttributeValueNode {std::move(*$2)}; }
     ;
 
 identifier: symbol
-        { $$ = $1; }
+        { $$ = new IdentifierNode {{}, std::move(*$1), {}}; }
     | '(' '_' symbol numeral_list ')'
-        {
-            $$ = $3;
-            $$->children = ASTVec_up($4);
-        }
+        { $$ = new IdentifierNode {{}, std::move(*$3), std::move(*$4)}; }
     ;
 
 sort: identifier
-      { $$ = $1; }
+      { $$ = new SortNode {{}, std::move(*$1)}; }
     | '(' identifier sort sort_list ')'
-      {
-        auto tmp = std::make_unique<ASTVec>();
-        tmp->push_back(ASTNode_up($2));
-        tmp->push_back(ASTNode_up($3));
-        $$ = new ASTNode(ASTType::LID_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        for (auto & c : *$4) {
-            $$->children->push_back(std::move(c));
-        }
-        delete $4;
-      }
+      { $$ = new ComplexSortNode {{{}, std::move(*$2)}, $3, std::move(*$4)}; }
     ;
 
 sort_list: sort_list sort
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back($2); $$ = $1; }
     |
-        { $$ = new ASTVec(); }
+        { $$ = new std::vector<SortNode*>(); }
     ;
 
 s_expr: spec_const
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::SPECC_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new SExpr{{}, std::move(*$1)}; }
     | symbol
-        {
-            $$ = $1;
-        }
+        { $$ = new SExpr{{}, std::move(*$1)}; }
     | TK_KEY
-        {
-            $$ = new ASTNode(ASTType::UATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1));
-        }
+        { $$ = new SExpr{{}, std::move(*$1)}; }
     | '(' s_expr_list ')'
-        {
-            $$ = new ASTNode(ASTType::SEXPRL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($2));
-        }
+        { $$ = new SExpr{{}, std::move(*$2)}; }
     ;
 
 s_expr_list:
-        {
-            $$ = new ASTVec();
-        }
+        { $$ = new std::vector<SExpr*>(); }
     | s_expr_list s_expr
         {
-            $1->emplace_back(ASTNode_up($2));
+            $1->emplace_back($2);
             $$ = $1;
         }
     ;
 
 
 spec_const: TK_NUM
-        { $$ = new ASTNode(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new SpecConstNode{{}, ConstType::numeral, std::move(*$1)}; }
     | TK_DEC
-        { $$ = new ASTNode(ASTType::DEC_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new SpecConstNode{{}, ConstType::decimal, std::move(*$1)}; }
     | TK_HEX
-        { $$ = new ASTNode(ASTType::HEX_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new SpecConstNode{{}, ConstType::hexadecimal, std::move(*$1)}; }
     | TK_BIN
-        { $$ = new ASTNode(ASTType::BIN_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new SpecConstNode{{}, ConstType::binary, std::move(*$1)}; }
     | TK_STR
-        { $$ = new ASTNode(ASTType::STR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = new SpecConstNode{{}, ConstType::string, std::move(*$1)}; }
     ;
 
 const_val: symbol
         { $$ = $1; }
     | spec_const
-        { $$ = $1; }
+        { $$ = new SymbolNode {{}, std::move(*$1), false}; }
     ;
 
 numeral_list: numeral_list TK_NUM
-        { $1->emplace_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($2))); $$ = $1; }
+        { $1->push_back(std::string(*$2)); delete $2; }
     | TK_NUM
-        { $$ = new ASTVec(); $$->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1))); }
+        { $$ = new std::vector<std::string>{std::string(std::move(*$1))}; }
     ;
 
 qual_identifier: identifier
-        { $$ = $1; }
+        { $$ = new QualIdentifierNode {{}, std::move(*$1)}; }
     | '(' TK_AS identifier sort ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(ASTNode_up($4));
-            $$ = new ASTNode(ASTType::AS_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new QualIdentifierNode {{}, std::move(*$3), $4}; }
     ;
 
 var_binding_list: var_binding
-        { $$ = new ASTVec(); $$->push_back(ASTNode_up($1)); }
+        { $$ = new std::vector<VarBindingNode>; $$->push_back(std::move(*$1)); }
     | var_binding_list var_binding
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back(std::move(*$2)); $$ = $1; }
     ;
 
 var_binding: '(' symbol term ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::VARB_T, osmttokens::smt2token{osmttokens::t_none}, mkUniqueStr($2->getValue()), std::move(tmp));
-            delete $2;
-        }
+        { $$ = new VarBindingNode { {}, std::move(*$2), std::move(*$3) }; }
     ;
 
 sorted_var_list:
-        { $$ = new ASTVec(); }
+        { $$ = new std::vector<SortedVarNode>(); }
     | sorted_var_list sorted_var
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back(std::move(*$2)); $$ = $1; }
     ;
 
 sorted_var: '(' symbol sort ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::SV_T, osmttokens::smt2token{osmttokens::t_none}, mkUniqueStr($2->getValue()), std::move(tmp));
-            delete $2;
-        }
+        { $$ = new SortedVarNode {{}, std::move(*$2), std::move(*$3)}; }
 
 term_list:
-        { $$ = new ASTVec(); }
+        { $$ = new std::vector<TermNode*>(); }
     | term_list term
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back($2); $$ = $1; }
     ;
 
 term: spec_const
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::TERM_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new NormalTermNode(std::move(*$1)); }
     | qual_identifier
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::QID_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new NormalTermNode(std::move($1->identifier), $1->returnSort, {}); delete $1; }
     | '(' qual_identifier term term_list ')'
         {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            tmp->push_back(ASTNode_up($3));
-            $$ = new ASTNode(ASTType::LQID_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
+            auto tmp = std::vector<TermNode*>();
+            tmp.push_back($3);
             for (auto & c : (*$4)) {
-                $$->children->emplace_back(std::move(c));
+                tmp.emplace_back(std::move(c));
             }
             delete $4;
+            $$ = new NormalTermNode(std::move($2->identifier), $2->returnSort, std::move(tmp));
         }
     | '(' TK_LET '(' var_binding_list ')' term ')'
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::VARBL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($4)));
-            tmp->push_back(ASTNode_up($6));
-            $$ = new ASTNode(ASTType::LET_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
-    | '(' TK_FORALL '(' sorted_var_list ')' term ')'
-        {
-            // todo: AST traversal must ensure that sorted_var_list is non-empty
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SVL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($4)));
-            tmp->push_back(ASTNode_up($6));
-            $$ = new ASTNode(ASTType::FORALL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
-    | '(' TK_EXISTS '(' sorted_var_list ')' term ')'
-        {
-            // todo: AST traversal must ensure that sorted_var_list is non-empty
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::SVL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($4)));
-            tmp->push_back(ASTNode_up($6));
-            $$ = new ASTNode(ASTType::EXISTS_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
-    | '(' '!' term attribute_list ')'
-        {
-            // todo: AST traversal must ensure that attribute_list is non-empty
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($3));
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::GATTRL_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, ASTVec_up($4)));
-            $$ = new ASTNode(ASTType::BANG_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new LetTermNode {{}, std::move(*$6), std::move(*$4)}; }
+    | '(' TK_FORALL '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
+        { $$ = new ForallNode {{}, std::move(*$6), std::move(*$4)}; }
+    | '(' TK_EXISTS '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
+        { $$ = new ExistsNode {{}, std::move(*$6), std::move(*$4)}; }
+    | '(' '!' term attribute_list ')' // todo: AST traversal must ensure that attribute_list is non-empty
+        { $$ = new AnnotationNode {{}, std::move(*$3), std::move(*$4)}; }
     ;
 
 symbol_list:
-        { $$ = new ASTVec(); }
+        { $$ = new std::vector<SymbolNode>(); }
     | symbol_list symbol
-        { $1->emplace_back(ASTNode_up($2)); $$ = $1; }
+        { $1->emplace_back(std::move(*$2)); $$ = $1; }
     ;
 
 b_value: symbol
         {
-            std::string const & str = $1->getValue();
-            if (str == "true" or str == "false") {
-                $$ = new ASTNode(ASTType::BOOL_T, osmttokens::smt2token{osmttokens::t_none}, mkUniqueStr(str)); delete $1;
-            }
-            else {
-                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", str.c_str());
+            if (std::string const * str_p = std::get_if<std::string>(&($1->name))) {
+                if (*str_p == "true") {
+                    $$ = true;
+                } else if (*str_p == "false") {
+                    $$ = false;
+                } else {
+                    printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", str_p->c_str());
+                    delete $1;
+                    YYERROR;
+                }
+                delete $1;
+            } else {
+                SpecConstNode const * node = std::get_if<SpecConstNode>(&($1->name));
+                assert(node);
+                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", node->value.c_str());
                 delete $1;
                 YYERROR;
             }
@@ -532,77 +381,29 @@ b_value: symbol
     ;
 
 option: KW_PRINTSUCCESS b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new PrintSuccess {{}, $2}; (void)$1; }
     | KW_EXPANDDEFINITIONS b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new ExpandDefinitions {{}, $2}; (void)$1; }
     | KW_INTERACTIVEMODE b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new InteractiveMode {{}, $2}; (void)$1; }
     | KW_PRODUCEPROOFS b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new ProduceProofs {{}, $2}; (void)$1; }
     | KW_PRODUCEUNSATCORES b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new ProduceUnsatCores {{}, $2}; (void)$1; }
     | KW_PRODUCEMODELS b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new ProduceModels {{}, $2}; (void)$1; }
     | KW_PRODUCEASSIGNMENTS b_value
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($2));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new ProduceAssignments {{}, $2}; (void)$1;}
     | KW_REGULAROUTPUTCHANNEL TK_STR
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::STR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($2)));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new RegularOutputChannel {{}, std::move(*$2)}; (void)$1; }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::STR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($2)));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new DiagnosticOutputChannel {{}, std::move(*$2)}; (void)$1; }
     | KW_RANDOMSEED TK_NUM
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($2)));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new RandomSeed {{}, std::stoi(*$2) }; free $2; (void)$1; }
     | KW_VERBOSITY TK_NUM
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::NUM_T, osmttokens::smt2token{osmttokens::t_none}, string_up($2)));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1), std::move(tmp));
-        }
+        { $$ = new Verbosity {{}, std::stoi(*$2) }; free $2; (void)$1; }
     | attribute
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(ASTNode_up($1));
-            $$ = new ASTNode(ASTType::OPTION_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = new Attribute {{}, std::move(*$1) }; }
     ;
 
 predef_key: KW_SORTS
@@ -664,25 +465,21 @@ predef_key: KW_SORTS
     ;
 
 info_flag: KW_ERRORBEHAVIOR
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_NAME
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_AUTHORS
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_VERSION
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_STATUS
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_REASONUNKNOWN
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | KW_ALLSTATISTICS
-        { $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)); }
+        { $$ = $1; }
     | TK_KEY
-        {
-            auto tmp = std::make_unique<ASTVec>();
-            tmp->push_back(std::make_unique<ASTNode>(ASTType::GATTR_T, osmttokens::smt2token{osmttokens::t_none}, string_up($1)));
-            $$ = new ASTNode(ASTType::INFO_T, osmttokens::smt2token{osmttokens::t_none}, nullptr, std::move(tmp));
-        }
+        { $$ = $1; }
     ;
 
 %%
