@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SMT2NEWCONTEXT_H
 
 #include <iostream>
+#include <variant>
 #include "SMTConfig.h"
 
 enum class ConstType {
