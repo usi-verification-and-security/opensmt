@@ -35,9 +35,11 @@ struct PTRef {
     inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
     inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
     inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
+    static const PTRef Undef;
 };
 
 const struct PTRef PTRef_Undef = {INT32_MAX};
+inline constexpr PTRef PTRef::Undef = PTRef { INT32_MAX };
 
 struct PTRefHash {
     uint32_t operator () (const PTRef& s) const {
