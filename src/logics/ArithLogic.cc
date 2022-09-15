@@ -9,6 +9,7 @@
 #include "OsmtApiException.h"
 #include "IteHandler.h"
 #include "DivModRewriter.h"
+#include "Polynomial.h"
 #include <memory>
 #include <sstream>
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
@@ -243,35 +244,192 @@ PTRef ArithLogic::normalizeMul(PTRef mul)
     }
 }
 
-lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & substitutions)
-{
-    std::vector<std::unique_ptr<LAExpression>> equalities;
-    ArithLogic& logic = *this;
-    // I don't know if reversing the order makes any sense but osmt1
-    // does that.
-    for (int i = top_level_arith.size() - 1; i >= 0; i--) {
-        equalities.emplace_back(new LAExpression(logic, top_level_arith[i]));
+namespace{
+using poly_t = PolynomialT<PTRef>;
+Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+    Logic::SubstMap substitutions;
+
+    while (true) {
+        vec<PTRef> new_keys;
+        std::vector<std::size_t> processedIndices;
+        std::unordered_map<PTRef, std::vector<std::size_t>, PTRefHash> varToPolyIndices;
+
+        for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
+            auto const & poly = zeroPolynomials[i];
+            assert(poly.size() > 0);
+            for (auto const & term : poly) {
+                varToPolyIndices[term.var].push_back(i);
+            }
+
+            if (poly.size() == 1) {
+                auto const & term = *poly.begin();
+                if (term.var == PTRef_Undef) { // FALSE equality
+                    continue;
+                }
+                // poly is "x = 0"
+                PTRef var = term.var;
+                if (not substitutions.has(var)) {
+                    substitutions.insert(var, logic.getZeroForSort(logic.getSortRef(var)));
+                    new_keys.push(var);
+                }
+                processedIndices.push_back(i);
+                varToPolyIndices.at(var).pop_back();
+                continue;
+            }
+            assert(poly.begin()->var != PTRef_Undef);
+            if (poly.size() == 2 and (poly.begin() + 1)->var == PTRef_Undef) { // poly is "a*x + c = 0" for c != 0
+                auto const & term = *poly.begin();
+                PTRef var = term.var;
+                if (not substitutions.has(var)) {
+                    auto val = -((poly.begin() + 1)->coeff) / term.coeff;
+                    substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
+                    new_keys.push(var);
+                }
+                processedIndices.push_back(i);
+                varToPolyIndices.at(var).pop_back();
+                continue;
+            }
+        }
+
+        // Apply found substitutions
+        bool changed = false;
+        for (PTRef var : new_keys) {
+            for (std::size_t index : varToPolyIndices.at(var)) {
+                auto & poly = zeroPolynomials[index];
+                auto coeff = poly.removeVar(var);
+                auto val = substitutions[var];
+                if (not logic.isZero(val)) {
+                    poly_t constantPoly;
+                    constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val));
+                    poly.merge(constantPoly, 1);
+                }
+                changed = true;
+            }
+        }
+        // remove used polynomials
+        auto lastValid = zeroPolynomials.size() - 1;
+        for (auto rit = processedIndices.rbegin(); rit != processedIndices.rend(); ++rit) {
+            auto index = *rit;
+            zeroPolynomials[index] = std::move(zeroPolynomials[lastValid]);
+            zeroPolynomials.pop_back();
+            --lastValid;
+        }
+
+        if (not changed) { break; }
+    }
+    return substitutions;
+}
+
+PTRef polyToPTRef(ArithLogic & logic, poly_t poly) {
+    vec<PTRef> args;
+    args.capacity(poly.size());
+    assert(poly.size() > 0);
+    assert(poly.begin()->var != PTRef_Undef);
+    SRef sortRef = logic.getSortRef(poly.begin()->var);
+    for (auto const & term : poly) {
+        assert(not term.coeff.isZero());
+        if (term.var == PTRef_Undef) { args.push(logic.mkConst(sortRef, term.coeff)); }
+        else if (term.coeff.isOne()) { args.push(term.var); }
+        else { args.push(logic.mkTimes(term.var, logic.mkConst(logic.getSortRef(term.var), term.coeff))); }
+    }
+    return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
+}
+
+Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+    Logic::SubstMap substitutions;
+    std::unordered_map<PTRef, std::vector<std::size_t>, PTRefHash> varToPolyIndices;
+
+    for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
+        auto const & poly = zeroPolynomials[i];
+        for (auto const & term : poly) {
+            varToPolyIndices[term.var].push_back(i);
+        }
     }
 
-    for (auto const& equality : equalities) {
-        PTRef res = equality->solve();
-        if (res == PTRef_Undef) { // MB: special case where the equality simplifies to "c = 0" with c constant
-            // This is a conflicting equality unless the constant "c" is also 0.
-            // We do nothing here and let the main code deal with this
-            continue;
+    std::unordered_set<std::size_t> processedIndices;
+    for (auto const & entry : varToPolyIndices) {
+        if (entry.second.size() != 1 or entry.first == PTRef_Undef) { continue; }
+        auto index = entry.second[0];
+        PTRef var = entry.first;
+        auto [it, inserted] = processedIndices.insert(index);
+        if (not inserted) { continue; }
+        auto & poly = zeroPolynomials[index];
+        auto coeff = poly.removeVar(var);
+        coeff.negate();
+        if (not coeff.isOne()) {
+            poly.divideBy(coeff);
         }
-        auto sub = equality->getSubst();
-        PTRef var = sub.first;
-        assert(var != PTRef_Undef and isNumVarLike(var) and sub.second != PTRef_Undef);
-        if (substitutions.has(var)) {
-            if (logic.isConstant(sub.second)) {
-                substitutions[var] = sub.second;
-            }
-            // Already has substitution for this var, let the main substitution code deal with this situation
-            continue;
+        PTRef val = polyToPTRef(logic, poly);
+        substitutions.insert(var, val);
+    }
+    // Remove processed polynomials
+    std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
+    std::sort(indicesToRemove.begin(), indicesToRemove.end());
+    auto lastValid = zeroPolynomials.size() - 1;
+    for (auto rit = indicesToRemove.rbegin(); rit != indicesToRemove.rend(); ++rit) {
+        auto index = *rit;
+        zeroPolynomials[index] = std::move(zeroPolynomials[lastValid]);
+        zeroPolynomials.pop_back();
+        --lastValid;
+    }
+    return substitutions;
+}
+}
+
+lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & out_substitutions)
+{
+    ArithLogic & logic = *this;
+    auto toPoly = [&logic](PTRef eq) {
+        assert(logic.isEquality(eq));
+        poly_t poly;
+        PTRef polyTerm = logic.mkMinus(logic.getPterm(eq)[0], logic.getPterm(eq)[1]);
+        assert(logic.isLinearTerm(polyTerm));
+        if (logic.isLinearFactor(polyTerm)) {
+            auto [var,c] = logic.splitTermToVarAndConst(polyTerm);
+            auto coeff = logic.getNumConst(c);
+            poly.addTerm(var, std::move(coeff));
         } else {
-            substitutions.insert(var, sub.second);
+            for (PTRef factor : logic.getPterm(polyTerm)) {
+                auto [var,c] = logic.splitTermToVarAndConst(factor);
+                auto coeff = logic.getNumConst(c);
+                poly.addTerm(var, std::move(coeff));
+            }
         }
+        return poly;
+    };
+    std::vector<poly_t> polynomials;
+    polynomials.reserve(top_level_arith.size_());
+    std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials), toPoly);
+
+    auto constSubstitutions = collectConstantSubstitutions(logic, polynomials);
+    for (PTRef key : constSubstitutions.getKeys()) {
+        assert(not out_substitutions.has(key));
+        out_substitutions.insert(key, constSubstitutions[key]);
+    }
+
+    auto singleEqSubstitutions = collectSingleEqualitySubstitutions(logic, polynomials);
+    for (PTRef key : singleEqSubstitutions.getKeys()) {
+        assert(not out_substitutions.has(key));
+        out_substitutions.insert(key, singleEqSubstitutions[key]);
+    }
+
+    for (auto & poly : polynomials) {
+        // solve polynomial with respect to its first variable
+        assert(poly.size() > 0);
+        PTRef var = poly.begin()->var;
+        if (out_substitutions.has(var)) {
+            // Already have a substitution for this variable; skip this equality, let the main loop deal with this
+            continue;
+        }
+        assert(var != PTRef_Undef);
+        auto coeff = poly.removeVar(var);
+        coeff.negate();
+        if (not coeff.isOne()) {
+            poly.divideBy(coeff);
+        }
+        PTRef val = polyToPTRef(logic, poly);
+        assert(not out_substitutions.has(var));
+        out_substitutions.insert(var, val);
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
