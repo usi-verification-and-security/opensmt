@@ -46,6 +46,40 @@ TEST_F(LIASubstitutionsRegression, test_InconsistentSubstitutions) {
     ASSERT_TRUE(true);
 }
 
+TEST_F(LIASubstitutionsRegression, test_InconsistentSubstitutions_WithConstants) {
+    auto const osmt = getLIAOsmt();
+    auto & lialogic = osmt->getLIALogic();
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef z = lialogic.mkIntVar("z");
+    PTRef zero = lialogic.getTerm_IntZero();
+    PTRef one = lialogic.getTerm_IntOne();
+    PTRef eq1 = lialogic.mkEq(x, zero);
+    PTRef eq2 = lialogic.mkEq(y, one);
+    PTRef eq3 = lialogic.mkEq(z, one);
+    PTRef eq4 = lialogic.mkEq(lialogic.mkPlus(vec<PTRef>{x,y,z}), one);
+    Logic::SubstMap substMap;
+    lialogic.arithmeticElimination({eq1,eq2,eq3,eq4}, substMap);
+    ASSERT_TRUE(true);
+}
+
+TEST_F(LIASubstitutionsRegression, test_RedundantEquality) {
+    auto const osmt = getLIAOsmt();
+    auto & lialogic = osmt->getLIALogic();
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef z = lialogic.mkIntVar("z");
+    PTRef zero = lialogic.getTerm_IntZero();
+    PTRef one = lialogic.getTerm_IntOne();
+    PTRef eq1 = lialogic.mkEq(x, zero);
+    PTRef eq2 = lialogic.mkEq(y, zero);
+    PTRef eq3 = lialogic.mkEq(z, one);
+    PTRef eq4 = lialogic.mkEq(lialogic.mkPlus(vec<PTRef>{x,y,z}), one);
+    Logic::SubstMap substMap;
+    lialogic.arithmeticElimination({eq1,eq2,eq3,eq4}, substMap);
+    ASSERT_TRUE(true);
+}
+
 TEST_F(LIASubstitutionsRegression, test_TwoVarsEqual) {
     auto const osmt = getLIAOsmt();
     auto & lialogic = osmt->getLIALogic();
