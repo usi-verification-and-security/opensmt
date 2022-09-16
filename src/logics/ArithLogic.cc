@@ -256,7 +256,10 @@ Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<pol
 
         for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
             auto const & poly = zeroPolynomials[i];
-            assert(poly.size() > 0);
+            if (poly.size() == 0) { // Could happen after first iteration; can safely ignore
+                processedIndices.push_back(i);
+                continue;
+            }
             for (auto const & term : poly) {
                 varToPolyIndices[term.var].push_back(i);
             }
@@ -417,11 +420,13 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
         // solve polynomial with respect to its first variable
         assert(poly.size() > 0);
         PTRef var = poly.begin()->var;
+        if (var == PTRef_Undef) { // 'c = 0' for some constant c; let the main loop deal with this
+            continue;
+        }
         if (out_substitutions.has(var)) {
             // Already have a substitution for this variable; skip this equality, let the main loop deal with this
             continue;
         }
-        assert(var != PTRef_Undef);
         auto coeff = poly.removeVar(var);
         coeff.negate();
         if (not coeff.isOne()) {
