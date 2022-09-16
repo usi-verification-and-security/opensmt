@@ -32,3 +32,30 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
     auto res = mainSolver.check();
     ASSERT_EQ(res, s_False);
 }
+
+TEST_F(LIASubstitutionsRegression, test_InconsistentSubstitutions) {
+    auto const osmt = getLIAOsmt();
+    auto & lialogic = osmt->getLIALogic();
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef one = lialogic.getTerm_IntOne();
+    PTRef eq1 = lialogic.mkEq(x, y);
+    PTRef eq2 = lialogic.mkEq(one, lialogic.mkMinus(x,y));
+    Logic::SubstMap substMap;
+    lialogic.arithmeticElimination({eq1,eq2}, substMap);
+    ASSERT_TRUE(true);
+}
+
+TEST_F(LIASubstitutionsRegression, test_TwoVarsEqual) {
+    auto const osmt = getLIAOsmt();
+    auto & lialogic = osmt->getLIALogic();
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef eq1 = lialogic.mkEq(x, y);
+    Logic::SubstMap substMap;
+    lialogic.arithmeticElimination({eq1}, substMap);
+    ASSERT_EQ(substMap.getSize(), 1);
+    PTRef key = substMap.getKeys()[0];
+    PTRef value = substMap[key];
+    ASSERT_TRUE((key == x and value == y) or (key == y and value == x));
+}

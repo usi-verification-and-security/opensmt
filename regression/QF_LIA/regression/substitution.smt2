@@ -1,0 +1,5 @@
+(set-logic QF_LIA)
+(declare-fun x () Int)
+(declare-fun H () Int)
+(assert (and (= H x) (= 1 (- x H))))
+(check-sat)
