@@ -43,16 +43,16 @@ class GeneralNode {};
 
 struct SpecConstNode : public GeneralNode {
     ConstType type;
-    std::string value;
+    std::unique_ptr<std::string> value;
 };
 
 struct SymbolNode : public GeneralNode {
-   std::variant<std::string,SpecConstNode> name;
-   bool quoted;
+    std::variant<std::unique_ptr<std::string>,std::unique_ptr<SpecConstNode>> name;
+    bool quoted;
 };
 
 struct SExpr : public GeneralNode {
-    std::variant<SpecConstNode,SymbolNode,std::string,std::vector<SExpr*>> data;
+    std::variant<std::unique_ptr<SpecConstNode>,std::unique_ptr<SymbolNode>,std::unique_ptr<std::string>,std::unique_ptr<std::vector<SExpr*>>> data;
     ~SExpr() {
         struct Qel {
             SExpr * node;
@@ -62,12 +62,12 @@ struct SExpr : public GeneralNode {
         queue.emplace_back(Qel{this, static_cast<uint32_t>(0)});
         while (not queue.empty()) {
             auto & [node, processed] = queue.back();
-            auto children = std::get_if<std::vector<SExpr *>>(&node->data);
-            if (children and processed < children->size()) {
+            auto children = std::get_if<std::unique_ptr<std::vector<SExpr *>>>(&node->data);
+            if (children and processed < (*children)->size()) {
                 ++processed;
-                queue.emplace_back(Qel{(*children)[processed - 1], 0});
+                queue.emplace_back(Qel{(**children)[processed - 1], 0});
             }
-            assert(not children or processed == children->size());
+            assert(not children or processed == (*children)->size());
             assert(node);
             delete node;
             queue.pop_back();
@@ -76,10 +76,13 @@ struct SExpr : public GeneralNode {
 };
 
 struct AttributeValueNode : public GeneralNode {
-    std::variant<SpecConstNode, SymbolNode, std::vector<SExpr*>> value;
+    std::variant<std::unique_ptr<SpecConstNode>, std::unique_ptr<SymbolNode>, std::unique_ptr<std::vector<SExpr*>>> value;
+    AttributeValueNode(std::unique_ptr<SpecConstNode> && node) : value(std::move(node)) {}
+    AttributeValueNode(std::unique_ptr<SymbolNode> && node) : value(std::move(node)) {}
+    AttributeValueNode(std::unique_ptr<std::vector<SExpr*>> && node) : value(std::move(node)) {}
     ~AttributeValueNode() {
-        if (auto vec = std::get_if<std::vector<SExpr*>>(&value)) {
-            for (auto el : *vec) {
+        if (auto vec = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&value)) {
+            for (auto el : (**vec)) {
                 delete el;
             }
         }
@@ -88,13 +91,13 @@ struct AttributeValueNode : public GeneralNode {
 
 struct AttributeNode : public GeneralNode {
     bool predefined = false;
-    std::string name;
-    AttributeValueNode value;
+    std::unique_ptr<std::string> name;
+    std::unique_ptr<AttributeValueNode> value;
 };
 
 struct IdentifierNode : public GeneralNode {
-    SymbolNode symbol;
-    std::vector<std::string> numeralList;
+    std::unique_ptr<SymbolNode> symbol;
+    std::unique_ptr<std::vector<std::string>> numeralList;
 };
 
 
@@ -115,97 +118,142 @@ struct Attribute : public OptionNode { AttributeNode value; };
 
 class CommandNode : public GeneralNode {};
 
-struct SetLogic : public CommandNode { SymbolNode logic; };
-struct SetOption : public CommandNode { OptionNode option; };
-struct SetInfo : public CommandNode { AttributeNode attribute; };
+struct SetLogic : public CommandNode { std::unique_ptr<SymbolNode> logic; };
+struct SetOption : public CommandNode { std::unique_ptr<OptionNode> option; };
+struct SetInfo : public CommandNode { std::unique_ptr<AttributeNode> attribute; };
 
 struct DeclareSort : public CommandNode {
-    SymbolNode symbol;
-    std::string num;
+    std::unique_ptr<SymbolNode> symbol;
+    std::unique_ptr<std::string> num;
 };
 
 struct SortNode : public GeneralNode {
-    IdentifierNode identifier;
-};
+    std::unique_ptr<IdentifierNode> identifier;
+    std::unique_ptr<std::vector<SortNode *>> sortList;
 
-
-struct ComplexSortNode : public SortNode {
-    SortNode * sort;
-    std::vector<SortNode *> sortList;
+    ~SortNode() {
+        struct Qel {
+           SortNode * node;
+           uint32_t processed;
+        };
+        std::vector<Qel> queue;
+        queue.emplace_back(Qel{this, static_cast<uint32_t>(0)});
+        while (not queue.empty()) {
+            auto & [node, processed] = queue.back();
+            auto & children = *node->sortList;
+            if (processed < children.size()) {
+                ++processed;
+                queue.emplace_back(Qel{children[processed - 1], 0});
+            }
+            assert(processed == children.size());
+            assert(node);
+            for (auto child : *sortList) {
+                assert(child->sortList->empty());
+                delete child;
+            }
+            node->sortList->clear(); // delete is not called on the pointers
+            queue.pop_back();
+        }
+    }
 };
 
 struct QualIdentifierNode : public GeneralNode {
-    IdentifierNode identifier;
-    SortNode * returnSort = nullptr;
+    std::unique_ptr<IdentifierNode> identifier;
+    std::unique_ptr<SortNode> returnSort = nullptr;
 };
 
 struct DefineSort : public CommandNode {
-    SymbolNode name;
-    std::vector<SymbolNode> argumentSorts;
-    SortNode sort;
+    std::unique_ptr<SymbolNode> name;
+    std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>> argumentSorts;
+    std::unique_ptr<SortNode> sort;
 };
 
 struct DeclareFun : public CommandNode {
-    SymbolNode name;
-    std::vector<SortNode*> argumentSorts;
-    SortNode returnSort;
+    std::unique_ptr<SymbolNode> name;
+    std::unique_ptr<std::vector<SortNode*>> argumentSorts;
+    std::unique_ptr<SortNode> returnSort;
+    ~DeclareFun() {
+        for (auto sort : *argumentSorts) {
+            delete sort;
+        }
+    }
 };
 
 struct DeclareConst : public CommandNode {
-    std::variant<SymbolNode,SpecConstNode> name;
-    SortNode sort;
-};
-
-class TermNode : public GeneralNode {};
-
-struct NormalTermNode : public TermNode {
-    std::variant<SpecConstNode,IdentifierNode> head;
-    SortNode * returnSort = nullptr;
-    std::vector<TermNode*> arguments;
-};
-
-struct VarBindingNode : public GeneralNode {
-    SymbolNode symbol;
-    TermNode term;
-};
-
-struct LetTermNode : public TermNode {
-    TermNode term;
-    std::vector<VarBindingNode> bindings;
+    std::variant<std::unique_ptr<SymbolNode>,std::unique_ptr<SpecConstNode>> name;
+    std::unique_ptr<SortNode> sort;
 };
 
 struct SortedVarNode : public GeneralNode {
-    SymbolNode symbol;
-    SortNode sort;
+    std::unique_ptr<SymbolNode> symbol;
+    std::unique_ptr<SortNode> sort;
+};
+
+struct TermNode;
+
+struct VarBindingNode : public GeneralNode {
+    std::unique_ptr<SymbolNode> symbol;
+    TermNode * term;
+};
+
+struct TermNode : public GeneralNode {
+    std::unique_ptr<std::vector<TermNode*>> arguments;
+    TermNode(std::unique_ptr<std::vector<TermNode*>> && arguments) : arguments(std::move(arguments)) {}
+    virtual ~TermNode();
+};
+
+struct NormalTermNode : public TermNode {
+    std::variant<std::unique_ptr<SpecConstNode>,std::unique_ptr<IdentifierNode>> head;
+    std::unique_ptr<SortNode> returnSort = nullptr;
+    // Todo: understand why I need this constructor
+    NormalTermNode(std::unique_ptr<std::vector<TermNode*>> && arguments,
+                   std::variant<std::unique_ptr<SpecConstNode>,
+                   std::unique_ptr<IdentifierNode>> && head,
+                   std::unique_ptr<SortNode> && returnSort)
+        :  TermNode(std::move(arguments)), head(std::move(head)), returnSort(std::move(returnSort)) {}
+};
+
+struct LetTermNode : public TermNode {
+    std::unique_ptr<std::vector<std::unique_ptr<VarBindingNode>>> bindings;
+    LetTermNode(TermNode * term, std::unique_ptr<std::vector<std::unique_ptr<VarBindingNode>>> && bindings)
+        : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
+        , bindings(std::move(bindings))
+    {}
 };
 
 struct ForallNode : public TermNode {
-    TermNode term;
-    std::vector<SortedVarNode> bindings;
+    std::unique_ptr<std::vector<SortedVarNode>> quantified;
+    ForallNode(TermNode * term, std::unique_ptr<std::vector<SortedVarNode>> && quantified)
+        : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
+        , quantified(std::move(quantified)) {}
 };
 
 struct ExistsNode : public TermNode {
-    TermNode term;
-    std::vector<SortedVarNode> bindings;
+    std::unique_ptr<std::vector<SortedVarNode>> quantified;
+    ExistsNode(TermNode * term, std::unique_ptr<std::vector<SortedVarNode>> && quantified)
+        : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
+        , quantified(std::move(quantified)) {}
 };
 
 struct AnnotationNode : public TermNode {
-    TermNode term;
-    std::vector<AttributeNode> attributes;
+    std::unique_ptr<std::vector<AttributeNode>> attributes;
+    AnnotationNode(TermNode * term, std::unique_ptr<std::vector<AttributeNode>> && attributes)
+        : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
+        , attributes(std::move(attributes)) {}
 };
 
 struct DefineFun : public CommandNode {
-    SymbolNode name;
-    std::vector<SortedVarNode> args;
-    SortNode returnSort;
-    TermNode term;
+    std::unique_ptr<SymbolNode> name;
+    std::unique_ptr<std::vector<SortedVarNode>> args;
+    std::unique_ptr<SortNode> returnSort;
+    std::unique_ptr<TermNode> term;
 };
 
 struct PushNode : public CommandNode { int num; };
 
 struct PopNode : public CommandNode { int num; };
 
-struct AssertNode : public CommandNode { TermNode term; };
+struct AssertNode : public CommandNode { std::unique_ptr<TermNode> term; };
 
 struct CheckSatNode : public CommandNode {};
 
@@ -213,25 +261,25 @@ struct GetAssertions : public CommandNode {};
 
 struct GetProof : public CommandNode {};
 
-struct GetInterpolants : public CommandNode { std::vector<TermNode*> configuration; };
+struct GetInterpolants : public CommandNode { std::unique_ptr<std::vector<TermNode*>> configuration; };
 
 struct GetUnsatCore : public CommandNode {};
 
-struct GetValue : public CommandNode { std::vector<TermNode*> terms; };
+struct GetValue : public CommandNode { std::unique_ptr<std::vector<TermNode*>> terms; };
 
 struct GetModel : public CommandNode {};
 
 struct GetAssignment : public CommandNode {};
 
-struct GetOption : public CommandNode { std::string key; };
+struct GetOption : public CommandNode { std::unique_ptr<std::string> key; };
 
-struct GetInfo : public CommandNode { std::string key; };
+struct GetInfo : public CommandNode { std::unique_ptr<std::string> key; };
 
 struct Simplify : public CommandNode {};
 
 struct Exit : public CommandNode {};
 
-struct Echo : public CommandNode { std::string text; };
+struct Echo : public CommandNode { std::unique_ptr<std::string> text; };
 
 class Smt2newContext {
   private:
@@ -240,14 +288,14 @@ class Smt2newContext {
     char*                       buffer;
     int                         buffer_sz;
     int                         buffer_cap;
-    std::vector<CommandNode*>   root;
+    std::unique_ptr<std::vector<CommandNode*>>   root;
   public:
     void*                       scanner;
     int                         result;
     FILE*                       is;
     char*                       ib;
     bool                        interactive;
-    inline std::vector<CommandNode*> const & getRoot() { return root; };
+    inline std::vector<CommandNode*> const & getRoot() { return *root; };
 
     Smt2newContext(FILE* in) :
        buffer_sz(0)
@@ -295,7 +343,7 @@ class Smt2newContext {
         buffer_sz = 0;
     }
 
-    void insertRoot(std::vector<CommandNode*> && n) {
+    void insertRoot(std::unique_ptr<std::vector<CommandNode*>> && n) {
         root = std::move(n);
     }
 

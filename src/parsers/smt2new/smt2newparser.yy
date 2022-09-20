@@ -78,7 +78,7 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   IdentifierNode * n_identifier;
   QualIdentifierNode * n_qualIdentifier;
   VarBindingNode * n_varBinding;
-  std::vector<VarBindingNode> * n_varBindingList;
+  std::vector<std::unique_ptr<VarBindingNode>> * n_varBindingList;
   std::vector<SortNode*> * n_sortList;
   std::vector<std::string> * n_numeralList;
   AttributeNode * n_attribute;
@@ -93,7 +93,7 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   std::vector<TermNode*> * n_termList;
   std::vector<AttributeNode> * n_attributeList;
   std::vector<CommandNode *> * n_commandList;
-  std::vector<SymbolNode> * n_symbolList;
+  std::vector<std::unique_ptr<SymbolNode>> * n_symbolList;
   std::vector<SExpr*> * sexpr_list;
   std::string * str;
   bool n_bool;
@@ -144,12 +144,12 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
 
 %%
 
-script: command_list { context->insertRoot(std::move(*$1)); };
+script: command_list { context->insertRoot(std::unique_ptr<std::vector<CommandNode*>>($1)); };
 
 symbol: TK_SYM
-        { $$ = new SymbolNode{{}, {std::move(*$1)}, false}; }
+        { $$ = new SymbolNode {{}, {std::unique_ptr<std::string>($1)}, false}; }
     | TK_QSYM
-        { $$ = new SymbolNode {{}, {std::move(*$1)}, true}; }
+        { $$ = new SymbolNode {{}, {std::unique_ptr<std::string>($1)}, true}; }
     ;
 
 command_list:
@@ -159,27 +159,27 @@ command_list:
     ;
 
 command: '(' TK_SETLOGIC symbol ')'
-        { $$ = new SetLogic {{}, std::move(*$3)}; }
+        { $$ = new SetLogic {{}, std::unique_ptr<SymbolNode>($3)}; }
     | '(' TK_SETOPTION option ')'
-        { $$ = new SetOption {{}, std::move(*$3)}; }
+        { $$ = new SetOption {{}, std::unique_ptr<OptionNode>($3)}; }
     | '(' TK_SETINFO attribute ')'
-        { $$ = new SetInfo {{}, std::move(*$3)}; }
+        { $$ = new SetInfo {{}, std::unique_ptr<AttributeNode>($3)}; }
     | '(' TK_DECLARESORT symbol TK_NUM ')'
-        { $$ = new DeclareSort {{}, std::move(*$3), std::move(*$4)}; }
+        { $$ = new DeclareSort {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::string>($4)}; }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
-        { $$ = new DefineSort {{}, std::move(*$3), std::move(*$5), std::move(*$7)}; }
+        { $$ = new DefineSort {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
-        { $$ = new DeclareFun {{}, std::move(*$3), std::move(*$5), std::move(*$7)}; }
+        { $$ = new DeclareFun {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortNode*>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLARECONST const_val sort ')'
-        { $$ = new DeclareConst {{}, std::move(*$3), std::move(*$4)}; }
+        { $$ = new DeclareConst {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
-        { $$ = new DefineFun {{}, std::move(*$3), std::move(*$5), std::move(*$7), std::move(*$8)}; }
+        { $$ = new DefineFun {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortedVarNode>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
     | '(' TK_PUSH TK_NUM ')'
         { $$ = new PushNode {{}, std::stoi(*$3)}; delete $3; }
     | '(' TK_POP TK_NUM ')'
         { $$ = new PopNode {{}, std::stoi(*$3)}; delete $3; }
     | '(' TK_ASSERT term ')'
-        { $$ = new AssertNode{{}, std::move(*$3)}; }
+        { $$ = new AssertNode{{}, std::unique_ptr<TermNode>($3)}; }
     | '(' TK_CHECKSAT ')'
         { $$ = new CheckSatNode(); }
     | '(' TK_GETASSERTIONS ')'
@@ -187,27 +187,27 @@ command: '(' TK_SETLOGIC symbol ')'
     | '(' TK_GETPROOF ')'
         { $$ = new GetProof() ; }
     | '(' TK_GETITPS term_list ')'
-        { $$ = new GetInterpolants {{}, std::move(*$3)}; }
+        { $$ = new GetInterpolants {{}, std::unique_ptr<std::vector<TermNode*>>($3)}; }
     | '(' TK_GETUNSATCORE ')'
         { $$ = new GetUnsatCore(); }
     | '(' TK_GETVALUE '(' term_list ')' ')'
-        { $$ = new GetValue { {}, std::move(*$4) }; }
+        { $$ = new GetValue { {}, std::unique_ptr<std::vector<TermNode*>>($4) }; }
     | '(' TK_GETMODEL ')'
             { $$ = new GetModel(); }
     | '(' TK_GETASSIGNMENT ')'
         { $$ = new GetAssignment(); }
     | '(' TK_GETOPTION TK_KEY ')'
-        { $$ = new GetOption{ {}, std::move(*$3) }; }
+        { $$ = new GetOption{ {}, std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETOPTION predef_key ')'
-        { $$ = new GetOption{ {}, std::move(*$3) }; }
+        { $$ = new GetOption{ {}, std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETINFO info_flag ')'
-        { $$ = new GetInfo{ {}, std::move(*$3) }; }
+        { $$ = new GetInfo{ {}, std::unique_ptr<std::string>($3) }; }
     | '(' TK_SIMPLIFY ')'
         { $$ = new Simplify(); }
     | '(' TK_EXIT ')'
         { $$ = new Exit(); }
     | '(' TK_ECHO TK_STR ')'
-        { $$ = new Echo{ {}, std::move(*$3) }; }
+        { $$ = new Echo{ {}, std::unique_ptr<std::string>($3) }; }
     ;
 
 attribute_list:
@@ -217,33 +217,36 @@ attribute_list:
     ;
 
 attribute: TK_KEY
-        { $$ = new AttributeNode { {}, false, std::move(*$1), {{}, std::vector<SExpr*>{}} }; }
+        { $$ = new AttributeNode { {}, false, std::unique_ptr<std::string>($1), std::make_unique<AttributeValueNode>(std::make_unique<std::vector<SExpr*>>()) }; }
     | TK_KEY attribute_value
-        { $$ = new AttributeNode { {}, false, std::move(*$1), std::move(*$2) }; }
+        { $$ = new AttributeNode { {}, false, std::unique_ptr<std::string>($1), std::unique_ptr<AttributeValueNode>($2) }; }
     | predef_key
-        { $$ = new AttributeNode { {}, true, std::move(*$1), {{}, std::vector<SExpr*>{}} }; }
+        { $$ = new AttributeNode { {}, true, std::unique_ptr<std::string>($1), std::make_unique<AttributeValueNode>(std::make_unique<std::vector<SExpr*>>()) }; }
     | predef_key attribute_value
-        { $$ = new AttributeNode { {}, true, std::move(*$1), std::move(*$2) }; }
+        { $$ = new AttributeNode { {}, true, std::unique_ptr<std::string>($1), std::unique_ptr<AttributeValueNode>($2) }; }
     ;
 
 attribute_value: spec_const
-        { $$ = new AttributeValueNode {{}, std::move(*$1)}; }
+        { $$ = new AttributeValueNode(std::unique_ptr<SpecConstNode>($1)); }
     | symbol
-        { $$ = new AttributeValueNode {{}, std::move(*$1)}; }
+        { $$ = new AttributeValueNode(std::unique_ptr<SymbolNode>($1)); }
     | '(' s_expr_list ')'
-        { $$ = new AttributeValueNode {{}, std::move(*$2)}; }
+        { $$ = new AttributeValueNode(std::unique_ptr<std::vector<SExpr*>>($2)); }
     ;
 
 identifier: symbol
-        { $$ = new IdentifierNode {{}, std::move(*$1), {}}; }
+        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($1), {}}; }
     | '(' '_' symbol numeral_list ')'
-        { $$ = new IdentifierNode {{}, std::move(*$3), std::move(*$4)}; }
+        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::string>>($4)}; }
     ;
 
 sort: identifier
-      { $$ = new SortNode {{}, std::move(*$1)}; }
-    | '(' identifier sort sort_list ')'
-      { $$ = new ComplexSortNode {{{}, std::move(*$2)}, $3, std::move(*$4)}; }
+      { $$ = new SortNode {{}, std::unique_ptr<IdentifierNode>($1), std::make_unique<std::vector<SortNode*>>()}; }
+    | '(' identifier sort_list sort ')'
+      {
+        $3->push_back($4);
+        $$ = new SortNode {{}, std::unique_ptr<IdentifierNode>($2), std::unique_ptr<std::vector<SortNode*>>($3)};
+      }
     ;
 
 sort_list: sort_list sort
@@ -253,13 +256,13 @@ sort_list: sort_list sort
     ;
 
 s_expr: spec_const
-        { $$ = new SExpr{{}, std::move(*$1)}; }
+        { $$ = new SExpr{{}, std::unique_ptr<SpecConstNode>($1)}; }
     | symbol
-        { $$ = new SExpr{{}, std::move(*$1)}; }
+        { $$ = new SExpr{{}, std::unique_ptr<SymbolNode>($1)}; }
     | TK_KEY
-        { $$ = new SExpr{{}, std::move(*$1)}; }
+        { $$ = new SExpr{{}, std::unique_ptr<std::string>($1)}; }
     | '(' s_expr_list ')'
-        { $$ = new SExpr{{}, std::move(*$2)}; }
+        { $$ = new SExpr{{}, std::unique_ptr<std::vector<SExpr*>>($2)}; }
     ;
 
 s_expr_list:
@@ -273,43 +276,43 @@ s_expr_list:
 
 
 spec_const: TK_NUM
-        { $$ = new SpecConstNode{{}, ConstType::numeral, std::move(*$1)}; }
+        { $$ = new SpecConstNode{{}, ConstType::numeral, std::unique_ptr<std::string>($1)}; }
     | TK_DEC
-        { $$ = new SpecConstNode{{}, ConstType::decimal, std::move(*$1)}; }
+        { $$ = new SpecConstNode{{}, ConstType::decimal, std::unique_ptr<std::string>($1)}; }
     | TK_HEX
-        { $$ = new SpecConstNode{{}, ConstType::hexadecimal, std::move(*$1)}; }
+        { $$ = new SpecConstNode{{}, ConstType::hexadecimal, std::unique_ptr<std::string>($1)}; }
     | TK_BIN
-        { $$ = new SpecConstNode{{}, ConstType::binary, std::move(*$1)}; }
+        { $$ = new SpecConstNode{{}, ConstType::binary, std::unique_ptr<std::string>($1)}; }
     | TK_STR
-        { $$ = new SpecConstNode{{}, ConstType::string, std::move(*$1)}; }
+        { $$ = new SpecConstNode{{}, ConstType::string, std::unique_ptr<std::string>($1)}; }
     ;
 
 const_val: symbol
         { $$ = $1; }
     | spec_const
-        { $$ = new SymbolNode {{}, std::move(*$1), false}; }
+        { $$ = new SymbolNode {{}, std::unique_ptr<SpecConstNode>($1), false}; }
     ;
 
 numeral_list: numeral_list TK_NUM
-        { $1->push_back(std::string(*$2)); delete $2; }
+        { $1->emplace_back(std::move(*$2)); }
     | TK_NUM
-        { $$ = new std::vector<std::string>{std::string(std::move(*$1))}; }
+        { $$ = new std::vector<std::string>{std::string(std::move(*$1))};  }
     ;
 
 qual_identifier: identifier
-        { $$ = new QualIdentifierNode {{}, std::move(*$1)}; }
+        { $$ = new QualIdentifierNode {{}, std::unique_ptr<IdentifierNode>($1)}; }
     | '(' TK_AS identifier sort ')'
-        { $$ = new QualIdentifierNode {{}, std::move(*$3), $4}; }
+        { $$ = new QualIdentifierNode {{}, std::unique_ptr<IdentifierNode>($3), std::unique_ptr<SortNode>($4)}; }
     ;
 
 var_binding_list: var_binding
-        { $$ = new std::vector<VarBindingNode>; $$->push_back(std::move(*$1)); }
+        { $$ = new std::vector<std::unique_ptr<VarBindingNode>>; $$->push_back(std::unique_ptr<VarBindingNode>($1)); }
     | var_binding_list var_binding
-        { $1->emplace_back(std::move(*$2)); $$ = $1; }
+        { $1->emplace_back(std::unique_ptr<VarBindingNode>($2)); $$ = $1; }
     ;
 
 var_binding: '(' symbol term ')'
-        { $$ = new VarBindingNode { {}, std::move(*$2), std::move(*$3) }; }
+        { $$ = new VarBindingNode { {}, std::unique_ptr<SymbolNode>($2), $3 }; }
     ;
 
 sorted_var_list:
@@ -319,7 +322,7 @@ sorted_var_list:
     ;
 
 sorted_var: '(' symbol sort ')'
-        { $$ = new SortedVarNode {{}, std::move(*$2), std::move(*$3)}; }
+        { $$ = new SortedVarNode {{}, std::unique_ptr<SymbolNode>($2), std::unique_ptr<SortNode>($3)}; }
 
 term_list:
         { $$ = new std::vector<TermNode*>(); }
@@ -328,52 +331,48 @@ term_list:
     ;
 
 term: spec_const
-        { $$ = new NormalTermNode {{}, std::move(*$1), nullptr, std::vector<TermNode*>{}}; }
+        { $$ = new NormalTermNode {{}, std::unique_ptr<SpecConstNode>($1), nullptr}; }
     | qual_identifier
-        { $$ = new NormalTermNode {{}, std::move($1->identifier), $1->returnSort, {}}; delete $1; }
-    | '(' qual_identifier term term_list ')'
+        { $$ = new NormalTermNode {{}, std::unique_ptr<IdentifierNode>($1->identifier.release()), std::unique_ptr<SortNode>($1->returnSort.release())}; delete $1; }
+    | '(' qual_identifier term_list term ')'
         {
-            auto tmp = std::vector<TermNode*>();
-            tmp.push_back($3);
-            for (auto & c : (*$4)) {
-                tmp.emplace_back(std::move(c));
-            }
-            delete $4;
-            $$ = new NormalTermNode {{}, std::move($2->identifier), $2->returnSort, std::move(tmp)};
+            $3->push_back($4);
+            $$ = new NormalTermNode {{std::unique_ptr<std::vector<TermNode*>>($3)}, std::unique_ptr<IdentifierNode>($2->identifier.release()), std::unique_ptr<SortNode>($2->returnSort.release())};
+            delete $2;
         }
     | '(' TK_LET '(' var_binding_list ')' term ')'
-        { $$ = new LetTermNode {{}, std::move(*$6), std::move(*$4)}; }
+        { $$ = new LetTermNode {$6, std::unique_ptr<std::vector<std::unique_ptr<VarBindingNode>>>($4)};   }
     | '(' TK_FORALL '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
-        { $$ = new ForallNode {{}, std::move(*$6), std::move(*$4)}; }
+        { $$ = new ForallNode {$6, std::unique_ptr<std::vector<SortedVarNode>>($4)}; }
     | '(' TK_EXISTS '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
-        { $$ = new ExistsNode {{}, std::move(*$6), std::move(*$4)}; }
+        { $$ = new ExistsNode {$6, std::unique_ptr<std::vector<SortedVarNode>>($4)}; }
     | '(' '!' term attribute_list ')' // todo: AST traversal must ensure that attribute_list is non-empty
-        { $$ = new AnnotationNode {{}, std::move(*$3), std::move(*$4)}; }
+        { $$ = new AnnotationNode {$3, std::unique_ptr<std::vector<AttributeNode>>($4)}; }
     ;
 
 symbol_list:
-        { $$ = new std::vector<SymbolNode>(); }
+        { $$ = new std::vector<std::unique_ptr<SymbolNode>>(); }
     | symbol_list symbol
-        { $1->emplace_back(std::move(*$2)); $$ = $1; }
+        { $1->push_back(std::unique_ptr<SymbolNode>($2)); $$ = $1; }
     ;
 
 b_value: symbol
         {
-            if (std::string const * str_p = std::get_if<std::string>(&($1->name))) {
-                if (*str_p == "true") {
+            if (auto const str_p = std::get_if<std::unique_ptr<std::string>>(&($1->name))) {
+                if (**str_p == "true") {
                     $$ = true;
-                } else if (*str_p == "false") {
+                } else if (**str_p == "false") {
                     $$ = false;
                 } else {
-                    printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", str_p->c_str());
+                    printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", (**str_p).c_str());
                     delete $1;
                     YYERROR;
                 }
                 delete $1;
             } else {
-                SpecConstNode const * node = std::get_if<SpecConstNode>(&($1->name));
+                auto const * node = std::get_if<std::unique_ptr<SpecConstNode>>(&($1->name));
                 assert(node);
-                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", node->value.c_str());
+                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", (*(*node)->value).c_str());
                 delete $1;
                 YYERROR;
             }
