@@ -28,6 +28,10 @@ TermNode::~TermNode() {
     queue.emplace_back(Qel{this, static_cast<uint32_t>(0)});
     while (not queue.empty()) {
         auto & [termNode, processed] = queue.back();
+        if (not termNode->arguments) {
+            queue.pop_back();
+            continue;
+        }
         auto & children = *(termNode->arguments);
         if (processed < children.size()) {
             ++ processed;
