@@ -1012,10 +1012,12 @@ int Interpret::interpFile(FILE* in) {
     int rval = yyparse(&context);
 
     if (rval != 0) return rval;
+
+    for (auto command : context.getRoot()) {
+//        execute(command);
+        delete command;
+    }
     return 0;
-//    const ASTNode & r = context.getRoot();
-//    execute(r);
-//    return rval;
 }
 
 int Interpret::interpFile(char *content){
