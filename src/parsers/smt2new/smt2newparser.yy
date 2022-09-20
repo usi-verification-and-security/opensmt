@@ -159,27 +159,27 @@ command_list:
     ;
 
 command: '(' TK_SETLOGIC symbol ')'
-        { $$ = new SetLogic {{}, std::unique_ptr<SymbolNode>($3)}; }
+        { $$ = new SetLogic {std::unique_ptr<SymbolNode>($3)}; }
     | '(' TK_SETOPTION option ')'
-        { $$ = new SetOption {{}, std::unique_ptr<OptionNode>($3)}; }
+        { $$ = new SetOption {std::unique_ptr<OptionNode>($3)}; }
     | '(' TK_SETINFO attribute ')'
-        { $$ = new SetInfo {{}, std::unique_ptr<AttributeNode>($3)}; }
+        { $$ = new SetInfo {std::unique_ptr<AttributeNode>($3)}; }
     | '(' TK_DECLARESORT symbol TK_NUM ')'
-        { $$ = new DeclareSort {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::string>($4)}; }
+        { $$ = new DeclareSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::string>($4)}; }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
-        { $$ = new DefineSort {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>>($5), std::unique_ptr<SortNode>($7)}; }
+        { $$ = new DefineSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
-        { $$ = new DeclareFun {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortNode*>>($5), std::unique_ptr<SortNode>($7)}; }
+        { $$ = new DeclareFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortNode*>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLARECONST const_val sort ')'
-        { $$ = new DeclareConst {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
+        { $$ = new DeclareConst {std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
-        { $$ = new DefineFun {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortedVarNode>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
+        { $$ = new DefineFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortedVarNode>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
     | '(' TK_PUSH TK_NUM ')'
-        { $$ = new PushNode {{}, std::stoi(*$3)}; delete $3; }
+        { $$ = new PushNode {std::stoi(*$3)}; delete $3; }
     | '(' TK_POP TK_NUM ')'
-        { $$ = new PopNode {{}, std::stoi(*$3)}; delete $3; }
+        { $$ = new PopNode {std::stoi(*$3)}; delete $3; }
     | '(' TK_ASSERT term ')'
-        { $$ = new AssertNode{{}, std::unique_ptr<TermNode>($3)}; }
+        { $$ = new AssertNode{std::unique_ptr<TermNode>($3)}; }
     | '(' TK_CHECKSAT ')'
         { $$ = new CheckSatNode(); }
     | '(' TK_GETASSERTIONS ')'
@@ -187,27 +187,27 @@ command: '(' TK_SETLOGIC symbol ')'
     | '(' TK_GETPROOF ')'
         { $$ = new GetProof() ; }
     | '(' TK_GETITPS term_list ')'
-        { $$ = new GetInterpolants {{}, std::unique_ptr<std::vector<TermNode*>>($3)}; }
+        { $$ = new GetInterpolants {std::unique_ptr<std::vector<TermNode*>>($3)}; }
     | '(' TK_GETUNSATCORE ')'
         { $$ = new GetUnsatCore(); }
     | '(' TK_GETVALUE '(' term_list ')' ')'
-        { $$ = new GetValue { {}, std::unique_ptr<std::vector<TermNode*>>($4) }; }
+        { $$ = new GetValue {std::unique_ptr<std::vector<TermNode*>>($4)}; }
     | '(' TK_GETMODEL ')'
             { $$ = new GetModel(); }
     | '(' TK_GETASSIGNMENT ')'
         { $$ = new GetAssignment(); }
     | '(' TK_GETOPTION TK_KEY ')'
-        { $$ = new GetOption{ {}, std::unique_ptr<std::string>($3) }; }
+        { $$ = new GetOption{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETOPTION predef_key ')'
-        { $$ = new GetOption{ {}, std::unique_ptr<std::string>($3) }; }
+        { $$ = new GetOption{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETINFO info_flag ')'
-        { $$ = new GetInfo{ {}, std::unique_ptr<std::string>($3) }; }
+        { $$ = new GetInfo{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_SIMPLIFY ')'
         { $$ = new Simplify(); }
     | '(' TK_EXIT ')'
         { $$ = new Exit(); }
     | '(' TK_ECHO TK_STR ')'
-        { $$ = new Echo{ {}, std::unique_ptr<std::string>($3) }; }
+        { $$ = new Echo{ std::unique_ptr<std::string>($3) }; }
     ;
 
 attribute_list:

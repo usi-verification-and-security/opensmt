@@ -116,15 +116,41 @@ struct RandomSeed : public OptionNode { int value; };
 struct Verbosity : public OptionNode { int value; };
 struct Attribute : public OptionNode { AttributeNode value; };
 
-class CommandNode : public GeneralNode {};
+// Note: classes derived from CommandNodes need to have a constructor because they need to be destructible as CommandNodes.
+// In particular, CommandNode needs to have a virtual member function (destructor), which forbids aggregate initialization.
 
-struct SetLogic : public CommandNode { std::unique_ptr<SymbolNode> logic; };
-struct SetOption : public CommandNode { std::unique_ptr<OptionNode> option; };
-struct SetInfo : public CommandNode { std::unique_ptr<AttributeNode> attribute; };
+struct CommandNode : public GeneralNode {
+    virtual ~CommandNode() = default;
+};
+
+struct CheckSatNode : public CommandNode { };
+struct GetAssertions : public CommandNode { };
+struct GetProof : public CommandNode { };
+struct GetUnsatCore : public CommandNode { };
+struct GetModel : public CommandNode { };
+struct GetAssignment : public CommandNode { };
+struct Simplify : public CommandNode { };
+struct Exit : public CommandNode { };
+
+struct SetLogic : public CommandNode {
+    std::unique_ptr<SymbolNode> logic;
+    SetLogic(std::unique_ptr<SymbolNode> && logic) : logic(std::move(logic)) {}
+};
+
+struct SetOption : public CommandNode {
+    std::unique_ptr<OptionNode> option;
+    SetOption(std::unique_ptr<OptionNode> && option) : option(std::move(option)) {}
+};
+
+struct SetInfo : public CommandNode {
+    std::unique_ptr<AttributeNode> attribute;
+    SetInfo(std::unique_ptr<AttributeNode> && attribute) : attribute(std::move(attribute)) {}
+};
 
 struct DeclareSort : public CommandNode {
     std::unique_ptr<SymbolNode> symbol;
     std::unique_ptr<std::string> num;
+    DeclareSort(std::unique_ptr<SymbolNode> && symbol, std::unique_ptr<std::string> && num) : symbol(std::move(symbol)), num(std::move(num)) {}
 };
 
 struct SortNode : public GeneralNode {
@@ -166,12 +192,26 @@ struct DefineSort : public CommandNode {
     std::unique_ptr<SymbolNode> name;
     std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>> argumentSorts;
     std::unique_ptr<SortNode> sort;
+    DefineSort(std::unique_ptr<SymbolNode> && name,
+               std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>> && argumentSorts,
+               std::unique_ptr<SortNode> && sort)
+        : name(std::move(name))
+        , argumentSorts(std::move(argumentSorts))
+        , sort(std::move(sort))
+    {}
 };
 
 struct DeclareFun : public CommandNode {
     std::unique_ptr<SymbolNode> name;
     std::unique_ptr<std::vector<SortNode*>> argumentSorts;
     std::unique_ptr<SortNode> returnSort;
+    DeclareFun(std::unique_ptr<SymbolNode> && name,
+               std::unique_ptr<std::vector<SortNode*>> && argumentSorts,
+               std::unique_ptr<SortNode> && returnSort)
+        : name(std::move(name))
+        , argumentSorts(std::move(argumentSorts))
+        , returnSort(std::move(returnSort))
+    {}
     ~DeclareFun() {
         for (auto sort : *argumentSorts) {
             delete sort;
@@ -182,6 +222,8 @@ struct DeclareFun : public CommandNode {
 struct DeclareConst : public CommandNode {
     std::variant<std::unique_ptr<SymbolNode>,std::unique_ptr<SpecConstNode>> name;
     std::unique_ptr<SortNode> sort;
+    DeclareConst(std::unique_ptr<SymbolNode> && name, std::unique_ptr<SortNode> && sort) : name(std::move(name)), sort(std::move(sort)) {}
+    DeclareConst(std::unique_ptr<SpecConstNode> && name, std::unique_ptr<SortNode> && sort) : name(std::move(name)), sort(std::move(sort)) {}
 };
 
 struct SortedVarNode : public GeneralNode {
@@ -247,39 +289,57 @@ struct DefineFun : public CommandNode {
     std::unique_ptr<std::vector<SortedVarNode>> args;
     std::unique_ptr<SortNode> returnSort;
     std::unique_ptr<TermNode> term;
+    DefineFun(std::unique_ptr<SymbolNode> && name,
+              std::unique_ptr<std::vector<SortedVarNode>> && args,
+              std::unique_ptr<SortNode> && returnSort,
+              std::unique_ptr<TermNode> && term)
+        : name(std::move(name))
+        , args(std::move(args))
+        , returnSort(std::move(returnSort))
+        , term(std::move(term))
+    {}
 };
 
-struct PushNode : public CommandNode { int num; };
+struct PushNode : public CommandNode {
+    int num;
+    PushNode(int num) : num(num) {}
+};
 
-struct PopNode : public CommandNode { int num; };
+struct PopNode : public CommandNode {
+    int num;
+    PopNode(int num) : num(num) {}
+};
 
-struct AssertNode : public CommandNode { std::unique_ptr<TermNode> term; };
+struct AssertNode : public CommandNode {
+    std::unique_ptr<TermNode> term;
+    AssertNode(std::unique_ptr<TermNode> && term) : term(std::move(term)) {}
+};
 
-struct CheckSatNode : public CommandNode {};
+struct GetInterpolants : public CommandNode {
+    std::unique_ptr<std::vector<TermNode*>> configuration;
+    GetInterpolants(std::unique_ptr<std::vector<TermNode*>> && configuration) : configuration(std::move(configuration)) {}
+};
 
-struct GetAssertions : public CommandNode {};
 
-struct GetProof : public CommandNode {};
+struct GetValue : public CommandNode {
+    std::unique_ptr<std::vector<TermNode*>> terms;
+    GetValue(std::unique_ptr<std::vector<TermNode*>> && terms) : terms(std::move(terms)) {}
+};
 
-struct GetInterpolants : public CommandNode { std::unique_ptr<std::vector<TermNode*>> configuration; };
+struct GetOption : public CommandNode {
+    std::unique_ptr<std::string> key;
+    GetOption(std::unique_ptr<std::string> && key) : key(std::move(key)) {}
+};
 
-struct GetUnsatCore : public CommandNode {};
+struct GetInfo : public CommandNode {
+    std::unique_ptr<std::string> key;
+    GetInfo(std::unique_ptr<std::string> && key) : key(std::move(key)) {}
+};
 
-struct GetValue : public CommandNode { std::unique_ptr<std::vector<TermNode*>> terms; };
-
-struct GetModel : public CommandNode {};
-
-struct GetAssignment : public CommandNode {};
-
-struct GetOption : public CommandNode { std::unique_ptr<std::string> key; };
-
-struct GetInfo : public CommandNode { std::unique_ptr<std::string> key; };
-
-struct Simplify : public CommandNode {};
-
-struct Exit : public CommandNode {};
-
-struct Echo : public CommandNode { std::unique_ptr<std::string> text; };
+struct Echo : public CommandNode {
+    std::unique_ptr<std::string> text;
+    Echo(std::unique_ptr<std::string> && text) : text(std::move(text)) {}
+};
 
 class Smt2newContext {
   private:
