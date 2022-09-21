@@ -723,7 +723,7 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
         }
 
         // printf("  ## (time = %6.2f s) ELIM: vars = %d\n", cpuTime(), elim_heap.size());
-        for (int cnt = 0; !elim_heap.empty(); cnt++)
+        while (!elim_heap.empty())
         {
             Var elim = elim_heap.removeMin();
 

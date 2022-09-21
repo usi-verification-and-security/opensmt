@@ -128,7 +128,6 @@ void ProofGraph::buildProofGraph(const Proof & proof) {
 
     ProofBuildingStatistics counters;
 
-    unsigned      num_clause = 0;
     unsigned      max_leaf_size = 0;
     double        avg_leaf_size = 0;
     unsigned      max_learnt_size = 0;
@@ -270,7 +269,6 @@ void ProofGraph::buildProofGraph(const Proof & proof) {
             assert(false);
         }
         visitedSet.insert(currClause);
-        num_clause++;
     } while(!q.empty());
 
     setRoot(clauseToIDMap.at(CRef_Undef));
@@ -285,11 +283,17 @@ void ProofGraph::buildProofGraph(const Proof & proof) {
 
     if (verbose() > 0) {
         unsigned num_non_null = 0;
+#ifdef PEDANTIC_DEBUG
         unsigned cl_non_null = 0;
+#endif
         for (size_t i = 0; i < getGraphSize(); i++) {
             if (getNode(i)) {
                 num_non_null++;
-                if (getNode(i)->getPClause()) { cl_non_null++; }
+#ifdef PEDANTIC_DEBUG
+                if (getNode(i)->getPClause()) {
+                    cl_non_null++;
+                }
+#endif
             }
         }
 #ifdef PEDANTIC_DEBUG
@@ -418,10 +422,8 @@ int ProofGraph::cleanProofGraph() {
     // Ideally it will be made of subgraphs not connected to the main graph
     unsigned removed = 0;
     bool done = false;
-    unsigned counter = 0;
     while (not done) {
         done = true;
-        counter++;
         for (size_t i = 0; i < getGraphSize(); i++) {
             if (getNode(i)  and getNode(i)->getNumResolvents() == 0 and getNode(i) != getRoot()) {
                 done = false;

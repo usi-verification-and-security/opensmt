@@ -236,7 +236,6 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     int i = 0;
     int d = decisionLevel();
 
-    int count = 0;
     bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
     int skipped_vars_due_to_logic = 0;
 
@@ -300,7 +299,6 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             respect_logic_partitioning_hints = false;
             continue;
         }
-        count++;
         int p0 = 0, p1 = 0;
         for (int p : {0, 1}) { // for both polarities
             assert(decisionLevel() == d);

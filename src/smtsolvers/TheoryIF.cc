@@ -131,7 +131,6 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
     for (int index : sortedIndices) {
         auto & splitClause = splitClauses[index];
         unsigned satisfied = 0;
-        unsigned falsified = 0;
         unsigned unknown = 0;
         // MB: ensure the SAT solver knows about the variables and that they are active
         int impliedIndex = -1;
@@ -139,8 +138,7 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             Lit l = splitClause[i];
             addVar_(var(l));
             if (value(l) == l_True) { ++satisfied; }
-            else if (value(l) == l_False) { ++falsified; }
-            else { ++unknown; impliedIndex = i; }
+            else if (value(l) != l_False) { ++unknown; impliedIndex = i; }
         }
         assert(satisfied != 0 or unknown != 0); // The clause cannot be falsified
         if (satisfied == 0 and unknown == 1) { // propagate
@@ -406,7 +404,6 @@ TPropRes CoreSMTSolver::checkTheory(bool complete, int& conflictC)
 void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
 {
     Lit ded = lit_Undef;
-    int n_deductions = 0;
 
     while (true)
     {
@@ -415,8 +412,6 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
         if (value(ded) != l_Undef) continue;
 
         // Found an unassigned deduction
-        n_deductions ++;
-
         deductions.push(LitLev(ded, decisionLevel()));
     }
 #ifdef PEDANTIC_DEBUG
