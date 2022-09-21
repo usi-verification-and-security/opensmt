@@ -322,7 +322,7 @@ Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<pol
     return substitutions;
 }
 
-PTRef polyToPTRef(ArithLogic & logic, poly_t poly) {
+PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
     vec<PTRef> args;
     args.capacity(poly.size());
     assert(poly.size() > 0);
