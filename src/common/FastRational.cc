@@ -110,7 +110,7 @@ std::string FastRational::get_str() const
 
 FastRational gcd(FastRational const & a, FastRational const & b)
 {
-    assert(a.isInteger() & b.isInteger());
+    assert(a.isInteger() and b.isInteger());
     if (a.wordPartValid() && b.wordPartValid()) {
         return FastRational(gcd(a.num, b.num));
     }
