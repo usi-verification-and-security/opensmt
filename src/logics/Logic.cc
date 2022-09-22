@@ -549,26 +549,25 @@ PTRef Logic::mkImpl(vec<PTRef> && args) {
         if (!hasSortBool(args[i]))
             return PTRef_Undef;
 
-        assert(args.size() == 2);
-        PTRef tr = PTRef_Undef;
-        if (isFalse(args[0]))
-                tr = getTerm_true();
-        else if(isTrue(args[1]))
-                tr = getTerm_true();
-        else if(isTrue(args[0]) && isFalse(args[1]))
-                tr = getTerm_false();
-        else
-        {
-            args[0] = mkNot(args[0]);
-            tr = mkOr(std::move(args));
-        }
+    assert(args.size() == 2);
+    PTRef tr = PTRef_Undef;
+    if (isFalse(args[0]))
+        tr = getTerm_true();
+    else if (isTrue(args[1]))
+        tr = getTerm_true();
+    else if (isTrue(args[0]) && isFalse(args[1]))
+        tr = getTerm_false();
+    else {
+        args[0] = mkNot(args[0]);
+        tr = mkOr(std::move(args));
+    }
 
-        if (tr == PTRef_Undef) {
-                printf("Error in mkImpl");
-                assert(0);
-        }
+    if (tr == PTRef_Undef) {
+        printf("Error in mkImpl");
+        assert(0);
+    }
 
-        return tr;
+    return tr;
 }
 
 PTRef Logic::mkBinaryEq(PTRef lhs, PTRef rhs) {
