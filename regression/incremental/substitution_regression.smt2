@@ -2,6 +2,8 @@
 (declare-fun b () Real)
 (define-fun _2 () Real b)
 (declare-fun a () Real)
+(set-info :status sat)
 (check-sat)
 (assert (and (= a b) (distinct b 0.0)))
+(set-info :status sat)
 (check-sat)

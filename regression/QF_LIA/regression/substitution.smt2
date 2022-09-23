@@ -1,4 +1,5 @@
 (set-logic QF_LIA)
+(set-info :status unsat)
 (declare-fun x () Int)
 (declare-fun H () Int)
 (assert (and (= H x) (= 1 (- x H))))
