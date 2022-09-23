@@ -247,6 +247,15 @@ PTRef ArithLogic::normalizeMul(PTRef mul)
 
 namespace{
 using poly_t = PolynomialT<PTRef>;
+
+void eraseIndices(std::vector<poly_t> & elements, std::vector<std::size_t> const & indices) {
+    assert(std::is_sorted(indices.begin(), indices.end()));
+    for (auto rit = indices.rbegin(); rit != indices.rend(); ++rit) {
+        elements[*rit] = std::move(elements.back());
+        elements.pop_back();
+    }
+}
+
 Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
     Logic::SubstMap substitutions;
 
@@ -310,14 +319,7 @@ Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<pol
             }
         }
         // remove used polynomials
-        auto lastValid = zeroPolynomials.size() - 1;
-        for (auto rit = processedIndices.rbegin(); rit != processedIndices.rend(); ++rit) {
-            auto index = *rit;
-            zeroPolynomials[index] = std::move(zeroPolynomials[lastValid]);
-            zeroPolynomials.pop_back();
-            --lastValid;
-        }
-
+        eraseIndices(zeroPolynomials, processedIndices);
         if (not changed) { break; }
     }
     return substitutions;
@@ -367,13 +369,7 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
     // Remove processed polynomials
     std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
     std::sort(indicesToRemove.begin(), indicesToRemove.end());
-    auto lastValid = zeroPolynomials.size() - 1;
-    for (auto rit = indicesToRemove.rbegin(); rit != indicesToRemove.rend(); ++rit) {
-        auto index = *rit;
-        zeroPolynomials[index] = std::move(zeroPolynomials[lastValid]);
-        zeroPolynomials.pop_back();
-        --lastValid;
-    }
+    eraseIndices(zeroPolynomials, indicesToRemove);
     return substitutions;
 }
 }
