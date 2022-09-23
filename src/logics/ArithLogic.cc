@@ -1,17 +1,18 @@
-#include "SStore.h"
-#include "PtStore.h"
-#include "TreeOps.h"
-#include "StringConv.h"
-#include "LA.h"
 #include "ArithLogic.h"
-#include "FastRational.h"
-#include "OsmtInternalException.h"
-#include "OsmtApiException.h"
-#include "IteHandler.h"
+
 #include "DivModRewriter.h"
+#include "FastRational.h"
+#include "OsmtApiException.h"
+#include "OsmtInternalException.h"
 #include "Polynomial.h"
+#include "PtStore.h"
+#include "SStore.h"
+#include "StringConv.h"
+#include "TreeOps.h"
+
 #include <memory>
 #include <sstream>
+
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 /***********************************************************
@@ -390,6 +391,7 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
+            assert(logic.isPlus(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
                 auto [var,c] = logic.splitTermToVarAndConst(factor);
                 auto coeff = logic.getNumConst(c);
