@@ -281,16 +281,15 @@ Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<pol
             }
             assert(poly.begin()->var != PTRef_Undef);
             if (poly.size() == 2 and (poly.begin() + 1)->var == PTRef_Undef) { // poly is "a*x + c = 0" for c != 0
-                auto const & term = *poly.begin();
-                PTRef var = term.var;
+                auto const & [var, coeff] = *poly.begin();
                 if (not substitutions.has(var)) {
-                    auto val = -((poly.begin() + 1)->coeff) / term.coeff;
+                    auto val = -((poly.begin() + 1)->coeff) / coeff;
                     substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
                     new_keys.push(var);
                 }
                 processedIndices.push_back(i);
                 varToPolyIndices.at(var).pop_back();
-                continue;
+                continue; // Unnecessary, but clearer this way
             }
         }
 
@@ -350,10 +349,9 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
     }
 
     std::unordered_set<std::size_t> processedIndices;
-    for (auto const & entry : varToPolyIndices) {
-        if (entry.second.size() != 1 or entry.first == PTRef_Undef) { continue; }
-        auto index = entry.second[0];
-        PTRef var = entry.first;
+    for (auto const & [var, polyIndices] : varToPolyIndices) {
+        if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
+        auto index = polyIndices[0];
         auto [it, inserted] = processedIndices.insert(index);
         if (not inserted) { continue; }
         auto & poly = zeroPolynomials[index];
