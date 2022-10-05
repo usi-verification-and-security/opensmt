@@ -1,19 +1,33 @@
-## Model validation regression tests
+# Model validation regression tests
 
-OpenSMT's model validation regression test suite framework runs OpenSMT
-on the testsuite with model production enabled and checks the resulting
-models for correctness.  The system is based on the infrastructure used in
-smt-comp.  The main components are
- - smt-comp `scrambler` used for annotating instances for model production, and
+OpenSMT's model validation regression test suite runs OpenSMT on model
+production enabled and checks the resulting models for correctness.
+Currently there are two systems side-by-side, one used in SMT comp and
+the other more easily compliable in recent OSs.  The main components are
+
+ - smt-comp `scrambler` used for annotating instances for model
+   production, shared by both systems,
  - smt-comp `ModelValidator`, a python script that uses `pySMT` to check
    whether an input instance conjoined with a model simplifies to
-  `true`.
+  `true`, used in the smt-comp based setup
+ - dolmen's model validation (from github), the modern variant
 
-### Setup
+## Setting up
 
-The following external packages are needed to set up the environment.
+This directory contains scripts for setting up the model validation
+environment locally.  If the output produced by the scripts is not
+present, the system assumes that the tools are available in the path.
+
+### Setup for smt-comp
+
+The following external packages are needed to set up the smt-comp
+environment.
  - `pip3`
  - `cython`
+
+To set up the environment, run ```
+./regression_models/bin/setup-env-smtcomp.sh
+```
 
 The version of pySMT to be used is give in
 `./regression_models/data/requirements.txt`.
@@ -21,10 +35,25 @@ The version of pySMT to be used is give in
 The ModelValidator script from smt-comp is included in the repository,
 in `./regression_models/data/ModelValidator.py`.
 
-To set up the environment, run `./regression_models/bin/setup_env.sh`.
+### Setup for dolmen
 
-### Usage
+The following external packages are needed to set up the dolmen
+environment.
+ - `opam`
 
-To run the tests, run
-`./regression_models/bin/run_tests.sh <path-to-opensmt>`.
+To set up the environment, run ```
+./regression_models/bin/setup-env-dolmen.sh
+```
 
+
+### Usage (smt-comp)
+
+To run the tests, run ```
+./regression_models/bin/run-tests-smtcomp.sh <path-to-opensmt>
+```
+
+### Usage (dolmen)
+
+To run the tests with dolmen, run ```
+./regression_models/bin/run-tests-dolmen.sh <path-to-opensmt>
+```
