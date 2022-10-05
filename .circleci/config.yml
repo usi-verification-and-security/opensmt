@@ -39,7 +39,7 @@ jobs:
                 command: sudo apt-get update
             - run:
                 name: install dependencies
-                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake libubsan0 opam
+                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake opam
             - run:
                 name: install modern model validation environment
                 no_output_timeout: 30m # Note: opam switch create might be slow on some systems
