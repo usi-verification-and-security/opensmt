@@ -2,7 +2,7 @@ version: 2.1
 jobs:
     formatter:
         docker:
-            - image: cimg/base:current
+            - image: verifyusi/verify-env:current
               auth:
                   username: mydockerhub-user
                   password: $DOCKERHUB_PASSWORD
@@ -21,7 +21,7 @@ jobs:
 
     build-recent:
         docker:
-          - image: cimg/base:current
+          - image: verifyusi/verify-env:current
             auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
