@@ -22,7 +22,7 @@ function runChecker {
 
 SCRIPT_ROOT=$(get_abs_path $(dirname $0))
 DEFAULTOSMT=${DEFAULTOSMT:-~/bin/opensmt}
-DEFAULTSCRAMBLER=${SCRAMBLER:-~/bin/scrambler}
+DEFAULTSCRAMBLER=${SCRAMBLER:-scrambler}
 DEFAULTOUTDIR=./out/
 DEFAULTPRESERVE=false
 
@@ -102,7 +102,7 @@ if [ -z ${preserve} ]; then
     preserve=${DEFAULTPRESERVE}
 fi
 
-[ -x ${scrambler} ] || \
+[ -x $(which ${scrambler}) ] || \
     (echo "Scrambler not found or not executable: ${scrambler}"; exit 1)
 
 [ -x ${checker} ] || \
