@@ -42,10 +42,8 @@ jobs:
                 command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake opam
             - run:
                 name: install modern model validation environment
-                no_output_timeout: 30m # Note: opam switch create might be slow on some systems
                 command: |
                   opam init -y --disable-sandboxing # Note: do not disable sandboxing if running outside docker / other safety system
-                  opam switch create -y 4.14.0
                   opam update -y
                   opam upgrade -y
                   eval $(opam env)
