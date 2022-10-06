@@ -10,12 +10,6 @@ jobs:
         steps:
             - checkout
             - run:
-                  name: apt-get update
-                  command: sudo apt-get update
-            - run:
-                  name: install dependencies
-                  command: sudo apt-get install clang-format
-            - run:
                   name: run clang formatter
                   command: cat .clang-files | xargs clang-format --Werror --dry-run
 
@@ -35,18 +29,8 @@ jobs:
         steps:
             - checkout
             - run:
-                name: apt-get update
-                command: sudo apt-get update
-            - run:
-                name: install dependencies
-                command: sudo apt-get install libgmp-dev libedit-dev bison flex cmake opam
-            - run:
                 name: install modern model validation environment
-                command: |
-                  opam init -y --disable-sandboxing # Note: do not disable sandboxing if running outside docker / other safety system
-                  opam update -y
-                  opam upgrade -y
-                  eval $(opam env)
+                command:
                   ./regression_models/bin/setup-env-modern.sh
             - run:
                 name: Debug build gcc
@@ -61,10 +45,8 @@ jobs:
                 environment:
                     CMAKE_BUILD_TYPE: Release
             - run:
-                name: Install clang
-                command: |
-                    sudo apt-get install clang
-                    sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
+                name: Setup clang
+                command: sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
             - run:
                 name: Debug build llvm
                 command: ./ci/run_travis_commands.sh
