@@ -29,7 +29,15 @@ if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
       cd ../regression_splitting && ./bin/run-tests.sh ../build/opensmt-splitter;
     fi
     cd ../regression_pipe && ./run-tests.sh ../build/opensmt;
-    cd ../regression_models && ./bin/run-tests.sh ../build/opensmt;
+    cd ../regression_models
+    if [[ x"${MODEL_VALIDATION}" == x"Dolmen" || -f ./data/ENV-MODERN ]]; then
+        ./bin/run-tests-dolmen.sh ../build/opensmt;
+    elif [[ x"${MODEL_VALIDATION}" == x"pySMT" || -f ./data/ENV-SMTCOMP ]]; then
+        ./bin/run-tests-smtcomp.sh ../build/opensmt;
+    else
+        echo "Error: the model regression environment is not set."
+        exit 1
+    fi
 fi
 
 cd ../examples && rm -rf build && mkdir -p build && cd build
