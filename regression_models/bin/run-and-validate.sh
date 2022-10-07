@@ -21,13 +21,11 @@ function runChecker {
 }
 
 SCRIPT_ROOT=$(get_abs_path $(dirname $0))
-DEFAULTOSMT=${DEFAULTOSMT:-~/bin/opensmt}
-DEFAULTSCRAMBLER=${SCRAMBLER:-scrambler}
 DEFAULTOUTDIR=./out/
 DEFAULTPRESERVE=false
 
 
-usage="Usage: $0 [-h] -m ( smtcomp | dolmen ) [-o <osmt2-binary>] [-s <scrambler>] [-c <checker>] [ -d <output-directory> ] [-p <true|false>] <file>"
+usage="Usage: $0 [-h] -m ( smtcomp | dolmen ) -o <osmt2-binary> -s <scrambler> -c <checker> [ -d <output-directory> ] [-p <true|false>] <file>"
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -75,23 +73,17 @@ if [ $# == 0 ]; then
     exit 1
 fi
 
-if [ x"$smtcomp" == x"true" ]; then
-    DEFAULTCHECKER=${CHECKER:-~/bin/ModelValidator}
-else
-    dolmen=$(dirname $(which dolmen))/dolmen
-    DEFAULTCHECKER=${CHECKER:-$dolmen}
-fi
-
 if [ -z ${binary} ]; then
-    binary=${DEFAULTOSMT}
+    echo "Error: $0: no opensmt binary provided"; exit 1
+    exit 1
 fi
 
 if [ -z ${scrambler} ]; then
-    scrambler=${DEFAULTSCRAMBLER}
+    echo "Error: $0: no scrambler provided"; exit 1
 fi
 
 if [ -z ${checker} ]; then
-    checker=${DEFAULTCHECKER}
+    echo "Error: $0: no checker provided"; exit 1
 fi
 
 if [ -z ${outdir} ]; then
@@ -102,7 +94,7 @@ if [ -z ${preserve} ]; then
     preserve=${DEFAULTPRESERVE}
 fi
 
-[ -x $(which ${scrambler}) ] || \
+[ -x ${scrambler} ] || \
     (echo "Scrambler not found or not executable: ${scrambler}"; exit 1)
 
 [ -x ${checker} ] || \
