@@ -13,7 +13,28 @@ jobs:
                   name: run clang formatter
                   command: cat .clang-files | xargs clang-format --Werror --dry-run
 
-    build-recent:
+    build-recent-gcc-debug:
+        docker:
+          - image: verifyusi/verify-env:current
+            auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+            environment:
+                CMAKE_BUILD_TYPE: Debug
+                MODEL_VALIDATION: Dolmen
+                ENABLE_LINE_EDITING: ON
+                PARALLEL: ON
+                FLAGS: -Wall -Wextra -Werror
+                OSMT_INSTALL: ~/osmt-install
+        steps:
+            - checkout
+            - run:
+                name: Debug build gcc
+                command: |
+                    eval $(opam env)
+                    ./ci/run_travis_commands.sh
+
+    build-recent-gcc-release:
         docker:
           - image: verifyusi/verify-env:current
             auth:
@@ -25,40 +46,52 @@ jobs:
                 OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
                 PARALLEL: OFF
-
         steps:
             - checkout
             - run:
-                name: install modern model validation environment
-                command:
-                  ./regression_models/bin/setup-env-modern.sh
-            - run:
-                name: Debug build gcc
-                command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Debug
-                    ENABLE_LINE_EDITING: ON
-                    PARALLEL: ON
-            - run:
                 name: Release build gcc
                 command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Release
+
+    build-recent-clang-debug:
+        docker:
+          - image: verifyusi/verify-env:current
+            auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+            environment:
+                CMAKE_BUILD_TYPE: Debug
+                MODEL_VALIDATION: Dolmen
+                ENABLE_LINE_EDITING: ON
+                PARALLEL: ON
+                FLAGS: -Wall -Wextra -Werror -fsanitize=signed-integer-overflow,address,undefined
+                OSMT_INSTALL: ~/osmt-install
+        steps:
+            - checkout
             - run:
                 name: Setup clang
                 command: sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
             - run:
                 name: Debug build llvm
-                command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Debug
-                    FLAGS: -Wall -Wextra -Werror -fsanitize=signed-integer-overflow,address,undefined
+                command: |
+                    eval $(opam env)
+                    ./ci/run_travis_commands.sh
+
+    build-recent-clang-release:
+        docker:
+          - image: verifyusi/verify-env:current
+            auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+            environment:
+                CMAKE_BUILD_TYPE: Release
+                PARALLEL: ON
+                FLAGS: -Wall -Wextra -Werror
+                OSMT_INSTALL: ~/osmt-install
+        steps:
+            - checkout
             - run:
                 name: Release build llvm
                 command: ./ci/run_travis_commands.sh
-                environment:
-                    CMAKE_BUILD_TYPE: Release
-                    PARALLEL: ON
 
     # To set up the centos-7 environment:
     #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
@@ -122,6 +155,7 @@ jobs:
                     cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
                 environment:
                     CMAKE_BUILD_TYPE: Debug
+                    MODEL_VALIDATION: pySMT
             - run:
                 name: Release build gcc under devtoolset-8
                 command: |
@@ -162,7 +196,16 @@ workflows:
           filters: &filters-build-test
             tags:
               only: /^v.*/
-        - build-recent:
+        - build-recent-gcc-debug:
+          filters:
+            <<: *filters-build-test
+        - build-recent-gcc-release:
+          filters:
+            <<: *filters-build-test
+        - build-recent-clang-debug:
+          filters:
+            <<: *filters-build-test
+        - build-recent-clang-release:
           filters:
             <<: *filters-build-test
         - build-macos:
