@@ -93,10 +93,27 @@ jobs:
                 name: Release build llvm
                 command: ./ci/run_travis_commands.sh
 
-    # To set up the centos-7 environment:
-    #  - yum install centos-release-scl devtoolset-8 gmp-devel libedit-devel
-    #  - scl enable devtoolset-8 bash
-    build-starexec:
+    build-starexec-debug:
+        docker:
+            - image: verifyusi/verify-env:starexec
+              auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+              environment:
+                FLAGS: -Wall -Wextra -Werror
+                OSMT_INSTALL: ~/osmt-install
+                USE_READLINE: OFF
+                CMAKE_BUILD_TYPE: Debug
+                MODEL_VALIDATION: pySMT
+
+        steps:
+            - checkout
+            - run:
+                name: Debug build gcc under devtoolset-8
+                command: |
+                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
+
+    build-starexec-release:
         docker:
             - image: verifyusi/verify-env:starexec
               auth:
@@ -107,23 +124,13 @@ jobs:
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
                 USE_READLINE: OFF
-
+                PARALLEL: ON
         steps:
             - checkout
-            - run:
-                name: Debug build gcc under devtoolset-8
-                command: |
-                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
-                environment:
-                    CMAKE_BUILD_TYPE: Debug
-                    MODEL_VALIDATION: pySMT
             - run:
                 name: Release build gcc under devtoolset-8
                 command: |
                     cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
-                environment:
-                    CMAKE_BUILD_TYPE: Release
-                    PARALLEL: ON
 
     build-macos:
         macos:
@@ -153,10 +160,13 @@ workflows:
   build-test:
       jobs:
         - formatter
-        - build-starexec:
+        - build-starexec-debug:
           filters: &filters-build-test
             tags:
               only: /^v.*/
+        - build-starexec-release:
+          filters:
+            <<: *filters-build-test
         - build-recent-gcc-debug:
           filters:
             <<: *filters-build-test
