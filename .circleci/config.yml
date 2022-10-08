@@ -90,6 +90,9 @@ jobs:
         steps:
             - checkout
             - run:
+                name: Setup clang
+                command: sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
+            - run:
                 name: Release build llvm
                 command: ./ci/run_travis_commands.sh
 
