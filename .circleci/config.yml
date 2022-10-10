@@ -2,7 +2,7 @@ version: 2.1
 jobs:
     formatter:
         docker:
-            - image: verifyusi/verify-env:current
+            - image: usiverify/verify-env:current
               auth:
                   username: mydockerhub-user
                   password: $DOCKERHUB_PASSWORD
@@ -15,7 +15,7 @@ jobs:
 
     build-recent-gcc-debug:
         docker:
-          - image: verifyusi/verify-env:current
+          - image: usiverify/verify-env:current
             auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -36,7 +36,7 @@ jobs:
 
     build-recent-gcc-release:
         docker:
-          - image: verifyusi/verify-env:current
+          - image: usiverify/verify-env:current
             auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -54,7 +54,7 @@ jobs:
 
     build-recent-clang-debug:
         docker:
-          - image: verifyusi/verify-env:current
+          - image: usiverify/verify-env:current
             auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -78,7 +78,7 @@ jobs:
 
     build-recent-clang-release:
         docker:
-          - image: verifyusi/verify-env:current
+          - image: usiverify/verify-env:current
             auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -98,7 +98,7 @@ jobs:
 
     build-starexec-debug:
         docker:
-            - image: verifyusi/verify-env:starexec
+            - image: usiverify/verify-env:starexec
               auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -118,7 +118,7 @@ jobs:
 
     build-starexec-release:
         docker:
-            - image: verifyusi/verify-env:starexec
+            - image: usiverify/verify-env:starexec
               auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
