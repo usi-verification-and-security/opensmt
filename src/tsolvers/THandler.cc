@@ -119,11 +119,12 @@ void THandler::getConflict (
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
     {
-        bool found;
+        bool found = false;
         for (auto solver : getSolverHandler().solverSchedule) {
             if (solver->hasExplanation()) {
                 solver->getConflict(explanation);
                 found = true;
+                break;
             }
         }
         (void)found;
