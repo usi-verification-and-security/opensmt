@@ -29,9 +29,8 @@ void THandler::backtrack(int lev)
         if (not isDeclared(var(PTRefToLit(e)))) continue;
         ++backTrackPointsCounter;
     }
-    for (auto id : getSolverHandler().solverSchedule) {
-        auto & solver = *getSolverHandler().tsolvers[id];
-        solver.popBacktrackPoints(backTrackPointsCounter);
+    for (auto solver : getSolverHandler().solverSchedule) {
+        solver->popBacktrackPoints(backTrackPointsCounter);
     }
 
     checked_trail_size = stack.size( );
@@ -121,10 +120,9 @@ void THandler::getConflict (
     vec<PtAsgn> explanation;
     {
         bool found;
-        for (auto id : getSolverHandler().solverSchedule) {
-            auto & solver = *getSolverHandler().tsolvers[id];
-            if (solver.hasExplanation()) {
-                solver.getConflict(explanation);
+        for (auto solver : getSolverHandler().solverSchedule) {
+            if (solver->hasExplanation()) {
+                solver->getConflict(explanation);
                 found = true;
             }
         }
@@ -169,9 +167,8 @@ THandler::getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *l
 Lit THandler::getDeduction() {
     PtAsgn_reason e = PtAsgn_reason_Undef;
     while (true) {
-        for (auto id : getSolverHandler().solverSchedule) {
-            auto & solver = *getSolverHandler().tsolvers[id];
-            e = solver.getDeduction();
+        for (auto solver : getSolverHandler().solverSchedule) {
+            e = solver->getDeduction();
             if (e.tr != PTRef_Undef) break;
         }
         if ( e.tr == PTRef_Undef ) {

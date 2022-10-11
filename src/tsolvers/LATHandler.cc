@@ -12,9 +12,7 @@ LATHandler::LATHandler(SMTConfig & c, ArithLogic & l)
     , logic(l)
 {
     lasolver = new LASolver(config, logic);
-    SolverId my_id = lasolver->getId();
-    tsolvers[my_id.id] = lasolver;
-    solverSchedule.push(my_id.id);
+    setSolverSchedule({lasolver});
 }
 
 PTRef LATHandler::getInterpolant(ipartitions_t const & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) {

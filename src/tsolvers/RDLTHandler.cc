@@ -7,9 +7,7 @@ RDLTHandler::RDLTHandler(SMTConfig &c, ArithLogic &l)
         , logic(l)
 {
     rdlsolver = new RDLSolver(config, logic);
-    SolverId my_id = rdlsolver->getId();
-    tsolvers[my_id.id] = rdlsolver;
-    solverSchedule.push(my_id.id);
+    setSolverSchedule({rdlsolver});
 }
 
 Logic &RDLTHandler::getLogic()

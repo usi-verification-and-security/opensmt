@@ -8,16 +8,8 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
         , logic(l)
 {
     lasolver = new LASolver(config, logic);
-    SolverId lra_id = lasolver->getId();
-    tsolvers[lra_id.id] = lasolver;
-    solverSchedule.push(lra_id.id);
-
     ufsolver = new Egraph(config, logic);
-
-    SolverId uf_id = ufsolver->getId();
-    tsolvers[uf_id.id] = ufsolver;
-    solverSchedule.push(uf_id.id);
-
+    setSolverSchedule({lasolver, ufsolver});
 }
 
 PTRef UFLATHandler::getInterpolant(const ipartitions_t&, std::map<PTRef, icolor_t> *, PartitionManager &)

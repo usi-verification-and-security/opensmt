@@ -9,10 +9,7 @@ UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
 {
     egraph = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic)
             : new Egraph(config, logic);
-
-    SolverId my_id = egraph->getId();
-    tsolvers[my_id.id] = egraph;
-    solverSchedule.push(my_id.id); // Only UF for the QF_UF logic
+    setSolverSchedule({egraph});
 }
 
 UFTHandler::~UFTHandler() { }

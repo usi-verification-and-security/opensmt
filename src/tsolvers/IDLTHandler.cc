@@ -12,9 +12,7 @@ IDLTHandler::IDLTHandler(SMTConfig& c, ArithLogic& l)
         , logic(l)
 {
     idlsolver = new IDLSolver(config, logic);
-    SolverId my_id = idlsolver->getId();
-    tsolvers[my_id.id] = idlsolver;
-    solverSchedule.push(my_id.id);
+    setSolverSchedule({idlsolver});
 }
 
 Logic &IDLTHandler::getLogic()

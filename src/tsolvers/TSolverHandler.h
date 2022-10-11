@@ -42,18 +42,11 @@ class ModelBuilder;
 class TSolverHandler
 {
     friend THandler;
+    vec<TSolver*>  solverSchedule;
 protected:
     SMTConfig     &config;
-protected:
-    vec<int>       solverSchedule;   // Why is this here and not in THandler?
-    vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
-
-    TSolverHandler(SMTConfig & c) : config(c) {
-        for (SolverDescr * solverDescr : SolverDescr::getSolverList()) {
-            SolverId id = (SolverId)(*solverDescr);
-            while (id.id >= (unsigned)tsolvers.size()) tsolvers.push(nullptr);
-        }
-    }
+    TSolverHandler(SMTConfig & c) : config(c) { }
+    void setSolverSchedule(vec<TSolver*> && schedule) { solverSchedule = std::move(schedule); }
 public:
     virtual ~TSolverHandler();
 
