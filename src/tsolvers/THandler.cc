@@ -29,9 +29,9 @@ void THandler::backtrack(int lev)
         if (not isDeclared(var(PTRefToLit(e)))) continue;
         ++backTrackPointsCounter;
     }
-    for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-        if (getSolverHandler().tsolvers[i] != nullptr)
-            getSolverHandler().tsolvers[i]->popBacktrackPoints(backTrackPointsCounter);
+    for (auto id : getSolverHandler().solverSchedule) {
+        auto & solver = *getSolverHandler().tsolvers[id];
+        solver.popBacktrackPoints(backTrackPointsCounter);
     }
 
     checked_trail_size = stack.size( );
@@ -120,14 +120,16 @@ void THandler::getConflict (
     // where li is the literal corresponding with ei with polarity !pi
     vec<PtAsgn> explanation;
     {
-        int i;
-        for (i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-            if (getSolverHandler().tsolvers[i] != nullptr && getSolverHandler().tsolvers[i]->hasExplanation()) {
-                getSolverHandler().tsolvers[i]->getConflict(explanation);
-                break;
+        bool found;
+        for (auto id : getSolverHandler().solverSchedule) {
+            auto & solver = *getSolverHandler().tsolvers[id];
+            if (solver.hasExplanation()) {
+                solver.getConflict(explanation);
+                found = true;
             }
         }
-        assert(i != getSolverHandler().tsolvers.size());
+        (void)found;
+        assert(found);
     }
 
     if (explanation.size() == 0) {
@@ -167,8 +169,9 @@ THandler::getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *l
 Lit THandler::getDeduction() {
     PtAsgn_reason e = PtAsgn_reason_Undef;
     while (true) {
-        for (int i = 0; i < getSolverHandler().tsolvers.size(); i++) {
-            if (getSolverHandler().tsolvers[i] != NULL) e = getSolverHandler().tsolvers[i]->getDeduction();
+        for (auto id : getSolverHandler().solverSchedule) {
+            auto & solver = *getSolverHandler().tsolvers[id];
+            e = solver.getDeduction();
             if (e.tr != PTRef_Undef) break;
         }
         if ( e.tr == PTRef_Undef ) {

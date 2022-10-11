@@ -48,12 +48,9 @@ protected:
     vec<int>       solverSchedule;   // Why is this here and not in THandler?
     vec<TSolver*>  tsolvers;         // List of ordinary theory solvers
 
-    TSolverHandler(SMTConfig & c)
-        : config(c)
-    {
-        for (int i = 0; i < SolverDescr::getSolverList().size(); i++) {
-            SolverDescr* sd = SolverDescr::getSolverList()[i];
-            SolverId id = (SolverId)(*sd);
+    TSolverHandler(SMTConfig & c) : config(c) {
+        for (SolverDescr * solverDescr : SolverDescr::getSolverList()) {
+            SolverId id = (SolverId)(*solverDescr);
             while (id.id >= (unsigned)tsolvers.size()) tsolvers.push(nullptr);
         }
     }

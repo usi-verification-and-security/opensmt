@@ -4,16 +4,16 @@
 
 TSolverHandler::~TSolverHandler()
 {
-    for (int i = 0; i < tsolvers.size(); i++) {
-        delete tsolvers[i];
+    for (auto id : solverSchedule) {
+        delete tsolvers[id];
     }
 }
 
 void TSolverHandler::computeModel()
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != nullptr)
-            tsolvers[i]->computeModel();
+    for (auto id : solverSchedule) {
+        tsolvers[id]->computeModel();
+    }
 }
 
 void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
@@ -29,14 +29,14 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
     bool res = true;
     // Push backtrack points and the assignments to the theory solvers
     // according to the schedule
-    for (int i = 0; i < solverSchedule.size(); i++) {
-        int idx = solverSchedule[i];
-        assert(tsolvers[idx] != nullptr);
-        tsolvers[idx]->pushBacktrackPoint();
-        if (!tsolvers[idx]->isInformed(asgn.tr)) {
+    for (auto id : solverSchedule) {
+        assert(tsolvers[id] != nullptr);
+        auto & solver = *tsolvers[id];
+        solver.pushBacktrackPoint();
+        if (not solver.isInformed(asgn.tr)) {
             continue;
         }
-        bool res_new = tsolvers[idx]->assertLit(asgn);
+        bool res_new = solver.assertLit(asgn);
         res &= res_new;
     }
     return res;
@@ -46,26 +46,27 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
 // Clear the vars of the solvers
 void TSolverHandler::clearSolver()
 {
-    for (int i = 0; i < tsolvers.size(); i++)
-        if (tsolvers[i] != NULL)
-            tsolvers[i]->clearSolver();
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        solver.clearSolver();
+    }
 }
 
 void TSolverHandler::declareAtom(PTRef tr) {
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != nullptr && tsolvers[i]->isValid(tr)) {
-            tsolvers[i]->declareAtom(tr);
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        if (solver.isValid(tr)) {
+            solver.declareAtom(tr);
         }
     }
 }
 
 void TSolverHandler::informNewSplit(PTRef tr)
 {
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-                if (tsolvers[i]->isValid(tr)) {
-                    tsolvers[i]->informNewSplit(tr);
-            }
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        if (solver.isValid(tr)) {
+            solver.informNewSplit(tr);
         }
     }
 }
@@ -73,24 +74,23 @@ void TSolverHandler::informNewSplit(PTRef tr)
 TRes TSolverHandler::check(bool complete)
 {
     TRes res_final = TRes::SAT;
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != NULL) {
-            TRes res = tsolvers[i]->check(complete);
-            if (res == TRes::UNSAT)
-                return TRes::UNSAT;
-            else if (res == TRes::UNKNOWN)
-                res_final = TRes::UNKNOWN;
-        }
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        TRes res = solver.check(complete);
+        if (res == TRes::UNSAT) {
+            return TRes::UNSAT;
+        } else if (res == TRes::UNKNOWN)
+            res_final = TRes::UNKNOWN;
     }
-
     return res_final;
 }
 
 vec<PTRef> TSolverHandler::getSplitClauses() {
     vec<PTRef> split_terms;
-    for (int i = 0; i < tsolvers.size(); i++) {
-        if (tsolvers[i] != nullptr && tsolvers[i]->hasNewSplits()) {
-            tsolvers[i]->getNewSplits(split_terms);
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        if (solver.hasNewSplits()) {
+            solver.getNewSplits(split_terms);
             break;
         }
     }
@@ -101,10 +101,10 @@ vec<PTRef> TSolverHandler::getSplitClauses() {
 TSolver* TSolverHandler::getReasoningSolverFor(PTRef ptref) const {
     assert(getLogic().isTheoryTerm(ptref));
     // MB: Can we use solverSchedule? Double check this if theory combination is implemented
-    for (auto* solver : tsolvers) {
-        if (solver != nullptr && solver->isValid(ptref)) {
-            return solver;
-        }
+    for (auto id : solverSchedule) {
+        auto & solver = *tsolvers[id];
+        if (solver.isValid(ptref))
+            return tsolvers[id];
     }
     assert(false);
     return nullptr;
