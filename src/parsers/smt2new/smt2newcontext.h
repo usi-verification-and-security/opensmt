@@ -325,6 +325,7 @@ struct GetInterpolants : public CommandNode {
 struct GetValue : public CommandNode {
     std::unique_ptr<std::vector<TermNode*>> terms;
     GetValue(std::unique_ptr<std::vector<TermNode*>> && terms) : terms(std::move(terms)) {}
+    ~GetValue() { for (auto node : *terms) { delete node; } }
 };
 
 struct GetOption : public CommandNode {
