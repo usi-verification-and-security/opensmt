@@ -170,10 +170,11 @@ struct SortNode : public GeneralNode {
             if (processed < children.size()) {
                 ++processed;
                 queue.emplace_back(Qel{children[processed - 1], 0});
+                continue;
             }
             assert(processed == children.size());
             assert(node);
-            for (auto child : *sortList) {
+            for (auto child : *(node->sortList)) {
                 assert(child->sortList->empty());
                 delete child;
             }
