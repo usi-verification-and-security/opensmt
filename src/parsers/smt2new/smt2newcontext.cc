@@ -10,16 +10,12 @@ namespace {
        TermNode* node;
        uint32_t processed;
     };
-    bool checkProcessedProperty(Qel & element) {
-        auto & [termNode, processed] = element;
+    bool checkProcessedProperty(TermNode * termNode, size_t processed) {
         assert(termNode);
-        if (auto normalTermNode = dynamic_cast<NormalTermNode*>(termNode)) {
-            return processed == normalTermNode->arguments->size();
-        } else if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
+        if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
             return processed == letTermNode->arguments->size() + letTermNode->bindings->size();
         }
-        assert(false);
-        return false;
+        return processed == termNode->arguments->size();
     }
 }
 
@@ -45,7 +41,7 @@ TermNode::~TermNode() {
             }
         }
         assert(termNode);
-        assert(checkProcessedProperty(queue.back()));
+        assert(checkProcessedProperty(termNode, processed));
 
         for (auto child : *arguments) {
             assert(child->arguments->empty());
