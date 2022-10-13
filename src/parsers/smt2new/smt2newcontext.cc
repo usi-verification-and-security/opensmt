@@ -49,6 +49,12 @@ TermNode::~TermNode() {
             assert(not child->arguments or child->arguments->empty());
             delete child;
         }
+        if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
+            for (auto & binding : *(letTermNode->bindings)) {
+                delete binding->term;
+            }
+            letTermNode->bindings->clear();
+        }
         termNode->arguments->clear(); // delete is not called on the pointers
         assert(termNode->arguments->empty());
         queue.pop_back();
