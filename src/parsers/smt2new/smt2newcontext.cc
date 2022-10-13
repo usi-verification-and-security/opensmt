@@ -32,22 +32,25 @@ TermNode::~TermNode() {
         if (processed < children.size()) {
             ++ processed;
             queue.emplace_back(Qel{children[processed - 1], 0});
+            continue;
         } else if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
             auto & bindings = *(letTermNode->bindings);
             assert(children.size() == 1);
             if (processed < bindings.size()+1) {
                 ++ processed;
-                queue.emplace_back(Qel{bindings[processed -1]->term, 0});
+                queue.emplace_back(Qel{bindings[processed - 2]->term, 0});
+                continue;
             }
         }
         assert(termNode);
         assert(checkProcessedProperty(termNode, processed));
 
-        for (auto child : *arguments) {
-            assert(child->arguments->empty());
+        for (auto child : *(termNode->arguments)) {
+            assert(not child->arguments or child->arguments->empty());
             delete child;
         }
         termNode->arguments->clear(); // delete is not called on the pointers
+        assert(termNode->arguments->empty());
         queue.pop_back();
     }
 }
