@@ -272,15 +272,15 @@ struct LetTermNode : public TermNode {
 };
 
 struct ForallNode : public TermNode {
-    std::unique_ptr<std::vector<SortedVarNode>> quantified;
-    ForallNode(TermNode * term, std::unique_ptr<std::vector<SortedVarNode>> && quantified)
+    std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> quantified;
+    ForallNode(TermNode * term, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> && quantified)
         : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
         , quantified(std::move(quantified)) {}
 };
 
 struct ExistsNode : public TermNode {
-    std::unique_ptr<std::vector<SortedVarNode>> quantified;
-    ExistsNode(TermNode * term, std::unique_ptr<std::vector<SortedVarNode>> && quantified)
+    std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> quantified;
+    ExistsNode(TermNode * term, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> && quantified)
         : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
         , quantified(std::move(quantified)) {}
 };
@@ -294,11 +294,11 @@ struct AnnotationNode : public TermNode {
 
 struct DefineFun : public CommandNode {
     std::unique_ptr<SymbolNode> name;
-    std::unique_ptr<std::vector<SortedVarNode>> args;
+    std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> args;
     std::unique_ptr<SortNode> returnSort;
     std::unique_ptr<TermNode> term;
     DefineFun(std::unique_ptr<SymbolNode> && name,
-              std::unique_ptr<std::vector<SortedVarNode>> && args,
+              std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>> && args,
               std::unique_ptr<SortNode> && returnSort,
               std::unique_ptr<TermNode> && term)
         : name(std::move(name))

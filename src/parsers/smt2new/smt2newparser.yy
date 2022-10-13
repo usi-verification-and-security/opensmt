@@ -89,7 +89,7 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   CommandNode * n_command;
   TermNode * n_term;
   SortedVarNode * n_sortedVar;
-  std::vector<SortedVarNode> * n_sortedVarList;
+  std::vector<std::unique_ptr<SortedVarNode>> * n_sortedVarList;
   std::vector<TermNode*> * n_termList;
   std::vector<AttributeNode> * n_attributeList;
   std::vector<CommandNode *> * n_commandList;
@@ -173,7 +173,7 @@ command: '(' TK_SETLOGIC symbol ')'
     | '(' TK_DECLARECONST const_val sort ')'
         { $$ = new DeclareConst {std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
-        { $$ = new DefineFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortedVarNode>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
+        { $$ = new DefineFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
     | '(' TK_PUSH TK_NUM ')'
         { $$ = new PushNode {std::stoi(*$3)}; delete $3; }
     | '(' TK_POP TK_NUM ')'
@@ -316,9 +316,9 @@ var_binding: '(' symbol term ')'
     ;
 
 sorted_var_list:
-        { $$ = new std::vector<SortedVarNode>(); }
+        { $$ = new std::vector<std::unique_ptr<SortedVarNode>>(); }
     | sorted_var_list sorted_var
-        { $1->emplace_back(std::move(*$2)); $$ = $1; }
+        { $1->emplace_back(std::unique_ptr<SortedVarNode>($2)); $$ = $1; }
     ;
 
 sorted_var: '(' symbol sort ')'
@@ -343,9 +343,9 @@ term: spec_const
     | '(' TK_LET '(' var_binding_list ')' term ')'
         { $$ = new LetTermNode {$6, std::unique_ptr<std::vector<std::unique_ptr<VarBindingNode>>>($4)};   }
     | '(' TK_FORALL '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
-        { $$ = new ForallNode {$6, std::unique_ptr<std::vector<SortedVarNode>>($4)}; }
+        { $$ = new ForallNode {$6, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($4)}; }
     | '(' TK_EXISTS '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
-        { $$ = new ExistsNode {$6, std::unique_ptr<std::vector<SortedVarNode>>($4)}; }
+        { $$ = new ExistsNode {$6, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($4)}; }
     | '(' '!' term attribute_list ')' // todo: AST traversal must ensure that attribute_list is non-empty
         { $$ = new AnnotationNode {$3, std::unique_ptr<std::vector<AttributeNode>>($4)}; }
     ;
