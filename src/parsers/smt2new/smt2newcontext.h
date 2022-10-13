@@ -262,6 +262,13 @@ struct LetTermNode : public TermNode {
         : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
         , bindings(std::move(bindings))
     {}
+
+    // Note: ~TermNode makes sure that bindings is non-zero only on top-level LetTermNodes
+    ~LetTermNode() override {
+        for (auto & binding : *bindings) {
+            delete binding->term;
+        }
+    }
 };
 
 struct ForallNode : public TermNode {
