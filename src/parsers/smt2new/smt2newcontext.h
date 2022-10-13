@@ -319,6 +319,7 @@ struct AssertNode : public CommandNode {
 struct GetInterpolants : public CommandNode {
     std::unique_ptr<std::vector<TermNode*>> configuration;
     GetInterpolants(std::unique_ptr<std::vector<TermNode*>> && configuration) : configuration(std::move(configuration)) {}
+    ~GetInterpolants() { for (auto node : *configuration) { delete node; } }
 };
 
 
