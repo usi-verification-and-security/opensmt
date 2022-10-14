@@ -66,6 +66,7 @@ struct SExpr : public GeneralNode {
             if (children and processed < (*children)->size()) {
                 ++processed;
                 queue.emplace_back(Qel{(**children)[processed - 1], 0});
+                continue;
             }
             assert(not children or processed == (*children)->size());
             assert(node);
@@ -85,6 +86,13 @@ struct AttributeValueNode : public GeneralNode {
     AttributeValueNode(std::unique_ptr<SpecConstNode> && node) : value(std::move(node)) {}
     AttributeValueNode(std::unique_ptr<SymbolNode> && node) : value(std::move(node)) {}
     AttributeValueNode(std::unique_ptr<std::vector<SExpr*>> && node) : value(std::move(node)) {}
+    ~AttributeValueNode() {
+        if (auto vec = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&value)) {
+            for (auto el : (**vec)) {
+                delete el;
+            }
+        }
+    }
 };
 
 struct AttributeNode : public GeneralNode {
