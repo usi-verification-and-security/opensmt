@@ -69,7 +69,12 @@ struct SExpr : public GeneralNode {
             }
             assert(not children or processed == (*children)->size());
             assert(node);
-            delete node;
+            if (children and *children) {
+                for (SExpr * child : (**children)) {
+                    delete child;
+                }
+                (*children)->clear();
+            }
             queue.pop_back();
         }
     }
@@ -80,13 +85,6 @@ struct AttributeValueNode : public GeneralNode {
     AttributeValueNode(std::unique_ptr<SpecConstNode> && node) : value(std::move(node)) {}
     AttributeValueNode(std::unique_ptr<SymbolNode> && node) : value(std::move(node)) {}
     AttributeValueNode(std::unique_ptr<std::vector<SExpr*>> && node) : value(std::move(node)) {}
-    ~AttributeValueNode() {
-        if (auto vec = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&value)) {
-            for (auto el : (**vec)) {
-                delete el;
-            }
-        }
-    }
 };
 
 struct AttributeNode : public GeneralNode {
