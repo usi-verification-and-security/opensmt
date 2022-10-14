@@ -289,8 +289,8 @@ struct ExistsNode : public TermNode {
 };
 
 struct AnnotationNode : public TermNode {
-    std::unique_ptr<std::vector<AttributeNode>> attributes;
-    AnnotationNode(TermNode * term, std::unique_ptr<std::vector<AttributeNode>> && attributes)
+    std::unique_ptr<std::vector<std::unique_ptr<AttributeNode>>> attributes;
+    AnnotationNode(TermNode * term, std::unique_ptr<std::vector<std::unique_ptr<AttributeNode>>> && attributes)
         : TermNode{std::make_unique<std::vector<TermNode*>>(std::vector<TermNode*>{term})}
         , attributes(std::move(attributes)) {}
 };

@@ -91,7 +91,7 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   SortedVarNode * n_sortedVar;
   std::vector<std::unique_ptr<SortedVarNode>> * n_sortedVarList;
   std::vector<TermNode*> * n_termList;
-  std::vector<AttributeNode> * n_attributeList;
+  std::vector<std::unique_ptr<AttributeNode>> * n_attributeList;
   std::vector<CommandNode *> * n_commandList;
   std::vector<std::unique_ptr<SymbolNode>> * n_symbolList;
   std::vector<SExpr*> * sexpr_list;
@@ -211,9 +211,9 @@ command: '(' TK_SETLOGIC symbol ')'
     ;
 
 attribute_list:
-        { $$ = new std::vector<AttributeNode>(); }
+        { $$ = new std::vector<std::unique_ptr<AttributeNode>>(); }
     | attribute_list attribute
-        { $1->emplace_back(std::move(*$2)); $$ = $1; }
+        { $1->emplace_back(std::move($2)); $$ = $1; }
     ;
 
 attribute: TK_KEY
@@ -347,7 +347,7 @@ term: spec_const
     | '(' TK_EXISTS '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
         { $$ = new ExistsNode {$6, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($4)}; }
     | '(' '!' term attribute_list ')' // todo: AST traversal must ensure that attribute_list is non-empty
-        { $$ = new AnnotationNode {$3, std::unique_ptr<std::vector<AttributeNode>>($4)}; }
+        { $$ = new AnnotationNode {$3, std::unique_ptr<std::vector<std::unique_ptr<AttributeNode>>>($4)}; }
     ;
 
 symbol_list:
