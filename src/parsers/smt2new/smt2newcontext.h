@@ -101,20 +101,23 @@ struct IdentifierNode : public GeneralNode {
 };
 
 
-class OptionNode : public GeneralNode { };
+class OptionNode : public GeneralNode {
+public:
+    virtual ~OptionNode() = default;
+};
 
-struct PrintSuccess : public OptionNode { bool value; };
-struct ExpandDefinitions : public OptionNode { bool value; };
-struct InteractiveMode : public OptionNode { bool value; };
-struct ProduceProofs : public OptionNode { bool value; };
-struct ProduceUnsatCores : public OptionNode { bool value; };
-struct ProduceModels : public OptionNode { bool value; };
-struct ProduceAssignments : public OptionNode { bool value; };
-struct RegularOutputChannel : public OptionNode { std::string value; };
-struct DiagnosticOutputChannel : public OptionNode { std::string value; };
-struct RandomSeed : public OptionNode { int value; };
-struct Verbosity : public OptionNode { int value; };
-struct Attribute : public OptionNode { AttributeNode value; };
+struct PrintSuccess : public OptionNode { bool value; PrintSuccess(bool value) : value(value) {} };
+struct ExpandDefinitions : public OptionNode { bool value; ExpandDefinitions(bool value) : value(value) {} };
+struct InteractiveMode : public OptionNode { bool value; InteractiveMode(bool value) : value(value) {} };
+struct ProduceProofs : public OptionNode { bool value; ProduceProofs(bool value) : value(value) {} };
+struct ProduceUnsatCores : public OptionNode { bool value; ProduceUnsatCores(bool value) : value(value) {} };
+struct ProduceModels : public OptionNode { bool value; ProduceModels(bool value) : value(value) {} };
+struct ProduceAssignments : public OptionNode { bool value; ProduceAssignments(bool value): value(value) {} };
+struct RegularOutputChannel : public OptionNode { std::string value; RegularOutputChannel(std::string value) : value(value) {} };
+struct DiagnosticOutputChannel : public OptionNode { std::string value; DiagnosticOutputChannel(std::string value) : value(value) {} };
+struct RandomSeed : public OptionNode { int value; RandomSeed(int value) : value(value) {} };
+struct Verbosity : public OptionNode { int value; Verbosity(int value) : value(value) {} };
+struct Attribute : public OptionNode { AttributeNode value; Attribute(AttributeNode && value) : value(std::move(value)) {} };
 
 // Note: classes derived from CommandNodes need to have a constructor because they need to be destructible as CommandNodes.
 // In particular, CommandNode needs to have a virtual member function (destructor), which forbids aggregate initialization.

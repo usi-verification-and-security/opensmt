@@ -380,29 +380,29 @@ b_value: symbol
     ;
 
 option: KW_PRINTSUCCESS b_value
-        { $$ = new PrintSuccess {{}, $2}; (void)$1; }
+        { $$ = new PrintSuccess {$2}; (void)$1; }
     | KW_EXPANDDEFINITIONS b_value
-        { $$ = new ExpandDefinitions {{}, $2}; (void)$1; }
+        { $$ = new ExpandDefinitions {$2}; (void)$1; }
     | KW_INTERACTIVEMODE b_value
-        { $$ = new InteractiveMode {{}, $2}; (void)$1; }
+        { $$ = new InteractiveMode {$2}; (void)$1; }
     | KW_PRODUCEPROOFS b_value
-        { $$ = new ProduceProofs {{}, $2}; (void)$1; }
+        { $$ = new ProduceProofs {$2}; (void)$1; }
     | KW_PRODUCEUNSATCORES b_value
-        { $$ = new ProduceUnsatCores {{}, $2}; (void)$1; }
+        { $$ = new ProduceUnsatCores {$2}; (void)$1; }
     | KW_PRODUCEMODELS b_value
-        { $$ = new ProduceModels {{}, $2}; (void)$1; }
+        { $$ = new ProduceModels {$2}; (void)$1; }
     | KW_PRODUCEASSIGNMENTS b_value
-        { $$ = new ProduceAssignments {{}, $2}; (void)$1;}
+        { $$ = new ProduceAssignments {$2}; (void)$1;}
     | KW_REGULAROUTPUTCHANNEL TK_STR
-        { $$ = new RegularOutputChannel {{}, std::move(*$2)}; (void)$1; }
+        { $$ = new RegularOutputChannel {std::move(*$2)}; (void)$1; delete $2; }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
-        { $$ = new DiagnosticOutputChannel {{}, std::move(*$2)}; (void)$1; }
+        { $$ = new DiagnosticOutputChannel {std::move(*$2)}; (void)$1; delete $2; }
     | KW_RANDOMSEED TK_NUM
-        { $$ = new RandomSeed {{}, std::stoi(*$2) }; free $2; (void)$1; }
+        { $$ = new RandomSeed { std::stoi(*$2) }; delete $2; (void)$1; }
     | KW_VERBOSITY TK_NUM
-        { $$ = new Verbosity {{}, std::stoi(*$2) }; free $2; (void)$1; }
+        { $$ = new Verbosity { std::stoi(*$2) }; delete $2; (void)$1; }
     | attribute
-        { $$ = new Attribute {{}, std::move(*$1) }; }
+        { $$ = new Attribute { std::move(*$1) }; delete $1; }
     ;
 
 predef_key: KW_SORTS
