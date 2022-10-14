@@ -117,7 +117,7 @@ struct RegularOutputChannel : public OptionNode { std::string value; RegularOutp
 struct DiagnosticOutputChannel : public OptionNode { std::string value; DiagnosticOutputChannel(std::string value) : value(value) {} };
 struct RandomSeed : public OptionNode { int value; RandomSeed(int value) : value(value) {} };
 struct Verbosity : public OptionNode { int value; Verbosity(int value) : value(value) {} };
-struct Attribute : public OptionNode { AttributeNode value; Attribute(AttributeNode && value) : value(std::move(value)) {} };
+struct Attribute : public OptionNode { std::unique_ptr<AttributeNode> value; Attribute(std::unique_ptr<AttributeNode> && value) : value(std::move(value)) {} };
 
 // Note: classes derived from CommandNodes need to have a constructor because they need to be destructible as CommandNodes.
 // In particular, CommandNode needs to have a virtual member function (destructor), which forbids aggregate initialization.

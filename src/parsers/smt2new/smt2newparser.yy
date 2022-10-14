@@ -402,7 +402,7 @@ option: KW_PRINTSUCCESS b_value
     | KW_VERBOSITY TK_NUM
         { $$ = new Verbosity { std::stoi(*$2) }; delete $2; (void)$1; }
     | attribute
-        { $$ = new Attribute { std::move(*$1) }; delete $1; }
+        { $$ = new Attribute { std::unique_ptr<AttributeNode>($1) }; }
     ;
 
 predef_key: KW_SORTS
