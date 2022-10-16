@@ -80,7 +80,7 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   VarBindingNode * n_varBinding;
   std::vector<std::unique_ptr<VarBindingNode>> * n_varBindingList;
   std::vector<SortNode*> * n_sortList;
-  std::vector<std::string> * n_numeralList;
+  std::vector<std::unique_ptr<std::string>> * n_numeralList;
   AttributeNode * n_attribute;
   AttributeValueNode * n_attributeValue;
   SpecConstNode * n_specConst;
@@ -237,7 +237,7 @@ attribute_value: spec_const
 identifier: symbol
         { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($1), {}}; }
     | '(' '_' symbol numeral_list ')'
-        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::string>>($4)}; }
+        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<std::string>>>($4)}; }
     ;
 
 sort: identifier
@@ -294,9 +294,9 @@ const_val: symbol
     ;
 
 numeral_list: numeral_list TK_NUM
-        { $1->emplace_back(std::move(*$2)); }
+        { $1->emplace_back(std::unique_ptr<std::string>($2)); }
     | TK_NUM
-        { $$ = new std::vector<std::string>{std::string(std::move(*$1))};  }
+        { $$ = new std::vector<std::unique_ptr<std::string>>(); $$->emplace_back(std::unique_ptr<std::string>{$1});  }
     ;
 
 qual_identifier: identifier

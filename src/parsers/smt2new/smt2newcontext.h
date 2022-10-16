@@ -103,7 +103,7 @@ struct AttributeNode : public GeneralNode {
 
 struct IdentifierNode : public GeneralNode {
     std::unique_ptr<SymbolNode> symbol;
-    std::unique_ptr<std::vector<std::string>> numeralList;
+    std::unique_ptr<std::vector<std::unique_ptr<std::string>>> numeralList;
 };
 
 
