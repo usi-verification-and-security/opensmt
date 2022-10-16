@@ -119,8 +119,8 @@ struct ProduceProofs : public OptionNode { bool value; ProduceProofs(bool value)
 struct ProduceUnsatCores : public OptionNode { bool value; ProduceUnsatCores(bool value) : value(value) {} };
 struct ProduceModels : public OptionNode { bool value; ProduceModels(bool value) : value(value) {} };
 struct ProduceAssignments : public OptionNode { bool value; ProduceAssignments(bool value): value(value) {} };
-struct RegularOutputChannel : public OptionNode { std::string value; RegularOutputChannel(std::string value) : value(value) {} };
-struct DiagnosticOutputChannel : public OptionNode { std::string value; DiagnosticOutputChannel(std::string value) : value(value) {} };
+struct RegularOutputChannel : public OptionNode { std::unique_ptr<std::string> value; RegularOutputChannel(std::unique_ptr<std::string> && value) : value(std::move(value)) {} };
+struct DiagnosticOutputChannel : public OptionNode { std::unique_ptr<std::string> value; DiagnosticOutputChannel(std::unique_ptr<std::string> && value) : value(std::move(value)) {} };
 struct RandomSeed : public OptionNode { int value; RandomSeed(int value) : value(value) {} };
 struct Verbosity : public OptionNode { int value; Verbosity(int value) : value(value) {} };
 struct Attribute : public OptionNode { std::unique_ptr<AttributeNode> value; Attribute(std::unique_ptr<AttributeNode> && value) : value(std::move(value)) {} };
