@@ -98,8 +98,6 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   std::string * str;
   bool n_bool;
   OptionNode * n_option;
-  ASTNode * snode;
-  std::vector<std::unique_ptr<ASTNode>> * snode_list;
   osmttokens::smt2token tok;
 }
 
