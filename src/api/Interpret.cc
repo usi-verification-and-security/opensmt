@@ -1010,14 +1010,13 @@ void Interpret::execute(ASTNode const & r) {
 int Interpret::interpFile(FILE* in) {
     Smt2newContext context(in);
     int rval = yyparse(&context);
-
-    if (rval != 0) return rval;
-
-    for (auto command : context.getRoot()) {
-//        execute(command);
-        delete command;
+    if (context.hasRoot()) {
+        for (auto command : context.getRoot()) {
+            //          if (rval == 0) { execute(command); }
+            delete command;
+        }
     }
-    return 0;
+    return rval;
 }
 
 int Interpret::interpFile(char *content){

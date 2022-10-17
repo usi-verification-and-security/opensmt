@@ -330,6 +330,7 @@ struct PopNode : public CommandNode {
 struct AssertNode : public CommandNode {
     std::unique_ptr<TermNode> term;
     AssertNode(std::unique_ptr<TermNode> && term) : term(std::move(term)) {}
+    ~AssertNode() override = default;
 };
 
 struct GetInterpolants : public CommandNode {
@@ -374,6 +375,7 @@ class Smt2newContext {
     FILE*                       is;
     char*                       ib;
     bool                        interactive;
+    bool hasRoot() const { return root != nullptr; }
     inline std::vector<CommandNode*> const & getRoot() { return *root; };
 
     Smt2newContext(FILE* in) :
