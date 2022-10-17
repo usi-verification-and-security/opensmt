@@ -101,13 +101,29 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
   osmttokens::smt2token tok;
 }
 
-%destructor { delete $$; } <str>
-%destructor { delete $$; } <n_sort>
-%destructor { for (CommandNode * n : *$$ ) { delete n; }; delete $$; } <n_commandList>
-%destructor { for (TermNode * n : *$$) { delete n; }; delete $$; } <n_termList>
-%destructor { delete $$; } <n_qualIdentifier>
-%destructor { delete $$; } <n_symbol>
+%destructor { delete $$; } <n_attributeValue>
+%destructor { delete $$; } <n_attribute>
+%destructor { delete $$; } <n_attributeList>
+%destructor { delete $$; } <n_command>
+%destructor { for (CommandNode * n : *$$) { delete n; }; delete $$; } <n_commandList>
+%destructor { delete $$; } <n_identifier>
 %destructor { delete $$; } <n_numeralList>
+%destructor { delete $$; } <n_qualIdentifier>
+%destructor { delete $$; } <n_option>
+%destructor { delete $$; } <n_sort>
+%destructor { delete $$; } <n_sortedVar>
+%destructor { delete $$; } <n_sortedVarList>
+%destructor { for (SortNode * n : *$$) { delete n; }; delete $$; } <n_sortList>
+%destructor { delete $$; } <n_specConst>
+%destructor { delete $$; } <n_symbol>
+%destructor { delete $$; } <n_symbolList>
+%destructor { delete $$; } <n_term>
+%destructor { for (TermNode * n : *$$) { delete n; }; delete $$; } <n_termList>
+%destructor { delete $$->term; delete $$; } <n_varBinding>
+%destructor { delete $$; } <n_varBindingList>
+%destructor { delete $$; } <sexpr>
+%destructor { for (SExpr * n : *$$) { delete n; }; delete $$; } <sexpr_list>
+%destructor { delete $$; } <str>
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
