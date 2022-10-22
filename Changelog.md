@@ -1,5 +1,11 @@
 ### 2.4.2 (unreleased)
 
+Bug fixes:
+ - TSolverHandler: Remove dependency on the global objects initialization order
+
+Performance improvements:
+ - ArithLogic: Improved computation of substitutions from equalities
+
 
 ### 2.4.1 (2022-07-28)
 
