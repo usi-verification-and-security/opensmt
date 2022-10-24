@@ -85,7 +85,7 @@ enum class ASTType {
 
 
 class SMTOption {
-    std::string sexprToString(SExpr * root) {
+    static std::string sexprToString(SExpr * root) {
         struct QEl { SExpr * sexpr; int count; };
         std::vector<std::string> childStrings;
         std::vector<QEl> stack;
