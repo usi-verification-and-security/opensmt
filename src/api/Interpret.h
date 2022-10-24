@@ -147,7 +147,7 @@ class Interpret {
     SRef                        sortFromASTNode(ASTNode const & n) const;
     static SortSymbol           sortSymbolFromASTNode(ASTNode const & node);
 
-    void                        setInfo(ASTNode const & n);
+    void                        setInfo(std::string const & str);
     void                        getInfo(ASTNode const & n);
     void                        setOption(ASTNode const & n);
     void                        getOption(ASTNode const & n);
@@ -169,8 +169,27 @@ class Interpret {
 
     virtual void                exit();
     void                        getInterpolants(const ASTNode& n);
-    void                        interp (ASTNode const & n);
-
+    void                        interp(CommandNode const * n);
+    void                        interp(SetLogic const & n);
+    void                        interp(SetInfo const & n);
+    void                        interp(SetOption const & n);
+    void                        interp(GetInfo const & n);
+    void                        interp(GetOption const & n);
+    void                        interp(DeclareSort const & n);
+    void                        interp(DeclareFun const & n);
+    void                        interp(DeclareConst const & n);
+    void                        interp(AssertNode const & n);
+    void                        interp(DefineFun const & n);
+    void                        interp(Simplify const & n);
+    void                        interp(CheckSatNode const & n);
+    void                        interp(GetInterpolants const & n);
+    void                        interp(GetAssignment const & n);
+    void                        interp(GetValue const & n);
+    void                        interp(GetModel const & n);
+    void                        interp(Echo const & n);
+    void                        interp(PushNode const & n);
+    void                        interp(PopNode const & n);
+    void                        interp(Exit const & n);
     void                        notify_formatted(bool error, const char* s, ...);
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;
@@ -192,7 +211,6 @@ class Interpret {
     int interpFile(char *content);
     int interpPipe();
 
-    void    execute(ASTNode const & n);
     bool    gotExit() const { return f_exit; }
 
     ValPair getValue       (PTRef tr) const;

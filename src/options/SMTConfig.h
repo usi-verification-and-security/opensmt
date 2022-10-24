@@ -29,15 +29,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SolverTypes.h"
 #include "StringMap.h"
+#include "smt2newcontext.h"
 #include "smt2tokens.h"
 
 #include <cstring>
-#include <libgen.h>
-#include <iostream>
-#include <list>
-#include <string>
 #include <fstream>
+#include <iostream>
+#include <libgen.h>
+#include <list>
 #include <memory>
+#include <string>
+#include <numeric>
 
 enum class ASTType {
       CMD_T      , CMDL_T
@@ -81,79 +83,99 @@ enum class ASTType {
     , UNDEF_T
 };
 
-class ASTNode {
-  using ASTNode_up = std::unique_ptr<ASTNode>;
-  using ASTVec = std::vector<ASTNode_up>;
-  using ASTVec_up = std::unique_ptr<ASTVec>;
-  using string_up = std::unique_ptr<std::string>;
-
-  private:
-    ASTType type = ASTType::UNDEF_T;
-    osmttokens::smt2token tok = {osmttokens::t_none};
-    std::unique_ptr<std::string> val;
-  public:
-    ASTVec_up children = nullptr;
-
-    ASTNode(ASTType t, osmttokens::smt2token tok = {osmttokens::t_none}, string_up v = nullptr, ASTVec_up children = nullptr)
-        : type(t), tok(tok), val(std::move(v)), children(std::move(children)) {}
-//    ASTNode(ASTNode const &) = default;
-//    ASTNode(ASTNode &&) = default;
-//    ASTNode & operator=(ASTNode const &) = delete;
-//    ASTNode & operator=(ASTNode &&) = default;
-
-    void print(std::ostream& o, int indent) const;
-    ASTType getType() const { return type; }
-    bool hasValue() const { return val != nullptr; }
-    std::string const & getValue() const { assert(hasValue()); return *val; }
-    osmttokens::smt2token getToken() const { return tok; }
-};
-
-
-enum ConfType { O_EMPTY, O_STR, O_SYM, O_NUM, O_DEC, O_HEX, O_BIN, O_LIST, O_ATTR, O_BOOL };
-
-class ConfValue {
-  public:
-    ConfType type = O_EMPTY;
-    std::string strval = "";
-    int numval = 0;
-    double decval = 0;
-    uint32_t unumval = 0;
-    std::list<ConfValue> configs;
-    ConfValue() = default;
-    ConfValue(const ASTNode& s_expr_n);
-    ConfValue(int i) : type(O_NUM), numval(i) {};
-    ConfValue(double i) : type(O_DEC), decval(i) {};
-    ConfValue(std::string && s) : strval(s) {}
-//    ConfValue(const ConfValue& other);
-//    ConfValue& operator=(const ConfValue& other);
-    std::string toString() const;
-    double getDoubleVal() const {if (type == O_NUM) return (double)numval; else if (type == O_DEC) return decval; else assert(false); return -1;}
-};
-
-class Info {
-  private:
-    ConfValue   value;
-  public:
-    Info(ASTNode const & n);
-    Info() = default;
-//    Info(Info const & other);
-//    Info() {};
-    bool isEmpty() const { return value.type == O_EMPTY; }
-    inline std::string toString() const { return value.toString(); }
-};
 
 class SMTOption {
-  private:
-    ConfValue   value;
-  public:
-    SMTOption(ASTNode const & n);
-    SMTOption() {}
+    std::string sexprToString(SExpr * root) {
+        struct QEl { SExpr * sexpr; int count; };
+        std::vector<std::string> childStrings;
+        std::vector<QEl> stack;
+        stack.push_back({root, 0});
+        while (not stack.empty()) {
+            auto & [sexpr, count] = stack.back();
+            if (auto vec_p = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&(*sexpr).data)) {
+                assert(*vec_p);
+                auto & vec = **vec_p;
+                if (vec.size() < count) {
+                    stack.push_back({ vec[count], 0 });
+                    ++count;
+                    continue;
+                }
+                // Vector, all children processed
+                assert(not childStrings.empty());
+                auto childStringStart = childStrings.end() - vec.size();
+                auto myString = std::accumulate(childStringStart, childStrings.end(), std::string(),
+                                [](const std::string & a, const std::string & b) {
+                                    return a + b;
+                                });
+                childStrings.erase(childStringStart, childStrings.end());
+                childStrings.emplace_back(std::move(myString));
+            } else if (auto constNode = std::get_if<std::unique_ptr<SpecConstNode>>(&(*sexpr).data)) {
+                assert(*constNode);
+                childStrings.push_back(*(**constNode).value);
+            } else if (auto symbolNode = std::get_if<std::unique_ptr<SymbolNode>>(&(*sexpr).data)) {
+                assert(*symbolNode);
+                childStrings.push_back((**symbolNode).getString());
+            } else if (auto string = std::get_if<std::unique_ptr<std::string>>(&(*sexpr).data)) {
+                assert(*string);
+                childStrings.push_back(**string);
+            }
+            stack.pop_back();
+        }
+        assert(childStrings.size() == 1);
+        return childStrings[0];
+    }
+public:
+    struct ConfValue {
+        ConstType type = ConstType::empty;
+        std::variant<std::string, int, double, uint32_t> value;
+        std::string toString() const;
+        double getDoubleVal() const {
+            if (type == ConstType::numeral) {
+                if (auto val = std::get_if<int>(&value)) {
+                    return static_cast<double>(*val);
+                } else if (auto val = std::get_if<uint32_t>(&value)) {
+                    return static_cast<double>(*val);
+                }
+                assert(false);
+            } else if (type == ConstType::decimal) {
+                auto val = std::get_if<double>(&value);
+                assert(val);
+                return *val;
+            } else {
+                throw OsmtApiException("Attempted to obtain double value for non-numeric type");
+            }
+        }
+    };
+
+    SMTOption();
+    SMTOption(AttributeValueNode const & n) {
+        if (auto specConst_p = std::get_if<std::unique_ptr<SpecConstNode>>(&n.value)) {
+            auto const & specConst = (**specConst_p);
+            value.type = specConst.type;
+            value.value = *specConst.value;
+        } else if (auto symbol_p = std::get_if<std::unique_ptr<SymbolNode>>(&n.value)) {
+            auto const & symbol = (**symbol_p);
+            value.type  = symbol.getType();
+            value.value = symbol.getString();
+        } else if (auto sexprVec_p = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&n.value)) {
+            assert(sexprVec_p);
+            value.type = ConstType::sexpr;
+            auto const & sexprVec = **sexprVec_p;
+            std::string s;
+            for (SExpr * sexpr_p : sexprVec) {
+                s += "(" + sexprToString(sexpr_p)+ ")";
+            }
+            value.value = s;
+        }
+    }
     SMTOption(int i)   : value(i) {}
     SMTOption(double i): value(i) {}
     SMTOption(std::string && s) : value(std::move(s)) {}
     inline bool isEmpty() const { return value.type == O_EMPTY; }
     inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
+  private:
+    ConfValue   value;
 };
 
 // Type safe wrapper for split types
@@ -317,11 +339,9 @@ private:
   static const char* s_err_unknown_split;
   static const char* s_err_unknown_units;
 
-
-  Info          info_Empty;
   SMTOption        option_Empty;
   std::vector<std::string> option_names;
-  std::unordered_map<std::string,Info> infoTable;
+  std::unordered_map<std::string,ConfValue> infoTable;
   std::unordered_map<std::string,SMTOption> optionTable;
 
   bool usedForInitialization = false; // Some options can be changed only before this config is used for initialization of MainSolver
@@ -362,8 +382,8 @@ public:
   bool             setOption(std::string const & name, const SMTOption& value, const char*& msg);
   const SMTOption& getOption(std::string const & name) const;
 
-  bool          setInfo  (std::string && name, Info && value);
-  Info          getInfo  (std::string const & name) const;
+  bool          setInfo  (std::string && name, ConfValue && value);
+  ConfValue     getInfo  (std::string const & name) const;
 
   void initializeConfig ( );
 

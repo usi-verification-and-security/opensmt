@@ -29,14 +29,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
 #include <variant>
-#include "SMTConfig.h"
+#include <string>
+#include <cassert>
+#include <vector>
 
 enum class ConstType {
     numeral,
     decimal,
     hexadecimal,
     binary,
-    string
+    string,
+    empty,
+    symbol,
+    boolean,
+    sexpr
 };
 
 class GeneralNode {};
@@ -48,6 +54,23 @@ struct SpecConstNode : public GeneralNode {
 
 struct SymbolNode : public GeneralNode {
     std::variant<std::unique_ptr<std::string>,std::unique_ptr<SpecConstNode>> name;
+    std::string getString() const {
+        if (auto str = std::get_if<std::unique_ptr<std::string>>(&name)) {
+            return {**str};
+        } else if (auto specConstNode = std::get_if<std::unique_ptr<SpecConstNode>>(&name)) {
+            return {*(**specConstNode).value};
+        }
+        assert(false);
+    }
+    ConstType getType() const {
+        if (std::get_if<std::unique_ptr<std::string>>(&name)) {
+            return ConstType::string;
+        } else {
+            auto specConstNode = std::get_if<std::unique_ptr<SpecConstNode>>(&name);
+            assert(specConstNode);
+            return (**specConstNode).type;
+        }
+    }
     bool quoted;
 };
 
@@ -154,6 +177,8 @@ struct SetOption : public CommandNode {
 struct SetInfo : public CommandNode {
     std::unique_ptr<AttributeNode> attribute;
     SetInfo(std::unique_ptr<AttributeNode> && attribute) : attribute(std::move(attribute)) {}
+    std::string getName() const { return {*attribute->name}; }
+    AttributeValueNode & getValue() const { return *attribute->value; }
 };
 
 struct DeclareSort : public CommandNode {

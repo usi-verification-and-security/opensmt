@@ -46,19 +46,8 @@ Interpret::getParsedFormula()
     return root;
 }
 
-void Interpret::setInfo(ASTNode const & n) {
-    assert(n.getType() == ASTType::UATTR_T || n.getType() == ASTType::PATTR_T);
+void Interpret::setInfo(std::string const & name) {
 
-    std::string name;
-    if (not n.hasValue()) {
-        ASTNode const & an = *(*n.children)[0];
-        assert(an.getType() == ASTType::UATTR_T || an.getType() == ASTType::PATTR_T);
-        name = an.getValue();
-    }
-    else // Normal option
-        name = n.getValue();
-
-    config.setInfo(std::move(name), Info(n));
 }
 
 void Interpret::getInfo(ASTNode const & n) {
@@ -112,29 +101,81 @@ using opensmt::Logic_t;
 using opensmt::getLogicFromString;
 using namespace osmttokens;
 
-void Interpret::interp(ASTNode const & n) {
+void Interpret::interp(CommandNode const * n) {
+    if (auto setLogic = dynamic_cast<SetLogic const *>(n)) {
+        return interp(*setLogic);
+    } else if (auto setInfo = dynamic_cast<SetInfo const *>(n)) {
+        return interp(*setInfo);
+    } else if (auto setOption = dynamic_cast<SetOption const *>(n)) {
+        return interp(*setOption);
+    } else if (auto getInfo = dynamic_cast<GetInfo const *>(n)) {
+        return interp(*getInfo);
+    } else if (auto getOption = dynamic_cast<GetOption const *>(n)) {
+        return interp(*getOption);
+    } else if (auto declareSort = dynamic_cast<DeclareSort const *>(n)) {
+        return interp(*declareSort);
+    } else if (auto declareFun = dynamic_cast<DeclareFun const *>(n)) {
+        return interp(*declareFun);
+    } else if (auto declareConst = dynamic_cast<DeclareConst const *>(n)) {
+        return interp(*declareConst);
+    } else if (auto assertNode = dynamic_cast<AssertNode const *>(n)) {
+        return interp(*assertNode);
+    } else if (auto defineFun = dynamic_cast<DefineFun const *>(n)) {
+        return interp(*defineFun);
+    } else if (auto simplify = dynamic_cast<Simplify const *>(n)) {
+        return interp(*simplify);
+    } else if (auto checkSatNode = dynamic_cast<CheckSatNode const *>(n)) {
+        return interp(*checkSatNode);
+    } else if (auto getInterpolants = dynamic_cast<GetInterpolants const *>(n)) {
+        return interp(*getInterpolants);
+    } else if (auto getAssignment = dynamic_cast<GetAssignment const *>(n)) {
+        return interp(*getAssignment);
+    } else if (auto getValue = dynamic_cast<GetValue const *>(n)) {
+        return interp(*getValue);
+    } else if (auto getModel = dynamic_cast<GetModel const *>(n)) {
+        return interp(*getModel);
+    } else if (auto echo = dynamic_cast<Echo const *>(n)) {
+        return interp(*echo);
+    } else if (auto pushNode = dynamic_cast<PushNode const *>(n)) {
+        return interp(*pushNode);
+    } else if (auto popNode = dynamic_cast<PopNode const *>(n)) {
+        return interp(*popNode);
+    } else if (auto exit = dynamic_cast<Exit const *>(n)) {
+        return interp(*exit);
+    } else {
+        notify_formatted(true, "Unimplemented command");
+    }
+}
+
+void Interpret::interp(SetLogic const & n) {
+    std::string const & logic_name = n.getLogicName();
+    if (isInitialized()) {
+        notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
+    } else {
+        auto logic_type = getLogicFromString(logic_name);
+        if (logic_type == Logic_t::UNDEF) {
+            notify_formatted(true, "unknown logic %s", logic_name.c_str());
+            return;
+        }
+        initializeLogic(logic_type);
+        main_solver = createMainSolver(logic_name);
+        main_solver->initialize();
+        notify_success();
+    }
+}
+
+void Interpret::interp(SetInfo const & n) {
+    std::string name = n.getName();
+    config.setInfo(n.getName(), ConfValue(n.getValue()));
+    notify_success();
+}
+
+    /*
+void Interpret::interp(CommandNode const & n) {
     assert(n.getType() == ASTType::CMD_T);
     const smt2token cmd = n.getToken();
     try {
-        switch (cmd.x) {
-            case t_setlogic: {
-                ASTNode const & logic_n = *(*n.children)[0];
-                std::string const & logic_name = logic_n.getValue();
-                if (isInitialized()) {
-                    notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
-                } else {
-                    auto logic_type = getLogicFromString(logic_name);
-                    if (logic_type == Logic_t::UNDEF) {
-                        notify_formatted(true, "unknown logic %s", logic_name.c_str());
-                        break;
-                    }
-                    initializeLogic(logic_type);
-                    main_solver = createMainSolver(logic_name);
-                    main_solver->initialize();
-                    notify_success();
-                }
-                break;
-            }
+
             case t_setinfo:
                 setInfo(*(*n.children)[0]);
                 notify_success();
@@ -286,20 +327,7 @@ void Interpret::interp(ASTNode const & n) {
                 break;
             }
 
-            case t_writestate: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: write-state");
-                } else {
-                    if (main_solver->solverEmpty()) {
-                        sstat status = main_solver->simplifyFormulas();
-                        if (status == s_Error)
-                            notify_formatted(true, "write-state");
-                    } else {
-                        writeState((*n.children)[0]->getValue());
-                    }
-                }
-                break;
-            }
+
             case t_echo: {
                 std::string const & str = (*n.children)[0]->getValue();
                 notify_formatted(false, "%s", str.c_str());
@@ -344,6 +372,7 @@ void Interpret::interp(ASTNode const & n) {
         notify_formatted(true, e.what());
     }
 }
+*/
 
 
 bool Interpret::addLetFrame(std::vector<std::string> const & names, vec<PTRef> const& args, LetRecords& letRecords) {
@@ -1000,19 +1029,12 @@ void Interpret::notify_success() {
     }
 }
 
-void Interpret::execute(ASTNode const & r) {
-    for (auto const & command : *r.children) {
-        if (f_exit) break;
-        interp(*command);
-    }
-}
-
 int Interpret::interpFile(FILE* in) {
     Smt2newContext context(in);
     int rval = yyparse(&context);
     if (context.hasRoot()) {
         for (auto command : context.getRoot()) {
-            //          if (rval == 0) { execute(command); }
+            if (rval == 0 and not f_exit) { interp(command); }
             delete command;
         }
     }

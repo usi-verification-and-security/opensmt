@@ -178,23 +178,17 @@ std::string ConfValue::toString() const {
  * Class defining the information, configured with set-info
  ***********************************************************/
 
-Info::Info(ASTNode const & n) {
-    assert(n.getType() == ASTType::UATTR_T or n.getType() == ASTType::PATTR_T);
-    if (not n.children or n.children->empty()) {
-        value.type = O_EMPTY;
-        return;
+Info::Info(AttributeValueNode const & n) {
+    // child is attribute_value
+    if (auto specConst = std::get_if<std::unique_ptr<SpecConstNode>>(&n.value)) {
+        value = ConfValue(**specConst);
+    } else if (auto symbolNode = std::get_if<std::unique_ptr<SymbolNode>>(&n.value)) {
+        value.strval = (**symbolNode).getString();
+        value.type = (**symbolNode).getType();
+    } else if (auto sexprList = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&n.value)) {
+        value = ConfValue(**sexprList);
     } else {
-        // child is attribute_value
-        ASTNode const & child = *(*n.children)[0];
-
-        if (child.getType() == ASTType::SPECC_T or child.getType() == ASTType::SEXPRL_T) {
-            value = ConfValue(child);
-        }
-        else if (child.getType() == ASTType::SYM_T or child.getType() == ASTType::QSYM_T) {
-            value.strval = child.getValue();
-            value.type = O_STR;
-        }
-        else assert(false);
+        assert(false);
     }
 }
 
