@@ -2,10 +2,18 @@
 
 Bug fixes:
  - TSolverHandler: Remove dependency on the global objects initialization order
+ - ScatterSplitter: Fix the implementation of scattering
 
 Performance improvements:
  - ArithLogic: Improved computation of substitutions from equalities
+ - ScatterSplitter: Limit sizes of shared literal representations
 
+New features:
+ - The shared clause representation is now portable between solvers for
+   all terms
+
+Build:
+ - Support for Apple M1
 
 ### 2.4.1 (2022-07-28)
 
