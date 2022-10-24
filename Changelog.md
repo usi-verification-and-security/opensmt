@@ -1,4 +1,7 @@
-### 2.4.2 (unreleased)
+### 2.4.3 (unreleased)
+
+
+### 2.4.2 (2022-10-24)
 
 Bug fixes:
  - TSolverHandler: Remove dependency on the global objects initialization order
