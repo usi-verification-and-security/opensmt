@@ -127,8 +127,12 @@ class SMTOption {
 public:
     struct ConfValue {
         ConstType type = ConstType::empty;
-        std::variant<std::string, int, double, uint32_t> value;
-        std::string toString() const;
+        std::variant<std::string, int, double, uint32_t, bool> value = 0;
+        ConfValue() = default;
+        ConfValue(int i) : type(ConstType::numeral), value(i) {}
+        ConfValue(double i) : type(ConstType::decimal), value(i) {}
+        ConfValue(std::string && s) : type(ConstType::string), value(std::move(s)) {}
+        std::string getStringValue() const;
         double getDoubleVal() const {
             if (type == ConstType::numeral) {
                 if (auto val = std::get_if<int>(&value)) {
@@ -143,6 +147,21 @@ public:
                 return *val;
             } else {
                 throw OsmtApiException("Attempted to obtain double value for non-numeric type");
+            }
+        }
+        uint32_t getUint32Value() const {
+            if (type == ConstType::uint32) {
+                auto val = std::get_if<uint32_t>(&value);
+                assert(val);
+                return *val;
+            } else {
+                throw OsmtApiException("Attempted to obtain uint32 value for non-uint32 type");
+            }
+        }
+        bool getBoolVal() const {
+            if (type == ConstType::boolean) {
+                auto val = std::get_if<bool>(&value);
+
             }
         }
     };
@@ -171,7 +190,7 @@ public:
     SMTOption(int i)   : value(i) {}
     SMTOption(double i): value(i) {}
     SMTOption(std::string && s) : value(std::move(s)) {}
-    inline bool isEmpty() const { return value.type == O_EMPTY; }
+    inline bool isEmpty() const { return value.type == ConstType::empty; }
     inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
   private:
@@ -341,7 +360,7 @@ private:
 
   SMTOption        option_Empty;
   std::vector<std::string> option_names;
-  std::unordered_map<std::string,ConfValue> infoTable;
+  std::unordered_map<std::string,SMTOption::ConfValue> infoTable;
   std::unordered_map<std::string,SMTOption> optionTable;
 
   bool usedForInitialization = false; // Some options can be changed only before this config is used for initialization of MainSolver
@@ -382,8 +401,8 @@ public:
   bool             setOption(std::string const & name, const SMTOption& value, const char*& msg);
   const SMTOption& getOption(std::string const & name) const;
 
-  bool          setInfo  (std::string && name, ConfValue && value);
-  ConfValue     getInfo  (std::string const & name) const;
+  bool          setInfo  (std::string && name, SMTOption::ConfValue && value);
+  SMTOption::ConfValue getInfo  (std::string const & name) const;
 
   void initializeConfig ( );
 
@@ -392,18 +411,18 @@ public:
   void printHelp        ( );
   void printConfig      ( std::ostream & out );
 
-  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getValue().numval : 91648253; }
+  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getValue().getUint32Value(): 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, SMTOption(seed)); return true; }
 
   void setUsedForInitiliazation() { usedForInitialization = true; }
 
   inline bool produceProof( ) {
-      return optionTable.find(o_produce_proofs) != optionTable.end() ? optionTable[o_produce_proofs].getValue().numval > 0 : false;
+      return optionTable.find(o_produce_proofs) != optionTable.end() ? optionTable[o_produce_proofs].getValue().getBoolVal() : false;
   }
 
   void setTimeQueries() { insertOption(o_time_queries, SMTOption(1)); }
-  bool timeQueries()    { return optionTable.find(o_time_queries) != optionTable.end() ? optionTable[o_time_queries].getValue().numval : false; }
+  bool timeQueries()    { return optionTable.find(o_time_queries) != optionTable.end() ? optionTable[o_time_queries].getValue().getBoolVal() : false; }
   // Set reduction params
   inline void setReduction(int r) { insertOption(o_proof_reduce, SMTOption(r)); }
 
@@ -425,27 +444,27 @@ public:
 
   // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getValue().numval)
+      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getValue().getUint32Value())
                                                                    : ItpAlgorithm::itp_alg_mcmillan;
   }
   inline ItpAlgorithm getEUFInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getValue().numval)
+      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getValue().getUint32Value())
                                                                   : ItpAlgorithm::itp_euf_alg_strong;
   }
 
   inline ItpAlgorithm getLRAInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getValue().numval)
+      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getValue().getUint32Value())
                                                                   : ItpAlgorithm::itp_lra_alg_strong;
   }
 
   inline std::string getLRAStrengthFactor() const {
       return optionTable.find(o_itp_lra_factor) != optionTable.end() ? optionTable.at(
-              o_itp_lra_factor).getValue().strval : itp_lra_factor_0;
+              o_itp_lra_factor).getValue().getStringValue() : itp_lra_factor_0;
   }
 
 
   inline std::string getInstanceName() const {
-      return optionTable.find(o_inst_name) != optionTable.end() ? optionTable.at(o_inst_name).getValue().strval : "unknown";
+      return optionTable.find(o_inst_name) != optionTable.end() ? optionTable.at(o_inst_name).getValue().getStringValue() : "unknown";
   }
 
   lbool        status;                       // Status of the benchmark

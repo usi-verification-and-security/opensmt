@@ -37,6 +37,7 @@ enum class ConstType {
     numeral,
     decimal,
     hexadecimal,
+    uint32,
     binary,
     string,
     empty,
