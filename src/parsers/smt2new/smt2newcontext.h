@@ -167,6 +167,11 @@ struct Exit : public CommandNode { };
 struct SetLogic : public CommandNode {
     std::unique_ptr<SymbolNode> logic;
     SetLogic(std::unique_ptr<SymbolNode> && logic) : logic(std::move(logic)) {}
+    std::string getLogicName() const {
+        auto s = std::get_if<std::unique_ptr<std::string>>(&logic->name);
+        assert(s);
+        return {**s};
+    }
 };
 
 struct SetOption : public CommandNode {
