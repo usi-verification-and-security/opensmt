@@ -62,6 +62,7 @@ struct SymbolNode : public GeneralNode {
             return {*(**specConstNode).value};
         }
         assert(false);
+        return {};
     }
     ConstType getType() const {
         if (std::get_if<std::unique_ptr<std::string>>(&name)) {

@@ -31,6 +31,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "StringMap.h"
 #include "smt2newcontext.h"
 #include "smt2tokens.h"
+#include "OsmtApiException.h"
+#include "OsmtInternalException.h"
 
 #include <cstring>
 #include <fstream>
@@ -132,15 +134,25 @@ public:
         ConfValue(int i) : type(ConstType::numeral), value(i) {}
         ConfValue(double i) : type(ConstType::decimal), value(i) {}
         ConfValue(std::string && s) : type(ConstType::string), value(std::move(s)) {}
-        std::string getStringValue() const;
+        std::string getStringVal() const {
+            if (type == ConstType::string) {
+                auto val = std::get_if<std::string>(&value);
+                assert(val);
+                return *val;
+            }
+            else {
+                throw OsmtApiException("Attempt to get string value of a non-string type");
+            }
+        }
         double getDoubleVal() const {
             if (type == ConstType::numeral) {
                 if (auto val = std::get_if<int>(&value)) {
                     return static_cast<double>(*val);
                 } else if (auto val = std::get_if<uint32_t>(&value)) {
                     return static_cast<double>(*val);
+                } else {
+                    throw OsmtInternalException("Inconsistent value for option");
                 }
-                assert(false);
             } else if (type == ConstType::decimal) {
                 auto val = std::get_if<double>(&value);
                 assert(val);
@@ -149,7 +161,16 @@ public:
                 throw OsmtApiException("Attempted to obtain double value for non-numeric type");
             }
         }
-        uint32_t getUint32Value() const {
+        int getIntVal() const {
+            if (type == ConstType::numeral) {
+                auto val = std::get_if<int>(&value);
+                assert(val);
+                return *val;
+            } else {
+                throw OsmtApiException("Attempted to obtain int value for non-int type");
+            }
+        }
+        uint32_t getUint32Val() const {
             if (type == ConstType::uint32) {
                 auto val = std::get_if<uint32_t>(&value);
                 assert(val);
@@ -161,7 +182,11 @@ public:
         bool getBoolVal() const {
             if (type == ConstType::boolean) {
                 auto val = std::get_if<bool>(&value);
-
+                assert(val);
+                return *val;
+            }
+            else {
+                throw OsmtApiException("Attempt to obtain boolean value for non-boolean type");
             }
         }
     };
@@ -191,7 +216,7 @@ public:
     SMTOption(double i): value(i) {}
     SMTOption(std::string && s) : value(std::move(s)) {}
     inline bool isEmpty() const { return value.type == ConstType::empty; }
-    inline std::string toString() const { return value.toString(); }
+//    inline std::string toString() const { return value.toString(); }
     inline const ConfValue& getValue() const { return value; }
   private:
     ConfValue   value;
@@ -411,7 +436,7 @@ public:
   void printHelp        ( );
   void printConfig      ( std::ostream & out );
 
-  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getValue().getUint32Value(): 91648253; }
+  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getValue().getUint32Val(): 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, SMTOption(seed)); return true; }
 
@@ -444,161 +469,185 @@ public:
 
   // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getValue().getUint32Value())
+      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getValue().getUint32Val())
                                                                    : ItpAlgorithm::itp_alg_mcmillan;
   }
   inline ItpAlgorithm getEUFInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getValue().getUint32Value())
+      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getValue().getUint32Val())
                                                                   : ItpAlgorithm::itp_euf_alg_strong;
   }
 
   inline ItpAlgorithm getLRAInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getValue().getUint32Value())
+      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getValue().getUint32Val())
                                                                   : ItpAlgorithm::itp_lra_alg_strong;
   }
 
   inline std::string getLRAStrengthFactor() const {
       return optionTable.find(o_itp_lra_factor) != optionTable.end() ? optionTable.at(
-              o_itp_lra_factor).getValue().getStringValue() : itp_lra_factor_0;
+              o_itp_lra_factor).getValue().getStringVal() : itp_lra_factor_0;
   }
 
 
   inline std::string getInstanceName() const {
-      return optionTable.find(o_inst_name) != optionTable.end() ? optionTable.at(o_inst_name).getValue().getStringValue() : "unknown";
+      return optionTable.find(o_inst_name) != optionTable.end() ? optionTable.at(o_inst_name).getValue().getStringVal() : "unknown";
   }
 
   lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
-  int           isIncremental() const
-     { return optionTable.find(o_incremental) != optionTable.end() ?
-        optionTable.at(o_incremental).getValue().numval == 1: true; }
-  int produce_models() const {
+  bool isIncremental() const {
+      return optionTable.find(o_incremental) != optionTable.end() ?
+             optionTable.at(o_incremental).getValue().getBoolVal() : true;
+  }
+  bool produce_models() const {
       return optionTable.find(o_produce_models) != optionTable.end() ?
-              optionTable.at(o_produce_models).getValue().numval :
-              1; }
-  int          produceStats() const
-     { return optionTable.find(o_produce_stats) != optionTable.end() ?
-        optionTable.at(o_produce_stats).getValue().numval == 1: false; }
+              optionTable.at(o_produce_models).getValue().getBoolVal() : true;
+  }
+  bool produceStats() const {
+      return optionTable.find(o_produce_stats) != optionTable.end() &&
+             optionTable.at(o_produce_stats).getValue().getBoolVal(); }
   std::string  getStatsOut() const {
-      return optionTable.find(o_stats_out) != optionTable.end() ? optionTable.at(o_stats_out).getValue().strval : "/dev/stdout";
+      return optionTable.find(o_stats_out) != optionTable.end() ? optionTable.at(o_stats_out).getValue().getStringVal() : "/dev/stdout";
   }
 
   int sat_grow() const
     { return optionTable.find(o_grow) != optionTable.end() ?
-        optionTable.at(o_grow).getValue().numval : 0; }
+        optionTable.at(o_grow).getValue().getBoolVal() : 0; }
   int sat_clause_lim() const
     { return optionTable.find(o_clause_lim) != optionTable.end() ?
-        optionTable.at(o_clause_lim).getValue().numval : 20; }
+        optionTable.at(o_clause_lim).getValue().getUint32Val() : 20; }
   int sat_subsumption_lim() const
     { return optionTable.find(o_subsumption_lim) != optionTable.end() ?
-        optionTable.at(o_subsumption_lim).getValue().numval : 1000; }
+        optionTable.at(o_subsumption_lim).getValue().getUint32Val() : 1000; }
   double sat_simp_garbage_frac() const
     { return optionTable.find(o_simp_garbage_frac) != optionTable.end() ?
-        optionTable.at(o_simp_garbage_frac).getValue().decval : 0.5; }
+        optionTable.at(o_simp_garbage_frac).getValue().getDoubleVal() : 0.5; }
   int sat_use_asymm() const
     { return optionTable.find(o_use_asymm) != optionTable.end() ?
-        optionTable.at(o_use_asymm).getValue().numval == 1: false; }
-  int sat_use_rcheck() const
-    { return optionTable.find(o_use_rcheck) != optionTable.end() ?
-        optionTable.at(o_use_rcheck).getValue().numval == 1: false; }
-  int sat_use_elim() const
-    { return optionTable.find(o_use_elim) != optionTable.end() ?
-        optionTable.at(o_use_elim).getValue().numval == 1: true; }
-  double sat_var_decay() const
-    { return optionTable.find(o_var_decay) != optionTable.end() ?
-        optionTable.at(o_var_decay).getValue().decval : 1 / 0.95; }
-  double sat_clause_decay() const
-    { return optionTable.find(o_clause_decay) != optionTable.end() ?
-        optionTable.at(o_clause_decay).getValue().decval : 1 / 0.999; }
-  double sat_random_var_freq() const
-    { return optionTable.find(o_random_var_freq) != optionTable.end() ?
-        optionTable.at(o_random_var_freq).getValue().decval : 0.02; }
-  int sat_random_seed() const
-    { return optionTable.find(o_random_seed) != optionTable.end() ?
-        optionTable.at(o_random_seed).getValue().decval : 91648253; }
-  int sat_luby_restart() const
-    { return optionTable.find(o_luby_restart) != optionTable.end() ?
-        optionTable.at(o_luby_restart).getValue().numval > 0 : 1; }
-  int sat_ccmin_mode() const
-    { return optionTable.find(o_ccmin_mode) != optionTable.end() ?
-        optionTable.at(o_ccmin_mode).getValue().numval : 2; }
-  int sat_rnd_pol() const
-    { return optionTable.find(o_rnd_pol) != optionTable.end() ?
-        optionTable.at(o_rnd_pol).getValue().numval > 0 : 0; }
-  int sat_rnd_init_act() const
-    { return optionTable.find(o_rnd_init_act) != optionTable.end() ?
-        optionTable.at(o_rnd_init_act).getValue().numval > 0 : 0; }
-  double sat_garbage_frac() const
-    { return optionTable.find(o_garbage_frac) != optionTable.end() ?
-        optionTable.at(o_garbage_frac).getValue().decval : 0.20; }
-  int sat_restart_first() const
-    { return optionTable.find(o_restart_first) != optionTable.end() ?
-        optionTable.at(o_restart_first).getValue().numval : 100; }
-  double sat_restart_inc() const
-    { return optionTable.find(o_restart_inc) != optionTable.end() ?
-        optionTable.at(o_restart_inc).getValue().numval : 1.1; }
-  int proof_interpolant_cnf() const
-  { return optionTable.find(o_interpolant_cnf) != optionTable.end() ?
-      optionTable.at(o_interpolant_cnf).getValue().numval : 0; }
-  int certify_inter() const
-    { return optionTable.find(o_certify_inter) != optionTable.end() ?
-        optionTable.at(o_certify_inter).getValue().numval : 0; }
-  bool produce_inter() const
-    { return optionTable.find(o_produce_inter) != optionTable.end() ?
-        optionTable.at(o_produce_inter).getValue().numval > 0 : false; }
-  int simplify_inter() const
-    { return optionTable.find(o_simplify_inter) != optionTable.end() ?
-             optionTable.at(o_simplify_inter).getValue().numval : 0; }
-  int proof_struct_hash() const
-    { return optionTable.find(o_proof_struct_hash) != optionTable.end() ?
-        optionTable.at(o_proof_struct_hash).getValue().numval : 1; }
-  int proof_num_graph_traversals() const
-    { return optionTable.find(o_proof_num_graph_traversals) != optionTable.end() ?
-        optionTable.at(o_proof_num_graph_traversals).getValue().numval : 3; }
-  int proof_red_trans() const
-    { return optionTable.find(o_proof_red_trans) != optionTable.end() ?
-        optionTable.at(o_proof_red_trans).getValue().numval : 2; }
-  int proof_rec_piv() const
-    { return optionTable.find(o_proof_rec_piv) != optionTable.end() ?
-        optionTable.at(o_proof_rec_piv).getValue().numval : 1; }
-  int proof_push_units() const
-    { return optionTable.find(o_proof_push_units) != optionTable.end() ?
-        optionTable.at(o_proof_push_units).getValue().numval : 1; }
-  int proof_transf_trav() const
-    { return optionTable.find(o_proof_transf_trav) != optionTable.end() ?
-        optionTable.at(o_proof_transf_trav).getValue().numval : 1; }
-  int proof_check() const
-    { return optionTable.find(o_proof_check) != optionTable.end() ?
-        optionTable.at(o_proof_check).getValue().numval : 0; }
-  int proof_multiple_inter() const
-    { return optionTable.find(o_proof_multiple_inter) != optionTable.end() ?
-        optionTable.at(o_proof_multiple_inter).getValue().numval : 0; }
-  int proof_alternative_inter() const
-    { return optionTable.find(o_proof_alternative_inter) != optionTable.end() ?
-        optionTable.at(o_proof_alternative_inter).getValue().numval : 0; }
-  int proof_reduce() const
-    { return optionTable.find(o_proof_reduce) != optionTable.end() ?
-        optionTable.at(o_proof_reduce).getValue().numval : 0; }
-  int itp_bool_alg() const
-    { return optionTable.find(o_itp_bool_alg) != optionTable.end() ?
-        optionTable.at(o_itp_bool_alg).getValue().numval : 0; }
-  int itp_euf_alg() const
+        optionTable.at(o_use_asymm).getValue().getBoolVal() : false; }
+  int sat_use_rcheck() const {
+      return optionTable.find(o_use_rcheck) != optionTable.end() ?
+             optionTable.at(o_use_rcheck).getValue().getBoolVal() : false;
+  }
+  int sat_use_elim() const {
+      return optionTable.find(o_use_elim) != optionTable.end() ?
+             optionTable.at(o_use_elim).getValue().getBoolVal() : true;
+  }
+  double sat_var_decay() const {
+      return optionTable.find(o_var_decay) != optionTable.end() ?
+             optionTable.at(o_var_decay).getValue().getDoubleVal() : 1 / 0.95; }
+  double sat_clause_decay() const {
+      return optionTable.find(o_clause_decay) != optionTable.end() ?
+             optionTable.at(o_clause_decay).getValue().getDoubleVal() : 1 / 0.999; }
+  double sat_random_var_freq() const {
+      return optionTable.find(o_random_var_freq) != optionTable.end() ?
+             optionTable.at(o_random_var_freq).getValue().getDoubleVal() : 0.02; }
+  uint32_t sat_random_seed() const {
+      return optionTable.find(o_random_seed) != optionTable.end() ?
+             optionTable.at(o_random_seed).getValue().getUint32Val() : 91648253; }
+  bool sat_luby_restart() const {
+      return optionTable.find(o_luby_restart) != optionTable.end() ?
+             optionTable.at(o_luby_restart).getValue().getBoolVal() : true;
+  }
+  uint32_t sat_ccmin_mode() const {
+      return optionTable.find(o_ccmin_mode) != optionTable.end() ?
+             optionTable.at(o_ccmin_mode).getValue().getUint32Val() : 2;
+  }
+  bool sat_rnd_pol() const {
+      return optionTable.find(o_rnd_pol) != optionTable.end() ?
+             optionTable.at(o_rnd_pol).getValue().getBoolVal() : false;
+  }
+  bool sat_rnd_init_act() const {
+      return optionTable.find(o_rnd_init_act) != optionTable.end() ?
+             optionTable.at(o_rnd_init_act).getValue().getBoolVal() : false; }
+  double sat_garbage_frac() const {
+      return optionTable.find(o_garbage_frac) != optionTable.end() ?
+             optionTable.at(o_garbage_frac).getValue().getDoubleVal() : 0.20;
+  }
+  uint32_t sat_restart_first() const {
+      return optionTable.find(o_restart_first) != optionTable.end() ?
+             optionTable.at(o_restart_first).getValue().getUint32Val() : 100; }
+  double sat_restart_inc() const {
+      return optionTable.find(o_restart_inc) != optionTable.end() ?
+             optionTable.at(o_restart_inc).getValue().getDoubleVal() : 1.1;
+  }
+  int proof_interpolant_cnf() const {
+      return optionTable.find(o_interpolant_cnf) != optionTable.end() ?
+             optionTable.at(o_interpolant_cnf).getValue().getBoolVal() : false;
+  }
+  int certify_inter() const {
+      return optionTable.find(o_certify_inter) != optionTable.end() ?
+             optionTable.at(o_certify_inter).getValue().getBoolVal(): false;
+  }
+  bool produce_inter() const {
+      return optionTable.find(o_produce_inter) != optionTable.end() ?
+             optionTable.at(o_produce_inter).getValue().getBoolVal() : false;
+  }
+  uint32_t simplify_inter() const {
+      return optionTable.find(o_simplify_inter) != optionTable.end() ?
+             optionTable.at(o_simplify_inter).getValue().getUint32Val() : false;
+  }
+  bool proof_struct_hash() const {
+      return optionTable.find(o_proof_struct_hash) != optionTable.end() ?
+             optionTable.at(o_proof_struct_hash).getValue().getBoolVal() : true;
+  }
+  uint32_t proof_num_graph_traversals() const {
+      return optionTable.find(o_proof_num_graph_traversals) != optionTable.end() ?
+             optionTable.at(o_proof_num_graph_traversals).getValue().getUint32Val() : 3; }
+  uint32_t proof_red_trans() const {
+      return optionTable.find(o_proof_red_trans) != optionTable.end() ?
+             optionTable.at(o_proof_red_trans).getValue().getUint32Val() : 2;
+  }
+  bool proof_rec_piv() const {
+      return optionTable.find(o_proof_rec_piv) != optionTable.end() ?
+             optionTable.at(o_proof_rec_piv).getValue().getBoolVal() : true;
+  }
+  bool proof_push_units() const {
+      return optionTable.find(o_proof_push_units) != optionTable.end() ?
+             optionTable.at(o_proof_push_units).getValue().getBoolVal() : true;
+  }
+  bool proof_transf_trav() const {
+      return optionTable.find(o_proof_transf_trav) != optionTable.end() ?
+             optionTable.at(o_proof_transf_trav).getValue().getBoolVal() : true;
+  }
+  bool proof_check() const {
+      return optionTable.find(o_proof_check) != optionTable.end() ?
+             optionTable.at(o_proof_check).getValue().getBoolVal() : true;
+  }
+  bool proof_multiple_inter() const {
+      return optionTable.find(o_proof_multiple_inter) != optionTable.end() ?
+             optionTable.at(o_proof_multiple_inter).getValue().getBoolVal() : true;
+  }
+  bool proof_alternative_inter() const {
+      return optionTable.find(o_proof_alternative_inter) != optionTable.end() ?
+             optionTable.at(o_proof_alternative_inter).getValue().getBoolVal() : false;
+  }
+  bool proof_reduce() const {
+      return optionTable.find(o_proof_reduce) != optionTable.end() ?
+             optionTable.at(o_proof_reduce).getValue().getBoolVal() : false;
+  }
+  uint32_t itp_bool_alg() const {
+      return optionTable.find(o_itp_bool_alg) != optionTable.end() ?
+             optionTable.at(o_itp_bool_alg).getValue().getUint32Val() : 0;
+  }
+  uint32_t itp_euf_alg() const
     { return optionTable.find(o_itp_euf_alg) != optionTable.end() ?
-        optionTable.at(o_itp_euf_alg).getValue().numval : 0; }
-  int itp_lra_alg() const
-    { return optionTable.find(o_itp_lra_alg) != optionTable.end() ?
-        optionTable.at(o_itp_lra_alg).getValue().numval : 0; }
-  int sat_dump_rnd_inter() const
-    { return optionTable.find(o_sat_dump_rnd_inter) != optionTable.end() ?
-        optionTable.at(o_sat_dump_rnd_inter).getValue().numval : 2; }
+        optionTable.at(o_itp_euf_alg).getValue().getUint32Val() : 0;
+  }
+  uint32_t itp_lra_alg() const {
+      return optionTable.find(o_itp_lra_alg) != optionTable.end() ?
+        optionTable.at(o_itp_lra_alg).getValue().getUint32Val() : 0; }
+  uint32_t sat_dump_rnd_inter() const {
+      return optionTable.find(o_sat_dump_rnd_inter) != optionTable.end() ?
+             optionTable.at(o_sat_dump_rnd_inter).getValue().getUint32Val() : 2; }
 
     bool declarations_are_global() const {
-      return optionTable.find(o_global_declarations) != optionTable.end() ? optionTable.at(o_global_declarations).getValue().numval > 0 : false;
+      return optionTable.find(o_global_declarations) != optionTable.end() ?
+             optionTable.at(o_global_declarations).getValue().getBoolVal() : false;
   }
 
   SpUnit sat_resource_units() const {
       if (optionTable.find(o_sat_resource_units) != optionTable.end()) {
-          std::string type = optionTable.at(o_sat_resource_units).getValue().strval;
+          std::string type = optionTable.at(o_sat_resource_units).getValue().getStringVal();
           if (type == spts_search_counter) {
               return SpUnit::search_counter;
           } else if (type == spts_time) {
@@ -608,50 +657,55 @@ public:
       return SpUnit::search_counter;
     }
 
-  bool respect_logic_partitioning_hints() const
-  { return optionTable.find(o_respect_logic_partitioning_hints) != optionTable.end() ?
-      optionTable.at(o_respect_logic_partitioning_hints).getValue().numval : 0; }
-  double sat_resource_limit() const
-    { return optionTable.find(o_sat_resource_limit) != optionTable.end() ?
-        optionTable.at(o_sat_resource_limit).getValue().getDoubleVal() : -1; }
+  bool respect_logic_partitioning_hints() const {
+      return optionTable.find(o_respect_logic_partitioning_hints) != optionTable.end() ?
+             optionTable.at(o_respect_logic_partitioning_hints).getValue().getBoolVal() : false;
+  }
+  double sat_resource_limit() const {
+      return optionTable.find(o_sat_resource_limit) != optionTable.end() ?
+             optionTable.at(o_sat_resource_limit).getValue().getDoubleVal() : -1;
+  }
 
   std::string dump_state() const {
       if (optionTable.find(o_dump_state) != optionTable.end()) {
-          return append_output_dir(optionTable.at(o_dump_state).getValue().strval);
+          return append_output_dir(optionTable.at(o_dump_state).getValue().getStringVal());
       } else {
           std::string name = getInstanceName();
           return name.substr(0, name.size() - strlen(".smt2"));
       }
   }
   std::string output_dir() const {
-      return optionTable.find(o_output_dir) != optionTable.end() ? optionTable.at(o_output_dir).getValue().strval : "";
+      return optionTable.find(o_output_dir) != optionTable.end() ? optionTable.at(o_output_dir).getValue().getStringVal() : "";
   }
-  int dump_only() const
-    { return optionTable.find(o_dump_only) != optionTable.end() ? optionTable.at(o_dump_only).getValue().numval : 0; }
-  bool dump_query() const
-    { return optionTable.find(o_dump_query) != optionTable.end() ? optionTable.at(o_dump_query).getValue().numval : 0; }
+  bool dump_only() const {
+      return optionTable.find(o_dump_only) != optionTable.end() ? optionTable.at(o_dump_only).getValue().getBoolVal(): false;
+  }
+  bool dump_query() const {
+      return optionTable.find(o_dump_query) != optionTable.end() ? optionTable.at(o_dump_query).getValue().getBoolVal() : false;
+  }
 
-  void set_dump_query_name(std::string && dump_query_name)
-    {
+  void set_dump_query_name(std::string && dump_query_name) {
         if (optionTable.find(o_dump_query_name) != optionTable.end()) {
             optionTable.insert({o_dump_query_name, SMTOption(std::move(dump_query_name))});
-        }
-        else
+        } else {
             insertOption(o_dump_query_name, SMTOption(std::move(dump_query_name)));
-    }
+        }
+  }
 
 
   std::string dump_query_name() const {
-      return optionTable.find(o_dump_query_name) != optionTable.end() ? append_output_dir(optionTable.at(o_dump_query_name).getValue().strval) : "";
+      return optionTable.find(o_dump_query_name) != optionTable.end() ?
+             append_output_dir(optionTable.at(o_dump_query_name).getValue().getStringVal()) : "";
   }
 
-  int sat_dump_learnts() const
-    { return optionTable.find(o_sat_dump_learnts) != optionTable.end() ?
-        optionTable.at(o_sat_dump_learnts).getValue().numval : 0; }
+  bool sat_dump_learnts() const {
+      return optionTable.find(o_sat_dump_learnts) != optionTable.end() ?
+             optionTable.at(o_sat_dump_learnts).getValue().getBoolVal() : false; }
 
-  bool sat_split_test_cube_and_conquer() const
-    { return optionTable.find(o_sat_split_test_cube_and_conquer) != optionTable.end() ?
-        optionTable.at(o_sat_split_test_cube_and_conquer).getValue().numval : 0; }
+  bool sat_split_test_cube_and_conquer() const {
+      return optionTable.find(o_sat_split_test_cube_and_conquer) != optionTable.end() ?
+             optionTable.at(o_sat_split_test_cube_and_conquer).getValue().getBoolVal() : false;
+  }
 
   SpType sat_split_type() const {
       if (sat_lookahead_split()) {
@@ -665,7 +719,7 @@ public:
 
   SpUnit sat_split_units() const {
       if (optionTable.find(o_sat_split_units) != optionTable.end()) {
-          std::string type = optionTable.at(o_sat_split_units).getValue().strval;
+          std::string type = optionTable.at(o_sat_split_units).getValue().getStringVal();
           if (type == spts_search_counter) {
               return SpUnit::search_counter;
           } else if (type == spts_time) {
@@ -677,64 +731,74 @@ public:
 
   double sat_split_inittune() const {
       return optionTable.find(o_sat_split_inittune) != optionTable.end() ?
-              optionTable.at(o_sat_split_inittune).getValue().getDoubleVal() :
-              -1; }
+             optionTable.at(o_sat_split_inittune).getValue().getDoubleVal() :
+              -1;
+  }
   double sat_split_midtune() const {
       return optionTable.find(o_sat_split_midtune) != optionTable.end() ?
               optionTable.at(o_sat_split_midtune).getValue().getDoubleVal() :
-              -1; }
-  int sat_split_num() const {
+              -1;
+  }
+  uint32_t sat_split_num() const {
       return optionTable.find(o_sat_split_num) != optionTable.end() ?
-              optionTable.at(o_sat_split_num).getValue().numval :
-              2; }
+              optionTable.at(o_sat_split_num).getValue().getUint32Val() :
+              2;
+  }
   int sat_split_fixvars() const {
       return optionTable.find(o_sat_split_fix_vars) != optionTable.end() ?
-              optionTable.at(o_sat_split_fix_vars).getValue().numval :
-              -1; }
-  int sat_split_asap() const {
+              optionTable.at(o_sat_split_fix_vars).getValue().getIntVal() :
+              -1;
+  }
+  bool sat_split_asap() const {
       return optionTable.find(o_sat_split_asap) != optionTable.end() ?
-              optionTable.at(o_sat_split_asap).getValue().numval :
-              0; }
-  int sat_lookahead_split() const {
+             optionTable.at(o_sat_split_asap).getValue().getBoolVal():
+             false;
+  }
+  bool sat_lookahead_split() const {
       return optionTable.find(o_sat_lookahead_split) != optionTable.end() ?
-              optionTable.at(o_sat_lookahead_split).getValue().numval :
-              0; }
-  int sat_scatter_split() const {
+             optionTable.at(o_sat_lookahead_split).getValue().getBoolVal():
+             false;
+  }
+  bool sat_scatter_split() const {
       return optionTable.find(o_sat_scatter_split) != optionTable.end() ?
-             optionTable.at(o_sat_scatter_split).getValue().numval :
-             0; }
-  int sat_pure_lookahead() const {
+             optionTable.at(o_sat_scatter_split).getValue().getBoolVal() :
+             false;
+  }
+  bool sat_pure_lookahead() const {
       return optionTable.find(o_sat_pure_lookahead) != optionTable.end() ?
-              optionTable.at(o_sat_pure_lookahead).getValue().numval :
-              0; }
-  int lookahead_score_deep() const {
+              optionTable.at(o_sat_pure_lookahead).getValue().getBoolVal() :
+              false;
+  }
+  bool lookahead_score_deep() const {
       return optionTable.find(o_lookahead_score_deep) != optionTable.end() ?
-              optionTable.at(o_lookahead_score_deep).getValue().numval :
-              0; }
-  int randomize_lookahead() const {
+              optionTable.at(o_lookahead_score_deep).getValue().getBoolVal() :
+              false;
+  }
+  bool randomize_lookahead() const {
       return optionTable.find(o_sat_split_randomize_lookahead) != optionTable.end() ?
-              optionTable.at(o_sat_split_randomize_lookahead).getValue().numval :
-              0; }
+              optionTable.at(o_sat_split_randomize_lookahead).getValue().getBoolVal() :
+              false;
+  }
 
-  int randomize_lookahead_bufsz() const {
+  uint32_t randomize_lookahead_bufsz() const {
       return optionTable.find(o_sat_split_randomize_lookahead_buf) != optionTable.end() ?
-              optionTable.at(o_sat_split_randomize_lookahead_buf).getValue().numval :
-              1; }
+              optionTable.at(o_sat_split_randomize_lookahead_buf).getValue().getUint32Val() :
+              true;
+  }
 
-  int remove_symmetries() const
-    { return optionTable.find(o_sat_remove_symmetries) != optionTable.end() ?
-        optionTable.at(o_sat_remove_symmetries).getValue().numval : 0; }
+  bool remove_symmetries() const {
+      return optionTable.find(o_sat_remove_symmetries) != optionTable.end() ?
+             optionTable.at(o_sat_remove_symmetries).getValue().getBoolVal() : false; }
 
-  int dryrun() const
-    { return optionTable.find(o_dryrun) != optionTable.end() ?
-        optionTable.at(o_dryrun).getValue().numval : 0; }
+  bool dryrun() const {
+      return optionTable.find(o_dryrun) != optionTable.end() ?
+             optionTable.at(o_dryrun).getValue().getBoolVal() : false; }
 
-  void set_dryrun(bool b)
-    { insertOption(o_dryrun, SMTOption(b)); }
+  void set_dryrun(bool b) { insertOption(o_dryrun, SMTOption(b)); }
 
   SpPref sat_split_preference() const {
     if (optionTable.find(o_sat_split_preference) != optionTable.end()) {
-        std::string type = optionTable.at(o_sat_split_preference).getValue().strval;
+        std::string type = optionTable.at(o_sat_split_preference).getValue().getStringVal();
         if (type == spprefs_tterm) return sppref_tterm;
         if (type == spprefs_blind) return sppref_blind;
         if (type == spprefs_bterm) return sppref_bterm;
@@ -747,29 +811,26 @@ public:
   }
 
   bool use_ghost_vars() const {
-      if (optionTable.find(o_ghost_vars) != optionTable.end()) {
-          return optionTable.at(o_ghost_vars).getValue().numval != 0;
-      }
-      return false;
+      return optionTable.find(o_ghost_vars) != optionTable.end() ?
+             optionTable.at(o_ghost_vars).getValue().getBoolVal() :
+             false;
   }
 
-  int do_substitutions() const
-    { return optionTable.find(o_do_substitutions) != optionTable.end()?
-        optionTable.at(o_do_substitutions).getValue().numval : 1; }
+  bool do_substitutions() const {
+      return optionTable.find(o_do_substitutions) != optionTable.end()?
+             optionTable.at(o_do_substitutions).getValue().getBoolVal() : true; }
 
 
-   bool use_theory_polarity_suggestion() const
-   { return sat_theory_polarity_suggestion != 0; }
+   bool use_theory_polarity_suggestion() const { return sat_theory_polarity_suggestion != 0; }
 
-   int sat_solver_limit() const
-   { return optionTable.find(o_sat_solver_limit) != optionTable.end() ?
-        optionTable.at(o_sat_solver_limit).getValue().numval : 0; }
+   uint32_t sat_solver_limit() const {
+       return optionTable.find(o_sat_solver_limit) != optionTable.end() ?
+              optionTable.at(o_sat_solver_limit).getValue().getUint32Val() : 0; }
 
     bool sat_split_mode() const {
-        if (optionTable.find(o_sat_split_mode) != optionTable.end()) {
-            return optionTable.at(o_sat_split_mode).getValue().numval != 0;
-        }
-        return false;
+        return optionTable.find(o_sat_split_mode) != optionTable.end() ?
+               optionTable.at(o_sat_split_mode).getValue().getBoolVal() :
+               false;
     }
 
 //  int          produce_stats;                // Should print statistics ?
@@ -779,21 +840,14 @@ public:
   bool         rocset;                       // Regular Output Channel set ?
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
-  int          verbosity() const             // Verbosity level
-// TODO: remove MACROS from header file
-#ifdef PEDANTIC_DEBUG
-    { return optionTable.has(o_verbosity) ?
-        optionTable[o_verbosity]->getValue().numval : 2; }
-#elif GC_DEBUG
-    { return optionTable.has(o_verbosity) ?
-        optionTable[o_verbosity]->getValue().numval : 2; }
-#else
-    { return optionTable.find(o_verbosity) != optionTable.end() ?
-        optionTable.at(o_verbosity).getValue().numval : 0; }
-#endif
-  int          printSuccess() const
-     { return optionTable.find(":print-success") != optionTable.end() ?
-        optionTable.at(":print-success").getValue().numval == 1: false; }
+  bool verbosity() const {           // Verbosity level
+        return optionTable.find(o_verbosity) != optionTable.end() ?
+               optionTable.at(o_verbosity).getValue().getBoolVal() : false;
+  }
+  bool printSuccess() const {
+      return optionTable.find(":print-success") != optionTable.end() ?
+             optionTable.at(":print-success").getValue().getBoolVal() : false;
+  }
   int          certification_level;          // Level of certification
   char         certifying_solver[256];       // Executable used for certification
 

@@ -30,232 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <sstream>
 
-/*********************************************************************
- * Generic configuration class, used for both set-info and set-option
- *********************************************************************/
-
-ConfValue::ConfValue(const ASTNode& s_expr_n) {
-    if (s_expr_n.getType() == ASTType::SEXPRL_T) {
-        type = O_LIST;
-        for (auto const & i : (*s_expr_n.children)) {
-            configs.push_back(ConfValue(*i));
-        }
-    } else if (s_expr_n.getType() == ASTType::SYM_T) {
-        type   = O_SYM;
-        strval = s_expr_n.getValue();
-    } else if (s_expr_n.getType() == ASTType::SPECC_T) {
-        assert(s_expr_n.children->size() > 0);
-        ASTNode const & spn = *(*s_expr_n.children)[0];
-        if (spn.getType() == ASTType::NUM_T) {
-           type = O_NUM;
-           numval = std::stoi(spn.getValue());
-        } else if (spn.getType() == ASTType::DEC_T) {
-            type = O_DEC;
-            decval = std::stod(spn.getValue());
-        } else if (spn.getType() == ASTType::HEX_T) {
-            type = O_HEX;
-            std::string tmp(spn.getValue());
-            tmp.erase(0,2);
-            char* end;
-            unumval = strtoul(tmp.c_str(), &end, 16);
-            assert(end);
-        }
-        else if (spn.getType() == ASTType::BIN_T) {
-            type = O_BIN;
-            std::string tmp(spn.getValue());
-            tmp.erase(0,2);
-            char* end;
-            unumval = strtoul(tmp.c_str(), &end, 2);
-            assert(end);
-        }
-        else if (spn.getType() == ASTType::STR_T) {
-            type = O_STR;
-            strval = spn.getValue();
-        }
-        else {
-            assert(false);
-        }
-    } else if (s_expr_n.getType() == ASTType::UATTR_T) {
-        type = O_ATTR;
-        strval = s_expr_n.getValue();
-    }
-    else {
-        assert(false); //Not implemented
-    }
-}
-
-//ConfValue::ConfValue(const ConfValue& other) {
-//    type = other.type;
-//    if (type == O_NUM) numval = other.numval;
-//    else if (type == O_STR) strval = other.strval;
-//    else if (type == O_DEC) decval = other.decval;
-//    else if (type == O_LIST) {
-//        configs = new std::list<ConfValue*>;
-//        for (ConfValue * value : *other.configs)
-//            configs->push_back(new ConfValue(*value));
-//    }
-//    else if (type == O_SYM)
-//        strval = other.strval;
-//    else if (type == O_HEX)
-//        unumval = other.unumval;
-//    else if (type == O_BIN)
-//        unumval = other.unumval;
-//    else if (type == O_ATTR)
-//        strval = other.strval;
-//    else if (type == O_BOOL)
-//        numval = other.numval;
-//    else if (type == O_EMPTY)
-//        strval = strdup("");
-//    else assert(false);
-//}
-
-//ConfValue& ConfValue::operator=(const ConfValue& other)
-//{
-//    type = other.type;
-//    if (type == O_NUM) numval = other.numval;
-//    else if (type == O_STR) strval = other.strval;
-//    else if (type == O_DEC) decval = other.decval;
-//    else if (type == O_LIST) {
-//        configs = new std::list<ConfValue*>;
-//        for (ConfValue * value : *other.configs)
-//            configs->push_back(new ConfValue(*value));
-//    }
-//    else if (type == O_SYM)
-//        strval = other.strval;
-//    else if (type == O_HEX)
-//        unumval = other.unumval;
-//    else if (type == O_BIN)
-//        unumval = other.unumval;
-//    else if (type == O_ATTR)
-//        strval = other.strval;
-//    else if (type == O_BOOL)
-//        numval = other.numval;
-//    else if (type == O_EMPTY)
-//        strval = strdup("");
-//    else assert(false);
-//    return *this;
-//}
-
-std::string ConfValue::toString() const {
-    if (type == O_BOOL)
-        return numval == 1 ? "true" : "false";
-    if (type == O_STR)
-        return strval;
-    if (type == O_NUM) {
-        return std::to_string(numval);
-    }
-    if (type == O_EMPTY) {
-        return "";
-    }
-    if (type == O_ATTR) {
-        return strval;
-    }
-    if (type == O_DEC) {
-        std::stringstream ss;
-        ss << decval;
-        return ss.str();
-    }
-    if (type == O_HEX or type == O_BIN) {
-        return std::to_string(unumval);
-    }
-    if (type == O_SYM) {
-        return strval;
-    }
-    if (type == O_LIST) {
-        std::stringstream ss;
-        ss << "( ";
-        for (ConfValue const & val : configs) {
-            ss << val.toString() << " ";
-        }
-        ss << ")";
-        return ss.str();
-    }
-    throw OsmtInternalException("Not implemented");
-}
-
-
-/***********************************************************
- * Class defining the information, configured with set-info
- ***********************************************************/
-
-Info::Info(AttributeValueNode const & n) {
-    // child is attribute_value
-    if (auto specConst = std::get_if<std::unique_ptr<SpecConstNode>>(&n.value)) {
-        value = ConfValue(**specConst);
-    } else if (auto symbolNode = std::get_if<std::unique_ptr<SymbolNode>>(&n.value)) {
-        value.strval = (**symbolNode).getString();
-        value.type = (**symbolNode).getType();
-    } else if (auto sexprList = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&n.value)) {
-        value = ConfValue(**sexprList);
-    } else {
-        assert(false);
-    }
-}
-
-//Info::Info(const Info& other)
-//{
-//    value = other.value;
-//}
-
-/***********************************************************
- * Class defining the options, configured with set-config
- ***********************************************************/
-
-SMTOption::SMTOption(ASTNode const & n) {
-    assert(not n.children->empty());
-
-    ASTNode const & child = *(*n.children)[0];
-
-    if (child.getType() == ASTType::BOOL_T) {
-        value.type   = O_BOOL;
-        value.numval = child.getValue() == "true" ? 1 : 0;
-        return;
-    }
-    if (child.getType() == ASTType::STR_T) {
-        value.type   = O_STR;
-        value.strval = child.getValue();
-        return;
-    }
-    if (child.getType() == ASTType::NUM_T) {
-        value.type   = O_NUM;
-        value.numval = std::stoi(child.getValue());
-        return;
-    }
-
-    if (child.getType() == ASTType::DEC_T) {
-        value.type   = O_DEC;
-        value.decval = std::stod(child.getValue());
-    }
-    assert(child.getType() == ASTType::UATTR_T or child.getType() == ASTType::PATTR_T);
-    // The option is an attribute
-
-    if (not child.children or child.children->empty()) {
-        value.type = O_EMPTY;
-        return;
-    } else {
-        // n is now attribute_value
-        ASTNode const & attributeValue = *(*child.children)[0];
-
-        if (attributeValue.getType() == ASTType::SPECC_T or attributeValue.getType() == ASTType::SEXPRL_T) {
-            value = ConfValue(attributeValue);
-        }
-        else if (attributeValue.getType() == ASTType::SYM_T) {
-            if (attributeValue.getValue() == "true") {
-                value.type = O_BOOL;
-                value.numval = 1;
-            } else if (attributeValue.getValue() == "false") {
-                value.type = O_BOOL;
-                value.numval = 0;
-            } else {
-                value.strval = attributeValue.getValue();
-                value.type = O_STR;
-            }
-            return;
-        }
-        else assert(false);
-    }
-}
-
 //---------------------------------------------------------------------------------
 // SMTConfig
 
@@ -268,13 +42,13 @@ bool SMTConfig::setOption(std::string const & name, const SMTOption& value, cons
     // Special options:
     // stats_out
     if (name == o_stats_out) {
-        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
+        if (value.getValue().type != ConstType::string) { msg = s_err_not_str; return false; }
         if (optionTable.find(name) == optionTable.end())
-            stats_out.open(value.getValue().strval, std::ios_base::out);
-        else if (optionTable[name].getValue().strval != value.getValue().strval) {
+            stats_out.open(value.getValue().getStringVal(), std::ios_base::out);
+        else if (optionTable[name].getValue().getStringVal() != value.getValue().getStringVal()) {
             if (stats_out.is_open()) {
                 stats_out.close();
-                stats_out.open(value.getValue().strval, std::ios_base::out);
+                stats_out.open(value.getValue().getStringVal(), std::ios_base::out);
             }
         }
         else {}
@@ -282,50 +56,50 @@ bool SMTConfig::setOption(std::string const & name, const SMTOption& value, cons
 
     // produce stats
     if (name == o_produce_stats) {
-        if (value.getValue().type != O_BOOL) { msg = s_err_not_bool; return false; }
-        if (value.getValue().numval == 1) {
+        if (value.getValue().type != ConstType::boolean) {
+            throw OsmtApiException(s_err_not_bool);
+        } else if (value.getValue().getBoolVal()) {
             // Gets set to true
             if (optionTable.find(o_stats_out) == optionTable.end()) {
-                if (optionTable.find(o_produce_stats) == optionTable.end() || optionTable[o_produce_stats].getValue().numval == 0) {
+                if (optionTable.find(o_produce_stats) == optionTable.end() || not optionTable[o_produce_stats].getValue().getBoolVal()) {
                     // Insert the default value
                     insertOption(o_stats_out, SMTOption("/dev/stdout"));
-                } else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats].getValue().numval == 1) {
+                } else if (optionTable.find(o_produce_stats) != optionTable.end() and optionTable[o_produce_stats].getValue().getBoolVal()) {
                     assert(false);
                 }
             }
             else { } // No action required
 
-            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getValue().strval, std::ios_base::out);
+            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getValue().getStringVal(), std::ios_base::out);
         }
-        else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats].getValue().numval == 1) {
+        else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats].getValue().getBoolVal()) {
             // gets set to false and was previously true
             if (optionTable.find(o_stats_out) != optionTable.end()) {
-                if (optionTable.at(o_stats_out).getValue().numval == 0) assert(false);
-                else if (stats_out.is_open()) stats_out.close();
+                stats_out.close();
             }
         }
     }
 
     if (name == o_random_seed) {
-        if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
-        int seed = value.getValue().numval;
-        if (seed == 0) { msg = s_err_seed_zero; return false; }
+        if (value.getValue().type != ConstType::numeral) {
+            throw OsmtApiException(s_err_not_num);
+        }
+        uint32_t seed = value.getValue().getUint32Val();
+        if (seed == 0) { throw OsmtApiException(s_err_seed_zero); }
     }
 
     if (name == o_sat_split_type) {
-        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        std::string val = value.getValue().strval;
+        if (value.getValue().type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
+        std::string val = value.getValue().getStringVal();
         if (val != spts_lookahead && val != spts_scatter && val != spts_none) {
-            msg = s_err_unknown_split;
-            return false;
+            throw OsmtApiException(s_err_unknown_split);
         }
     }
     if (name == o_sat_split_units) {
-        if (value.getValue().type != O_STR) { msg = s_err_not_str; return false; }
-        std::string val = value.getValue().strval;
+        if (value.getValue().type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
+        std::string val = value.getValue().getStringVal();
         if (val != spts_time && val != spts_search_counter) {
-            msg = s_err_unknown_units;
-            return false;
+            throw OsmtApiException(s_err_unknown_units);
         }
     }
     auto itr = optionTable.find(name);
@@ -344,18 +118,18 @@ const SMTOption& SMTConfig::getOption(std::string const & name) const {
         return option_Empty;
 }
 
-bool SMTConfig::setInfo(std::string && name_, Info && value) {
+bool SMTConfig::setInfo(std::string && name_, SMTOption::ConfValue && value) {
     if (infoTable.find(name_) != infoTable.end())
         infoTable.erase(infoTable.find(name_));
     infoTable.insert({name_, value});
     return true;
 }
 
-Info SMTConfig::getInfo(std::string const & name) const {
+SMTOption::ConfValue SMTConfig::getInfo(std::string const & name) const {
     if (infoTable.find(name) != infoTable.end())
         return infoTable.at(name);
     else
-        return info_Empty;
+        return {};
 }
 
 const char* SMTConfig::o_produce_models = ":produce-models";
