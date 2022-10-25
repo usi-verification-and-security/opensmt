@@ -624,6 +624,13 @@ PTRef Logic::mkDistinct(vec<PTRef>&& args) {
         }
     }
 
+    // Here we know that no two terms are the same
+    if (std::all_of(args.begin(), args.end(), [this](PTRef arg) {
+        return this->isConstant(arg);
+    })) {
+        return getTerm_true();
+    }
+
     SymRef diseq_sym = term_store.lookupSymbol(tk_distinct, args);
     assert(!isBooleanOperator(diseq_sym));
     PTLKey key;
