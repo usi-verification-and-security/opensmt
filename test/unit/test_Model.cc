@@ -204,6 +204,8 @@ protected:
         z = logic.mkRealVar("z");
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("b");
+        tval = logic.getTerm_true();
+        fval = logic.getTerm_false();
     }
     SMTConfig config;
     ArithLogic logic;
@@ -212,6 +214,8 @@ protected:
     PTRef z;
     PTRef a;
     PTRef b;
+    PTRef tval;
+    PTRef fval;
 
     std::unique_ptr<Model> getModel() {
         Model::Evaluation eval {
@@ -223,7 +227,6 @@ protected:
         };
         return std::unique_ptr<Model>(new Model(logic, eval));
     }
-
 };
 
 
@@ -239,8 +242,6 @@ TEST_F(LAModelTest, test_inputVarValues) {
 
 TEST_F(LAModelTest, test_constants) {
     auto model = getModel();
-    PTRef tval = logic.getTerm_true();
-    PTRef fval = logic.getTerm_false();
     EXPECT_EQ(model->evaluate(fval), fval);
     EXPECT_EQ(model->evaluate(tval), tval);
 
@@ -254,9 +255,6 @@ TEST_F(LAModelTest, test_constants) {
 
 TEST_F(LAModelTest, test_derivedBooleanTerms) {
     auto model = getModel();
-    PTRef tval = logic.getTerm_true();
-    PTRef fval = logic.getTerm_false();
-
     PTRef and_false = logic.mkAnd(a,b);
     PTRef or_true = logic.mkOr(a,b);
     PTRef not_true = logic.mkNot(b);
@@ -279,8 +277,6 @@ TEST_F(LAModelTest, test_derivedArithmeticTerms) {
 
 TEST_F(LAModelTest, test_derivedArithmeticAtoms) {
     auto model = getModel();
-    PTRef tval = logic.getTerm_true();
-    PTRef fval = logic.getTerm_false();
 
     EXPECT_EQ(model->evaluate(logic.mkLeq(x, y)), fval);
     EXPECT_EQ(model->evaluate(logic.mkLt(x, y)), fval);
@@ -296,6 +292,13 @@ TEST_F(LAModelTest, test_derivedArithmeticAtoms) {
     EXPECT_EQ(model->evaluate(logic.mkLt(x, z)), fval);
     EXPECT_EQ(model->evaluate(logic.mkGeq(x, z)), tval);
     EXPECT_EQ(model->evaluate(logic.mkGt(x, z)), fval);
+}
+
+TEST_F(LAModelTest, test_distinctOperator) {
+    auto model = getModel();
+
+    PTRef distinct = logic.mkDistinct({logic.getTerm_RealZero(), logic.getTerm_RealMinusOne(), x});
+    EXPECT_EQ(model->evaluate(distinct), tval);
 
 }
 
