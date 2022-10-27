@@ -93,19 +93,17 @@ int main( int argc, char * argv[] )
                 break;
             case 'd':
                 const char* msg;
-                c.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_dryrun, SMTOption(true));
                 break;
             case 'r':
-                if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
-                    fprintf(stderr, "Error setting random seed: %s\n", msg);
-                else
-                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)));
+                fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             case 'i':
-                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_produce_inter, SMTOption(true));
                 break;
             case 'v':
-                c.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_verbosity, SMTOption(true));
                 break;
             case 'p':
                 pipe = true;

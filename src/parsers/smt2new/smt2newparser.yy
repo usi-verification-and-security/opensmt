@@ -60,11 +60,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "smt2newcontext.h"
 #include "smt2tokens.h"
 
-using ASTNode_up = std::unique_ptr<ASTNode>;
-using ASTVec = std::vector<ASTNode_up>;
-using ASTVec_up = std::unique_ptr<ASTVec>;
-using string_up = std::unique_ptr<std::string>;
-
 std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::make_unique<std::string>(s); }
 
 
@@ -400,29 +395,29 @@ b_value: symbol
     ;
 
 option: KW_PRINTSUCCESS b_value
-        { $$ = new PrintSuccess {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::PrintSuccess, $2}; delete $1; }
     | KW_EXPANDDEFINITIONS b_value
-        { $$ = new ExpandDefinitions {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::ExpandDefinitions, $2}; delete $1; }
     | KW_INTERACTIVEMODE b_value
-        { $$ = new InteractiveMode {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::InteractiveMode, $2}; delete $1; }
     | KW_PRODUCEPROOFS b_value
-        { $$ = new ProduceProofs {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceProofs, $2}; delete $1; }
     | KW_PRODUCEUNSATCORES b_value
-        { $$ = new ProduceUnsatCores {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceUnsatCores, $2}; delete $1; }
     | KW_PRODUCEMODELS b_value
-        { $$ = new ProduceModels {$2}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceModels, $2}; delete $1; }
     | KW_PRODUCEASSIGNMENTS b_value
-        { $$ = new ProduceAssignments {$2}; delete $1;}
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceAssignments, $2}; delete $1;}
     | KW_REGULAROUTPUTCHANNEL TK_STR
-        { $$ = new RegularOutputChannel {std::unique_ptr<std::string>($2)}; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::RegularOutputChannel, std::unique_ptr<std::string>($2)}; delete $1; }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
-        { $$ = new DiagnosticOutputChannel {std::unique_ptr<std::string>($2)}; delete $1;  }
+        { $$ = new OptionNode {OptionNode::OptionType::DiagnosticOutputChannel, std::unique_ptr<std::string>($2)}; delete $1;  }
     | KW_RANDOMSEED TK_NUM
-        { $$ = new RandomSeed { std::stoi(*$2) }; delete $2; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::RandomSeed, static_cast<uint32_t>(std::stoi(*$2)) }; delete $2; delete $1; }
     | KW_VERBOSITY TK_NUM
-        { $$ = new Verbosity { std::stoi(*$2) }; delete $2; delete $1; }
+        { $$ = new OptionNode {OptionNode::OptionType::Verbosity, static_cast<uint32_t>(std::stoi(*$2)) }; delete $2; delete $1; }
     | attribute
-        { $$ = new Attribute { std::unique_ptr<AttributeNode>($1) }; }
+        { $$ = new OptionNode {OptionNode::OptionType::Attribute, std::unique_ptr<AttributeNode>($1) }; }
     ;
 
 predef_key: KW_SORTS

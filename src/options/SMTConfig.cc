@@ -33,22 +33,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //---------------------------------------------------------------------------------
 // SMTConfig
 
-bool SMTConfig::setOption(std::string const & name, const SMTOption& value, const char*& msg) {
-    msg = "ok";
+void SMTConfig::setOption(std::string const & name, const SMTOption& value) {
     if (usedForInitialization && isPreInitializationOption(name)) {
-        msg = "Option cannot be changed at this point";
-        return false;
+        throw OsmtApiException("Option cannot be changed at this point");
     }
     // Special options:
     // stats_out
     if (name == o_stats_out) {
-        if (value.getValue().type != ConstType::string) { msg = s_err_not_str; return false; }
+        if (value.type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
         if (optionTable.find(name) == optionTable.end())
-            stats_out.open(value.getValue().getStringVal(), std::ios_base::out);
-        else if (optionTable[name].getValue().getStringVal() != value.getValue().getStringVal()) {
+            stats_out.open(value.getStringVal(), std::ios_base::out);
+        else if (optionTable[name].getStringVal() != value.getStringVal()) {
             if (stats_out.is_open()) {
                 stats_out.close();
-                stats_out.open(value.getValue().getStringVal(), std::ios_base::out);
+                stats_out.open(value.getStringVal(), std::ios_base::out);
             }
         }
         else {}
@@ -56,23 +54,23 @@ bool SMTConfig::setOption(std::string const & name, const SMTOption& value, cons
 
     // produce stats
     if (name == o_produce_stats) {
-        if (value.getValue().type != ConstType::boolean) {
+        if (value.type != ConstType::boolean) {
             throw OsmtApiException(s_err_not_bool);
-        } else if (value.getValue().getBoolVal()) {
+        } else if (value.getBoolVal()) {
             // Gets set to true
             if (optionTable.find(o_stats_out) == optionTable.end()) {
-                if (optionTable.find(o_produce_stats) == optionTable.end() || not optionTable[o_produce_stats].getValue().getBoolVal()) {
+                if (optionTable.find(o_produce_stats) == optionTable.end() || not optionTable[o_produce_stats].getBoolVal()) {
                     // Insert the default value
                     insertOption(o_stats_out, SMTOption("/dev/stdout"));
-                } else if (optionTable.find(o_produce_stats) != optionTable.end() and optionTable[o_produce_stats].getValue().getBoolVal()) {
+                } else if (optionTable.find(o_produce_stats) != optionTable.end() and optionTable[o_produce_stats].getBoolVal()) {
                     assert(false);
                 }
             }
             else { } // No action required
 
-            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getValue().getStringVal(), std::ios_base::out);
+            if (!stats_out.is_open()) stats_out.open(optionTable[o_stats_out].getStringVal(), std::ios_base::out);
         }
-        else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats].getValue().getBoolVal()) {
+        else if (optionTable.find(o_produce_stats) != optionTable.end() && optionTable[o_produce_stats].getBoolVal()) {
             // gets set to false and was previously true
             if (optionTable.find(o_stats_out) != optionTable.end()) {
                 stats_out.close();
@@ -81,23 +79,23 @@ bool SMTConfig::setOption(std::string const & name, const SMTOption& value, cons
     }
 
     if (name == o_random_seed) {
-        if (value.getValue().type != ConstType::numeral) {
+        if (value.type != ConstType::numeral) {
             throw OsmtApiException(s_err_not_num);
         }
-        uint32_t seed = value.getValue().getUint32Val();
+        uint32_t seed = value.getUint32Val();
         if (seed == 0) { throw OsmtApiException(s_err_seed_zero); }
     }
 
     if (name == o_sat_split_type) {
-        if (value.getValue().type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
-        std::string val = value.getValue().getStringVal();
+        if (value.type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
+        std::string val = value.getStringVal();
         if (val != spts_lookahead && val != spts_scatter && val != spts_none) {
             throw OsmtApiException(s_err_unknown_split);
         }
     }
     if (name == o_sat_split_units) {
-        if (value.getValue().type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
-        std::string val = value.getValue().getStringVal();
+        if (value.type != ConstType::string) { throw OsmtApiException(s_err_not_str); }
+        std::string val = value.getStringVal();
         if (val != spts_time && val != spts_search_counter) {
             throw OsmtApiException(s_err_unknown_units);
         }
@@ -107,7 +105,6 @@ bool SMTConfig::setOption(std::string const & name, const SMTOption& value, cons
         optionTable.erase(itr);
     }
     insertOption(name, SMTOption(value));
-    return true;
 }
 
 const SMTOption& SMTConfig::getOption(std::string const & name) const {
@@ -118,14 +115,14 @@ const SMTOption& SMTConfig::getOption(std::string const & name) const {
         return option_Empty;
 }
 
-bool SMTConfig::setInfo(std::string && name_, SMTOption::ConfValue && value) {
+bool SMTConfig::setInfo(std::string && name_, SMTOption && value) {
     if (infoTable.find(name_) != infoTable.end())
         infoTable.erase(infoTable.find(name_));
     infoTable.insert({name_, value});
     return true;
 }
 
-SMTOption::ConfValue SMTConfig::getInfo(std::string const & name) const {
+SMTOption SMTConfig::getInfo(std::string const & name) const {
     if (infoTable.find(name) != infoTable.end())
         return infoTable.at(name);
     else

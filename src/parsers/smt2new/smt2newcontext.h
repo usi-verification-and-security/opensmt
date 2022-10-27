@@ -55,15 +55,7 @@ struct SpecConstNode : public GeneralNode {
 
 struct SymbolNode : public GeneralNode {
     std::variant<std::unique_ptr<std::string>,std::unique_ptr<SpecConstNode>> name;
-    std::string getString() const {
-        if (auto str = std::get_if<std::unique_ptr<std::string>>(&name)) {
-            return {**str};
-        } else if (auto specConstNode = std::get_if<std::unique_ptr<SpecConstNode>>(&name)) {
-            return {*(**specConstNode).value};
-        }
-        assert(false);
-        return {};
-    }
+
     ConstType getType() const {
         if (std::get_if<std::unique_ptr<std::string>>(&name)) {
             return ConstType::string;
@@ -107,6 +99,7 @@ struct SExpr : public GeneralNode {
 };
 
 struct AttributeValueNode : public GeneralNode {
+    // Todo: Why do we need SpecConstNode if we have SymbolNode that can also be SpecConstNode?
     std::variant<std::unique_ptr<SpecConstNode>, std::unique_ptr<SymbolNode>, std::unique_ptr<std::vector<SExpr*>>> value;
     AttributeValueNode(std::unique_ptr<SpecConstNode> && node) : value(std::move(node)) {}
     AttributeValueNode(std::unique_ptr<SymbolNode> && node) : value(std::move(node)) {}
@@ -134,21 +127,27 @@ struct IdentifierNode : public GeneralNode {
 
 class OptionNode : public GeneralNode {
 public:
-    virtual ~OptionNode() = default;
+    enum class OptionType {
+        Attribute,
+        DiagnosticOutputChannel,
+        ExpandDefinitions,
+        InteractiveMode,
+        PrintSuccess,
+        ProduceAssignments,
+        ProduceModels,
+        ProduceProofs,
+        ProduceUnsatCores,
+        RandomSeed,
+        RegularOutputChannel,
+        Verbosity,
+    };
+    std::variant<bool,uint32_t,std::unique_ptr<std::string>,std::unique_ptr<AttributeNode>> value;
+    OptionType type;
+    OptionNode(OptionType type, bool value) : type(type), value(value) {}
+    OptionNode(OptionType type, uint32_t value) : type(type), value(value) {}
+    OptionNode(OptionType type, std::unique_ptr<std::string> && value) : type(type), value(std::move(value)) {}
+    OptionNode(OptionType type, std::unique_ptr<AttributeNode> && value) : type(type), value(std::move(value)) {}
 };
-
-struct PrintSuccess : public OptionNode { bool value; PrintSuccess(bool value) : value(value) {} };
-struct ExpandDefinitions : public OptionNode { bool value; ExpandDefinitions(bool value) : value(value) {} };
-struct InteractiveMode : public OptionNode { bool value; InteractiveMode(bool value) : value(value) {} };
-struct ProduceProofs : public OptionNode { bool value; ProduceProofs(bool value) : value(value) {} };
-struct ProduceUnsatCores : public OptionNode { bool value; ProduceUnsatCores(bool value) : value(value) {} };
-struct ProduceModels : public OptionNode { bool value; ProduceModels(bool value) : value(value) {} };
-struct ProduceAssignments : public OptionNode { bool value; ProduceAssignments(bool value): value(value) {} };
-struct RegularOutputChannel : public OptionNode { std::unique_ptr<std::string> value; RegularOutputChannel(std::unique_ptr<std::string> && value) : value(std::move(value)) {} };
-struct DiagnosticOutputChannel : public OptionNode { std::unique_ptr<std::string> value; DiagnosticOutputChannel(std::unique_ptr<std::string> && value) : value(std::move(value)) {} };
-struct RandomSeed : public OptionNode { int value; RandomSeed(int value) : value(value) {} };
-struct Verbosity : public OptionNode { int value; Verbosity(int value) : value(value) {} };
-struct Attribute : public OptionNode { std::unique_ptr<AttributeNode> value; Attribute(std::unique_ptr<AttributeNode> && value) : value(std::move(value)) {} };
 
 // Note: classes derived from CommandNodes need to have a constructor because they need to be destructible as CommandNodes.
 // In particular, CommandNode needs to have a virtual member function (destructor), which forbids aggregate initialization.
@@ -262,10 +261,9 @@ struct DeclareFun : public CommandNode {
 };
 
 struct DeclareConst : public CommandNode {
-    std::variant<std::unique_ptr<SymbolNode>,std::unique_ptr<SpecConstNode>> name;
+    std::unique_ptr<SymbolNode> name;
     std::unique_ptr<SortNode> sort;
     DeclareConst(std::unique_ptr<SymbolNode> && name, std::unique_ptr<SortNode> && sort) : name(std::move(name)), sort(std::move(sort)) {}
-    DeclareConst(std::unique_ptr<SpecConstNode> && name, std::unique_ptr<SortNode> && sort) : name(std::move(name)), sort(std::move(sort)) {}
 };
 
 struct SortedVarNode : public GeneralNode {

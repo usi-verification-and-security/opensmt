@@ -145,28 +145,20 @@ class Interpret {
     void                        initializeLogic(opensmt::Logic_t logicType);
     bool                        isInitialized() const { return logic != nullptr; }
 
-    void                        setInfo(std::string const & str);
-    void                        getInfo(AttributeNode const & n);
-    void                        setOption(AttributeNode const & n);
-    void                        getOption(AttributeNode const & n);
     void                        writeState(std::string const & fname);
-    bool                        declareFun(DeclareFun const & n); //(const char* fname, const vec<SRef>& args);
-    bool                        declareConst(DeclareConst const & n); //(const char* fname, const SRef ret_sort);
-    bool                        defineFun(DefineFun const & n);
-    virtual sstat               checkSat();
-    void                        getValue(std::vector<std::unique_ptr<SymbolNode>> const & term);
-    void                        getModel();
     std::string                 printDefinitionSmtlib(PTRef tr, PTRef val);
     std::string                 printDefinitionSmtlib(const TemplateFunction &templateFun) const;
-    void                        push(int);
-    void                        pop(int);
 
     PTRef                       parseTerm(TermNode const & term, LetRecords& letRecords);
+    PTRef                       parseTerm(NormalTermNode const * term, LetRecords & letRecords);
+    PTRef                       parseTerm(LetTermNode const * term, LetRecords & letRecords);
+    PTRef                       parseTerm(ForallNode const * term, LetRecords & letRecords);
+    PTRef                       parseTerm(ExistsNode const * term, LetRecords & letRecords);
+    PTRef                       parseTerm(AnnotationNode const * term, LetRecords & letRecords);
     PTRef                       resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
     bool                        storeDefinedFun(std::string const & fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
 
     virtual void                exit();
-    void                        getInterpolants(TermNode const & n);
     void                        interp(CommandNode const * n);
     void                        interp(SetLogic const & n);
     void                        interp(SetInfo const & n);
@@ -194,7 +186,8 @@ class Interpret {
 
     bool                        addLetFrame(std::vector<std::string> const & names, vec<PTRef> const& args, LetRecords& letRecords);
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
-    PTRef                       resolveQualifiedIdentifier(const char * name, SortNode const & sort, bool isQuoted);
+    PTRef                       resolveQualifiedIdentifier(std::string const & name, SortNode const & sort, bool isQuoted);
+    SRef sortFromSortNode(SortNode const & node) const;
 
     virtual std::unique_ptr<MainSolver>   createMainSolver(std::string const & logic_name);
 
@@ -210,9 +203,6 @@ class Interpret {
     int interpPipe();
 
     bool    gotExit() const { return f_exit; }
-
-    ValPair getValue       (PTRef tr) const;
-    bool    getAssignment  ();
 
     void    reportError(char const * msg) { notify_formatted(true, msg); }
 
