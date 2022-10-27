@@ -568,7 +568,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     int derivations = 0;
     Var oldBest, newBest;
     if(close_to_prop + bound_prop > 0){
-      for (Var v(idx % nVars()); (close_to_prop!=0 || bound_prop!=0) && !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
+      for (Var v(idx % nVars()); (close_to_prop!=0 || bound_prop!=0) && (close_to_prop + bound_prop > 0) && !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
+//        assert(v>=0);
         if (next_arr[v] || bound_arr[v]) {
             if (!decision[v]) {
               score->setChecked(v);
@@ -678,11 +679,11 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                         printf(" -> Propagation resulted in backtrack\n");
     #endif
                       derivations++;
-                      if(derivations>5 || value(best) != l_Undef){
-                          derivations=0;
-                          score->updateRound();
-                        }
-                        break;
+//                      if(derivations>5 || value(best) != l_Undef){
+//                          derivations=0;
+                      score->updateRound();
+//                        }
+                      break;
                     } else {
     #ifdef LADEBUG
                         printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
@@ -713,7 +714,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             }
       }
     }
-    if(close_to_prop + bound_prop  == 0){
+    if(close_to_prop + bound_prop  <= 0){
       for(Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
           if (!decision[v]) {
             score->setChecked(v);
