@@ -24,5 +24,5 @@ target_sources(parsers
 
 target_compile_options(parsers PRIVATE -Wno-error)
 
-install(FILES smt2newcontext.h
+install(FILES smt2newcontext.h ParseNodePrinter.h
 DESTINATION ${INSTALL_HEADERS_DIR})
