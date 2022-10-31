@@ -1,5 +1,7 @@
 ### 2.4.3 (unreleased)
 
+Bug fixes:
+ - Logic: Evaluate `distinct` function on constant arguments (required for model evaluation)
 
 ### 2.4.2 (2022-10-24)
 
