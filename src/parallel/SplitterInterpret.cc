@@ -28,7 +28,10 @@ sstat SplitterInterpret::checkSat() {
 
     auto name = config.dump_state();
     sstat res = Interpret::checkSat();
-    if (res == s_Undef and not config.output_dir().empty()) {
+    if (res == s_Undef) {
+        if (not config.output_dir().empty()) {
+            name = config.output_dir().append(name, name.rfind('/'), std::string::npos);
+        }
         writeSplits(name);
     }
     return res;

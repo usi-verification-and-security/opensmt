@@ -462,7 +462,7 @@ public:
 
   inline void setLRAStrengthFactor(const char *factor) { insertOption(o_itp_lra_factor, SMTOption(factor)); }
 
-  inline void setInstanceName(const char* name) { insertOption(o_inst_name, SMTOption(name)); }
+  inline void setInstanceName(std::string && name) { insertOption(o_inst_name, SMTOption(std::move(name))); }
 
   // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
