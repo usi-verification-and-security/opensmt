@@ -154,8 +154,9 @@ void Interpret::interp(SetOption const & n) {
     }
     default:
         notify_formatted(true, "unknown option");
-        break;
+        return;
     }
+    notify_success();
 }
 
 void Interpret::interp(GetOption const & n) {
@@ -299,8 +300,11 @@ void Interpret::interp(Simplify const & n) {
         return;
     }
     sstat status = main_solver->simplifyFormulas();
-    if (status == s_Error)
+    if (status == s_Error) {
         notify_formatted(true, "Simplify");
+    } else {
+        notify_success();
+    }
 }
 
 void Interpret::interp(CheckSatNode const & n) {
@@ -450,6 +454,9 @@ void Interpret::interp(PushNode const & n) {
         return;
     } else if (not isInitialized()) {
         notify_formatted(true, "Illegal command before set-logic: push");
+        return;
+    } else if (n.num < 0) {
+        notify_formatted(true, "Incorrect push command, value is negative.");
         return;
     }
     int num = n.num;
@@ -631,7 +638,7 @@ PTRef Interpret::parseTerm(NormalTermNode const * term, LetRecords & letRecords)
     if (term->returnSort) {
         return resolveQualifiedIdentifier(name, *term->returnSort, isQuoted);
     } else {
-        if (term->arguments->empty()) {
+        if (not term->arguments) {
             PTRef tr = letNameResolve(name.c_str(), letRecords);
             if (tr != PTRef_Undef) {
                 return tr;
@@ -793,6 +800,10 @@ void Interpret::writeState(std::string const & filename)
 
 void Interpret::interp(DeclareFun const & n) // (const char* fname, const vec<SRef>& args)
 {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: declare-fun");
+        return;
+    }
     SymbolNode const & name_node = *n.name;
     auto const & args_vec = *n.argumentSorts;
     SortNode const & ret_sort = *n.returnSort;
@@ -832,6 +843,7 @@ void Interpret::interp(DeclareFun const & n) // (const char* fname, const vec<SR
         return;
     }
     user_declarations.push(rval);
+    notify_success();
 }
 
 
@@ -860,6 +872,7 @@ void Interpret::interp(DeclareConst const & n) //(const char* fname, const SRef 
 void Interpret::interp(DefineFun const & n) {
     if (not isInitialized()) {
         notify_formatted(true, "Illegal command before set-logic: define-fun");
+        return;
     }
     SymbolNode const & nameNode = *n.name;
     auto const & argumentVector = *n.args;
