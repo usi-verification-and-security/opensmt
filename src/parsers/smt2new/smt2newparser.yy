@@ -122,13 +122,13 @@ std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::ma
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
-%token TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%token TK_INT TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %token KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS
 
 %type <tok> TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %type <tok> TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
 
-%type <str> TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%type <str> TK_INT TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
 %type <n_sort> sort
 %type <n_identifier> identifier
@@ -179,7 +179,7 @@ command: '(' TK_SETLOGIC symbol ')'
         { $$ = new SetOption {std::unique_ptr<OptionNode>($3)}; }
     | '(' TK_SETINFO attribute ')'
         { $$ = new SetInfo {std::unique_ptr<AttributeNode>($3)}; }
-    | '(' TK_DECLARESORT symbol TK_NUM ')'
+    | '(' TK_DECLARESORT symbol TK_INT ')'
         { $$ = new DeclareSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::string>($4)}; }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
         { $$ = new DefineSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>>($5), std::unique_ptr<SortNode>($7)}; }
@@ -189,9 +189,9 @@ command: '(' TK_SETLOGIC symbol ')'
         { $$ = new DeclareConst {std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
         { $$ = new DefineFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
-    | '(' TK_PUSH TK_NUM ')'
+    | '(' TK_PUSH TK_INT ')'
         { $$ = new PushNode {std::stoi(*$3)}; delete $3; }
-    | '(' TK_POP TK_NUM ')'
+    | '(' TK_POP TK_INT ')'
         { $$ = new PopNode {std::stoi(*$3)}; delete $3; }
     | '(' TK_ASSERT term ')'
         { $$ = new AssertNode{std::unique_ptr<TermNode>($3)}; }
@@ -290,8 +290,8 @@ s_expr_list:
     ;
 
 
-spec_const: TK_NUM
-        { $$ = new SpecConstNode{{}, ConstType::numeral, std::unique_ptr<std::string>($1)}; }
+spec_const: TK_INT
+        { $$ = new SpecConstNode{{}, ConstType::integral, std::unique_ptr<std::string>($1)}; }
     | TK_DEC
         { $$ = new SpecConstNode{{}, ConstType::decimal, std::unique_ptr<std::string>($1)}; }
     | TK_HEX
@@ -308,9 +308,9 @@ const_val: symbol
         { $$ = new SymbolNode {{}, std::unique_ptr<SpecConstNode>($1), false}; }
     ;
 
-numeral_list: numeral_list TK_NUM
+numeral_list: numeral_list TK_INT
         { $1->emplace_back(std::unique_ptr<std::string>($2)); }
-    | TK_NUM
+    | TK_INT
         { $$ = new std::vector<std::unique_ptr<std::string>>(); $$->emplace_back(std::unique_ptr<std::string>{$1});  }
     ;
 
@@ -412,10 +412,10 @@ option: KW_PRINTSUCCESS b_value
         { $$ = new OptionNode {OptionNode::OptionType::RegularOutputChannel, std::unique_ptr<std::string>($2)}; delete $1; }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
         { $$ = new OptionNode {OptionNode::OptionType::DiagnosticOutputChannel, std::unique_ptr<std::string>($2)}; delete $1;  }
-    | KW_RANDOMSEED TK_NUM
-        { $$ = new OptionNode {OptionNode::OptionType::RandomSeed, static_cast<uint32_t>(std::stoi(*$2)) }; delete $2; delete $1; }
-    | KW_VERBOSITY TK_NUM
-        { $$ = new OptionNode {OptionNode::OptionType::Verbosity, static_cast<uint32_t>(std::stoi(*$2)) }; delete $2; delete $1; }
+    | KW_RANDOMSEED TK_INT
+        { $$ = new OptionNode {OptionNode::OptionType::RandomSeed, static_cast<int>(std::stoi(*$2)) }; delete $2; delete $1; }
+    | KW_VERBOSITY TK_INT
+        { $$ = new OptionNode {OptionNode::OptionType::Verbosity, static_cast<int>(std::stoi(*$2)) }; delete $2; delete $1; }
     | attribute
         { $$ = new OptionNode {OptionNode::OptionType::Attribute, std::unique_ptr<AttributeNode>($1) }; }
     ;

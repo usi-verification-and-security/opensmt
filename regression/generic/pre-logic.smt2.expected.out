@@ -6,7 +6,8 @@ success
 success
 success
 success
-success
+(error "Overflow in #xdeafbeef")
+
 success
 success
 true
@@ -17,8 +18,9 @@ Longer story
 (error "No value for attr :foo-option")
 
 0
-3.14159
-3736059631
+3.141593
+(error "No value for option :hex")
+
 85
 ( foo string 10 4075 1.23 2 ( ( ) bar ( :keyword ) ) )
 (error "No value for attr :non-existing-option")

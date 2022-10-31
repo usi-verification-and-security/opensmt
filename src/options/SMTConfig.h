@@ -90,7 +90,7 @@ class SMTOption {
 
 public:
     ConstType type = ConstType::empty;
-    std::variant<std::string, int, double, uint32_t, bool> value = 0;
+    std::variant<std::string, int, double, bool> value = 0;
 
     std::string toString() const {
         if (auto val = std::get_if<std::string>(&value)) {
@@ -98,8 +98,6 @@ public:
         } else if (auto val = std::get_if<int>(&value)) {
             return std::to_string(*val);
         } else if (auto val = std::get_if<double>(&value)) {
-            return std::to_string(*val);
-        } else if (auto val = std::get_if<uint32_t>(&value)) {
             return std::to_string(*val);
         } else if (auto val =  std::get_if<bool>(&value)) {
             return *val ? "true" : "false";
@@ -118,10 +116,8 @@ public:
         }
     }
     double getDoubleVal() const {
-        if (type == ConstType::numeral) {
+        if (type == ConstType::integral) {
             if (auto val = std::get_if<int>(&value)) {
-                return static_cast<double>(*val);
-            } else if (auto val = std::get_if<uint32_t>(&value)) {
                 return static_cast<double>(*val);
             } else {
                 throw OsmtInternalException("Inconsistent value for option");
@@ -135,21 +131,12 @@ public:
         }
     }
     int getIntVal() const {
-        if (type == ConstType::numeral) {
+        if (type == ConstType::integral) {
             auto val = std::get_if<int>(&value);
             assert(val);
             return *val;
         } else {
             throw OsmtApiException("Attempted to obtain int value for non-int type");
-        }
-    }
-    uint32_t getUint32Val() const {
-        if (type == ConstType::uint32) {
-            auto val = std::get_if<uint32_t>(&value);
-            assert(val);
-            return *val;
-        } else {
-            throw OsmtApiException("Attempted to obtain uint32 value for non-uint32 type");
         }
     }
     bool getBoolVal() const {
@@ -163,19 +150,61 @@ public:
         }
     }
     SMTOption() = default;
-    SMTOption(int i) : type(ConstType::numeral), value(i) {}
-    SMTOption(uint32_t i) : type(ConstType::uint32), value(i) {}
-    SMTOption(double i) : type(ConstType::decimal), value(i) {}
-    SMTOption(std::string && s) : type(ConstType::string), value(std::move(s)) {}
-    SMTOption(AttributeValueNode const & n) {
+    explicit SMTOption(bool i) : type(ConstType::boolean), value(i) {}
+    explicit SMTOption(int i) : type(ConstType::integral), value(i) {}
+    explicit SMTOption(double i) : type(ConstType::decimal), value(i) {}
+    explicit SMTOption(std::string && s) : type(ConstType::string), value(std::move(s)) {}
+    explicit SMTOption(AttributeValueNode const & n) {
         if (auto specConst_p = std::get_if<std::unique_ptr<SpecConstNode>>(&n.value)) {
             auto const & specConst = (**specConst_p);
             type = specConst.type;
-            value = *specConst.value;
+            switch (type) {
+            case ConstType::integral: {
+                value = std::stoi(*specConst.value);
+                break;
+            }
+            case ConstType::boolean: {
+                value = *specConst.value == "true";
+                break;
+            }
+            case ConstType::string: {
+                value = *specConst.value;
+                break;
+            }
+            case ConstType::decimal: {
+                value = std::stod(*specConst.value);
+                break;
+            }
+            case ConstType::binary: {
+                value = std::stoi(static_cast<std::string const>(std::string_view(&(*specConst.value)[2], (*specConst.value).size()-2)), nullptr, 2);
+                break;
+            }
+            case ConstType::hexadecimal: {
+                value = std::stoi(static_cast<std::string const>(std::string_view(&(*specConst.value)[2], (*specConst.value).size()-2)), nullptr, 16);
+                break;
+            }
+            case ConstType::sexpr:
+            case ConstType::symbol: {
+                value = *specConst.value;
+                break;
+            }
+            case ConstType::empty: {
+                throw OsmtInternalException("Parsed an empty type");
+            }
+            }
         } else if (auto symbol_p = std::get_if<std::unique_ptr<SymbolNode>>(&n.value)) {
             auto const & symbol = (**symbol_p);
-            type  = symbol.getType();
-            value = opensmt::nodeToString()(symbol);
+            std::string symbolString = opensmt::nodeToString()(symbol);
+            if (not symbol.quoted and symbolString == "true") {
+                type = ConstType::boolean;
+                value = true;
+            } else if (not symbol.quoted and symbolString == "false") {
+                type = ConstType::boolean;
+                value = false;
+            } else {
+                type = symbol.getType();
+                value = std::move(symbolString);
+            }
         } else if (auto sexprVec_p = std::get_if<std::unique_ptr<std::vector<SExpr*>>>(&n.value)) {
             assert(sexprVec_p);
             type = ConstType::sexpr;
@@ -404,7 +433,7 @@ public:
   void printHelp        ( );
   void printConfig      ( std::ostream & out );
 
-  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getUint32Val(): 91648253; }
+  inline int  getRandomSeed   ( ) const { return optionTable.find(o_random_seed) != optionTable.end() ? optionTable.at(o_random_seed).getIntVal(): 91648253; }
   inline void setProduceModels( ) { insertOption(o_produce_models, SMTOption(1)); }
   inline bool setRandomSeed(int seed) { insertOption(o_random_seed, SMTOption(seed)); return true; }
 
@@ -417,7 +446,7 @@ public:
   void setTimeQueries() { insertOption(o_time_queries, SMTOption(1)); }
   bool timeQueries()    { return optionTable.find(o_time_queries) != optionTable.end() ? optionTable[o_time_queries].getBoolVal() : false; }
   // Set reduction params
-  inline void setReduction(int r) { insertOption(o_proof_reduce, SMTOption(r)); }
+  inline void setReduction(bool r) { insertOption(o_proof_reduce, SMTOption(r)); }
 
   inline void setReductionGraph(int r) { insertOption(o_proof_num_graph_traversals, SMTOption(r)); }
 
@@ -437,16 +466,16 @@ public:
 
   // Get interpolation algorithms
   inline ItpAlgorithm getBooleanInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getUint32Val())
+      return optionTable.find(o_itp_bool_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_bool_alg).getIntVal())
                                                                    : ItpAlgorithm::itp_alg_mcmillan;
   }
   inline ItpAlgorithm getEUFInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getUint32Val())
+      return optionTable.find(o_itp_euf_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_euf_alg).getIntVal())
                                                                   : ItpAlgorithm::itp_euf_alg_strong;
   }
 
   inline ItpAlgorithm getLRAInterpolationAlgorithm() const {
-      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getUint32Val())
+      return optionTable.find(o_itp_lra_alg) != optionTable.end() ? static_cast<ItpAlgorithm>(optionTable.at(o_itp_lra_alg).getIntVal())
                                                                   : ItpAlgorithm::itp_lra_alg_strong;
   }
 
@@ -482,10 +511,10 @@ public:
         optionTable.at(o_grow).getBoolVal() : 0; }
   int sat_clause_lim() const
     { return optionTable.find(o_clause_lim) != optionTable.end() ?
-        optionTable.at(o_clause_lim).getUint32Val() : 20; }
+        optionTable.at(o_clause_lim).getIntVal() : 20; }
   int sat_subsumption_lim() const
     { return optionTable.find(o_subsumption_lim) != optionTable.end() ?
-        optionTable.at(o_subsumption_lim).getUint32Val() : 1000; }
+        optionTable.at(o_subsumption_lim).getIntVal() : 1000; }
   double sat_simp_garbage_frac() const
     { return optionTable.find(o_simp_garbage_frac) != optionTable.end() ?
         optionTable.at(o_simp_garbage_frac).getDoubleVal() : 0.5; }
@@ -511,14 +540,14 @@ public:
              optionTable.at(o_random_var_freq).getDoubleVal() : 0.02; }
   uint32_t sat_random_seed() const {
       return optionTable.find(o_random_seed) != optionTable.end() ?
-             optionTable.at(o_random_seed).getUint32Val() : 91648253; }
+             optionTable.at(o_random_seed).getIntVal() : 91648253; }
   bool sat_luby_restart() const {
       return optionTable.find(o_luby_restart) != optionTable.end() ?
              optionTable.at(o_luby_restart).getBoolVal() : true;
   }
   uint32_t sat_ccmin_mode() const {
       return optionTable.find(o_ccmin_mode) != optionTable.end() ?
-             optionTable.at(o_ccmin_mode).getUint32Val() : 2;
+             optionTable.at(o_ccmin_mode).getIntVal() : 2;
   }
   bool sat_rnd_pol() const {
       return optionTable.find(o_rnd_pol) != optionTable.end() ?
@@ -533,7 +562,7 @@ public:
   }
   uint32_t sat_restart_first() const {
       return optionTable.find(o_restart_first) != optionTable.end() ?
-             optionTable.at(o_restart_first).getUint32Val() : 100; }
+             optionTable.at(o_restart_first).getIntVal() : 100; }
   double sat_restart_inc() const {
       return optionTable.find(o_restart_inc) != optionTable.end() ?
              optionTable.at(o_restart_inc).getDoubleVal() : 1.1;
@@ -552,7 +581,7 @@ public:
   }
   uint32_t simplify_inter() const {
       return optionTable.find(o_simplify_inter) != optionTable.end() ?
-             optionTable.at(o_simplify_inter).getUint32Val() : false;
+             optionTable.at(o_simplify_inter).getIntVal() : false;
   }
   bool proof_struct_hash() const {
       return optionTable.find(o_proof_struct_hash) != optionTable.end() ?
@@ -560,10 +589,10 @@ public:
   }
   uint32_t proof_num_graph_traversals() const {
       return optionTable.find(o_proof_num_graph_traversals) != optionTable.end() ?
-             optionTable.at(o_proof_num_graph_traversals).getUint32Val() : 3; }
+             optionTable.at(o_proof_num_graph_traversals).getIntVal() : 3; }
   uint32_t proof_red_trans() const {
       return optionTable.find(o_proof_red_trans) != optionTable.end() ?
-             optionTable.at(o_proof_red_trans).getUint32Val() : 2;
+             optionTable.at(o_proof_red_trans).getIntVal() : 2;
   }
   bool proof_rec_piv() const {
       return optionTable.find(o_proof_rec_piv) != optionTable.end() ?
@@ -595,18 +624,18 @@ public:
   }
   uint32_t itp_bool_alg() const {
       return optionTable.find(o_itp_bool_alg) != optionTable.end() ?
-             optionTable.at(o_itp_bool_alg).getUint32Val() : 0;
+             optionTable.at(o_itp_bool_alg).getIntVal() : 0;
   }
   uint32_t itp_euf_alg() const
     { return optionTable.find(o_itp_euf_alg) != optionTable.end() ?
-        optionTable.at(o_itp_euf_alg).getUint32Val() : 0;
+        optionTable.at(o_itp_euf_alg).getIntVal() : 0;
   }
   uint32_t itp_lra_alg() const {
       return optionTable.find(o_itp_lra_alg) != optionTable.end() ?
-        optionTable.at(o_itp_lra_alg).getUint32Val() : 0; }
+        optionTable.at(o_itp_lra_alg).getIntVal() : 0; }
   uint32_t sat_dump_rnd_inter() const {
       return optionTable.find(o_sat_dump_rnd_inter) != optionTable.end() ?
-             optionTable.at(o_sat_dump_rnd_inter).getUint32Val() : 2; }
+             optionTable.at(o_sat_dump_rnd_inter).getIntVal() : 2; }
 
     bool declarations_are_global() const {
       return optionTable.find(o_global_declarations) != optionTable.end() ?
@@ -709,7 +738,7 @@ public:
   }
   uint32_t sat_split_num() const {
       return optionTable.find(o_sat_split_num) != optionTable.end() ?
-              optionTable.at(o_sat_split_num).getUint32Val() :
+              optionTable.at(o_sat_split_num).getIntVal() :
               2;
   }
   int sat_split_fixvars() const {
@@ -750,7 +779,7 @@ public:
 
   uint32_t randomize_lookahead_bufsz() const {
       return optionTable.find(o_sat_split_randomize_lookahead_buf) != optionTable.end() ?
-              optionTable.at(o_sat_split_randomize_lookahead_buf).getUint32Val() :
+              optionTable.at(o_sat_split_randomize_lookahead_buf).getIntVal() :
               true;
   }
 
@@ -793,7 +822,7 @@ public:
 
    uint32_t sat_solver_limit() const {
        return optionTable.find(o_sat_solver_limit) != optionTable.end() ?
-              optionTable.at(o_sat_solver_limit).getUint32Val() : 0; }
+              optionTable.at(o_sat_solver_limit).getIntVal() : 0; }
 
     bool sat_split_mode() const {
         return optionTable.find(o_sat_split_mode) != optionTable.end() ?
@@ -808,9 +837,9 @@ public:
   bool         rocset;                       // Regular Output Channel set ?
   bool         docset;                       // Diagnostic Output Channel set ?
   int          dump_formula;                 // Dump input formula
-  bool verbosity() const {           // Verbosity level
+  uint32_t verbosity() const {           // Verbosity level
         return optionTable.find(o_verbosity) != optionTable.end() ?
-               optionTable.at(o_verbosity).getBoolVal() : false;
+               optionTable.at(o_verbosity).getIntVal() : 0;
   }
   bool printSuccess() const {
       return optionTable.find(":print-success") != optionTable.end() ?

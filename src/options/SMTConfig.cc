@@ -79,10 +79,10 @@ void SMTConfig::setOption(std::string const & name, const SMTOption& value) {
     }
 
     if (name == o_random_seed) {
-        if (value.type != ConstType::numeral) {
+        if (value.type != ConstType::integral) {
             throw OsmtApiException(s_err_not_num);
         }
-        uint32_t seed = value.getUint32Val();
+        uint32_t seed = value.getIntVal();
         if (seed == 0) { throw OsmtApiException(s_err_seed_zero); }
     }
 

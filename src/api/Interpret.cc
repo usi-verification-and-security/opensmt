@@ -48,8 +48,7 @@ Interpret::getParsedFormula()
 }
 
 void Interpret::interp(SetInfo const & n) {
-    std::string name = n.getName();
-    config.setInfo(n.getName(), n.getValue());
+    config.setInfo(n.getName(), SMTOption{n.getValue()});
     notify_success();
 }
 
@@ -74,75 +73,83 @@ void Interpret::interp(SetOption const & n) {
         auto val = std::get_if<std::unique_ptr<AttributeNode>>(&n.option->value);
         assert(val);
         assert(*val);
-        config.setOption(*(**val).name, *(**val).value);
+        try {
+            config.setOption(*(**val).name, SMTOption{*(**val).value});
+        } catch (std::out_of_range & e) {
+            notify_formatted(true, "Overflow in %s", opensmt::nodeToString()(*(**val).value).c_str());
+            return;
+        } catch (OsmtApiException & e) {
+            notify_formatted(true, "%s", e.what());
+            return;
+        }
         break;
     }
     case OptionNode::OptionType::DiagnosticOutputChannel: {
         auto val = std::get_if<std::unique_ptr<std::string>>(&n.option->value);
         assert(val);
         assert(*val);
-        config.setOption("diagnostic-output-channel", std::move(**val));
+        config.setOption(":diagnostic-output-channel", SMTOption{std::move(**val)});
         break;
     }
     case OptionNode::OptionType::ExpandDefinitions: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("expand-definitions", *val);
+        config.setOption(":expand-definitions", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::InteractiveMode: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("interactive-mode", *val);
+        config.setOption(":interactive-mode", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::PrintSuccess: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("print-success", *val);
+        config.setOption(":print-success", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::ProduceAssignments: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("produce-assignments", *val);
+        config.setOption(":produce-assignments", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::ProduceModels: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("produce-models", *val);
+        config.setOption(":produce-models", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::ProduceProofs: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("produce-proofs", *val);
+        config.setOption(":produce-proofs", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::ProduceUnsatCores: {
         auto val = std::get_if<bool>(&n.option->value);
         assert(val);
-        config.setOption("produce-unsat-cores", *val);
+        config.setOption(":produce-unsat-cores", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::RandomSeed: {
-        auto val = std::get_if<uint32_t>(&n.option->value);
+        auto val = std::get_if<int>(&n.option->value);
         assert(val);
-        config.setOption("random-seed", *val);
+        config.setOption(":random-seed", SMTOption{*val});
         break;
     }
     case OptionNode::OptionType::RegularOutputChannel: {
         auto val = std::get_if<std::unique_ptr<std::string>>(&n.option->value);
         assert(val);
         assert(*val);
-        config.setOption("regular-output-channel", std::move(**val));
+        config.setOption(":regular-output-channel", SMTOption{std::move(**val)});
         break;
     }
     case OptionNode::OptionType::Verbosity: {
-        auto val = std::get_if<uint32_t>(&n.option->value);
+        auto val = std::get_if<int>(&n.option->value);
         assert(val);
-        config.setOption("verbosity", *val);
+        config.setOption(":verbosity", SMTOption{*val});
         break;
     }
     default:

@@ -34,10 +34,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 
 enum class ConstType {
-    numeral,
+    integral,
     decimal,
     hexadecimal,
-    uint32,
     binary,
     string,
     empty,
@@ -141,10 +140,10 @@ public:
         RegularOutputChannel,
         Verbosity,
     };
-    std::variant<bool,uint32_t,std::unique_ptr<std::string>,std::unique_ptr<AttributeNode>> value;
     OptionType type;
+    std::variant<bool,int,std::unique_ptr<std::string>,std::unique_ptr<AttributeNode>> value;
     OptionNode(OptionType type, bool value) : type(type), value(value) {}
-    OptionNode(OptionType type, uint32_t value) : type(type), value(value) {}
+    OptionNode(OptionType type, int value) : type(type), value(value) {}
     OptionNode(OptionType type, std::unique_ptr<std::string> && value) : type(type), value(std::move(value)) {}
     OptionNode(OptionType type, std::unique_ptr<AttributeNode> && value) : type(type), value(std::move(value)) {}
 };
