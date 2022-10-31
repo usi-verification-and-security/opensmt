@@ -62,7 +62,7 @@ void Interpret::interp(GetInfo const & n) {
     if (value.type == ConstType::empty)
         notify_formatted(true, "no value for info %s", name.c_str());
     else {
-        auto val_str = value.getStringVal();
+        auto val_str = value.toString();
         notify_formatted(false, "%s %s", name.c_str(), val_str.c_str());
     }
 }
