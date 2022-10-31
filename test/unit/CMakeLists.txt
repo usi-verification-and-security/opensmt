@@ -245,11 +245,3 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SATSolverTypes.cc"
 
 target_link_libraries(SATSolverTypesTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SATSolverTypesTest)
-
-add_executable(ParserSymbolsTest)
-target_sources(ParserSymbolsTest
-PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ParserSymbols.cc"
-)
-
-target_link_libraries(ParserSymbolsTest OpenSMT gtest gtest_main)
-gtest_add_tests(TARGET ParserSymbolsTest)
