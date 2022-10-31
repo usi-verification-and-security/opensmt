@@ -209,11 +209,11 @@ public:
             assert(sexprVec_p);
             type = ConstType::sexpr;
             auto const & sexprVec = **sexprVec_p;
-            std::string s;
-            for (SExpr * sexpr_p : sexprVec) {
-                s += "(" + opensmt::nodeToString()(sexpr_p) + ")";
-            }
-            value = s;
+            auto str = std::accumulate(sexprVec.begin(), sexprVec.end(), std::string{},
+                            [](std::string & a, SExpr const * b) {
+                                return a += (a.empty() ? "" : " ") + opensmt::nodeToString()(b);
+                            });
+            value = "(" + str + ")";
         }
     }
     inline bool isEmpty() const { return type == ConstType::empty; }

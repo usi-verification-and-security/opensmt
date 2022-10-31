@@ -15,23 +15,21 @@ quux
 Longer story
 3
 /dev/null
-(error "No value for attr :foo-option")
-
+()
 0
 3.141593
 (error "No value for option :hex")
 
 85
-( foo string 10 4075 1.23 2 ( ( ) bar ( :keyword ) ) )
-(error "No value for attr :non-existing-option")
+(foo string #b1010 #xfeb 1.23 2 (() bar (:keyword)))
+(error "No value for option :non-existing-option")
 
 success
 success
 success
 success
 success
-(error "no value for info :foo")
-
+:foo ()
 :error-behavior commit-adultery
 :name OpenSMT
 :authors Muumi-peikko
