@@ -5,8 +5,7 @@ Opensmt*
 pre()
 {
     auto config = std::unique_ptr<SMTConfig>(new SMTConfig());
-    const char* msg;
-    config->setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config->setOption(SMTConfig::o_produce_inter, SMTOption(true));
     Opensmt* osmt = new Opensmt(opensmt_logic::qf_lra, "test solver", std::move(config));
     return osmt;
 }
@@ -90,8 +89,7 @@ int main()
     {
         printf("unsat\n");
         // Set labeling function
-        const char* msg;
-        c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0), msg);
+        c.setOption(SMTConfig::o_itp_bool_alg, SMTOption(0));
 
         auto itp_context = mainSolver.getInterpolationContext();
         // Create the partitioning mask
