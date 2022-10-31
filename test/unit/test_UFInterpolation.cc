@@ -54,8 +54,7 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(y,z1);
     PTRef eq3 = logic.mkEq(z1,x);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(eq1);
     solver.insertFormula(eq2);
@@ -81,8 +80,7 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(y,z1);
     PTRef eq3 = logic.mkEq(z1,x);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkNot(eq3));
     solver.insertFormula(eq2);
@@ -107,8 +105,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
      */
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(logic.mkUninterpFun(f, {x}), logic.mkUninterpFun(f, {y}));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(eq1);
     solver.insertFormula(logic.mkNot(eq2));
@@ -128,8 +125,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
      */
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(logic.mkUninterpFun(f, {x}), logic.mkUninterpFun(f, {y}));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkNot(eq2));
     solver.insertFormula(eq1);
@@ -151,8 +147,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(g, {x,z2}),z3);
     PTRef eqB1 = logic.mkEq(y,z2);
     PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {z1,y}),z3);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd(eqA1, eqA2));
     solver.insertFormula(logic.mkAnd(eqB1, logic.mkNot(eqB2)));
@@ -180,8 +175,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {x,z2}),z3);
     PTRef eqA1 = logic.mkEq(y,z2);
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(g, {z1,y}),z3);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd(eqA1, logic.mkNot(eqA2)));
     solver.insertFormula(logic.mkAnd(eqB1, eqB2));
@@ -219,8 +213,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     PTRef eqB4 = logic.mkEq(y1,z7);
     PTRef eqB5 = logic.mkEq(z8,y2);
     PTRef eqB6 = logic.mkEq(y1,y2);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, eqA6, eqA7, eqA8}));
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, logic.mkNot(eqB6)}));
@@ -259,8 +252,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     PTRef eqA4 = logic.mkEq(y1,z7);
     PTRef eqA5 = logic.mkEq(z8,y2);
     PTRef eqA6 = logic.mkEq(y1,y2);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, logic.mkNot(eqA6)}));
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, eqB6, eqB7,eqB8}));
@@ -286,8 +278,7 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     PTRef eq = logic.mkEq(x,y);
     PTRef px = logic.mkUninterpFun(p, {x});
     PTRef py = logic.mkUninterpFun(p, {y});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(px);
     solver.insertFormula(eq);
@@ -310,8 +301,7 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     PTRef d = logic.mkConst(ufsort, "d");
     PTRef eqA = logic.mkEq(c,x);
     PTRef eqB = logic.mkEq(x,d);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(eqA);
     solver.insertFormula(eqB);
@@ -337,8 +327,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
     PTRef eqA3 = logic.mkEq(z3,z4);
     PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, dis}));
     solver.insertFormula(logic.mkAnd({eqB1, eqB2}));
@@ -369,8 +358,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
     PTRef eqA3 = logic.mkEq(z3,z4);
     PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3}));
     solver.insertFormula(logic.mkAnd({eqB1, eqB2, dis}));
@@ -432,8 +420,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
         logic.mkNot(logic.mkEq(r1, r2))
     });
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd(eqB1, eqB2));
     solver.insertFormula(A);
@@ -456,8 +443,7 @@ TEST_F(UFInterpolationTest, test_DistinctInA){
     PTRef eqA1 = logic.mkEq(x1,x2);
     PTRef eqA2 = logic.mkEq(x2,x3);
     PTRef deqB = logic.mkDistinct({x1,x4,x3});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(logic.mkAnd(eqA1, eqA2));
     solver.insertFormula(deqB);
@@ -481,8 +467,7 @@ TEST_F(UFInterpolationTest, test_DistinctInB){
     PTRef eqB1 = logic.mkEq(x1,x2);
     PTRef eqB2 = logic.mkEq(x2,x3);
     PTRef deqA = logic.mkDistinct({x1,x4,x3});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "ufinterpolator");
     solver.insertFormula(deqA);
     solver.insertFormula(logic.mkAnd(eqB1, eqB2));

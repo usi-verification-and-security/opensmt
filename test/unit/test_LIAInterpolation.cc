@@ -104,8 +104,7 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
 
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partA = logic.mkAnd(leq1, leq2);
     PTRef partB = leq3;
@@ -138,8 +137,7 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
 
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partB = logic.mkAnd(leq1, leq2);
     PTRef partA = leq3;
@@ -172,8 +170,7 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(two, x), y), two);
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partA = leq1;
     PTRef partB = logic.mkAnd(leq2, leq3);

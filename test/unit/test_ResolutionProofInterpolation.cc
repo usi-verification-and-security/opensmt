@@ -16,8 +16,7 @@ class ResolutionProofInterpolationTest : public ::testing::Test {
 protected:
     ResolutionProofInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("c");
@@ -83,8 +82,7 @@ class ResolutionProofInterpolationTestWithReduction : public ::testing::Test {
 protected:
     ResolutionProofInterpolationTestWithReduction(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
 //        config.setOption(SMTConfig::o_verbosity, SMTOption(2), msg);
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
@@ -134,8 +132,7 @@ class ResolutionProofIncrementalInterpolationTest : public ::testing::Test {
 protected:
     ResolutionProofIncrementalInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("c");
