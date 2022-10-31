@@ -207,9 +207,10 @@ void interpretInteractive(Interpret & interpret) {
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
-                    ASTNode const & r = context.getRoot();
-                    interpret.execute(r);
-                    done = interpret.gotExit();
+                    for (auto command : context.getRoot()) {
+                        if (rval == 0 and not interpret.gotExit()) { interpret.interp(command); }
+                        delete command;
+                    }
                 }
                 add_history(parse_buf);
                 pb_sz = 0;

@@ -159,7 +159,6 @@ class Interpret {
     bool                        storeDefinedFun(std::string const & fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
 
     virtual void                exit();
-    void                        interp(CommandNode const * n);
     void                        interp(SetLogic const & n);
     void                        interp(SetInfo const & n);
     void                        interp(SetOption const & n);
@@ -198,6 +197,7 @@ class Interpret {
         , f_exit     (false)
         { }
 
+    void interp(CommandNode const * n);
     int interpFile(FILE* in);
     int interpFile(char *content);
     int interpPipe();
