@@ -150,44 +150,7 @@ namespace osmttokens {
         {t_let, "let"},
         {t_echo, "echo"}
     };
-    inline const std::unordered_map<std::string, token> nameToToken = {
-        {"none", t_none},
-        {"as", t_as},
-        {"decimal", t_DECIMAL},
-        {"numeral", t_NUMERAL},
-        {"par", t_par},
-        {"string", t_STRING},
-        {"exists", t_exists},
-        {"forall", t_forall},
-        {"assert", t_assert},
-        {"check-sat", t_checksat},
-        {"declare-sort", t_declaresort},
-        {"define-sort", t_definesort},
-        {"declare-fun", t_declarefun},
-        {"declare-const", t_declareconst},
-        {"define-fun", t_definefun},
-        {"exit", t_exit},
-        {"get-assertions", t_getassertions},
-        {"get-assignment", t_getassignment},
-        {"get-info", t_getinfo},
-        {"set-info", t_setinfo},
-        {"get-option", t_getoption},
-        {"set-option", t_setoption},
-        {"get-proof", t_getproof},
-        {"get-unsat-core", t_getunsatcore},
-        {"get-value", t_getvalue},
-        {"get-model", t_getmodel},
-        {"pop", t_pop},
-        {"push", t_push},
-        {"set-logic", t_setlogic},
-        {"get-interpolants", t_getinterpolants},
-        {"theory", t_theory},
-        {"write-state", t_writestate},
-        {"read-state", t_readstate},
-        {"simplify", t_simplify},
-        {"let", t_let},
-        {"echo", t_echo}
-    };
+
     struct smt2token {
         token x;
     };
