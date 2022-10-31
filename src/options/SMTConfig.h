@@ -914,7 +914,6 @@ public:
     static uint16_t database_port;
 
     void setSimplifyInterpolant(int val) {
-        const char* msg;
         setOption(o_simplify_inter, SMTOption(val));
     }
 

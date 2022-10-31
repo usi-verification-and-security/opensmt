@@ -92,7 +92,6 @@ int main( int argc, char * argv[] )
                 //    context.getConfig( ).printHelp( );
                 break;
             case 'd':
-                const char* msg;
                 c.setOption(SMTConfig::o_dryrun, SMTOption(true));
                 break;
             case 'r':

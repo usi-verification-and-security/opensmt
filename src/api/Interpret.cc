@@ -294,7 +294,7 @@ void Interpret::interp(AssertNode const & n) {
     }
 }
 
-void Interpret::interp(Simplify const & n) {
+void Interpret::interp(Simplify const &) {
     if (not isInitialized()) {
         notify_formatted(true, "Illegal command before set-logic: simplify");
         return;
@@ -307,7 +307,7 @@ void Interpret::interp(Simplify const & n) {
     }
 }
 
-void Interpret::interp(CheckSatNode const & n) {
+void Interpret::interp(CheckSatNode const &) {
     if (not isInitialized()) {
         notify_formatted(true, "Illegal command before set-logic: check-sat");
         return;
@@ -408,7 +408,7 @@ private:
 };
 }
 
-void Interpret::interp(GetModel const & n) {
+void Interpret::interp(GetModel const &) {
     if (not isInitialized()) {
         notify_formatted(true, "Illegal command before set-logic: get-model");
         return;
@@ -491,7 +491,7 @@ void Interpret::interp(PopNode const & n) {
     }
 }
 
-void Interpret::interp(Exit const & n) {
+void Interpret::interp(Exit const &) {
     exit();
     notify_success();
 }
@@ -673,10 +673,10 @@ PTRef Interpret::parseTerm(NormalTermNode const * term, LetRecords & letRecords)
     }
 }
 
-PTRef Interpret::parseTerm(ForallNode const * term, LetRecords & letRecords) {
+PTRef Interpret::parseTerm(ForallNode const *, LetRecords &) {
     return PTRef_Undef;
 }
-PTRef Interpret::parseTerm(ExistsNode const * term, LetRecords & letRecords) {
+PTRef Interpret::parseTerm(ExistsNode const *, LetRecords &) {
     return PTRef_Undef;
 }
 
@@ -684,7 +684,7 @@ PTRef Interpret::parseTerm(ExistsNode const * term, LetRecords & letRecords) {
 
 
 
-void Interpret::interp(GetAssignment const & getAssignment) {
+void Interpret::interp(GetAssignment const &) {
     if (not isInitialized()) {
        notify_formatted(true, "Illegal command before set-logic");
     }
