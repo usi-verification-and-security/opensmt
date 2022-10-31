@@ -679,9 +679,11 @@ PTRef Interpret::parseTerm(NormalTermNode const * term, LetRecords & letRecords)
 }
 
 PTRef Interpret::parseTerm(ForallNode const *, LetRecords &) {
+    throw OsmtApiException("Forall not implemented");
     return PTRef_Undef;
 }
 PTRef Interpret::parseTerm(ExistsNode const *, LetRecords &) {
+    throw OsmtApiException("Exists not implemented");
     return PTRef_Undef;
 }
 
