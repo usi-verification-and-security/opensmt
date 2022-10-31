@@ -188,6 +188,7 @@ class Interpret {
     PTRef                       resolveQualifiedIdentifier(std::string const & name, SortNode const & sort, bool isQuoted);
     SRef sortFromSortNode(SortNode const & node) const;
 
+    virtual sstat checkSat();
     virtual std::unique_ptr<MainSolver>   createMainSolver(std::string const & logic_name);
 
   public:

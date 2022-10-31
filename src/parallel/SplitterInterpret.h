@@ -18,6 +18,7 @@ private:
 
   protected:
     void                          writeSplits(std::string const & filename);
+    std::unique_ptr<MainSolver>   createMainSolver(std::string const & logic_name) override;
     sstat                         checkSat()                               override;
     void                          exit()                                   override  { return; }
 
