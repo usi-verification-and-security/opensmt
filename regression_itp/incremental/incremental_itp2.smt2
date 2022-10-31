@@ -1,4 +1,4 @@
-(set-option :produce-interpolants 1)
+(set-option :produce-interpolants true)
 (set-logic QF_LRA)
 (declare-fun a () Real)
 (assert (!

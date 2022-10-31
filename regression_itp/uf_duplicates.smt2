@@ -1,5 +1,5 @@
-(set-option :produce-interpolants 1)
-(set-option :certify-interpolants 1)
+(set-option :produce-interpolants true)
+(set-option :certify-interpolants true)
 (set-logic QF_UF)
 (declare-sort Real 0)
 (declare-fun .uf-not () Bool)
