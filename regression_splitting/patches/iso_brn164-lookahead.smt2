@@ -1,5 +1,5 @@
 0a1
-> (set-option :lookahead-split)
+> (set-option :lookahead-split true)
 5a7,12
 > 
 > (set-option :split-num 16)

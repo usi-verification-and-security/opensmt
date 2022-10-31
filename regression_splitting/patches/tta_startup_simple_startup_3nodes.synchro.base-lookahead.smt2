@@ -1,5 +1,5 @@
 0a1,6
-> (set-option :lookahead-split)
+> (set-option :lookahead-split true)
 > (set-option :split-num 64)
 > (set-option :output-dir "splits_here")
 > (set-option :test_cube_and_conquer true)
