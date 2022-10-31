@@ -736,7 +736,7 @@ public:
               optionTable.at(o_sat_split_midtune).getDoubleVal() :
               -1;
   }
-  uint32_t sat_split_num() const {
+  int sat_split_num() const {
       return optionTable.find(o_sat_split_num) != optionTable.end() ?
               optionTable.at(o_sat_split_num).getIntVal() :
               2;
