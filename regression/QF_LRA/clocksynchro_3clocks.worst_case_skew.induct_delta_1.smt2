@@ -1,4 +1,4 @@
-(set-option :ghost-vars 1)
+(set-option :ghost-vars true)
 (set-logic QF_LRA)
 (declare-fun v17 () Real)
 (declare-fun v23 () Real)

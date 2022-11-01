@@ -92,20 +92,17 @@ int main( int argc, char * argv[] )
                 //    context.getConfig( ).printHelp( );
                 break;
             case 'd':
-                const char* msg;
-                c.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_dryrun, SMTOption(true));
                 break;
             case 'r':
-                if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
-                    fprintf(stderr, "Error setting random seed: %s\n", msg);
-                else
-                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)));
+                fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             case 'i':
-                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_produce_inter, SMTOption(true));
                 break;
             case 'v':
-                c.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_verbosity, SMTOption(true));
                 break;
             case 'p':
                 pipe = true;
@@ -145,6 +142,9 @@ int main( int argc, char * argv[] )
                 opensmt_error( "SMTLIB 1.2 format is not supported in this version, sorry" );
             }
             else if ( extension != NULL && strcmp( extension, ".smt2" ) == 0 ) {
+                std::filebuf fb;
+                fb.open(filename, std::ios::in);
+                std::istream is(&fb);
                 interpreter.interpFile(fin);
             }
             else
@@ -203,13 +203,14 @@ void interpretInteractive(Interpret & interpret) {
                 // Parsing should be done from a string that I get from the readline
                 // library.
                 Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
+                int rval = yyparse(&context);
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
-                    const ASTNode* r = context.getRoot();
-                    interpret.execute(r);
-                    done = interpret.gotExit();
+                    for (auto command : context.getRoot()) {
+                        if (rval == 0 and not interpret.gotExit()) { interpret.interp(command); }
+                        delete command;
+                    }
                 }
                 add_history(parse_buf);
                 pb_sz = 0;

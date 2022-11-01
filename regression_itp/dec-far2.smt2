@@ -1,7 +1,7 @@
 (set-option :produce-interpolants true)
-(set-option :certify-interpolants 1)
+(set-option :certify-interpolants true)
 (set-logic QF_LRA)
-(set-option :interpolation-lra-algorithm 4) ; decomposed Farkas
+(set-option :interpolation-lra-algorithm 11) ; decomposed Farkas
 (declare-fun x1 () Real)
 (declare-fun x2 () Real)
 (declare-fun x3 () Real)

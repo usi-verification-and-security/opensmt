@@ -12,7 +12,7 @@
  * Usage: Parallel solver
  ***********************************************************/
 
-void SplitterInterpret::writeSplits(const char* filename)
+void SplitterInterpret::writeSplits(std::string const & filename)
 {
     try {
         dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
@@ -26,9 +26,12 @@ sstat SplitterInterpret::checkSat() {
     if (not search)
         return s_Undef;
 
-    char* name = config.dump_state();
+    auto name = config.dump_state();
     sstat res = Interpret::checkSat();
-    if (res == s_Undef and strcmp(config.output_dir(),"") != 0) {
+    if (res == s_Undef) {
+        if (not config.output_dir().empty()) {
+            name = config.output_dir().append(name, name.rfind('/'), std::string::npos);
+        }
         writeSplits(name);
     }
     return res;
@@ -46,7 +49,7 @@ sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,i
         return getMainSplitter().getStatus();
 }
 
-std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logic_name) {
+std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(std::string const & logic_name) {
     if (config.sat_split_type() != spt_none) {
         auto th = MainSolver::createTheory(*logic, config);
         auto tm = std::make_unique<TermMapper>(*logic);
@@ -58,10 +61,7 @@ std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logi
                                               *logic,
                                               config,
                                               std::string(logic_name)
-                                              + " splitter");
+                                                  + " splitter");
     } else
         return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
 }
-
-
-

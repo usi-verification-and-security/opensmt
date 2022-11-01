@@ -104,8 +104,7 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
 
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partA = logic.mkAnd(leq1, leq2);
     PTRef partB = leq3;
@@ -138,8 +137,7 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
 
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partB = logic.mkAnd(leq1, leq2);
     PTRef partA = leq3;
@@ -172,8 +170,7 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(two, x), y), two);
     PTRef leq3 = logic.mkLeq(y, one);
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
     MainSolver solver(logic, config, "test");
     PTRef partA = leq1;
     PTRef partB = logic.mkAnd(leq2, leq3);
@@ -189,12 +186,12 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
-    config.setBooleanInterpolationAlgorithm(itp_alg_pudlak);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_pudlak);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillanp);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillanp);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));

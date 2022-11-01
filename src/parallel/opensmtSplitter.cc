@@ -81,17 +81,14 @@ int main( int argc, char * argv[] )
                 //    context.getConfig( ).printHelp( );
                 break;
             case 'd':
-                const char* msg;
-                c.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_dryrun, SMTOption(true));
                 break;
             case 'r':
-                if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
-                    fprintf(stderr, "Error setting random seed: %s\n", msg);
-                else
-                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)));
+                fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             case 'i':
-                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                c.setOption(SMTConfig::o_produce_inter, SMTOption(true));
                 break;
             case 'p':
                 pipe = true;
@@ -189,13 +186,14 @@ void interpretInteractive(SplitterInterpret & interpret) {
                 // Parsing should be done from a string that I get from the readline
                 // library.
                 Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
+                int rval = yyparse(&context);
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
-                    const ASTNode* r = context.getRoot();
-                    interpret.execute(r);
-                    done = interpret.gotExit();
+                    for (auto command : context.getRoot()) {
+                        if (rval == 0 and not interpret.gotExit()) { interpret.interp(command); }
+                        delete command;
+                    }
                 }
                 add_history(parse_buf);
                 pb_sz = 0;

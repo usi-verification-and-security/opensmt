@@ -1,4 +1,4 @@
-(set-option :produce-interpolants 1)
+(set-option :produce-interpolants true)
 (set-logic QF_LIA)
 (declare-fun x () Int)
 (declare-fun y () Int)

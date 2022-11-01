@@ -25,38 +25,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 %define api.pure
+%lex-param { void * myScanner }
 %define parse.error verbose
-%name-prefix "smt2new"
+%code provides
+{
+  // Tell Flex the expected prototype of yylex.
+  //#define YY_DECL int smt2newlex (SMT2NEWSTYPE *yylval, SMT2NEWLTYPE *yylloc)
+  // Declare the scanner.
+  //YY_DECL;
+
+  int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, void * myScanner);
+
+  inline void yyerror(YYLTYPE* locp, Smt2newContext* context, const char * s ) {
+    if (context->interactive)
+      printf("At interactive input: %s\n", s);
+    else
+      printf("At line %d: %s\n", locp->first_line, s);
+  }
+
+  #define myScanner context->scanner
+}
+
 %locations
 %defines
 %parse-param { Smt2newContext* context }
-%lex-param { void* scanner }
 
 %{
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <vector>
-#include <list>
 #include <string>
-#include <string.h>
 
 #include "smt2newcontext.h"
-#include "smt2newparser.hh"
 #include "smt2tokens.h"
 
-int smt2newlex(YYSTYPE* lvalp, YYLTYPE* llocp, void* scanner);
+std::unique_ptr<std::string> mkUniqueStr(std::string const & s) { return std::make_unique<std::string>(s); }
 
-void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
-{
-  if (context->interactive)
-    printf("At interactive input: %s\n", s);
-  else
-    printf( "At line %d: %s\n", locp->first_line, s );
-//  exit( 1 );
-}
-
-#define scanner context->scanner
 
 /* Overallocation to prevent stack overflow */
 #define YYMAXDEPTH 1024 * 1024
@@ -64,439 +69,325 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 
 %union
 {
-  char  *                      str;
-  ASTNode *                    snode;
-  std::vector< ASTNode * > *   snode_list;
-  osmttokens::smt2token        tok;
+  SortNode * n_sort;
+  IdentifierNode * n_identifier;
+  QualIdentifierNode * n_qualIdentifier;
+  VarBindingNode * n_varBinding;
+  std::vector<std::unique_ptr<VarBindingNode>> * n_varBindingList;
+  std::vector<SortNode*> * n_sortList;
+  std::vector<std::unique_ptr<std::string>> * n_numeralList;
+  AttributeNode * n_attribute;
+  AttributeValueNode * n_attributeValue;
+  SpecConstNode * n_specConst;
+  SExpr * sexpr;
+  SymbolNode * n_symbol;
+  CommandNode * n_command;
+  TermNode * n_term;
+  SortedVarNode * n_sortedVar;
+  std::vector<std::unique_ptr<SortedVarNode>> * n_sortedVarList;
+  std::vector<TermNode*> * n_termList;
+  std::vector<std::unique_ptr<AttributeNode>> * n_attributeList;
+  std::vector<CommandNode *> * n_commandList;
+  std::vector<std::unique_ptr<SymbolNode>> * n_symbolList;
+  std::vector<SExpr*> * sexpr_list;
+  std::string * str;
+  bool n_bool;
+  OptionNode * n_option;
+  osmttokens::smt2token tok;
 }
 
-%destructor { free($$); } <str>
-%destructor { delete $$; } <snode>
-%destructor { if ($$) { for (auto node : *$$) { delete node; } delete $$; }} <snode_list>
-
+%destructor { delete $$; } <n_attributeValue>
+%destructor { delete $$; } <n_attribute>
+%destructor { delete $$; } <n_attributeList>
+%destructor { delete $$; } <n_command>
+%destructor { for (CommandNode * n : *$$) { delete n; }; delete $$; } <n_commandList>
+%destructor { delete $$; } <n_identifier>
+%destructor { delete $$; } <n_numeralList>
+%destructor { delete $$; } <n_qualIdentifier>
+%destructor { delete $$; } <n_option>
+%destructor { delete $$; } <n_sort>
+%destructor { delete $$; } <n_sortedVar>
+%destructor { delete $$; } <n_sortedVarList>
+%destructor { for (SortNode * n : *$$) { delete n; }; delete $$; } <n_sortList>
+%destructor { delete $$; } <n_specConst>
+%destructor { delete $$; } <n_symbol>
+%destructor { delete $$; } <n_symbolList>
+%destructor { delete $$; } <n_term>
+%destructor { for (TermNode * n : *$$) { delete n; }; delete $$; } <n_termList>
+%destructor { delete $$->term; delete $$; } <n_varBinding>
+%destructor { delete $$; } <n_varBindingList>
+%destructor { delete $$; } <sexpr>
+%destructor { for (SExpr * n : *$$) { delete n; }; delete $$; } <sexpr_list>
+%destructor { delete $$; } <str>
 
 %token TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %token TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
-%token TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%token TK_INT TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %token KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS
 
 %type <tok> TK_AS TK_DECIMAL TK_EXISTS TK_FORALL TK_LET TK_NUMERAL TK_PAR TK_STRING
 %type <tok> TK_ASSERT TK_CHECKSAT TK_DECLARESORT TK_DECLAREFUN TK_DECLARECONST TK_DEFINESORT TK_DEFINEFUN TK_EXIT TK_GETASSERTIONS TK_GETASSIGNMENT TK_GETINFO TK_GETOPTION TK_GETPROOF TK_GETUNSATCORE TK_GETVALUE TK_GETMODEL TK_POP TK_PUSH TK_SETLOGIC TK_SETINFO TK_SETOPTION TK_THEORY TK_GETITPS TK_WRSTATE TK_RDSTATE TK_SIMPLIFY TK_WRFUNS TK_ECHO
 
-%type <str> TK_NUM TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
+%type <str> TK_INT TK_SYM TK_QSYM TK_KEY TK_STR TK_DEC TK_HEX TK_BIN
 %type <str> KW_SORTS KW_FUNS KW_SORTSDESCRIPTION KW_FUNSDESCRIPTION KW_DEFINITION KW_NOTES KW_THEORIES KW_EXTENSIONS KW_VALUES KW_PRINTSUCCESS KW_EXPANDDEFINITIONS KW_INTERACTIVEMODE KW_PRODUCEPROOFS KW_PRODUCEUNSATCORES KW_PRODUCEMODELS KW_PRODUCEASSIGNMENTS KW_REGULAROUTPUTCHANNEL KW_DIAGNOSTICOUTPUTCHANNEL KW_RANDOMSEED KW_VERBOSITY KW_ERRORBEHAVIOR KW_NAME KW_NAMED KW_AUTHORS KW_VERSION KW_STATUS KW_REASONUNKNOWN KW_ALLSTATISTICS predef_key
-%type <snode> symbol identifier sort command attribute attribute_value s_expr spec_const qual_identifier var_binding sorted_var term const_val
-%type <snode_list> sort_list command_list s_expr_list numeral_list term_list var_binding_list attribute_list sorted_var_list symbol_list
-%type <snode> b_value option info_flag
+%type <n_sort> sort
+%type <n_identifier> identifier
+%type <n_qualIdentifier> qual_identifier
+%type <n_varBinding> var_binding
+%type <n_term> term
+%type <n_sortedVar> sorted_var
+%type <n_command> command
+%type <n_symbol> symbol const_val
+%type <sexpr> s_expr
+%type <n_specConst> spec_const
+%type <n_attribute> attribute
+%type <n_attributeValue> attribute_value
+%type <n_sortList> sort_list
+%type <n_varBindingList> var_binding_list
+%type <n_termList> term_list
+%type <n_attributeList> attribute_list
+%type <n_sortedVarList> sorted_var_list
+%type <n_symbolList> symbol_list
+%type <n_commandList> command_list
+%type <sexpr_list> s_expr_list
+%type <n_numeralList> numeral_list
+%type <n_bool> b_value
+%type <str> info_flag
+%type <n_option> option
 
 %start script
 
 %%
 
-script: command_list { ASTNode *n = new ASTNode(CMDL_T, strdup("main-script")); n->children = $1; context->insertRoot(n); };
+script: command_list { context->insertRoot(std::unique_ptr<std::vector<CommandNode*>>($1)); };
 
 symbol: TK_SYM
-        { $$ = new ASTNode(SYM_T, $1); }
+        { $$ = new SymbolNode {{}, {std::unique_ptr<std::string>($1)}, false}; }
     | TK_QSYM
-        { $$ = new ASTNode(QSYM_T, $1); }
+        { $$ = new SymbolNode {{}, {std::unique_ptr<std::string>($1)}, true}; }
     ;
 
 command_list:
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<CommandNode*>(); }
     | command_list command
-        { (*$1).push_back($2); $$ = $1; }
+        { (*$1).emplace_back($2); $$ = $1; }
     ;
 
 command: '(' TK_SETLOGIC symbol ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-        }
+        { $$ = new SetLogic {std::unique_ptr<SymbolNode>($3)}; }
     | '(' TK_SETOPTION option ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-        }
+        { $$ = new SetOption {std::unique_ptr<OptionNode>($3)}; }
     | '(' TK_SETINFO attribute ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-        }
-    | '(' TK_DECLARESORT symbol TK_NUM ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-            $$->children->push_back(new ASTNode(NUM_T, $4));
-        }
+        { $$ = new SetInfo {std::unique_ptr<AttributeNode>($3)}; }
+    | '(' TK_DECLARESORT symbol TK_INT ')'
+        { $$ = new DeclareSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::string>($4)}; }
     | '(' TK_DEFINESORT symbol '(' symbol_list ')' sort ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-
-            ASTNode* syml = new ASTNode(SYML_T, NULL);
-            syml->children = $5;
-            $$->children->push_back(syml);
-
-            $$->children->push_back($7);
-        }
-
+        { $$ = new DefineSort {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SymbolNode>>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLAREFUN symbol '(' sort_list ')' sort ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-
-            ASTNode* sortl = new ASTNode(SORTL_T, NULL);
-            sortl->children = $5;
-            $$->children->push_back(sortl);
-
-            $$->children->push_back($7);
-        }
+        { $$ = new DeclareFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<SortNode*>>($5), std::unique_ptr<SortNode>($7)}; }
     | '(' TK_DECLARECONST const_val sort ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-
-            ASTNode* sortl = new ASTNode(SORTL_T, NULL);
-            sortl->children = new std::vector<ASTNode*>();
-            $$->children->push_back(sortl);
-
-            $$->children->push_back($4);
-        }
+        { $$ = new DeclareConst {std::unique_ptr<SymbolNode>($3), std::unique_ptr<SortNode>($4)}; }
     | '(' TK_DEFINEFUN symbol '(' sorted_var_list ')' sort term ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-
-            ASTNode* svl = new ASTNode(SVL_T, NULL);
-            svl->children = $5;
-            $$->children->push_back(svl);
-
-            $$->children->push_back($7);
-            $$->children->push_back($8);
-        }
-    | '(' TK_PUSH TK_NUM ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(NUM_T, $3));
-        }
-    | '(' TK_POP TK_NUM ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(NUM_T, $3));
-        }
+        { $$ = new DefineFun {std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($5), std::unique_ptr<SortNode>($7), std::unique_ptr<TermNode>($8)}; }
+    | '(' TK_PUSH TK_INT ')'
+        { $$ = new PushNode {std::stoi(*$3)}; delete $3; }
+    | '(' TK_POP TK_INT ')'
+        { $$ = new PopNode {std::stoi(*$3)}; delete $3; }
     | '(' TK_ASSERT term ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-        }
+        { $$ = new AssertNode{std::unique_ptr<TermNode>($3)}; }
     | '(' TK_CHECKSAT ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
+        { $$ = new CheckSatNode(); }
     | '(' TK_GETASSERTIONS ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
+        { $$ = new GetAssertions(); }
     | '(' TK_GETPROOF ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
+        { $$ = new GetProof() ; }
     | '(' TK_GETITPS term_list ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = $3;
-        }
-    | '(' TK_WRSTATE TK_STR ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(UATTR_T, $3));
-        }
-    | '(' TK_RDSTATE TK_STR ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(UATTR_T, $3));
-        }
-    | '(' TK_WRFUNS TK_STR ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(UATTR_T, $3));
-        }
+        { $$ = new GetInterpolants {std::unique_ptr<std::vector<TermNode*>>($3)}; }
     | '(' TK_GETUNSATCORE ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
-    | '(' TK_GETVALUE '(' term term_list ')' ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = $5;
-            $$->children->insert($$->children->begin(), $4);
-        }
+        { $$ = new GetUnsatCore(); }
+    | '(' TK_GETVALUE '(' term_list ')' ')'
+        { $$ = new GetValue {std::unique_ptr<std::vector<TermNode*>>($4)}; }
     | '(' TK_GETMODEL ')'
-            {
-                $$ = new ASTNode(CMD_T, $2);
-            }
+            { $$ = new GetModel(); }
     | '(' TK_GETASSIGNMENT ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
+        { $$ = new GetAssignment(); }
     | '(' TK_GETOPTION TK_KEY ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(UATTR_T, $3));
-        }
+        { $$ = new GetOption{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETOPTION predef_key ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(PATTR_T, $3));
-        }
+        { $$ = new GetOption{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_GETINFO info_flag ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-        }
+        { $$ = new GetInfo{ std::unique_ptr<std::string>($3) }; }
     | '(' TK_SIMPLIFY ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-        }
+        { $$ = new Simplify(); }
     | '(' TK_EXIT ')'
-        { $$ = new ASTNode(CMD_T, $2); }
+        { $$ = new Exit(); }
     | '(' TK_ECHO TK_STR ')'
-        {
-            $$ = new ASTNode(CMD_T, $2);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(UATTR_T, $3));
-        }
+        { $$ = new Echo{ std::unique_ptr<std::string>($3) }; }
     ;
 
 attribute_list:
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<std::unique_ptr<AttributeNode>>(); }
     | attribute_list attribute
-        { $1->push_back($2); $$ = $1; }
+        { $1->emplace_back(std::move($2)); $$ = $1; }
     ;
 
 attribute: TK_KEY
-        { $$ = new ASTNode(UATTR_T, $1); }
+        { $$ = new AttributeNode { {}, false, std::unique_ptr<std::string>($1), std::make_unique<AttributeValueNode>(std::make_unique<std::vector<SExpr*>>()) }; }
     | TK_KEY attribute_value
-        { $$ = new ASTNode(UATTR_T, $1); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($2); }
+        { $$ = new AttributeNode { {}, false, std::unique_ptr<std::string>($1), std::unique_ptr<AttributeValueNode>($2) }; }
     | predef_key
-        { $$ = new ASTNode(PATTR_T, $1); }
+        { $$ = new AttributeNode { {}, true, std::unique_ptr<std::string>($1), std::make_unique<AttributeValueNode>(std::make_unique<std::vector<SExpr*>>()) }; }
     | predef_key attribute_value
-        { $$ = new ASTNode(PATTR_T, $1); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($2); }
+        { $$ = new AttributeNode { {}, true, std::unique_ptr<std::string>($1), std::unique_ptr<AttributeValueNode>($2) }; }
     ;
 
 attribute_value: spec_const
-        { $$ = new ASTNode(SPECC_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
+        { $$ = new AttributeValueNode(std::unique_ptr<SpecConstNode>($1)); }
     | symbol
-        {
-            $$ = $1;
-        }
+        { $$ = new AttributeValueNode(std::unique_ptr<SymbolNode>($1)); }
     | '(' s_expr_list ')'
-        {
-            $$ = new ASTNode(SEXPRL_T, NULL);
-            $$->children = $2;
-        }
+        { $$ = new AttributeValueNode(std::unique_ptr<std::vector<SExpr*>>($2)); }
     ;
 
 identifier: symbol
-        { $$ = $1; }
+        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($1), {}}; }
     | '(' '_' symbol numeral_list ')'
-        { $$ = $3; $$->children = $4; }
+        { $$ = new IdentifierNode {{}, std::unique_ptr<SymbolNode>($3), std::unique_ptr<std::vector<std::unique_ptr<std::string>>>($4)}; }
     ;
 
 sort: identifier
-      { $$ = $1; }
-    | '(' identifier sort sort_list ')'
+      { $$ = new SortNode {{}, std::unique_ptr<IdentifierNode>($1), std::make_unique<std::vector<SortNode*>>()}; }
+    | '(' identifier sort_list sort ')'
       {
-        $$ = new ASTNode(LID_T, NULL);
-        $$->children = $4;
-        $$->children->insert($$->children->begin(), $3);
-        $$->children->insert($$->children->begin(), $2);
+        $3->push_back($4);
+        $$ = new SortNode {{}, std::unique_ptr<IdentifierNode>($2), std::unique_ptr<std::vector<SortNode*>>($3)};
       }
     ;
 
 sort_list: sort_list sort
-        { $1->push_back($2); $$ = $1; }
+        { $1->emplace_back($2); $$ = $1; }
     |
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<SortNode*>(); }
     ;
 
 s_expr: spec_const
-        {
-            $$ = new ASTNode(SPECC_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($1);
-        }
+        { $$ = new SExpr{{}, std::unique_ptr<SpecConstNode>($1)}; }
     | symbol
-        {
-            $$ = $1;
-        }
+        { $$ = new SExpr{{}, std::unique_ptr<SymbolNode>($1)}; }
     | TK_KEY
-        {
-            $$ = new ASTNode(UATTR_T, $1);
-        }
+        { $$ = new SExpr{{}, std::unique_ptr<std::string>($1)}; }
     | '(' s_expr_list ')'
-        {
-            $$ = new ASTNode(SEXPRL_T, NULL);
-            $$->children = $2;
-        }
+        { $$ = new SExpr{{}, std::unique_ptr<std::vector<SExpr*>>($2)}; }
     ;
 
 s_expr_list:
-        {
-            $$ = new std::vector<ASTNode*>();
-        }
+        { $$ = new std::vector<SExpr*>(); }
     | s_expr_list s_expr
         {
-            $1->push_back($2);
+            $1->emplace_back($2);
             $$ = $1;
         }
     ;
 
 
-spec_const: TK_NUM
-        { $$ = new ASTNode(NUM_T, $1); }
+spec_const: TK_INT
+        { $$ = new SpecConstNode{{}, ConstType::integral, std::unique_ptr<std::string>($1)}; }
     | TK_DEC
-        { $$ = new ASTNode(DEC_T, $1); }
+        { $$ = new SpecConstNode{{}, ConstType::decimal, std::unique_ptr<std::string>($1)}; }
     | TK_HEX
-        { $$ = new ASTNode(HEX_T, $1); }
+        { $$ = new SpecConstNode{{}, ConstType::hexadecimal, std::unique_ptr<std::string>($1)}; }
     | TK_BIN
-        { $$ = new ASTNode(BIN_T, $1); }
+        { $$ = new SpecConstNode{{}, ConstType::binary, std::unique_ptr<std::string>($1)}; }
     | TK_STR
-        { $$ = new ASTNode(STR_T, $1); }
+        { $$ = new SpecConstNode{{}, ConstType::string, std::unique_ptr<std::string>($1)}; }
     ;
 
 const_val: symbol
         { $$ = $1; }
     | spec_const
-        { $$ = $1; }
+        { $$ = new SymbolNode {{}, std::unique_ptr<SpecConstNode>($1), false}; }
     ;
 
-numeral_list: numeral_list TK_NUM
-        { $1->push_back(new ASTNode(NUM_T, $2)); $$ = $1; }
-    | TK_NUM
-        { $$ = new std::vector<ASTNode*>(); $$->push_back(new ASTNode(NUM_T, $1)); }
+numeral_list: numeral_list TK_INT
+        { $1->emplace_back(std::unique_ptr<std::string>($2)); }
+    | TK_INT
+        { $$ = new std::vector<std::unique_ptr<std::string>>(); $$->emplace_back(std::unique_ptr<std::string>{$1});  }
     ;
 
 qual_identifier: identifier
-        { $$ = $1; }
+        { $$ = new QualIdentifierNode {{}, std::unique_ptr<IdentifierNode>($1)}; }
     | '(' TK_AS identifier sort ')'
-        {
-            $$ = new ASTNode(AS_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-            $$->children->push_back($4);
-        }
+        { $$ = new QualIdentifierNode {{}, std::unique_ptr<IdentifierNode>($3), std::unique_ptr<SortNode>($4)}; }
     ;
 
-var_binding_list:
-        { $$ = new std::vector<ASTNode*>(); }
+var_binding_list: var_binding
+        { $$ = new std::vector<std::unique_ptr<VarBindingNode>>; $$->push_back(std::unique_ptr<VarBindingNode>($1)); }
     | var_binding_list var_binding
-        { $1->push_back($2); $$ = $1; }
+        { $1->emplace_back(std::unique_ptr<VarBindingNode>($2)); $$ = $1; }
     ;
 
 var_binding: '(' symbol term ')'
-        { $$ = new ASTNode(VARB_T, strdup($2->getValue())); delete $2; $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
+        { $$ = new VarBindingNode { {}, std::unique_ptr<SymbolNode>($2), $3 }; }
     ;
 
 sorted_var_list:
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<std::unique_ptr<SortedVarNode>>(); }
     | sorted_var_list sorted_var
-        { $1->push_back($2); $$ = $1; }
+        { $1->emplace_back(std::unique_ptr<SortedVarNode>($2)); $$ = $1; }
     ;
 
 sorted_var: '(' symbol sort ')'
-        { $$ = new ASTNode(SV_T, strdup($2->getValue())); delete $2; $$->children = new std::vector<ASTNode*>(); $$->children->push_back($3); }
+        { $$ = new SortedVarNode {{}, std::unique_ptr<SymbolNode>($2), std::unique_ptr<SortNode>($3)}; }
 
 term_list:
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<TermNode*>(); }
     | term_list term
-        { $1->push_back($2); $$ = $1; }
+        { $1->emplace_back($2); $$ = $1; }
     ;
 
 term: spec_const
-        { $$ = new ASTNode(TERM_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
+        { $$ = new NormalTermNode {{}, std::unique_ptr<SpecConstNode>($1), nullptr}; }
     | qual_identifier
-        { $$ = new ASTNode(QID_T, NULL); $$->children = new std::vector<ASTNode*>(); $$->children->push_back($1); }
-    | '(' qual_identifier term term_list ')'
+        { $$ = new NormalTermNode {{}, std::unique_ptr<IdentifierNode>($1->identifier.release()), std::unique_ptr<SortNode>($1->returnSort.release())}; delete $1; }
+    | '(' qual_identifier term_list term ')'
         {
-            $$ = new ASTNode(LQID_T, NULL);
-            $$->children = $4;
-            $$->children->insert($$->children->begin(), $3);
-            $$->children->insert($$->children->begin(), $2);
+            $3->push_back($4);
+            $$ = new NormalTermNode {{std::unique_ptr<std::vector<TermNode*>>($3)}, std::unique_ptr<IdentifierNode>($2->identifier.release()), std::unique_ptr<SortNode>($2->returnSort.release())};
+            delete $2;
         }
-    | '(' TK_LET '(' var_binding var_binding_list ')' term ')'
-        {
-            $$ = new ASTNode(LET_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $5->insert($5->begin(), $4);
-            ASTNode* vbl = new ASTNode(VARBL_T, NULL);
-            vbl->children = $5;
-            $$->children->push_back(vbl);
-            $$->children->push_back($7);
-        }
-    | '(' TK_FORALL '(' sorted_var sorted_var_list ')' term ')'
-        {
-            $$ = new ASTNode(FORALL_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $5->insert($5->begin(), $4);
-            ASTNode* svl = new ASTNode(SVL_T, NULL);
-            svl->children = $5;
-            $$->children->push_back(svl);
-            $$->children->push_back($7);
-        }
-    | '(' TK_EXISTS '(' sorted_var sorted_var_list ')' term ')'
-        {
-            $$ = new ASTNode(EXISTS_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $5->insert($5->begin(), $4);
-            ASTNode* svl = new ASTNode(SVL_T, NULL);
-            svl->children = $5;
-            $$->children->push_back(svl);
-            $$->children->push_back($7);
-        }
-    | '(' '!' term attribute attribute_list ')'
-        {
-            $$ = new ASTNode(BANG_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($3);
-            ASTNode *atrs = new ASTNode(GATTRL_T, NULL);
-            $5->insert($5->begin(), $4);
-            atrs->children = $5;
-            $$->children->push_back(atrs);
-        }
+    | '(' TK_LET '(' var_binding_list ')' term ')'
+        { $$ = new LetTermNode {$6, std::unique_ptr<std::vector<std::unique_ptr<VarBindingNode>>>($4)};   }
+    | '(' TK_FORALL '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
+        { $$ = new ForallNode {$6, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($4)}; }
+    | '(' TK_EXISTS '(' sorted_var_list ')' term ')' // todo: AST traversal must ensure that sorted_var_list is non-empty
+        { $$ = new ExistsNode {$6, std::unique_ptr<std::vector<std::unique_ptr<SortedVarNode>>>($4)}; }
+    | '(' '!' term attribute_list ')' // todo: AST traversal must ensure that attribute_list is non-empty
+        { $$ = new AnnotationNode {$3, std::unique_ptr<std::vector<std::unique_ptr<AttributeNode>>>($4)}; }
     ;
 
 symbol_list:
-        { $$ = new std::vector<ASTNode*>(); }
+        { $$ = new std::vector<std::unique_ptr<SymbolNode>>(); }
     | symbol_list symbol
-        { $1->push_back($2); $$ = $1; }
+        { $1->push_back(std::unique_ptr<SymbolNode>($2)); $$ = $1; }
     ;
 
 b_value: symbol
         {
-            const char * str = $1->getValue();
-            if (strcmp(str, "true") == 0 or strcmp(str, "false") == 0) {
-                $$ = new ASTNode(BOOL_T, strdup($1->getValue())); delete $1;
-            }
-            else {
-                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", str);
+            if (auto const str_p = std::get_if<std::unique_ptr<std::string>>(&($1->name))) {
+                if (**str_p == "true") {
+                    $$ = true;
+                } else if (**str_p == "false") {
+                    $$ = false;
+                } else {
+                    printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", (**str_p).c_str());
+                    delete $1;
+                    YYERROR;
+                }
+                delete $1;
+            } else {
+                auto const * node = std::get_if<std::unique_ptr<SpecConstNode>>(&($1->name));
+                assert(node);
+                printf("Syntax error: expecting either 'true' or 'false', got '%s'\n", (*(*node)->value).c_str());
                 delete $1;
                 YYERROR;
             }
@@ -504,77 +395,29 @@ b_value: symbol
     ;
 
 option: KW_PRINTSUCCESS b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::PrintSuccess, $2}; delete $1; }
     | KW_EXPANDDEFINITIONS b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::ExpandDefinitions, $2}; delete $1; }
     | KW_INTERACTIVEMODE b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::InteractiveMode, $2}; delete $1; }
     | KW_PRODUCEPROOFS b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceProofs, $2}; delete $1; }
     | KW_PRODUCEUNSATCORES b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceUnsatCores, $2}; delete $1; }
     | KW_PRODUCEMODELS b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceModels, $2}; delete $1; }
     | KW_PRODUCEASSIGNMENTS b_value
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($2);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::ProduceAssignments, $2}; delete $1;}
     | KW_REGULAROUTPUTCHANNEL TK_STR
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::RegularOutputChannel, std::unique_ptr<std::string>($2)}; delete $1; }
     | KW_DIAGNOSTICOUTPUTCHANNEL TK_STR
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(STR_T, $2));
-        }
-    | KW_RANDOMSEED TK_NUM
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(NUM_T, $2));
-        }
-    | KW_VERBOSITY TK_NUM
-        {
-            $$ = new ASTNode(OPTION_T, $1);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(NUM_T, $2));
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::DiagnosticOutputChannel, std::unique_ptr<std::string>($2)}; delete $1;  }
+    | KW_RANDOMSEED TK_INT
+        { $$ = new OptionNode {OptionNode::OptionType::RandomSeed, static_cast<int>(std::stoi(*$2)) }; delete $2; delete $1; }
+    | KW_VERBOSITY TK_INT
+        { $$ = new OptionNode {OptionNode::OptionType::Verbosity, static_cast<int>(std::stoi(*$2)) }; delete $2; delete $1; }
     | attribute
-        {
-            $$ = new ASTNode(OPTION_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back($1);
-        }
+        { $$ = new OptionNode {OptionNode::OptionType::Attribute, std::unique_ptr<AttributeNode>($1) }; }
     ;
 
 predef_key: KW_SORTS
@@ -636,25 +479,21 @@ predef_key: KW_SORTS
     ;
 
 info_flag: KW_ERRORBEHAVIOR
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_NAME
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_AUTHORS
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_VERSION
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_STATUS
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_REASONUNKNOWN
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | KW_ALLSTATISTICS
-        { $$ = new ASTNode(INFO_T, $1); }
+        { $$ = $1; }
     | TK_KEY
-        {
-            $$ = new ASTNode(INFO_T, NULL);
-            $$->children = new std::vector<ASTNode*>();
-            $$->children->push_back(new ASTNode(GATTR_T, $1));
-        }
+        { $$ = $1; }
     ;
 
 %%

@@ -1,30 +1,62 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
+/*
+* Copyright (c) 2021, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+*
+* SPDX-License-Identifier: MIT
+*/
 
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
-
-
-#include <stdio.h>
 #include "smt2newcontext.h"
+namespace {
+    struct Qel {
+       TermNode* node;
+       uint32_t processed;
+    };
+    bool checkProcessedProperty(TermNode * termNode, size_t processed) {
+        assert(termNode);
+        if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
+            return processed == letTermNode->arguments->size() + letTermNode->bindings->size();
+        }
+        return processed == termNode->arguments->size();
+    }
+}
 
+TermNode::~TermNode() {
+    std::vector<Qel> queue;
+    queue.emplace_back(Qel{this, static_cast<uint32_t>(0)});
+    while (not queue.empty()) {
+        auto & [termNode, processed] = queue.back();
+        if (not termNode->arguments) {
+            queue.pop_back();
+            continue;
+        }
+        auto & children = *(termNode->arguments);
+        if (processed < children.size()) {
+            ++ processed;
+            queue.emplace_back(Qel{children[processed - 1], 0});
+            continue;
+        } else if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
+            auto & bindings = *(letTermNode->bindings);
+            assert(children.size() == 1);
+            if (processed < bindings.size()+1) {
+                ++ processed;
+                queue.emplace_back(Qel{bindings[processed - 2]->term, 0});
+                continue;
+            }
+        }
+        assert(termNode);
+        assert(checkProcessedProperty(termNode, processed));
 
+        for (auto child : *(termNode->arguments)) {
+            assert(not child->arguments or child->arguments->empty());
+            delete child;
+        }
+        if (auto letTermNode = dynamic_cast<LetTermNode*>(termNode)) {
+            for (auto & binding : *(letTermNode->bindings)) {
+                delete binding->term;
+            }
+            letTermNode->bindings->clear();
+        }
+        termNode->arguments->clear(); // delete is not called on the pointers
+        assert(termNode->arguments->empty());
+        queue.pop_back();
+    }
+}

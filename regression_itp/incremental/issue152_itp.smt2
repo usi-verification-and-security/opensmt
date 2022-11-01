@@ -1,4 +1,4 @@
-(set-option :produce-interpolants 1)
+(set-option :produce-interpolants true)
 (set-logic QF_LRA)
 (declare-fun r11 () Real)
 (check-sat)

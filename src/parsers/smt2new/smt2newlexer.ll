@@ -24,7 +24,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-%option prefix="smt2new"
 %option reentrant
 %option bison-bridge
 %option bison-locations
@@ -100,43 +99,43 @@ using namespace osmttokens;
 "simplify"         { yyget_lval(yyscanner)->tok = { t_simplify }; return TK_SIMPLIFY;      }
 "echo"             { yyget_lval(yyscanner)->tok = { t_echo }; return TK_ECHO; }
 
-":sorts"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTS;                   }
-":funs"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_FUNS;                    }
-":sorts-description"         { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_SORTSDESCRIPTION;        }
-":funs-description"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_FUNSDESCRIPTION;         }
-":definition"                { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_DEFINITION;              }
-":values"                    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VALUES;                  }
-":notes"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NOTES;                   }
-":theories"                  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_THEORIES;                }
-":extensions"                { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_EXTENSIONS;              }
-":print-success"             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRINTSUCCESS;            }
-":expand-definitions"        { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_EXPANDDEFINITIONS;       }
-":interactive-mode"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_INTERACTIVEMODE;         }
-":produce-proofs"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEPROOFS;           }
-":produce-unsat-cores"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEUNSATCORES;       }
-":produce-models"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEMODELS;           }
-":produce-assignments"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEASSIGNMENTS;      }
-":regular-output-channel"    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_REGULAROUTPUTCHANNEL;    }
-":diagnostic-output-channel" { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_DIAGNOSTICOUTPUTCHANNEL; }
-":random-seed"               { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_RANDOMSEED;              }
-":verbosity"                 { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VERBOSITY;               }
-":error-behavior"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_ERRORBEHAVIOR;           }
-":name"                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NAME;                    }
-":named"                     { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_NAMED;                   }
-":authors"                   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_AUTHORS;                 }
-":version"                   { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_VERSION;                 }
-":status"                    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_STATUS;                  }
-":reason-unknown"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_REASONUNKNOWN;           }
-":all-statistics"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_ALLSTATISTICS;           }
+":sorts"                     { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_SORTS;                   }
+":funs"                      { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_FUNS;                    }
+":sorts-description"         { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_SORTSDESCRIPTION;        }
+":funs-description"          { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_FUNSDESCRIPTION;         }
+":definition"                { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_DEFINITION;              }
+":values"                    { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_VALUES;                  }
+":notes"                     { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_NOTES;                   }
+":theories"                  { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_THEORIES;                }
+":extensions"                { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_EXTENSIONS;              }
+":print-success"             { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_PRINTSUCCESS;            }
+":expand-definitions"        { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_EXPANDDEFINITIONS;       }
+":interactive-mode"          { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_INTERACTIVEMODE;         }
+":produce-proofs"            { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_PRODUCEPROOFS;           }
+":produce-unsat-cores"       { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_PRODUCEUNSATCORES;       }
+":produce-models"            { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_PRODUCEMODELS;           }
+":produce-assignments"       { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_PRODUCEASSIGNMENTS;      }
+":regular-output-channel"    { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_REGULAROUTPUTCHANNEL;    }
+":diagnostic-output-channel" { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_DIAGNOSTICOUTPUTCHANNEL; }
+":random-seed"               { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_RANDOMSEED;              }
+":verbosity"                 { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_VERBOSITY;               }
+":error-behavior"            { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_ERRORBEHAVIOR;           }
+":name"                      { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_NAME;                    }
+":named"                     { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_NAMED;                   }
+":authors"                   { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_AUTHORS;                 }
+":version"                   { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_VERSION;                 }
+":status"                    { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_STATUS;                  }
+":reason-unknown"            { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_REASONUNKNOWN;           }
+":all-statistics"            { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return KW_ALLSTATISTICS;           }
 
 
-0|-?[1-9][0-9]*(\/[1-9][0-9]*)?  { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_NUM; }
--?[0-9]+\.0*[0-9]+             { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_DEC; }
-#x[0-9a-fA-F]+               { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_HEX; }
-#b[01]+                      { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_BIN; }
+0|-?[1-9][0-9]*(\/[1-9][0-9]*)? { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_INT; }
+-?[0-9]+\.0*[0-9]+              { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_DEC; }
+#x[0-9a-fA-F]+                  { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_HEX; }
+#b[01]+                         { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_BIN; }
 
-[a-zA-Z~!@\$\%\^&\*\-\+=\<\>\.\?\/'_][a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/']* { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_SYM; }
-\:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+ { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return TK_KEY; }
+[a-zA-Z~!@\$\%\^&\*\-\+=\<\>\.\?\/'_][a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/']* { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_SYM; }
+\:[a-zA-Z0-9~!@\$\%\^&\*_\-\+=\<\>\.\?\/]+ { yyget_lval(yyscanner)->str = new std::string(yyget_text(yyscanner)); return TK_KEY; }
 
 [()]            { return *yyget_text(yyscanner); }
 
@@ -149,7 +148,7 @@ using namespace osmttokens;
   \\\"          { yyextra->insertBuf('"');                                       }
   \\\\          { yyextra->insertBuf('\\');                                      }
   [^\\\n\"]     { yyextra->insertBuf(yyget_text(yyscanner)[0]);                  }
-  \"            { yylval->str = strdup(yyextra->getBuf()); yyextra->clearBuf();
+  \"            { yylval->str = new std::string(yyextra->getBuf()); yyextra->clearBuf();
                     yy_pop_state(yyscanner); return TK_STR;                      }
 }
 
@@ -160,7 +159,7 @@ using namespace osmttokens;
   [\t]          { yyextra->insertBuf('\t');                                      }
   \n            { yyextra->insertBuf('\n');                                      }
   [^ \t\n\\\|]  { yyextra->insertBuf(yyget_text(yyscanner)[0]);                  }
-  \|            { yylval->str = strdup(yyextra->getBuf()); yyextra->clearBuf();
+  \|            { yylval->str = new std::string(yyextra->getBuf()); yyextra->clearBuf();
                     yy_pop_state(yyscanner); return TK_QSYM;                     }
   \\            { printf("Syntax error at line %d near %s, \\ not allowed inside | ... |\n", yyget_lineno(yyscanner), yyget_text(yyscanner)); exit(1); }
 }

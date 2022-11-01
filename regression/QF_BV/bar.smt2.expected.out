@@ -1,1 +1,1 @@
-At line 4: syntax error, unexpected TK_SYM, expecting TK_NUM or ')'
+At line 4: syntax error, unexpected TK_SYM, expecting TK_INT or ')'

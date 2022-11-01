@@ -1,5 +1,5 @@
 0a1,6
-> (set-option :lookahead-split)
+> (set-option :lookahead-split true)
 > (set-option :split-num 8)
 > (set-option :output-dir "split_and_solve_work")
 > 

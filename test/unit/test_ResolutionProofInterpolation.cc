@@ -16,8 +16,7 @@ class ResolutionProofInterpolationTest : public ::testing::Test {
 protected:
     ResolutionProofInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("c");
@@ -46,7 +45,7 @@ protected:
 };
 
 TEST_F(ResolutionProofInterpolationTest, test_McMillanInterpolant) {
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillan);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillan);
     auto itpContext = solver->getInterpolationContext();
     vec<PTRef> itps;
     ipartitions_t A_mask = 1;
@@ -57,7 +56,7 @@ TEST_F(ResolutionProofInterpolationTest, test_McMillanInterpolant) {
 }
 
 TEST_F(ResolutionProofInterpolationTest, test_PudlakInterpolant) {
-    config.setBooleanInterpolationAlgorithm(itp_alg_pudlak);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_pudlak);
     auto itpContext = solver->getInterpolationContext();
     vec<PTRef> itps;
     ipartitions_t A_mask = 1;
@@ -68,7 +67,7 @@ TEST_F(ResolutionProofInterpolationTest, test_PudlakInterpolant) {
 }
 
 TEST_F(ResolutionProofInterpolationTest, test_McMillanPrimeInterpolant) {
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillanp);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillanp);
     auto itpContext = solver->getInterpolationContext();
     vec<PTRef> itps;
     ipartitions_t A_mask = 1;
@@ -83,8 +82,7 @@ class ResolutionProofInterpolationTestWithReduction : public ::testing::Test {
 protected:
     ResolutionProofInterpolationTestWithReduction(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
 //        config.setOption(SMTConfig::o_verbosity, SMTOption(2), msg);
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
@@ -118,7 +116,7 @@ protected:
 };
 
 TEST_F(ResolutionProofInterpolationTestWithReduction, test_InterpolationAfterReduction) {
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillan);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillan);
     config.setReduction(1);
     auto itpContext = solver->getInterpolationContext();
     vec<PTRef> itps;
@@ -134,8 +132,7 @@ class ResolutionProofIncrementalInterpolationTest : public ::testing::Test {
 protected:
     ResolutionProofIncrementalInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
     virtual void SetUp() {
-        const char* msg;
-        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true));
         solver = std::make_unique<MainSolver>(logic, config, "test");
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("c");
@@ -166,7 +163,7 @@ protected:
 };
 
 TEST_F(ResolutionProofIncrementalInterpolationTest, test_McMillanInterpolant) {
-    config.setBooleanInterpolationAlgorithm(itp_alg_mcmillan);
+    config.setBooleanInterpolationAlgorithm(ItpAlgorithm::itp_alg_mcmillan);
     auto itpContext = solver->getInterpolationContext();
     vec<PTRef> itps;
     ipartitions_t A_mask = 1;

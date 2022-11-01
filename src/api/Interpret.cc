@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ArithLogic.h"
 #include "LogicFactory.h"
 #include "Substitutor.h"
+#include "ParseNodePrinter.h"
 
 #include <string>
 #include <sstream>
@@ -39,12 +40,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Class defining interpreter
  ***********************************************************/
 
-Interpret::~Interpret() {
-    for (int i = 0; i < term_names.size(); ++i) {
-        free(term_names[i]);
-    }
-}
-
 PTRef
 Interpret::getParsedFormula()
 {
@@ -52,77 +47,126 @@ Interpret::getParsedFormula()
     return root;
 }
 
-void Interpret::setInfo(ASTNode& n) {
-    assert(n.getType() == UATTR_T || n.getType() == PATTR_T);
-
-    char* name = NULL;
-    if (n.getValue() == NULL) {
-        ASTNode& an = **(n.children->begin());
-        assert(an.getType() == UATTR_T || an.getType() == PATTR_T);
-        name = strdup(an.getValue());
-    }
-    else // Normal option
-        name = strdup(n.getValue());
-
-    Info value(n);
-
-    config.setInfo(name, value);
-    free(name);
+void Interpret::interp(SetInfo const & n) {
+    config.setInfo(n.getName(), SMTOption{n.getValue()});
+    notify_success();
 }
 
-void Interpret::getInfo(ASTNode& n) {
-    assert(n.getType() == INFO_T);
+void Interpret::interp(GetInfo const & n) {
+    assert(n.key);
+    std::string const & name = *n.key;
 
-    const char* name;
+    auto const & value = config.getInfo(name);
 
-    if (n.getValue() != NULL)
-        name = n.getValue();
-    else {
-        assert(n.children != NULL);
-        name = (**(n.children->begin())).getValue();
-    }
-
-    const Info& value = config.getInfo(name);
-
-    if (value.isEmpty())
-        notify_formatted(true, "no value for info %s", name);
+    if (value.type == ConstType::empty)
+        notify_formatted(true, "no value for info %s", name.c_str());
     else {
         auto val_str = value.toString();
-        notify_formatted(false, "%s %s", name, val_str.c_str());
+        notify_formatted(false, "%s %s", name.c_str(), val_str.c_str());
     }
 }
 
-void Interpret::setOption(ASTNode& n) {
-    assert(n.getType() == OPTION_T);
-    char* name  = NULL;
-
-    if (n.getValue() == NULL)  {
-        // Attribute
-        ASTNode& an = **(n.children->begin());
-        assert(an.getType() == UATTR_T || an.getType() == PATTR_T);
-        name = strdup(an.getValue());
+void Interpret::interp(SetOption const & n) {
+    assert(n.option);
+    switch (n.option->type) {
+    case OptionNode::OptionType::Attribute: {
+        auto val = std::get_if<std::unique_ptr<AttributeNode>>(&n.option->value);
+        assert(val);
+        assert(*val);
+        try {
+            config.setOption(*(**val).name, SMTOption{*(**val).value});
+        } catch (std::out_of_range & e) {
+            notify_formatted(true, "Overflow in %s", opensmt::nodeToString()(*(**val).value).c_str());
+            return;
+        } catch (OsmtApiException & e) {
+            notify_formatted(true, "%s", e.what());
+            return;
+        }
+        break;
     }
-    else // Normal option
-        name = strdup(n.getValue());
-
-    SMTOption value(n);
-    const char* msg = "ok";
-    bool rval = config.setOption(name, value, msg);
-    if (rval == false)
-        notify_formatted(true, "set-option failed for %s: %s", name, msg);
-    free(name);
+    case OptionNode::OptionType::DiagnosticOutputChannel: {
+        auto val = std::get_if<std::unique_ptr<std::string>>(&n.option->value);
+        assert(val);
+        assert(*val);
+        config.setOption(":diagnostic-output-channel", SMTOption{std::move(**val)});
+        break;
+    }
+    case OptionNode::OptionType::ExpandDefinitions: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":expand-definitions", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::InteractiveMode: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":interactive-mode", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::PrintSuccess: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":print-success", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::ProduceAssignments: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":produce-assignments", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::ProduceModels: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":produce-models", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::ProduceProofs: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":produce-proofs", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::ProduceUnsatCores: {
+        auto val = std::get_if<bool>(&n.option->value);
+        assert(val);
+        config.setOption(":produce-unsat-cores", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::RandomSeed: {
+        auto val = std::get_if<int>(&n.option->value);
+        assert(val);
+        config.setOption(":random-seed", SMTOption{*val});
+        break;
+    }
+    case OptionNode::OptionType::RegularOutputChannel: {
+        auto val = std::get_if<std::unique_ptr<std::string>>(&n.option->value);
+        assert(val);
+        assert(*val);
+        config.setOption(":regular-output-channel", SMTOption{std::move(**val)});
+        break;
+    }
+    case OptionNode::OptionType::Verbosity: {
+        auto val = std::get_if<int>(&n.option->value);
+        assert(val);
+        config.setOption(":verbosity", SMTOption{*val});
+        break;
+    }
+    default:
+        notify_formatted(true, "unknown option");
+        return;
+    }
+    notify_success();
 }
 
-void Interpret::getOption(ASTNode& n) {
-    assert(n.getType() == UATTR_T || n.getType() == PATTR_T );
-
-    assert(n.getValue() != NULL);
-    const char* name = n.getValue();
+void Interpret::interp(GetOption const & n) {
+    assert(n.key);
+    std::string const & name = *n.key;
 
     const SMTOption& value = config.getOption(name);
 
     if (value.isEmpty())
-        notify_formatted(true, "No value for attr %s", name);
+        notify_formatted(true, "No value for option %s", name.c_str());
     else {
         auto str_val = value.toString();
         notify_formatted(false, "%s",str_val.c_str());
@@ -137,431 +181,138 @@ using opensmt::Logic_t;
 using opensmt::getLogicFromString;
 using namespace osmttokens;
 
-void Interpret::interp(ASTNode& n) {
-    assert(n.getType() == CMD_T);
-    const smt2token cmd = n.getToken();
-    try {
-        switch (cmd.x) {
-            case t_setlogic: {
-                ASTNode &logic_n = **(n.children->begin());
-                const char *logic_name = logic_n.getValue();
-                if (isInitialized()) {
-                    notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
-                } else {
-                    auto logic_type = getLogicFromString(logic_name);
-                    if (logic_type == Logic_t::UNDEF) {
-                        notify_formatted(true, "unknown logic %s", logic_name);
-                        break;
-                    }
-                    initializeLogic(logic_type);
-                    main_solver = createMainSolver(logic_name);
-                    main_solver->initialize();
-                    notify_success();
-                }
-                break;
-            }
-            case t_setinfo: {
-                setInfo(**(n.children->begin()));
-                notify_success();
-                break;
-            }
-            case t_getinfo: {
-                getInfo(**(n.children->begin()));
-                break;
-            }
-            case t_setoption: {
-                setOption(**(n.children->begin()));
-                notify_success();
-                break;
-            }
-            case t_getoption: {
-                getOption(**(n.children->begin()));
-                break;
-            }
-            case t_declaresort: {
-                if (isInitialized()) {
-                    assert(n.children and n.children->size() == 2);
-                    auto it = n.children->begin();
-                    ASTNode & symbolNode = **it;
-                    assert(symbolNode.getType() == SYM_T or symbolNode.getType() == QSYM_T);
-                    ++it;
-                    ASTNode & numNode = **it;
-                    assert(numNode.getType() == NUM_T);
-                    int arity = atoi(numNode.getValue()); // MB: TODO: take care of out-of-range input
-                    SortSymbol symbol(symbolNode.getValue(), arity);
-                    SSymRef ssref;
-                    if (logic->peekSortSymbol(symbol, ssref)) {
-                        notify_formatted(true, "sort %s already declared", symbolNode.getValue());
-                    } else {
-                        logic->declareSortSymbol(std::move(symbol));
-                        notify_success();
-                    }
-                } else
-                    notify_formatted(true, "illegal command before set-logic: declare-sort");
-                break;
-            }
-            case t_declarefun: {
-                if (isInitialized()) {
-                    if (declareFun(n))
-                        notify_success();
-                } else
-                    notify_formatted(true, "Illegal command before set-logic: declare-fun");
-                break;
-            }
-            case t_declareconst: {
-                if (isInitialized()) {
-                    declareConst(n);
-                } else
-                    notify_formatted(true, "Illegal command before set-logic: declare-const");
-                break;
-            }
-            case t_assert: {
-                if (isInitialized()) {
-                    sstat status;
-                    ASTNode &asrt = **(n.children->begin());
-                    LetRecords letRecords;
-                    PTRef tr = parseTerm(asrt, letRecords);
-                    if (tr == PTRef_Undef)
-                        notify_formatted(true, "assertion returns an unknown sort");
-                    else {
-                        assertions.push(tr);
-                        char *err_msg = NULL;
-                        status = main_solver->insertFormula(tr, &err_msg);
-
-                        if (status == s_Error)
-                            notify_formatted(true, "Error");
-                        else if (status == s_Undef)
-                            notify_success();
-                        else if (status == s_False)
-                            notify_success();
-
-                        if (err_msg != NULL && status == s_Error)
-                            notify_formatted(true, err_msg);
-                        if (err_msg != NULL && status != s_Error)
-                            comment_formatted(err_msg);
-                        free(err_msg);
-                    }
-                } else {
-                    notify_formatted(true, "Illegal command before set-logic: assert");
-                }
-                break;
-            }
-            case t_definefun: {
-                if (isInitialized()) {
-                    defineFun(n);
-                } else {
-                    notify_formatted(true, "Illegal command before set-logic: define-fun");
-                }
-                break;
-            }
-            case t_simplify: {
-                if (isInitialized()) {
-                    sstat status = main_solver->simplifyFormulas();
-                    if (status == s_Error)
-                        notify_formatted(true, "Simplify");
-                } else {
-                    notify_formatted(true, "Illegal command before set-logic: simplify");
-                }
-                break;
-            }
-            case t_checksat: {
-                if (isInitialized()) {
-                    checkSat();
-                } else {
-                    notify_formatted(true, "Illegal command before set-logic: check-sat");
-                }
-                break;
-            }
-            case t_getinterpolants: {
-                if (config.produce_inter()) {
-                    if (isInitialized()) {
-                        getInterpolants(n);
-                    } else {
-                        notify_formatted(true, "Illegal command before set-logic: get-interpolants");
-                    }
-                } else {
-                    notify_formatted(true,
-                                     "Option to produce interpolants has not been set, skipping this command ...");
-                }
-                break;
-            }
-            case t_getassignment: {
-                if (isInitialized()) {
-                    getAssignment();
-                } else {
-                    notify_formatted(true, "Illegal command before set-logic: get-assignment");
-                }
-                break;
-            }
-            case t_getvalue: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: get-value");
-                } else if (main_solver->getStatus() != s_True) {
-                    notify_formatted(true, "Command get-value called, but solver is not in SAT state");
-                } else {
-                    getValue(n.children);
-                }
-                break;
-            }
-            case t_getmodel: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: get-model");
-                } else if (main_solver->getStatus() != s_True) {
-                    notify_formatted(true, "Command get-model called, but solver is not in SAT state");
-                } else {
-                    getModel();
-                }
-                break;
-            }
-
-            case t_writestate: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: write-state");
-                } else {
-                    if (main_solver->solverEmpty()) {
-                        sstat status = main_solver->simplifyFormulas();
-                        if (status == s_Error)
-                            notify_formatted(true, "write-state");
-                    } else {
-                        writeState((**(n.children->begin())).getValue());
-                    }
-                }
-                break;
-            }
-            case t_echo: {
-                const char *str = (**(n.children->begin())).getValue();
-                notify_formatted(false, "%s", str);
-                break;
-            }
-            case t_push: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: push");
-                } else {
-                    try {
-                        int num = std::stoi((**(n.children->begin())).getValue());
-                        push(num);
-                    } catch (std::out_of_range const & e) {
-                        notify_formatted(true, "Illegal push command: %s", e.what());
-                    }
-                }
-                break;
-            }
-            case t_pop: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: pop");
-                } else {
-                    try {
-                        std::string str((**(n.children->begin())).getValue());
-                        int num = std::stoi(str);
-                        pop(num);
-                    } catch (std::out_of_range const &ex) {
-                        notify_formatted(true, "Illegal pop command: %s", ex.what());
-                    }
-                }
-                break;
-            }
-            case t_exit: {
-                exit();
-                notify_success();
-                break;
-            }
-            default: {
-                notify_formatted(true, "Unknown command encountered: %s", tokenToName.at(cmd.x).c_str());
-            }
-        }
-    } catch (OsmtApiException const &e) {
-        notify_formatted(true, e.what());
+void Interpret::interp(CommandNode const * n) {
+    if (auto setLogic = dynamic_cast<SetLogic const *>(n)) {
+        return interp(*setLogic);
+    } else if (auto setInfo = dynamic_cast<SetInfo const *>(n)) {
+        return interp(*setInfo);
+    } else if (auto setOption = dynamic_cast<SetOption const *>(n)) {
+        return interp(*setOption);
+    } else if (auto getInfo = dynamic_cast<GetInfo const *>(n)) {
+        return interp(*getInfo);
+    } else if (auto getOption = dynamic_cast<GetOption const *>(n)) {
+        return interp(*getOption);
+    } else if (auto declareSort = dynamic_cast<DeclareSort const *>(n)) {
+        return interp(*declareSort);
+    } else if (auto declareFun = dynamic_cast<DeclareFun const *>(n)) {
+        return interp(*declareFun);
+    } else if (auto declareConst = dynamic_cast<DeclareConst const *>(n)) {
+        return interp(*declareConst);
+    } else if (auto assertNode = dynamic_cast<AssertNode const *>(n)) {
+        return interp(*assertNode);
+    } else if (auto defineFun = dynamic_cast<DefineFun const *>(n)) {
+        return interp(*defineFun);
+    } else if (auto simplify = dynamic_cast<Simplify const *>(n)) {
+        return interp(*simplify);
+    } else if (auto checkSatNode = dynamic_cast<CheckSatNode const *>(n)) {
+        return interp(*checkSatNode);
+    } else if (auto getInterpolants = dynamic_cast<GetInterpolants const *>(n)) {
+        return interp(*getInterpolants);
+    } else if (auto getAssignment = dynamic_cast<GetAssignment const *>(n)) {
+        return interp(*getAssignment);
+    } else if (auto getValue = dynamic_cast<GetValue const *>(n)) {
+        return interp(*getValue);
+    } else if (auto getModel = dynamic_cast<GetModel const *>(n)) {
+        return interp(*getModel);
+    } else if (auto echo = dynamic_cast<Echo const *>(n)) {
+        return interp(*echo);
+    } else if (auto pushNode = dynamic_cast<PushNode const *>(n)) {
+        return interp(*pushNode);
+    } else if (auto popNode = dynamic_cast<PopNode const *>(n)) {
+        return interp(*popNode);
+    } else if (auto exit = dynamic_cast<Exit const *>(n)) {
+        return interp(*exit);
+    } else {
+        notify_formatted(true, "Unimplemented command");
     }
 }
 
-
-bool Interpret::addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords) {
-    assert(names.size() == args.size());
-    if (names.size() > 1) {
-        // check that they are pairwise distinct;
-        std::unordered_set<const char*, StringHash, Equal<const char*>> namesAsSet(names.begin(), names.end());
-        if (namesAsSet.size() != names.size_()) {
-            comment_formatted("Overloading let variables makes no sense");
-            return false;
+void Interpret::interp(SetLogic const & n) {
+    std::string const & logic_name = n.getLogicName();
+    if (isInitialized()) {
+        notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
+    } else {
+        auto logic_type = getLogicFromString(logic_name);
+        if (logic_type == Logic_t::UNDEF) {
+            notify_formatted(true, "unknown logic %s", logic_name.c_str());
+            return;
         }
+        initializeLogic(logic_type);
+        main_solver = createMainSolver(logic_name);
+        main_solver->initialize();
+        notify_success();
     }
-    for (int i = 0; i < names.size(); ++i) {
-        const char* name = names[i];
-        if (logic->hasSym(name) && logic->getSym(logic->symNameToRef(name)[0]).noScoping()) {
-            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name);
-            return false;
-        }
-        letRecords.addBinding(name, args[i]);
-    }
-    return true;
 }
 
-//
-// Determine whether the term refers to some let definition
-//
-PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) const {
-    return letRecords.getOrUndef(s);
+void Interpret::interp(DeclareSort const & declareSort) {
+    if (not isInitialized()) {
+        notify_formatted(true, "illegal command before set-logic: declare-sort");
+        return;
+    }
+    SymbolNode const & symbolNode = *declareSort.symbol;
+    std::string const & numNode = *declareSort.num;
+    int arity = std::stoi(numNode); // MB: TODO: take care of out-of-range input
+    SortSymbol symbol(opensmt::nodeToString()(symbolNode), arity);
+    SSymRef ssref;
+    if (logic->peekSortSymbol(symbol, ssref)) {
+        notify_formatted(true, "sort %s already declared", opensmt::nodeToString()(symbolNode).c_str());
+    } else {
+        logic->declareSortSymbol(std::move(symbol));
+        notify_success();
+    }
 }
 
-PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted) {
-    SRef sr = sortFromASTNode(sort);
-    PTRef tr = PTRef_Undef;
-    try {
-        tr = resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
-    } catch (OsmtApiException & e) {
-        reportError(e.what());
+void Interpret::interp(AssertNode const & n) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: assert");
+        return;
     }
-    return tr;
+
+    sstat status;
+    TermNode const & asrt = *n.term;
+    LetRecords letRecords;
+    PTRef tr = parseTerm(asrt, letRecords);
+    if (tr == PTRef_Undef) {
+        notify_formatted(true, "assertion returns an unknown sort");
+    } else {
+        assertions.push(tr);
+        char *err_msg = nullptr;
+        status = main_solver->insertFormula(tr, &err_msg);
+
+        if (status == s_Error)
+            notify_formatted(true, "Error");
+        else if (status == s_Undef)
+            notify_success();
+        else if (status == s_False)
+            notify_success();
+
+        if (err_msg != nullptr && status == s_Error)
+            notify_formatted(true, err_msg);
+        if (err_msg != nullptr && status != s_Error)
+            comment_formatted(err_msg);
+        free(err_msg);
+    }
 }
 
-PTRef Interpret::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, SymbolMatcher symbolMatcher) {
-    if (defined_functions.has(s)) {
-        auto const & tpl = defined_functions[s];
-        return logic->instantiateFunctionTemplate(tpl, std::move(args));
+void Interpret::interp(Simplify const &) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: simplify");
+        return;
     }
-    return logic->resolveTerm(s, std::move(args), sortRef, symbolMatcher);
+    sstat status = main_solver->simplifyFormulas();
+    if (status == s_Error) {
+        notify_formatted(true, "Simplify");
+    } else {
+        notify_success();
+    }
 }
 
-PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
-    ASTType t = term.getType();
-    if (t == TERM_T) {
-        const char* name = (**(term.children->begin())).getValue();
-//        comment_formatted("Processing term %s", name);
-        PTRef tr = PTRef_Undef;
-        try {
-            tr = logic->mkConst(name);
-        } catch (OsmtApiException const & e) {
-            comment_formatted("While processing %s: %s", name, e.what());
-        }
-        return tr;
+void Interpret::interp(CheckSatNode const &) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: check-sat");
+        return;
     }
-
-    else if (t == QID_T) {
-        if ((**(term.children->begin())).getType() == AS_T) {
-            auto const & as_node = **(term.children->begin());
-            ASTNode const * symbolNode = (*as_node.children)[0];
-            bool isQuoted = symbolNode->getType() == QSYM_T;
-            const char * name = (*as_node.children)[0]->getValue();
-            ASTNode const & sortNode = *(*as_node.children)[1];
-            assert(name != nullptr);
-            PTRef tr = resolveQualifiedIdentifier(name, sortNode, isQuoted);
-            return tr;
-        } else {
-            ASTNode const * symbolNode = (*(term.children->begin()));
-            char const * name = symbolNode->getValue();
-            bool isQuoted = symbolNode->getType() == QSYM_T;
-            assert(name != nullptr);
-            PTRef tr = letNameResolve(name, letRecords);
-            if (tr != PTRef_Undef) {
-                return tr;
-            }
-            try {
-                tr = resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
-            } catch (OsmtApiException & e) {
-                reportError(e.what());
-            }
-            return tr;
-        }
-    }
-
-    else if ( t == LQID_T ) {
-        // Multi-argument term
-        auto node_iter = term.children->begin();
-        vec<PTRef> args;
-        const char* name = (**node_iter).getValue(); node_iter++;
-        // Parse the arguments
-        for (; node_iter != term.children->end(); node_iter++) {
-            PTRef arg_term = parseTerm(**node_iter, letRecords);
-            if (arg_term == PTRef_Undef)
-                return PTRef_Undef;
-            else
-                args.push(arg_term);
-        }
-        assert(args.size() > 0);
-
-        PTRef tr = PTRef_Undef;
-        try {
-            tr = resolveTerm(name, std::move(args));
-        } catch (ArithDivisionByZeroException &ex) {
-            reportError(ex.what());
-        } catch (OsmtApiException &e) {
-            reportError(e.what());
-        }
-        return tr;
-    }
-
-    else if (t == LET_T) {
-        auto ch = term.children->begin();
-        auto vbl = (**ch).children->begin();
-        vec<PTRef> tmp_args;
-        vec<char*> names;
-        // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
-        class Guard {
-            LetRecords& rec;
-            vec<char*>& names;
-        public:
-            Guard(LetRecords& rec, vec<char*>& names): rec(rec), names(names) { rec.pushFrame(); }
-            ~Guard() { rec.popFrame(); for (int i = 0; i < names.size(); i++) { free(names[i]); }}
-        } scopeGuard(letRecords, names);
-        // First read the term declarations in the let statement
-        while (vbl != (**ch).children->end()) {
-            PTRef let_tr = parseTerm(**((**vbl).children->begin()), letRecords);
-            if (let_tr == PTRef_Undef) return PTRef_Undef;
-            tmp_args.push(let_tr);
-            char* name = strdup((**vbl).getValue());
-            names.push(name);
-            vbl++;
-        }
-        // Only then insert them to the table
-        bool success = addLetFrame(names, tmp_args, letRecords);
-        if (not success) {
-            comment_formatted("Let name addition failed");
-            return PTRef_Undef;
-        }
-        ch++;
-        // This is now constructed with the let declarations context in let_branch
-        PTRef tr = parseTerm(**(ch), letRecords);
-        if (tr == PTRef_Undef) {
-            comment_formatted("Failed in parsing the let scoped term");
-            return PTRef_Undef;
-        }
-        return tr;
-    }
-
-    else if (t == BANG_T) {
-        assert(term.children->size() == 2);
-        auto ch = term.children->begin();
-        ASTNode& named_term = **ch;
-        ASTNode& attr_l = **(++ ch);
-        assert(attr_l.getType() == GATTRL_T);
-        assert(attr_l.children->size() == 1);
-        ASTNode& name_attr = **(attr_l.children->begin());
-
-        PTRef tr = parseTerm(named_term, letRecords);
-        if (tr == PTRef_Undef) return tr;
-
-        if (strcmp(name_attr.getValue(), ":named") == 0) {
-            ASTNode& sym = **(name_attr.children->begin());
-            assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
-            if (nameToTerm.has(sym.getValue())) {
-                notify_formatted(true, "name %s already exists", sym.getValue());
-                return PTRef_Undef;
-            }
-            char* name = strdup(sym.getValue());
-            // MB: term_names becomes the owner of the string and is responsible for deleting
-            term_names.push(name);
-            nameToTerm.insert(name, tr);
-            if (!termToNames.has(tr)) {
-                vec<const char*> v;
-                termToNames.insert(tr, v);
-            }
-            termToNames[tr].push(name);
-        }
-        return tr;
-    }
-    else
-        comment_formatted("Unknown term type");
-    return PTRef_Undef;
+    (void)checkSat();
 }
 
 sstat Interpret::checkSat() {
@@ -576,14 +327,13 @@ sstat Interpret::checkSat() {
     else
         notify_formatted(false, "unknown");
 
-    const Info& status = config.getInfo(":status");
+    auto const & status = config.getInfo(":status");
     if (!status.isEmpty()) {
         std::string statusString = status.toString();
-        if ((statusString.compare("sat") == 0) && (res == s_False)) {
+        if (statusString == "sat" && (res == s_False)) {
             notify_formatted(false, "(error \"check status which says sat\")");
-
         }
-        else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
+        else if (statusString == "unsat" && (res == s_True)) {
             notify_formatted(false, "(error \"check status which says unsat\")");
         }
     }
@@ -591,99 +341,11 @@ sstat Interpret::checkSat() {
     if (res == s_Undef) {
         const SMTOption& o_dump_state = config.getOption(":dump-state");
         const SpType o_split = config.sat_split_type();
-        char* name = config.dump_state();
+        std::string name = config.dump_state();
         if (!o_dump_state.isEmpty() && o_split == spt_none)
             writeState(name);
-        free(name);
     }
-
     return res;
-}
-
-void Interpret::push(int n) {
-    if (not config.isIncremental()) {
-        notify_formatted(true, "push encountered but solver not in incremental mode");
-    } else {
-        if (n < 0) {
-            notify_formatted(true, "Incorrect push command, value is negative.");
-        } else {
-            while (n--) {
-                defined_functions.pushScope();
-                main_solver->push();
-            }
-            notify_success();
-        }
-    }
-}
-
-void Interpret::pop(int n) {
-    if (config.isIncremental()) {
-        if (n < 0) {
-            notify_formatted(true, "Incorrect pop command, value is negative.");
-        } else {
-            bool success = true;
-            while (n-- and success) {
-                success = main_solver->pop();
-                if (success) { defined_functions.popScope(); }
-            }
-            if (success) {
-                notify_success();
-            } else {
-                notify_formatted(true, "Attempt to pop beyond the top of the stack");
-            }
-        }
-    } else {
-        notify_formatted(true, "pop encountered but solver not in incremental mode");
-    }
-}
-
-bool Interpret::getAssignment() {
-    if (not isInitialized()) {
-       notify_formatted(true, "Illegal command before set-logic");
-       return false;
-    }
-    if (main_solver->getStatus() != s_True) {
-       notify_formatted(true, "Last solver call not satisfiable");
-       return false;
-    }
-    std::stringstream ss;
-    ss << '(';
-    for (int i = 0; i < term_names.size(); i++) {
-        const char* name = term_names[i];
-        PTRef tr = nameToTerm[name];
-        lbool val = main_solver->getTermValue(tr);
-        ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown"))
-            << ')' << (i < term_names.size() - 1 ? " " : "");
-    }
-    ss << ')';
-    const std::string& out = ss.str();
-    notify_formatted(false, out.c_str());
-    return true;
-}
-
-void Interpret::getValue(const std::vector<ASTNode*>* terms)
-{
-    auto model = main_solver->getModel();
-    Logic& logic = main_solver->getLogic();
-    std::vector<opensmt::pair<PTRef,PTRef>> values;
-    for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
-        const ASTNode& term = **term_it;
-        LetRecords tmp;
-        PTRef tr = parseTerm(term, tmp);
-        if (tr != PTRef_Undef) {
-            values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
-            auto pt_str = logic.printTerm(tr);
-            comment_formatted("Found the term %s", pt_str.c_str());
-        } else
-            comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
-    }
-    printf("(");
-    for (auto const & valPair : values) {
-        auto name = logic.printTerm(valPair.first);
-        auto value = logic.printTerm(valPair.second);
-        printf("(%s %s)", name.c_str(), value.c_str());
-    }
-    printf(")\n");
 }
 
 namespace {
@@ -751,7 +413,14 @@ private:
 };
 }
 
-void Interpret::getModel() {
+void Interpret::interp(GetModel const &) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: get-model");
+        return;
+    } else if (main_solver->getStatus() != s_True) {
+        notify_formatted(true, "Command get-model called, but solver is not in SAT state");
+        return;
+    }
 
     auto model = main_solver->getModel();
     NameClashResolver resolver(*logic);
@@ -778,6 +447,310 @@ void Interpret::getModel() {
     ss << ')';
     std::cout << ss.str() << std::endl;
 }
+
+void Interpret::interp(Echo const & n) {
+    std::string const & str = *n.text;
+    notify_formatted(false, "%s", str.c_str());
+}
+
+void Interpret::interp(PushNode const & n) {
+    if (not config.isIncremental()) {
+        notify_formatted(true, "push encountered but solver not in incremental mode");
+        return;
+    } else if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: push");
+        return;
+    } else if (n.num < 0) {
+        notify_formatted(true, "Incorrect push command, value is negative.");
+        return;
+    }
+    int num = n.num;
+    while (num --) {
+        defined_functions.pushScope();
+        main_solver->push();
+    }
+    notify_success();
+}
+
+void Interpret::interp(PopNode const & n) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: pop");
+        return;
+    } else if (not config.isIncremental()) {
+        notify_formatted(true, "pop encountered but solver not in incremental mode");
+        return;
+    } else if (n.num < 0) {
+        notify_formatted(true, "Incorrect pop command, value is negative.");
+        return;
+    }
+    bool success = true;
+    int num = n.num;
+    while (num -- and success) {
+        success = main_solver->pop();
+        if (success) { defined_functions.popScope(); }
+    }
+    if (success) {
+        notify_success();
+    } else {
+        notify_formatted(true, "Attempt to pop beyond the top of the stack");
+    }
+}
+
+void Interpret::interp(Exit const &) {
+    exit();
+    notify_success();
+}
+
+bool Interpret::addLetFrame(std::vector<std::string> const & names, vec<PTRef> const& args, LetRecords& letRecords) {
+    assert(names.size() == args.size_());
+    if (names.size() > 1) {
+        // check that they are pairwise distinct;
+        std::unordered_set<std::string> namesAsSet(names.begin(), names.end());
+        if (namesAsSet.size() != names.size()) {
+            comment_formatted("Overloading let variables makes no sense");
+            return false;
+        }
+    }
+    for (unsigned int i = 0; i < names.size(); ++i) {
+        std::string const & name = names[i];
+        if (logic->hasSym(name.c_str()) && logic->getSym(logic->symNameToRef(name.c_str())[0]).noScoping()) {
+            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name.c_str());
+            return false;
+        }
+        letRecords.addBinding(name.c_str(), args[i]);
+    }
+    return true;
+}
+
+//
+// Determine whether the term refers to some let definition
+//
+PTRef Interpret::letNameResolve(const char* s, const LetRecords& letRecords) const {
+    return letRecords.getOrUndef(s);
+}
+
+PTRef Interpret::resolveQualifiedIdentifier(std::string const & name, SortNode const & sort, bool isQuoted) {
+    SRef sr = sortFromSortNode(sort);
+    PTRef tr = PTRef_Undef;
+    try {
+        tr = resolveTerm(name.c_str(), {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+    } catch (OsmtApiException & e) {
+        reportError(e.what());
+    }
+    return tr;
+}
+
+PTRef Interpret::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, SymbolMatcher symbolMatcher) {
+    if (defined_functions.has(s)) {
+        auto const & tpl = defined_functions[s];
+        return logic->instantiateFunctionTemplate(tpl, std::move(args));
+    }
+    return logic->resolveTerm(s, std::move(args), sortRef, symbolMatcher);
+}
+
+PTRef Interpret::parseTerm(LetTermNode const * letTerm, LetRecords & letRecords) {
+    assert(letTerm->arguments->size() == 1);
+    auto const & varList = *letTerm->bindings;
+    auto const & letBoundedTerm = (*letTerm->arguments)[0];
+    vec<PTRef> tmp_args;
+    std::vector<std::string> names;
+
+    // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
+    class Guard {
+        LetRecords& rec;
+    public:
+        Guard(LetRecords& rec): rec(rec) { rec.pushFrame(); }
+        ~Guard() { rec.popFrame(); }
+    } scopeGuard(letRecords);
+    // First read the term declarations in the let statement
+    for (auto const & varListEl : varList) {
+        PTRef let_tr = parseTerm(*varListEl->term, letRecords);
+        if (let_tr == PTRef_Undef) return PTRef_Undef;
+        tmp_args.push(let_tr);
+        names.push_back(opensmt::nodeToString()(*varListEl->symbol));
+    }
+
+    // Only then insert them to the table
+    bool success = addLetFrame(names, tmp_args, letRecords);
+    if (not success) {
+        comment_formatted("Let name addition failed");
+        return PTRef_Undef;
+    }
+    // This is now constructed with the let declarations context in let_branch
+    PTRef tr = parseTerm(*letBoundedTerm, letRecords);
+    if (tr == PTRef_Undef) {
+        comment_formatted("Failed in parsing the let scoped term");
+        return PTRef_Undef;
+    }
+    return tr;
+}
+
+PTRef Interpret::parseTerm(AnnotationNode const * term, LetRecords & letRecords) {
+    TermNode const & named_term = *(*term->arguments)[0];
+    PTRef tr = parseTerm(named_term, letRecords);
+    if (tr == PTRef_Undef) return tr;
+
+    auto const & attr_l = *term->attributes;
+
+    for (auto const & attribute : attr_l) {
+        std::string const & name_attr = *attribute->name;
+
+        if (name_attr == ":named") {
+            auto name = opensmt::nodeToString()(*attribute->value);
+            if (nameToTerm.find(name) != nameToTerm.end()) {
+                notify_formatted(true, "name %s already exists", name.c_str());
+                return PTRef_Undef;
+            }
+            // MB: term_names becomes the owner of the string and is responsible for deleting
+            term_names.push_back(name);
+            nameToTerm.insert({name, tr});
+        }
+    }
+    return tr;
+}
+
+PTRef Interpret::parseTerm(TermNode const & term, LetRecords& letRecords) {
+   if (auto const regularTerm = dynamic_cast<NormalTermNode const*>(&term)) {
+       return parseTerm(regularTerm, letRecords);
+    } else if (auto const letTerm = dynamic_cast<LetTermNode const *>(&term)) {
+        return parseTerm(letTerm, letRecords);
+    } else if (auto const annotatedTerm = dynamic_cast<AnnotationNode const *>(&term)) {
+        return parseTerm(annotatedTerm, letRecords);
+    } else if (auto const forallTerm = dynamic_cast<ForallNode const *>(&term)) {
+        return parseTerm(forallTerm, letRecords);
+    } else if (auto const existsTerm = dynamic_cast<ExistsNode const *>(&term)) {
+        return parseTerm(existsTerm, letRecords);
+    }
+    comment_formatted("Unknown term type");
+    return PTRef_Undef;
+}
+
+PTRef Interpret::parseTerm(NormalTermNode const * term, LetRecords & letRecords) {
+    if (auto constName = std::get_if<std::unique_ptr<SpecConstNode>>(&term->head)) {
+        auto const & name = *(*constName)->value;
+        try {
+            PTRef tr = logic->mkConst(name.c_str());
+            return tr;
+        } catch (OsmtApiException const & e) {
+            comment_formatted("While processing %s: %s", name.c_str(), e.what());
+            return PTRef_Undef;
+        }
+    }
+    auto identifier = std::get_if<std::unique_ptr<IdentifierNode>>(&term->head);
+    assert(identifier);
+    auto name = opensmt::nodeToString()(*(*identifier)->symbol);
+    bool isQuoted = (*identifier)->symbol->quoted;
+    if (term->returnSort) {
+        return resolveQualifiedIdentifier(name, *term->returnSort, isQuoted);
+    } else {
+        if (not term->arguments) {
+            PTRef tr = letNameResolve(name.c_str(), letRecords);
+            if (tr != PTRef_Undef) {
+                return tr;
+            } try {
+                tr = resolveTerm(name.c_str(), {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
+            } catch (OsmtApiException & e) {
+                reportError(e.what());
+            }
+            return tr;
+        } else {
+            vec<PTRef> args;
+            for (auto const & arg : *term->arguments) {
+                PTRef arg_tr = parseTerm(*arg, letRecords);
+                if (arg_tr == PTRef_Undef) {
+                    return PTRef_Undef;
+                } else {
+                    args.push(arg_tr);
+                }
+            }
+            assert(args.size() > 0);
+
+            PTRef tr = PTRef_Undef;
+            try {
+                tr = resolveTerm(name.c_str(), std::move(args));
+            } catch (ArithDivisionByZeroException &ex) {
+                reportError(ex.what());
+            } catch (OsmtApiException &e) {
+                reportError(e.what());
+            }
+            return tr;
+        }
+    }
+}
+
+PTRef Interpret::parseTerm(ForallNode const *, LetRecords &) {
+    throw OsmtApiException("Forall not implemented");
+    return PTRef_Undef;
+}
+PTRef Interpret::parseTerm(ExistsNode const *, LetRecords &) {
+    throw OsmtApiException("Exists not implemented");
+    return PTRef_Undef;
+}
+
+
+
+
+
+void Interpret::interp(GetAssignment const &) {
+    if (not isInitialized()) {
+       notify_formatted(true, "Illegal command before set-logic");
+    }
+    if (main_solver->getStatus() != s_True) {
+       notify_formatted(true, "Last solver call not satisfiable");
+    }
+    std::stringstream ss;
+    ss << '(';
+    for (unsigned int i = 0; i < term_names.size(); i++) {
+        std::string const & name = term_names[i];
+        PTRef tr = nameToTerm[name.c_str()];
+        lbool val = main_solver->getTermValue(tr);
+        ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown"))
+            << ')' << (i < term_names.size() - 1 ? " " : "");
+    }
+    ss << ')';
+    const std::string& out = ss.str();
+    notify_formatted(false, out.c_str());
+}
+
+namespace {
+// Todo: implement all cases
+std::string printTermNode(TermNode const & term) {
+    auto term_p = dynamic_cast<NormalTermNode const *>(&term);
+    assert(term_p);
+    if (auto const_p = std::get_if<std::unique_ptr<SpecConstNode>>(&term_p->head)) {
+        return *(*const_p)->value;
+    } else {
+        auto head_p = std::get_if<std::unique_ptr<IdentifierNode>>(&term_p->head);
+        assert(head_p);
+        return opensmt::nodeToString()(*(*head_p)->symbol);
+    }
+}
+}
+
+void Interpret::interp(GetValue const & getValue)
+{
+    auto model = main_solver->getModel();
+    Logic & logic = *(this->logic);
+    std::vector<opensmt::pair<PTRef,PTRef>> values;
+    for (auto const term : *getValue.terms) {
+        LetRecords tmp;
+        PTRef tr = parseTerm(*term, tmp);
+        if (tr != PTRef_Undef) {
+            values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
+            auto pt_str = logic.printTerm(tr);
+            comment_formatted("Found the term %s", pt_str.c_str());
+        } else
+            comment_formatted("Error parsing the term %s", printTermNode(*term).c_str());
+    }
+    printf("(");
+    for (auto const & valPair : values) {
+        auto name = logic.printTerm(valPair.first);
+        auto value = logic.printTerm(valPair.second);
+        printf("(%s %s)", name.c_str(), value.c_str());
+    }
+    printf(")\n");
+}
+
 
 /**
  *
@@ -818,45 +791,49 @@ std::string Interpret::printDefinitionSmtlib(TemplateFunction const & templateFu
     return ss.str();
 }
 
-void Interpret::writeState(const char* filename)
+void Interpret::writeState(std::string const & filename)
 {
     char* msg;
     bool rval;
 
-    rval = main_solver->writeSolverState_smtlib2(filename, &msg);
+    rval = main_solver->writeSolverState_smtlib2(filename.c_str(), &msg);
 
     if (!rval) {
         notify_formatted("%s", msg);
     }
 }
 
-bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)
-{
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    ASTNode const & args_node = **(it++);
-    ASTNode const & ret_node  = **(it++);
-    assert(it == n.children->end());
 
-    const char* fname = name_node.getValue();
+
+void Interpret::interp(DeclareFun const & n) // (const char* fname, const vec<SRef>& args)
+{
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: declare-fun");
+        return;
+    }
+    SymbolNode const & name_node = *n.name;
+    auto const & args_vec = *n.argumentSorts;
+    SortNode const & ret_sort = *n.returnSort;
+
+    std::string const & fname = opensmt::nodeToString()(name_node);
 
     vec<SRef> args;
 
-    SRef retSort = sortFromASTNode(ret_node);
+    SRef retSort = sortFromSortNode(ret_sort);
     if (retSort != SRef_Undef) {
         args.push(retSort);
     } else {
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
-        return false;
+        notify_formatted(true, "Unknown return sort %s of %s", opensmt::nodeToString()(*ret_sort.identifier).c_str(), fname.c_str());
+        return;
     }
 
-    for (auto childNode : *(args_node.children)) {
-        SRef argSort = sortFromASTNode(*childNode);
+    for (auto const childNode : args_vec) {
+        SRef argSort = sortFromSortNode(*childNode);
         if (argSort != SRef_Undef) {
             args.push(argSort);
         } else {
-            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(*childNode).name.c_str(), fname);
-            return false;
+            notify_formatted(true, "Undefined sort %s in function %s", opensmt::nodeToString()(*childNode->identifier).c_str(), fname.c_str());
+            return;
         }
     }
 
@@ -869,61 +846,58 @@ bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<S
     SymRef rval = logic->declareFun(fname, rsort, args2);
 
     if (rval == SymRef_Undef) {
-        comment_formatted("Error while declare-fun %s", fname);
-        return false;
+        comment_formatted("Error while declare-fun %s", fname.c_str());
+        return;
     }
     user_declarations.push(rval);
-    return true;
+    notify_success();
 }
 
-bool Interpret::declareConst(ASTNode& n) //(const char* fname, const SRef ret_sort)
+
+void Interpret::interp(DeclareConst const & n) //(const char* fname, const SRef ret_sort)
 {
-    assert(n.children and n.children->size() == 3);
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    it++; // args_node
-    ASTNode const & ret_node = **(it++);
-    const char* fname = name_node.getValue();
-    SRef ret_sort = sortFromASTNode(ret_node);
+    auto const & name_node = *n.name;
+    auto const & ret_node = *n.sort;
+
+    std::string const & fname = opensmt::nodeToString()(name_node);
+    SRef ret_sort = sortFromSortNode(ret_node);
     if (ret_sort == SRef_Undef) {
-        notify_formatted(true, "Failed to declare constant %s", fname);
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
-        return false;
+        notify_formatted(true, "Failed to declare constant %s", fname.c_str());
+        notify_formatted(true, "Unknown return sort %s of %s", opensmt::nodeToString()(ret_node).c_str(), fname.c_str());
+        return;
     }
 
     SymRef rval = logic->declareFun(fname, ret_sort, {});
     if (rval == SymRef_Undef) {
-        comment_formatted("Error while declare-const %s", fname);
-        return false;
+        comment_formatted("Error while declare-const %s", fname.c_str());
+        return;
     }
     user_declarations.push(rval);
     notify_success();
-    return true;
 }
 
-bool Interpret::defineFun(const ASTNode& n)
-{
-    auto it = n.children->begin();
-    ASTNode const & name_node = **(it++);
-    ASTNode const & args_node = **(it++);
-    ASTNode const & ret_node  = **(it++);
-    ASTNode const & term_node = **(it++);
-    assert(it == n.children->end());
+void Interpret::interp(DefineFun const & n) {
+    if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: define-fun");
+        return;
+    }
+    SymbolNode const & nameNode = *n.name;
+    auto const & argumentVector = *n.args;
+    SortNode const & returnSort = *n.returnSort;
+    TermNode const & termNode = *n.term;
 
-    const char* fname = name_node.getValue();
+    std::string const & fname = opensmt::nodeToString()(nameNode);
 
     // Get the argument sorts
     vec<SRef> arg_sorts;
     vec<PTRef> arg_trs;
-    for (auto childNodePtr : *args_node.children) {
-        ASTNode const & childNode = *childNodePtr;
-        assert(childNode.children->size() == 1);
-        std::string varName = childNode.getValue();
-        ASTNode const & sortNode = **(childNode.children->begin());
-        SRef sortRef = sortFromASTNode(sortNode);
+    for (auto const & sortedVar_p : argumentVector) {
+        std::string const & varName = opensmt::nodeToString()(*sortedVar_p->symbol);
+        SortNode const & sortNode = *sortedVar_p->sort;
+        SRef sortRef = sortFromSortNode(sortNode);
         if (sortRef == SRef_Undef) {
-            notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname);
-            return false;
+            notify_formatted(true, "Undefined sort %s in function %s", opensmt::nodeToString()(sortNode).c_str(), fname.c_str());
+            return;
         }
         arg_sorts.push(sortRef);
         PTRef pvar = logic->mkVar(arg_sorts.last(), varName.c_str());
@@ -931,30 +905,29 @@ bool Interpret::defineFun(const ASTNode& n)
     }
 
     // The return sort
-    SRef ret_sort = sortFromASTNode(ret_node);
+    SRef ret_sort = sortFromSortNode(returnSort);
     if (ret_sort == SRef_Undef) {
-        notify_formatted(true, "Unknown return sort %s of %s", sortSymbolFromASTNode(ret_node).name.c_str(), fname);
-        return false;
+        notify_formatted(true, "Unknown return sort %s of %s", opensmt::nodeToString()(returnSort).c_str(), fname.c_str());
+        return;
     }
     sstat status;
     LetRecords letRecords;
-    PTRef tr = parseTerm(term_node, letRecords);
+    PTRef tr = parseTerm(termNode, letRecords);
     if (tr == PTRef_Undef) {
         notify_formatted(true, "define-fun returns an unknown sort");
-        return false;
+        return;
     }
     else if (logic->getSortRef(tr) != ret_sort) {
         notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
-        return false;
+        return;
     }
     bool rval = storeDefinedFun(fname, arg_trs, ret_sort, tr);
-    if (rval) notify_success();
-    else {
+    if (rval) {
+        notify_success();
+    } else {
         notify_formatted(true, "define-fun failed");
-        return false;
+        return;
     }
-
-    return rval;
 }
 
 bool Interpret::storeDefinedFun(std::string const & fname, const vec<PTRef> & args, SRef ret_sort, const PTRef tr) {
@@ -1041,33 +1014,25 @@ void Interpret::notify_success() {
     }
 }
 
-void Interpret::execute(const ASTNode* r) {
-    auto i = r->children->begin();
-    for (; i != r->children->end() && !f_exit; i++) {
-        interp(**i);
-        delete *i;
-        *i = nullptr;
-    }
-}
-
 int Interpret::interpFile(FILE* in) {
     Smt2newContext context(in);
-    int rval = smt2newparse(&context);
-
-    if (rval != 0) return rval;
-
-    const ASTNode* r = context.getRoot();
-    execute(r);
+    int rval = yyparse(&context);
+    if (context.hasRoot()) {
+        for (auto command : context.getRoot()) {
+            if (rval == 0 and not f_exit) { interp(command); }
+            delete command;
+        }
+    }
     return rval;
 }
 
 int Interpret::interpFile(char *content){
     Smt2newContext context(content);
-    int rval = smt2newparse(&context);
+    int rval = yyparse(&context);
 
     if (rval != 0) return rval;
-    const ASTNode* r = context.getRoot();
-    execute(r);
+//    ASTNode const & r = context.getRoot();
+//    execute(r);
     return rval;
 }
 
@@ -1165,13 +1130,14 @@ int Interpret::interpPipe() {
 
                     i = -1; // will be incremented to 0 by the loop condition.
                     Smt2newContext context(buf_out);
-                    int rval = smt2newparse(&context);
+                    int rval = yyparse(&context);
                     if (rval != 0)
                         notify_formatted(true, "scanner");
                     else {
-                        const ASTNode* r = context.getRoot();
-                        execute(r);
-                        done = f_exit;
+                        for (auto command : context.getRoot()) {
+                            if (rval == 0 and not f_exit) { interp(command); }
+                            delete command;
+                        }
                     }
                     free(buf_out);
                 }
@@ -1186,74 +1152,44 @@ int Interpret::interpPipe() {
     return 0;
 }
 
-SortSymbol Interpret::sortSymbolFromASTNode(ASTNode const & node) {
-    auto type = node.getType();
-    if (type == SYM_T or type == QSYM_T) {
-        return {node.getValue(), 0};
-    } else {
-        assert(type == LID_T and node.children and not node.children->empty());
-        ASTNode const & name = **(node.children->begin());
-        return {name.getValue(), static_cast<unsigned int>(node.children->size() - 1)};
-    }
-}
-
-SRef Interpret::sortFromASTNode(ASTNode const & node) const {
-    auto type = node.getType();
-    if (type == SYM_T or type == QSYM_T) {
-        SortSymbol symbol(node.getValue(), 0);
-        SSymRef symRef;
-        bool known = logic->peekSortSymbol(symbol, symRef);
-        if (not known) { return SRef_Undef; }
-        return logic->getSort(symRef, {});
-    } else {
-        assert(type == LID_T and node.children and not node.children->empty());
-        ASTNode const & name = **(node.children->begin());
-        SortSymbol symbol(name.getValue(), node.children->size() - 1);
-        SSymRef symRef;
-        bool known = logic->peekSortSymbol(symbol, symRef);
-        if (not known) { return SRef_Undef; }
-        vec<SRef> args;
-        for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
-            SRef argSortRef = sortFromASTNode(**it);
-            if (argSortRef == SRef_Undef) { return SRef_Undef; }
-            args.push(argSortRef);
-        }
-        return logic->getSort(symRef, std::move(args));
-    }
-    assert(type == LID_T and node.children and not node.children->empty());
-    ASTNode const & name = **(node.children->begin());
-    SortSymbol symbol(name.getValue(), node.children->size() - 1);
+SRef Interpret::sortFromSortNode(SortNode const & node) const {
+    SortSymbol symbol(opensmt::nodeToString()(*node.identifier->symbol), node.sortList->size());
     SSymRef symRef;
     bool known = logic->peekSortSymbol(symbol, symRef);
     if (not known) { return SRef_Undef; }
     vec<SRef> args;
-    for (auto it = node.children->begin() + 1; it != node.children->end(); ++it) {
-        SRef argSortRef = sortFromASTNode(**it);
+    for (auto const arg : *node.sortList) {
+        SRef argSortRef = sortFromSortNode(*arg);
         if (argSortRef == SRef_Undef) { return SRef_Undef; }
         args.push(argSortRef);
     }
     return logic->getSort(symRef, std::move(args));
 }
 
-void Interpret::getInterpolants(const ASTNode& n)
-{
-    auto exps = *n.children;
+void Interpret::interp(GetInterpolants const & n) {
+    if (not config.produce_inter()) {
+        notify_formatted(true, "Option to produce interpolants has not been set, skipping this command ...");
+        return;
+    } else if (not isInitialized()) {
+        notify_formatted(true, "Illegal command before set-logic: get-interpolants");
+        return;
+    }
+    auto const & exps = n.configuration;
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
-    for (auto key : nameToTerm.getKeys()) {
+    for (auto const & key : term_names) {
         letRecords.addBinding(key, nameToTerm[key]);
     }
 
-    for (auto e : exps) {
-        ASTNode& c = *e;
-        PTRef tr = parseTerm(c, letRecords);
+    for (auto const & c : *exps) {
+        PTRef tr = parseTerm(*c, letRecords);
 //        printf("Itp'ing a term %s\n", logic->pp(tr));
         grouping.push(tr);
     }
     letRecords.popFrame();
 
-    if (!(config.produce_inter() > 0))
+    if (not config.produce_inter())
         throw OsmtApiException("Cannot interpolate");
 
     assert(grouping.size() >= 2);
@@ -1325,8 +1261,8 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
     logic.reset(opensmt::LogicFactory::getInstance(logicType));
 }
 
-std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
-    return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+std::unique_ptr<MainSolver> Interpret::createMainSolver(std::string const & logic_name) {
+    return std::make_unique<MainSolver>(*logic, config, logic_name + " solver");
 }
 
 
