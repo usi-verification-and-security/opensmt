@@ -620,8 +620,7 @@ inline bool LASolver::getStatus( )
 bool LASolver::setStatus( LASolverStatus s )
 {
     status = s;
-    if (s == UNSAT)
-        has_explanation = true;
+    has_explanation = (s == UNSAT);
     return getStatus( );
 }
 
