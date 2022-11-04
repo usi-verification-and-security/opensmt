@@ -9,7 +9,7 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
 {
     lasolver = new LASolver(config, logic);
     ufsolver = new Egraph(config, logic);
-    setSolverSchedule({lasolver, ufsolver});
+    setSolverSchedule({ufsolver,lasolver});
 }
 
 PTRef UFLATHandler::getInterpolant(const ipartitions_t&, std::map<PTRef, icolor_t> *, PartitionManager &)
@@ -75,5 +75,11 @@ vec<PTRef> UFLATHandler::getSplitClauses() {
     }
     equalitiesToPropagate.clear();
     return res;
+}
+
+void UFLATHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
+    // MB: To properly build model in UF solver, we already need values for the LA variables from LA solver.
+    lasolver->fillTheoryFunctions(modelBuilder);
+    ufsolver->fillTheoryFunctions(modelBuilder);
 }
 

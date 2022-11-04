@@ -60,6 +60,8 @@ class UFLATHandler : public TSolverHandler
     void setInterfaceVars(vec<PTRef> && vars) { vars.moveTo(interfaceVars); }
 
     vec<PTRef> getSplitClauses() override;
+
+    void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
 };
 
 #endif

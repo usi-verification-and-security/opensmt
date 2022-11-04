@@ -56,15 +56,14 @@ public:
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
 
-    void    fillTheoryFunctions(ModelBuilder& modelBuilder) const;
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers
     void    informNewSplit(PTRef);                     // Recompute split datastructures
     virtual void declareAtom(PTRef tr);                     // Declare atom to the appropriate solver
-//    virtual SolverId getId() const { return my_id; }
     virtual lbool getPolaritySuggestion(PTRef) const { return l_Undef; }
     virtual TRes    check(bool);
     virtual vec<PTRef> getSplitClauses();
+    virtual void fillTheoryFunctions(ModelBuilder & modelBuilder) const;
 private:
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;
