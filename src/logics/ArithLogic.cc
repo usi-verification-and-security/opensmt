@@ -10,6 +10,7 @@
 #include "StringConv.h"
 #include "TreeOps.h"
 
+#include <map>
 #include <memory>
 #include <sstream>
 
@@ -341,9 +342,15 @@ PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
 }
 
 Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
-    Logic::SubstMap substitutions;
-    std::unordered_map<PTRef, std::vector<std::size_t>, PTRefHash> varToPolyIndices;
+    // MB: We enforce order to ensure that later-created terms are processed first.
+    //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
+    //     around, which would cause infinite cycle in transitive closure
+    struct PTRefGreaterThan {
+        bool operator()(PTRef first, PTRef second) const { return first.x > second.x; }
+    };
+    std::map<PTRef, std::vector<std::size_t>, PTRefGreaterThan> varToPolyIndices;
 
+    Logic::SubstMap substitutions;
     for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
         auto const & poly = zeroPolynomials[i];
         for (auto const & term : poly) {
