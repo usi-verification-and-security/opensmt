@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 17.06.20.
-//
+/*
+ *  Copyright (c) 2020-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include <gtest/gtest.h>
 #include <Opensmt.h>
@@ -9,6 +12,30 @@ class LIASubstitutionsRegression: public ::testing::Test {
 public:
     std::unique_ptr<Opensmt> getLIAOsmt() {
         return std::make_unique<Opensmt>(opensmt_logic::qf_lia, "test");
+    }
+};
+
+class UFLRASubstitutionsRegression: public ::testing::Test {
+protected:
+    ArithLogic logic;
+    SymRef f;
+    PTRef a,b,c,x,y,z;
+    PTRef fa,fb,fc,fx,fy,fz;
+public:
+    UFLRASubstitutionsRegression() : logic(opensmt::Logic_t::QF_UFLRA) {
+        f = logic.declareFun("f", logic.getSort_real(), {logic.getSort_real()});
+        x = logic.mkRealVar("x");
+        y = logic.mkRealVar("y");
+        z = logic.mkRealVar("z");
+        a = logic.mkRealVar("a");
+        b = logic.mkRealVar("b");
+        c = logic.mkRealVar("c");
+        fx = logic.mkUninterpFun(f,{x});
+        fy = logic.mkUninterpFun(f,{y});
+        fz = logic.mkUninterpFun(f,{z});
+        fa = logic.mkUninterpFun(f,{a});
+        fb = logic.mkUninterpFun(f,{b});
+        fc = logic.mkUninterpFun(f,{c});
     }
 };
 
@@ -92,4 +119,23 @@ TEST_F(LIASubstitutionsRegression, test_TwoVarsEqual) {
     PTRef key = substMap.getKeys()[0];
     PTRef value = substMap[key];
     ASSERT_TRUE((key == x and value == y) or (key == y and value == x));
+}
+
+TEST_F(UFLRASubstitutionsRegression, test_NoProblematicSubstitutions) {
+    vec<PTRef> equalities;
+    equalities.push(logic.mkEq(x,fx));
+    equalities.push(logic.mkEq(y,fy));
+    equalities.push(logic.mkEq(z,fz));
+    equalities.push(logic.mkEq(a,fa));
+    equalities.push(logic.mkEq(b,fb));
+    equalities.push(logic.mkEq(c,fc));
+    Logic::SubstMap map;
+    logic.arithmeticElimination(equalities, map);
+    // Substitutions of the form 'var -> term' where term contains the variable are forbidden!
+    EXPECT_FALSE(map.has(x));
+    EXPECT_FALSE(map.has(y));
+    EXPECT_FALSE(map.has(z));
+    EXPECT_FALSE(map.has(a));
+    EXPECT_FALSE(map.has(b));
+    EXPECT_FALSE(map.has(c));
 }
