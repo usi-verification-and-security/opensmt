@@ -87,7 +87,7 @@ gtest_add_tests(TARGET STPSolverTest)
 add_executable(SubstitutionsTest)
 target_sources(SubstitutionsTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIASubstitutionsRegression.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Substitutions.cc"
     )
 
 target_link_libraries(SubstitutionsTest OpenSMT gtest gtest_main)
