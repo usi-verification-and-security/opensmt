@@ -21,6 +21,7 @@ protected:
     vec<bool>           next_arr;
     vec<bool>           init_arr;
     vec<bool>           bound_arr;
+    int                 init_vars;
     int                 close_to_prop = 0;
     int                 init_close_to_prop = 0;
     int                 bound_prop = 0;
@@ -28,6 +29,7 @@ protected:
     int                 fun_props;
     bool                tested = false;
     bool                reset_props = false;
+    bool                initialized = false;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -133,6 +135,8 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     auto root = std::unique_ptr<Node>(root_raw);
     root->p = root_raw;
     queue.push(root_raw);
+    init_vars = nVars();
+    initialized = true;
 
     while (queue.size() != 0) {
         Node * n = queue.last();

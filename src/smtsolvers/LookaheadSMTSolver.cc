@@ -36,13 +36,25 @@ void LookaheadSMTSolver::attachClause(CRef cr) {
     if (c.size() > 2) {
         watches[~c[2]].push(Watcher(cr, c[0]));
     } else {
-        if(!init_arr[var(~c[0])]){
-            init_arr[var(~c[0])] = true;
-            init_close_to_prop++;
+        if(var(c[0])<init_vars || !initialized){
+            if(!init_arr[var(~c[0])]){
+                init_arr[var(~c[0])] = true;
+                init_close_to_prop++;
+            }
+            if(!next_arr[var(~c[0])]){
+                next_arr[var(~c[0])] = true;
+                close_to_prop++;
+            }
         }
-        if(!init_arr[var(~c[1])]){
-            init_arr[var(~c[1])] = true;
-            init_close_to_prop++;
+        if(var(c[0])<init_vars || !initialized){
+            if(!init_arr[var(~c[1])]){
+                init_arr[var(~c[1])] = true;
+                init_close_to_prop++;
+            }
+            if(!next_arr[var(~c[1])]){
+                next_arr[var(~c[1])] = true;
+                close_to_prop++;
+            }
         }
     }
 
@@ -175,7 +187,9 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
-                uncheckedEnqueue(out_learnt[0]);
+                CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
+                proof->endChain(unitClause);
+                uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
                 if (logsProofForInterpolation()) {
@@ -777,65 +791,67 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
           }
           count++;
           int p0 = 0, p1 = 0;
-          for (int polarity : {0, 1}) {
-            // do for both polarities
-            assert(decisionLevel() == d);
-            double ss = score->getSolverScore(this);
-            newDecisionLevel();
-            Lit l = mkLit(v, polarity);
-            fun_props = 1;
+          if(v<init_vars) {
+              for (int polarity : {0, 1}) {
+                // do for both polarities
+                assert(decisionLevel() == d);
+                double ss = score->getSolverScore(this);
+                newDecisionLevel();
+                Lit l = mkLit(v, polarity);
+                fun_props = 1;
 
 
-#ifdef LADEBUG
-            printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
-#endif
-            uncheckedEnqueue(l);
-            lbool res = laPropagateWrapper();
-            if (res == l_False) {
-              best = lit_Undef;
-              return {laresult::la_tl_unsat, best};
-            } else if (res == l_Undef) {
-              cancelUntil(0);
-              close_to_prop = init_close_to_prop;
-              for(int i = 0; i<next_arr.size(); i++){
-                next_arr[i] = init_arr[i];
+    #ifdef LADEBUG
+                printf("Checking lit %s%d\n", p == 0 ? "" : "-", v);
+    #endif
+                uncheckedEnqueue(l);
+                lbool res = laPropagateWrapper();
+                if (res == l_False) {
+                  best = lit_Undef;
+                  return {laresult::la_tl_unsat, best};
+                } else if (res == l_Undef) {
+                  cancelUntil(0);
+                  close_to_prop = init_close_to_prop;
+                  for(int i = 0; i<next_arr.size(); i++){
+                    next_arr[i] = init_arr[i];
+                  }
+                  return {laresult::la_restart, best};
+                }
+                // Else we go on
+                if (decisionLevel() == d + 1) {
+    #ifdef LADEBUG
+    //                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
+    #endif
+                score->updateSolverScore(ss, this);
+              } else if (decisionLevel() == d) {
+    #ifdef LADEBUG
+                printf(" -> Propagation resulted in backtrack\n");
+    #endif
+    //            derivations++;
+    //            if(derivations>5 || value(best) != l_Undef ){
+    //              derivations=0;
+                  score->updateRound();
+    //            }
+                break;
+              } else {
+    #ifdef LADEBUG
+                printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
+    #endif
+                // Backtracking should happen.
+                best = lit_Undef;
+                return {laresult::la_unsat, best};
               }
-              return {laresult::la_restart, best};
+              polarity == 0 ? p0 = ss : p1 = ss;
+              // Update also the clause deletion heuristic?
+    //          cancel_counter++;
+              cancelUntil(decisionLevel() - 1);
             }
-            // Else we go on
-            if (decisionLevel() == d + 1) {
-#ifdef LADEBUG
-//                printf(" -> Successfully propagated %d lits\n", trail.size() - tmp_trail_sz);
-#endif
-            score->updateSolverScore(ss, this);
-          } else if (decisionLevel() == d) {
-#ifdef LADEBUG
-            printf(" -> Propagation resulted in backtrack\n");
-#endif
-//            derivations++;
-//            if(derivations>5 || value(best) != l_Undef ){
-//              derivations=0;
-              score->updateRound();
-//            }
-            break;
-          } else {
-#ifdef LADEBUG
-            printf(" -> Propagation resulted in backtrack: %d -> %d\n", d, decisionLevel());
-#endif
-            // Backtracking should happen.
-            best = lit_Undef;
-            return {laresult::la_unsat, best};
-          }
-          polarity == 0 ? p0 = ss : p1 = ss;
-          // Update also the clause deletion heuristic?
-//          cancel_counter++;
-          cancelUntil(decisionLevel() - 1);
-        }
+           }
           if (value(v) == l_Undef) {
 #ifdef LADEBUG
           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-            assert(p0 == 1 and p1 == 1);
+            assert(p0 <= 1 and p1 <= 1);
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
             break;
