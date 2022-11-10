@@ -188,7 +188,9 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
                 CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                proof->endChain(unitClause);
+                if (logsProofForInterpolation()) {
+                    proof->endChain(unitClause);
+                }
                 uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
@@ -544,8 +546,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
 //    close_to_prop = close_to_prop_trail[decisionLevel()];
-//    printf("Level: %d \n", decisionLevel());
-//    printf("Close to prop: %d \n", close_to_prop);
+    printf("Level: %d \n", decisionLevel());
+    printf("Close to prop: %d \n", close_to_prop);
     tested = true;
     if (laPropagateWrapper() == l_False) {
 #ifdef LADEBUG
