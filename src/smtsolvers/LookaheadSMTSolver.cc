@@ -546,8 +546,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
 //    close_to_prop = close_to_prop_trail[decisionLevel()];
-    printf("Level: %d \n", decisionLevel());
-    printf("Close to prop: %d \n", close_to_prop);
+//    printf("Level: %d \n", decisionLevel());
+//    printf("Close to prop: %d \n", close_to_prop);
     tested = true;
     if (laPropagateWrapper() == l_False) {
 #ifdef LADEBUG
