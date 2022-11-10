@@ -74,7 +74,7 @@ void LookaheadSMTSolver::detachClause(CRef cr, bool strict) {
 Var LookaheadSMTSolver::newVar(bool dvar) {
     next_arr.push(false);
     init_arr.push(false);
-    bound_arr.push(true);
+    bound_arr.push(false);
     Var v = SimpSMTSolver::newVar(dvar);
     score->newVar();
     return v;
@@ -569,7 +569,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     Var oldBest, newBest;
     if(close_to_prop + bound_prop > 0){
       for (Var v(idx % nVars()); (close_to_prop!=0 || bound_prop!=0) && (close_to_prop + bound_prop > 0) && !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
-//        assert(v>=0);
+        assert(v>=0 && bound_prop>=0 && close_to_prop>=0);
         if (next_arr[v] || bound_arr[v]) {
             if (!decision[v]) {
               score->setChecked(v);
