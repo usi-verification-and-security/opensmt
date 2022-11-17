@@ -16,6 +16,7 @@ struct PTRef {
     inline friend bool operator== (PTRef a1, PTRef a2) { return a1.x == a2.x; }
     inline friend bool operator!= (PTRef a1, PTRef a2) { return a1.x != a2.x; }
     inline friend bool operator> (PTRef a1, PTRef a2) { return a1.x > a2.x; }
+    inline friend bool operator< (PTRef a1, PTRef a2) { return a1.x < a2.x; }
     static const PTRef Undef;
 };
 
