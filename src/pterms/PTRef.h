@@ -8,7 +8,7 @@
 #ifndef OPENSMT_PTREF_H
 #define OPENSMT_PTREF_H
 
-#include "Map.h"
+#include <cstdint>
 #include <functional>
 
 struct PTRef {
@@ -32,12 +32,6 @@ struct PTRefPairHash {
         std::hash<uint32_t> hasher;
         return (hasher(p.first.x) ^ hasher(p.second.x));
     }
-};
-
-
-template <>
-struct Equal<const PTRef> {
-    bool operator() (PTRef s1, PTRef s2) const { return s1 == s2; }
 };
 
 #endif //OPENSMT_PTREF_H

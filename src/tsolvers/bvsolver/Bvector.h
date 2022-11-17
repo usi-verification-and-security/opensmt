@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Alloc.h"
 #include "PTRef.h"
 
+#include "Map.h"
+
 struct BVRef {
     uint32_t x;
     void operator= (uint32_t v) { x = v; }
