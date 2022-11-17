@@ -345,10 +345,7 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
     // MB: We enforce order to ensure that later-created terms are processed first.
     //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
     //     around, which would cause infinite cycle in transitive closure
-    struct PTRefGreaterThan {
-        bool operator()(PTRef first, PTRef second) const { return first.x > second.x; }
-    };
-    std::map<PTRef, std::vector<std::size_t>, PTRefGreaterThan> varToPolyIndices;
+    std::map<PTRef, std::vector<std::size_t>, std::greater<PTRef>> varToPolyIndices;
 
     Logic::SubstMap substitutions;
     for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
