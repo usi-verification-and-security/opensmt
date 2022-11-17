@@ -244,16 +244,4 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     friend class PtStore;
 };
 
-inline void ptermSort(Pterm& t) { sort(t.args, t.size(), LessThan_PTRef()); }
-
-inline bool isSorted(vec<PTRef>& args) {
-    LessThan_PTRef lt;
-    if (args.size() == 0) return true;
-    PTRef c = args[0];
-    for (int i = 1; i < args.size(); i++) {
-        if (!lt.operator()(c, args[i])) return false;
-        c = args[i];
-    }
-    return true;
-}
 #endif
