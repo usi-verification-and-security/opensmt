@@ -11,8 +11,8 @@
 #include <vector>
 
 class FlaPartitionMap {
-    std::map<PTRef, unsigned int> top_level_flas;
-    std::map<PTRef, unsigned int> other_flas;
+    std::map<PTRef, unsigned int, std::greater<PTRef>> top_level_flas;
+    std::map<PTRef, unsigned int, std::greater<PTRef>> other_flas;
 
 public:
     void store_top_level_fla_index(PTRef fla, unsigned int idx) { top_level_flas[fla] = idx; }

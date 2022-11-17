@@ -11,8 +11,9 @@
 #include "ModelBuilder.h"
 
 #include <sys/wait.h>
-#include <assert.h>
+#include <cassert>
 #include <sstream>
+#include <unordered_set>
 
 void THandler::backtrack(int lev)
 {
@@ -85,7 +86,7 @@ std::vector<vec<Lit>> THandler::getNewSplits() {
     if (newSplits.size() == 0) {
         return splitClauses;
     }
-    assert(std::set<PTRef>(newSplits.begin(), newSplits.end()).size() == newSplits.size_()); // No duplicates in splits
+    assert((std::unordered_set<PTRef, PTRefHash>{newSplits.begin(), newSplits.end()}.size() == newSplits.size_())); // No duplicates in splits
     for (PTRef clause : newSplits) {
         splitClauses.emplace_back();
         Logic const & logic = getLogic();
@@ -154,7 +155,7 @@ void THandler::getConflict (
 
 
 PTRef
-THandler::getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
+THandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager)
 {
     return getSolverHandler().getInterpolant(mask, labels, pmanager);
 }
@@ -254,7 +255,7 @@ void
 THandler::dumpFormulaToFile( std::ostream & dump_out, PTRef formula, bool negate )
 {
 	std::vector< PTRef > unprocessed_enodes;
-	std::map< PTRef, std::string > enode_to_def;
+	std::map< PTRef, std::string, std::greater<PTRef> > enode_to_def;
 	unsigned num_lets = 0;
     Logic& logic = getLogic();
 

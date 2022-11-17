@@ -7,14 +7,16 @@
 
 #include "FarkasInterpolator.h"
 
+using ItpColorMap = TheoryInterpolator::ItpColorMap;
+
 struct LAExplanations {
     vec<PtAsgn> explanations;
     std::vector<opensmt::Real> coeffs;
-    std::map<PTRef, icolor_t> labels;
+    ItpColorMap labels;
 
     static LAExplanations getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                              std::vector<opensmt::Real> const & coeffs,
-                                             std::map<PTRef, icolor_t> const & labels);
+                                             ItpColorMap const & labels);
 };
 
 class LIAInterpolator : public FarkasInterpolator {

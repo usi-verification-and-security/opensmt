@@ -15,7 +15,7 @@ LATHandler::LATHandler(SMTConfig & c, ArithLogic & l)
     setSolverSchedule({lasolver});
 }
 
-PTRef LATHandler::getInterpolant(ipartitions_t const & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) {
+PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) {
     if (logic.hasReals() and not logic.hasIntegers()) {
         return lasolver->getRealInterpolant(mask, labels, pmanager);
     } else if (logic.hasIntegers() and not logic.hasReals()) {

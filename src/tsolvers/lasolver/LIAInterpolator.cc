@@ -9,7 +9,7 @@
 
 LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                                   std::vector<opensmt::Real> const & coeffs,
-                                                  std::map<PTRef, icolor_t> const & labels) {
+                                                  ItpColorMap const & labels) {
     LAExplanations liaExplanations;
     // We need to recompute the labels for the Farkas interpolator!
     // Consider this example: not (0 <= x - y) with label A; not (1 <= y - x) with label B

@@ -139,7 +139,8 @@ private:
 class TheoryInterpolator
 {
 public:
-    virtual PTRef getInterpolant(const ipartitions_t&, std::map<PTRef, icolor_t>*, PartitionManager &pmanager) = 0;
+    using ItpColorMap = std::map<PTRef, icolor_t, std::greater<PTRef>>;
+    virtual PTRef getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager &pmanager) = 0;
 };
 
 #endif //THEORY_INTERPOLATOR_H

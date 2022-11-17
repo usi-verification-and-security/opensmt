@@ -38,7 +38,7 @@ public:
     PtAsgn() : tr(PTRef_Undef), sgn(l_Undef) {}
     bool operator== (const PtAsgn& other) const;// { return tr == other.tr && sgn == other.sgn; }
     bool operator!= (const PtAsgn& other) const ;//{ return !(*this == other); }
-    bool operator< (const PtAsgn& other) const;// { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
+    bool operator> (const PtAsgn& other) const;// { return tr < other.tr || (tr == other.tr && toInt(sgn) < toInt(other.sgn)); }
 };
 
 

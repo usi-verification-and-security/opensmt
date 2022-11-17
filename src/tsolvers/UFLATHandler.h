@@ -49,7 +49,7 @@ class UFLATHandler : public TSolverHandler
     Logic & getLogic() override { return logic; }
     Logic const & getLogic() const override { return logic; }
 
-    PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) override;
+    PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
 
     lbool getPolaritySuggestion(PTRef pt) const override;
 

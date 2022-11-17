@@ -48,13 +48,15 @@ protected:
     TSolverHandler(SMTConfig & c) : config(c) { }
     void setSolverSchedule(vec<TSolver*> && schedule) { solverSchedule = std::move(schedule); }
 public:
+    using ItpColorMap = std::map<PTRef, icolor_t, std::greater<PTRef>>;
+
     virtual ~TSolverHandler();
 
     virtual void clearSolver(); // Clear the solver state
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t>*, PartitionManager& pmanager) = 0;
+    virtual PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap *, PartitionManager& pmanager) = 0;
 
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers

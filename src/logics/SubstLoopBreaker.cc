@@ -81,7 +81,7 @@ TargetVarList::TargetVarList(vec<PTRef>&& _children)
 
 TVLRef TargetVarListAllocator::alloc(vec<PTRef>&& _children)
 {
-    sort(_children);
+    sort(_children, std::greater<PTRef>{});
     uint32_t v = RegionAllocator<uint32_t>::alloc(targetVarList32Size(_children.size()));
     TVLRef sid = {v};
     auto size = (unsigned)_children.size();

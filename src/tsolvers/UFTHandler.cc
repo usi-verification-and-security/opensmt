@@ -29,7 +29,7 @@ lbool UFTHandler::getPolaritySuggestion(PTRef p) const {
     return l_Undef;
 }
 
-PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager)
+PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager)
 {
     InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(egraph);
     assert(iegraph);

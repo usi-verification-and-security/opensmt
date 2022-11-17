@@ -16,7 +16,7 @@ public:
     virtual ~RDLTHandler() = default;
     Logic &getLogic() override;
     const Logic &getLogic() const override;
-    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t>*, PartitionManager&) override {
+    PTRef getInterpolant(const ipartitions_t &, ItpColorMap *, PartitionManager&) override {
         throw std::logic_error("Not implemented yet");
     }
 

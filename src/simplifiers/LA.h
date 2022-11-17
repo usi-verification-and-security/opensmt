@@ -57,7 +57,7 @@ public:
         return polynome.size() == 1 && (r == OP::EQ ? polynome[PTRef_Undef] != 0 : polynome[PTRef_Undef] < 0);
     }
 
-    using polynome_t = std::map<PTRef, opensmt::Real>;
+    using polynome_t = std::map<PTRef, opensmt::Real, std::greater<PTRef>>;
 
     void initialize(PTRef, bool canonize = true);      // Initialize
     PTRef solve();           // Solve w.r.t. some variable

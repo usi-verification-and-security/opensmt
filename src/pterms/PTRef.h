@@ -34,7 +34,7 @@ struct PTRef {
 //    void operator= (uint32_t v) { x = v; }
     inline friend bool operator== (const PTRef& a1, const PTRef& a2)   { return a1.x == a2.x; }
     inline friend bool operator!= (const PTRef& a1, const PTRef& a2)   { return a1.x != a2.x; }
-    inline friend bool operator< (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
+    inline friend bool operator> (const PTRef& a1, const PTRef& a2)    { return a1.x > a2.x;  }
     static const PTRef Undef;
 };
 

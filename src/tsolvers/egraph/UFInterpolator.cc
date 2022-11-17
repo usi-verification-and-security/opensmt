@@ -296,7 +296,7 @@ void UFInterpolator::colorCongruenceEdge(CEdge * edge) {
     }
 }
 
-icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, std::map<PTRef, icolor_t> const & conflictColors) const {
+icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, ItpColorMap const & conflictColors) const {
     icolor_t conf_color = icolor_t::I_UNDEF;
     PTRef eq = logic.mkEq(t1, t2);
     if (conflictColors.find(eq) != conflictColors.end()) {
@@ -338,7 +338,7 @@ icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, std::map<
 // formula into A and B.
 //
 PTRef
-UFInterpolator::getInterpolant(const ipartitions_t & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) {
+UFInterpolator::getInterpolant(const ipartitions_t & mask, ItpColorMap * labels, PartitionManager & pmanager) {
     assert(labels);
     if (labels) {
         colorInfo = std::make_unique<GlobalTermColorInfo>(pmanager, mask);

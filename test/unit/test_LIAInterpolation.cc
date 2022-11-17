@@ -8,6 +8,8 @@
 #include <LIAInterpolator.h>
 #include <MainSolver.h>
 
+using ItpColorMap = LIAInterpolator::ItpColorMap;
+
 class LIAInterpolationTest : public ::testing::Test {
 protected:
     LIAInterpolationTest(): logic{opensmt::Logic_t::QF_LIA} {}
@@ -40,7 +42,7 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
     PTRef leq2 = logic.mkLt(x, one);
     vec<PtAsgn> conflict {PtAsgn(logic.mkNot(leq1), l_False), PtAsgn(logic.mkNot(leq2), l_False)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
+    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1,1}, labels));
     PTRef farkasItp = interpolator.getFarkasInterpolant();
     std::cout << logic.pp(farkasItp) << std::endl;
@@ -76,7 +78,7 @@ TEST_F(LIAInterpolationTest, test_DecompositionInLIA){
                           PtAsgn(logic.mkNot(leq3), l_False),
                           PtAsgn(logic.mkNot(leq4), l_False), PtAsgn(leq5, l_True), PtAsgn(leq6, l_True)};
     ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
-    std::map<PTRef, icolor_t> labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A},
+    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A},
                                       {conflict[3].tr, icolor_t::I_B}, {conflict[4].tr, icolor_t::I_B}, {conflict[5].tr, icolor_t::I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, std::move(conflict), {2,1,1,1,1,2}, labels));
     PTRef decomposedFarkasItp = interpolator.getDecomposedInterpolant();

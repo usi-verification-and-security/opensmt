@@ -24,7 +24,7 @@ public:
     virtual Logic const & getLogic() const override { return logic; }
     virtual lbool getPolaritySuggestion(PTRef p) const override { return lasolver->getPolaritySuggestion(p); }
 
-    virtual PTRef getInterpolant(ipartitions_t const & mask, std::map<PTRef, icolor_t> * labels, PartitionManager & pmanager) override;
+    virtual PTRef getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) override;
 };
 
 #endif //OPENSMT_LATHANDLER_H

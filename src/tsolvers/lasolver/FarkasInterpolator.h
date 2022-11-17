@@ -42,8 +42,9 @@ struct DecomposedStatistics {
 
 class FarkasInterpolator {
 public:
+    using ItpColorMap = TheoryInterpolator::ItpColorMap;
     FarkasInterpolator(ArithLogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
-                       std::map<PTRef, icolor_t> labels)
+                       ItpColorMap labels)
         : logic(logic),
           explanations(std::move(explanations)),
           explanation_coeffs(std::move(coeffs)),
@@ -51,7 +52,7 @@ public:
     {}
 
     FarkasInterpolator(ArithLogic & logic, vec<PtAsgn> explanations, std::vector<opensmt::Real> coeffs,
-                       std::map<PTRef, icolor_t> labels, std::unique_ptr<TermColorInfo> colorInfo)
+                       ItpColorMap labels, std::unique_ptr<TermColorInfo> colorInfo)
         : logic(logic),
           explanations(std::move(explanations)),
           explanation_coeffs(std::move(coeffs)),
@@ -108,7 +109,7 @@ private:
     ArithLogic & logic;
     const vec<PtAsgn> explanations;
     const std::vector<opensmt::Real> explanation_coeffs;
-    const std::map<PTRef, icolor_t> labels;
+    const ItpColorMap labels;
     std::unique_ptr<TermColorInfo> termColorInfo;
 };
 

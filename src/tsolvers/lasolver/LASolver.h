@@ -92,6 +92,7 @@ private:
     }
 
 public:
+    using ItpColorMap = TheoryInterpolator::ItpColorMap;
 
     LASolver(SMTConfig & c, ArithLogic & l);
     LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l);
@@ -114,8 +115,8 @@ public:
     void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
     vec<PTRef> collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
-    PTRef getRealInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t>*, PartitionManager & pmanager);
-    PTRef getIntegerInterpolant(std::map<PTRef, icolor_t> const &);
+    PTRef getRealInterpolant(const ipartitions_t &, ItpColorMap *, PartitionManager & pmanager);
+    PTRef getIntegerInterpolant(ItpColorMap const &);
 
     // Return the conflicting bounds
     void getConflict(vec<PtAsgn> &) override;

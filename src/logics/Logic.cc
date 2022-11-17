@@ -532,7 +532,7 @@ PTRef Logic::mkXor(vec<PTRef>&& args) {
     else if (args[0] == getTerm_false() || args[1] == getTerm_false())
         return (args[0] == getTerm_false() ? args[1] : args[0]);
 
-    sort(args);
+    sort(args, std::greater<PTRef>{});
     tr = mkFun(getSym_xor(), std::move(args));
 
     if(tr == PTRef_Undef) {
@@ -1304,7 +1304,7 @@ std::string Logic::dumpWithLets(PTRef formula) const {
 void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
     uint32_t random_Idx = 0;
     vector<PTRef> unprocessed_enodes;
-    map<PTRef, string> enode_to_def;
+    map<PTRef, string, std::greater<PTRef>> enode_to_def;
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back(formula);
@@ -1460,7 +1460,7 @@ PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTR
 void
 Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int& n_of_if)
 {
-    set<PTRef> seen_terms;
+    set<PTRef, std::greater<PTRef>> seen_terms;
     queue<PTRef> to_visit;
     n_of_conn = n_of_eq = n_of_uf = n_of_if = 0;
     to_visit.push(root);

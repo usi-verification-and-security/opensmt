@@ -820,16 +820,16 @@ PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const 
 // Compute interpolants for the conflict
 //
 PTRef
-LASolver::getRealInterpolant( const ipartitions_t & mask , std::map<PTRef, icolor_t> *labels, PartitionManager &pmanager) {
+LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels, PartitionManager &pmanager) {
     assert(status == UNSAT);
     vec<PtAsgn> explCopy;
     explanation.copyTo(explCopy);
-    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : std::map<PTRef, icolor_t>{},
+    FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
         std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     return interpolateUsingEngine(interpolator);
 }
 
-PTRef LASolver::getIntegerInterpolant(std::map<PTRef, icolor_t> const& labels) {
+PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
     return interpolateUsingEngine(interpolator);

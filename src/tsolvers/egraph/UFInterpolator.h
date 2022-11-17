@@ -78,7 +78,7 @@ struct CEdge {
 class CGraph {
     std::vector<CNode *>          cnodes;
     std::vector<CEdge *>          cedges;
-    std::map<PTRef, CNode *>      cnodes_store;
+    std::map<PTRef, CNode *, std::greater<PTRef>> cnodes_store;
 
     PTRef conf1 = PTRef_Undef;
     PTRef conf2 = PTRef_Undef;
@@ -121,7 +121,7 @@ public:
 
     inline int verbose() const { return config.verbosity(); }
 
-    PTRef getInterpolant(const ipartitions_t &, std::map<PTRef, icolor_t> *, PartitionManager &) override;
+    PTRef getInterpolant(const ipartitions_t &, ItpColorMap *, PartitionManager &) override;
 
     void printAsDotty(std::ostream &);
 
@@ -136,7 +136,7 @@ private:
         return colorInfo->getColorFor(term);
     }
 
-    icolor_t determineDisequalityColor(PTRef t1, PTRef t2, std::map<PTRef, icolor_t> const & conflictColors) const;
+    icolor_t determineDisequalityColor(PTRef t1, PTRef t2, ItpColorMap const & conflictColors) const;
 
     void colorCGraph();
     void colorNodes();
@@ -184,7 +184,7 @@ private:
     SMTConfig & config;
     Logic & logic;
     CGraph & cgraph;
-    std::map<PTRef, icolor_t> litColors; // MB: this is needed because edges need to be colored exactly as the literals in the conflict
+    ItpColorMap litColors; // MB: this is needed because edges need to be colored exactly as the literals in the conflict
     std::set<CNode *> colored_nodes;
     std::set<CEdge *> colored_edges;
     std::unique_ptr<TermColorInfo> colorInfo;
