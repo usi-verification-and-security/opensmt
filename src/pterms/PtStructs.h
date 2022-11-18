@@ -1,32 +1,13 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+/*
+ * Copyright (c) 2012-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ * Copyright (c) 2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_PTHELPERSTRUCTS_H
 #define OPENSMT_PTHELPERSTRUCTS_H
 
-#include <string.h>
 #include "SolverTypes.h"
 #include "PTRef.h"
 
@@ -72,40 +53,5 @@ public:
 };
 
 static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
-
-// DEPRECATED in favour of new Model structure, should not be used anymore!
-class ValPair
-{
-public:
-    PTRef tr;
-    char* val;
-    ValPair() : tr(PTRef_Undef), val(nullptr) {}
-    ~ValPair();/* {
-        if (val != NULL)
-            free(val);
-    }*/
-    ValPair(PTRef tr, const char* val_) : tr(tr) {
-        if (val_ != NULL)
-            val = strdup(val_);
-        else val = NULL;
-    }
-    ValPair(const ValPair& other);/* {
-        tr = other.tr;
-        if (other.val != NULL)
-            val = strdup(other.val);
-        else val = NULL;
-    }*/
-    const ValPair& operator= (const ValPair& other);/* {
-        tr = other.tr;
-        if (other.val != NULL)
-            val = strdup(other.val);
-        else val = NULL;
-        return *this;
-    }*/
-    bool operator== (const ValPair& other) const;// { return tr == other.tr && val == other.val; }
-    bool operator!= (const ValPair& other) const;// { return tr != other.tr || val != other.val; }
-};
-
-static class ValPair ValPair_Undef(PTRef_Undef, nullptr);
 
 #endif //OPENSMT_PTHELPERSTRUCTS_H

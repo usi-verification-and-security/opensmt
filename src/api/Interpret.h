@@ -200,7 +200,6 @@ class Interpret {
     void    execute(const ASTNode* n);
     bool    gotExit() const { return f_exit; }
 
-    ValPair getValue       (PTRef tr) const;
     bool    getAssignment  ();
 
     void    reportError(char const * msg) { notify_formatted(true, msg); }
