@@ -651,11 +651,12 @@ bool Interpret::getAssignment() {
 
 void Interpret::getValue(const std::vector<ASTNode*>* terms)
 {
+    assert(terms);
     auto model = main_solver->getModel();
-    Logic& logic = main_solver->getLogic();
+    Logic & logic = main_solver->getLogic();
     std::vector<opensmt::pair<PTRef,PTRef>> values;
-    for (auto term_it = terms->begin(); term_it != terms->end(); ++term_it) {
-        const ASTNode& term = **term_it;
+    for (auto termNode : *terms) {
+        ASTNode const & term = *termNode;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
