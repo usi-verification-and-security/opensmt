@@ -1,11 +1,5 @@
 #include <PtStructs.h>
 
-
-bool PtAsgn::operator== (const PtAsgn& other) const { return tr == other.tr && sgn == other.sgn; }
-bool PtAsgn::operator!= (const PtAsgn& other) const { return !(*this == other); }
-bool PtAsgn::operator> (const PtAsgn& other) const { return tr > other.tr || (tr == other.tr && toInt(sgn) > toInt(other.sgn)); }
-
-
 uint32_t PtAsgnHash::operator () (const PtAsgn& s) const {
     return ((uint32_t)s.tr.x << 2) + toInt(s.sgn);
 }
