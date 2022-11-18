@@ -42,6 +42,13 @@ public:
     bool operator< (PtAsgn const & other) const { return tr < other.tr or (tr == other.tr and toInt(sgn) < toInt(other.sgn)); }
 };
 
+// Strict weak ordering of PtAsgn: Instances with same tr, but different sgn are treated as equivalent.
+// OK to be used in sorting, see https://en.cppreference.com/w/cpp/named_req/Compare
+struct LessThan_PtAsgn {
+    bool operator() (PtAsgn x, PtAsgn y) {
+        return x.tr.x < y.tr.x;
+    }
+};
 
 static class PtAsgn PtAsgn_Undef(PTRef_Undef, l_Undef);
 
@@ -65,12 +72,6 @@ public:
 };
 
 static class PtAsgn_reason PtAsgn_reason_Undef(PTRef_Undef, l_Undef, PTRef_Undef);
-
-struct LessThan_PtAsgn {
-    bool operator () (PtAsgn x, PtAsgn y) {
-        return x.tr.x < y.tr.x;
-    }
-};
 
 // DEPRECATED in favour of new Model structure, should not be used anymore!
 class ValPair
