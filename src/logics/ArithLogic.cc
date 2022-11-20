@@ -1083,21 +1083,16 @@ void SimplifyConstDiv::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef 
     s_new = s;
 }
 
-// Return a term corresponding to the operation applied to the constant
-// terms.  The list may contain terms of the form (* -1 a) for constant
-// a.
-PTRef SimplifyConst::simplifyConstOp(const vec<PTRef> & terms)
-{
-    if (terms.size() == 0) {
-        opensmt::Number s = getIdOp();
-        return l.mkConst(l.getSortRef(terms[0]), s);
-    } else if (terms.size() == 1) {
+// Returns a term corresponding to the operation applied to the constant terms.
+PTRef SimplifyConst::simplifyConstOp(vec<PTRef> const & terms) {
+    assert(terms.size() != 0);
+    if (terms.size() == 1) {
         return terms[0];
     } else {
         opensmt::Number s = l.getNumConst(terms[0]);
-        for (int i = 1; i < terms.size(); i++) {
+        for (int i = 1; i < terms.size(); ++i) {
             assert(l.isConstant((terms[i])));
-            opensmt::Number const& val = l.getNumConst(terms[i]);
+            opensmt::Number const & val = l.getNumConst(terms[i]);
             Op(s, val);
         }
         return l.mkConst(l.getSortRef(terms[0]), s);
