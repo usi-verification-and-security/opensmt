@@ -1,4 +1,8 @@
-### 2.4.3 (unreleased)
+### 2.5.0 (unreleased)
+
+
+
+### 2.4.3 (2022-11-21)
 
 Bug fixes:
  - UFLA: Fix unsoundness bug due to LASolver not signalling the presence of conflict correctly
