@@ -10,7 +10,6 @@
 #include <gmpxx.h>
 
 #include <cassert>
-#include <map>
 #include <set>
 
 namespace opensmt {
