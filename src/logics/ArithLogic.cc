@@ -13,6 +13,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <variant>
 
 const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
@@ -587,34 +588,47 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     if (args.size() == 1) {
         return args[0];
     }
+    assert(args.size() != 0);
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
-    VecMap<PTRef,PTRef,PTRefHash> s2t;
-    vec<PTRef> keys;
+    Map<PTRef,uint32_t,PTRefHash> varIndices;
+    struct Entry {
+        PTRef var;
+        std::variant<PTRef,FastRational> coeff;
+    };
+    std::vector<Entry> simplified;
+    simplified.reserve(args.size());
+
     for (PTRef arg : args) {
         auto [v,c] = splitTermToVarAndConst(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
-        if (!s2t.has(v)) {
-            s2t.insert(v, {c});
-            keys.push(v);
-        } else
-            s2t[v].push(c);
+        if (not varIndices.has(v)) {
+            varIndices.insert(v, simplified.size());
+            simplified.push_back({.var = v, .coeff = c});
+        } else {
+            auto index = varIndices[v];
+            auto & entry = simplified[index];
+            if (std::holds_alternative<PTRef>(entry.coeff)) {
+                entry.coeff = this->getNumConst(std::get<PTRef>(entry.coeff));
+            }
+            assert(std::holds_alternative<FastRational>(entry.coeff));
+            std::get<FastRational>(entry.coeff) += this->getNumConst(c);
+        }
     }
     flattened_args.clear();
-    for (PTRef key : keys) {
-        const vec<PTRef>& consts = s2t[key];
-        PTRef consts_summed = consts.size() == 1 ? consts[0] : SimplifyConstSum(*this).simplifyConstOp(consts);
-        if (isZero(consts_summed)) { continue; }
-        if (key == PTRef_Undef) {
-            flattened_args.push(consts_summed);
+    for (auto const & [var,coeff] : simplified) {
+        PTRef coeffTerm = std::holds_alternative<PTRef>(coeff) ? std::get<PTRef>(coeff) : this->mkConst(this->getSortRef(var), std::get<FastRational>(coeff));
+        if (isZero(coeffTerm)) { continue; }
+        if (var == PTRef_Undef) {
+            flattened_args.push(coeffTerm);
             continue;
         }
-        if (isOne(consts_summed)) {
-            flattened_args.push(key);
+        if (isOne(coeffTerm)) {
+            flattened_args.push(var);
             continue;
         }
         // default case, variable and constant (cannot be simplified)
-        PTRef term = mkFun(getTimesForSort(returnSort), {consts_summed, key});
+        PTRef term = mkFun(getTimesForSort(returnSort), {coeffTerm, var});
         flattened_args.push(term);
     }
     if (flattened_args.size() == 0) return getZeroForSort(returnSort);
