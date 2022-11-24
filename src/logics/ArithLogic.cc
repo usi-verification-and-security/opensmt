@@ -545,7 +545,6 @@ PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
 
 PTRef ArithLogic::mkMinus(vec<PTRef> && args)
 {
-    SRef sort = checkArithSortCompatible(args);
     assert(args.size() > 0);
     if (args.size() == 1) {
         return mkNeg(args[0]);
@@ -553,9 +552,7 @@ PTRef ArithLogic::mkMinus(vec<PTRef> && args)
     assert(args.size() == 2);
     if (args.size() > 2) { throw OsmtApiException("Too many terms provided to LALogic::mkNumMinus"); }
 
-    PTRef mo = getMinusOneForSort(sort);
-
-    PTRef fact = mkTimes(mo, args[1]);
+    PTRef fact = mkNeg(args[1]);
     assert(fact != PTRef_Undef);
     args[1] = fact;
     return mkPlus(std::move(args));
