@@ -374,24 +374,13 @@ void Interpret::interp(ASTNode& n) {
     }
 }
 
-
-bool Interpret::addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords) {
-    assert(names.size() == args.size());
-    if (names.size() > 1) {
-        // check that they are pairwise distinct;
-        std::unordered_set<const char*, StringHash, Equal<const char*>> namesAsSet(names.begin(), names.end());
-        if (namesAsSet.size() != names.size_()) {
-            comment_formatted("Overloading let variables makes no sense");
+bool Interpret::addLetFrame(std::vector<opensmt::pair<PTRef,std::string>> const & bindings, LetRecords& letRecords) {
+    for (auto const & [arg, name] : bindings) {
+        if (logic->hasSym(name.c_str()) and logic->getSym(logic->symNameToRef(name.c_str())[0]).noScoping()) {
+            notify_formatted(true, "Names marked as no scoping cannot be overloaded with let variables: %s", name.c_str());
             return false;
         }
-    }
-    for (int i = 0; i < names.size(); ++i) {
-        const char* name = names[i];
-        if (logic->hasSym(name) && logic->getSym(logic->symNameToRef(name)[0]).noScoping()) {
-            comment_formatted("Names marked as no scoping cannot be overloaded with let variables: %s", name);
-            return false;
-        }
-        letRecords.addBinding(name, args[i]);
+        letRecords.addBinding(name, arg);
     }
     return true;
 }
@@ -493,27 +482,26 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     else if (t == LET_T) {
         auto ch = term.children->begin();
         auto vbl = (**ch).children->begin();
-        vec<PTRef> tmp_args;
-        vec<char*> names;
+
         // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
         class Guard {
             LetRecords& rec;
-            vec<char*>& names;
         public:
-            Guard(LetRecords& rec, vec<char*>& names): rec(rec), names(names) { rec.pushFrame(); }
-            ~Guard() { rec.popFrame(); for (int i = 0; i < names.size(); i++) { free(names[i]); }}
-        } scopeGuard(letRecords, names);
+            Guard(LetRecords& rec): rec(rec) { rec.pushFrame(); }
+            ~Guard() { rec.popFrame(); }
+        } scopeGuard(letRecords);
+
+        std::vector<opensmt::pair<PTRef, std::string>> bindings;
+
         // First read the term declarations in the let statement
         while (vbl != (**ch).children->end()) {
             PTRef let_tr = parseTerm(**((**vbl).children->begin()), letRecords);
             if (let_tr == PTRef_Undef) return PTRef_Undef;
-            tmp_args.push(let_tr);
-            char* name = strdup((**vbl).getValue());
-            names.push(name);
+            bindings.push_back({let_tr, (**vbl).getValue()});
             vbl++;
         }
         // Only then insert them to the table
-        bool success = addLetFrame(names, tmp_args, letRecords);
+        bool success = addLetFrame(bindings, letRecords);
         if (not success) {
             comment_formatted("Let name addition failed");
             return PTRef_Undef;

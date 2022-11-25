@@ -35,6 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ScopedVector.h"
 
 #include <unordered_map>
+#include <string>
 
 class DefinedFunctions {
     std::unordered_map<std::string,TemplateFunction> defined_functions;
@@ -65,32 +66,28 @@ public:
 
 class LetBinder {
     PTRef currentValue;
-    std::vector<PTRef>* shadowedValues;
+    vec<PTRef> shadowedValues;
 public:
-    LetBinder(PTRef val) : currentValue(val), shadowedValues(nullptr) {}
-    ~LetBinder() { delete shadowedValues; }
+    LetBinder(PTRef val) : currentValue(val) {}
     LetBinder(const LetBinder&) = delete;
     LetBinder& operator=(const LetBinder&) = delete;
     LetBinder(LetBinder&&) = default;
     LetBinder& operator=(LetBinder&&) = default;
     PTRef getValue() const { return currentValue; }
-    bool hasShadowValue() const { return shadowedValues && !shadowedValues->empty(); }
-    void restoreShadowedValue() { assert(hasShadowValue()); currentValue = shadowedValues->back(); shadowedValues->pop_back(); }
+    bool hasShadowValue() const { return shadowedValues.size() != 0; }
+    void restoreShadowedValue() { currentValue = shadowedValues.last(); shadowedValues.pop(); }
     void addValue(PTRef val) {
-        if (not shadowedValues) {
-            shadowedValues = new std::vector<PTRef>();
-        }
-        shadowedValues->push_back(currentValue);
+        shadowedValues.push(currentValue);
         currentValue = val;
     }
 };
 
 class LetRecords {
-    std::unordered_map<const char*, LetBinder, StringHash, Equal<const char*> > letBinders;
-    std::vector<const char*> knownBinders;
+    std::unordered_map<std::string, LetBinder> letBinders;
+    std::vector<std::string const> knownBinders;
     std::vector<std::size_t> frameLimits;
 
-    bool has(const char* name) const { return letBinders.count(name) != 0; }
+    bool has(std::string const & name) const { return letBinders.find(name) != letBinders.end(); }
 public:
     PTRef getOrUndef(const char* letSymbol) const {
         auto it = letBinders.find(letSymbol);
@@ -104,7 +101,7 @@ public:
         auto limit = frameLimits.back();
         frameLimits.pop_back();
         while (knownBinders.size() > limit) {
-            const char* binder = knownBinders.back();
+            std::string const & binder = knownBinders.back();
             knownBinders.pop_back();
             assert(this->has(binder));
             auto& values = letBinders.at(binder);
@@ -116,13 +113,18 @@ public:
         }
     }
 
-    void addBinding(const char* name, PTRef arg) {
-        knownBinders.push_back(name);
+    /**
+     * Bind `name` to `arg` in this let scope.
+     * @param name
+     * @param arg
+     */
+    void addBinding(std::string const & name, PTRef arg) {
         if (not this->has(name)) {
-            letBinders.insert(std::make_pair(name, LetBinder(arg)));
+            letBinders.insert({name, LetBinder(arg)});
         } else {
             letBinders.at(name).addValue(arg);
         }
+        knownBinders.push_back(name);
     }
 };
 
@@ -176,7 +178,7 @@ class Interpret {
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;
 
-    bool                        addLetFrame(const vec<char *> & names, vec<PTRef> const& args, LetRecords& letRecords);
+    bool                        addLetFrame(std::vector<opensmt::pair<PTRef, std::string>> const & bindings, LetRecords& letRecords);
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
     PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 
