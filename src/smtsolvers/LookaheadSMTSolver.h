@@ -31,6 +31,7 @@ protected:
     bool                reset_props = false;
     bool                initialized = false;
 
+
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
     static inline int min(int i, int j) { return i < j ? i : j; }
