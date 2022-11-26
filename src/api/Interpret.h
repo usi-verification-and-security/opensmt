@@ -84,7 +84,7 @@ public:
 
 class LetRecords {
     std::unordered_map<std::string, LetBinder> letBinders;
-    std::vector<std::string const> knownBinders;
+    std::vector<std::string> knownBinders;
     std::vector<std::size_t> frameLimits;
 
     bool has(std::string const & name) const { return letBinders.find(name) != letBinders.end(); }
