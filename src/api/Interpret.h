@@ -101,7 +101,7 @@ public:
         auto limit = frameLimits.back();
         frameLimits.pop_back();
         while (knownBinders.size() > limit) {
-            std::string const & binder = knownBinders.back();
+            std::string binder = std::move(knownBinders.back());
             knownBinders.pop_back();
             assert(this->has(binder));
             auto& values = letBinders.at(binder);
