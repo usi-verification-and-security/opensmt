@@ -78,7 +78,7 @@ struct CEdge {
 class CGraph {
     std::vector<CNode *>          cnodes;
     std::vector<CEdge *>          cedges;
-    std::map<PTRef, CNode *, std::greater<PTRef>> cnodes_store;
+    std::map<PTRef, CNode *> cnodes_store;
 
     PTRef conf1 = PTRef_Undef;
     PTRef conf2 = PTRef_Undef;

@@ -41,7 +41,7 @@ private:
     vec<bool>         declared;                 // Cache for quick check if given SAT variable has been declared to theory solvers
 
 public:
-    using ItpColorMap = std::map<PTRef, icolor_t, std::greater<PTRef>>;
+    using ItpColorMap = std::map<PTRef, icolor_t>;
 
     THandler(Theory & tsh, TermMapper & termMapper)
     : theory             (tsh)

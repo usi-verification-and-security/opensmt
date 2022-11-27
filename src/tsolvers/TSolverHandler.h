@@ -48,7 +48,7 @@ protected:
     TSolverHandler(SMTConfig & c) : config(c) { }
     void setSolverSchedule(vec<TSolver*> && schedule) { solverSchedule = std::move(schedule); }
 public:
-    using ItpColorMap = std::map<PTRef, icolor_t, std::greater<PTRef>>;
+    using ItpColorMap = std::map<PTRef, icolor_t>;
 
     virtual ~TSolverHandler();
 

@@ -255,7 +255,7 @@ void
 THandler::dumpFormulaToFile( std::ostream & dump_out, PTRef formula, bool negate )
 {
 	std::vector< PTRef > unprocessed_enodes;
-	std::map< PTRef, std::string, std::greater<PTRef> > enode_to_def;
+	std::map<PTRef, std::string> enode_to_def;
 	unsigned num_lets = 0;
     Logic& logic = getLogic();
 

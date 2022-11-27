@@ -691,7 +691,7 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
         assert(false);
         throw OsmtInternalException("Asserting negation of theory clause did not result in conflict in theory solver!");
     }
-    std::map<PTRef, icolor_t, std::greater<PTRef>> ptref2label;
+    THandler::ItpColorMap ptref2label;
     for (Lit l : oldvec) {
         ptref2label.insert({varToPTRef(var(l)), getVarColor(n, var(l))});
     }
