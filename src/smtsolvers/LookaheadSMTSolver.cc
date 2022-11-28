@@ -108,9 +108,10 @@ lbool LookaheadSMTSolver::solve_() {
         }
       }
       else{
-        if (init_arr[i])
+        if (init_arr[i]){
           next_arr[i] = true;
           close_to_prop++;
+        }
       }
     }
 
