@@ -242,7 +242,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
  *
  */
 LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode const & n) {
-    cancelUntil(0);
+    tested = false;
 
     vec<Lit> path;
     LANode const * curr = &n;
@@ -253,152 +253,99 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         curr = parent;
         parent = curr->p;
     }
+//    printf("Check counter: %d \n", check_counter);
+
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
-    for (int i = path.size() - 1; i >= 0; i--) {
-        newDecisionLevel();
-        if (value(path[i]) == l_Undef) {
-#ifdef LADEBUG
-            printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
-#endif
-            int curr_dl = decisionLevel();
-            uncheckedEnqueue(path[i]);
-            lbool res = laPropagateWrapper();
-            // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-            if (res == l_False) {
-                return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-            } else if (res == l_Undef) {
-                cancelUntil(0);
-                return PathBuildResult::pathbuild_restart; // Do a restart
-            }
-            if (curr_dl != decisionLevel()) {
-                return PathBuildResult::pathbuild_unsat;
-            }
-        } else {
-#ifdef LADEBUG
-            printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
-#endif
-            if (value(path[i]) == l_False) {
-#ifdef LADEBUG
-                printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
-                printf("Marking the subtree false:\n");
-                n->print();
-#endif
-                return PathBuildResult::pathbuild_unsat;
+    if(path.size() <= decisionLevel() || reset_props ){
+        cancelUntil(0);
+        #ifdef LADEBUG
+            printf("Setting solver to the right dl %d\n", path.size());
+        #endif
+        close_to_prop = init_close_to_prop;
+        reset_props= false;
+        for(int i = 0; i<next_arr.size(); i++){
+          next_arr[i] = init_arr[i];
+        }
+        for (int i = path.size() - 1; i >= 0; i--) {
+            newDecisionLevel();
+            if (value(path[i]) == l_Undef) {
+    #ifdef LADEBUG
+                printf("I will propagate %s%d\n", sign(path[i]) ? "-" : "", var(path[i]));
+    #endif
+                int curr_dl = decisionLevel();
+                uncheckedEnqueue(path[i]);
+                lbool res = laPropagateWrapper();
+                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+                if (res == l_False) {
+                    return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+                } else if (res == l_Undef) {
+                    cancelUntil(0);
+                    return PathBuildResult::pathbuild_restart; // Do a restart
+                }
+                if (curr_dl != decisionLevel()) {
+                    return PathBuildResult::pathbuild_unsat;
+                }
             } else {
-                assert(value(path[i]) == l_True);
+    #ifdef LADEBUG
+                printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+    #endif
+                if (value(path[i]) == l_False) {
+    #ifdef LADEBUG
+                    printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+                    printf("Marking the subtree false:\n");
+                    n->print();
+    #endif
+                    return PathBuildResult::pathbuild_unsat;
+                } else {
+                    assert(value(path[i]) == l_True);
+                }
             }
         }
+    } else {
+      for (int i = path.size() - decisionLevel() - 1; i >= 0; i--) {
+        newDecisionLevel();
+
+        if (value(path[i]) == l_Undef) {
+#ifdef LADEBUG
+          printf("I will propagate %d\n", var(path[i]));
+#endif
+          int curr_dl = decisionLevel();
+          uncheckedEnqueue(path[i]);
+          lbool res = laPropagateWrapper();
+          // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+          if (res == l_False) {
+            return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+          } else if (res == l_Undef) {
+            cancelUntil(0);
+            close_to_prop = init_close_to_prop;
+            for(int i = 0; i<next_arr.size(); i++){
+              next_arr[i] = init_arr[i];
+            }
+            return PathBuildResult::pathbuild_restart; // Do a restart
+          }
+          if (curr_dl != decisionLevel()) {
+            return PathBuildResult::pathbuild_unsat;
+          }
+        } else {
+#ifdef LADEBUG
+          printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
+#endif
+          if (value(path[i]) == l_False) {
+#ifdef LADEBUG
+            printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
+            printf("Marking the subtree false:\n");
+            n->print();
+#endif
+            return PathBuildResult::pathbuild_unsat;
+          } else {
+            assert(value(path[i]) == l_True);
+          }
+        }
+      }
     }
     return PathBuildResult::pathbuild_success;
-//    tested = false;
-//
-//    vec<Lit> path;
-//    LANode const * curr = &n;
-//    LANode const * parent = n.p;
-//    // Collect the truth assignment.
-//    while (parent != curr) {
-//        path.push(curr->l);
-//        curr = parent;
-//        parent = curr->p;
-//    }
-////    printf("Check counter: %d \n", check_counter);
-//
-//#ifdef LADEBUG
-//    printf("Setting solver to the right dl %d\n", path.size());
-//#endif
-//    if(path.size() <= decisionLevel() || reset_props ){
-//      reset_props = false;
-//      cancelUntil(0);
-////      cancel_counter++;
-//      close_to_prop = init_close_to_prop;
-//      for(int i = 0; i<next_arr.size(); i++){
-//        next_arr[i] = init_arr[i];
-//      }
-//      for (int i = path.size() - 1; i >= 0; i--) {
-//        newDecisionLevel();
-//
-//        if (value(path[i]) == l_Undef) {
-//#ifdef LADEBUG
-//          printf("I will propagate %d\n", var(path[i]));
-//#endif
-//          int curr_dl = decisionLevel();
-//          uncheckedEnqueue(path[i]);
-//          lbool res = laPropagateWrapper();
-//          // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-//          if (res == l_False) {
-//            return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-//          } else if (res == l_Undef) {
-//            cancelUntil(0);
-//            close_to_prop = init_close_to_prop;
-//            for(int i = 0; i<next_arr.size(); i++){
-//              next_arr[i] = init_arr[i];
-//            }
-//            return PathBuildResult::pathbuild_restart; // Do a restart
-//          }
-//          if (curr_dl != decisionLevel()) {
-//            return PathBuildResult::pathbuild_unsat;
-//          }
-//        } else {
-//#ifdef LADEBUG
-//          printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
-//#endif
-//        if (value(path[i]) == l_False) {
-//#ifdef LADEBUG
-//            printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
-//            printf("Marking the subtree false:\n");
-//            n->print();
-//#endif
-//            return PathBuildResult::pathbuild_unsat;
-//          } else {
-//            assert(value(path[i]) == l_True);
-//          }
-//        }
-//      }
-//    } else {
-//      for (int i = path.size() - decisionLevel() - 1; i >= 0; i--) {
-//        newDecisionLevel();
-//
-//        if (value(path[i]) == l_Undef) {
-//#ifdef LADEBUG
-//          printf("I will propagate %d\n", var(path[i]));
-//#endif
-//          int curr_dl = decisionLevel();
-//          uncheckedEnqueue(path[i]);
-//          lbool res = laPropagateWrapper();
-//          // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-//          if (res == l_False) {
-//            return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-//          } else if (res == l_Undef) {
-//            cancelUntil(0);
-//            close_to_prop = init_close_to_prop;
-//            for(int i = 0; i<next_arr.size(); i++){
-//              next_arr[i] = init_arr[i];
-//            }
-//            return PathBuildResult::pathbuild_restart; // Do a restart
-//          }
-//          if (curr_dl != decisionLevel()) {
-//            return PathBuildResult::pathbuild_unsat;
-//          }
-//        } else {
-//#ifdef LADEBUG
-//          printf("Would propagate %s%d but the literal is already assigned\n", sign(path[i]) ? "-" : "", var(path[i]));
-//#endif
-//          if (value(path[i]) == l_False) {
-//#ifdef LADEBUG
-//            printf("Unsatisfiable branch since I'd like to propagate %s%d but %s%d is assigned already\n", sign(path[i]) ? "-" : "", var(path[i]), sign(~path[i]) ? "-" : "", var(path[i]));
-//            printf("Marking the subtree false:\n");
-//            n->print();
-//#endif
-//            return PathBuildResult::pathbuild_unsat;
-//          } else {
-//            assert(value(path[i]) == l_True);
-//          }
-//        }
-//      }
-//    }
-//    return PathBuildResult::pathbuild_success;
 }
 
 LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2)
