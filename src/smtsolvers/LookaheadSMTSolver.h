@@ -137,7 +137,6 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     root->p = root_raw;
     queue.push(root_raw);
     init_vars = nVars();
-    initialized = true;
 
     while (queue.size() != 0) {
         Node * n = queue.last();

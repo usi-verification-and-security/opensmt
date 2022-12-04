@@ -36,26 +36,27 @@ void LookaheadSMTSolver::attachClause(CRef cr) {
     if (c.size() > 2) {
         watches[~c[2]].push(Watcher(cr, c[0]));
     } else {
-        if(var(c[0])<init_vars || !initialized){
+//  TODO: figure out what goes wrong here
+//        if(var(c[0])<init_vars || !initialized){
             if(!init_arr[var(~c[0])]){
                 init_arr[var(~c[0])] = true;
                 init_close_to_prop++;
             }
-            if(!next_arr[var(~c[0])]){
-                next_arr[var(~c[0])] = true;
-                close_to_prop++;
-            }
-        }
-        if(var(c[0])<init_vars || !initialized){
+//            if(!next_arr[var(~c[0])]){
+//                next_arr[var(~c[0])] = true;
+//                close_to_prop++;
+//            }
+//        }
+//        if(var(c[0])<init_vars || !initialized){
             if(!init_arr[var(~c[1])]){
                 init_arr[var(~c[1])] = true;
                 init_close_to_prop++;
             }
-            if(!next_arr[var(~c[1])]){
-                next_arr[var(~c[1])] = true;
-                close_to_prop++;
-            }
-        }
+//            if(!next_arr[var(~c[1])]){
+//                next_arr[var(~c[1])] = true;
+//                close_to_prop++;
+//            }
+//        }
     }
 
     if (c.learnt()) learnts_literals += c.size();
@@ -549,16 +550,22 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 //    close_to_prop = close_to_prop_trail[decisionLevel()];
 //    printf("Level: %d \n", decisionLevel());
 //    printf("Trail: %d \n", trail.size());
-//    printf("Clauses: %d \n", ca.size());
-//    printf("Close to prop: %d \n", close_to_prop);
-    tested = true;
+//    tested = false;
+//    initialized = false;
+//    initialized = true;
     if (laPropagateWrapper() == l_False) {
 #ifdef LADEBUG
         printf("Already unsatisfiable at entering the lookahead loop\n");
 #endif
         return {laresult::la_tl_unsat, lit_Undef};
     }
-    tested = false;
+//    if(!initialized){
+//        init_vars = nVars();
+//    }
+//    printf("Close to prop: %d \n", close_to_prop);
+//    printf("Clauses: %d \n", ca.size());
+//    tested = true;
+//    initialized = true;
     confl_quota = prev;
 
     score->updateRound();
@@ -584,6 +591,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
         bound_prop++;
       }
     }
+
+//    initialized = true;
     int derivations = 0;
     Var oldBest, newBest;
     if(close_to_prop + bound_prop > 0){
@@ -733,8 +742,10 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             }
       }
     }
+    int currVars = nVars();
     if(close_to_prop + bound_prop  <= 0){
       for(Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
+//          printf("Vars: %d \n", nVars());
           if (!decision[v]) {
             score->setChecked(v);
 #ifdef LADEBUG
@@ -796,7 +807,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
           }
           count++;
           int p0 = 0, p1 = 0;
-          if(v<init_vars) {
+          if(v<currVars) {
               for (int polarity : {0, 1}) {
                 // do for both polarities
                 assert(decisionLevel() == d);
@@ -865,6 +876,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     }
     tested = false;
     Lit best = score->getBest();
+//    initialized = true;
 //    printf("Best: %d\n", var(best));
     if (static_cast<unsigned int>(trail.size()) == dec_vars and best == lit_Undef) {
 #ifdef LADEBUG
