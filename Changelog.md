@@ -1,6 +1,7 @@
 ### 2.5.0 (unreleased)
 
-
+API changes:
+ - Pterms: Change operator < on PTRefs to more intuitive implementation 
 
 ### 2.4.3 (2022-11-21)
 
