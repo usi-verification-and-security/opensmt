@@ -140,6 +140,8 @@ public:
 };
 
 // Simple single-use version
-inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) { return DivModRewriter(logic).rewrite(root); }
+inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) {
+    return DivModRewriter(logic).rewrite(root);
+}
 
 #endif // OPENSMT_DIVMODEREWRITER_H

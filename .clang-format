@@ -5,5 +5,6 @@ ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -4
 PointerAlignment: Middle
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortBlocksOnASingleLine: Always
 AllowShortIfStatementsOnASingleLine: WithoutElse

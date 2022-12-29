@@ -73,7 +73,9 @@ public:
         : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config), config(logic, std::move(topLevelDistincts)) {}
 };
 
-inline PTRef rewriteDistincts(Logic & logic, PTRef fla) { return DistinctRewriter(logic).rewrite(fla); }
+inline PTRef rewriteDistincts(Logic & logic, PTRef fla) {
+    return DistinctRewriter(logic).rewrite(fla);
+}
 
 PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla);
 
