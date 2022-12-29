@@ -1,33 +1,33 @@
-//
-// Created by Martin Blicha on 31.03.18.
-//
+/*
+ *  Copyright (c) 2018-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
 
 #ifndef OPENSMT_TABLEAU_H
 #define OPENSMT_TABLEAU_H
 
-
-#include "Polynomial.h"
 #include "LAVar.h"
+#include "Polynomial.h"
 #include "Real.h"
 
-#include <unordered_map>
-#include <set>
-#include <vector>
 #include <functional>
 #include <memory>
+#include <set>
+#include <unordered_map>
+#include <vector>
 
-class Tableau{
+class Tableau {
 
-    class Column{
+    class Column {
         std::vector<LVRef> rows;
 
         using iterator_t = std::vector<LVRef>::iterator;
         using const_iterator_t = std::vector<LVRef>::const_iterator;
 
     public:
-        void addRow(LVRef row) {
-            rows.push_back(row);
-        }
+        void addRow(LVRef row) { rows.push_back(row); }
+
         void removeRow(LVRef row) {
             auto beg = rows.rbegin();
             auto it = std::find(beg, rows.rend(), row);
@@ -36,17 +36,11 @@ class Tableau{
             rows.pop_back();
         }
 
-        void clear() {
-            rows.clear();
-        }
+        void clear() { rows.clear(); }
 
-        bool empty() const {
-            return rows.empty();
-        }
+        bool empty() const { return rows.empty(); }
 
-        unsigned int size() const {
-            return rows.size();
-        }
+        unsigned int size() const { return rows.size(); }
 
         iterator_t begin() { return rows.begin(); }
         iterator_t end() { return rows.end(); }
@@ -59,16 +53,15 @@ class Tableau{
 
 public:
     using Polynomial = PolynomialT<LVRef>;
-protected:
 
+protected:
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
     using column_t = Column;
     using rows_t = std::vector<std::unique_ptr<Polynomial>>;
-//    using vars_t = std::unordered_set<LVRef, LVRefHash>;
+    // using vars_t = std::unordered_set<LVRef, LVRefHash>;
     using vars_t = std::set<LVRef, LVRefComp>;
 
 public:
-
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
     void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
@@ -100,9 +93,7 @@ private:
     std::vector<std::unique_ptr<column_t>> cols;
     rows_t rows;
 
-    enum class VarType:char {
-        NONE, BASIC, NONBASIC, QUASIBASIC
-    };
+    enum class VarType : char { NONE, BASIC, NONBASIC, QUASIBASIC };
     std::vector<VarType> varTypes;
 
     Tableau::Polynomial::poly_t tmp_storage;
@@ -113,12 +104,19 @@ private:
     std::unique_ptr<Polynomial> removeRow(LVRef v);
     void moveRowFromTo(LVRef from, LVRef to);
     void moveColFromTo(LVRef from, LVRef to);
-    void addRowToColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->addRow(row); }
-    void removeRowFromColumn(LVRef row, LVRef col) { assert(cols[col.x]); cols[col.x]->removeRow(row); }
-    void clearColumn(LVRef col) { assert(cols[col.x]); cols[col.x]->clear();}
+    void addRowToColumn(LVRef row, LVRef col) {
+        assert(cols[col.x]);
+        cols[col.x]->addRow(row);
+    }
+    void removeRowFromColumn(LVRef row, LVRef col) {
+        assert(cols[col.x]);
+        cols[col.x]->removeRow(row);
+    }
+    void clearColumn(LVRef col) {
+        assert(cols[col.x]);
+        cols[col.x]->clear();
+    }
     void normalizeRow(LVRef row);
 };
 
-
-
-#endif //OPENSMT_TABLEAU_H
+#endif // OPENSMT_TABLEAU_H

@@ -1,6 +1,8 @@
-//
-// Created by Martin Blicha on 31.03.18.
-//
+/*
+ *  Copyright (c) 2018-2022, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ */
 
 #include "Tableau.h"
 #include <iostream>
@@ -13,11 +15,10 @@
 
 using namespace opensmt;
 namespace {
-    template<class C, class E>
-    inline bool contains(const C & container, const E & elem){
-        return container.find(elem) != container.end();
-    }
+template <class C, class E> inline bool contains(const C & container, const E & elem) {
+    return container.find(elem) != container.end();
 }
+} // namespace
 
 void Tableau::nonbasicVar(LVRef v) {
     if (isProcessed(v)) { return; }
@@ -38,7 +39,6 @@ void Tableau::newRow(LVRef v, std::unique_ptr<Polynomial> poly) {
     addRow(v, std::move(poly));
     varTypes[getVarId(v)] = VarType::QUASIBASIC;
     normalizeRow(v);
-
 }
 
 std::size_t Tableau::getNumOfCols() const {
@@ -78,9 +78,7 @@ std::vector<LVRef> Tableau::getNonBasicVars() const {
     std::vector<LVRef> res;
     res.resize(varTypes.size());
     for (unsigned i = 0; i < varTypes.size(); ++i) {
-        if (varTypes[i] == VarType::NONBASIC) {
-            res.push_back(LVRef{i});
-        }
+        if (varTypes[i] == VarType::NONBASIC) { res.push_back(LVRef{i}); }
     }
     return res;
 }
@@ -127,9 +125,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     {
         Polynomial & nvPoly = getRowPoly(bv);
         const auto coeff = nvPoly.removeVar(nv);
-        if (not coeff.isOne()) {
-            nvPoly.divideBy(coeff);
-        }
+        if (not coeff.isOne()) { nvPoly.divideBy(coeff); }
         nvPoly.negate();
         nvPoly.addTerm(bv, coeff.inverse());
     }
@@ -141,7 +137,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
 
     Polynomial & nvPoly = getRowPoly(nv);
     // update column information regarding this one poly
-    for(auto & term : nvPoly) {
+    for (auto & term : nvPoly) {
         auto var = term.var;
         assert(cols[var.x]);
         removeRowFromColumn(bv, var);
@@ -150,27 +146,25 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
 
     // for all (active) rows containing nv, substitute
     for (auto rowVar : getColumn(bv)) {
-        if(rowVar == nv || isQuasiBasic(rowVar)) {
-            continue;
-        }
+        if (rowVar == nv || isQuasiBasic(rowVar)) { continue; }
         // update the polynomials
         auto & poly = getRowPoly(rowVar);
         const auto nvCoeff = poly.removeVar(nv);
-        poly.merge(nvPoly, nvCoeff, tmp_storage,
-                // informAdded
-                   [this, bv, rowVar](LVRef addedVar) {
-                       if (addedVar == bv) { return; }
-                       assert(cols[addedVar.x]);
-                       assert(!contains(getColumn(addedVar), rowVar));
-                       addRowToColumn(rowVar, addedVar);
-                   },
-                // informRemoved
-                   [this, rowVar](LVRef removedVar) {
-                       assert(cols[removedVar.x]);
-                       assert(contains(getColumn(removedVar), rowVar));
-                       removeRowFromColumn(rowVar, removedVar);
-                   }
-        );
+        poly.merge(
+            nvPoly, nvCoeff, tmp_storage,
+            // informAdded
+            [this, bv, rowVar](LVRef addedVar) {
+                if (addedVar == bv) { return; }
+                assert(cols[addedVar.x]);
+                assert(!contains(getColumn(addedVar), rowVar));
+                addRowToColumn(rowVar, addedVar);
+            },
+            // informRemoved
+            [this, rowVar](LVRef removedVar) {
+                assert(cols[removedVar.x]);
+                assert(contains(getColumn(removedVar), rowVar));
+                removeRowFromColumn(rowVar, removedVar);
+            });
     }
     assert(!cols[nv.x]);
     assert(cols[bv.x]);
@@ -184,16 +178,19 @@ void Tableau::clear() {
     this->varTypes.clear();
 }
 
-bool Tableau::isBasic(LVRef v) const
-    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::BASIC;}
-bool Tableau::isNonBasic(LVRef v) const
-    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::NONBASIC;}
-bool Tableau::isQuasiBasic(LVRef v) const
-    {return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::QUASIBASIC;}
+bool Tableau::isBasic(LVRef v) const {
+    return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::BASIC;
+}
+bool Tableau::isNonBasic(LVRef v) const {
+    return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::NONBASIC;
+}
+bool Tableau::isQuasiBasic(LVRef v) const {
+    return varTypes.size() > getVarId(v) && varTypes[getVarId(v)] == VarType::QUASIBASIC;
+}
 
 void Tableau::print() const {
     std::cout << "Rows:\n";
-    for(unsigned i = 0; i != rows.size(); ++i) {
+    for (unsigned i = 0; i != rows.size(); ++i) {
         if (!rows[i]) { continue; }
         std::cout << "Var of the row: " << i << ';';
         for (const auto & term : this->getRowPoly(LVRef{i})) {
@@ -203,8 +200,8 @@ void Tableau::print() const {
     }
     std::cout << '\n';
     std::cout << "Columns:\n";
-    for(unsigned i = 0; i != cols.size(); ++i) {
-        if(!cols[i]) { continue; }
+    for (unsigned i = 0; i != cols.size(); ++i) {
+        if (!cols[i]) { continue; }
         std::cout << "Var of the column: " << i << "; Contains: ";
         for (auto var : getColumn(LVRef{i})) {
             std::cout << var.x << ' ';
@@ -216,27 +213,27 @@ void Tableau::print() const {
 
 bool Tableau::checkConsistency() const {
     bool res = true;
-    for(unsigned i = 0; i < cols.size(); ++i) {
-        LVRef var {i};
+    for (unsigned i = 0; i < cols.size(); ++i) {
+        LVRef var{i};
         if (isNonBasic(var)) {
             res &= (cols[i] != nullptr);
             assert(res);
-            for(auto row : *cols[i]) {
+            for (auto row : *cols[i]) {
                 res &= this->getRowPoly(row).contains(var);
                 assert(res);
             }
-        }
-        else{
+        } else {
             assert(!cols[i]);
         }
     }
 
-    for(unsigned i = 0; i < rows.size(); ++i) {
-        LVRef var {i};
-        if(isQuasiBasic(var)) {
+    for (unsigned i = 0; i < rows.size(); ++i) {
+        LVRef var{i};
+        if (isQuasiBasic(var)) { continue; }
+        if (!rows[i]) {
+            assert(isNonBasic(var));
             continue;
         }
-        if (!rows[i]) { assert(isNonBasic(var)); continue; }
         res &= isBasic(var);
         assert(res);
         for (auto const & term : *rows[i]) {
@@ -260,9 +257,7 @@ void Tableau::normalizeRow(LVRef v) {
             normalizeRow(term.var);
             toEliminate.push_back(term.var);
         }
-        if (isBasic(term.var)) {
-            toEliminate.push_back(term.var);
-        }
+        if (isBasic(term.var)) { toEliminate.push_back(term.var); }
     }
     for (LVRef var : toEliminate) {
         auto const coeff = row.removeVar(var);
@@ -297,13 +292,13 @@ void Tableau::basicToQuasi(LVRef v) {
 
 void Tableau::ensureTableauReadyFor(LVRef v) {
     auto id = getVarId(v);
-    while(cols.size() <= id) {
+    while (cols.size() <= id) {
         cols.emplace_back();
     }
-    while(rows.size() <= id) {
+    while (rows.size() <= id) {
         rows.emplace_back();
     }
-    while(varTypes.size() <= id) {
+    while (varTypes.size() <= id) {
         varTypes.push_back(VarType::NONE);
     }
 }
