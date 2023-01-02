@@ -36,7 +36,6 @@ const char* Logic::tk_val_bool_default = "true";
 
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
-const char* Logic::tk_anon     = ".anon";
 const char* Logic::tk_not      = "not";
 const char* Logic::tk_uf_not   = ".uf-not";
 const char* Logic::tk_equals   = "=";
@@ -65,7 +64,6 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     , term_FALSE(mkConst(getSort_bool(), tk_false))
     , sym_TRUE(getSymRef(term_TRUE))
     , sym_FALSE(getSymRef(term_FALSE))
-    , sym_ANON(sym_store.newSymb(tk_anon, {}))
     , sym_AND(declareFun_Commutative_NoScoping_LeftAssoc(tk_and, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_OR(declareFun_Commutative_NoScoping_LeftAssoc(tk_or, sort_BOOL, {sort_BOOL, sort_BOOL}))
     , sym_XOR(declareFun_Commutative_NoScoping_LeftAssoc(tk_xor, sort_BOOL, {sort_BOOL, sort_BOOL}))
@@ -1386,7 +1384,7 @@ Logic::dumpHeaderToFile(ostream& dump_out) const
 
     const vec<SymRef>& symbols = sym_store.getSymbols();
     for (SymRef s : symbols) {
-        if (s == getSym_true() || s == getSym_false() || s == getSym_anon())
+        if (s == getSym_true() || s == getSym_false())
             continue;
         if (isConstant(s)) {
             if (isBuiltinConstant(s)) continue;

@@ -81,7 +81,6 @@ class Logic {
 
     SymRef              sym_TRUE;
     SymRef              sym_FALSE;
-    SymRef              sym_ANON;
     SymRef              sym_AND;
     SymRef              sym_OR;
     SymRef              sym_XOR;
@@ -279,7 +278,6 @@ public:
     // The Boolean connectives
     SymRef        getSym_true      ()              const;// { return sym_TRUE;     }
     SymRef        getSym_false     ()              const;// { return sym_FALSE;    }
-    SymRef        getSym_anon      ()              const    { return sym_ANON; }
     SymRef        getSym_and       ()              const;// { return sym_AND;      }
     SymRef        getSym_or        ()              const;// { return sym_OR;       }
     SymRef        getSym_xor       ()              const;// { return sym_XOR;      }
@@ -356,7 +354,6 @@ public:
     bool        isTrue(PTRef tr)  const ;//{ return isTrue(getPterm(tr).symb()); }
     bool        isFalse(SymRef sr) const;// { return sr == getSym_false(); }
     bool        isFalse(PTRef tr)  const;// { return isFalse(getPterm(tr).symb()); }
-    bool        isAnon(SymRef sr) const { return sr == getSym_anon(); }
     bool        isIff(SymRef sr) const;// { return sr == getSym_eq(); }
     bool        isIff(PTRef tr) const;// { return isIff(getPterm(tr).symb()); }
 
