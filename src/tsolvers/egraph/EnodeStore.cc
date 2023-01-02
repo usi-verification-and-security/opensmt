@@ -46,35 +46,30 @@ EnodeStore::EnodeStore(Logic& l)
     ERef_False = termToERef[f];
 }
 
-ERef EnodeStore::addAnonTerm(PTRef term) {
-    if (termToERef.has(term))
-        return termToERef[term];
-
-    SymRef symref = logic.getSym_anon();
-    ERef newEnode = ea.alloc(symref, opensmt::span<ERef>(nullptr, 0) , term);
-    termToERef.insert(term, newEnode);
-    assert(not ERefToTerm.has(newEnode));
-    ERefToTerm.insert(newEnode, term);
-    termEnodes.push(newEnode);
-    return newEnode;
-}
-
-//
-// Add a term to enode store
-//
-ERef EnodeStore::addTerm(PTRef term) {
+/**
+ * Register term with this store.
+ * This creates a new ENode representing the term, if the term has no been registered before.
+ * @param term
+ * @param ignoreChildren if true, creates a special version of ENode with no children
+ * @return Reference to the newly created ENode
+ */
+ERef EnodeStore::addTerm(PTRef term, bool ignoreChildren) {
     if (termToERef.has(term))
         return termToERef[term];
 
     Pterm const & pterm = logic.getPterm(term);
     SymRef symref = pterm.symb();
     vec<ERef> args;
-    args.capacity(pterm.nargs());
-    for (PTRef arg : pterm) {
-        assert(termToERef.has(arg));
-        args.push(termToERef[arg]);
-    }
-    ERef newEnode = ea.alloc(symref, opensmt::span(args.begin(), args.size_()) , term);
+    auto argSpan = [&](){
+        if (ignoreChildren) { return opensmt::span<ERef>(nullptr, 0); }
+        args.capacity(pterm.nargs());
+        for (PTRef arg : pterm) {
+            assert(termToERef.has(arg));
+            args.push(termToERef[arg]);
+        }
+        return opensmt::span(args.begin(), args.size_());
+    }();
+    ERef newEnode = ea.alloc(symref, argSpan, term);
 
     termToERef.insert(term, newEnode);
     assert(not ERefToTerm.has(newEnode));
@@ -135,8 +130,8 @@ vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
         addDistClass(tr);
     }
 
-    bool makeRecursiveDefinition = needsRecursiveDefinition(tr);
-    ERef er = makeRecursiveDefinition ? addTerm(tr) : addAnonTerm(tr);
+    bool ignoreChildren = not needsRecursiveDefinition(tr);
+    ERef er = addTerm(tr, ignoreChildren);
     new_enodes.push({tr, er});
 
     if (logic.hasSortBool(tr)) {

@@ -83,8 +83,7 @@ class EnodeStore {
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
     vec<ERef>      termEnodes;
 
-    ERef  addTerm(PTRef pt);
-    ERef  addAnonTerm(PTRef pt);
+    ERef  addTerm(PTRef pt, bool ignoreChildren = false);
 
 public:
     EnodeStore(Logic& l);
