@@ -94,12 +94,14 @@ class Symbol {
     friend class SymStore;
     // Note: do not use directly (no memory allocation for args)
 
-    Symbol(vec<SRef> const & ps, SymbolConfig const & config)
-        : header(ps.size(), config)
+    Symbol(SRef rsort, vec<SRef> const & argSorts, SymbolConfig const & config)
+        : header(argSorts.size_() + 1, config)
     {
         assert(config.prop != SymbolProperty::LeftAssoc or nargs() == 2);
         assert(config.prop != SymbolProperty::RightAssoc or nargs() == 2);
-        for (int i = 0; i < ps.size(); i++) args[i].sort = ps[i];
+
+        args[0].sort = rsort;
+        for (int i = 0; i < argSorts.size(); ++i) args[i+1].sort = argSorts[i];
     }
 
   public:
@@ -158,16 +160,16 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
         to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    SymRef alloc(vec<SRef> const & ps, SymbolConfig const & sc)
+    SymRef alloc(SRef rsort, vec<SRef> const & argSorts, SymbolConfig const & sc)
     {
         assert(sizeof(SRef)     == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
 
-        uint32_t v = RegionAllocator<uint32_t>::alloc(symWord32Size(ps.size()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(symWord32Size(argSorts.size() + 1));
         SymRef symid;
         symid.x = v;
 
-        new (lea(symid)) Symbol(ps, sc);
+        new (lea(symid)) Symbol(rsort, argSorts, sc);
         return symid;
     }
 

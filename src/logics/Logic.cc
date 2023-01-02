@@ -693,7 +693,7 @@ PTRef Logic::mkConst(const char* name)
 
 
 PTRef Logic::mkVar(SRef s, const char* name, bool isInterpreted) {
-    SymRef sr = sym_store.newSymb(name, {s}, isInterpreted ? SymConf::Interpreted : SymConf::Default);
+    SymRef sr = sym_store.newSymb(name, s, {}, isInterpreted ? SymConf::Interpreted : SymConf::Default);
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
@@ -807,19 +807,11 @@ PTRef Logic::mkSelect(vec<PTRef> && args) {
     return mkFun(sortToSelect[arraySort], std::move(args));
 }
 
-SymRef Logic::declareFun(std::string const & fname, SRef rsort, const vec<SRef> & args, SymbolConfig const & symbolConfig)
-{
-    vec<SRef> comb_args;
-
+SymRef Logic::declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig) {
     assert(rsort != SRef_Undef);
+    assert(std::find(args.begin(), args.end(), SRef_Undef) == args.end());
 
-    comb_args.push(rsort);
-
-    for (SRef sr : args) {
-        assert(sr != SRef_Undef);
-        comb_args.push(sr);
-    }
-    SymRef sr = sym_store.newSymb(fname.c_str(), comb_args, symbolConfig);
+    SymRef sr = sym_store.newSymb(fname.c_str(), rsort, args, symbolConfig);
     return sr;
 }
 

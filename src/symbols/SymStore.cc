@@ -38,30 +38,26 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(const char * fname, vec<SRef> const & args, SymbolConfig const & symConfig) {
+SymRef SymStore::newSymb(const char * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto* symrefs = getRefOrNull(fname);
 
     if (symrefs) {
         const vec<SymRef>& trs = *symrefs;
-        for (int i = 0; i < trs.size(); i++) {
-            if (ta[trs[i]].rsort() == args[0] and ta[trs[i]].nargs() == args.size_()-1
-                    and ta[trs[i]].commutes() == symConfig.commutes
-                    and ta[trs[i]].noScoping() == symConfig.noScoping
-                    and ta[trs[i]].isInterpreted() == symConfig.isInterpreted) {
-                uint32_t j;
-                for (j = 0; j < ta[trs[i]].nargs(); j++) {
-                    if (ta[trs[i]][j] != args[j+1])
-                        break;
-                }
-                if (j == ta[trs[i]].nargs()) { // The term exists already
-                    return trs[i];
+        for (SymRef symref : trs) {
+            auto const & symbol = ta[symref];
+            if (symbol.rsort() == rsort and symbol.nargs() == args.size_()
+                    and symbol.commutes() == symConfig.commutes
+                    and symbol.noScoping() == symConfig.noScoping
+                    and symbol.isInterpreted() == symConfig.isInterpreted) {
+                if (std::equal(symbol.begin(), symbol.end(), args.begin())) {
+                    return symref;
                 }
             }
         }
     }
     bool newsym = (symrefs == nullptr);
-    SymRef tr = ta.alloc(args, symConfig);
+    SymRef tr = ta.alloc(rsort, args, symConfig);
     SymId id = symbols.size();
     symbols.push(tr);
 
