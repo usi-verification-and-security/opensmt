@@ -548,8 +548,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
 //    close_to_prop = close_to_prop_trail[decisionLevel()];
-//    printf("Level: %d \n", decisionLevel());
-//    printf("Trail: %d \n", trail.size());
+    printf("Level: %d \n", decisionLevel());
+    printf("Trail: %d \n", trail.size());
 //    tested = false;
 //    initialized = false;
 //    initialized = true;
@@ -562,8 +562,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 //    if(!initialized){
 //        init_vars = nVars();
 //    }
-//    printf("Close to prop: %d \n", close_to_prop);
-//    printf("Clauses: %d \n", ca.size());
+    printf("Close to prop: %d \n", close_to_prop);
+    printf("Clauses: %d \n", ca.size());
 //    tested = true;
 //    initialized = true;
     confl_quota = prev;
@@ -870,7 +870,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             assert(p0 <= 1 and p1 <= 1);
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
-            break;
+//            break;
           }
       }
     }
