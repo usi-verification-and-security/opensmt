@@ -269,30 +269,6 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     }
 //    printf("Check counter: %d \n", check_counter);
 
-    while (decisionLevel() < crossed_assumptions) {
-        // Perform user provided assumption:
-        Lit p = assumptions[decisionLevel()];
-        if (value(p) == l_True) {
-            // Dummy decision level:
-            crossed_assumptions++;
-        } else if (value(p) == l_False) {
-            analyzeFinal(~p, conflict);
-            int max = 0;
-            for (Lit q : conflict) {
-                if (!sign(q)) {
-                    max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
-                }
-            }
-            conflict_frame = max+1;
-            ok = false;
-            return PathBuildResult::pathbuild_tlunsat;
-        } else {
-            crossed_assumptions++;
-            path.push(p);
-            break;
-        }
-    }
-
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
 #endif
@@ -392,7 +368,36 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
     assert(c2);
     // Do the lookahead
     assert(decisionLevel() == n.d);
-    auto [res, best] = lookaheadLoop();
+    laresult res;
+    Lit best;
+    if(crossed_assumptions >= assumptions.size()){
+        std::tie(res, best) = lookaheadLoop();
+    } else {
+        while (crossed_assumptions < assumptions.size()) {
+            // Perform user provided assumption:
+            Lit p = assumptions[decisionLevel()];
+            if (value(p) == l_True) {
+                // Dummy decision level:
+                crossed_assumptions++;
+            } else if (value(p) == l_False) {
+                analyzeFinal(~p, conflict);
+                int max = 0;
+                for (Lit q : conflict) {
+                    if (!sign(q)) {
+                        max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                    }
+                }
+                conflict_frame = max+1;
+                ok = false;
+                return laresult::la_unsat;
+            } else {
+                crossed_assumptions++;
+                res = laresult::la_ok;
+                best = p;
+                break;
+            }
+        }
+    }
     assert(decisionLevel() <= n.d);
     if (res != laresult::la_ok)
         return res;
