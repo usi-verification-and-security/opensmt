@@ -64,11 +64,6 @@ void LookaheadSMTSolver::attachClause(CRef cr) {
 }
 
 
-//lbool LookaheadSMTSolver::zeroLevelConflictHandler() {
-//    ok = false;
-//    return l_False;
-//}
-
 void LookaheadSMTSolver::detachClause(CRef cr, bool strict) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
@@ -909,10 +904,10 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #ifdef LADEBUG
           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-//            assert(p0 <= 1 and p1 <= 1);
+            assert(p0 <= 1 and p1 <= 1);
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
-//            break;
+            break;
           }
       }
     }

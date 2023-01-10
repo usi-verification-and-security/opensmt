@@ -139,31 +139,6 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     queue.push(root_raw);
     init_vars = nVars();
 
-    //TODO: rework it for the lookahead
-//    Lit next = lit_Undef;
-//    while (decisionLevel() < assumptions.size()) {
-//        // Perform user provided assumption:
-//        Lit p = assumptions[decisionLevel()];
-//        if (value(p) == l_True) {
-//            // Dummy decision level:
-//            newDecisionLevel();
-//        } else if (value(p) == l_False) {
-//            analyzeFinal(~p, conflict);
-//            int max = 0;
-//            for (Lit q : conflict) {
-//                if (!sign(q)) {
-//                    max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
-//                }
-//            }
-//            conflict_frame = max+1;
-//            return zeroLevelConflictHandler();
-//        } else {
-//            next = p;
-//            break;
-//        }
-//    }
-    //TODO
-
     while (queue.size() != 0) {
         Node * n = queue.last();
         queue.pop();
