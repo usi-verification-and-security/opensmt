@@ -64,6 +64,11 @@ void LookaheadSMTSolver::attachClause(CRef cr) {
 }
 
 
+//lbool LookaheadSMTSolver::zeroLevelConflictHandler() {
+//    ok = false;
+//    return l_False;
+//}
+
 void LookaheadSMTSolver::detachClause(CRef cr, bool strict) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
@@ -94,9 +99,15 @@ Var LookaheadSMTSolver::newVar(bool dvar) {
 }
 
 lbool LookaheadSMTSolver::solve_() {
+    // This exists in Core Solver but not here, which is strange
+    for (Lit l : this->assumptions) {
+        this->addVar_(var(l));
+    }
+
     declareVarsToTheories();
 
     bound_prop = bound_arr.size();
+    crossed_assumptions = 0;
     double nof_conflicts = restart_first;
     check_counter = 0;
 
@@ -115,6 +126,8 @@ lbool LookaheadSMTSolver::solve_() {
         }
       }
     }
+    model.clear();
+    conflict.clear();
 
 
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
@@ -255,6 +268,30 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         parent = curr->p;
     }
 //    printf("Check counter: %d \n", check_counter);
+
+    while (decisionLevel() < crossed_assumptions) {
+        // Perform user provided assumption:
+        Lit p = assumptions[decisionLevel()];
+        if (value(p) == l_True) {
+            // Dummy decision level:
+            crossed_assumptions++;
+        } else if (value(p) == l_False) {
+            analyzeFinal(~p, conflict);
+            int max = 0;
+            for (Lit q : conflict) {
+                if (!sign(q)) {
+                    max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                }
+            }
+            conflict_frame = max+1;
+            ok = false;
+            return PathBuildResult::pathbuild_tlunsat;
+        } else {
+            crossed_assumptions++;
+            path.push(p);
+            break;
+        }
+    }
 
 #ifdef LADEBUG
     printf("Setting solver to the right dl %d\n", path.size());
@@ -548,8 +585,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
 //    close_to_prop = close_to_prop_trail[decisionLevel()];
-    printf("Level: %d \n", decisionLevel());
-    printf("Trail: %d \n", trail.size());
+//    printf("Level: %d \n", decisionLevel());
+//    printf("Trail: %d \n", trail.size());
 //    tested = false;
 //    initialized = false;
 //    initialized = true;
@@ -562,8 +599,8 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 //    if(!initialized){
 //        init_vars = nVars();
 //    }
-    printf("Close to prop: %d \n", close_to_prop);
-    printf("Clauses: %d \n", ca.size());
+//    printf("Close to prop: %d \n", close_to_prop);
+//    printf("Clauses: %d \n", ca.size());
 //    tested = true;
 //    initialized = true;
     confl_quota = prev;
@@ -867,7 +904,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 #ifdef LADEBUG
           printf("Updating var %d to (%d, %d)\n", v, p0, p1);
 #endif
-            assert(p0 <= 1 and p1 <= 1);
+//            assert(p0 <= 1 and p1 <= 1);
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
 //            break;
