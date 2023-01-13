@@ -94,8 +94,7 @@ class Pterm {
 
     int      size        ()          const   { return static_cast<int>(header.size); }
 
-    const PTRef& operator [] (int i) const   { assert(i < size()); return args[i]; }
-    PTRef&       operator [] (int i)         { assert(i < size()); return args[i]; }
+    PTRef operator [] (int i) const   { assert(i < size()); return args[i]; }
 
     SymRef   symb        ()         const   { return sym; }
     bool     has_extra   ()         const   { return false; }
