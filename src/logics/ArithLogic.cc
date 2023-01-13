@@ -384,7 +384,9 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
     auto toPoly = [&logic](PTRef eq) {
         assert(logic.isEquality(eq));
         poly_t poly;
-        PTRef polyTerm = logic.mkMinus(logic.getPterm(eq)[1], logic.getPterm(eq)[0]);
+        PTRef lhs = logic.getPterm(eq)[0];
+        PTRef rhs = logic.getPterm(eq)[1];
+        PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
         assert(logic.isLinearTerm(polyTerm));
         if (logic.isLinearFactor(polyTerm)) {
             auto [var,c] = logic.splitTermToVarAndConst(polyTerm);
