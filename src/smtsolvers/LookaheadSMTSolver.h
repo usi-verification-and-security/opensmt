@@ -15,6 +15,7 @@ class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
     ConflQuota confl_quota;
     int idx;
+    int crossed_assumptions;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -80,6 +81,7 @@ protected:
 
     virtual LALoopRes solveLookahead();
     std::pair<laresult,Lit> lookaheadLoop();
+    virtual void cancelUntil(int level) override; // Backtrack until a certain level.
     lbool solve_() override; // Does not change the formula
 
     enum class PathBuildResult {
@@ -118,27 +120,27 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         assert(n);
 
         switch (setSolverToNode(*n)) {
-            case PathBuildResult::pathbuild_tlunsat:
-                return { LALoopRes::unsat, nullptr };
-            case PathBuildResult::pathbuild_restart:
-                return { LALoopRes::restart, nullptr };
-            case PathBuildResult::pathbuild_unsat: {
-                // Reinsert the parent to the queue
-                assert(n != root_raw); // Unsatisfiability in root should be tlunsat
-                Node * parent = n->getParent();
-                if (queue.size() > 0 and queue.last()->p == parent) {
-                    // This is the second child (searched first).  Pop the other child as well
-                    queue.pop();
-                    // Now queue does not have children of the parent
-                    assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
-                }
-                queue.push(parent);
-                parent->c1.reset(nullptr);
-                parent->c2.reset(nullptr);
-                continue;
+        case PathBuildResult::pathbuild_tlunsat:
+            return { LALoopRes::unsat, nullptr };
+        case PathBuildResult::pathbuild_restart:
+            return { LALoopRes::restart, nullptr };
+        case PathBuildResult::pathbuild_unsat: {
+            // Reinsert the parent to the queue
+            assert(n != root_raw); // Unsatisfiability in root should be tlunsat
+            Node * parent = n->getParent();
+            if (queue.size() > 0 and queue.last()->p == parent) {
+                // This is the second child (searched first).  Pop the other child as well
+                queue.pop();
+                // Now queue does not have children of the parent
+                assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
             }
-            case PathBuildResult::pathbuild_success:
-                ;
+            queue.push(parent);
+            parent->c1.reset(nullptr);
+            parent->c2.reset(nullptr);
+            continue;
+        }
+        case PathBuildResult::pathbuild_success:
+            ;
         }
 
         assert(n);
@@ -151,27 +153,57 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c2_raw = new Node();
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
+        bool checked = false;
 
-        switch (expandTree(*n, std::move(c1), std::move(c2))) {
+        if(crossed_assumptions < assumptions.size()){
+            while (crossed_assumptions < assumptions.size()) {
+                // Perform user provided assumption:
+                Lit p = assumptions[crossed_assumptions];
+                if (value(p) == l_True) {
+                    // Dummy decision level:
+                    crossed_assumptions++;
+                } else if (value(p) == l_False) {
+                    analyzeFinal(~p, conflict);
+                    int max = 0;
+                    for (Lit q : conflict) {
+                        if (!sign(q)) {
+                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                        }
+                    }
+                    conflict_frame = max+1;
+                    ok = false;
+                    return { LALoopRes::unsat, nullptr };
+                } else {
+                    c1_raw->p = n;
+                    c1_raw->d = (*n).d + 1;
+                    c1_raw->l = p;
+                    n->c1 = std::move(c1);
+                    crossed_assumptions++;
+                    checked = true;
+                    queue.push(c1_raw);
+                    break;
+                }
+            }
+        }
+
+        if(!checked) {
+            switch (expandTree(*n, std::move(c1), std::move(c2))) {
             case laresult::la_tl_unsat:
-                return { LALoopRes::unsat, nullptr };
+                return {LALoopRes::unsat, nullptr};
             case laresult::la_restart:
-                return { LALoopRes::restart, nullptr };
+                return {LALoopRes::restart, nullptr};
             case laresult::la_unsat:
                 queue.push(n);
                 continue;
             case laresult::la_sat:
-                return { LALoopRes::sat, nullptr };
-            case laresult::la_ok:
-                ;
-        }
+                return {LALoopRes::sat, nullptr};
+            case laresult::la_ok:;
+            }
 
-        queue.push(c1_raw);
-        queue.push(c2_raw);
+            queue.push(c1_raw);
+            queue.push(c2_raw);
+        }
     }
-#ifdef LADEBUG
-    root->print();
-#endif
     return { buildConfig.exitState(), std::move(root) };
 }
 
