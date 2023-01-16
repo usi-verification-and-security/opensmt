@@ -516,6 +516,7 @@ const char* SMTConfig::o_respect_logic_partitioning_hints = ":respect-logic-part
 const char* SMTConfig::o_sat_scatter_split = ":scatter-split";
 const char* SMTConfig::o_sat_lookahead_split = ":lookahead-split";
 const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
+const char* SMTConfig::o_sat_picky = ":picky";
 const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";
 const char* SMTConfig::o_sat_solver_limit = ":solver-limit";
 const char* SMTConfig::o_global_declarations = ":global-declarations";

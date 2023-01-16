@@ -295,6 +295,7 @@ public:
   static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
   static const char* o_sat_pure_lookahead;
+  static const char* o_sat_picky;
   static const char* o_lookahead_score_deep;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
@@ -335,7 +336,7 @@ private:
   bool isPreInitializationOption(const char* o_name) {
       return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0
         || strcmp(o_name, o_sat_pure_lookahead) == 0 || strcmp(o_name, o_sat_lookahead_split) == 0
-        || strcmp(o_name, o_sat_scatter_split) == 0
+        || strcmp(o_name, o_sat_picky) == 0 || strcmp(o_name, o_sat_scatter_split) == 0
         || strcmp(o_name, o_ghost_vars) == 0;
   }
 
@@ -760,6 +761,10 @@ public:
       return optionTable.has(o_sat_pure_lookahead) ?
               optionTable[o_sat_pure_lookahead]->getValue().numval :
               0; }
+  int sat_picky() const {
+      return optionTable.has(o_sat_picky) ?
+               optionTable[o_sat_picky]->getValue().numval :
+               0; }
   int lookahead_score_deep() const {
       return optionTable.has(o_lookahead_score_deep) ?
               optionTable[o_lookahead_score_deep]->getValue().numval :

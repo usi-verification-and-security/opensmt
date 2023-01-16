@@ -1,0 +1,1 @@
+(set-option :picky true)

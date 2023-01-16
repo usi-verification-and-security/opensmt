@@ -1,0 +1,179 @@
+//
+// Created by prova on 07.02.19.
+//
+
+#ifndef OPENSMT_PICKYSMTSOLVER_H
+#define OPENSMT_PICKYSMTSOLVER_H
+
+#include "SimpSMTSolver.h"
+#include "PScore.h"
+
+#include <memory>
+#include <unistd.h>
+
+class PickySMTSolver : public SimpSMTSolver {
+protected:
+    ConflQuota confl_quota;
+    int idx;
+
+    // -----------------------------------------------------------------------------------------
+    // Data type for exact value array
+    static inline int min(int i, int j) { return i < j ? i : j; }
+    static inline int max(int i, int j) { return i > j ? i : j; }
+    class PNode {
+    public:
+        // The children
+        std::unique_ptr<PNode> c1;
+        std::unique_ptr<PNode> c2;
+        PNode* p;
+        virtual PNode * getParent() { return p; }
+        Lit l;
+        int d;
+        PNode() : l(lit_Undef), d(0) {}
+        virtual ~PNode() = default;
+        virtual void print_local() const {
+            for (int i = 0; i < d; i++)
+                dprintf(STDERR_FILENO, " ");
+            dprintf(STDERR_FILENO, "%s%d [%d]", sign(l) ? "-" : "", var(l), d);
+
+            if (c1 != nullptr) {
+                dprintf(STDERR_FILENO, " c1");
+            }
+            if (c2 != nullptr) {
+                dprintf(STDERR_FILENO, " c2");
+            }
+            dprintf(STDERR_FILENO, "\n");
+        }
+
+        void print() const {
+            print_local();
+            if (c1 != nullptr)
+                c1->print();
+            if (c2 != nullptr)
+                c2->print();
+        }
+    };
+
+    lbool    laPropagateWrapper();
+
+protected:
+    // The result from the lookahead loop
+    enum class PLoopRes {
+        sat,
+        unsat,
+        unknown,
+        unknown_final,
+        restart
+    };
+
+    enum class laresult {
+        la_tl_unsat,
+        la_sat,
+        la_restart,
+        la_unsat,
+        la_ok
+    };
+
+    template<typename Node, typename BuildConfig>
+
+    std::pair<PLoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
+
+    virtual PLoopRes solveLookahead();
+    std::pair<laresult,Lit> lookaheadLoop();
+    lbool solve_() override; // Does not change the formula
+
+    enum class PathBuildResult {
+        pathbuild_success,
+        pathbuild_tlunsat,
+        pathbuild_unsat,
+        pathbuild_restart
+    };
+
+    PathBuildResult setSolverToNode(PNode const &);                                         // Set solver dl stack according to the path from root to n
+    laresult expandTree(PNode & n, std::unique_ptr<PNode> c1, std::unique_ptr<PNode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    std::unique_ptr<PickyScore> score;
+    bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
+public:
+    PickySMTSolver(SMTConfig&, THandler&);
+    Var newVar(bool dvar) override;
+};
+
+// Maintain the tree explicitly.  Each internal node should have the info whether its
+// both children have been constructed and whether any of its two
+// children has been shown unsatisfiable either directly or with a
+// backjump.
+template<typename Node, typename BuildConfig>
+std::pair<PickySMTSolver::PLoopRes, std::unique_ptr<Node>>
+PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
+    score->updateRound();
+    vec<Node *> queue;
+    auto * root_raw = new Node();
+    auto root = std::unique_ptr<Node>(root_raw);
+    root->p = root_raw;
+    queue.push(root_raw);
+
+    while (queue.size() != 0) {
+        Node * n = queue.last();
+        queue.pop();
+        assert(n);
+
+        switch (setSolverToNode(*n)) {
+            case PathBuildResult::pathbuild_tlunsat:
+                return { PLoopRes::unsat, nullptr };
+            case PathBuildResult::pathbuild_restart:
+                return { PLoopRes::restart, nullptr };
+            case PathBuildResult::pathbuild_unsat: {
+                // Reinsert the parent to the queue
+                assert(n != root_raw); // Unsatisfiability in root should be tlunsat
+                Node * parent = n->getParent();
+                if (queue.size() > 0 and queue.last()->p == parent) {
+                    // This is the second child (searched first).  Pop the other child as well
+                    queue.pop();
+                    // Now queue does not have children of the parent
+                    assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
+                }
+                queue.push(parent);
+                parent->c1.reset(nullptr);
+                parent->c2.reset(nullptr);
+                continue;
+            }
+            case PathBuildResult::pathbuild_success:
+                ;
+        }
+
+        assert(n);
+
+        if (buildConfig.stopCondition(*n, config.sat_split_num())) {
+            continue;
+        }
+
+        auto c1_raw = new Node();
+        auto c2_raw = new Node();
+        auto c1 = std::unique_ptr<Node>(c1_raw);
+        auto c2 = std::unique_ptr<Node>(c2_raw);
+
+        switch (expandTree(*n, std::move(c1), std::move(c2))) {
+            case laresult::la_tl_unsat:
+                return { PLoopRes::unsat, nullptr };
+            case laresult::la_restart:
+                return { PLoopRes::restart, nullptr };
+            case laresult::la_unsat:
+                queue.push(n);
+                continue;
+            case laresult::la_sat:
+                return { PLoopRes::sat, nullptr };
+            case laresult::la_ok:
+                ;
+        }
+
+        queue.push(c1_raw);
+        queue.push(c2_raw);
+    }
+#ifdef PDEBUG
+    root->print();
+#endif
+    return { buildConfig.exitState(), std::move(root) };
+}
+
+
+#endif //OPENSMT_PICKYSMTSOLVER_H

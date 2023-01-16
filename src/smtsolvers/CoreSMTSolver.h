@@ -82,6 +82,8 @@ class CoreSMTSolver
 {
     friend class LookaheadScoreClassic;
     friend class LookaheadScoreDeep;
+    friend class PickyScoreClassic;
+    friend class PickyScoreDeep;
 protected:
     SMTConfig & config;         // Stores Config
     THandler  & theory_handler; // Handles theory
@@ -321,6 +323,8 @@ protected:
     bool                flipState = false;
     vec<bool>           var_seen;
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+public:
+    Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 protected:
 #ifdef PEDANTIC_DEBUG
 public:
@@ -337,7 +341,6 @@ protected:
     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
     Map<Var,int, VarHash> assumptions_order; // Defined for active assumption variables: how manyeth active assumption variable this is in assumptions
-    Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
     double              random_seed;      // Used by the random variable selection.
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
