@@ -365,13 +365,14 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
     assert(decisionLevel() == n.d);
     laresult res;
     Lit best;
-    if(crossed_assumptions >= assumptions.size()){
+    if(decisionLevel() >= assumptions.size()){
         std::tie(res, best) = lookaheadLoop();
     } else {
-        while (crossed_assumptions < assumptions.size()) {
+        while (decisionLevel() < assumptions.size()) {
             // Perform user provided assumption:
             Lit p = assumptions[decisionLevel()];
             if (value(p) == l_True) {
+                newDecisionLevel();
                 // Dummy decision level:
                 crossed_assumptions++;
             } else if (value(p) == l_False) {
