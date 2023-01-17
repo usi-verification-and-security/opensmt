@@ -241,6 +241,34 @@ lbool LookaheadSMTSolver::laPropagateWrapper()
     return l_True;
 }
 
+LookaheadSMTSolver::laresult LookaheadSMTSolver::assumptionsPropagation(){
+    while (crossed_assumptions < assumptions.size()) {
+        // Perform user provided assumption:
+        Lit p = assumptions[decisionLevel()];
+        if (value(p) == l_True) {
+            // Dummy decision level:
+            crossed_assumptions++;
+        } else if (value(p) == l_False) {
+            analyzeFinal(~p, conflict);
+            int max = 0;
+            for (Lit q : conflict) {
+                if (!sign(q)) {
+                    max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                }
+            }
+            conflict_frame = max+1;
+            ok = false;
+            return laresult::la_unsat;
+        } else {
+            uncheckedEnqueue(p);
+            lbool res = laPropagateWrapper();
+            crossed_assumptions++;
+        }
+    }
+
+    return laresult::la_sat;
+}
+
 /**
  * Set solver decision stack according to the path from the root to @param n.
  * As a side-effect the solver is either
@@ -365,34 +393,8 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
     assert(decisionLevel() == n.d);
     laresult res;
     Lit best;
-    if(decisionLevel() >= assumptions.size()){
-        std::tie(res, best) = lookaheadLoop();
-    } else {
-        while (decisionLevel() < assumptions.size()) {
-            // Perform user provided assumption:
-            Lit p = assumptions[decisionLevel()];
-            if (value(p) == l_True) {
-                newDecisionLevel();
-                // Dummy decision level:
-                crossed_assumptions++;
-            } else if (value(p) == l_False) {
-                analyzeFinal(~p, conflict);
-                int max = 0;
-                for (Lit q : conflict) {
-                    if (!sign(q)) {
-                        max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
-                    }
-                }
-                conflict_frame = max+1;
-                ok = false;
-                return laresult::la_unsat;
-            } else {
-                res = laresult::la_ok;
-                best = p;
-                break;
-            }
-        }
-    }
+    std::tie(res, best) = lookaheadLoop();
+
     assert(decisionLevel() <= n.d);
     if (res != laresult::la_ok)
         return res;
@@ -404,12 +406,7 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
     c1->l = best;
     c2->p = &n;
     c2->d = n.d+1;
-    if(crossed_assumptions < assumptions.size()){
-        crossed_assumptions++;
-        c2->l = best;
-    } else{
-        c2->l = ~best;
-    }
+    c2->l = ~best;
     n.c1 = std::move(c1);
     n.c2 = std::move(c2);
 

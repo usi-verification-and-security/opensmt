@@ -109,6 +109,7 @@ protected:
 
     PathBuildResult setSolverToNode(LANode const &);                                         // Set solver dl stack according to the path from root to n
     laresult expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    laresult assumptionsPropagation(); // Do lookahead.  On success write the new children to c1 and c2
     std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
@@ -138,7 +139,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     root->p = root_raw;
     queue.push(root_raw);
     init_vars = nVars();
-
+    if(assumptionsPropagation() == laresult::la_unsat){ return { LALoopRes::unsat, nullptr }; }
     while (queue.size() != 0) {
         Node * n = queue.last();
         queue.pop();
