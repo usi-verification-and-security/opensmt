@@ -139,7 +139,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     root->p = root_raw;
     queue.push(root_raw);
     init_vars = nVars();
-    if(assumptionsPropagation() == laresult::la_unsat){ return { LALoopRes::unsat, nullptr }; }
+//    if(assumptionsPropagation() == laresult::la_unsat){ return { LALoopRes::unsat, nullptr }; }
     while (queue.size() != 0) {
         Node * n = queue.last();
         queue.pop();
@@ -180,22 +180,51 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
 
-        switch (expandTree(*n, std::move(c1), std::move(c2))) {
-            case laresult::la_tl_unsat:
-                return { LALoopRes::unsat, nullptr };
-            case laresult::la_restart:
-                return { LALoopRes::restart, nullptr };
-            case laresult::la_unsat:
-                queue.push(n);
-                continue;
-            case laresult::la_sat:
-                return { LALoopRes::sat, nullptr };
-            case laresult::la_ok:
-                ;
-        }
+        if(decisionLevel() < assumptions.size()){
+            while (decisionLevel() < assumptions.size()) {
+                // Perform user provided assumption:
+                Lit p = assumptions[decisionLevel()];
+                if (value(p) == l_True) {
+                    // Dummy decision level:
+                    newDecisionLevel();
+                } else if (value(p) == l_False) {
+                    analyzeFinal(~p, conflict);
+                    int max = 0;
+                    for (Lit q : conflict) {
+                        if (!sign(q)) {
+                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                        }
+                    }
+                    conflict_frame = max+1;
+                    ok = false;
+                    return { LALoopRes::unsat, nullptr };
+                } else {
+                    c1_raw->p = n;
+                    c1_raw->d = (*n).d + 1;
+                    c1_raw->l = p;
+                    n->c1 = std::move(c1);
+                    break;
+                }
+            }
+            queue.push(c1_raw);
+        } else {
+            switch (expandTree(*n, std::move(c1), std::move(c2))) {
+                case laresult::la_tl_unsat:
+                    return { LALoopRes::unsat, nullptr };
+                case laresult::la_restart:
+                    return { LALoopRes::restart, nullptr };
+                case laresult::la_unsat:
+                    queue.push(n);
+                    continue;
+                case laresult::la_sat:
+                    return { LALoopRes::sat, nullptr };
+                case laresult::la_ok:
+                    ;
+            }
 
-        queue.push(c1_raw);
-        queue.push(c2_raw);
+            queue.push(c1_raw);
+            queue.push(c2_raw);
+        }
     }
 #ifdef LADEBUG
     root->print();
