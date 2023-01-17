@@ -386,7 +386,6 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
                 ok = false;
                 return laresult::la_unsat;
             } else {
-                crossed_assumptions++;
                 res = laresult::la_ok;
                 best = p;
                 break;
@@ -404,7 +403,12 @@ LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::uni
     c1->l = best;
     c2->p = &n;
     c2->d = n.d+1;
-    c2->l = ~best;
+    if(crossed_assumptions < assumptions.size()){
+        crossed_assumptions++;
+        c2->l = best;
+    } else{
+        c2->l = ~best;
+    }
     n.c1 = std::move(c1);
     n.c2 = std::move(c2);
 
