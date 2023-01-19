@@ -917,7 +917,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     Lit best = score->getBest();
 //    initialized = true;
 //    printf("Best: %d\n", var(best));
-    if (static_cast<unsigned int>(trail.size()) == dec_vars and best == lit_Undef) {
+    if (static_cast<unsigned int>(trail.size()) >= dec_vars and best == lit_Undef) {
 #ifdef LADEBUG
         printf("All variables are already set, so we have nothing to branch on and this is a SAT answer\n");
 #endif
@@ -960,7 +960,7 @@ void LookaheadSMTSolver::cancelUntil(int level)
       assigns [x] = l_Undef;
       insertVarOrder(x);
     }
-    crossed_assumptions = min(assumptions.size(), level);
+    crossed_assumptions = min(crossed_assumptions, level);
     qhead = trail_lim[level];
     trail.shrink(trail.size() - trail_lim[level]);
     trail_lim.shrink(trail_lim.size() - level);
