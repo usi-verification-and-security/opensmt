@@ -139,34 +139,34 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     root->p = root_raw;
     queue.push(root_raw);
     init_vars = nVars();
-//    if(assumptionsPropagation() == laresult::la_unsat){ return { LALoopRes::unsat, nullptr }; }
+    //    if(assumptionsPropagation() == laresult::la_unsat){ return { LALoopRes::unsat, nullptr }; }
     while (queue.size() != 0) {
         Node * n = queue.last();
         queue.pop();
         assert(n);
 
         switch (setSolverToNode(*n)) {
-            case PathBuildResult::pathbuild_tlunsat:
-                return { LALoopRes::unsat, nullptr };
-            case PathBuildResult::pathbuild_restart:
-                return { LALoopRes::restart, nullptr };
-            case PathBuildResult::pathbuild_unsat: {
-                // Reinsert the parent to the queue
-                assert(n != root_raw); // Unsatisfiability in root should be tlunsat
-                Node * parent = n->getParent();
-                if (queue.size() > 0 and queue.last()->p == parent) {
-                    // This is the second child (searched first).  Pop the other child as well
-                    queue.pop();
-                    // Now queue does not have children of the parent
-                    assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
-                }
-                queue.push(parent);
-                parent->c1.reset(nullptr);
-                parent->c2.reset(nullptr);
-                continue;
+        case PathBuildResult::pathbuild_tlunsat:
+            return { LALoopRes::unsat, nullptr };
+        case PathBuildResult::pathbuild_restart:
+            return { LALoopRes::restart, nullptr };
+        case PathBuildResult::pathbuild_unsat: {
+            // Reinsert the parent to the queue
+            assert(n != root_raw); // Unsatisfiability in root should be tlunsat
+            Node * parent = n->getParent();
+            if (queue.size() > 0 and queue.last()->p == parent) {
+                // This is the second child (searched first).  Pop the other child as well
+                queue.pop();
+                // Now queue does not have children of the parent
+                assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
             }
-            case PathBuildResult::pathbuild_success:
-                ;
+            queue.push(parent);
+            parent->c1.reset(nullptr);
+            parent->c2.reset(nullptr);
+            continue;
+        }
+        case PathBuildResult::pathbuild_success:
+            ;
         }
 
         assert(n);
@@ -179,7 +179,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c2_raw = new Node();
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
-
+        bool checked = false;
         if(crossed_assumptions < assumptions.size()){
             while (crossed_assumptions < assumptions.size()) {
                 // Perform user provided assumption:
@@ -204,23 +204,26 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                     c1_raw->l = p;
                     n->c1 = std::move(c1);
                     crossed_assumptions++;
+                    checked = true;
+                    queue.push(c1_raw);
                     break;
                 }
             }
-            queue.push(c1_raw);
-        } else {
+        }
+
+        if(!checked){
             switch (expandTree(*n, std::move(c1), std::move(c2))) {
-                case laresult::la_tl_unsat:
-                    return { LALoopRes::unsat, nullptr };
-                case laresult::la_restart:
-                    return { LALoopRes::restart, nullptr };
-                case laresult::la_unsat:
-                    queue.push(n);
-                    continue;
-                case laresult::la_sat:
-                    return { LALoopRes::sat, nullptr };
-                case laresult::la_ok:
-                    ;
+            case laresult::la_tl_unsat:
+                return { LALoopRes::unsat, nullptr };
+            case laresult::la_restart:
+                return { LALoopRes::restart, nullptr };
+            case laresult::la_unsat:
+                queue.push(n);
+                continue;
+            case laresult::la_sat:
+                return { LALoopRes::sat, nullptr };
+            case laresult::la_ok:
+                ;
             }
 
             queue.push(c1_raw);
