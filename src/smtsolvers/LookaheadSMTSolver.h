@@ -203,7 +203,6 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                     c1_raw->d = (*n).d + 1;
                     c1_raw->l = p;
                     n->c1 = std::move(c1);
-                    n->c2 = std::move(c2);
                     crossed_assumptions++;
                     break;
                 }
