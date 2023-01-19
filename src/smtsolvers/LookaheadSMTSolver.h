@@ -180,13 +180,13 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
 
-        if(decisionLevel() < assumptions.size()){
-            while (decisionLevel() < assumptions.size()) {
+        if(crossed_assumptions < assumptions.size()){
+            while (crossed_assumptions < assumptions.size()) {
                 // Perform user provided assumption:
-                Lit p = assumptions[decisionLevel()];
+                Lit p = assumptions[crossed_assumptions];
                 if (value(p) == l_True) {
                     // Dummy decision level:
-                    newDecisionLevel();
+                    crossed_assumptions++;
                 } else if (value(p) == l_False) {
                     analyzeFinal(~p, conflict);
                     int max = 0;
@@ -203,6 +203,8 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                     c1_raw->d = (*n).d + 1;
                     c1_raw->l = p;
                     n->c1 = std::move(c1);
+                    n->c2 = std::move(c2);
+                    crossed_assumptions++;
                     break;
                 }
             }

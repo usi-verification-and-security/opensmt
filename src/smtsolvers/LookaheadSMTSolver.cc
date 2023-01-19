@@ -960,6 +960,7 @@ void LookaheadSMTSolver::cancelUntil(int level)
       assigns [x] = l_Undef;
       insertVarOrder(x);
     }
+    crossed_assumptions = min(assumptions.size(), level);
     qhead = trail_lim[level];
     trail.shrink(trail.size() - trail_lim[level]);
     trail_lim.shrink(trail_lim.size() - level);
