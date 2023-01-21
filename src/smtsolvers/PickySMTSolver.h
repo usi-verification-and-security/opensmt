@@ -15,6 +15,7 @@ class PickySMTSolver : public SimpSMTSolver {
 protected:
     ConflQuota confl_quota;
     int idx;
+    int crossed_assumptions;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -80,6 +81,7 @@ protected:
 
     virtual PLoopRes solveLookahead();
     std::pair<laresult,Lit> lookaheadLoop();
+    virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
     lbool solve_() override; // Does not change the formula
 
     enum class PathBuildResult {
@@ -91,6 +93,7 @@ protected:
 
     PathBuildResult setSolverToNode(PNode const &);                                         // Set solver dl stack according to the path from root to n
     laresult expandTree(PNode & n, std::unique_ptr<PNode> c1, std::unique_ptr<PNode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    void rebuildOrderHeap();
     std::unique_ptr<PickyScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
@@ -151,23 +154,56 @@ PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c2_raw = new Node();
         auto c1 = std::unique_ptr<Node>(c1_raw);
         auto c2 = std::unique_ptr<Node>(c2_raw);
+        bool checked = false;
 
-        switch (expandTree(*n, std::move(c1), std::move(c2))) {
+        if(crossed_assumptions < assumptions.size()){
+            while (crossed_assumptions < assumptions.size()) {
+                // Perform user provided assumption:
+                Lit p = assumptions[crossed_assumptions];
+                if (value(p) == l_True) {
+                    // Dummy decision level:
+                    crossed_assumptions++;
+                } else if (value(p) == l_False) {
+                    analyzeFinal(~p, conflict);
+                    int max = 0;
+                    for (Lit q : conflict) {
+                        if (!sign(q)) {
+                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
+                        }
+                    }
+                    conflict_frame = max+1;
+                    ok = false;
+                    return { PLoopRes::unsat, nullptr };
+                } else {
+                    c1_raw->p = n;
+                    c1_raw->d = (*n).d + 1;
+                    c1_raw->l = p;
+                    n->c1 = std::move(c1);
+                    crossed_assumptions++;
+                    checked = true;
+                    queue.push(c1_raw);
+                    break;
+                }
+            }
+        }
+
+        if(!checked) {
+            switch (expandTree(*n, std::move(c1), std::move(c2))) {
             case laresult::la_tl_unsat:
-                return { PLoopRes::unsat, nullptr };
+                return {PLoopRes::unsat, nullptr};
             case laresult::la_restart:
-                return { PLoopRes::restart, nullptr };
+                return {PLoopRes::restart, nullptr};
             case laresult::la_unsat:
                 queue.push(n);
                 continue;
             case laresult::la_sat:
-                return { PLoopRes::sat, nullptr };
-            case laresult::la_ok:
-                ;
-        }
+                return {PLoopRes::sat, nullptr};
+            case laresult::la_ok:;
+            }
 
-        queue.push(c1_raw);
-        queue.push(c2_raw);
+            queue.push(c1_raw);
+            queue.push(c2_raw);
+        }
     }
 #ifdef PDEBUG
     root->print();
