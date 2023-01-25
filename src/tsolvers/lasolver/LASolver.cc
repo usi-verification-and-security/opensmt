@@ -538,7 +538,9 @@ void LASolver::popBacktrackPoints(unsigned int count) {
         TSolver::popBacktrackPoint();
     }
     simplex.finalizeBacktracking();
-    setStatus(SAT);
+    if(status != INIT){
+        setStatus(SAT);
+    }
 }
 
 void LASolver::initSolver()
