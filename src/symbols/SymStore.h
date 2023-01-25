@@ -35,19 +35,17 @@ class SymStore {
     VecMap<const char*,SymRef,StringHash,Equal<const char*> >  symbolTable;
     vec<SymRef>                                 symbols;
     SymbolAllocator                             ta{1024};
-  public:
     vec<char*>                                  idToName;
 
+  public:
     ~SymStore();
-    // Construct a new symbol.  The first argument in args is the return
-    // sort of the symbol
+    // Constructs a new symbol.
     SymRef newSymb(const char *fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig);
     SymRef newSymb(const char *fname, SRef rsort, vec<SRef> const & args) { return newSymb(fname, rsort, args, SymConf::Default); }
     bool contains(const char* fname)            const { return symbolTable.has(fname); }
     const vec<SymRef>& nameToRef(const char* s) const { return symbolTable[s]; }
     vec<SymRef>& nameToRef(const char* s)             { return symbolTable[s]; }
 
-    // Replace with std::optional if C++17 will be required
     const vec<SymRef>* getRefOrNull(const char* s) const { return symbolTable.getOrNull(s); }
 
     Symbol& operator [] (SymRef sr)                   { return ta[sr]; }
