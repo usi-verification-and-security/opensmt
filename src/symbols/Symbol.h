@@ -151,13 +151,10 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
     static int symWord32Size(int size){
         return (sizeof(Symbol) + (sizeof(SRef) * size )) / sizeof(uint32_t); }
  public:
-    bool extra_term_field;
-
-    SymbolAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_term_field(false){}
-    SymbolAllocator() : extra_term_field(false){}
+    SymbolAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap) {}
+    SymbolAllocator() = default;
 
     void moveTo(SymbolAllocator& to){
-        to.extra_term_field = extra_term_field;
         RegionAllocator<uint32_t>::moveTo(to); }
 
     SymRef alloc(SRef rsort, vec<SRef> const & argSorts, SymbolConfig const & sc)
