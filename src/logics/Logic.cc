@@ -569,12 +569,14 @@ PTRef Logic::mkImpl(vec<PTRef> && args) {
 }
 
 PTRef Logic::mkBinaryEq(PTRef lhs, PTRef rhs) {
+    assert(getSortRef(lhs) == getSortRef(rhs));
     if (lhs == rhs) return getTerm_true();
     if (isConstant(lhs) && isConstant(rhs))
         return getTerm_false();
 
+    SRef sref = getSortRef(lhs);
     // Simplify more here now that the equals type is known
-    if (hasSortBool(lhs)) {
+    if (sref == getSort_bool()) {
         if (lhs == mkNot(rhs)) return getTerm_false();
         if (lhs == getTerm_true() || rhs == getTerm_true())
             return lhs == getTerm_true() ? rhs : lhs;
@@ -582,7 +584,8 @@ PTRef Logic::mkBinaryEq(PTRef lhs, PTRef rhs) {
             return lhs == getTerm_false() ? mkNot(rhs) : mkNot(lhs);
     }
     vec<PTRef> args {lhs, rhs};
-    SymRef eq_sym = term_store.lookupSymbol(tk_equals, args);
+    assert(sortToEquality.has(sref));
+    SymRef eq_sym = sortToEquality[sref];
     return mkFun(eq_sym, std::move(args));
 }
 
