@@ -89,9 +89,9 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVarOrIte(sum) || logic.isPlus(sum) || logic.isTimes(sum));
-    assert(!logic.isTimes(sum) || ((logic.isNumVarOrIte(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1]))) ||
-                                   (logic.isNumVarOrIte(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0])))));
+    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimes(sum));
+    assert(!logic.isTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1]))) ||
+                                   (logic.isNumVar(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0])))));
     (void) cons; (void)sum;
 }
 
@@ -222,7 +222,7 @@ opensmt::Number LASolver::getNum(PTRef r) {
 }
 
 void LASolver::notifyVar(LVRef v) {
-    assert(logic.isNumVarOrIte(getVarPTRef(v)));
+    assert(logic.isNumVar(getVarPTRef(v)));
     if (logic.yieldsSortInt(getVarPTRef(v))) {
         markVarAsInt(v);
     }
@@ -300,10 +300,10 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
         }
     }
 
-    if (logic.isNumVarOrIte(expr) || logic.isTimes(expr)) {
+    if (logic.isNumVar(expr) || logic.isTimes(expr)) {
         // Case (1), (2a), and (2b)
         auto [v,c] = logic.splitTermToVarAndConst(expr);
-        assert(logic.isNumVarOrIte(v) || (laVarMapper.isNegated(v) && logic.isNumVarOrIte(logic.mkNeg(v))));
+        assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
         notifyVar(x);
