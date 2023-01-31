@@ -2,6 +2,7 @@
 #include "lasolver/LASolver.h"
 #include "TreeOps.h"
 #include "Egraph.h"
+#include "ArraySolver.h"
 
 UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
@@ -9,7 +10,13 @@ UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
 {
     lasolver = new LASolver(config, logic);
     ufsolver = new Egraph(config, logic);
-    setSolverSchedule({ufsolver,lasolver});
+    arraySolver = logic.hasArrays() ? new ArraySolver(l, *ufsolver, c) : nullptr;
+    if (logic.hasArrays()) {
+        setSolverSchedule({ufsolver, arraySolver, lasolver});
+    } else {
+        setSolverSchedule({ufsolver,lasolver});
+    }
+
 }
 
 PTRef UFLATHandler::getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager &)

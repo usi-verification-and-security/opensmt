@@ -762,7 +762,7 @@ PTRef ArithLogic::mkGt(vec<PTRef> const & args)
 
 PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     if (getSortRef(rhs) != getSortRef(lhs)) { throw OsmtApiException("Equality over non-equal sorts"); }
-    if (hasUFs()) { return Logic::mkBinaryEq(lhs, rhs); }
+    if (hasUFs() or hasArrays()) { return Logic::mkBinaryEq(lhs, rhs); }
     SRef eqSort = getSortRef(lhs);
     if (!isSortNum(eqSort)) {
         return Logic::mkBinaryEq(lhs, rhs);

@@ -33,13 +33,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class Egraph;
 class LASolver;
+class ArraySolver;
 
 class UFLATHandler : public TSolverHandler
 {
   private:
-    ArithLogic      &logic;
-    LASolver      *lasolver;
-    Egraph        *ufsolver;
+    ArithLogic & logic;
+    LASolver * lasolver;
+    Egraph * ufsolver;
+    ArraySolver * arraySolver;
     vec<PTRef> interfaceVars;
     vec<PTRef> equalitiesToPropagate;
     std::unordered_set<PTRef, PTRefHash> knownEqualities;
