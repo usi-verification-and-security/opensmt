@@ -258,28 +258,28 @@ private:
 
     ERef getArrayFromStore(ERef storeTerm) const {
         PTRef ptref = egraph.ERefToTerm(storeTerm);
-        assert(logic.isArrayStore(logic.getSymRef(ptref)));
+        assert(logic.isArrayStore(ptref));
         PTRef arrayPTerm = logic.getPterm(ptref)[0];
         return egraph.termToERef(arrayPTerm);
     }
 
     ERef getIndexFromStore(ERef storeTerm) const {
         PTRef ptref = egraph.ERefToTerm(storeTerm);
-        assert(logic.isArrayStore(logic.getSymRef(ptref)));
+        assert(logic.isArrayStore(ptref));
         PTRef indexPTerm = logic.getPterm(ptref)[1];
         return egraph.termToERef(indexPTerm);
     }
 
     ERef getIndexFromSelect(ERef selectTerm) const {
         PTRef ptref = egraph.ERefToTerm(selectTerm);
-        assert(logic.isArraySelect(logic.getSymRef(ptref)));
+        assert(logic.isArraySelect(ptref));
         PTRef indexPTerm = logic.getPterm(ptref)[1];
         return egraph.termToERef(indexPTerm);
     }
 
     ERef getArrayFromSelect(ERef selectTerm) const {
         PTRef ptref = egraph.ERefToTerm(selectTerm);
-        assert(logic.isArraySelect(logic.getSymRef(ptref)));
+        assert(logic.isArraySelect(ptref));
         PTRef arrayPTerm = logic.getPterm(ptref)[0];
         return egraph.termToERef(arrayPTerm);
     }

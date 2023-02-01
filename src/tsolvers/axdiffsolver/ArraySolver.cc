@@ -141,10 +141,10 @@ void ArraySolver::declareAtom(PTRef tr) {
             if (logic.isArraySort(logic.getSortRef(term))) {
                 ERef eref = egraph.termToERef(term);
                 arrayTerms.insert(eref);
-                if (logic.isArrayStore(logic.getSymRef(term))) {
+                if (logic.isArrayStore(term)) {
                     storeTerms.insert(eref);
                 }
-            } else if (logic.isArraySelect(logic.getSymRef(term))) {
+            } else if (logic.isArraySelect(term)) {
                 ERef eref = egraph.termToERef(term);
                 selectTerms.insert(eref);
             }
@@ -212,7 +212,7 @@ void ArraySolver::makeWeakRepresentative(NodeRef nodeRef) {
 }
 
 void ArraySolver::merge(ERef storeTerm) {
-    assert(logic.isArrayStore(logic.getSymRef(egraph.ERefToTerm(storeTerm))));
+    assert(logic.isArrayStore(egraph.ERefToTerm(storeTerm)));
     ERef arrayTerm = getArrayFromStore(storeTerm);
     ERef indexTerm = getRoot(getIndexFromStore(storeTerm));
     NodeRef arrayNode = getNodeRef(getRoot(arrayTerm));
@@ -522,8 +522,8 @@ ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceConflict(
     assert(logic.isEquality(equality));
     PTRef lhs = logic.getPterm(equality)[0];
     PTRef rhs = logic.getPterm(equality)[1];
-    assert(logic.isArraySelect(logic.getSymRef(lhs)));
-    assert(logic.isArraySelect(logic.getSymRef(rhs)));
+    assert(logic.isArraySelect(lhs));
+    assert(logic.isArraySelect(rhs));
     ERef array1 = egraph.termToERef(logic.getPterm(lhs)[0]);
     ERef array2 = egraph.termToERef(logic.getPterm(rhs)[0]);
     ERef index1 = egraph.termToERef(logic.getPterm(lhs)[1]);

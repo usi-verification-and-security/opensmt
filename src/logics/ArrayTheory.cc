@@ -18,7 +18,7 @@ vec<PTRef> collectStores(Logic const & logic, PTRef fla) {
         CollectStoresConfig(Logic const & logic) : logic(logic) {}
 
         void visit(PTRef term) override {
-            if (logic.isArrayStore(logic.getSymRef(term))) {
+            if (logic.isArrayStore(term)) {
                 stores.push(term);
             }
         }
@@ -36,7 +36,7 @@ PTRef instantiateReadOverStore(Logic & logic, PTRef fla) {
     for (PTRef store : stores) {
         PTRef index = logic.getPterm(store)[1];
         PTRef value = logic.getPterm(store)[2];
-        assert(logic.isArrayStore(logic.getSymRef(store)));
+        assert(logic.isArrayStore(store));
         instantiatedAxioms.push(logic.mkEq(logic.mkSelect({store, index}), value));
     }
     instantiatedAxioms.push(fla);

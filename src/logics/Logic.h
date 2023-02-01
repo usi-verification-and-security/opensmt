@@ -153,7 +153,9 @@ class Logic {
     bool isArraySort(SRef sref) const { return sort_store[sref].getSymRef() == sym_ArraySort; }
     bool hasArrays() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasArrays; }
     bool isArrayStore(SymRef) const;
+    bool isArrayStore(PTRef) const;
     bool isArraySelect(SymRef) const;
+    bool isArraySelect(PTRef) const;
     PTRef mkStore(vec<PTRef> &&);
     PTRef mkSelect(vec<PTRef> &&);
 

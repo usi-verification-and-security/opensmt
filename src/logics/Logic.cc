@@ -1580,7 +1580,9 @@ bool        Logic::hasSortBool(PTRef tr) const { return sym_store[getPterm(tr).s
 bool        Logic::hasSortBool(SymRef sr) const { return sym_store[sr].rsort() == sort_BOOL; }
 
 bool        Logic::isArraySelect(SymRef sr) const { return selects.has(sr); }
+bool        Logic::isArraySelect(PTRef tr) const { return isArraySelect(getPterm(tr).symb()); }
 bool        Logic::isArrayStore(SymRef sr) const { return stores.has(sr); }
+bool        Logic::isArrayStore(PTRef tr) const { return isArrayStore(getPterm(tr).symb()); }
 
 void Logic::termSort(vec<PTRef>& v) const { sort(v, std::less<PTRef>{}); }
 
