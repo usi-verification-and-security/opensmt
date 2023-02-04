@@ -266,7 +266,7 @@ public:
 
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef sr) const { return isNumVar(sr) or isIte(sr) or isIntDiv(sr) or isMod(sr) or (hasUFs() and isUF(sr)); }
+    bool isNumVarLike(SymRef sr) const { return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr); }
     bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
