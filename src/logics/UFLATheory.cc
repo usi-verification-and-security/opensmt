@@ -22,7 +22,7 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int cu
 
 namespace {
     bool isArithmeticSymbol(ArithLogic const & logic, SymRef sym) {
-        return logic.isIF(sym) and not logic.isEquality(sym) and not logic.isBooleanOperator(sym);
+        return logic.isPlus(sym) or logic.isTimes(sym) or logic.isLeq(sym);
     }
 
     bool isUninterpreted(ArithLogic const & logic, SymRef sym) {
@@ -35,10 +35,11 @@ namespace {
      */
     bool isPureArithmeticEquality(PTRef ptref, ArithLogic & logic) {
         assert(logic.isNumEq(ptref));
+        auto isUForArray = [&](SymRef sym) { return isUninterpreted(logic, sym) or logic.isArraySelect(sym); };
         auto const & term = logic.getPterm(ptref);
         PTRef lhs = term[0];
         PTRef rhs = term[1];
-        return not (isUninterpreted(logic, logic.getSymRef(lhs)) or isUninterpreted(logic, logic.getSymRef(rhs)));
+        return not (isUForArray(logic.getSymRef(lhs)) or isUForArray(logic.getSymRef(rhs)));
     }
 
     class PurifyConfig : public DefaultRewriterConfig {
@@ -83,8 +84,10 @@ namespace {
         PTRef rewrite(PTRef ptref) override {
             auto const & term = logic.getPterm(ptref);
             if (isArithmeticSymbol(logic, term.symb())) {
-                return rewriteInternal(ptref, [this](PTRef child) { return isUninterpreted(logic, logic.getSymRef(child)); });
-            } else if (isUninterpreted(logic, term.symb())) {
+                return rewriteInternal(ptref, [this](PTRef child) {
+                    return isUninterpreted(logic, logic.getSymRef(child)) or (logic.hasArrays() and logic.isArraySelect(child));
+                });
+            } else if (isUninterpreted(logic, term.symb()) or logic.isArraySelect(term.symb()) or logic.isArrayStore(term.symb())) {
                 return rewriteInternal(ptref, [this](PTRef child) { return isArithmeticSymbol(logic, logic.getSymRef(child)) and not logic.isConstant(child); });
             } else if (logic.isNumEq(term.symb())) {
                 if (not isPureArithmeticEquality(ptref, logic)) {
