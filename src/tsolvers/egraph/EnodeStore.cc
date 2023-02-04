@@ -91,7 +91,7 @@ bool EnodeStore::needsEnode(PTRef tr) const {
         return true;
     } else if (logic.isUF(tr) or logic.yieldsSortUninterpreted(tr)) {
         return true;
-    } else if (logic.hasArrays() and logic.isArraySort(logic.getSortRef(tr))) {
+    } else if (logic.hasArrays() and (logic.isArraySort(logic.getSortRef(tr)) or logic.isArraySelect(tr))) {
         return true;
     } else if (logic.isTheoryEquality(tr)) {
         return true;
