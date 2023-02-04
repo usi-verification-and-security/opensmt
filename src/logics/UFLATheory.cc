@@ -1,4 +1,6 @@
 #include "UFLATheory.h"
+
+#include "ArrayHelpers.h"
 #include "OsmtInternalException.h"
 #include "TreeOps.h"
 #include "Substitutor.h"
@@ -13,6 +15,9 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int cu
         PTRef coll_f = getCollateFunction(formulas, curr);
         PTRef fla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
         PTRef purified = purify(fla);
+        if (logic.hasArrays()) {
+            purified = instantiateReadOverStore(logic, purified);
+        }
         PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
         this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
         currentFrame.root = noArithmeticEqualities;
