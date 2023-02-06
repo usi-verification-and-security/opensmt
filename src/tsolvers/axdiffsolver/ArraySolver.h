@@ -227,8 +227,8 @@ private:
 
     PTRef getEquality(ERef lhs, ERef rhs, Logic & logic) const { return logic.mkEq(egraph.ERefToTerm(lhs), egraph.ERefToTerm(rhs)); }
 
-    bool isFalsified(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_False; }
-    bool isSatisfied(PTRef equality) const { return this->hasPolarity(equality) and this->getPolarity(equality) == l_True; }
+    bool isFalsified(PTRef equality) const { return logic.isFalse(equality) or (this->hasPolarity(equality) and this->getPolarity(equality) == l_False); }
+    bool isSatisfied(PTRef equality) const { return logic.isTrue(equality) or (this->hasPolarity(equality) and this->getPolarity(equality) == l_True); }
 
     void computeExplanation(PTRef equality);
 

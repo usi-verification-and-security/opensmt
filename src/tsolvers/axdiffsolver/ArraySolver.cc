@@ -580,7 +580,9 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
     cursor1.collectPrimaries(cursor2, storeIndices, explanations);
     for (ERef storeIndex : storeIndices) {
         PTRef eq = getEquality(storeIndex, index, logic);
-        explanations.insert(PtAsgn(eq, l_False));
+        if (eq != logic.getTerm_false()) {
+            explanations.insert(PtAsgn(eq, l_False));
+        }
     }
     return explanations;
 }
