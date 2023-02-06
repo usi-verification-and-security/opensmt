@@ -87,18 +87,26 @@ std::vector<vec<Lit>> THandler::getNewSplits() {
         return splitClauses;
     }
     assert((std::unordered_set<PTRef, PTRefHash>{newSplits.begin(), newSplits.end()}.size() == newSplits.size_())); // No duplicates in splits
+    Logic const & logic = getLogic();
+    auto processLiteral = [&](PTRef litTerm){
+        Lit l = tmap.getOrCreateLit(litTerm);
+        PTRef atomTerm = logic.isNot(litTerm) ? logic.getPterm(litTerm)[0] : litTerm;
+        assert(getLogic().isAtom(atomTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
+        declareAtom(atomTerm);
+        informNewSplit(atomTerm);
+        splitClauses.back().push(l);
+    };
     for (PTRef clause : newSplits) {
         splitClauses.emplace_back();
-        Logic const & logic = getLogic();
-        assert(logic.isOr(clause));
-        for (int i = 0; i < logic.getPterm(clause).size(); i++) {
-            PTRef litTerm = logic.getPterm(clause)[i];
-            Lit l = tmap.getOrCreateLit(litTerm);
-            PTRef atomTerm = logic.isNot(litTerm) ? logic.getPterm(litTerm)[0] : litTerm;
-            assert(getLogic().isAtom(atomTerm)); // MB: Needs to be an atom, otherwise the declaration would not work.
-            declareAtom(atomTerm);
-            informNewSplit(atomTerm);
-            splitClauses.back().push(l);
+        if (logic.isAtom(clause)) {
+            processLiteral(clause);
+        } else if (logic.isOr(clause)) {
+            for (int i = 0; i < logic.getPterm(clause).size(); i++) {
+                PTRef litTerm = logic.getPterm(clause)[i];
+                processLiteral(litTerm);
+            }
+        } else {
+            assert(false);
         }
     }
     return splitClauses;
