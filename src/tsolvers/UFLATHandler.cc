@@ -50,6 +50,26 @@ void UFLATHandler::declareAtom(PTRef atom) {
     }
 }
 
+namespace {
+    void addInterfaceClausesForEquality(ArithLogic & logic, PTRef eq, vec<PTRef> & clauses) {
+        // create clauses corresponding to "x = y iff x >= y and x <= y"
+        assert(logic.isNumEq(eq));
+        PTRef lhs = logic.getPterm(eq)[0];
+        PTRef rhs = logic.getPterm(eq)[1];
+        assert((logic.isNumVar(lhs) or logic.isNumConst(lhs)) and (logic.isNumVar(rhs) or logic.isNumConst(rhs)));
+        PTRef leq = logic.mkLeq(lhs, rhs);
+        PTRef geq = logic.mkGeq(lhs, rhs);
+        vec<PTRef> args = {eq, logic.mkNot(leq), logic.mkNot(geq)}; // trichotomy clause
+        clauses.push(logic.mkOr(args));
+        args.clear();
+        args.push(logic.mkNot(eq));
+        args.push(leq);
+        clauses.push(logic.mkOr(args)); // x = y => x <= y
+        args.last() = geq;
+        clauses.push(logic.mkOr(std::move(args))); // x = y => x >= y
+    }
+}
+
 vec<PTRef> UFLATHandler::getSplitClauses() {
     assert(not ufsolver->hasNewSplits());
     vec<PTRef> res;
@@ -59,30 +79,37 @@ vec<PTRef> UFLATHandler::getSplitClauses() {
     }
     if (arraySolver and arraySolver->hasNewSplits()) {
         arraySolver->getNewSplits(res);
+        vec<PTRef> arrayLemmas;
+        res.copyTo(arrayLemmas);
+        std::unordered_set<PTRef, PTRefHash> equalitiesWithAddedClauses;
+        // HACK: If array solver needs to decide equality on interface vars, we need to add corresponding lemmas already here
+        for (PTRef lemma : arrayLemmas) {
+            if (logic.isOr(lemma)) {
+                for (PTRef lit : logic.getPterm(lemma)) {
+                    PTRef atom = logic.isNot(lit) ? logic.getPterm(lit)[0] : lit;
+                    if (logic.isNumEq(atom) and knownEqualities.find(atom) == knownEqualities.end() and
+                        equalitiesWithAddedClauses.find(atom) == equalitiesWithAddedClauses.end()) {
+                        PTRef lhs = logic.getPterm(atom)[0];
+                        PTRef rhs = logic.getPterm(atom)[1];
+                        if (std::find(interfaceVars.begin(), interfaceVars.end(), lhs) != interfaceVars.end() and
+                            std::find(interfaceVars.begin(), interfaceVars.end(), rhs) != interfaceVars.end()
+                        ) {
+                            addInterfaceClausesForEquality(logic, atom, res);
+                            equalitiesWithAddedClauses.insert(atom);
+                        }
+                    }
+                }
+            }
+        }
         return res;
     }
     if (equalitiesToPropagate.size() == 0) {
         return res;
     }
     for (PTRef eq : equalitiesToPropagate) {
-        if (knownEqualities.find(eq) != knownEqualities.end()) {
-            continue;
+        if (knownEqualities.find(eq) == knownEqualities.end()) {
+            addInterfaceClausesForEquality(logic, eq, res);
         }
-        // create clauses corresponding to "x = y iff x >= y and x <= y"
-        assert(logic.isNumEq(eq));
-        PTRef lhs = logic.getPterm(eq)[0];
-        PTRef rhs = logic.getPterm(eq)[1];
-        assert((logic.isNumVar(lhs) or logic.isNumConst(lhs)) and (logic.isNumVar(rhs) or logic.isNumConst(rhs)));
-        PTRef leq = logic.mkLeq(lhs, rhs);
-        PTRef geq = logic.mkGeq(lhs, rhs);
-        vec<PTRef> args = {eq, logic.mkNot(leq), logic.mkNot(geq)}; // trichotomy clause
-        res.push(logic.mkOr(args));
-        args.clear();
-        args.push(logic.mkNot(eq));
-        args.push(leq);
-        res.push(logic.mkOr(args)); // x = y => x <= y
-        args.last() = geq;
-        res.push(logic.mkOr(std::move(args))); // x = y => x >= y
     }
     equalitiesToPropagate.clear();
     return res;
