@@ -47,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #endif // ENABLE_LINE_EDITING
 
-#if defined(__linux__)
+#if defined(__GLIBC__)
 #include <fpu_control.h>
 #endif
 

@@ -27,7 +27,7 @@
 #endif
 #endif // ENABLE_LINE_EDITING
 
-#if defined(__linux__)
+#if defined(__GLIBC__)
 #include <fpu_control.h>
 #endif
 
@@ -55,7 +55,7 @@ int main( int argc, char * argv[] )
     // the repeatability of experiments that might be compromised
     // by the floating point unit approximations on doubles
     //
-#if defined(__linux__)
+#if defined(__GLIBC__)
     fpu_control_t oldcw, newcw;
     _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
 #endif

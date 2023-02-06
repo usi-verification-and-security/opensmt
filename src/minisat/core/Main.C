@@ -74,7 +74,7 @@ static inline uint64_t memUsed(void) {
 static inline uint64_t memUsed() { return 0; }
 #endif
 
-#if defined(__linux__)
+#if defined(__GLIBC__)
 #include <fpu_control.h>
 #endif
 
@@ -287,7 +287,7 @@ int main(int argc, char** argv)
 
 
     reportf("This is MiniSat 2.0 beta\n");
-#if defined(__linux__)
+#if defined(__GLIBC__)
     fpu_control_t oldcw, newcw;
     _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
     reportf("WARNING: for repeatability, setting FPU to use double precision\n");
