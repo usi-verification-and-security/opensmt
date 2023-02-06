@@ -189,7 +189,7 @@ public:
                     updateOccurrenceUsingType(child, Type::Arith);
                 }
             }
-        } else if (isUninterpreted(logic, symbolRef) or logic.isEquality(symbolRef)) {
+        } else if (isUninterpreted(logic, symbolRef) or logic.isEquality(symbolRef) or logic.isArraySelect(symbolRef) or logic.isArrayStore(symbolRef)) {
             for (PTRef child : logic.getPterm(ptref)) {
                 if (logic.isNumVar(child) or logic.isNumConst(child)) {
                     updateOccurrenceUsingType(child, logic.isNumConst(child) ? Type::Both : Type::Unint);
