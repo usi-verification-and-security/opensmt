@@ -1,0 +1,8 @@
+(set-logic QF_ALIA)
+(set-info :status unsat)
+(declare-fun j () Int)
+(declare-fun v () Int)
+(declare-fun a () (Array Int Int))
+(declare-fun i () Int)
+(assert (and (< j i) (distinct v (select a j)) (= a (store (store a j v) i 0))))
+(check-sat)
