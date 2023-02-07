@@ -295,8 +295,9 @@ public:
   static const char* o_sat_scatter_split;
   static const char* o_sat_lookahead_split;
   static const char* o_sat_pure_lookahead;
-  static const char* o_sat_picky;
   static const char* o_lookahead_score_deep;
+  static const char* o_sat_picky;
+  static const char* o_sat_picky_w;
   static const char* o_sat_split_units;
   static const char* o_sat_split_preference;
   static const char* o_sat_split_test_cube_and_conquer;
@@ -818,6 +819,10 @@ public:
 
    bool use_theory_polarity_suggestion() const
    { return sat_theory_polarity_suggestion != 0; }
+
+   int sat_picky_w() const
+   { return optionTable.has(o_sat_picky_w) ?
+        optionTable[o_sat_picky_w]->getValue().numval : 1; }
 
    int sat_solver_limit() const
    { return optionTable.has(o_sat_solver_limit) ?

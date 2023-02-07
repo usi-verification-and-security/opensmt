@@ -259,7 +259,7 @@ PickySMTSolver::LALoopRes PickySMTSolver::solvePicky() {
 };
 
 std::pair<PickySMTSolver::laresult,Lit> PickySMTSolver::lookaheadLoop() {
-    int X = 1;
+    int X = std::min(nVars(), config.sat_picky_w());
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
     if (laPropagateWrapper() == l_False) {
@@ -280,7 +280,6 @@ std::pair<PickySMTSolver::laresult,Lit> PickySMTSolver::lookaheadLoop() {
 #ifdef LADEBUG
     printf("Starting lookahead loop with %d vars\n", nVars());
 #endif
-//    order_heap.removeMin();
     Lit best;
     do{
         int k = 0 ,j = 0;
