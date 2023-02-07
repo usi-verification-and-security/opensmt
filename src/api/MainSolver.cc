@@ -317,7 +317,7 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
         return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else if (config.sat_picky()) {
         return std::make_unique<PickySMTSolver>(config, thandler);
-    }else if (config.use_ghost_vars()) {
+    } else if (config.use_ghost_vars()) {
         return std::make_unique<GhostSMTSolver>(config, thandler);
     } else {
         return std::make_unique<SimpSMTSolver>(config, thandler);
