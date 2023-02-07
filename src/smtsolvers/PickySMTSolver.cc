@@ -6,13 +6,13 @@
 #include "Proof.h"
 
 PickySMTSolver::PickySMTSolver(SMTConfig& c, THandler& thandler)
-	: SimpSMTSolver(c, thandler)
+	: LookaheadSMTSolver(c, thandler)
     , idx(0)
-	, score(c.lookahead_score_deep() ? (PickyScore*)(new PickyScoreDeep(assigns, c)) : (PickyScore*)(new PickyScoreClassic(assigns, c)))
+	, score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
 {}
 
 Var PickySMTSolver::newVar(bool dvar) {
-    Var v = SimpSMTSolver::newVar(dvar);
+    Var v = LookaheadSMTSolver::newVar(dvar);
     score->newVar();
     return v;
 }
@@ -26,12 +26,12 @@ lbool PickySMTSolver::solve_() {
 
     double nof_conflicts = restart_first;
     crossed_assumptions = 0;
-    PLoopRes res = PLoopRes::unknown;
+    LALoopRes res = LALoopRes::unknown;
 
     model.clear();
     conflict.clear();
 
-    while (res == PLoopRes::unknown || res == PLoopRes::restart) {
+    while (res == LALoopRes::unknown || res == LALoopRes::restart) {
         //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
         ConflQuota conflict_quota;
         //if (config.lookahead_restarts()) {
@@ -42,7 +42,7 @@ lbool PickySMTSolver::solve_() {
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
 
-    if (res == PLoopRes::sat) {
+    if (res == LALoopRes::sat) {
         model.growTo(nVars());
         for (unsigned int i = 0; i < dec_vars; i++) {
             Var p = var(trail[i]);
@@ -50,11 +50,11 @@ lbool PickySMTSolver::solve_() {
         }
     }
     switch (res) {
-        case PLoopRes::unknown_final:
+        case LALoopRes::unknown_final:
             return l_Undef;
-        case PLoopRes::sat:
+        case LALoopRes::sat:
             return l_True;
-        case PLoopRes::unsat: {
+        case LALoopRes::unsat: {
             ok = false;
             return l_False;
         }
@@ -250,10 +250,10 @@ PickySMTSolver::laresult PickySMTSolver::expandTree(PNode & n, std::unique_ptr<P
     return laresult::la_ok;
 }
 
-PickySMTSolver::PLoopRes PickySMTSolver::solveLookahead() {
+PickySMTSolver::LALoopRes PickySMTSolver::solveLookahead() {
     struct PlainBuildConfig {
         bool stopCondition(PNode &, int) { return false; }
-        PLoopRes exitState() const { return PLoopRes::unknown; }
+        LALoopRes exitState() const { return LALoopRes::unknown; }
     };
     return buildAndTraverse<PNode, PlainBuildConfig>(PlainBuildConfig()).first;
 };
@@ -397,7 +397,7 @@ std::pair<PickySMTSolver::laresult,Lit> PickySMTSolver::lookaheadLoop() {
                printf("Updating var %d to (%d, %d)\n", v, p0, p1);
     #endif
                 score->setLAValue(v, p0, p1);
-                score->updatePBest(v);
+                score->updateLABest(v);
             }
         }
         best = score->getBest();

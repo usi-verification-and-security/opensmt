@@ -5,13 +5,13 @@
 #ifndef OPENSMT_PICKYSMTSOLVER_H
 #define OPENSMT_PICKYSMTSOLVER_H
 
-#include "SimpSMTSolver.h"
-#include "PScore.h"
+#include "LookaheadSMTSolver.h"
+#include "LAScore.h"
 
 #include <memory>
 #include <unistd.h>
 
-class PickySMTSolver : public SimpSMTSolver {
+class PickySMTSolver : public LookaheadSMTSolver {
 protected:
     ConflQuota confl_quota;
     int idx;
@@ -59,29 +59,14 @@ protected:
 
 protected:
     // The result from the lookahead loop
-    enum class PLoopRes {
-        sat,
-        unsat,
-        unknown,
-        unknown_final,
-        restart
-    };
-
-    enum class laresult {
-        la_tl_unsat,
-        la_sat,
-        la_restart,
-        la_unsat,
-        la_ok
-    };
 
     template<typename Node, typename BuildConfig>
 
-    std::pair<PLoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
+    std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
-    virtual PLoopRes solveLookahead();
+    virtual LALoopRes solveLookahead();
     std::pair<laresult,Lit> lookaheadLoop();
-    virtual void cancelUntil  (int level);                                             // Backtrack until a certain level.
+    virtual void cancelUntil(int level) override; // Backtrack until a certain level.
     lbool solve_() override; // Does not change the formula
 
     enum class PathBuildResult {
@@ -94,7 +79,7 @@ protected:
     PathBuildResult setSolverToNode(PNode const &);                                         // Set solver dl stack according to the path from root to n
     laresult expandTree(PNode & n, std::unique_ptr<PNode> c1, std::unique_ptr<PNode> c2); // Do lookahead.  On success write the new children to c1 and c2
     void rebuildOrderHeap();
-    std::unique_ptr<PickyScore> score;
+    std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
     PickySMTSolver(SMTConfig&, THandler&);
@@ -106,7 +91,7 @@ public:
 // children has been shown unsatisfiable either directly or with a
 // backjump.
 template<typename Node, typename BuildConfig>
-std::pair<PickySMTSolver::PLoopRes, std::unique_ptr<Node>>
+std::pair<PickySMTSolver::LALoopRes, std::unique_ptr<Node>>
 PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     score->updateRound();
     vec<Node *> queue;
@@ -122,9 +107,9 @@ PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
 
         switch (setSolverToNode(*n)) {
             case PathBuildResult::pathbuild_tlunsat:
-                return { PLoopRes::unsat, nullptr };
+                return { LALoopRes::unsat, nullptr };
             case PathBuildResult::pathbuild_restart:
-                return { PLoopRes::restart, nullptr };
+                return { LALoopRes::restart, nullptr };
             case PathBuildResult::pathbuild_unsat: {
                 // Reinsert the parent to the queue
                 assert(n != root_raw); // Unsatisfiability in root should be tlunsat
@@ -173,7 +158,7 @@ PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                     }
                     conflict_frame = max+1;
                     ok = false;
-                    return { PLoopRes::unsat, nullptr };
+                    return { LALoopRes::unsat, nullptr };
                 } else {
                     c1_raw->p = n;
                     c1_raw->d = (*n).d + 1;
@@ -190,14 +175,14 @@ PickySMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         if(!checked) {
             switch (expandTree(*n, std::move(c1), std::move(c2))) {
             case laresult::la_tl_unsat:
-                return {PLoopRes::unsat, nullptr};
+                return {LALoopRes::unsat, nullptr};
             case laresult::la_restart:
-                return {PLoopRes::restart, nullptr};
+                return {LALoopRes::restart, nullptr};
             case laresult::la_unsat:
                 queue.push(n);
                 continue;
             case laresult::la_sat:
-                return {PLoopRes::sat, nullptr};
+                return {LALoopRes::sat, nullptr};
             case laresult::la_ok:;
             }
 

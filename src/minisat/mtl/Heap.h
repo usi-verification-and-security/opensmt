@@ -160,18 +160,6 @@ class Heap {
         return x; 
     }
 
-    void  getMin(int n, int *res)
-    {
-        res = new int[n];
-        for(int j = 0; j<n; j++){
-            res[j]          = heap[j];
-//            heap[0]          = heap.last();
-//            indices[heap[0]] = 0;
-//            indices[res[j]]       = -1;
-//            heap.pop();
-//            if (heap.size() > 1) percolateDown(0);
-        }
-    }
 
     // Rebuild the heap from scratch, using the elements in 'ns':
     void build(vec<int>& ns) {
