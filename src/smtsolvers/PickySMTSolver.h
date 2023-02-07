@@ -13,55 +13,13 @@
 
 class PickySMTSolver : public LookaheadSMTSolver {
 protected:
-    ConflQuota confl_quota;
     int idx;
     int crossed_assumptions;
-
-    // -----------------------------------------------------------------------------------------
-    // Data type for exact value array
-    static inline int min(int i, int j) { return i < j ? i : j; }
-    static inline int max(int i, int j) { return i > j ? i : j; }
-    class PNode {
-    public:
-        // The children
-        std::unique_ptr<PNode> c1;
-        std::unique_ptr<PNode> c2;
-        PNode* p;
-        virtual PNode * getParent() { return p; }
-        Lit l;
-        int d;
-        PNode() : l(lit_Undef), d(0) {}
-        virtual ~PNode() = default;
-        virtual void print_local() const {
-            for (int i = 0; i < d; i++)
-                dprintf(STDERR_FILENO, " ");
-            dprintf(STDERR_FILENO, "%s%d [%d]", sign(l) ? "-" : "", var(l), d);
-
-            if (c1 != nullptr) {
-                dprintf(STDERR_FILENO, " c1");
-            }
-            if (c2 != nullptr) {
-                dprintf(STDERR_FILENO, " c2");
-            }
-            dprintf(STDERR_FILENO, "\n");
-        }
-
-        void print() const {
-            print_local();
-            if (c1 != nullptr)
-                c1->print();
-            if (c2 != nullptr)
-                c2->print();
-        }
-    };
-
-    lbool    laPropagateWrapper();
 
 protected:
     // The result from the lookahead loop
 
     template<typename Node, typename BuildConfig>
-
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
     virtual LALoopRes solvePicky();
@@ -69,18 +27,10 @@ protected:
     virtual void cancelUntil(int level) override; // Backtrack until a certain level.
     lbool solve_() override; // Does not change the formula
 
-    enum class PathBuildResult {
-        pathbuild_success,
-        pathbuild_tlunsat,
-        pathbuild_unsat,
-        pathbuild_restart
-    };
-
-    PathBuildResult setSolverToNode(PNode const &);                                         // Set solver dl stack according to the path from root to n
-    laresult expandTree(PNode & n, std::unique_ptr<PNode> c1, std::unique_ptr<PNode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    PathBuildResult setSolverToNode(LANode const &);                                         // Set solver dl stack according to the path from root to n
+    laresult expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
     void rebuildOrderHeap();
     std::unique_ptr<LookaheadScore> score;
-    bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
 public:
     PickySMTSolver(SMTConfig&, THandler&);
     Var newVar(bool dvar) override;

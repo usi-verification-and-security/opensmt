@@ -32,11 +32,6 @@ lbool PickySMTSolver::solve_() {
     conflict.clear();
 
     while (res == LALoopRes::unknown || res == LALoopRes::restart) {
-        //cerr << "; Doing lookahead for " << nof_conflicts << " conflicts\n";
-        ConflQuota conflict_quota;
-        //if (config.lookahead_restarts()) {
-        //    conflict_quota = ConflQuota((int)nof_conflicts);
-        //}
         res = solvePicky();
 
         nof_conflicts = restartNextLimit(nof_conflicts);
@@ -75,72 +70,6 @@ lbool PickySMTSolver::solve_() {
 // new conflicts or propagations are available in theory or in unit propagation
 //
 
-lbool PickySMTSolver::laPropagateWrapper() {
-    CRef cr;
-    bool diff;
-    do {
-        diff = false;
-        while ((cr = propagate()) != CRef_Undef) {
-            if (decisionLevel() == 0)
-                return l_False; // Unsat
-            -- confl_quota;
-#ifdef LADEBUG
-            cerr << "; Got a conflict, quota now " << confl_quota.getQuota() << "\n";
-#endif
-            if (confl_quota <= 0)
-                return l_Undef;
-
-            vec<Lit> out_learnt;
-            int out_btlevel;
-            analyze(cr, out_learnt, out_btlevel);
-#ifdef LADEBUG
-            printf("Conflict: I would need to backtrack from %d to %d\n", decisionLevel(), out_btlevel);
-#endif
-            cancelUntil(out_btlevel);
-            assert(value(out_learnt[0]) == l_Undef);
-            if (out_learnt.size() == 1) {
-                CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                if (logsProofForInterpolation()) {
-                    proof->endChain(unitClause);
-                }
-                uncheckedEnqueue(out_learnt[0], unitClause);
-            } else {
-                CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
-                if (logsProofForInterpolation()) {
-                    proof->endChain(crd);
-                }
-                learnts.push(crd);
-                attachClause(crd);
-                uncheckedEnqueue(out_learnt[0], crd);
-            }
-            diff = true;
-        }
-        if (!diff) {
-            TPropRes res = checkTheory(true);
-            if (res == TPropRes::Unsat) {
-#ifdef LADEBUG
-                printf("Theory unsatisfiability\n");
-#endif
-                return l_False; // Unsat
-            }
-            else if (res == TPropRes::Propagate) {
-#ifdef LADEBUG
-                printf("Theory propagation / conflict\n");
-#endif
-                diff = true;
-                -- confl_quota;
-#ifdef LADEBUG
-                cerr << "; Got a theory conflict, quota now " << confl_quota.getQuota() << "\n";
-#endif
-                if (confl_quota <= 0)
-                    return l_Undef;
-            }
-        }
-    } while (diff);
-
-    return l_True;
-}
-
 /**
  * Set solver decision stack according to the path from the root to @param n.
  * As a side-effect the solver is either
@@ -150,11 +79,11 @@ lbool PickySMTSolver::laPropagateWrapper() {
  * In case (ii), either @return pathbuild_tlunsat or @return pathbuild_unsat
  *
  */
-PickySMTSolver::PathBuildResult PickySMTSolver::setSolverToNode(PNode const & n) {
+PickySMTSolver::PathBuildResult PickySMTSolver::setSolverToNode(LANode const & n) {
 
     vec<Lit> path;
-    PNode const * curr = &n;
-    PNode const * parent = n.p;
+    LANode const * curr = &n;
+    LANode const * parent = n.p;
     // Collect the truth assignment.
     while (parent != curr) {
         path.push(curr->l);
@@ -225,7 +154,7 @@ void PickySMTSolver::rebuildOrderHeap()
 }
 
 
-PickySMTSolver::laresult PickySMTSolver::expandTree(PNode & n, std::unique_ptr<PNode> c1, std::unique_ptr<PNode> c2)
+PickySMTSolver::laresult PickySMTSolver::expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2)
 {
     assert(c1);
     assert(c2);
@@ -252,14 +181,15 @@ PickySMTSolver::laresult PickySMTSolver::expandTree(PNode & n, std::unique_ptr<P
 
 PickySMTSolver::LALoopRes PickySMTSolver::solvePicky() {
     struct PlainBuildConfig {
-        bool stopCondition(PNode &, int) { return false; }
+        bool stopCondition(LANode &, int) { return false; }
         LALoopRes exitState() const { return LALoopRes::unknown; }
     };
-    return buildAndTraverse<PNode, PlainBuildConfig>(PlainBuildConfig()).first;
+    return buildAndTraverse<LANode, PlainBuildConfig>(PlainBuildConfig()).first;
 };
 
 std::pair<PickySMTSolver::laresult,Lit> PickySMTSolver::lookaheadLoop() {
     int X = std::min(nVars(), config.sat_picky_w());
+    printf("Width: %d \n", X);
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
     if (laPropagateWrapper() == l_False) {
@@ -452,7 +382,6 @@ void PickySMTSolver::cancelUntil(int level)
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
         crossed_assumptions = min(crossed_assumptions, level);
-        //if ( first_model_found )
         theory_handler.backtrack(trail.size());
     }
 }
