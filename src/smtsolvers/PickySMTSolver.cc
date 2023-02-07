@@ -37,7 +37,7 @@ lbool PickySMTSolver::solve_() {
         //if (config.lookahead_restarts()) {
         //    conflict_quota = ConflQuota((int)nof_conflicts);
         //}
-        res = solveLookahead();
+        res = solvePicky();
 
         nof_conflicts = restartNextLimit(nof_conflicts);
     }
@@ -250,7 +250,7 @@ PickySMTSolver::laresult PickySMTSolver::expandTree(PNode & n, std::unique_ptr<P
     return laresult::la_ok;
 }
 
-PickySMTSolver::LALoopRes PickySMTSolver::solveLookahead() {
+PickySMTSolver::LALoopRes PickySMTSolver::solvePicky() {
     struct PlainBuildConfig {
         bool stopCondition(PNode &, int) { return false; }
         LALoopRes exitState() const { return LALoopRes::unknown; }

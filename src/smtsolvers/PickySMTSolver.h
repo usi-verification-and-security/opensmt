@@ -64,7 +64,7 @@ protected:
 
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
-    virtual LALoopRes solveLookahead();
+    virtual LALoopRes solvePicky();
     std::pair<laresult,Lit> lookaheadLoop();
     virtual void cancelUntil(int level) override; // Backtrack until a certain level.
     lbool solve_() override; // Does not change the formula
