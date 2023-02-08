@@ -48,7 +48,7 @@ struct LogicProperty {
 
 enum class Logic_t : int {
     UNDEF, EMPTY, QF_UF, QF_CUF, QF_BV, QF_RDL, QF_IDL, QF_LRA, QF_LIA, QF_NIA, QF_NRA, QF_LIRA, QF_NIRA, QF_UFRDL, QF_UFIDL,
-    QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_ALRA, QF_ALIA, QF_BOOL, QF_AUFBV, QF_CT
+    QF_UFLRA, QF_UFLIA, QF_UFBV, QF_AX, QF_AXDIFF, QF_ALRA, QF_ALIA, QF_AUFLRA, QF_AUFLIA, QF_BOOL, QF_AUFBV, QF_CT
 };
 
 inline const std::unordered_map<Logic_t, LogicProperty> QFLogicToProperties  {
@@ -139,6 +139,14 @@ inline const std::unordered_map<Logic_t, LogicProperty> QFLogicToProperties  {
     {Logic_t::QF_ALIA, {"QF_ALIA",
                         ArithProperty{true, false, Arithmetic_t::Linear},
                         UFProperty{true, false, false},
+                        no_bv}},
+    {Logic_t::QF_AUFLRA, {"QF_AUFLRA",
+                        ArithProperty{false, true, Arithmetic_t::Linear},
+                        UFProperty{true, true, false},
+                        no_bv}},
+    {Logic_t::QF_AUFLIA, {"QF_AUFLIA",
+                        ArithProperty{true, false, Arithmetic_t::Linear},
+                        UFProperty{true, true, false},
                         no_bv}},
     {Logic_t::QF_BOOL, {"QF_BOOL",
                         no_arith,

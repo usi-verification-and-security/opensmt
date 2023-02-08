@@ -372,6 +372,8 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_UFLIA:
         case Logic_t::QF_ALRA:
         case Logic_t::QF_ALIA:
+        case Logic_t::QF_AUFLRA:
+        case Logic_t::QF_AUFLIA:
         {
             ArithLogic & laLogic = dynamic_cast<ArithLogic &>(logic);
             theory = new UFLATheory(config, laLogic);
