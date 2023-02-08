@@ -81,29 +81,14 @@ lbool PickySMTSolver::solve_() {
  */
 PickySMTSolver::PathBuildResult PickySMTSolver::setSolverToNode(LANode const & n) {
 
-    vec<Lit> new_path;
+    vec<Lit> path;
     LANode const * curr = &n;
     LANode const * parent = n.p;
     // Collect the truth assignment.
     while (parent != curr) {
-        new_path.push(curr->l);
+        path.push(curr->l);
         curr = parent;
         parent = curr->p;
-    }
-    int j = path.size() - 1;
-    int bp = 0;
-    for(int i = new_path.size() - 1; i >= 0; i--){
-        if(path[j] == new_path[i]){
-            continue;
-        } else {
-            bp = path.size() - j - 1;
-            cancelUntil(bp);
-            break;
-        }
-    }
-    path.growTo(new_path.size());
-    for(int i = new_path.size() - 1 - bp; i >= 0; i--){
-        path[i] = new_path[i];
     }
 
 #ifdef LADEBUG
@@ -111,6 +96,8 @@ PickySMTSolver::PathBuildResult PickySMTSolver::setSolverToNode(LANode const & n
 #endif
     int i = path.size() - 1;
     if(path.size() <= decisionLevel()) {
+
+        if (path.size() > 0) { cancelUntil(path.size() - 1);}
         if(path.size() >= assumptions.size()){
             crossed_assumptions = assumptions.size();
         } else {
