@@ -530,10 +530,15 @@ ArraySolver::ExplanationCollection ArraySolver::readOverWeakEquivalenceConflict(
     ERef index2 = egraph.termToERef(logic.getPterm(rhs)[1]);
 
     // collect literals explaining why array1 is weakly equivalent to array2
-    auto lemma = explainWeakEquivalencePath(array1, array2, getRoot(index1));
+    ERef root1 = getRoot(index1);
+    auto lemma = explainWeakEquivalencePath(array1, array2, root1);
     // collect literals explaining why index1 is equivalent to index2 in Egraph
     if (index1 != index2) {
         recordExplanationOfEgraphEquivalence(lemma, index1, index2);
+    }
+    // collect literals explaining why index1 is equivalent to its root
+    if (root1 != index1) {
+        recordExplanationOfEgraphEquivalence(lemma, index1, root1);
     }
     // add literal asserting that the selects are not equal
     lemma.insert({equality, l_False});
