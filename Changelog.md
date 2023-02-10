@@ -1,5 +1,8 @@
 ### 2.5.0 (unreleased)
 
+Bug fixes:
+ - QF_AX: Fix unsoundness bug due to missing literals in read-over-weak-eq lemmas
+
 API changes:
  - Pterms: Change operator < on PTRefs to more intuitive implementation 
 
