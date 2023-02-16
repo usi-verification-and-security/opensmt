@@ -204,9 +204,6 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
             queue.push(c2_raw);
         }
     }
-#ifdef LADEBUG
-    root->print();
-#endif
     return { buildConfig.exitState(), std::move(root) };
 }
 
