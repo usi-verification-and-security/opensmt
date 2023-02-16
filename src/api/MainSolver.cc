@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "MainSolver.h"
 #include "BoolRewriting.h"
 #include "LookaheadSMTSolver.h"
-#include "PickySMTSolver.h"
 #include "GhostSMTSolver.h"
 #include "UFLATheory.h"
 #include "LATheory.h"
@@ -316,7 +315,7 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     if (config.sat_pure_lookahead()) {
         return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else if (config.sat_picky()) {
-        return std::make_unique<PickySMTSolver>(config, thandler);
+        return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else if (config.use_ghost_vars()) {
         return std::make_unique<GhostSMTSolver>(config, thandler);
     } else {

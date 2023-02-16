@@ -82,7 +82,6 @@ class CoreSMTSolver
 {
     friend class LookaheadScoreClassic;
     friend class LookaheadScoreDeep;
-    friend class PickySMTSolver;
 protected:
     SMTConfig & config;         // Stores Config
     THandler  & theory_handler; // Handles theory
