@@ -135,10 +135,11 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
         parent = curr->p;
     }
     // setting solver to the correct dl
-    int i = path.size() - 1;
+    int i = 0;
     if(path.size() <= decisionLevel()) {
 
         if (path.size() > 0) { cancelUntil(path.size() - 1);}
+        if (path.size() == 0) { cancelUntil(0);}
         if(path.size() >= assumptions.size()){
             crossed_assumptions = assumptions.size();
         } else {
@@ -147,31 +148,33 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     } else {
         i = path.size() - decisionLevel() - 1;
     }
-    for (; i >= 0; i--) {
-        newDecisionLevel();
-        if (value(path[i]) == l_Undef) {
-            // propagating path[i]
-            int curr_dl = decisionLevel();
-            uncheckedEnqueue(path[i]);
-            lbool res = laPropagateWrapper();
-            // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
-            if (res == l_False) {
-                return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
-            } else if (res == l_Undef) {
-                cancelUntil(0);
-                return PathBuildResult::pathbuild_restart; // Do a restart
-            }
-            if (curr_dl != decisionLevel()) { return PathBuildResult::pathbuild_unsat; }
-        } else {
-            // literal to propagate was already assigned
-            if (value(path[i]) == l_False) {
-                return PathBuildResult::pathbuild_unsat;
+    if(path.size() > 0){
+        for (; i >= 0; i--) {
+            newDecisionLevel();
+            if (value(path[i]) == l_Undef) {
+                // propagating path[i]
+                int curr_dl = decisionLevel();
+                uncheckedEnqueue(path[i]);
+                lbool res = laPropagateWrapper();
+                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+                if (res == l_False) {
+                    return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
+                } else if (res == l_Undef) {
+                    cancelUntil(0);
+                    return PathBuildResult::pathbuild_restart; // Do a restart
+                }
+                if (curr_dl != decisionLevel()) { return PathBuildResult::pathbuild_unsat; }
             } else {
-                assert(value(path[i]) == l_True);
+                // literal to propagate was already assigned
+                if (value(path[i]) == l_False) {
+                    return PathBuildResult::pathbuild_unsat;
+                } else {
+                    assert(value(path[i]) == l_True);
+                }
             }
         }
+        rebuildOrderHeap();
     }
-    rebuildOrderHeap();
     return PathBuildResult::pathbuild_success;
 }
 
