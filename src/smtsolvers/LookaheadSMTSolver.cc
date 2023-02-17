@@ -212,8 +212,6 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
 };
 
 std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() {
-    int X = std::min(nVars(), config.sat_picky_w());
-    //    printf("Width: %d \n", X);
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
     if (laPropagateWrapper() == l_False) {
@@ -230,116 +228,100 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     int skipped_vars_due_to_logic = 0;
 
     Lit best;
-    do{
-        if(config.o_sat_picky){
-            int k = 0 ,j = 0;
-            while(k < order_heap.size() && j < X ){
-                if(value(order_heap[k]) == l_Undef){
-                    j++;
-                    k++;
-                } else {
-                    order_heap.remove(order_heap[k]);
-                }
-            }
-            idx = order_heap[0];
+    for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
+    {
+        if (!decision[v]) {
+            score->setChecked(v);
+            // not a decision var
+            continue;
         }
-        for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = SMTConfig::o_sat_picky ? order_heap[(idx + (++i)) % X] : Var((idx + (++i)) % nVars()))
-        {
-            if (!decision[v]) {
-                score->setChecked(v);
-                // not a decision var
-                continue;
-            }
-            if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
-                respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
-            if (respect_logic_partitioning_hints && !okToPartition(v)) {
-                skipped_vars_due_to_logic ++;
-                std::cout << "Skipping " << v << " since logic says it's not good\n";
-                continue; // Skip the vars that the logic considers bad to split on
-            }
-            // checking the variable score
-            Lit best = score->getBest();
-            if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
-                score->setChecked(v);
-                // It is possible that all variables are assigned here.
-                // In this case it seems that we have a satisfying assignment.
-                // This is in fact a debug check
-                if (static_cast<unsigned int>(trail.size()) == dec_vars) {
-                    // checking if all vars are set
-                    if (checkTheory(true) != TPropRes::Decide)
-                        return {laresult::la_tl_unsat, lit_Undef}; // Problem is trivially unsat
-                    assert(checkTheory(true) == TPropRes::Decide);
+        if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
+            respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+        if (respect_logic_partitioning_hints && !okToPartition(v)) {
+            skipped_vars_due_to_logic ++;
+            std::cout << "Skipping " << v << " since logic says it's not good\n";
+            continue; // Skip the vars that the logic considers bad to split on
+        }
+        // checking the variable score
+        Lit best = score->getBest();
+        if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
+            score->setChecked(v);
+            // It is possible that all variables are assigned here.
+            // In this case it seems that we have a satisfying assignment.
+            // This is in fact a debug check
+            if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                // checking if all vars are set
+                if (checkTheory(true) != TPropRes::Decide)
+                    return {laresult::la_tl_unsat, lit_Undef}; // Problem is trivially unsat
+                assert(checkTheory(true) == TPropRes::Decide);
 #ifndef NDEBUG
-                    for (CRef cr : clauses) {
-                        Clause& c = ca[cr];
-                        unsigned k;
-                        for (k = 0; k < c.size(); k++) {
-                            if (value(c[k]) == l_True) {
-                                break;
-                            }
+                for (CRef cr : clauses) {
+                    Clause& c = ca[cr];
+                    unsigned k;
+                    for (k = 0; k < c.size(); k++) {
+                        if (value(c[k]) == l_True) {
+                            break;
                         }
-                        assert(k < c.size());
                     }
+                    assert(k < c.size());
+                }
 #endif
-                    return {laresult::la_sat, lit_Undef}; // Stands for SAT
-                }
-                continue;
+                return {laresult::la_sat, lit_Undef}; // Stands for SAT
             }
-            if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-                std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
-                respect_logic_partitioning_hints = false;
-                continue;
-            }
-            int p0 = 0, p1 = 0;
-            for (int p : {0, 1}) { // for both polarities
-                assert(decisionLevel() == d);
-                double ss = score->getSolverScore(this);
-                newDecisionLevel();
-                Lit l = mkLit(v, p);
-                // checking literal propagations
-                uncheckedEnqueue(l);
-                lbool res = laPropagateWrapper();
-                if (res == l_False) {
-                    return {laresult::la_tl_unsat, lit_Undef};
-                }
-                else if (res == l_Undef) {
-                    cancelUntil(0);
-                    return {laresult::la_restart, lit_Undef};
-                }
-                // Else we go on
-                if (decisionLevel() == d+1) {
-                    // literal is succesfully propagated
-                    score->updateSolverScore(ss, this);
-                } else if (decisionLevel() == d) {
-                    // propagation resulted in backtrack
-                    score->updateRound();
-                    break;
-                } else {
-                    // Backtracking should happen.
-                    return {laresult::la_unsat, lit_Undef};
-                }
-                p == 0 ? p0 = ss : p1 = ss;
-                // Update also the clause deletion heuristic?
-                cancelUntil(decisionLevel() - 1);
-            }
-            if (value(v) == l_Undef)
-            {
-                // updating var score
-                score->setLAValue(v, p0, p1);
-                score->updateLABest(v);
-            }
+            continue;
         }
-        best = score->getBest();
-        if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
-            // all variables are set
-            return {laresult::la_sat, best};
+        if (trail.size() == nVars() + skipped_vars_due_to_logic) {
+            std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
+            respect_logic_partitioning_hints = false;
+            continue;
         }
-
-    } while (var(score->getBest()) == -1);
-    // lookahead phase is over
-    if(!SMTConfig::o_sat_picky){
-        idx = (idx + i) % nVars();
+        int p0 = 0, p1 = 0;
+        for (int p : {0, 1}) { // for both polarities
+            assert(decisionLevel() == d);
+            double ss = score->getSolverScore(this);
+            newDecisionLevel();
+            Lit l = mkLit(v, p);
+            // checking literal propagations
+            uncheckedEnqueue(l);
+            lbool res = laPropagateWrapper();
+            if (res == l_False) {
+                return {laresult::la_tl_unsat, lit_Undef};
+            }
+            else if (res == l_Undef) {
+                cancelUntil(0);
+                return {laresult::la_restart, lit_Undef};
+            }
+            // Else we go on
+            if (decisionLevel() == d+1) {
+                // literal is succesfully propagated
+                score->updateSolverScore(ss, this);
+            } else if (decisionLevel() == d) {
+                // propagation resulted in backtrack
+                score->updateRound();
+                break;
+            } else {
+                // Backtracking should happen.
+                return {laresult::la_unsat, lit_Undef};
+            }
+            p == 0 ? p0 = ss : p1 = ss;
+            // Update also the clause deletion heuristic?
+            cancelUntil(decisionLevel() - 1);
+        }
+        if (value(v) == l_Undef)
+        {
+            // updating var score
+            score->setLAValue(v, p0, p1);
+            score->updateLABest(v);
+        }
     }
+    best = score->getBest();
+    if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
+        // all variables are set
+        return {laresult::la_sat, best};
+    }
+
+    // lookahead phase is over
+    idx = (idx + i) % nVars();
     if (!okToPartition(var(best))) { unadvised_splits++; }
     return {laresult::la_ok, best};
 }
