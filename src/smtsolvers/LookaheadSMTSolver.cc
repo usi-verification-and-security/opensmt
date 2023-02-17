@@ -231,17 +231,19 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 
     Lit best;
     do{
-        int k = 0 ,j = 0;
-        while(k < order_heap.size() && j < X ){
-            if(value(order_heap[k]) == l_Undef){
-                j++;
-                k++;
-            } else {
-                order_heap.remove(order_heap[k]);
+        if(config.o_sat_picky){
+            int k = 0 ,j = 0;
+            while(k < order_heap.size() && j < X ){
+                if(value(order_heap[k]) == l_Undef){
+                    j++;
+                    k++;
+                } else {
+                    order_heap.remove(order_heap[k]);
+                }
             }
+            idx = order_heap[0];
         }
-        idx = order_heap[0];
-        for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = order_heap[(idx + (++i)) % X])
+        for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = SMTConfig::o_sat_picky ? order_heap[(idx + (++i)) % X] : Var((idx + (++i)) % nVars()))
         {
             if (!decision[v]) {
                 score->setChecked(v);
@@ -335,7 +337,9 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 
     } while (var(score->getBest()) == -1);
     // lookahead phase is over
-    //    idx = (idx + i) % nVars();
+    if(!SMTConfig::o_sat_picky){
+        idx = (idx + i) % nVars();
+    }
     if (!okToPartition(var(best))) { unadvised_splits++; }
     return {laresult::la_ok, best};
 }
