@@ -1,4 +1,5 @@
 (set-option :produce-interpolants 1)
+(set-option :pure-lookahead true)
 (set-logic QF_UF)
 (declare-fun a () Bool)
 (declare-fun b () Bool)
@@ -23,7 +24,7 @@
 (or a (not c))
  :named p3))
 (check-sat)
-(get-interpolants p1 (and p2 p3))
+(get-interpolants (and p1 p2) p3)
 
 
 (pop 1)
@@ -35,8 +36,8 @@
 (push 1)
 
 (assert (!
-(or (not c) (not d))
+(not d)
  :named p5))
 
 (check-sat)
-(get-interpolants p1 (and p2 p4 p5))
+(get-interpolants (and p1 p2 p4) p5)

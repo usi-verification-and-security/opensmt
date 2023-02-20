@@ -1,4 +1,5 @@
 ;(set-option :produce-proofs true)
+(set-option :pure-lookahead true)
 (set-option :produce-interpolants true)
 (set-logic QF_LRA)
 (declare-fun x () Real)
