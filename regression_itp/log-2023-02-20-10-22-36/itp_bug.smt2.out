@@ -1,2 +1,0 @@
-unsat
-((not (<= 0 (* -1 |state_type::state.v!0|))))

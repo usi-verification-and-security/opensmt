@@ -1,2 +1,0 @@
-unsat
-((and |hifrog::fun_end!0#3| (<= 2 (* -1 |getchar::#return_value!0#1|))))

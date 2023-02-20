@@ -1,4 +1,0 @@
-sat
-sat
-unsat
-((not (<= 0 (* -1 r11))))

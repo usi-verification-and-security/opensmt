@@ -1,3 +1,0 @@
-(error "set-option failed for :produce-interpolants: Option cannot be changed at this point")
-
-sat

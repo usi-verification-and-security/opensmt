@@ -1,3 +1,0 @@
-unsat
-((not a)
- (and (not a) (and (or a b) (not c))))
