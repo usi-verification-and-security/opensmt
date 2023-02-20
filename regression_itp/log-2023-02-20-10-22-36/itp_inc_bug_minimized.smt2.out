@@ -1,0 +1,4 @@
+unsat
+((<= 11357901/7325290 (+ (* -1 |state_type::state.x|) (* |state_type::state.y| -176994/732529) (* |state_type::state.z| 529460/732529))))
+unsat
+((<= 11357901/7325290 (+ (* -1 |state_type::state.x|) (* |state_type::state.y| -176994/732529) (* |state_type::state.z| 529460/732529))))

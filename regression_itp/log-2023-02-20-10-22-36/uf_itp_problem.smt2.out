@@ -1,0 +1,2 @@
+unsat
+((not (= k (g c d))))

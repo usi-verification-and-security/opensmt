@@ -1,0 +1,2 @@
+unsat
+((and (not (= r1 r2)) (= (f a1 b1) (f a2 b2))))

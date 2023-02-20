@@ -1,0 +1,11 @@
+(set-option :produce-interpolants 1)
+(set-option :pure-lookahead true)
+(set-logic QF_LRA)
+(declare-fun x () Real)
+(push 1)
+(assert (! (>= x 0) :named A))
+(push 1)
+(assert (! (<= x (- 10)) :named B))
+(check-sat)
+(get-interpolants A B)
+
