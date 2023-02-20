@@ -113,6 +113,10 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     auto root = std::unique_ptr<Node>(root_raw);
     root->p = root_raw;
     queue.push(root_raw);
+    TPropRes res = checkTheory(true);
+    if (res == TPropRes::Unsat) {
+        return {LALoopRes::unsat, nullptr};; // Unsat
+    }
 
     while (queue.size() != 0) {
         Node * n = queue.last();
@@ -186,7 +190,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
             }
         }
 
-        if(!checked) {
+        if (!checked) {
             switch (expandTree(*n, std::move(c1), std::move(c2))) {
             case laresult::la_tl_unsat:
                 return {LALoopRes::unsat, nullptr};

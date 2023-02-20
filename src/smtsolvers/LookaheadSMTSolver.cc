@@ -46,19 +46,19 @@ lbool LookaheadSMTSolver::solve_() {
         assert(not okContinue() || res == LALoopRes::unsat || this->stop);
     }
     switch (res) {
-    case LALoopRes::unknown_final:
-        return l_Undef;
-    case LALoopRes::sat:
-        return l_True;
-    case LALoopRes::unsat: {
-        ok = false;
-        return l_False;
+        case LALoopRes::unknown_final:
+            return l_Undef;
+        case LALoopRes::sat:
+            return l_True;
+        case LALoopRes::unsat: {
+            ok = false;
+            return l_False;
+        }
+        default:
+            assert(false);
+            return l_Undef;
+        }
     }
-    default:
-        assert(false);
-        return l_Undef;
-    }
-}
 
 //
 // Function for making a propagation.
@@ -80,7 +80,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             if (decisionLevel() == 0)
                 return l_False; // Unsat
             -- confl_quota;
-            // Received a conflict ad decisionLevel > 0
+            // Received a conflict and decisionLevel > 0
             if (confl_quota <= 0)
                 return l_Undef;
 
@@ -145,16 +145,15 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     }
     // setting solver to the correct dl
     int i = 0;
-    if(path.size() <= decisionLevel()) {
-
-        if (path.size() > 0) { cancelUntil(path.size() - 1);}
-        if (path.size() == 0) { cancelUntil(0);}
-        if(path.size() >= assumptions.size()){
-            crossed_assumptions = assumptions.size();
-        } else {
-            crossed_assumptions = path.size();
-        }
+    if (path.size() <= decisionLevel()) {
+        // Means we've encountered conflict and backtracked to another path in DPLL
+        // New path is different from the old one only in the last element
+        if (path.size() > 0) { cancelUntil(path.size() - 1); }
+        else { cancelUntil(0); }
+        crossed_assumptions = std::min(path.size(), assumptions.size());
     } else {
+        // Means no conflict was encountered and basic path hasn't changed
+        // we need only propagate i new literals
         i = path.size() - decisionLevel() - 1;
     }
     if(path.size() > 0){
@@ -252,7 +251,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             continue; // Skip the vars that the logic considers bad to split on
         }
         // checking the variable score
-        Lit best = score->getBest();
+        best = score->getBest();
         if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
             score->setChecked(v);
             // It is possible that all variables are assigned here.
@@ -338,27 +337,9 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
 
 void LookaheadSMTSolver::cancelUntil(int level)
 {
-    if (decisionLevel() > level)
-    {
-        if (trail.size() > longestTrail) {
-            for (auto p : trail) {
-                savedPolarity[var(p)] = not sign(p);
-            }
-            longestTrail = trail.size();
-        }
-        for (int c = trail.size()-1; c >= trail_lim[level]; c--)
-        {
-            Var      x  = var(trail[c]);
-#ifdef PEDANTIC_DEBUG
-            assert(assigns[x] != l_Undef);
-#endif
-            assigns [x] = l_Undef;
-            insertVarOrder(x);
-        }
-        qhead = trail_lim[level];
-        trail.shrink(trail.size() - trail_lim[level]);
-        trail_lim.shrink(trail_lim.size() - level);
-        crossed_assumptions = min(crossed_assumptions, level);
-        theory_handler.backtrack(trail.size());
+    assert(level >= 0);
+    if (decisionLevel() > level){
+        CoreSMTSolver::cancelUntil(level);
+        crossed_assumptions = std::min(crossed_assumptions, level);
     }
 }
