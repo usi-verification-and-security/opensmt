@@ -377,12 +377,12 @@ bool Simplex::invariantHolds() const
         if (isModelOutOfBounds(var)) {
             rval = false;
             if (isModelOutOfUpperBound(var)) {
-                printf("Non-basic (column) LRA var %s has value %s <= %s \n",
+                printf("Non-basic (column) LRA var %s has value %s > %s (upper bound)\n",
                        printVar(var), model->read(var).printValue(), model->Ub(var).printValue());
             }
             if (isModelOutOfLowerBound(var)) {
-                printf("Non-basic (column) LRA var %s has value %s <= %s \n",
-                       printVar(var), model->Lb(var).printValue(), model->read(var).printValue());
+                printf("Non-basic (column) LRA var %s has value %s < %s (lower bound)\n",
+                       printVar(var), model->read(var).printValue(), model->Lb(var).printValue());
             }
             assert(false);
         }
