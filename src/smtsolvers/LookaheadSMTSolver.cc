@@ -3,6 +3,7 @@
 //
 
 #include "LookaheadSMTSolver.h"
+#include "Proof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
 	: SimpSMTSolver(c, thandler)
@@ -38,10 +39,11 @@ lbool LookaheadSMTSolver::solve_() {
 
     if (res == LALoopRes::sat) {
         model.growTo(nVars());
-        for (unsigned int i = 0; i < dec_vars; i++) {
-            Var p = var(trail[i]);
-            model[p] = value(p);
+        for (int i = 0; i < nVars(); i++) {
+            model[i] = value(i);
         }
+    } else {
+        assert(not okContinue() || res == LALoopRes::unsat || this->stop);
     }
     switch (res) {
     case LALoopRes::unknown_final:
@@ -89,9 +91,16 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             cancelUntil(out_btlevel);
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
-                uncheckedEnqueue(out_learnt[0]);
+                CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
+                if (logsProofForInterpolation()) {
+                    proof->endChain(unitClause);
+                }
+                uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+                if (logsProofForInterpolation()) {
+                    proof->endChain(crd);
+                }
                 learnts.push(crd);
                 attachClause(crd);
                 uncheckedEnqueue(out_learnt[0], crd);
