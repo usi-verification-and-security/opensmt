@@ -8,3 +8,4 @@ PointerAlignment: Middle
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortBlocksOnASingleLine: Always
 AllowShortIfStatementsOnASingleLine: WithoutElse
+IndentCaseLabels: True
