@@ -5,8 +5,8 @@
 #ifndef OPENSMT_LOOKAHEADSMTSOLVER_H
 #define OPENSMT_LOOKAHEADSMTSOLVER_H
 
-#include "SimpSMTSolver.h"
 #include "LAScore.h"
+#include "SimpSMTSolver.h"
 
 #include <memory>
 #include <unistd.h>
@@ -26,7 +26,7 @@ protected:
         // The children
         std::unique_ptr<LANode> c1;
         std::unique_ptr<LANode> c2;
-        LANode* p;
+        LANode * p;
         virtual LANode * getParent() { return p; }
         Lit l;
         int d;
@@ -37,66 +37,45 @@ protected:
                 dprintf(STDERR_FILENO, " ");
             dprintf(STDERR_FILENO, "%s%d [%d]", sign(l) ? "-" : "", var(l), d);
 
-            if (c1 != nullptr) {
-                dprintf(STDERR_FILENO, " c1");
-            }
-            if (c2 != nullptr) {
-                dprintf(STDERR_FILENO, " c2");
-            }
+            if (c1 != nullptr) { dprintf(STDERR_FILENO, " c1"); }
+            if (c2 != nullptr) { dprintf(STDERR_FILENO, " c2"); }
             dprintf(STDERR_FILENO, "\n");
         }
 
         void print() const {
             print_local();
-            if (c1 != nullptr)
-                c1->print();
-            if (c2 != nullptr)
-                c2->print();
+            if (c1 != nullptr) c1->print();
+            if (c2 != nullptr) c2->print();
         }
     };
 
-    lbool    laPropagateWrapper();
+    lbool laPropagateWrapper();
 
 protected:
     // The result from the lookahead loop
-    enum class LALoopRes {
-        sat,
-        unsat,
-        unknown,
-        unknown_final,
-        restart
-    };
+    enum class LALoopRes { sat, unsat, unknown, unknown_final, restart };
 
-    enum class laresult {
-        la_tl_unsat,
-        la_sat,
-        la_restart,
-        la_unsat,
-        la_ok
-    };
+    enum class laresult { la_tl_unsat, la_sat, la_restart, la_unsat, la_ok };
 
-    template<typename Node, typename BuildConfig>
+    template <typename Node, typename BuildConfig>
 
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
     virtual LALoopRes solveLookahead();
-    std::pair<laresult,Lit> lookaheadLoop();
+    std::pair<laresult, Lit> lookaheadLoop();
     virtual void cancelUntil(int level) override; // Backtrack until a certain level.
-    lbool solve_() override; // Does not change the formula
+    lbool solve_() override;                      // Does not change the formula
 
-    enum class PathBuildResult {
-        pathbuild_success,
-        pathbuild_tlunsat,
-        pathbuild_unsat,
-        pathbuild_restart
-    };
+    enum class PathBuildResult { pathbuild_success, pathbuild_tlunsat, pathbuild_unsat, pathbuild_restart };
 
-    PathBuildResult setSolverToNode(LANode const &);                                         // Set solver dl stack according to the path from root to n
-    laresult expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
+    PathBuildResult setSolverToNode(LANode const &); // Set solver dl stack according to the path from root to n
+    laresult expandTree(LANode & n, std::unique_ptr<LANode> c1,
+                        std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
     std::unique_ptr<LookaheadScore> score;
     bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
+
 public:
-    LookaheadSMTSolver(SMTConfig&, THandler&);
+    LookaheadSMTSolver(SMTConfig &, THandler &);
     Var newVar(bool dvar) override;
 };
 
@@ -104,7 +83,7 @@ public:
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
-template<typename Node, typename BuildConfig>
+template <typename Node, typename BuildConfig>
 std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>>
 LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     score->updateRound();
@@ -115,7 +94,8 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     queue.push(root_raw);
     TPropRes res = checkTheory(true);
     if (res == TPropRes::Unsat) {
-        return {LALoopRes::unsat, nullptr};; // Unsat
+        return {LALoopRes::unsat, nullptr};
+        ; // Unsat
     }
 
     while (queue.size() != 0) {
@@ -125,9 +105,9 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
 
         switch (setSolverToNode(*n)) {
         case PathBuildResult::pathbuild_tlunsat:
-            return { LALoopRes::unsat, nullptr };
+            return {LALoopRes::unsat, nullptr};
         case PathBuildResult::pathbuild_restart:
-            return { LALoopRes::restart, nullptr };
+            return {LALoopRes::restart, nullptr};
         case PathBuildResult::pathbuild_unsat: {
             // Reinsert the parent to the queue
             assert(n != root_raw); // Unsatisfiability in root should be tlunsat
@@ -136,22 +116,20 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                 // This is the second child (searched first).  Pop the other child as well
                 queue.pop();
                 // Now queue does not have children of the parent
-                assert( std::all_of(queue.begin(), queue.end(), [parent] (Node const * qel) { return qel->p != parent; }) );
+                assert(
+                    std::all_of(queue.begin(), queue.end(), [parent](Node const * qel) { return qel->p != parent; }));
             }
             queue.push(parent);
             parent->c1.reset(nullptr);
             parent->c2.reset(nullptr);
             continue;
         }
-        case PathBuildResult::pathbuild_success:
-            ;
+        case PathBuildResult::pathbuild_success:;
         }
 
         assert(n);
 
-        if (buildConfig.stopCondition(*n, config.sat_split_num())) {
-            continue;
-        }
+        if (buildConfig.stopCondition(*n, config.sat_split_num())) { continue; }
 
         auto c1_raw = new Node();
         auto c2_raw = new Node();
@@ -159,7 +137,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         auto c2 = std::unique_ptr<Node>(c2_raw);
         bool checked = false;
 
-        if(crossed_assumptions < assumptions.size()){
+        if (crossed_assumptions < assumptions.size()) {
             while (crossed_assumptions < assumptions.size()) {
                 // Perform user provided assumption:
                 Lit p = assumptions[crossed_assumptions];
@@ -170,13 +148,11 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
                     analyzeFinal(~p, conflict);
                     int max = 0;
                     for (Lit q : conflict) {
-                        if (!sign(q)) {
-                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
-                        }
+                        if (!sign(q)) { max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max; }
                     }
-                    conflict_frame = max+1;
+                    conflict_frame = max + 1;
                     ok = false;
-                    return { LALoopRes::unsat, nullptr };
+                    return {LALoopRes::unsat, nullptr};
                 } else {
                     c1_raw->p = n;
                     c1_raw->d = (*n).d + 1;
@@ -208,8 +184,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
             queue.push(c2_raw);
         }
     }
-    return { buildConfig.exitState(), std::move(root) };
+    return {buildConfig.exitState(), std::move(root)};
 }
 
-
-#endif //OPENSMT_LOOKAHEADSMTSOLVER_H
+#endif // OPENSMT_LOOKAHEADSMTSOLVER_H

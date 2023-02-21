@@ -5,11 +5,10 @@
 #include "LookaheadSMTSolver.h"
 #include "Proof.h"
 
-LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig& c, THandler& thandler)
-	: SimpSMTSolver(c, thandler)
-    , idx(0)
-	, score(c.lookahead_score_deep() ? (LookaheadScore*)(new LookaheadScoreDeep(assigns, c)) : (LookaheadScore*)(new LookaheadScoreClassic(assigns, c)))
-{}
+LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
+    : SimpSMTSolver(c, thandler), idx(0),
+      score(c.lookahead_score_deep() ? (LookaheadScore *)(new LookaheadScoreDeep(assigns, c))
+                                     : (LookaheadScore *)(new LookaheadScoreClassic(assigns, c))) {}
 
 Var LookaheadSMTSolver::newVar(bool dvar) {
     Var v = SimpSMTSolver::newVar(dvar);
@@ -46,19 +45,19 @@ lbool LookaheadSMTSolver::solve_() {
         assert(not okContinue() || res == LALoopRes::unsat || this->stop);
     }
     switch (res) {
-        case LALoopRes::unknown_final:
-            return l_Undef;
-        case LALoopRes::sat:
-            return l_True;
-        case LALoopRes::unsat: {
-            ok = false;
-            return l_False;
-        }
-        default:
-            assert(false);
-            return l_Undef;
-        }
+    case LALoopRes::unknown_final:
+        return l_Undef;
+    case LALoopRes::sat:
+        return l_True;
+    case LALoopRes::unsat: {
+        ok = false;
+        return l_False;
     }
+    default:
+        assert(false);
+        return l_Undef;
+    }
+}
 
 //
 // Function for making a propagation.
@@ -77,12 +76,10 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
     do {
         diff = false;
         while ((cr = propagate()) != CRef_Undef) {
-            if (decisionLevel() == 0)
-                return l_False; // Unsat
-            -- confl_quota;
+            if (decisionLevel() == 0) return l_False; // Unsat
+            --confl_quota;
             // Received a conflict and decisionLevel > 0
-            if (confl_quota <= 0)
-                return l_Undef;
+            if (confl_quota <= 0) return l_Undef;
 
             vec<Lit> out_learnt;
             int out_btlevel;
@@ -92,15 +89,11 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
                 CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                if (logsProofForInterpolation()) {
-                    proof->endChain(unitClause);
-                }
+                if (logsProofForInterpolation()) { proof->endChain(unitClause); }
                 uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
-                if (logsProofForInterpolation()) {
-                    proof->endChain(crd);
-                }
+                if (logsProofForInterpolation()) { proof->endChain(crd); }
                 learnts.push(crd);
                 attachClause(crd);
                 uncheckedEnqueue(out_learnt[0], crd);
@@ -111,12 +104,10 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             TPropRes res = checkTheory(true);
             if (res == TPropRes::Unsat) {
                 return l_False; // Unsat
-            }
-            else if (res == TPropRes::Propagate) {
+            } else if (res == TPropRes::Propagate) {
                 diff = true;
-                -- confl_quota;
-                if (confl_quota <= 0)
-                    return l_Undef;
+                --confl_quota;
+                if (confl_quota <= 0) return l_Undef;
             }
         }
     } while (diff);
@@ -148,15 +139,18 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     if (path.size() <= decisionLevel()) {
         // Means we've encountered conflict and backtracked to another path in DPLL
         // New path is different from the old one only in the last element
-        if (path.size() > 0) { cancelUntil(path.size() - 1); }
-        else { cancelUntil(0); }
+        if (path.size() > 0) {
+            cancelUntil(path.size() - 1);
+        } else {
+            cancelUntil(0);
+        }
         crossed_assumptions = std::min(path.size(), assumptions.size());
     } else {
         // Means no conflict was encountered and basic path hasn't changed
         // we need only propagate i new literals
-        i = path.size() - decisionLevel() - 1;
+        i = (path.size() - decisionLevel()) - 1;
     }
-    if(path.size() > 0){
+    if (path.size() > 0) {
         for (; i >= 0; i--) {
             newDecisionLevel();
             if (value(path[i]) == l_Undef) {
@@ -164,7 +158,8 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
                 int curr_dl = decisionLevel();
                 uncheckedEnqueue(path[i]);
                 lbool res = laPropagateWrapper();
-                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check this?
+                // Here it is possible that the solver is on level 0 and in an inconsistent state.  How can I check
+                // this?
                 if (res == l_False) {
                     return PathBuildResult::pathbuild_tlunsat; // Indicate unsatisfiability
                 } else if (res == l_Undef) {
@@ -186,24 +181,23 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     return PathBuildResult::pathbuild_success;
 }
 
-LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::unique_ptr<LANode> c1, std::unique_ptr<LANode> c2)
-{
+LookaheadSMTSolver::laresult LookaheadSMTSolver::expandTree(LANode & n, std::unique_ptr<LANode> c1,
+                                                            std::unique_ptr<LANode> c2) {
     assert(c1);
     assert(c2);
     // Do the lookahead
     assert(decisionLevel() == n.d);
     auto [res, best] = lookaheadLoop();
     assert(decisionLevel() <= n.d);
-    if (res != laresult::la_ok)
-        return res;
+    if (res != laresult::la_ok) return res;
 
     assert(best != lit_Undef);
 
     c1->p = &n;
-    c1->d = n.d+1;
+    c1->d = n.d + 1;
     c1->l = best;
     c2->p = &n;
-    c2->d = n.d+1;
+    c2->d = n.d + 1;
     c2->l = ~best;
     n.c1 = std::move(c1);
     n.c2 = std::move(c2);
@@ -219,7 +213,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
     return buildAndTraverse<LANode, PlainBuildConfig>(PlainBuildConfig()).first;
 };
 
-std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() {
+std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop() {
     ConflQuota prev = confl_quota;
     confl_quota = ConflQuota(); // Unlimited;
     if (laPropagateWrapper() == l_False) {
@@ -236,8 +230,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     int skipped_vars_due_to_logic = 0;
 
     Lit best;
-    for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars()))
-    {
+    for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
         if (!decision[v]) {
             score->setChecked(v);
             // not a decision var
@@ -246,7 +239,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
         if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
             respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
         if (respect_logic_partitioning_hints && !okToPartition(v)) {
-            skipped_vars_due_to_logic ++;
+            skipped_vars_due_to_logic++;
             std::cout << "Skipping " << v << " since logic says it's not good\n";
             continue; // Skip the vars that the logic considers bad to split on
         }
@@ -264,12 +257,10 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
                 assert(checkTheory(true) == TPropRes::Decide);
 #ifndef NDEBUG
                 for (CRef cr : clauses) {
-                    Clause& c = ca[cr];
+                    Clause & c = ca[cr];
                     unsigned k;
                     for (k = 0; k < c.size(); k++) {
-                        if (value(c[k]) == l_True) {
-                            break;
-                        }
+                        if (value(c[k]) == l_True) { break; }
                     }
                     assert(k < c.size());
                 }
@@ -294,13 +285,12 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             lbool res = laPropagateWrapper();
             if (res == l_False) {
                 return {laresult::la_tl_unsat, lit_Undef};
-            }
-            else if (res == l_Undef) {
+            } else if (res == l_Undef) {
                 cancelUntil(0);
                 return {laresult::la_restart, lit_Undef};
             }
             // Else we go on
-            if (decisionLevel() == d+1) {
+            if (decisionLevel() == d + 1) {
                 // literal is succesfully propagated
                 score->updateSolverScore(ss, this);
             } else if (decisionLevel() == d) {
@@ -315,8 +305,7 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
             // Update also the clause deletion heuristic?
             cancelUntil(decisionLevel() - 1);
         }
-        if (value(v) == l_Undef)
-        {
+        if (value(v) == l_Undef) {
             // updating var score
             score->setLAValue(v, p0, p1);
             score->updateLABest(v);
@@ -334,11 +323,9 @@ std::pair<LookaheadSMTSolver::laresult,Lit> LookaheadSMTSolver::lookaheadLoop() 
     return {laresult::la_ok, best};
 }
 
-
-void LookaheadSMTSolver::cancelUntil(int level)
-{
+void LookaheadSMTSolver::cancelUntil(int level) {
     assert(level >= 0);
-    if (decisionLevel() > level){
+    if (decisionLevel() > level) {
         CoreSMTSolver::cancelUntil(level);
         crossed_assumptions = std::min(crossed_assumptions, level);
     }
