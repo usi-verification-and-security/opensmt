@@ -6,6 +6,9 @@ Bug fixes:
 API changes:
  - Pterms: Change operator < on PTRefs to more intuitive implementation 
 
+New features:
+- Implemented the interpolant production and incrementality for the Lookahead
+
 ### 2.4.3 (2022-11-21)
 
 Bug fixes:

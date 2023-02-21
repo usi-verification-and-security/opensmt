@@ -229,7 +229,6 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
     bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
     int skipped_vars_due_to_logic = 0;
 
-    Lit best;
     for (Var v(idx % nVars()); !score->isAlreadyChecked(v); v = Var((idx + (++i)) % nVars())) {
         if (!decision[v]) {
             score->setChecked(v);
@@ -244,7 +243,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
             continue; // Skip the vars that the logic considers bad to split on
         }
         // checking the variable score
-        best = score->getBest();
+        Lit best = score->getBest();
         if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
             score->setChecked(v);
             // It is possible that all variables are assigned here.
@@ -311,7 +310,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
             score->updateLABest(v);
         }
     }
-    best = score->getBest();
+    Lit best = score->getBest();
     if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
         // all variables are set
         return {laresult::la_sat, best};

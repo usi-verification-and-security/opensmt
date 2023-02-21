@@ -94,8 +94,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     queue.push(root_raw);
     TPropRes res = checkTheory(true);
     if (res == TPropRes::Unsat) {
-        return {LALoopRes::unsat, nullptr};
-        ; // Unsat
+        return {LALoopRes::unsat, nullptr}; // unsat
     }
 
     while (queue.size() != 0) {
