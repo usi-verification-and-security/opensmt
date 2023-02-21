@@ -10,3 +10,6 @@
 
 ./src/tsolvers/lasolver/Tableau.h
 ./src/tsolvers/lasolver/Tableau.cc
+
+./src/smtsolvers/LookaheadSMTSolver.h
+./src/smtsolvers/LookaheadSMTSolver.cc
