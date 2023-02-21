@@ -15,7 +15,7 @@
 
 using namespace opensmt;
 namespace {
-template <class C, class E> inline bool contains(const C & container, const E & elem) {
+template<class C, class E> inline bool contains(const C & container, const E & elem) {
     return container.find(elem) != container.end();
 }
 } // namespace

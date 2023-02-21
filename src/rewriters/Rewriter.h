@@ -11,7 +11,7 @@
 
 #include "Logic.h"
 
-template <typename TConfig> class Rewriter {
+template<typename TConfig> class Rewriter {
 protected:
     Logic & logic;
     TConfig & cfg;
