@@ -57,7 +57,7 @@ protected:
 
     enum class laresult { la_tl_unsat, la_sat, la_restart, la_unsat, la_ok };
 
-    template <typename Node, typename BuildConfig>
+    template<typename Node, typename BuildConfig>
 
     std::pair<LALoopRes, std::unique_ptr<Node>> buildAndTraverse(BuildConfig &&);
 
@@ -83,7 +83,7 @@ public:
 // both children have been constructed and whether any of its two
 // children has been shown unsatisfiable either directly or with a
 // backjump.
-template <typename Node, typename BuildConfig>
+template<typename Node, typename BuildConfig>
 std::pair<LookaheadSMTSolver::LALoopRes, std::unique_ptr<Node>>
 LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     score->updateRound();
@@ -104,27 +104,27 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
         assert(n);
 
         switch (setSolverToNode(*n)) {
-        case PathBuildResult::pathbuild_tlunsat:
-            return {LALoopRes::unsat, nullptr};
-        case PathBuildResult::pathbuild_restart:
-            return {LALoopRes::restart, nullptr};
-        case PathBuildResult::pathbuild_unsat: {
-            // Reinsert the parent to the queue
-            assert(n != root_raw); // Unsatisfiability in root should be tlunsat
-            Node * parent = n->getParent();
-            if (queue.size() > 0 and queue.last()->p == parent) {
-                // This is the second child (searched first).  Pop the other child as well
-                queue.pop();
-                // Now queue does not have children of the parent
-                assert(
-                    std::all_of(queue.begin(), queue.end(), [parent](Node const * qel) { return qel->p != parent; }));
+            case PathBuildResult::pathbuild_tlunsat:
+                return {LALoopRes::unsat, nullptr};
+            case PathBuildResult::pathbuild_restart:
+                return {LALoopRes::restart, nullptr};
+            case PathBuildResult::pathbuild_unsat: {
+                // Reinsert the parent to the queue
+                assert(n != root_raw); // Unsatisfiability in root should be tlunsat
+                Node * parent = n->getParent();
+                if (queue.size() > 0 and queue.last()->p == parent) {
+                    // This is the second child (searched first).  Pop the other child as well
+                    queue.pop();
+                    // Now queue does not have children of the parent
+                    assert(std::all_of(queue.begin(), queue.end(),
+                                       [parent](Node const * qel) { return qel->p != parent; }));
+                }
+                queue.push(parent);
+                parent->c1.reset(nullptr);
+                parent->c2.reset(nullptr);
+                continue;
             }
-            queue.push(parent);
-            parent->c1.reset(nullptr);
-            parent->c2.reset(nullptr);
-            continue;
-        }
-        case PathBuildResult::pathbuild_success:;
+            case PathBuildResult::pathbuild_success:;
         }
 
         assert(n);
@@ -168,16 +168,16 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
 
         if (!checked) {
             switch (expandTree(*n, std::move(c1), std::move(c2))) {
-            case laresult::la_tl_unsat:
-                return {LALoopRes::unsat, nullptr};
-            case laresult::la_restart:
-                return {LALoopRes::restart, nullptr};
-            case laresult::la_unsat:
-                queue.push(n);
-                continue;
-            case laresult::la_sat:
-                return {LALoopRes::sat, nullptr};
-            case laresult::la_ok:;
+                case laresult::la_tl_unsat:
+                    return {LALoopRes::unsat, nullptr};
+                case laresult::la_restart:
+                    return {LALoopRes::restart, nullptr};
+                case laresult::la_unsat:
+                    queue.push(n);
+                    continue;
+                case laresult::la_sat:
+                    return {LALoopRes::sat, nullptr};
+                case laresult::la_ok:;
             }
 
             queue.push(c1_raw);

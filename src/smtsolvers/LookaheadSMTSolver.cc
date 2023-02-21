@@ -45,17 +45,17 @@ lbool LookaheadSMTSolver::solve_() {
         assert(not okContinue() || res == LALoopRes::unsat || this->stop);
     }
     switch (res) {
-    case LALoopRes::unknown_final:
-        return l_Undef;
-    case LALoopRes::sat:
-        return l_True;
-    case LALoopRes::unsat: {
-        ok = false;
-        return l_False;
-    }
-    default:
-        assert(false);
-        return l_Undef;
+        case LALoopRes::unknown_final:
+            return l_Undef;
+        case LALoopRes::sat:
+            return l_True;
+        case LALoopRes::unsat: {
+            ok = false;
+            return l_False;
+        }
+        default:
+            assert(false);
+            return l_Undef;
     }
 }
 
