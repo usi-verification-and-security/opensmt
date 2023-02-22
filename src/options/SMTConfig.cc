@@ -518,6 +518,8 @@ const char* SMTConfig::o_sat_lookahead_split = ":lookahead-split";
 const char* SMTConfig::o_sat_pure_lookahead = ":pure-lookahead";
 const char* SMTConfig::o_lookahead_score_deep = ":lookahead-score-deep";
 const char* SMTConfig::o_sat_solver_limit = ":solver-limit";
+const char* SMTConfig::o_sat_picky = ":picky";
+const char* SMTConfig::o_sat_picky_w = ":picky_w";
 const char* SMTConfig::o_global_declarations = ":global-declarations";
 const char* SMTConfig::o_sat_split_mode     = ":split-mode";
 
