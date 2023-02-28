@@ -337,8 +337,8 @@ private:
   bool isPreInitializationOption(const char* o_name) {
       return strcmp(o_name, o_produce_inter) == 0 || strcmp(o_name, o_produce_proofs) == 0
         || strcmp(o_name, o_sat_pure_lookahead) == 0 || strcmp(o_name, o_sat_lookahead_split) == 0
-             || strcmp(o_name, o_sat_picky) == 0 || strcmp(o_name, o_sat_scatter_split) == 0
-             || strcmp(o_name, o_ghost_vars) == 0;
+        || strcmp(o_name, o_sat_picky) == 0 || strcmp(o_name, o_sat_scatter_split) == 0
+        || strcmp(o_name, o_ghost_vars) == 0;
   }
 
   void          insertOption(const char* o_name, SMTOption* o) {
