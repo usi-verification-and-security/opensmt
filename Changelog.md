@@ -9,6 +9,7 @@ API changes:
 New features:
  - Implemented the interpolant production and incrementality for the Lookahead
  - Support for the combination of arrays and linear arithmetic (QF_ALIA, QF_AUFLIA)
+ - Implemented new solving heuristic - Picky CDCL, as an extension for the lookahead
 
 ### 2.4.3 (2022-11-21)
 

@@ -88,6 +88,17 @@ $ opensmt test.smt2
 ```
 It is also possible to run OpenSMT without any arguments, in which case it reads the input from the standard input.
 
+### Other engines
+
+OpenSMT supports multiple SMT solving approaches. By the default it uses the approach described in the CoreSMTSolver. But it can also utilize 
+Lookahead or Picky CDCL. Those engines can be enabled by using following config:
+```
+(set-option :pure-lookahead true)
+```
+or
+```
+(set-option :picky true)
+```
 ### Interpolation
 OpenSMT supports a range of interpolation algorithms for propositional
 logic, linear real arithmetic, and uninterpreted functions with
