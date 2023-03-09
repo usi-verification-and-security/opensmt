@@ -13,6 +13,9 @@ fi
 # run the interpolating version of OpenSMT
 opensmt=${opensmt}' -i'
 
+picky=./utils/picky.smt2
+lookahead=./utils/lookahead.smt2
+
 tmpfolder=log-$(date '+%Y-%m-%d-%H-%M-%S')
 mkdir ${tmpfolder}
 
@@ -30,6 +33,22 @@ for file in $(find . -name '*.smt2' |sort); do
 
     if [ -s "$tmpfolder/$name.err" ]; then
         echo "stderr not empty for benchmark $file";
+        err=true;
+    fi
+
+    sh -c "ulimit -St 60; ${opensmt} $picky $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
+    grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
+
+    if [ -s "$tmpfolder/$name.err" ]; then
+        echo "stderr not empty for picky benchmark $file";
+        err=true;
+    fi
+
+    sh -c "ulimit -St 60; ${opensmt} $lookahead $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
+    grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
+
+    if [ -s "$tmpfolder/$name.err" ]; then
+        echo "stderr not empty for lookahead benchmark $file";
         err=true;
     fi
 
