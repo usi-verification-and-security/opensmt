@@ -90,8 +90,7 @@ It is also possible to run OpenSMT without any arguments, in which case it reads
 
 ### Other engines
 
-OpenSMT supports multiple SMT solving approaches. By the default it uses the approach described in the CoreSMTSolver. But it can also utilize 
-Lookahead or Picky CDCL. Those engines can be enabled by using following config:
+OpenSMT supports multiple SMT solving approaches. By the default it uses CDCL(T) with VSDIS decision heuristic. But it can also utilize Lookahead, possibly with picky heuristic based on VSDIS score. Those engines can be enabled by using following config:
 ```
 (set-option :pure-lookahead true)
 ```
