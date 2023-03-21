@@ -710,7 +710,7 @@ PTRef Logic::mkVar(SRef s, const char* name, bool isInterpreted) {
     assert(sr != SymRef_Undef);
     if (sr == SymRef_Undef) {
         std::cerr << "Unexpected situation in  Logic::mkVar for " << name << std::endl;
-        assert(symNameToRef(name)>>.size() == 1);
+        assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
     PTRef ptr = mkFun(sr, {});
