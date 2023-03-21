@@ -25,6 +25,7 @@ list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/LAScore.cc"
                 "${CMAKE_CURRENT_SOURCE_DIR}/ClausePrinter.h"
                 "${CMAKE_CURRENT_SOURCE_DIR}/ClausePrinter.cc"
+                "${CMAKE_CURRENT_SOURCE_DIR}/SMTSolver.h"
 		)
 list(APPEND PUBLIC_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
