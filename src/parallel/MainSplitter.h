@@ -57,7 +57,7 @@ public:
 
     void writeSplits(std::string const &)  const;
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
+    static std::unique_ptr<SMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
 
     inline TermMapper& getTermMapper() const { return *term_mapper;}
 };
