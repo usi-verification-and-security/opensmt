@@ -1,4 +1,14 @@
-add_library(smtsolvers OBJECT "")
+#add_library(smtsolvers OBJECT "")
+add_library(smtsolvers OBJECT ""
+                LookaheadSMTSolver.cc
+                LookaheadSMTSolver.h
+                ClausePrinter.cc
+                ClausePrinter.h
+                LAScore.h
+                LAScore.cc
+                SMTSolver.h
+                )
+
 
 
 list(APPEND PRIVATE_SOURCES_TO_ADD
@@ -13,6 +23,8 @@ list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/LookaheadSMTSolver.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LAScore.h"
 		"${CMAKE_CURRENT_SOURCE_DIR}/LAScore.cc"
+                "${CMAKE_CURRENT_SOURCE_DIR}/ClausePrinter.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/ClausePrinter.cc"
 		)
 list(APPEND PUBLIC_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.h"
@@ -21,24 +33,6 @@ list(APPEND PUBLIC_SOURCES_TO_ADD
 		)
 
 target_sources(smtsolvers PRIVATE ${PRIVATE_SOURCES_TO_ADD}  PUBLIC ${PUBLIC_SOURCES_TO_ADD} )
-
-#add_library(smtsolvers OBJECT ""
-#		LookaheadSMTSolver.cc
-#		LookaheadSMTSolver.h
-#		LookaheadSplitter.cc
-#		LookaheadSplitter.h
-#		ScatterSplitter.cc
-#		ScatterSplitter.h
-#		ClausePrinter.cc
-#		ClausePrinter.h
-#		SplitContext.h
-#		SplitData.cc
-#		SplitData.h
-#		LAScore.h
-#		LAScore.cc
-#		SMTSolver.h
-#		)
-
 
 if(VERBOSE_SAT)
 	target_compile_definitions(smtsolvers PRIVATE -DVERBOSE_SAT)
@@ -56,10 +50,10 @@ target_sources(proof
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc")
 
-install(FILES TheoryInterpolator.h Proof.h
+install(FILES TheoryInterpolator.h 
 	 DESTINATION ${INSTALL_HEADERS_DIR})
 
 
 
-install(FILES SimpSMTSolver.h CoreSMTSolver.h ScatterSplitter.h SMTSolver.h
+install(FILES SimpSMTSolver.h CoreSMTSolver.h
 		DESTINATION ${INSTALL_HEADERS_DIR})

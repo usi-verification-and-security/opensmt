@@ -30,7 +30,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "LogicFactory.h"
 #include "Substitutor.h"
 #include "MainCounter.h"
-#include "MainSplitter.h"
 
 #include <string>
 #include <sstream>
@@ -1358,7 +1357,7 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
 }
 
 std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
-    if (config.sat_split_type() != spt_none) {
+    /* if (config.sat_split_type() != spt_none) {
         auto th = MainSolver::createTheory(*logic, config);
         auto tm = std::make_unique<TermMapper>(*logic);
         auto thandler = new THandler(*th, *tm);
@@ -1371,6 +1370,20 @@ std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) 
                                  std::string(logic_name)
                                  + " splitter");
     } else if (config.count_models()) {
+        auto theory = MainSolver::createTheory(*logic, config);
+        auto termMapper = std::unique_ptr<TermMapper>(new TermMapper(*logic));
+        auto thandler = new THandler(*theory, *termMapper);
+        return std::make_unique<MainCounter>(std::move(theory),
+                                 std::move(termMapper),
+                                 std::unique_ptr<THandler>(thandler),
+                                 MainCounter::createInnerSolver(config, *thandler),
+                                 *logic,
+                                 config,
+                                 std::string(logic_name) + " counter");
+    } else {
+        return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+    } */
+    if (config.count_models()) {
         auto theory = MainSolver::createTheory(*logic, config);
         auto termMapper = std::unique_ptr<TermMapper>(new TermMapper(*logic));
         auto thandler = new THandler(*theory, *termMapper);
