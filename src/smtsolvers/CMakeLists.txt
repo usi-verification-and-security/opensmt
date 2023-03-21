@@ -59,5 +59,5 @@ install(FILES TheoryInterpolator.h
 
 
 
-install(FILES SimpSMTSolver.h CoreSMTSolver.h SMTSolver.h
+install(FILES SimpSMTSolver.h CoreSMTSolver.h SMTSolver.h Proof.h
 		DESTINATION ${INSTALL_HEADERS_DIR})
