@@ -175,8 +175,8 @@ public:
     bool          implied                  (const vec<Lit>& c);
     void          relocAll                 (ClauseAllocator& to);
 
-    virtual void mapEnabledFrameIdToVar(Var, uint32_t, uint32_t &)  { return; }
-    virtual void addAssumptionVar(Var)                              { return; }
+//    virtual void mapEnabledFrameIdToVar(Var, uint32_t, uint32_t &)  { return; }
+//    virtual void addAssumptionVar(Var)                              { return; }
 };
 
 
