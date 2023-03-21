@@ -32,6 +32,8 @@ public:
     virtual Proof const & getProof() const = 0;
     virtual int getConflictFrame() const = 0;
     void setStop() { stop = true; }
+    virtual void mapEnabledFrameIdToVar(Var, uint32_t, uint32_t &)  { return; }
+    virtual void addAssumptionVar(Var)                              { return; }
 };
 
 
