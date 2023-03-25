@@ -182,7 +182,7 @@ private:
     bool childDuplicatesClass(ERef parent, uint32_t childIndex);
 
     //***************************************************************************************************************
-    Map<PTRef, ERef, PTRefHash> negatedTermToERef;
+    Map<PTRef, ERef, PTRefHash> termToNegatedERef;
 
     ELAllocator forbid_allocator;
 
