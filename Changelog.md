@@ -1,4 +1,7 @@
-### 2.5.0 (unreleased)
+### 2.5.1 (unreleased)
+
+
+### 2.5.0 (2023-03-27)
 
 Bug fixes:
  - QF_AX: Fix unsoundness bug due to missing literals in read-over-weak-eq lemmas
