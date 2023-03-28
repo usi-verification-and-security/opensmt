@@ -224,3 +224,17 @@ PTRef PtStore::getFromCplxMap (const PTLKey& k)       { return cplx_map.at(k); }
 
 PtermIter PtStore::getPtermIter() { return PtermIter(idToPTRef); }
 
+
+void PtStore::copyTo(PtStore& other) const {
+    other.pta = pta;
+    symstore.copyTo(other.symstore);
+    idToPTRef.copyTo(other.idToPTRef);
+    cterm_map.copyTo(other.cterm_map);
+    for(auto& it: cplx_map){
+        other.addToCplxMap(const_cast<PTLKey &&>(it.first), it.second);
+    }
+    for(auto& it: bool_map){
+        other.addToBoolMap(const_cast<PTLKey &&>(it.first), it.second);
+    }
+};
+

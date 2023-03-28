@@ -56,6 +56,7 @@ class SymStore {
 
     bool isInterpreted(SymRef sr)               const { return ta[sr].isInterpreted(); }
 
+    void copyTo(SymStore& other) const;
 #ifdef PEDANTIC_DEBUG
     void compare(SymStore&);
     void check() const;

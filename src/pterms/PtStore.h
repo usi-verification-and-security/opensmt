@@ -100,6 +100,8 @@ class PtStore {
     PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
 
     std::size_t getNumberOfTerms() const { return pta.getNumTerms(); }
+
+    void copyTo(PtStore& other) const;
 };
 
 #endif

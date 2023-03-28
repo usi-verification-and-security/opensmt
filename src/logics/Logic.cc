@@ -1281,6 +1281,51 @@ PTRef Logic::removeAuxVars(PTRef tr) {
     return rewriter.rewrite(tr);
 }
 
+
+Logic Logic::clone() const {
+    Logic other = Logic(this->logicType);
+    assert(logicType == other.logicType);
+    equalities.copyTo(other.equalities);
+    disequalities.copyTo(other.disequalities);
+    ites.copyTo(other.ites);
+    selects.copyTo(other.selects);
+    stores.copyTo(other.stores);
+    sortToEquality.copyTo(other.sortToEquality);
+    sortToDisequality.copyTo(other.sortToDisequality);
+    sortToIte.copyTo(other.sortToIte);
+    sortToSelect.copyTo(other.sortToSelect);
+    sortToStore.copyTo(other.sortToStore);
+    ufsorts.copyTo(other.ufsorts);
+    defaultValueForSort.copyTo(other.defaultValueForSort);
+    other.abstractValueCount = abstractValueCount;
+    other.distinctClassCount = distinctClassCount;
+    constants.copyTo(other.constants);
+    sort_store.copyTo(other.sort_store);
+    sym_store.copyTo(other.sym_store);
+    term_store.copyTo(other.term_store);
+    other.auxiliaryNatSet = auxiliaryNatSet;
+    other.sym_IndexedSort = sym_IndexedSort;
+    other.sort_BOOL = sort_BOOL;
+    other.term_TRUE = term_TRUE;
+    other.term_TRUE = term_TRUE;
+    other.term_FALSE = term_FALSE;
+    other.sym_TRUE = sym_TRUE;
+    other.sym_FALSE = sym_FALSE;
+    other.sym_AND = sym_AND;
+    other.sym_OR = sym_OR;
+    other.sym_XOR = sym_XOR;
+    other.sym_NOT = sym_NOT;
+    other.sym_UF_NOT = sym_UF_NOT;
+    other.sym_EQ = sym_EQ;
+    other.sym_IMPLIES = sym_IMPLIES;
+    other.sym_DISTINCT = sym_DISTINCT;
+    other.sym_ITE = sym_ITE;
+    other.sym_ArraySort = sym_ArraySort;
+    appears_in_uf.copyTo(other.appears_in_uf);
+    propFormulasAppearingInUF.copyTo(other.propFormulasAppearingInUF);
+    return other;
+}
+
 void
 Logic::dumpChecksatToFile(ostream& dump_out) const
 {

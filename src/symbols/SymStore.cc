@@ -38,6 +38,13 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
+void SymStore::copyTo(SymStore& other) const {
+    symbolTable.copyTo(other.symbolTable);
+    symbols.copyTo(other.symbols);
+    other.ta = ta;
+    idToName.copyTo(other.idToName);
+}
+
 SymRef SymStore::newSymb(const char * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto* symrefs = getRefOrNull(fname);

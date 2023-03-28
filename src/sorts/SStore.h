@@ -90,6 +90,7 @@ class SStore
     const vec<SRef>& getSorts() const { return sorts; }
     const vec<SSymRef>& getSortSyms() const { return sortSymbols; }
     int     numSorts() const { return sorts.size(); }
+    void copyTo(SStore& other) const;
 };
 
 #endif
