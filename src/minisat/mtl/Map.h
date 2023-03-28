@@ -328,10 +328,7 @@ public:
         clear();
         other.copyTo(this);
     };
-    //    VecMap        (VecMap<K,D,H,E>& other){
-    //        this = new VecMap();
-    //        other.copyTo(this);
-    //    };
+
 
     // PRECONDITION: the key must already exist in the map.
     const vec<D>& operator [] (const K& k) const
@@ -422,14 +419,14 @@ public:
 
 
 
-    //    // NOTE: the hash and equality objects are not moved by this method:
-    //    void copyTo(VecMap& other){
-    //        delete [] other.table;
-    //
-    //        other.table = table;
-    //        other.cap   = cap;
-    //        other.size  = size;
-    //    }
+    // NOTE: the hash and equality objects are not moved by this method:
+    void copyTo(VecMap& other) const {
+        delete [] other.table;
+
+        other.table = table;
+        other.cap   = cap;
+        other.size  = size;
+    }
 
     // NOTE: the hash and equality objects are not moved by this method:
     void moveTo(VecMap& other){
