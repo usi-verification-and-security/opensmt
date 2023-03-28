@@ -384,6 +384,8 @@ public:
 
     virtual PTRef removeAuxVars(PTRef tr);
 
+    Logic clone() const;
+
     bool hasQuotableChars(std::string const & name) const;
     bool isReservedWord(std::string const & name) const;
     bool isAmbiguousUninterpretedNullarySymbolName(std::string_view name) const { return term_store.isAmbiguousNullarySymbolName(name); };
