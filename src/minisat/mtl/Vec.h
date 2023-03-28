@@ -2,22 +2,23 @@
 Copyright (c) 2003-2007, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 Copyright (c) 2012-2014, Antti Hyvarinen
+Copyright (c) 2023, Konstantin Britikov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+                                                  associated documentation files (the "Software"), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge, publish, distribute,
+    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+                                                      furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+    NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+                                                                                                       OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                                                                                                           **************************************************************************************************/
 
 #ifndef Minisat_Vec_h
 #define Minisat_Vec_h
@@ -30,13 +31,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "osmtinttypes.h"
 #include "XAlloc.h"
 
-//=================================================================================================
-// Automatically resizable arrays
-//
-// NOTE! Don't use this vector on datatypes that cannot be re-located in memory (with realloc)
+                                                                                                       //=================================================================================================
+                                                                                                       // Automatically resizable arrays
+                                                                                                       //
+                                                                                                       // NOTE! Don't use this vector on datatypes that cannot be re-located in memory (with realloc)
 
-template<class T>
-class vec {
+                                                                                                       template<class T>
+                                                                                                       class vec {
     T*  data;
     int sz;
     int cap;
@@ -55,10 +56,11 @@ public:
     vec(int size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
     vec(const std::initializer_list<T> &iList);
     vec(const std::vector<T>& v) : vec(v.size()) { for (unsigned i = 0; i < v.size(); i++) { operator[](i) = v[i]; } };
+    vec(const vec<T>& v) : vec(v.size()) { for (unsigned i = 0; i < v.size(); i++) { operator[](i) = v[i]; } };
     vec(vec&& o)                : data(NULL) , sz(0)   , cap(0)    { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); }
     // copy constructor if ever needed
     //vec(const vec<T>& other) : sz(other.sz), cap(other.cap) { data = (T*)malloc(cap*sizeof(T)); memcpy(data, other.data, sz*sizeof(T)); }
-   ~vec()                                                          { clear(true); }
+    ~vec()                                                          { clear(true); }
     vec<T>& operator = (vec<T>&& o) { std::swap(data, o.data); std::swap(sz, o.sz); std::swap(cap, o.cap); return *this; }
 
 
@@ -123,7 +125,7 @@ void vec<T>::capacity(int min_cap) {
     int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
     if (add > INT_MAX - cap || (((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) && errno == ENOMEM))
         throw OutOfMemoryException();
- }
+}
 
 template<class T>
 void vec<T>::growTo(int size, const T& pad) {

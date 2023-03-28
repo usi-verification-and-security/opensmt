@@ -1,21 +1,22 @@
 /*******************************************************************************************[Map.h]
 Copyright (c) 2006-2010, Niklas Sorensson
+Copyright (c) 2023, Konstantin Britikov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+                                                  associated documentation files (the "Software"), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge, publish, distribute,
+    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+                                                      furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+    NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+                                                                                                       OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                                                                                                           **************************************************************************************************/
 
 #ifndef Minisat_Map_h
 #define Minisat_Map_h
@@ -24,12 +25,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Vec.h"
 #include <vector>
 
-//=================================================================================================
-// Default hash/equals functions
-//
+                                                                                                       //=================================================================================================
+                                                                                                       // Default hash/equals functions
+                                                                                                       //
 
-//template<class K> struct Hash  { uint32_t operator()(const K& k)               const { return hash(k);  } };
-template<class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
+                                                                                                       //template<class K> struct Hash  { uint32_t operator()(const K& k)               const { return hash(k);  } };
+                                                                                                       template<class K> struct Equal { bool     operator()(const K& k1, const K& k2) const { return k1 == k2; } };
 
 //template<class K> struct DeepHash  { uint32_t operator()(const K* k)               const { return hash(*k);  } };
 template<class K> struct DeepEqual { bool     operator()(const K* k1, const K* k2) const { return *k1 == *k2; } };
@@ -54,10 +55,10 @@ static const int primes [nprimes] = { 31, 73, 151, 313, 643, 1291, 2593, 5233, 1
 //template<class K, class D, class H = Hash<K>, class E = Equal<K> >
 template<class K, class D, class H, class E = Equal<K> >
 class Map {
- public:
+public:
     struct Pair { K key; D data; };
 
- private:
+private:
     H          hash;
     E          equals;
 
@@ -65,9 +66,6 @@ class Map {
     int        cap;
     int        size;
 
-    // Don't allow copying (error prone):
-    Map<K,D,H,E>&  operator = (Map<K,D,H,E>& other) = delete;
-                   Map        (Map<K,D,H,E>& other) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -82,7 +80,7 @@ class Map {
         int old_cap = cap;
         int newsize = primes[0];
         for (int i = 1; newsize <= cap && i < nprimes; i++)
-           newsize = primes[i];
+            newsize = primes[i];
 
         table = new vec<Pair>[newsize];
         cap   = newsize;
@@ -97,13 +95,23 @@ class Map {
     }
 
 
- public:
+public:
 
     Map () : table(NULL), cap(0), size(0) {}
     Map (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0) {}
     Map (Map&& o) noexcept : table(NULL), cap(0), size(0) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
     //    Map (Map<K,D,H,E>&& o) noexcept : cap(0), size(0) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); }
     ~Map () { delete [] table; }
+
+    // Don't allow copying (error prone):
+    Map<K,D,H,E>&  operator = (Map<K,D,H,E>& other) {
+        clear();
+        other.copyTo(this);
+    };
+    Map        (Map<K,D,H,E>& other) {
+        clear();
+        other.copyTo(*this);
+    };
 
     //Map<K,D,H,E>&  operator = (Map<K,D,H,E>&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); return *this; }
     Map&  operator = (Map&& o) { std::swap(hash, o.hash); std::swap(equals, o.equals); std::swap(table, o.table); std::swap(cap, o.cap); std::swap(size, o.size); return *this; }
@@ -142,7 +150,7 @@ class Map {
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 d = ps[i].data;
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -269,7 +277,7 @@ class VecMap {
 public:
     struct Pair { K key; vec<D> data; };
 
- private:
+private:
     H          hash;
     E          equals;
 
@@ -277,9 +285,6 @@ public:
     int        cap;
     int        size;
 
-    // Don't allow copying (error prone):
-    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& ) = delete;
-                   VecMap        (VecMap<K,D,H,E>& ) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -295,7 +300,7 @@ public:
         int old_cap = cap;
         int newsize = primes[0];
         for (int i = 1; newsize <= cap && i < nprimes; i++)
-           newsize = primes[i];
+            newsize = primes[i];
 
         table = new std::vector<Pair>[newsize];
         cap   = newsize;
@@ -311,12 +316,22 @@ public:
         // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
     }
 
-    
- public:
+
+public:
 
     VecMap () : table(NULL), cap(0), size(0) {}
     VecMap (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
     ~VecMap () { delete [] table; }
+
+    // Don't allow copying (error prone):
+    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& other) {
+        clear();
+        other.copyTo(this);
+    };
+    //    VecMap        (VecMap<K,D,H,E>& other){
+    //        this = new VecMap();
+    //        other.copyTo(this);
+    //    };
 
     // PRECONDITION: the key must already exist in the map.
     const vec<D>& operator [] (const K& k) const
@@ -352,7 +367,7 @@ public:
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 ps[i].data.copyTo(d);
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -405,6 +420,17 @@ public:
     int  elems() const { return size; }
     int  bucket_count() const { return cap; }
 
+
+
+    //    // NOTE: the hash and equality objects are not moved by this method:
+    //    void copyTo(VecMap& other){
+    //        delete [] other.table;
+    //
+    //        other.table = table;
+    //        other.cap   = cap;
+    //        other.size  = size;
+    //    }
+
     // NOTE: the hash and equality objects are not moved by this method:
     void moveTo(VecMap& other){
         delete [] other.table;
@@ -423,10 +449,10 @@ public:
 
 template<class K, class D, class H, class E = Equal<K> >
 class VecKeyMap {
- public:
+public:
     struct Pair { vec<K> key; D data; };
 
- private:
+private:
     H          hash;
     E          equals;
 
@@ -434,9 +460,7 @@ class VecKeyMap {
     int        cap;
     int        size;
 
-    // Don't allow copying (error prone):
-    VecKeyMap<K,D,H,E>&  operator = (VecKeyMap<K,D,H,E>& other) = delete;
-                   VecKeyMap        (VecKeyMap<K,D,H,E>& other) = delete;
+
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -451,7 +475,7 @@ class VecKeyMap {
         int old_cap = cap;
         int newsize = primes[0];
         for (int i = 1; newsize <= cap && i < nprimes; i++)
-           newsize = primes[i];
+            newsize = primes[i];
 
         table = new vec<Pair>[newsize];
         cap   = newsize;
@@ -466,11 +490,20 @@ class VecKeyMap {
     }
 
 
- public:
+public:
 
     VecKeyMap  () : table(NULL), cap(0), size(0) {}
     VecKeyMap  (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
     ~VecKeyMap () { delete [] table; }
+    // Don't allow copying (error prone):
+    VecKeyMap<K,D,H,E>&  operator = (VecKeyMap<K,D,H,E>& other) {
+        clear();
+        other.copyTo(this);
+    };
+    VecKeyMap        (VecKeyMap<K,D,H,E>& other) {
+        clear();
+        other.copyTo(this);
+    };
 
     // PRECONDITION: the key must already exist in the map.
     const D& operator [] (const vec<K>& k) const
@@ -506,7 +539,7 @@ class VecKeyMap {
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 d = ps[i].data;
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -565,8 +598,14 @@ class MapVec
     int cap;
 
     // Don't allow copying (error prone):
-    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) = delete;
-    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) = delete;
+    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) {
+        clear();
+        other.copyTo(this);
+    };
+    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) {
+        clear();
+        other.copyTo(this);
+    };
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
@@ -577,7 +616,7 @@ public:
     MapVec()                                : data(NULL) , sz(0)   , cap(0)    { }
     explicit MapVec(int size)               : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
     MapVec(int size, const Map<K,D,H>& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
-   ~MapVec()                                                                   { clear(true); }
+    ~MapVec()                                                                   { clear(true); }
 
     // Pointer to first element:
     operator Map<K,D,H>*       (void)           { return data; }
@@ -592,7 +631,7 @@ public:
         if (cap >= min_cap) return;
         int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);   // NOTE: grow by approximately 3/2
         if (add > INT_MAX - cap || (((data = (Map<K,D,H,E>*)::realloc(data, (cap += add) * sizeof(Map<K,D,H>))) == NULL) && errno == ENOMEM))
-        throw OutOfMemoryException();
+            throw OutOfMemoryException();
     }
     void     growTo   (int size);
     void     growTo   (int size, const Map<K,D,H>& pad);
