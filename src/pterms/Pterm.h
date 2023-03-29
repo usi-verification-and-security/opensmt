@@ -192,12 +192,17 @@ class PtermAllocator : public RegionAllocator<uint32_t>
     PtermAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_terms(0) {}
     PtermAllocator() : n_terms(0) {}
 
+    void copyTo(PtermAllocator& to) const {
+            to.n_terms = n_terms;
+            RegionAllocator<uint32_t>::copyTo(to); }
     uint32_t getNumTerms() const { return n_terms; }
 
     void moveTo(PtermAllocator& to) {
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to);
     }
+
+
 
     PTRef alloc(const SymRef sym, const vec<PTRef> & ps)
     {

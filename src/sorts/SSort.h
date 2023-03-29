@@ -130,6 +130,8 @@ public:
     const SortSymbol& operator[](SSymRef r) const { return (SortSymbol&)RegionAllocator<uint32_t>::operator[](r.x); }
     SortSymbol*       lea       (SSymRef r)       { return (SortSymbol*)RegionAllocator<uint32_t>::lea(r.x); }
 
+    void copyTo(SortSymbolAllocator& to) const {
+        RegionAllocator<uint32_t>::copyTo(to); }
     void free(SSymRef)
     {
         RegionAllocator<uint32_t>::free(SortSymbolWord32Size());
@@ -146,6 +148,9 @@ class SortAllocator : public RegionAllocator<uint32_t>
     SortAllocator(uint32_t init_capacity): RegionAllocator<uint32_t>(init_capacity) {}
     void moveTo(SortAllocator &to) {
         RegionAllocator<uint32_t>::moveTo(to); }
+    void copyTo(SortAllocator& to) const {
+        to.static_uniq_id = static_uniq_id;
+        RegionAllocator<uint32_t>::copyTo(to); }
     SRef alloc(SortKey const & key)
     {
         uint32_t v = RegionAllocator<uint32_t>::alloc(SortWord32Size(key.args.size()));

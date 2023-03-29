@@ -154,6 +154,9 @@ class SymbolAllocator : public RegionAllocator<uint32_t>
     SymbolAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap) {}
     SymbolAllocator() = default;
 
+    void copyTo(SymbolAllocator& to) const {
+        RegionAllocator<uint32_t>::copyTo(to); }
+
     void moveTo(SymbolAllocator& to){
         RegionAllocator<uint32_t>::moveTo(to); }
 

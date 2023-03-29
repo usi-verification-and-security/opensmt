@@ -226,7 +226,7 @@ PtermIter PtStore::getPtermIter() { return PtermIter(idToPTRef); }
 
 
 void PtStore::copyTo(PtStore& other) const {
-    other.pta = pta;
+    pta.copyTo(other.pta);
     symstore.copyTo(other.symstore);
     idToPTRef.copyTo(other.idToPTRef);
     cterm_map.copyTo(other.cterm_map);

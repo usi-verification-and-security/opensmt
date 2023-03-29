@@ -41,7 +41,7 @@ SymStore::~SymStore() {
 void SymStore::copyTo(SymStore& other) const {
     symbolTable.copyTo(other.symbolTable);
     symbols.copyTo(other.symbols);
-    other.ta = ta;
+    ta.copyTo(other.ta);
     idToName.copyTo(other.idToName);
 }
 

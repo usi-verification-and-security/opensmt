@@ -59,13 +59,13 @@ opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> &&
     sorts.push(sr);
     auto emplaceRes = sortTable.emplace(std::move(key), sr);
     assert(emplaceRes.second); (void)emplaceRes;
-    return {sr, true};
+    return {sr, true};   f
 }
 
 
 void SStore::copyTo(SStore& other) const {
-    other.sa = sa;
-    other.ssa = ssa;
+    sa.copyTo(other.sa);
+    ssa.copyTo(other.ssa);
 //    sorts.copyTo(other.sorts);
     sortSymbols.copyTo(other.sortSymbols);
     other.sortSymbolTable = sortSymbolTable;
