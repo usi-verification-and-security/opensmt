@@ -88,6 +88,15 @@ class RegionAllocator
         memory = NULL;
         sz = cap = wasted_ = 0;
     }
+
+
+    void  copyTo(RegionAllocator& to) const {
+        if (to.memory != NULL) ::free(to.memory);
+        to.memory = memory;
+        to.sz = sz;
+        to.cap = cap;
+        to.wasted_ = wasted_;
+    }
 };
 
 template<class T>
