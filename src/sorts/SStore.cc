@@ -59,7 +59,7 @@ opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> &&
     sorts.push(sr);
     auto emplaceRes = sortTable.emplace(std::move(key), sr);
     assert(emplaceRes.second); (void)emplaceRes;
-    return {sr, true};   f
+    return {sr, true};
 }
 
 
