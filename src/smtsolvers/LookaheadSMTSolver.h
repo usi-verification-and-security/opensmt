@@ -16,6 +16,8 @@ protected:
     ConflQuota confl_quota;
     int idx;
     int crossed_assumptions;
+    long lookahead_time;
+    long vsids_time;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
