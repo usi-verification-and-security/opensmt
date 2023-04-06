@@ -218,7 +218,7 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
 };
 
 std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop() {
-    if(lookahead_time <= vsids_time * 10) {
+    if(lookahead_time*10 <= vsids_time) {
         auto start = std::chrono::steady_clock::now();
         int pickyWidth = std::min(nVars(), config.sat_picky_w());
         ConflQuota prev = confl_quota;
@@ -343,7 +343,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
 
         auto end = std::chrono::steady_clock::now();
         auto diff = end - start;
-        lookahead_time += std::chrono::duration_cast<std::chrono::seconds> (diff).count();
+        lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
         return {laresult::la_ok, best};
     } else {
         auto start = std::chrono::steady_clock::now();
@@ -381,20 +381,20 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
             }
 
             if (next == lit_Undef){
-                auto end = std::chrono::steady_clock::now();
-                auto diff = end - start;
-                // Model found:
-
-                vsids_time += std::chrono::duration_cast<std::chrono::seconds> (diff).count();
-                return {laresult::la_sat, next};
+                                return {laresult::la_sat, next};
             }
         }
 
         assert(value(next) == l_Undef);
         // Increase decision level and enqueue 'next'
         assert(value(next) == l_Undef);
-        newDecisionLevel();
-        uncheckedEnqueue(next);
+//        newDecisionLevel();
+        auto end = std::chrono::steady_clock::now();
+        auto diff = end - start;
+        // Model found:
+        //        uncheckedEnqueue(next);
+
+        vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
         return {laresult::la_ok, next};
     }
 }
