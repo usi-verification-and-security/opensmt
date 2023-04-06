@@ -1,7 +1,7 @@
 //
 // Created by prova on 07.02.19.
 //
-#include < chrono >
+#include <chrono>
 #include "LookaheadSMTSolver.h"
 #include "Proof.h"
 
