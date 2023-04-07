@@ -18,6 +18,7 @@ protected:
     int crossed_assumptions;
     long lookahead_time;
     long vsids_time;
+    long clauses_num;
 
     // -----------------------------------------------------------------------------------------
     // Data type for exact value array
@@ -98,6 +99,7 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     if (res == TPropRes::Unsat) {
         return {LALoopRes::unsat, nullptr}; // unsat
     }
+    clauses_num = 0;
 
     while (queue.size() != 0) {
         Node * n = queue.last();

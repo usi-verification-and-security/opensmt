@@ -218,7 +218,8 @@ LookaheadSMTSolver::LALoopRes LookaheadSMTSolver::solveLookahead() {
 };
 
 std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop() {
-    if(lookahead_time*10 <= vsids_time) {
+    if(clauses_num*2 <= clauses.size()) {
+        clauses_num = clauses.size();
         auto start = std::chrono::steady_clock::now();
         int pickyWidth = std::min(nVars(), config.sat_picky_w());
         ConflQuota prev = confl_quota;
