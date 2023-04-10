@@ -178,7 +178,7 @@ class Interpret {
     void                        notify_success();
     void                        comment_formatted(const char* s, ...) const;
 
-    bool                        addLetFrame(std::vector<opensmt::pair<PTRef, std::string>> const & bindings, LetRecords& letRecords);
+    bool                        addLetFrame(ASTNode const & bindingsNode, LetRecords& letRecords);
     PTRef                       letNameResolve(const char* s, const LetRecords& letRecords) const;
     PTRef                       resolveQualifiedIdentifier(const char * name, ASTNode const & sort, bool isQuoted);
 

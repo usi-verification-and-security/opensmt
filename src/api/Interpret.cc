@@ -374,7 +374,16 @@ void Interpret::interp(ASTNode& n) {
     }
 }
 
-bool Interpret::addLetFrame(std::vector<opensmt::pair<PTRef,std::string>> const & bindings, LetRecords& letRecords) {
+bool Interpret::addLetFrame(ASTNode const & bindingsNode, LetRecords & letRecords) {
+    std::vector<opensmt::pair<PTRef, std::string>> bindings;
+
+    // First read the term declarations in the let statement
+    for (ASTNode const* vb : *bindingsNode.children) {
+        PTRef let_tr = parseTerm(**(vb->children->begin()), letRecords);
+        if (let_tr == PTRef_Undef) return false;
+        bindings.push_back({let_tr, vb->getValue()});
+    }
+    // Only then insert them to the table
     for (auto const & [arg, name] : bindings) {
         if (logic->hasSym(name.c_str()) and logic->getSym(logic->symNameToRef(name.c_str())[0]).noScoping()) {
             notify_formatted(true, "Names marked as no scoping cannot be overloaded with let variables: %s", name.c_str());
@@ -480,9 +489,6 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     }
 
     else if (t == LET_T) {
-        auto ch = term.children->begin();
-        auto vbl = (**ch).children->begin();
-
         // use RAII idiom to guard the scope of new LetFrame (and ensure the cleaup of names)
         class Guard {
             LetRecords& rec;
@@ -491,17 +497,8 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
             ~Guard() { rec.popFrame(); }
         } scopeGuard(letRecords);
 
-        std::vector<opensmt::pair<PTRef, std::string>> bindings;
-
-        // First read the term declarations in the let statement
-        while (vbl != (**ch).children->end()) {
-            PTRef let_tr = parseTerm(**((**vbl).children->begin()), letRecords);
-            if (let_tr == PTRef_Undef) return PTRef_Undef;
-            bindings.push_back({let_tr, (**vbl).getValue()});
-            vbl++;
-        }
-        // Only then insert them to the table
-        bool success = addLetFrame(bindings, letRecords);
+        auto ch = term.children->begin();
+        bool success = addLetFrame(**ch, letRecords);
         if (not success) {
             comment_formatted("Let name addition failed");
             return PTRef_Undef;
