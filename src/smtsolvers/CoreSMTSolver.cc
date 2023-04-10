@@ -1432,6 +1432,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
         CRef confl = propagate();
         runPeriodic();
         if (confl != CRef_Undef) {
+
             if (conflicts > conflictsUntilFlip) {
                 flipState = not flipState;
                 conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
@@ -1496,9 +1497,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
             // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify()) {
-                return zeroLevelConflictHandler();
-            }
+            if (decisionLevel() == 0 && !simplify()) { return zeroLevelConflictHandler(); }
             // Two ways of reducing the clause.  The latter one seems to be working
             // better (not running proper tests since the cluster is down...)
             // if ((learnts.size()-nAssigns()) >= max_learnts)
@@ -1518,7 +1517,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 case TPropRes::Decide:
                     break; // Sat and no deductions: go ahead
                 default:
-                    assert( false );
+                    assert(false);
             }
 
             Lit next = lit_Undef;
@@ -1532,64 +1531,180 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     analyzeFinal(~p, conflict);
                     int max = 0;
                     for (Lit q : conflict) {
-                        if (!sign(q)) {
-                            max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max;
-                        }
+                        if (!sign(q)) { max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max; }
                     }
-                    conflict_frame = max+1;
+                    conflict_frame = max + 1;
                     return zeroLevelConflictHandler();
                 } else {
                     next = p;
                     break;
                 }
             }
+            if(clauses_num*2 <= clauses.size()) {
+                clauses_num = clauses.size();
+                auto start = std::chrono::steady_clock::now();
+                int pickyWidth = std::min(nVars(), config.sat_picky_w());
 
-            if (next == lit_Undef) {
-                switch (notifyConsistency()) {
-                    case ConsistencyAction::BacktrackToZero:
-                        cancelUntil(0);
-                        break;
-                    case ConsistencyAction::ReturnUndef:
-                        return l_Undef;
-                    case ConsistencyAction::SkipToSearchBegin:
-                        continue;
-                    case ConsistencyAction::NoOp:
-                    default:
-                        ;
+                int i = 0;
+                int d = decisionLevel();
+
+                bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
+                int skipped_vars_due_to_logic = 0;
+
+                if (config.sat_picky()) {
+                    int k = 0, j = 0;
+                    while (k < order_heap.size() && j < pickyWidth) {
+                        if (value(order_heap[k]) == l_Undef) {
+                            j++;
+                            k++;
+                        } else {
+                            order_heap.remove(order_heap[k]);
+                        }
+                    }
+                    if (order_heap.size() == 0) { break; }
+                    pickyWidth = std::min(order_heap.size(), pickyWidth);
                 }
-                // Assumptions done and the solver is in consistent state
-                // New variable decision:
-                decisions++;
-                next = pickBranchLit();
-                // Complete Call
-                if ( next == lit_Undef ) {
-                    TPropRes res = checkTheory(true, conflictC);
-
-                    if ( res == TPropRes::Propagate ) {
+                int idx = 0;
+                for (Var v(idx % nVars()); !score->isAlreadyChecked(v);
+                     v = config.sat_picky() ? order_heap[(idx + (++i)) % pickyWidth] : Var((idx + (++i)) % nVars())) {
+                    if (!decision[v]) {
+                        score->setChecked(v);
+                        // not a decision var
                         continue;
                     }
-                    if ( res == TPropRes::Unsat )
-                    {
-                        return zeroLevelConflictHandler();
+                    if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
+                        respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+                    if (respect_logic_partitioning_hints && !okToPartition(v)) {
+                        skipped_vars_due_to_logic++;
+                        std::cout << "Skipping " << v << " since logic says it's not good\n";
+                        continue; // Skip the vars that the logic considers bad to split on
                     }
-                    assert( res == TPropRes::Decide );
+                    // checking the variable score
+                    Lit best = score->getBest();
+                    if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
+                        score->setChecked(v);
+                        // It is possible that all variables are assigned here.
+                        // In this case it seems that we have a satisfying assignment.
+                        // This is in fact a debug check
+                        if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                            // checking if all vars are set
+                            if (checkTheory(true) != TPropRes::Decide)
+                                break; // Problem is trivially unsat
+                            assert(checkTheory(true) == TPropRes::Decide);
+            #ifndef NDEBUG
+                            for (CRef cr : clauses) {
+                                Clause & c = ca[cr];
+                                unsigned k;
+                                for (k = 0; k < c.size(); k++) {
+                                    if (value(c[k]) == l_True) { break; }
+                                }
+                                assert(k < c.size());
+                            }
+            #endif
+                            break; // Stands for SAT
+                        }
+                        continue;
+                    }
+                    if (trail.size() == nVars() + skipped_vars_due_to_logic) {
+                        std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
+                        respect_logic_partitioning_hints = false;
+                        continue;
+                    }
+                    int p0 = 0, p1 = 0;
+                    for (int p : {0, 1}) { // for both polarities
+                        assert(decisionLevel() == d);
+                        double ss = score->getSolverScore(this);
+                        newDecisionLevel();
+                        Lit l = mkLit(v, p);
+                        // checking literal propagations
+                        uncheckedEnqueue(l);
+                        lbool res = laPropagateWrapper();
+                        if (res == l_False) {
+                            break;
+                        } else if (res == l_Undef) {
+                            cancelUntil(0);
+                            break;
+                        }
+                        // Else we go on
+                        if (decisionLevel() == d + 1) {
+                            // literal is succesfully propagated
+                            score->updateSolverScore(ss, this);
+                        } else if (decisionLevel() == d) {
+                            // propagation resulted in backtrack
+                            score->updateRound();
+                            break;
+                        } else {
+                            // Backtracking should happen.
+                            return {laresult::la_unsat, lit_Undef};
+                        }
+                        p == 0 ? p0 = ss : p1 = ss;
+                        // Update also the clause deletion heuristic?
+                        cancelUntil(decisionLevel() - 1);
+                    }
+                    if (value(v) == l_Undef) {
+                        // updating var score
+                        score->setLAValue(v, p0, p1);
+                        score->updateLABest(v);
+                    }
+                }
+                Lit best = score->getBest();
+                if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
+                    // all variables are set
+                    newDecisionLevel();
+                    uncheckedEnqueue(best);
+                }
 
-                    // Otherwise we still have to make sure that
-                    // splitting on demand did not add any new variable
+                // lookahead phase is over
+                if (!config.sat_picky()) { idx = (idx + i) % nVars(); }
+                if (best != lit_Undef && !okToPartition(var(best))) { unadvised_splits++; }
+
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
+                lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
+                newDecisionLevel();
+                uncheckedEnqueue(best);
+            } else {
+                if (next == lit_Undef) {
+                    switch (notifyConsistency()) {
+                        case ConsistencyAction::BacktrackToZero:
+                            cancelUntil(0);
+                            break;
+                        case ConsistencyAction::ReturnUndef:
+                            return l_Undef;
+                        case ConsistencyAction::SkipToSearchBegin:
+                            continue;
+                        case ConsistencyAction::NoOp:
+                        default:;
+                    }
+                    // Assumptions done and the solver is in consistent state
+                    // New variable decision:
                     decisions++;
                     next = pickBranchLit();
+                    // Complete Call
+                    if (next == lit_Undef) {
+                        TPropRes res = checkTheory(true, conflictC);
+
+                        if (res == TPropRes::Propagate) { continue; }
+                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                        assert(res == TPropRes::Decide);
+
+                        // Otherwise we still have to make sure that
+                        // splitting on demand did not add any new variable
+                        decisions++;
+                        next = pickBranchLit();
+                    }
+
+                    if (next == lit_Undef)
+                        // Model found:
+                        return l_True;
                 }
 
-                if (next == lit_Undef)
-                    // Model found:
-                    return l_True;
+                assert(value(next) == l_Undef);
+                // Increase decision level and enqueue 'next'
+                assert(value(next) == l_Undef);
+                newDecisionLevel();
+                uncheckedEnqueue(next);
             }
-
-            assert(value(next) == l_Undef);
-            // Increase decision level and enqueue 'next'
-            assert(value(next) == l_Undef);
-            newDecisionLevel();
-            uncheckedEnqueue(next);
         }
     }
     cancelUntil(0);
