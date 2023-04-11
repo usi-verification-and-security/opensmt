@@ -1426,6 +1426,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
+    int i = 0;
     while (okContinue()) {
 
         search_counter++;
@@ -1540,10 +1541,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     break;
                 }
             }
-            if(clauses_num*2 <= clauses.size()) {
+            if(clauses_num * 2 <= clauses.size() && clauses.size() != 0) {
                 clauses_num = clauses.size();
                 auto start = std::chrono::steady_clock::now();
-                int pickyWidth = std::min(nVars(), config.sat_picky_w());
 
                 int i = 0;
                 int d = decisionLevel();
@@ -1551,57 +1551,44 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
                 int skipped_vars_due_to_logic = 0;
 
-                if (config.sat_picky()) {
-                    int k = 0, j = 0;
-                    while (k < order_heap.size() && j < pickyWidth) {
-                        if (value(order_heap[k]) == l_Undef) {
-                            j++;
-                            k++;
-                        } else {
-                            order_heap.remove(order_heap[k]);
-                        }
-                    }
-                    if (order_heap.size() == 0) { break; }
-                    pickyWidth = std::min(order_heap.size(), pickyWidth);
-                }
-                int idx = 0;
-                for (Var v(idx % nVars()); !score->isAlreadyChecked(v);
-                     v = config.sat_picky() ? order_heap[(idx + (++i)) % pickyWidth] : Var((idx + (++i)) % nVars())) {
+                int best_id = 0;
+                Lit best;
+                for (; i<nVars();  i++) {
+                    Var v = i;
                     if (!decision[v]) {
-                        score->setChecked(v);
+//                        score->setChecked(v);
                         // not a decision var
                         continue;
                     }
-                    if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
-                        respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
-                    if (respect_logic_partitioning_hints && !okToPartition(v)) {
-                        skipped_vars_due_to_logic++;
-                        std::cout << "Skipping " << v << " since logic says it's not good\n";
-                        continue; // Skip the vars that the logic considers bad to split on
-                    }
-                    // checking the variable score
-                    Lit best = score->getBest();
-                    if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
-                        score->setChecked(v);
+//                    if (v == (idx * nVars()) && skipped_vars_due_to_logic > 0)
+//                        respect_logic_partitioning_hints = false; // Allow branching on these since we looped back.
+//                    if (respect_logic_partitioning_hints && !okToPartition(v)) {
+//                        skipped_vars_due_to_logic++;
+//                        std::cout << "Skipping " << v << " since logic says it's not good\n";
+//                        continue; // Skip the vars that the logic considers bad to split on
+//                    }
+//                     checking the variable score
+//                    Lit best = score->getBest();
+                    if (value(v) != l_Undef) {
+//                        score->setChecked(v);
                         // It is possible that all variables are assigned here.
                         // In this case it seems that we have a satisfying assignment.
                         // This is in fact a debug check
-                        if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                        if (static_cast<unsigned int>(trail.size()) == nVars()) {
                             // checking if all vars are set
                             if (checkTheory(true) != TPropRes::Decide)
-                                break; // Problem is trivially unsat
+                                return l_False; // Problem is trivially unsat
                             assert(checkTheory(true) == TPropRes::Decide);
-            #ifndef NDEBUG
-                            for (CRef cr : clauses) {
-                                Clause & c = ca[cr];
-                                unsigned k;
-                                for (k = 0; k < c.size(); k++) {
-                                    if (value(c[k]) == l_True) { break; }
-                                }
-                                assert(k < c.size());
-                            }
-            #endif
-                            break; // Stands for SAT
+
+//                            Lit p = mkLit(v, value(v) == l_True ? true : false);
+//                            analyzeFinal(~p, conflict);
+//                            int max = 0;
+//                            for (Lit q : conflict) {
+//                                if (!sign(q)) { max = assumptions_order[var(q)] > max ? assumptions_order[var(q)] : max; }
+//                            }
+//                            conflict_frame = max + 1;
+//                            return zeroLevelConflictHandler(); //Stands for SAT
+                            break ;
                         }
                         continue;
                     }
@@ -1613,29 +1600,30 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     int p0 = 0, p1 = 0;
                     for (int p : {0, 1}) { // for both polarities
                         assert(decisionLevel() == d);
-                        double ss = score->getSolverScore(this);
+                        double ss = trail.size();
                         newDecisionLevel();
                         Lit l = mkLit(v, p);
                         // checking literal propagations
                         uncheckedEnqueue(l);
-                        lbool res = laPropagateWrapper();
-                        if (res == l_False) {
+                        CRef res = propagate();
+                        if (res == CRef_Fake) {
                             break;
-                        } else if (res == l_Undef) {
+                        } else if (res != CRef_Undef) {
                             cancelUntil(0);
                             break;
                         }
                         // Else we go on
                         if (decisionLevel() == d + 1) {
                             // literal is succesfully propagated
-                            score->updateSolverScore(ss, this);
+                            ss = trail.size() - ss;
                         } else if (decisionLevel() == d) {
                             // propagation resulted in backtrack
-                            score->updateRound();
+//                            score->updateRound();
                             break;
                         } else {
                             // Backtracking should happen.
-                            return {laresult::la_unsat, lit_Undef};
+                            break;
+//                            return {laresult::la_unsat, lit_Undef};
                         }
                         p == 0 ? p0 = ss : p1 = ss;
                         // Update also the clause deletion heuristic?
@@ -1643,11 +1631,16 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
                     if (value(v) == l_Undef) {
                         // updating var score
-                        score->setLAValue(v, p0, p1);
-                        score->updateLABest(v);
+                        if((p0+p1)/2 > best_id){
+                            best_id = (p0+p1)/2;
+                            best = mkLit(v, true);
+                        }
+//                        score->setLAValue(v, p0, p1);
+//                        score->updateLABest(v);
                     }
                 }
-                Lit best = score->getBest();
+                i = 0;
+//                Lit best = score->getBest();
                 if (static_cast<unsigned int>(trail.size()) == dec_vars && best == lit_Undef) {
                     // all variables are set
                     newDecisionLevel();
@@ -1655,14 +1648,13 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 }
 
                 // lookahead phase is over
-                if (!config.sat_picky()) { idx = (idx + i) % nVars(); }
-                if (best != lit_Undef && !okToPartition(var(best))) { unadvised_splits++; }
+                if (best != lit_Undef) { unadvised_splits++; }
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-                newDecisionLevel();
-                uncheckedEnqueue(best);
+//                newDecisionLevel();
+//                uncheckedEnqueue(best);
             } else {
                 if (next == lit_Undef) {
                     switch (notifyConsistency()) {
