@@ -397,7 +397,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
 
         vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
         return {laresult::la_ok, next};
-//    }
+    }
 }
 
 void LookaheadSMTSolver::cancelUntil(int level) {
