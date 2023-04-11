@@ -50,6 +50,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "OsmtInternalException.h"
 #include "Sort.h"
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
