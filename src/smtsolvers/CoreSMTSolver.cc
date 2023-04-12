@@ -1542,7 +1542,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     break;
                 }
             }
-            if(clauses_num * 2 <= clauses.size() && clauses.size() != 0) {
+            if(lookahead_time * 10 <= vsids_time && clauses.size() != 0) {
                 clauses_num = clauses.size();
                 auto start = std::chrono::steady_clock::now();
 
@@ -1657,6 +1657,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 //                newDecisionLevel();
 //                uncheckedEnqueue(best);
             } else {
+                auto start = std::chrono::steady_clock::now();
                 if (next == lit_Undef) {
                     switch (notifyConsistency()) {
                         case ConsistencyAction::BacktrackToZero:
@@ -1697,6 +1698,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 assert(value(next) == l_Undef);
                 newDecisionLevel();
                 uncheckedEnqueue(next);
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
+                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
             }
         }
     }
