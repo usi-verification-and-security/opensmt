@@ -1558,6 +1558,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
 //            if(lookahead_time * 10 >= vsids_time && clauses.size() != 0) {
             clauses_num = clauses.size();
+            decisions++;
 //            auto start = std::chrono::steady_clock::now();
 
             int pickyWidth = std::min(nVars(), config.sat_picky_w());
@@ -1568,7 +1569,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             int skipped_vars_due_to_logic = 0;
             bool conflict = false;
             int best_id = 0;
-            Lit best;
+            Lit best = lit_Undef;
             int props = assumptions.size();
 
             if (config.sat_picky()) {
@@ -1582,30 +1583,28 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
                 }
             }
-            for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[(j + (++i)) % pickyWidth] : Var((++j) % nVars()))
-                    {
+
+            for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[(j + (++i)) % pickyWidth] : Var((++j) % nVars())) {
                 if(conflict){
                     break ;
                 }
-                if (!decision[v]) {
-                    continue;
+                if(!decision[v]){
+                    continue ;
                 }
                 if (value(v) != l_Undef) {
-                    if (static_cast<unsigned int>(trail.size()) == nVars()) {
+                    if (static_cast<unsigned int>(trail.size()) == dec_vars) {
                         // checking if all vars are set
-                        if (checkTheory(true) != TPropRes::Decide)
-                            return l_False; // Problem is trivially unsat
-                        assert(checkTheory(true) == TPropRes::Decide);
-                        return l_True;
-//                        break ;
+                        TPropRes res = checkTheory(true, conflictC);
+                        if (res == TPropRes::Propagate) { continue; }
+                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                        assert(res == TPropRes::Decide);
+                        if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                            return l_True;
+                        }
                     }
                     continue;
                 }
-                if (trail.size() == nVars() + skipped_vars_due_to_logic) {
-                    std::cout << "; " << skipped_vars_due_to_logic << " vars were skipped\n";
-                    respect_logic_partitioning_hints = false;
-                    continue;
-                }
+
                 for (int p : {0, 1}) { // for both polarities
 
                     assert(decisionLevel() == d);
@@ -1683,12 +1682,15 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     if (decisionLevel() == d + 1) {
                         // literal is succesfully propagated
                         ss = trail.size() - ss;
-                    } else if (decisionLevel() == d) {
-                        // propagation resulted in backtrack
-                        continue ;
-                    } else {
+                    }
+//                    else if (decisionLevel() == d) {
+//                        // propagation resulted in backtrack
+//                        assert(false);
+//                        continue ;
+//                    }
+                    else {
                         // Backtracking should happen.
-                        break ;
+                        assert(false);
                     }
                     if(ss > best_id){
                         best_id = ss;
@@ -1701,25 +1703,19 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             if(conflict){
                 continue ;
             }
-//            static_cast<unsigned int>(trail.size()) == dec_vars &&
-            if (value(best) == l_Undef) {
+            if( best == lit_Undef ){
+                // checking if all vars are set
                 TPropRes res = checkTheory(true, conflictC);
                 if (res == TPropRes::Propagate) { continue; }
                 if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                 assert(res == TPropRes::Decide);
-
-                // Otherwise we still have to make sure that
-                // splitting on demand did not add any new variable
-                decisions++;
-                    //                        next = pickBranchLit();
-                    //                    }
-                // all variables are set
-                newDecisionLevel();
-                uncheckedEnqueue(best);
+                if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                    return l_True;
+                }
             }
-
-            // lookahead phase is over
-            if (best != lit_Undef) { unadvised_splits++; }
+            assert(value(best) == l_Undef);
+            newDecisionLevel();
+            uncheckedEnqueue(best);
 
 //            auto end = std::chrono::steady_clock::now();
 //            auto diff = end - start;
@@ -1743,6 +1739,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 //                    // Assumptions done and the solver is in consistent state
 //                    // New variable decision:
 //                    decisions++;
+
+
 //                    next = pickBranchLit();
 //                    // Complete Call
 //                    if (next == lit_Undef) {
