@@ -1543,6 +1543,12 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 }
             }
 
+            if (next != lit_Undef){
+                newDecisionLevel();
+                uncheckedEnqueue(next);
+                continue ;
+            }
+
 
             switch (notifyConsistency()) {
                 case ConsistencyAction::BacktrackToZero:
@@ -1561,7 +1567,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             decisions++;
 //            auto start = std::chrono::steady_clock::now();
 
-            int pickyWidth = std::min(nVars(), config.sat_picky_w());
+            int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
             int j = 0;
             int d = decisionLevel();
 
@@ -1582,9 +1588,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         order_heap.remove(order_heap[k]);
                     }
                 }
+                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
             }
 
-            for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[(j + (++i)) % pickyWidth] : Var((++j) % nVars())) {
+            for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j) % nVars())) {
                 if(conflict){
                     break ;
                 }
@@ -1592,13 +1599,14 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     continue ;
                 }
                 if (value(v) != l_Undef) {
-                    if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                    if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
                         // checking if all vars are set
                         TPropRes res = checkTheory(true, conflictC);
+                        d = decisionLevel();
                         if (res == TPropRes::Propagate) { continue; }
                         if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                         assert(res == TPropRes::Decide);
-                        if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
                             return l_True;
                         }
                     }
@@ -1675,19 +1683,12 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             learntSizeAdjust();
                             conflict = true;
                             break ;
-                            ;
-
                     }
                     // Else we go on
                     if (decisionLevel() == d + 1) {
                         // literal is succesfully propagated
                         ss = trail.size() - ss;
                     }
-//                    else if (decisionLevel() == d) {
-//                        // propagation resulted in backtrack
-//                        assert(false);
-//                        continue ;
-//                    }
                     else {
                         // Backtracking should happen.
                         assert(false);
@@ -1709,9 +1710,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 if (res == TPropRes::Propagate) { continue; }
                 if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                 assert(res == TPropRes::Decide);
-                if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+                if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
                     return l_True;
                 }
+                continue;
             }
             assert(value(best) == l_Undef);
             newDecisionLevel();
