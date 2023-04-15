@@ -1562,216 +1562,205 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-//            if(lookahead_time * 10 >= vsids_time && clauses.size() != 0) {
-            clauses_num = clauses.size();
-            decisions++;
-//            auto start = std::chrono::steady_clock::now();
+            if(lookahead_time * 10 >= vsids_time && clauses.size() != 0) {
+                clauses_num = clauses.size();
+                decisions++;
+                auto start = std::chrono::steady_clock::now();
 
-            int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-            int j = 0;
-            int d = decisionLevel();
+                int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                int j = 0;
+                int d = decisionLevel();
 
-            bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
-            int skipped_vars_due_to_logic = 0;
-            bool conflict = false;
-            int best_id = 0;
-            Lit best = lit_Undef;
-            int props = assumptions.size();
+                bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
+                int skipped_vars_due_to_logic = 0;
+                bool conflict = false;
+                int best_id = 0;
+                Lit best = lit_Undef;
+                int props = assumptions.size();
 
-            if (config.sat_picky()) {
-                int k = 0, l = 0;
-                while (k < order_heap.size() && l < pickyWidth) {
-                    if (value(order_heap[k]) == l_Undef) {
-                        l++;
-                        k++;
-                    } else {
-                        order_heap.remove(order_heap[k]);
+                if (config.sat_picky()) {
+                    int k = 0, l = 0;
+                    while (k < order_heap.size() && l < pickyWidth) {
+                        if (value(order_heap[k]) == l_Undef) {
+                            l++;
+                            k++;
+                        } else {
+                            order_heap.remove(order_heap[k]);
+                        }
+                    }
+                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                }
+
+                for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j) % nVars())) {
+                    if(conflict){
+                        break ;
+                    }
+                    if(!decision[v]){
+                        continue ;
+                    }
+                    if (value(v) != l_Undef) {
+                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                            // checking if all vars are set
+                            TPropRes res = checkTheory(true, conflictC);
+                            d = decisionLevel();
+                            if (res == TPropRes::Propagate) { continue; }
+                            if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                            assert(res == TPropRes::Decide);
+                            if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                                return l_True;
+                            }
+                        }
+                        continue;
+                    }
+
+                    for (int p : {0, 1}) { // for both polarities
+
+                        assert(decisionLevel() == d);
+                        double ss = trail.size();
+                        newDecisionLevel();
+                        Lit l = mkLit(v, p);
+                        // checking literal propagations
+                        uncheckedEnqueue(l);
+                        CRef res = propagate();
+                        if (res == CRef_Fake) {
+                            break;
+                        } else if (res != CRef_Undef) {
+
+
+                                if (conflicts > conflictsUntilFlip) {
+                                    flipState = not flipState;
+                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
+                                }
+                                // CONFLICT
+                                if (verbosity and conflicts % 1000 == 999) {
+                                    uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
+                                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
+                                              << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
+                                              << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
+                                              << " units: " << std::setw(5) << units
+                                              << std::endl;
+                                }
+
+                                conflicts++;
+                                conflictC++;
+                                if (decisionLevel() == 0) {
+                                    return zeroLevelConflictHandler();
+                                }
+                                learnt_clause.clear();
+                                analyze(res, learnt_clause, backtrack_level);
+
+                                cancelUntil(backtrack_level);
+
+                                assert(value(learnt_clause[0]) == l_Undef);
+
+                                if (learnt_clause.size() == 1) {
+                                    CRef reason = CRef_Undef;
+                                    if (logsProofForInterpolation()) {
+                                        CRef cr = ca.alloc(learnt_clause);
+                                        proof->endChain(cr);
+                                        reason = cr;
+                                    }
+                                    uncheckedEnqueue(learnt_clause[0], reason);
+                                } else {
+                                    // ADDED FOR NEW MINIMIZATION
+                                    learnts_size += learnt_clause.size( );
+                                    all_learnts ++;
+
+                                    CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
+
+                                    if (logsProofForInterpolation()) {
+                                        proof->endChain(cr);
+                                    }
+                                    learnts.push(cr);
+                                    attachClause(cr);
+                                    claBumpActivity(ca[cr]);
+                                    uncheckedEnqueue(learnt_clause[0], cr);
+                                }
+
+                                varDecayActivity();
+                                claDecayActivity();
+
+                                learntSizeAdjust();
+                                conflict = true;
+                                break ;
+                        }
+                        // Else we go on
+                        if (decisionLevel() == d + 1) {
+                            // literal is succesfully propagated
+                            ss = trail.size() - ss;
+                        }
+                        else {
+                            // Backtracking should happen.
+                            assert(false);
+                        }
+                        if(ss > best_id){
+                            best_id = ss;
+                            best = mkLit(v, p);
+                        }
+                        // Update also the clause deletion heuristic?
+                        cancelUntil(decisionLevel() - 1);
                     }
                 }
-                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-            }
-
-            for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j) % nVars())) {
                 if(conflict){
-                    break ;
-                }
-                if(!decision[v]){
                     continue ;
                 }
-                if (value(v) != l_Undef) {
+                if( best == lit_Undef ){
+                    // checking if all vars are set
+                    TPropRes res = checkTheory(true, conflictC);
+                    if (res == TPropRes::Propagate) { continue; }
+                    if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                    assert(res == TPropRes::Decide);
                     if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
-                        // checking if all vars are set
-                        TPropRes res = checkTheory(true, conflictC);
-                        d = decisionLevel();
-                        if (res == TPropRes::Propagate) { continue; }
-                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                        assert(res == TPropRes::Decide);
-                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
-                            return l_True;
-                        }
+                        return l_True;
                     }
                     continue;
                 }
+                assert(value(best) == l_Undef);
+                newDecisionLevel();
+                uncheckedEnqueue(best);
 
-                for (int p : {0, 1}) { // for both polarities
-
-                    assert(decisionLevel() == d);
-                    double ss = trail.size();
-                    newDecisionLevel();
-                    Lit l = mkLit(v, p);
-                    // checking literal propagations
-                    uncheckedEnqueue(l);
-                    CRef res = propagate();
-                    if (res == CRef_Fake) {
-                        break;
-                    } else if (res != CRef_Undef) {
-
-
-                            if (conflicts > conflictsUntilFlip) {
-                                flipState = not flipState;
-                                conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
-                            }
-                            // CONFLICT
-                            if (verbosity and conflicts % 1000 == 999) {
-                                uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
-                                std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
-                                          << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
-                                          << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
-                                          << " units: " << std::setw(5) << units
-                                          << std::endl;
-                            }
-
-                            conflicts++;
-                            conflictC++;
-                            if (decisionLevel() == 0) {
-                                return zeroLevelConflictHandler();
-                            }
-                            learnt_clause.clear();
-                            analyze(res, learnt_clause, backtrack_level);
-
-                            cancelUntil(backtrack_level);
-
-                            assert(value(learnt_clause[0]) == l_Undef);
-
-                            if (learnt_clause.size() == 1) {
-                                CRef reason = CRef_Undef;
-                                if (logsProofForInterpolation()) {
-                                    CRef cr = ca.alloc(learnt_clause);
-                                    proof->endChain(cr);
-                                    reason = cr;
-                                }
-                                uncheckedEnqueue(learnt_clause[0], reason);
-                            } else {
-                                // ADDED FOR NEW MINIMIZATION
-                                learnts_size += learnt_clause.size( );
-                                all_learnts ++;
-
-                                CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
-
-                                if (logsProofForInterpolation()) {
-                                    proof->endChain(cr);
-                                }
-                                learnts.push(cr);
-                                attachClause(cr);
-                                claBumpActivity(ca[cr]);
-                                uncheckedEnqueue(learnt_clause[0], cr);
-                            }
-
-                            varDecayActivity();
-                            claDecayActivity();
-
-                            learntSizeAdjust();
-                            conflict = true;
-                            break ;
-                    }
-                    // Else we go on
-                    if (decisionLevel() == d + 1) {
-                        // literal is succesfully propagated
-                        ss = trail.size() - ss;
-                    }
-                    else {
-                        // Backtracking should happen.
-                        assert(false);
-                    }
-                    if(ss > best_id){
-                        best_id = ss;
-                        best = mkLit(v, p);
-                    }
-                    // Update also the clause deletion heuristic?
-                    cancelUntil(decisionLevel() - 1);
-                }
-            }
-            if(conflict){
-                continue ;
-            }
-            if( best == lit_Undef ){
-                // checking if all vars are set
-                TPropRes res = checkTheory(true, conflictC);
-                if (res == TPropRes::Propagate) { continue; }
-                if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                assert(res == TPropRes::Decide);
-                if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
-                    return l_True;
-                }
-                continue;
-            }
-            assert(value(best) == l_Undef);
-            newDecisionLevel();
-            uncheckedEnqueue(best);
-
-//            auto end = std::chrono::steady_clock::now();
-//            auto diff = end - start;
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
 //            lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //                newDecisionLevel();
 //                uncheckedEnqueue(best);
-//            } else {
-//                auto start = std::chrono::steady_clock::now();
-//                if (next == lit_Undef) {
-//                    switch (notifyConsistency()) {
-//                        case ConsistencyAction::BacktrackToZero:
-//                            cancelUntil(0);
-//                            break;
-//                        case ConsistencyAction::ReturnUndef:
-//                            return l_Undef;
-//                        case ConsistencyAction::SkipToSearchBegin:
-//                            continue;
-//                        case ConsistencyAction::NoOp:
-//                        default:;
-//                    }
-//                    // Assumptions done and the solver is in consistent state
-//                    // New variable decision:
-//                    decisions++;
+            } else {
+                auto start = std::chrono::steady_clock::now();
+                if (next == lit_Undef) {
+                    // Assumptions done and the solver is in consistent state
+                    // New variable decision:
+                    decisions++;
 
 
-//                    next = pickBranchLit();
-//                    // Complete Call
-//                    if (next == lit_Undef) {
-//                        TPropRes res = checkTheory(true, conflictC);
-//
-//                        if (res == TPropRes::Propagate) { continue; }
-//                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-//                        assert(res == TPropRes::Decide);
-//
-//                        // Otherwise we still have to make sure that
-//                        // splitting on demand did not add any new variable
-//                        decisions++;
-//                        next = pickBranchLit();
-//                    }
-//
-//                    if (next == lit_Undef)
-//                        // Model found:
-//                        return l_True;
-//                }
-//
-//                assert(value(next) == l_Undef);
-//                // Increase decision level and enqueue 'next'
-//                assert(value(next) == l_Undef);
-//                newDecisionLevel();
-//                uncheckedEnqueue(next);
-//                auto end = std::chrono::steady_clock::now();
-//                auto diff = end - start;
-//                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-//            }
+                    next = pickBranchLit();
+                    // Complete Call
+                    if (next == lit_Undef) {
+                        TPropRes res = checkTheory(true, conflictC);
+
+                        if (res == TPropRes::Propagate) { continue; }
+                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                        assert(res == TPropRes::Decide);
+
+                        // Otherwise we still have to make sure that
+                        // splitting on demand did not add any new variable
+                        decisions++;
+                        next = pickBranchLit();
+                    }
+
+                    if (next == lit_Undef)
+                        // Model found:
+                        return l_True;
+                }
+
+                assert(value(next) == l_Undef);
+                // Increase decision level and enqueue 'next'
+                assert(value(next) == l_Undef);
+                newDecisionLevel();
+                uncheckedEnqueue(next);
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
+                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
+            }
         }
     }
     cancelUntil(0);
