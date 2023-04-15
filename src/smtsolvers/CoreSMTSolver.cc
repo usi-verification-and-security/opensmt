@@ -1562,7 +1562,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            if(lookahead_time * 10 >= vsids_time && clauses.size() != 0) {
+            if(lookahead_time * 10 <= vsids_time && clauses.size() != 0) {
                 clauses_num = clauses.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
