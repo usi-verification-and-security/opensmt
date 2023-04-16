@@ -1606,7 +1606,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             if (res == TPropRes::Propagate) { continue; }
                             if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                             assert(res == TPropRes::Decide);
-                            if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                            if (static_cast<unsigned int>(trail.size()) >= nVars() || dec_vars > nVars()) {
                                 return l_True;
                             }
                         }
