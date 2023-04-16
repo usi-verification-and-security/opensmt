@@ -961,6 +961,11 @@ TRes LASolver::cutFromProof() {
         constraints.push_back(DefiningConstraint{term, rhs});
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
+    // MB: Order of constraints affects the shape of the proof. To decrease the chance a proof will not be useful,
+    //     let's sometimes consider different order of constraints
+    if (opensmt::drand(seed) < 0.5) {
+        std::reverse(constraints.begin(), constraints.end());
+    }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
