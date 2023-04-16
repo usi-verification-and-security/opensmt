@@ -961,11 +961,6 @@ TRes LASolver::cutFromProof() {
         constraints.push_back(DefiningConstraint{term, rhs});
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
-    // MB: Order of constraints affects the shape of the proof. To decrease the chance a proof will not be useful,
-    //     let's sometimes consider different order of constraints
-    if (opensmt::drand(seed) < 0.5) {
-        std::reverse(constraints.begin(), constraints.end());
-    }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
@@ -974,13 +969,27 @@ TRes LASolver::cutFromProof() {
         return val.R();
     };
     CutCreator cutCreator(getVarValue);
-    auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
-    auto cut = cutCreator.makeCut(std::move(system), toVarMap);
-    PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
-    if (split == PTRef_Undef) {
-        return TRes::UNKNOWN;
+    // MB: Order of constraints affects the shape of the proof.
+    //     Let's try different orders of constraints
+    {
+        auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
+        auto cut = cutCreator.makeCut(std::move(system), toVarMap);
+        PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
+        if (split == PTRef_Undef) {
+            return TRes::UNKNOWN;
+        }
+        splitondemand.push(split);
     }
-    splitondemand.push(split);
+    { // Reversed order of constraints
+        std::reverse(constraints.begin(), constraints.end());
+        auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
+        auto cut = cutCreator.makeCut(std::move(system), toVarMap);
+        PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
+        assert(splitondemand.size() > 0);
+        if (split != PTRef_Undef and split != splitondemand.last()) {
+            splitondemand.push(split);
+        }
+    }
     setStatus(NEWSPLIT);
     return TRes::SAT;
 }
