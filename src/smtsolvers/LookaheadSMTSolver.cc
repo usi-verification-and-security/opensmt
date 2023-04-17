@@ -344,7 +344,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
 
         auto end = std::chrono::steady_clock::now();
         auto diff = end - start;
-        lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
+//        lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
         return {laresult::la_ok, best};
     } else {
         auto start = std::chrono::steady_clock::now();
