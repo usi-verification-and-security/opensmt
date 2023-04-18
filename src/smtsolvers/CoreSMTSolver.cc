@@ -1702,6 +1702,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
                 }
                 if(conflict){
+                    auto end = std::chrono::steady_clock::now();
+                    auto diff = end - start;
+                    lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
                     continue ;
                 }
                 if( best == lit_Undef ){
