@@ -1563,6 +1563,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
             if(clauses_num * 2 <= clauses.size()) {
+                clauses_num = clauses.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
@@ -1703,7 +1704,6 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 if(conflict){
                     continue ;
                 }
-                clauses_num = clauses.size();
                 if( best == lit_Undef ){
                     // checking if all vars are set
                     TPropRes res = checkTheory(true, conflictC);
