@@ -1428,6 +1428,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     bool thr_backtrack = false;
 #endif
     int i = 0;
+    bool preprocessing = false;
     while (okContinue()) {
 
         search_counter++;
@@ -1562,7 +1563,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            if(clauses_num * 2 <= clauses.size()) {
+            if(!preprocessing) {
                 clauses_num = clauses.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
@@ -1721,6 +1722,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 assert(value(best) == l_Undef);
                 newDecisionLevel();
                 uncheckedEnqueue(best);
+                preprocessing = true;
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
