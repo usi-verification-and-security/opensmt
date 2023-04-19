@@ -66,12 +66,14 @@ namespace osmttokens {
         t_push,
         t_setlogic,
         t_getinterpolants,
+        t_countmodels,
         t_theory,
         t_writestate,
         t_readstate,
         t_simplify,
         t_let,
-        t_echo
+        t_echo,
+        t_idx,
     };
     inline const std::unordered_set<std::string> tokenNames = {
         "none",
@@ -84,6 +86,7 @@ namespace osmttokens {
         "forall",
         "assert",
         "check-sat",
+        "count-models",
         "declare-sort",
         "define-sort",
         "declare-fun",
@@ -143,12 +146,14 @@ namespace osmttokens {
         {t_push, "push"},
         {t_setlogic, "set-logic"},
         {t_getinterpolants, "get-interpolants"},
+        {t_countmodels, "count-models"},
         {t_theory, "theory"},
         {t_writestate, "write-state"},
         {t_readstate, "read-state"},
         {t_simplify, "simplify"},
         {t_let, "let"},
-        {t_echo, "echo"}
+        {t_echo, "echo"},
+        {t_idx, "_"},
     };
 
     struct smt2token {

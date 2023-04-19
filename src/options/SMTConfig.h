@@ -77,6 +77,7 @@ enum ASTType {
     , OPTION_T   , OPTIONL_T
     , INFO_T     , INFOL_T
     , CONST_T    , CONSTL_T
+    , IDX_T      , IDXL_T
 };
 
 class ASTNode {
@@ -304,6 +305,7 @@ public:
   static const char* o_sat_split_randomize_lookahead;
   static const char* o_sat_split_randomize_lookahead_buf;
   static const char* o_produce_models;
+  static const char* o_count_models;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
   static const char* o_do_substitutions;
@@ -312,6 +314,8 @@ public:
   static const char* o_ghost_vars;
   static const char* o_sat_solver_limit;
   static const char* o_global_declarations;
+  static const char* o_print_clauses_only;
+  static const char* o_print_clauses_file;
 
   static const char* o_sat_split_mode;
 private:
@@ -780,6 +784,10 @@ public:
               optionTable[o_sat_split_randomize_lookahead_buf]->getValue().numval :
               1; }
 
+  bool count_models() const {
+      return optionTable.has(o_count_models) ? optionTable[o_count_models]->getValue().numval : false;
+  }
+
   int remove_symmetries() const
     { return optionTable.has(o_sat_remove_symmetries) ?
         optionTable[o_sat_remove_symmetries]->getValue().numval : 0; }
@@ -810,6 +818,21 @@ public:
           return optionTable[o_ghost_vars]->getValue().numval != 0;
       }
       return false;
+  }
+
+  bool print_clauses_only() const {
+      if (optionTable.has(o_print_clauses_only)) {
+          return optionTable[o_print_clauses_only]->getValue().numval != 0;
+      }
+      return false;
+  }
+
+  std::string get_counting_output_file() const {
+      if (optionTable.has(o_print_clauses_file)) {
+          return optionTable[o_print_clauses_file]->getValue().strval;
+      } else {
+          return "/dev/stdout";
+      }
   }
 
   int do_substitutions() const

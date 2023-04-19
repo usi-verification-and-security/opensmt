@@ -54,7 +54,7 @@ public:
         return dynamic_cast<CUFLogic&>(*logic);
     }
     MainSolver& getMainSolver() { return *mainSolver; }
-    SimpSMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
+    SMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
 private:
     std::unique_ptr<SMTConfig> config;
     std::unique_ptr<Logic> logic;

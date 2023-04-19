@@ -66,7 +66,7 @@ class Bvector {
     BVId                                id;
     PTRef                               actVar;
     // This has to be the last
-    NameAsgn                            args[0]; // Either the terms or the relocation reference
+    PTRef                               args[0]; // Either the terms or the relocation reference
 
     friend class BvectorAllocator;
     friend class BVStore;
@@ -74,7 +74,7 @@ class Bvector {
 
   public:
 
-    Bvector(const vec<NameAsgn>& ps, PTRef actVar) : actVar(actVar) {
+    Bvector(const vec<PTRef>& ps, PTRef actVar) : actVar(actVar) {
         header.is_signed = 0;
         header.has_extra = 0;
         header.reloced   = 0;
@@ -82,6 +82,9 @@ class Bvector {
 
         for (int i = 0; i < ps.size(); i++) args[i] = ps[i];
     }
+
+    Bvector(vec<PTRef> const & ps) : Bvector(ps, PTRef_Undef) {}
+
     Bvector() : actVar(PTRef_Undef) {
         header.is_signed = 0;
         header.has_extra = 0;
@@ -94,20 +97,25 @@ class Bvector {
     int      size        ()          const   { return header.size; }
     PTRef    getActVar   ()          const   { return actVar; }
 
-    const PTRef&    operator [] (int i) const   { assert(i < size()); return args[i].asgn; }
-    PTRef&          operator [] (int i)         { assert(i < size()); return args[i].asgn; }
+    const PTRef&    operator [] (int i) const   { assert(i < size()); return args[i]; }
+    PTRef&          operator [] (int i)         { assert(i < size()); return args[i]; }
     const PTRef&    lsb         ()      const   { return operator[](0); }
     const PTRef&    msb         ()      const   { return operator[](size()-1); }
 
-    const PTRef&    namebit(int i) const        { assert(i < size()); return args[i].name; }
-    PTRef&          namebit(int i)              { assert(i < size()); return args[i].name; }
-
-    const NameAsgn& nameasgn(int i) const        { assert(i < size()); return args[i]; }
-    NameAsgn&       nameasgn(int i)              { assert(i < size()); return args[i]; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to the first child of the term
+     */
+    const PTRef* begin() const { return args; }
+    /**
+     * @note The function is unsafe: if used in a loop, the loop should in *absolutely no case* build new terms in the same Pterm allocator
+     * @return A pointer to right past the last child of the term
+     */
+    const PTRef* end() const { return args + size(); }
 
     bool     reloced     ()      const   { return header.reloced; }
-    BVRef    relocation  ()      const   { return { args[0].name.x }; }
-    void     relocate    (BVRef t)       { header.reloced = 1; args[0] = { {t.x}, {0} }; }
+    BVRef    relocation  ()      const   { return { args[0].x }; }
+    void     relocate    (BVRef t)       { header.reloced = 1; args[0] = {t.x}; }
     bool     is_signed   ()      const   { return header.is_signed; }
     void     set_signed  (bool m)    { header.is_signed = m; }
 
@@ -135,19 +143,12 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         to.n_terms = n_terms;
         RegionAllocator<uint32_t>::moveTo(to); }
 
-    BVRef alloc(const vec<PTRef> & names, const vec<PTRef> & asgn, PTRef act_var)
-    {
+    BVRef alloc(vec<PTRef> const & asgn, PTRef act_var) {
         assert(sizeof(PTRef) == sizeof(uint32_t));
-        assert(names.size() == asgn.size());
-        uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(2*names.size()));
+        uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(asgn.size()));
         BVRef tid = {v};
-        vec<NameAsgn> args;
-        args.growTo(names.size());
-        for (int i = 0; i < args.size(); i++)
-            args[i] = {names[i], asgn[i]};
-        new (lea(tid)) Bvector(args, act_var);
+        new (lea(tid)) Bvector(asgn, act_var);
         operator[](tid).setId(n_terms++);
-
         return tid;
     }
 
@@ -158,26 +159,12 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
     const Bvector& operator[](BVRef r) const   { return (Bvector&)RegionAllocator<uint32_t>::operator[](r.x); }
     Bvector*       lea       (BVRef r)         { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
     const Bvector* lea       (BVRef r) const   { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
-    BVRef        ael       (const Bvector* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); BVRef rf; rf.x = r; return rf; }
+    BVRef          ael       (const Bvector* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); BVRef rf{r}; return rf; }
 
-    void free(BVRef tid)
-    {
+    void free(BVRef tid) {
         Bvector& t = operator[](tid);
         RegionAllocator<uint32_t>::free(ptermWord32Size(t.size()));
     }
-
-//    void reloc(BVRef& tr, BvectorAllocator& to)
-//    {
-//        Bvector& t = operator[](tr);
-//
-//        if (t.reloced()) { tr = t.relocation(); return; }
-//
-//        tr = to.alloc(t, false);
-//        t.relocate(tr);
-//
-//        // Copy extra data-fields:
-//        to[tr].set_signed(t.is_signed());
-//    }
     friend class BVStore;
 };
 #endif

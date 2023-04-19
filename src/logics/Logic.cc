@@ -330,6 +330,17 @@ SSymRef Logic::declareSortSymbol(SortSymbol symbol) {
     return sort_store.newSortSymbol(std::move(symbol));
 }
 
+SRef Logic::getIndexedSort(SRef indexedSort, std::string const & idx) {
+    SortSymbol s(idx, 0, SortSymbol::INTERNAL);
+    SSymRef idxSortSym;
+    if (not peekSortSymbol(s, idxSortSym)) {
+        idxSortSym = sort_store.newSortSymbol(SortSymbol(idx, 0, SortSymbol::INTERNAL));
+    }
+    SRef idxSortIdx = sort_store.getOrCreateSort(idxSortSym, {}).first;
+    return getSort(sym_IndexedSort, {indexedSort, idxSortIdx});
+}
+
+
 SRef Logic::getSort(SSymRef symbolRef, vec<SRef> && args) {
     auto [sr,created] = sort_store.getOrCreateSort(symbolRef, std::move(args));
     if (created) {
@@ -569,7 +580,9 @@ PTRef Logic::mkImpl(vec<PTRef> && args) {
 }
 
 PTRef Logic::mkBinaryEq(PTRef lhs, PTRef rhs) {
-    assert(getSortRef(lhs) == getSortRef(rhs));
+    if (getSortRef(lhs) != getSortRef(rhs)) {
+        throw OsmtApiException("Sort mismatch in equality: " + printSort(getSortRef(lhs)) + " != " + printSort(getSortRef(rhs)));
+    }
     if (lhs == rhs) return getTerm_true();
     if (isConstant(lhs) && isConstant(rhs))
         return getTerm_false();

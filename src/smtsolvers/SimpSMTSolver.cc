@@ -119,68 +119,6 @@ Var SimpSMTSolver::newVar(bool dvar)
     return v;
 }
 
-
-
-lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
-{
-    vec<Var> extra_frozen;
-    lbool    result = l_True;
-
-    if (config.sat_preprocess_theory != 0) {
-        throw OsmtApiException("preprocess theory has been temporairly disabled in this version");
-    }
-
-    // Added Code
-    //=================================================================================================
-
-    do_simp &= use_simplification;
-
-    if (do_simp)
-    {
-        // Assumptions must be temporarily frozen to run variable elimination:
-        for (int i = 0; i < assumptions.size(); i++)
-        {
-            Var v = var(assumptions[i]);
-
-            // If an assumption has been eliminated, remember it.
-            assert(!isEliminated(v));
-
-            if (!frozen[v])
-            {
-                // Freeze and store.
-                setFrozen(v, true);
-                extra_frozen.push(v);
-            }
-        }
-
-        result = lbool(eliminate(turn_off_simp));
-    }
-
-#ifdef STATISTICS
-    CoreSMTSolver::preproc_time = cpuTime( );
-#endif
-
-    if (result == l_True)
-        result = solve_();
-
-    if (result == l_True)
-    {
-        extendModel();
-        // Previous line
-        // #ifndef NDEBUG
-        verifyModel();
-    }
-
-    if (do_simp)
-        // Unfreeze the assumptions that were frozen:
-        for (int i = 0; i < extra_frozen.size(); i++)
-            setFrozen(extra_frozen[i], false);
-
-    return result;
-}
-
-
-
 //=================================================================================================
 // Added code
 

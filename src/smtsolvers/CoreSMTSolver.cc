@@ -70,11 +70,10 @@ namespace opensmt {
 // Constructor/Destructor:
 
 CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
-    : config           (c)
-    , theory_handler   (t)
+    : SMTSolver(t)
+    , config           (c)
     , verbosity        (c.verbosity())
     , init             (false)
-    , stop             (false)
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
     , clause_decay     (c.sat_clause_decay())
@@ -1246,103 +1245,6 @@ bool CoreSMTSolver::simplify()
     simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
 
     return true;
-}
-
-void
-CoreSMTSolver::pushBacktrackPoint()
-{
-    assert( config.isIncremental() );
-    //
-    // Save undo stack size
-    //
-    undo_stack_size.push(undo_stack.size( ));
-    undo_trail_size.push(trail.size( ));
-}
-
-void CoreSMTSolver::popBacktrackPoint()
-{
-    assert( config.isIncremental() );
-    //
-    // Force restart, but retain assumptions
-    //
-    cancelUntil(0);
-    //
-    // Shrink back trail
-    //
-    int new_trail_size = undo_trail_size.last();
-    undo_trail_size.pop();
-    for ( int i = trail.size( ) - 1 ; i >= new_trail_size ; i -- )
-    {
-        Var     x  = var(trail[i]);
-        assigns[x] = l_Undef;
-        vardata[x].reason = CRef_Undef;
-        insertVarOrder(x);
-    }
-    trail.shrink(trail.size( ) - new_trail_size);
-    assert( trail_lim.size( ) == 0 );
-    qhead = trail.size( );
-    //
-    // Undo operations
-    //
-    size_t new_stack_size = undo_stack_size.last();
-    undo_stack_size.pop();
-    while (static_cast<size_t>(undo_stack.size()) > new_stack_size )
-    {
-        const undo_stack_el op = undo_stack.last();
-
-        if (op.getType() == undo_stack_el::NEWVAR)
-        {
-            const Var x = op.getVar();
-
-            // Undoes insertVarOrder( )
-            assert( order_heap.inHeap(x) );
-            order_heap  .remove(x);
-            // Undoes decision_var ... watches
-            decision    .pop();
-            seen        .pop();
-            activity    .pop();
-            vardata     .pop();
-            assigns     .pop();
-            watches.clean(mkLit(x, true));
-            watches.clean(mkLit(x, false));
-            // Remove variable from translation tables
-//      theory_handler->clearVar( x );
-        }
-        else if (op.getType() == undo_stack_el::NEWUNIT) ; // Do nothing
-        else if (op.getType() == undo_stack_el::NEWCLAUSE)
-        {
-            CRef cr = op.getClause();
-            assert( clauses.last() == cr );
-            clauses.pop();
-            removeClause(cr);
-        }
-        else if (op.getType() == undo_stack_el::NEWLEARNT)
-        {
-            CRef cr = op.getClause();
-            detachClause(cr);
-        }
-        else
-        {
-            throw OsmtInternalException("unknown undo operation in CoreSMTSolver" + std::to_string(op.getType()));
-        }
-
-        undo_stack.pop();
-    }
-    //
-    // Clear all learnts
-    //
-    while( learnts.size( ) > 0 )
-    {
-        CRef cr = learnts.last();
-        learnts.pop( );
-        removeClause(cr);
-    }
-    assert( learnts.size( ) == 0 );
-    // Backtrack theory solvers
-    theory_handler.backtrack(trail.size());
-    // Restore OK
-    restoreOK( );
-    assert( isOK( ) );
 }
 
 bool CoreSMTSolver::okContinue() const

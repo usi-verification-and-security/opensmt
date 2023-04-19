@@ -47,7 +47,7 @@ private:
 
 public:
     MainSplitter(std::unique_ptr<Theory> t,std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> th,
-                 std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
+                 std::unique_ptr<SMTSolver> ss, Logic & logic, SMTConfig & config, std::string name)
             : MainSolver(std::move(t), std::move(tm), std::move(th), std::move(ss),logic,config, std::move(name))
     {}
 
@@ -57,7 +57,7 @@ public:
 
     void writeSplits(std::string const &)  const;
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
+    static std::unique_ptr<SMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
 
     inline TermMapper& getTermMapper() const { return *term_mapper;}
 };

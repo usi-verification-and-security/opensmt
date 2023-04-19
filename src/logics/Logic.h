@@ -264,6 +264,7 @@ public:
     bool        peekSortSymbol(SortSymbol const &, SSymRef&);
     SSymRef     declareSortSymbol(SortSymbol symbol);
     SRef        getSort(SSymRef, vec<SRef> && args);
+    virtual SRef getIndexedSort(SRef indexedSort, std::string const & idx);
 
     PTRef       mkBoolVar     (const char* name);
 
@@ -368,7 +369,8 @@ public:
     // args is sorted before lookup, but not simplified otherwise
     PTRef       hasEquality        (vec<PTRef>& args);
 
-    PTRef       resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
+    virtual PTRef resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef = SRef_Undef, SymbolMatcher symbolMatcher = SymbolMatcher::Any);
+
     virtual PTRef insertTerm (SymRef sym, vec<PTRef> && args);
     PTRef insertTerm(SymRef sym, vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return insertTerm(sym, std::move(tmp)); }
 
@@ -395,7 +397,7 @@ public:
     std::string printTerm          (PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
     std::string pp(PTRef tr) const; // A pretty printer
 
-    std::string   printSym          (SymRef sr) const;
+    virtual std::string printSym   (SymRef sr) const;
     virtual void termSort(vec<PTRef>& v) const;// { sort(v, LessThan_PTRef()); }
 
     void  purify           (PTRef r, PTRef& p, lbool& sgn) const;//{p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}

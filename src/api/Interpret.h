@@ -128,6 +128,14 @@ public:
     }
 };
 
+
+class OsmtAstException : public std::runtime_error {
+public:
+    OsmtAstException(const std::string & msg) : std::runtime_error(msg) {}
+    OsmtAstException(const char * msg) : std::runtime_error(msg) {}
+};
+
+
 class Interpret {
   protected:
     SMTConfig &     config;
@@ -173,6 +181,8 @@ class Interpret {
     virtual void                exit();
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
+
+    void                        countModels(ASTNode const & n);
 
     void                        notify_formatted(bool error, const char* s, ...);
     void                        notify_success();
