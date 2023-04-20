@@ -17,8 +17,15 @@ typedef enum
   , qf_idl        // Integer difference logics
   , qf_lra        // Real linear arithmetic
   , qf_lia        // Integer linear arithmetic
+  , qf_ufrdl      // UF + RDL
   , qf_ufidl      // UF + IDL
   , qf_uflra      // UF + LRA
+  , qf_uflia      // UF + LIA
+  , qf_ax         // Arrays with extensionality
+  , qf_alra       // Arrays + LRA
+  , qf_alia       // Arrays + LIA
+  , qf_auflra     // Arrays + UF + LRA
+  , qf_auflia     // Arrays + UF + LIA
   , qf_bool       // Only booleans
   , qf_ct         // Cost 
 } opensmt_logic;

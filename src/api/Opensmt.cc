@@ -25,6 +25,20 @@ opensmt::Logic_t convert(opensmt_logic logic) {
             return opensmt::Logic_t::QF_UFIDL;
         case qf_uflra:
             return opensmt::Logic_t::QF_UFLRA;
+        case qf_ufrdl:
+          return opensmt::Logic_t::QF_UFRDL;
+        case qf_uflia:
+          return opensmt::Logic_t::QF_UFLIA;
+        case qf_ax:
+          return opensmt::Logic_t::QF_AX;
+        case qf_alra:
+          return opensmt::Logic_t::QF_ALRA;
+        case qf_alia:
+          return opensmt::Logic_t::QF_ALIA;
+        case qf_auflra:
+          return opensmt::Logic_t::QF_AUFLRA;
+        case qf_auflia:
+          return opensmt::Logic_t::QF_AUFLIA;
         case qf_ct:
             return opensmt::Logic_t::QF_CT;
         default:
