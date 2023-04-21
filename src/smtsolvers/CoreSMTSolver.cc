@@ -1429,6 +1429,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #endif
     int i = 0;
     bool preprocessing = false;
+
+    clauses_num = clauses.size() * 5 / 8 ;
     while (okContinue()) {
 
         search_counter++;
@@ -1563,7 +1565,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            if(lookahead_time*20 <= vsids_time) {
+
+            if(clauses_num*2 <= clauses.size()) {
                 clauses_num = clauses.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
