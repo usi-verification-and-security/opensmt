@@ -385,8 +385,8 @@ protected:
     lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
     int nof_learnts = 40000;
     int clauses_num;
-    int lookahead_time;
-    int vsids_time;
+    int lookahead_time = 100;
+    int vsids_time = 0;
     double nofLearntsIncrement = 1.1;
     virtual bool okContinue   () const;                                                // Check search termination conditions
     virtual ConsistencyAction notifyConsistency() { return ConsistencyAction::NoOp; }  // Called when the search has reached a consistent point
