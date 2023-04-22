@@ -1430,7 +1430,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     int i = 0;
     bool preprocessing = false;
 
-    clauses_num = clauses.size() * 5 / 8 ;
+    clauses_num = 0;
     while (okContinue()) {
 
         search_counter++;
@@ -1704,6 +1704,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         // Update also the clause deletion heuristic?
                         cancelUntil(decisionLevel() - 1);
                     }
+
                 }
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
@@ -1729,6 +1730,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
+                clauses_num = clauses.size();
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //                newDecisionLevel();
 //                uncheckedEnqueue(best);
