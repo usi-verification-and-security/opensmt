@@ -1566,8 +1566,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if(clauses_num * 3 <= clauses.size()) {
-                clauses_num = clauses.size();
+            if(clauses_num * 3 <= ca.size()) {
+                clauses_num = ca.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
@@ -1730,7 +1730,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
-                clauses_num = clauses.size();
+                clauses_num = ca.size();
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //                newDecisionLevel();
 //                uncheckedEnqueue(best);
