@@ -1401,6 +1401,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     int         backtrack_level;
     int         conflictC = 0;
     vec<Lit>    learnt_clause;
+    int initial_clauses = ca.size();
 
     starts++;
 
@@ -1566,7 +1567,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if(lookahead_time*20 <= vsids_time) {
+            if(clauses_num * 2 <= ca.size() && ca.size() > initial_clauses * 1.2) {
                 clauses_num = ca.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
