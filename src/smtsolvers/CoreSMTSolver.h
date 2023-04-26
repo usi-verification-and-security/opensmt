@@ -385,7 +385,7 @@ protected:
     lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
     int nof_learnts = 40000;
     int clauses_num;
-    int lookahead_time = 100;
+    int lookahead_time = 0;
     int vsids_time = 0;
     double nofLearntsIncrement = 1.1;
     virtual bool okContinue   () const;                                                // Check search termination conditions
