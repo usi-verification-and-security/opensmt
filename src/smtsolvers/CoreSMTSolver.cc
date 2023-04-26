@@ -1567,7 +1567,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if(clauses_num * 2 <= ca.size() && ca.size() > initial_clauses * 1.2) {
+            if(clauses_num * 2 <= ca.size()) {
                 clauses_num = ca.size();
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
