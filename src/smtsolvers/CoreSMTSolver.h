@@ -386,6 +386,8 @@ protected:
     int nof_learnts = 40000;
     int clauses_num;
     int lookahead_time = 0;
+
+    bool preprocessing = false;
     int vsids_time = 0;
     double nofLearntsIncrement = 1.1;
     virtual bool okContinue   () const;                                                // Check search termination conditions

@@ -1567,8 +1567,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if(clauses_num * 4 <= ca.size()) {
-                clauses_num = ca.size();
+            if(!preprocessing) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
@@ -1596,7 +1595,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
                 }
 
-                for (Var v(j % nVars()); j < nVars(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j) % nVars())) {
+                for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j))) {
                     if(conflict){
                         break ;
                     }
@@ -1686,7 +1685,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                 claDecayActivity();
 
                                 learntSizeAdjust();
-                                conflict = true;
+//                                conflict = true;
                                 break ;
                         }
                         // Else we go on
@@ -1707,6 +1706,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 
                 }
+                preprocessing = true;
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
                     auto diff = end - start;
@@ -1727,10 +1727,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 assert(value(best) == l_Undef);
                 newDecisionLevel();
                 uncheckedEnqueue(best);
-                preprocessing = true;
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
+                clauses_num = ca.size();
 //                clauses_num = ca.size();
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //                newDecisionLevel();
