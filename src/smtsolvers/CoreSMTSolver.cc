@@ -1731,7 +1731,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
-                clauses_num = ca.size();
+//                clauses_num = ca.size();
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //                newDecisionLevel();
 //                uncheckedEnqueue(best);
