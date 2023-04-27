@@ -1428,9 +1428,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 #ifdef PEDANTIC_DEBUG
     bool thr_backtrack = false;
 #endif
-    int i = 0;
 
-    clauses_num = 0;
     while (okContinue()) {
 
         search_counter++;
@@ -1565,8 +1563,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-
-            if( clauses_num * 2 < ca.size() ) {
+            if( lookahead_time * 9 < vsids_time ) {
+//            if( clauses_num * 2 < ca.size() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
