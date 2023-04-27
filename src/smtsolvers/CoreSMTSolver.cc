@@ -1566,7 +1566,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if( clauses_num * 1.2 < ca.size() ) {
+            if( clauses_num * 2 < ca.size() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
@@ -1581,20 +1581,18 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 Lit best = lit_Undef;
                 int props = assumptions.size();
 
-                if (config.sat_picky()) {
-                    int k = 0, l = 0;
-                    while (k < order_heap.size() && l < pickyWidth) {
-                        if (value(order_heap[k]) == l_Undef) {
-                            l++;
-                            k++;
-                        } else {
-                            order_heap.remove(order_heap[k]);
-                        }
-                    }
-                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                }
-//                std::vector<Lit> accumulated_lits;
-//                std::vector<CRef> accumulated_reasons;
+//                if (config.sat_picky()) {
+//                    int k = 0, l = 0;
+//                    while (k < order_heap.size() && l < pickyWidth) {
+//                        if (value(order_heap[k]) == l_Undef) {
+//                            l++;
+//                            k++;
+//                        } else {
+//                            order_heap.remove(order_heap[k]);
+//                        }
+//                    }
+//                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+//                }
 
                 for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j))) {
                     if(conflict){
@@ -1626,82 +1624,124 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         Lit l = mkLit(v, p);
                         // checking literal propagations
                         uncheckedEnqueue(l);
-                        CRef res = propagate();
-                        if (res == CRef_Fake) {
-                            break;
-                        } else if (res != CRef_Undef) {
+                        CRef cr;
+//                        bool diff;
+//                        do {
+//                            diff = false;
+                            while ((cr = propagate()) != CRef_Undef) {
+                                if (decisionLevel() == 0) return l_False; // Unsat
 
-
-                                if (conflicts > conflictsUntilFlip) {
-                                    flipState = not flipState;
-                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
-                                }
-                                // CONFLICT
-                                if (verbosity and conflicts % 1000 == 999) {
-                                    uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
-                                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
-                                              << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
-                                              << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
-                                              << " units: " << std::setw(5) << units
-                                              << std::endl;
-                                }
-
-                                conflicts++;
-                                conflictC++;
-                                if (decisionLevel() == 0) {
-                                    return zeroLevelConflictHandler();
-                                }
-                                learnt_clause.clear();
-                                analyze(res, learnt_clause, backtrack_level);
-
-                                cancelUntil(backtrack_level);
-
-                                assert(value(learnt_clause[0]) == l_Undef);
-
-                                if (learnt_clause.size() == 1) {
-                                    CRef reason = CRef_Undef;
-                                    if (logsProofForInterpolation()) {
-                                        CRef cr = ca.alloc(learnt_clause);
-                                        proof->endChain(cr);
-                                        reason = cr;
-                                    }
-//                                    accumulated_lits.push_back(learnt_clause[0]);
-//                                    accumulated_reasons.push_back(reason);
-                                    uncheckedEnqueue(learnt_clause[0], reason);
+                                vec<Lit> out_learnt;
+                                int out_btlevel;
+                                analyze(cr, out_learnt, out_btlevel);
+                                // Backtracking back to the second best decision level in the clause
+                                cancelUntil(out_btlevel);
+                                assert(value(out_learnt[0]) == l_Undef);
+                                if (out_learnt.size() == 1) {
+                                    CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
+                                    if (logsProofForInterpolation()) { proof->endChain(unitClause); }
+                                    uncheckedEnqueue(out_learnt[0], unitClause);
                                 } else {
-                                    // ADDED FOR NEW MINIMIZATION
-                                    learnts_size += learnt_clause.size( );
-                                    all_learnts ++;
-
-                                    CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
-
-                                    if (logsProofForInterpolation()) {
-                                        proof->endChain(cr);
-                                    }
-                                    learnts.push(cr);
-                                    attachClause(cr);
-                                    claBumpActivity(ca[cr]);
-//                                    accumulated_lits.push_back(learnt_clause[0]);
-//                                    accumulated_reasons.push_back(cr);
-                                    uncheckedEnqueue(learnt_clause[0], cr);
+                                    CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+                                    if (logsProofForInterpolation()) { proof->endChain(crd); }
+                                    learnts.push(crd);
+                                    attachClause(crd);
+                                    uncheckedEnqueue(out_learnt[0], crd);
                                 }
+//                                diff = true;
+                            }
+//                            if (!diff) {
+//                                TPropRes res = checkTheory(true);
+//                                if (res == TPropRes::Unsat) {
+//                                    return l_False; // Unsat
+//                                } else if (res == TPropRes::Propagate) {
+//                                    diff = true;
+//                                }
+//                            }
+//                        } while (diff);
 
-                                varDecayActivity();
-                                claDecayActivity();
-
-                                learntSizeAdjust();
-                                conflict = true;
-                                break ;
-                        }
+//                        if (res == CRef_Fake) {
+//                            break;
+//                        } else if (res != CRef_Undef) {
+//
+//
+//                                if (conflicts > conflictsUntilFlip) {
+//                                    flipState = not flipState;
+//                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
+//                                }
+//                                // CONFLICT
+//                                if (verbosity and conflicts % 1000 == 999) {
+//                                    uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
+//                                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
+//                                              << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
+//                                              << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
+//                                              << " units: " << std::setw(5) << units
+//                                              << std::endl;
+//                                }
+//
+//                                conflicts++;
+//                                conflictC++;
+//                                if (decisionLevel() == 0) {
+//                                    return zeroLevelConflictHandler();
+//                                }
+//                                learnt_clause.clear();
+//                                analyze(res, learnt_clause, backtrack_level);
+//
+//                                cancelUntil(backtrack_level);
+//
+//                                assert(value(learnt_clause[0]) == l_Undef);
+//
+//                                if (learnt_clause.size() == 1) {
+//                                    CRef reason = CRef_Undef;
+//                                    if (logsProofForInterpolation()) {
+//                                        CRef cr = ca.alloc(learnt_clause);
+//                                        proof->endChain(cr);
+//                                        reason = cr;
+//                                    }
+////                                    accumulated_lits.push_back(learnt_clause[0]);
+////                                    accumulated_reasons.push_back(reason);
+//                                    uncheckedEnqueue(learnt_clause[0], reason);
+//                                } else {
+//                                    // ADDED FOR NEW MINIMIZATION
+//                                    learnts_size += learnt_clause.size( );
+//                                    all_learnts ++;
+//
+//                                    CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
+//
+//                                    if (logsProofForInterpolation()) {
+//                                        proof->endChain(cr);
+//                                    }
+//                                    learnts.push(cr);
+//                                    attachClause(cr);
+//                                    claBumpActivity(ca[cr]);
+////                                    accumulated_lits.push_back(learnt_clause[0]);
+////                                    accumulated_reasons.push_back(cr);
+//                                    uncheckedEnqueue(learnt_clause[0], cr);
+//                                }
+//
+//                                varDecayActivity();
+//                                claDecayActivity();
+//
+//                                learntSizeAdjust();
+//                                conflict = true;
+//                                break ;
+//                        }
                         // Else we go on
                         if (decisionLevel() == d + 1) {
                             // literal is succesfully propagated
                             ss = trail.size() - ss;
-                        }
-                        else {
+                        } else if (decisionLevel() == d) {
+                            // propagation resulted in backtrack
+                            break;
+                        } else {
                             // Backtracking should happen.
-                            assert(false);
+                            conflict = true;
+                            break ;
                         }
+//                        else {
+//                            // Backtracking should happen.
+//                            assert(false);
+//                        }
                         if(ss > best_id){
                             best_id = ss;
                             best = mkLit(v, p);
@@ -1711,12 +1751,12 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 
                 }
-//                for(int k = 0; k < accumulated_lits.size(); k++){
-//                    if(value(accumulated_lits[k]) == l_Undef)
-//                        uncheckedEnqueue(accumulated_lits[k], accumulated_reasons[k]);
-//                    conflict = true;
-//                }
+
                 preprocessing = true;
+                TPropRes res = checkTheory(true);
+                if (res == TPropRes::Unsat) {
+                    return zeroLevelConflictHandler(); // Unsat
+                }
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
                     auto diff = end - start;
