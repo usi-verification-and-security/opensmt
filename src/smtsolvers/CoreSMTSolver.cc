@@ -1594,6 +1594,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
                 }
+                std::vector<Lit> accumulated_lits;
+                std::vector<CRef> accumulated_reasons;
 
                 for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j))) {
                     if(conflict){
@@ -1664,7 +1666,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                         proof->endChain(cr);
                                         reason = cr;
                                     }
-                                    uncheckedEnqueue(learnt_clause[0], reason);
+                                    accumulated_lits.push_back(learnt_clause[0]);
+                                    accumulated_reasons.push_back(reason);
+//                                    uncheckedEnqueue(learnt_clause[0], reason);
                                 } else {
                                     // ADDED FOR NEW MINIMIZATION
                                     learnts_size += learnt_clause.size( );
@@ -1678,7 +1682,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                     learnts.push(cr);
                                     attachClause(cr);
                                     claBumpActivity(ca[cr]);
-                                    uncheckedEnqueue(learnt_clause[0], cr);
+                                    accumulated_lits.push_back(learnt_clause[0]);
+                                    accumulated_reasons.push_back(cr);
+//                                    uncheckedEnqueue(learnt_clause[0], cr);
                                 }
 
                                 varDecayActivity();
@@ -1706,6 +1712,12 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 
                 }
+                clauses_num = ca.size();
+                for(int k = 0; k < accumulated_lits.size(); k++){
+                    if(value(accumulated_lits[k]) == l_Undef)
+                        uncheckedEnqueue(accumulated_lits[k], accumulated_reasons[k]);
+                    conflict = true;
+                }
                 preprocessing = true;
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
@@ -1730,11 +1742,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
-                clauses_num = ca.size();
 //                clauses_num = ca.size();
                 lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-//                newDecisionLevel();
-//                uncheckedEnqueue(best);
             } else {
                 auto start = std::chrono::steady_clock::now();
                 if (next == lit_Undef) {
