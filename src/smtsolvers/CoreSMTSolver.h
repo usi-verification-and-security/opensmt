@@ -384,7 +384,7 @@ protected:
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts);                    // Search for a given number of conflicts.
     int nof_learnts = 40000;
-    int clauses_num;
+    int clauses_num = 0;
     int lookahead_time = 0;
 
     bool preprocessing = false;
