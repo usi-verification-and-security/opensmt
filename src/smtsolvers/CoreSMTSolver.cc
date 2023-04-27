@@ -1429,7 +1429,6 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     bool thr_backtrack = false;
 #endif
     int i = 0;
-    bool preprocessing = false;
 
     clauses_num = 0;
     while (okContinue()) {
@@ -1567,7 +1566,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 
-            if(clauses_num * 2 <= ca.size()) {
+            if( clauses_num * 1.2 < ca.size() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
@@ -1594,8 +1593,8 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
                 }
-                std::vector<Lit> accumulated_lits;
-                std::vector<CRef> accumulated_reasons;
+//                std::vector<Lit> accumulated_lits;
+//                std::vector<CRef> accumulated_reasons;
 
                 for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j))) {
                     if(conflict){
@@ -1666,9 +1665,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                         proof->endChain(cr);
                                         reason = cr;
                                     }
-                                    accumulated_lits.push_back(learnt_clause[0]);
-                                    accumulated_reasons.push_back(reason);
-//                                    uncheckedEnqueue(learnt_clause[0], reason);
+//                                    accumulated_lits.push_back(learnt_clause[0]);
+//                                    accumulated_reasons.push_back(reason);
+                                    uncheckedEnqueue(learnt_clause[0], reason);
                                 } else {
                                     // ADDED FOR NEW MINIMIZATION
                                     learnts_size += learnt_clause.size( );
@@ -1682,16 +1681,16 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                     learnts.push(cr);
                                     attachClause(cr);
                                     claBumpActivity(ca[cr]);
-                                    accumulated_lits.push_back(learnt_clause[0]);
-                                    accumulated_reasons.push_back(cr);
-//                                    uncheckedEnqueue(learnt_clause[0], cr);
+//                                    accumulated_lits.push_back(learnt_clause[0]);
+//                                    accumulated_reasons.push_back(cr);
+                                    uncheckedEnqueue(learnt_clause[0], cr);
                                 }
 
                                 varDecayActivity();
                                 claDecayActivity();
 
                                 learntSizeAdjust();
-//                                conflict = true;
+                                conflict = true;
                                 break ;
                         }
                         // Else we go on
@@ -1712,12 +1711,11 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 
                 }
-                clauses_num = ca.size();
-                for(int k = 0; k < accumulated_lits.size(); k++){
-                    if(value(accumulated_lits[k]) == l_Undef)
-                        uncheckedEnqueue(accumulated_lits[k], accumulated_reasons[k]);
-                    conflict = true;
-                }
+//                for(int k = 0; k < accumulated_lits.size(); k++){
+//                    if(value(accumulated_lits[k]) == l_Undef)
+//                        uncheckedEnqueue(accumulated_lits[k], accumulated_reasons[k]);
+//                    conflict = true;
+//                }
                 preprocessing = true;
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
@@ -1725,6 +1723,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
                     continue ;
                 }
+                clauses_num = ca.size();
                 if( best == lit_Undef ){
                     // checking if all vars are set
                     TPropRes res = checkTheory(true, conflictC);
