@@ -1762,6 +1762,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     continue ;
                 }
                 clauses_num = ca.size();
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
+                //                clauses_num = ca.size();
+                lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
                 if( best == lit_Undef ){
                     // checking if all vars are set
                     TPropRes res = checkTheory(true, conflictC);
@@ -1777,10 +1781,6 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 newDecisionLevel();
                 uncheckedEnqueue(best);
 
-                auto end = std::chrono::steady_clock::now();
-                auto diff = end - start;
-//                clauses_num = ca.size();
-                lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
             } else {
                 auto start = std::chrono::steady_clock::now();
                 if (next == lit_Undef) {
