@@ -1623,9 +1623,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         // checking literal propagations
                         uncheckedEnqueue(l);
                         CRef cr;
-//                        bool diff;
-//                        do {
-//                            diff = false;
+                        bool diff;
+                        do {
+                            diff = false;
                             while ((cr = propagate()) != CRef_Undef) {
                                 if (decisionLevel() == 0) return l_False; // Unsat
 
@@ -1646,90 +1646,26 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                     attachClause(crd);
                                     uncheckedEnqueue(out_learnt[0], crd);
                                 }
-//                                diff = true;
+                                diff = true;
                             }
-//                            if (!diff) {
-//                                TPropRes res = checkTheory(true);
-//                                if (res == TPropRes::Unsat) {
-//                                    return l_False; // Unsat
-//                                } else if (res == TPropRes::Propagate) {
-//                                    diff = true;
-//                                }
-//                            }
-//                        } while (diff);
-
-//                        if (res == CRef_Fake) {
-//                            break;
-//                        } else if (res != CRef_Undef) {
-//
-//
-//                                if (conflicts > conflictsUntilFlip) {
-//                                    flipState = not flipState;
-//                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
-//                                }
-//                                // CONFLICT
-//                                if (verbosity and conflicts % 1000 == 999) {
-//                                    uint64_t units = trail_lim.size() == 0 ?  trail.size() :  trail_lim[0];
-//                                    std::cout << "; conflicts: " << std::setw(5) << std::round(conflicts/1000.0) << "k"
-//                                              << " learnts: " << std::setw(5) << std::round(learnts.size()/1000.0) << "k"
-//                                              << " clauses: " << std::setw(5) << std::round(clauses.size()/1000.0) << "k"
-//                                              << " units: " << std::setw(5) << units
-//                                              << std::endl;
-//                                }
-//
-//                                conflicts++;
-//                                conflictC++;
-//                                if (decisionLevel() == 0) {
-//                                    return zeroLevelConflictHandler();
-//                                }
-//                                learnt_clause.clear();
-//                                analyze(res, learnt_clause, backtrack_level);
-//
-//                                cancelUntil(backtrack_level);
-//
-//                                assert(value(learnt_clause[0]) == l_Undef);
-//
-//                                if (learnt_clause.size() == 1) {
-//                                    CRef reason = CRef_Undef;
-//                                    if (logsProofForInterpolation()) {
-//                                        CRef cr = ca.alloc(learnt_clause);
-//                                        proof->endChain(cr);
-//                                        reason = cr;
-//                                    }
-////                                    accumulated_lits.push_back(learnt_clause[0]);
-////                                    accumulated_reasons.push_back(reason);
-//                                    uncheckedEnqueue(learnt_clause[0], reason);
-//                                } else {
-//                                    // ADDED FOR NEW MINIMIZATION
-//                                    learnts_size += learnt_clause.size( );
-//                                    all_learnts ++;
-//
-//                                    CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
-//
-//                                    if (logsProofForInterpolation()) {
-//                                        proof->endChain(cr);
-//                                    }
-//                                    learnts.push(cr);
-//                                    attachClause(cr);
-//                                    claBumpActivity(ca[cr]);
-////                                    accumulated_lits.push_back(learnt_clause[0]);
-////                                    accumulated_reasons.push_back(cr);
-//                                    uncheckedEnqueue(learnt_clause[0], cr);
-//                                }
-//
-//                                varDecayActivity();
-//                                claDecayActivity();
-//
-//                                learntSizeAdjust();
-//                                conflict = true;
-//                                break ;
-//                        }
+                            if (!diff) {
+                                TPropRes res = checkTheory(true);
+                                if (res == TPropRes::Unsat) {
+                                    return l_False; // Unsat
+                                } else if (res == TPropRes::Propagate) {
+                                    diff = true;
+                                }
+                            }
+                        } while (diff);
                         // Else we go on
                         if (decisionLevel() == d + 1) {
                             // literal is succesfully propagated
                             ss = trail.size() - ss;
                         } else if (decisionLevel() == d) {
                             // propagation resulted in backtrack
+                            j = 0;
+                            best = lit_Undef;
+                            best_id = 0;
                             break;
                         } else {
                             // Backtracking should happen.
