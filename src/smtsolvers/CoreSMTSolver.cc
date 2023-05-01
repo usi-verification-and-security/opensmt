@@ -1563,7 +1563,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            if( lookahead_time * 4 < vsids_time ) {
+            if( lookahead_time * 4 <= vsids_time ) {
 //            if( clauses_num * 2 < ca.size() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
@@ -1592,7 +1592,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 //                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
 //                }
 
-                for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : Var((++j))) {
+                for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : order_heap[j++]) {
                     if(conflict){
                         break ;
                     }
@@ -1751,10 +1751,10 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 }
 
                 preprocessing = true;
-                TPropRes res = checkTheory(true);
-                if (res == TPropRes::Unsat) {
-                    return zeroLevelConflictHandler(); // Unsat
-                }
+//                TPropRes res = checkTheory(true);
+//                if (res == TPropRes::Unsat) {
+//                    return zeroLevelConflictHandler(); // Unsat
+//                }
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
                     auto diff = end - start;
