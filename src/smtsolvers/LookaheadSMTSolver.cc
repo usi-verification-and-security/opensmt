@@ -248,7 +248,8 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
         pickyWidth = std::min(order_heap.size(), pickyWidth);
     }
     for (Var v(idx % nVars()); !score->isAlreadyChecked(v);
-         v = config.sat_picky() ? order_heap[(idx + (++i)) % pickyWidth] : Var((idx + (++i)) % nVars())) {
+         v = config.sat_picky() ? order_heap[(idx + (i++)) % pickyWidth] : Var((idx + (i++)) % nVars())) {
+
         if (!decision[v]) {
             score->setChecked(v);
             // not a decision var
@@ -266,7 +267,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
         if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
             if (config.sat_picky()) {
                 rebuildOrderHeap();
-                pickyWidth = std::min(order_heap.size(), pickyWidth);
+                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
             }
             score->setChecked(v);
             // It is possible that all variables are assigned here.
