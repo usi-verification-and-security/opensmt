@@ -272,7 +272,7 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.size() == 0) { {
+            if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.size() == 0) {
                 // checking if all vars are set
                 if (checkTheory(true) != TPropRes::Decide)
                     return {laresult::la_tl_unsat, lit_Undef}; // Problem is trivially unsat
