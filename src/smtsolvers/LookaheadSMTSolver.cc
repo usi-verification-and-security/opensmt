@@ -248,10 +248,10 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
                 }
             }
             if (order_heap.size() == 0) { return {laresult::la_sat, lit_Undef}; }
-            pickyWidth = std::min(order_heap.size(), pickyWidth);
+            pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
         }
         for (Var v(idx % nVars()); !score->isAlreadyChecked(v);
-             v = config.sat_picky() ? order_heap[(idx + (++i)) % pickyWidth] : Var((idx + (++i)) % nVars())) {
+             v = config.sat_picky() ? order_heap[(idx + (i++)) % pickyWidth] : Var((idx + (i++)) % nVars())) {
             if (!decision[v]) {
                 score->setChecked(v);
                 // not a decision var
