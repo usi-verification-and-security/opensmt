@@ -264,11 +264,15 @@ std::pair<LookaheadSMTSolver::laresult, Lit> LookaheadSMTSolver::lookaheadLoop()
         // checking the variable score
         Lit best = score->getBest();
         if (value(v) != l_Undef || (best != lit_Undef && score->safeToSkip(v, best))) {
+            if (config.sat_picky()) {
+                rebuildOrderHeap();
+                pickyWidth = std::min(order_heap.size(), pickyWidth);
+            }
             score->setChecked(v);
             // It is possible that all variables are assigned here.
             // In this case it seems that we have a satisfying assignment.
             // This is in fact a debug check
-            if (static_cast<unsigned int>(trail.size()) == dec_vars) {
+            if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.size() == 0) { {
                 // checking if all vars are set
                 if (checkTheory(true) != TPropRes::Decide)
                     return {laresult::la_tl_unsat, lit_Undef}; // Problem is trivially unsat
