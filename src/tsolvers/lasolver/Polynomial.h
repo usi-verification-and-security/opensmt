@@ -56,8 +56,10 @@ public:
 
     using iterator = typename poly_t::iterator;
     using const_iterator = typename poly_t::const_iterator;
+    using reverse_iterator = typename poly_t::reverse_iterator;
+    using const_reverse_iterator = typename poly_t::const_reverse_iterator;
 
-    iterator begin(){
+    iterator begin() {
         return poly.begin();
     }
     iterator end() {
@@ -67,8 +69,22 @@ public:
     const_iterator begin() const {
         return poly.cbegin();
     }
-    const_iterator end() const{
+    const_iterator end() const {
         return poly.cend();
+    }
+
+    reverse_iterator rbegin() {
+        return poly.rbegin();
+    }
+    reverse_iterator rend() {
+        return poly.rend();
+    }
+
+    const_reverse_iterator rbegin() const {
+        return poly.rbegin();
+    }
+    const_reverse_iterator rend() const {
+        return poly.rend();
     }
 
     // debug
