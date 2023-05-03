@@ -422,10 +422,19 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
     for (auto & poly : polynomials) {
         // solve polynomial with respect to its first variable
         assert(poly.size() > 0);
-        PTRef var = poly.begin()->var;
-        if (var == PTRef_Undef) { // 'c = 0' for some constant c; let the main loop deal with this
-            continue;
+        // To prevent loops in rewriting, we always need to take the var with largest PTRef for the substitution
+        // The code assumes polynomial is ordered from smallest to largest
+        assert(poly.begin()->var.x <= poly.rbegin()->var.x);
+        auto termIt = poly.rbegin();
+        if (termIt->var == PTRef_Undef) {
+            if (poly.size() == 1) { // 'c = 0' for some constant c; let the main loop deal with this
+                continue;
+            } else {
+                ++termIt;
+            }
         }
+        PTRef var = termIt->var;
+        assert(var != PTRef_Undef);
         if (out_substitutions.has(var)) {
             // Already have a substitution for this variable; skip this equality, let the main loop deal with this
             continue;
