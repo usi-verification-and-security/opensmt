@@ -148,7 +148,11 @@ LookaheadSMTSolver::PathBuildResult LookaheadSMTSolver::setSolverToNode(LANode c
     } else {
         // Means no conflict was encountered and basic path hasn't changed
         // we need only propagate i new literals
-        i = (path.size() - decisionLevel()) - 1;
+//        i = (path.size() - decisionLevel()) - 1;
+        if(decisionLevel() > 0){
+            i = (path.size() - decisionLevel()) ;
+            cancelUntil(decisionLevel() - 1);
+        }
     }
     if (path.size() > 0) {
         for (; i >= 0; i--) {
