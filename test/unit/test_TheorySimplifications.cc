@@ -2,9 +2,10 @@
 // Created by Martin Blicha on 2018-12-20.
 //
 
-#include <gtest/gtest.h>
 #include <Logic.h>
 #include <Substitutor.h>
+#include <SubstitutionUtils.h>
+#include <gtest/gtest.h>
 
 class GetFactsTest : public ::testing::Test {
 protected:
@@ -195,7 +196,7 @@ TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     substitutions.insert(a, logic.mkAnd(b,c));
     substitutions.insert(b, c);
     substitutions.insert(c, d);
-    logic.substitutionsTransitiveClosure(substitutions);
+    substitutionsTransitiveClosure(substitutions, logic);
     ASSERT_EQ(substitutions.getSize(), 3);
     ASSERT_EQ(substitutions[a], d);
 }

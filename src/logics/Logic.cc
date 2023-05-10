@@ -1063,27 +1063,6 @@ opensmt::pair<lbool,Logic::SubstMap> Logic::retrieveSubstitutions(const vec<PtAs
     return {l_Undef, slb(std::move(substs))};
 }
 
-void Logic::substitutionsTransitiveClosure(SubstMap & substs) {
-    bool changed = true;
-    const auto & keys = substs.getKeys(); // We can use direct pointers, since no elements are inserted or deleted in the loop
-    std::vector<char> notChangedElems(substs.getSize(), 0); // True if not changed in last iteration, initially False
-    while (changed) {
-        changed = false;
-        for (int i = 0; i < keys.size(); ++i) {
-            if (notChangedElems[i]) { continue; }
-            PTRef & val = substs[keys[i]];
-            PTRef oldVal = val;
-            PTRef newVal = Substitutor(*this, substs).rewrite(oldVal);
-            if (oldVal != newVal) {
-                changed = true;
-                val = newVal;
-            }
-            else {
-                notChangedElems[i] = 1;
-            }
-        }
-    }
-}
 
 //
 // TODO: Also this should most likely be dependent on the theory being

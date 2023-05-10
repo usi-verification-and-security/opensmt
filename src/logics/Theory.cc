@@ -1,4 +1,5 @@
 #include "Theory.h"
+#include "SubstitutionUtils.h"
 #include "Substitutor.h"
 //#include "MainSolver.h"
 //#include "logics/Logic.h"
@@ -58,8 +59,7 @@ Theory::SubstitutionResult Theory::computeSubstitutions(const PTRef fla)
         }
 
         auto [res, newsubsts] = getLogic().retrieveSubstitutions(current_units_vec);
-        getLogic().substitutionsTransitiveClosure(newsubsts);
-
+        substitutionsTransitiveClosure(newsubsts, getLogic());
 
         // remember the substitutions for models
         for (PTRef key : newsubsts.getKeys()) {

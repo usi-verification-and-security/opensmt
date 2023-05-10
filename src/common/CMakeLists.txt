@@ -3,6 +3,7 @@ add_library(common OBJECT "FastRational.cc" Real.h)
 target_sources(common
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FastRational.h"
     PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/SubstitutionUtils.cc"
     PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/Alloc.h"
     "${CMAKE_CURRENT_LIST_DIR}/XAlloc.h"

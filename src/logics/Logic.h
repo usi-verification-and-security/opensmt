@@ -376,8 +376,6 @@ public:
     bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
     virtual opensmt::pair<lbool,SubstMap> retrieveSubstitutions(const vec<PtAsgn>& units);
 
-    void substitutionsTransitiveClosure(SubstMap & substs);
-
     bool contains(PTRef x, PTRef y);  // term x contains an occurrence of y
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
