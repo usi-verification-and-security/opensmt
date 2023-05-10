@@ -1563,7 +1563,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            if( lookahead_time * 10 <= vsids_time ) {
+//            if( lookahead_time * 10 <= vsids_time ) {
 //            if( clauses_num * 2 < ca.size() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
@@ -1579,20 +1579,20 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 Lit best = lit_Undef;
                 int props = assumptions.size();
 
-//                if (config.sat_picky()) {
-//                    int k = 0, l = 0;
-//                    while (k < order_heap.size() && l < pickyWidth) {
-//                        if (value(order_heap[k]) == l_Undef) {
-//                            l++;
-//                            k++;
-//                        } else {
-//                            order_heap.remove(order_heap[k]);
-//                        }
-//                    }
-//                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-//                }
+                if (config.sat_picky()) {
+                    int k = 0, l = 0;
+                    while (k < order_heap.size() && l < pickyWidth) {
+                        if (value(order_heap[k]) == l_Undef) {
+                            l++;
+                            k++;
+                        } else {
+                            order_heap.remove(order_heap[k]);
+                        }
+                    }
+                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                }
 
-                for (Var v(j % nVars()); j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : order_heap[j++]) {
+                for (Var v = order_heap[j]; j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : order_heap[j++]) {
                     if(conflict){
                         break ;
                     }
@@ -1600,18 +1600,30 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         continue ;
                     }
                     if (value(v) != l_Undef) {
-                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                        if (config.sat_picky()) {
+                            rebuildOrderHeap();
+                            pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                        }
+                        if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
                             // checking if all vars are set
-                            TPropRes res = checkTheory(true, conflictC);
-                            d = decisionLevel();
-                            if (res == TPropRes::Propagate) { continue; }
-                            if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                            assert(res == TPropRes::Decide);
-                            if (static_cast<unsigned int>(trail.size()) >= nVars() || dec_vars > nVars()) {
-                                return l_True;
-                            }
+                            if (checkTheory(true) != TPropRes::Decide)
+                                return l_False; // Problem is trivially unsat
+                            assert(checkTheory(true) == TPropRes::Decide);
+                            return l_True; // Stands for SAT
                         }
                         continue;
+//                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+//                            // checking if all vars are set
+//                            TPropRes res = checkTheory(true, conflictC);
+//                            d = decisionLevel();
+//                            if (res == TPropRes::Propagate) { continue; }
+//                            if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+//                            assert(res == TPropRes::Decide);
+//                            if (static_cast<unsigned int>(trail.size()) >= nVars() || dec_vars > nVars()) {
+//                                return l_True;
+//                            }
+//                        }
+//                        continue;
                     }
 
                     for (int p : {0, 1}) { // for both polarities
@@ -1717,43 +1729,43 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 newDecisionLevel();
                 uncheckedEnqueue(best);
 
-            } else {
-                auto start = std::chrono::steady_clock::now();
-                if (next == lit_Undef) {
-                    // Assumptions done and the solver is in consistent state
-                    // New variable decision:
-                    decisions++;
-
-
-                    next = pickBranchLit();
-                    // Complete Call
-                    if (next == lit_Undef) {
-                        TPropRes res = checkTheory(true, conflictC);
-
-                        if (res == TPropRes::Propagate) { continue; }
-                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                        assert(res == TPropRes::Decide);
-
-                        // Otherwise we still have to make sure that
-                        // splitting on demand did not add any new variable
-                        decisions++;
-                        next = pickBranchLit();
-                    }
-
-                    if (next == lit_Undef)
-                        // Model found:
-                        return l_True;
-                }
-
-                assert(value(next) == l_Undef);
-                // Increase decision level and enqueue 'next'
-                assert(value(next) == l_Undef);
-                newDecisionLevel();
-                uncheckedEnqueue(next);
-                auto end = std::chrono::steady_clock::now();
-                auto diff = end - start;
-                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-            }
+//            } else {
+//                auto start = std::chrono::steady_clock::now();
+//                if (next == lit_Undef) {
+//                    // Assumptions done and the solver is in consistent state
+//                    // New variable decision:
+//                    decisions++;
+//
+//
+//                    next = pickBranchLit();
+//                    // Complete Call
+//                    if (next == lit_Undef) {
+//                        TPropRes res = checkTheory(true, conflictC);
+//
+//                        if (res == TPropRes::Propagate) { continue; }
+//                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+//                        assert(res == TPropRes::Decide);
+//
+//                        // Otherwise we still have to make sure that
+//                        // splitting on demand did not add any new variable
+//                        decisions++;
+//                        next = pickBranchLit();
+//                    }
+//
+//                    if (next == lit_Undef)
+//                        // Model found:
+//                        return l_True;
+//                }
+//
+//                assert(value(next) == l_Undef);
+//                // Increase decision level and enqueue 'next'
+//                assert(value(next) == l_Undef);
+//                newDecisionLevel();
+//                uncheckedEnqueue(next);
+//                auto end = std::chrono::steady_clock::now();
+//                auto diff = end - start;
+//                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
+//            }
         }
     }
     cancelUntil(0);
