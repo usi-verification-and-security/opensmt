@@ -663,13 +663,13 @@ void Interpret::getValue(const std::vector<ASTNode*>* terms)
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
-    printf("(");
+    std::cout << "(";
     for (auto const & valPair : values) {
         auto name = logic.printTerm(valPair.first);
         auto value = logic.printTerm(valPair.second);
-        printf("(%s %s)", name.c_str(), value.c_str());
+        std::cout << "(" << name.c_str() << " " << value.c_str() << ")";
     }
-    printf(")\n");
+    std::cout << ")" << std::endl;
 }
 
 namespace {
