@@ -1592,7 +1592,11 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
                 }
 
-                for (Var v = order_heap[j]; j < order_heap.size(); v = config.sat_picky() ? order_heap[((++j)) % pickyWidth] : order_heap[j++]) {
+                int iterator = 0;
+
+                for (; (!config.sat_picky() && iterator < order_heap.size()) || (config.sat_picky() && iterator < pickyWidth); iterator++ && j++) {
+                    Var v = config.sat_picky() ? order_heap[((j)) % pickyWidth] : order_heap[j % order_heap.size()];
+
                     if(conflict){
                         break ;
                     }
@@ -1675,7 +1679,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             ss = trail.size() - ss;
                         } else if (decisionLevel() == d) {
                             // propagation resulted in backtrack
-                            j = 0;
+                            iterator = 0;
                             best = lit_Undef;
                             best_id = 0;
                             break;
