@@ -1589,12 +1589,13 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             order_heap.remove(order_heap[k]);
                         }
                     }
+//                    rebuildOrderHeap();
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
                 }
 
                 int iterator = 0;
 
-                for (; (!config.sat_picky() && iterator < order_heap.size()) || (config.sat_picky() && iterator < pickyWidth); iterator++ && j++) {
+                for (; (!config.sat_picky() && iterator < order_heap.size()) || (config.sat_picky() && iterator < pickyWidth); iterator++, j++) {
                     Var v = config.sat_picky() ? order_heap[((j)) % pickyWidth] : order_heap[j % order_heap.size()];
 
                     if(conflict){
@@ -1629,14 +1630,11 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 //                        }
 //                        continue;
                     }
-
-                    for (int p : {0, 1}) { // for both polarities
-
+                    if(config.sat_picky()){
                         assert(decisionLevel() == d);
                         double ss = trail.size();
                         newDecisionLevel();
-                        Lit l = mkLit(v, p);
-                        // checking literal propagations
+                        Lit l = choosePolarity(v);
                         uncheckedEnqueue(l);
                         CRef cr;
                         bool diff;
@@ -1682,26 +1680,87 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             iterator = 0;
                             best = lit_Undef;
                             best_id = 0;
-                            break;
+                            continue ;
                         } else {
                             // Backtracking should happen.
                             conflict = true;
                             break ;
                         }
-//                        else {
-//                            // Backtracking should happen.
-//                            assert(false);
-//                        }
                         if(ss > best_id){
                             best_id = ss;
-                            best = mkLit(v, p);
+                            best = l;
                         }
                         // Update also the clause deletion heuristic?
                         cancelUntil(decisionLevel() - 1);
+                    } else {
+                        for (int p : {0, 1}) { // for both polarities
+
+                            assert(decisionLevel() == d);
+                            double ss = trail.size();
+                            newDecisionLevel();
+                            Lit l = mkLit(v, p);
+                            // checking literal propagations
+                            uncheckedEnqueue(l);
+                            CRef cr;
+                            bool diff;
+                            do {
+                                diff = false;
+                                while ((cr = propagate()) != CRef_Undef) {
+                                    if (decisionLevel() == 0) return l_False; // Unsat
+
+                                    vec<Lit> out_learnt;
+                                    int out_btlevel;
+                                    analyze(cr, out_learnt, out_btlevel);
+                                    // Backtracking back to the second best decision level in the clause
+                                    cancelUntil(out_btlevel);
+                                    assert(value(out_learnt[0]) == l_Undef);
+                                    if (out_learnt.size() == 1) {
+                                        CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
+                                        if (logsProofForInterpolation()) { proof->endChain(unitClause); }
+                                        uncheckedEnqueue(out_learnt[0], unitClause);
+                                    } else {
+                                        CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+                                        if (logsProofForInterpolation()) { proof->endChain(crd); }
+                                        learnts.push(crd);
+                                        attachClause(crd);
+                                        uncheckedEnqueue(out_learnt[0], crd);
+                                    }
+                                    diff = true;
+                                }
+                                if (!diff) {
+                                    TPropRes res = checkTheory(true);
+                                    if (res == TPropRes::Unsat) {
+                                        return l_False; // Unsat
+                                    } else if (res == TPropRes::Propagate) {
+                                        diff = true;
+                                    }
+                                }
+                            } while (diff);
+                            // Else we go on
+                            if (decisionLevel() == d + 1) {
+                                // literal is succesfully propagated
+                                ss = trail.size() - ss;
+                            } else if (decisionLevel() == d) {
+                                // propagation resulted in backtrack
+                                iterator = 0;
+                                best = lit_Undef;
+                                best_id = 0;
+                                break;
+                            } else {
+                                // Backtracking should happen.
+                                conflict = true;
+                                break;
+                            }
+
+                            if (ss > best_id) {
+                                best_id = ss;
+                                best = l;
+                            }
+                            // Update also the clause deletion heuristic?
+                            cancelUntil(decisionLevel() - 1);
+                        }
                     }
-
                 }
-
                 preprocessing = true;
 //                TPropRes res = checkTheory(true);
 //                if (res == TPropRes::Unsat) {
@@ -1712,6 +1771,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     auto diff = end - start;
                     lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
                     continue ;
+                }
+                if(config.sat_picky()){
+                    assert(iterator == 1 && j >= iterator);
                 }
                 clauses_num = ca.size();
                 auto end = std::chrono::steady_clock::now();
@@ -1770,6 +1832,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 //                auto diff = end - start;
 //                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
 //            }
+
+//                printf("Best: %d\n", var(best));
+//                printf("Decision level: %d\n", decisionLevel());
         }
     }
     cancelUntil(0);
