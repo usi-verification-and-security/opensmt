@@ -822,7 +822,7 @@ public:
 
    int sat_picky_w() const
    { return optionTable.has(o_sat_picky_w) ?
-       optionTable[o_sat_picky_w]->getValue().numval : 1; }
+       optionTable[o_sat_picky_w]->getValue().numval : -1; }
 
    int sat_solver_limit() const
    { return optionTable.has(o_sat_solver_limit) ?
