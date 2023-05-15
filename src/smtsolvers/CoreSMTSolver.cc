@@ -1569,6 +1569,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 auto start = std::chrono::steady_clock::now();
 
                 int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                if(pickyWidth == -1){
+                    pickyWidth = nVars();
+                }
                 int j = 0;
                 int d = decisionLevel();
 
@@ -1591,6 +1594,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 //                    rebuildOrderHeap();
                     pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                    if(pickyWidth == -1){
+                        pickyWidth = nVars();
+                    }
                 }
 
                 int iterator = 0;
@@ -1608,6 +1614,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         if (config.sat_picky()) {
                             rebuildOrderHeap();
                             pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                            if(pickyWidth == -1){
+                                pickyWidth = nVars();
+                            }
                         }
                         if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
                             // checking if all vars are set
@@ -1677,12 +1686,14 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             ss = trail.size() - ss;
                         } else if (decisionLevel() == d) {
                             // propagation resulted in backtrack
+                            conflicts++;
                             iterator = 0;
                             best = lit_Undef;
                             best_id = 0;
                             continue ;
                         } else {
                             // Backtracking should happen.
+                            conflicts++;
                             conflict = true;
                             break ;
                         }
@@ -2004,6 +2015,8 @@ lbool CoreSMTSolver::solve_()
         // XXX
         status = search((int)nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
+        printf("Conflicts found: %d\n", conflicts);
+        printf("CA size: %d\n", ca.size());
     }
 
     if (status == l_True) {
