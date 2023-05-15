@@ -342,6 +342,18 @@ PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
     return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
 }
 
+bool isGoodAsSubstitutionValue(poly_t const & poly) {
+    assert(poly.size() != 0);
+    if (poly.size() < 2) { return true; }
+    if (poly.size() > 2) { return false; }
+    // For polynomials of size two we need to check if this is "cx + d" (good) or c1 * x1 + c2 * x2 (bad)
+    assert(poly.size() == 2);
+    // If it contains the constant term (where var is equal to PTRef_Undef, it is still OK to use this poly
+    return poly.contains(PTRef_Undef);
+
+
+}
+
 Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
     // MB: We enforce order to ensure that later-created terms are processed first.
     //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
@@ -364,12 +376,14 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
         if (not inserted) { continue; }
         auto & poly = zeroPolynomials[index];
         auto coeff = poly.removeVar(var);
-        coeff.negate();
-        if (not coeff.isOne()) {
-            poly.divideBy(coeff);
+        if (isGoodAsSubstitutionValue(poly)) {
+            coeff.negate();
+            if (not coeff.isOne()) {
+                poly.divideBy(coeff);
+            }
+            PTRef val = polyToPTRef(logic, poly);
+            substitutions.insert(var, val);
         }
-        PTRef val = polyToPTRef(logic, poly);
-        substitutions.insert(var, val);
     }
     // Remove processed polynomials
     std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
@@ -440,13 +454,15 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
             continue;
         }
         auto coeff = poly.removeVar(var);
-        coeff.negate();
-        if (not coeff.isOne()) {
-            poly.divideBy(coeff);
+        if (isGoodAsSubstitutionValue(poly)) {
+            coeff.negate();
+            if (not coeff.isOne()) {
+                poly.divideBy(coeff);
+            }
+            PTRef val = polyToPTRef(logic, poly);
+            assert(not out_substitutions.has(var));
+            out_substitutions.insert(var, val);
         }
-        PTRef val = polyToPTRef(logic, poly);
-        assert(not out_substitutions.has(var));
-        out_substitutions.insert(var, val);
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
