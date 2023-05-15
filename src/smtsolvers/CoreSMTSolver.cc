@@ -1564,12 +1564,12 @@ lbool CoreSMTSolver::search(int nof_conflicts)
             }
 
 //            if( lookahead_time * 10 <= vsids_time ) {
-//            if( clauses_num * 2 < ca.size() ) {
+            if( config.sat_picky() ) {
                 decisions++;
                 auto start = std::chrono::steady_clock::now();
 
                 int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                if(pickyWidth == -1){
+                if (pickyWidth == -1) {
                     pickyWidth = nVars();
                 }
                 int j = 0;
@@ -1806,43 +1806,43 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 newDecisionLevel();
                 uncheckedEnqueue(best);
 
-//            } else {
-//                auto start = std::chrono::steady_clock::now();
-//                if (next == lit_Undef) {
-//                    // Assumptions done and the solver is in consistent state
-//                    // New variable decision:
-//                    decisions++;
-//
-//
-//                    next = pickBranchLit();
-//                    // Complete Call
-//                    if (next == lit_Undef) {
-//                        TPropRes res = checkTheory(true, conflictC);
-//
-//                        if (res == TPropRes::Propagate) { continue; }
-//                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-//                        assert(res == TPropRes::Decide);
-//
-//                        // Otherwise we still have to make sure that
-//                        // splitting on demand did not add any new variable
-//                        decisions++;
-//                        next = pickBranchLit();
-//                    }
-//
-//                    if (next == lit_Undef)
-//                        // Model found:
-//                        return l_True;
-//                }
-//
-//                assert(value(next) == l_Undef);
-//                // Increase decision level and enqueue 'next'
-//                assert(value(next) == l_Undef);
-//                newDecisionLevel();
-//                uncheckedEnqueue(next);
-//                auto end = std::chrono::steady_clock::now();
-//                auto diff = end - start;
-//                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-//            }
+            } else {
+                auto start = std::chrono::steady_clock::now();
+                if (next == lit_Undef) {
+                    // Assumptions done and the solver is in consistent state
+                    // New variable decision:
+                    decisions++;
+
+
+                    next = pickBranchLit();
+                    // Complete Call
+                    if (next == lit_Undef) {
+                        TPropRes res = checkTheory(true, conflictC);
+
+                        if (res == TPropRes::Propagate) { continue; }
+                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                        assert(res == TPropRes::Decide);
+
+                        // Otherwise we still have to make sure that
+                        // splitting on demand did not add any new variable
+                        decisions++;
+                        next = pickBranchLit();
+                    }
+
+                    if (next == lit_Undef)
+                        // Model found:
+                        return l_True;
+                }
+
+                assert(value(next) == l_Undef);
+                // Increase decision level and enqueue 'next'
+                assert(value(next) == l_Undef);
+                newDecisionLevel();
+                uncheckedEnqueue(next);
+                auto end = std::chrono::steady_clock::now();
+                auto diff = end - start;
+                vsids_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
+            }
 
 //                printf("Best: %d\n", var(best));
 //                printf("Decision level: %d\n", decisionLevel());
