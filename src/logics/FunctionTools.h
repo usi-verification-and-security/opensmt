@@ -10,6 +10,7 @@
 
 #include "PTRef.h"
 #include "SSort.h"
+
 class FunctionSignature {
     friend class TemplateFunction;
     SRef ret_sort;
@@ -31,7 +32,12 @@ public:
 class TemplateFunction {
     FunctionSignature signature;
     PTRef tr_body;
+
+    inline static std::string_view constexpr template_arg_prefix = ".arg";
+    inline static std::size_t template_arg_counter = 0;
 public:
+    static std::string nextFreeArgumentName() { return std::string(template_arg_prefix) + std::to_string(template_arg_counter++); }
+
     TemplateFunction(const std::string & name, const vec<PTRef>& args_, SRef ret_sort, PTRef tr_body)
             : tr_body(tr_body)
     {

@@ -899,21 +899,23 @@ bool Interpret::defineFun(const ASTNode& n)
     const char* fname = name_node.getValue();
 
     // Get the argument sorts
-    vec<SRef> arg_sorts;
-    vec<PTRef> arg_trs;
+    struct DefineFunArg {
+        PTRef inner;
+        std::string formalName;
+    };
+    std::vector<DefineFunArg> args;
     for (auto childNodePtr : *args_node.children) {
         ASTNode const & childNode = *childNodePtr;
         assert(childNode.children->size() == 1);
-        std::string varName = childNode.getValue();
         ASTNode const & sortNode = **(childNode.children->begin());
         SRef sortRef = sortFromASTNode(sortNode);
         if (sortRef == SRef_Undef) {
             notify_formatted(true, "Undefined sort %s in function %s", sortSymbolFromASTNode(sortNode).name.c_str(), fname);
             return false;
         }
-        arg_sorts.push(sortRef);
-        PTRef pvar = logic->mkVar(arg_sorts.last(), varName.c_str());
-        arg_trs.push(pvar);
+        PTRef pvar = logic->mkVar(sortRef, TemplateFunction::nextFreeArgumentName().c_str());
+        std::string formalName = childNode.getValue();
+        args.push_back({.inner = pvar, .formalName = std::move(formalName)});
     }
 
     // The return sort
@@ -924,6 +926,7 @@ bool Interpret::defineFun(const ASTNode& n)
     }
     sstat status;
     LetRecords letRecords;
+    for (auto const & arg : args) { letRecords.addBinding(arg.formalName, arg.inner); }
     PTRef tr = parseTerm(term_node, letRecords);
     if (tr == PTRef_Undef) {
         notify_formatted(true, "define-fun returns an unknown sort");
@@ -933,7 +936,11 @@ bool Interpret::defineFun(const ASTNode& n)
         notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
         return false;
     }
-    bool rval = storeDefinedFun(fname, arg_trs, ret_sort, tr);
+
+    vec<PTRef> argTerms;
+    argTerms.capacity(args.size());
+    for (auto const & arg : args) { argTerms.push(arg.inner); }
+    bool rval = storeDefinedFun(fname, argTerms, ret_sort, tr);
     if (rval) notify_success();
     else {
         notify_formatted(true, "define-fun failed");
