@@ -2015,8 +2015,8 @@ lbool CoreSMTSolver::solve_()
         // XXX
         status = search((int)nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
-        printf("Conflicts found: %d\n", conflicts);
-        printf("CA size: %d\n", ca.size());
+//        printf("Conflicts found: %d\n", conflicts);
+//        printf("CA size: %d\n", ca.size());
     }
 
     if (status == l_True) {
