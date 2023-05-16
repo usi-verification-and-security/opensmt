@@ -244,6 +244,13 @@ TEST_F(LRALogicMkTermsTest, test_ChainableInequality) {
     EXPECT_EQ(multiArgsGt, expandedGt);
 }
 
+TEST_F(LRALogicMkTermsTest, test_EqualityNormalization_Commutativity) {
+    PTRef two = logic.mkRealConst(2);
+    PTRef eq1 = logic.mkEq(x, two);
+    PTRef eq2 = logic.mkEq(two, x);
+    ASSERT_EQ(eq1, eq2);
+}
+
 TEST_F(LRALogicMkTermsTest, test_EqualityNormalization) {
     PTRef two = logic.mkRealConst(2);
     PTRef eq1 = logic.mkEq(x, y);

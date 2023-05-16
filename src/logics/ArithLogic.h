@@ -392,6 +392,8 @@ protected:
     opensmt::pair<FastRational, PTRef> sumToNormalizedPair(PTRef sum);
     opensmt::pair<FastRational, PTRef> sumToNormalizedIntPair(PTRef sum);
     opensmt::pair<FastRational, PTRef> sumToNormalizedRealPair(PTRef sum);
+
+    bool hasNegativeLeadingVariable(PTRef poly) const;
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=

@@ -130,6 +130,13 @@ TEST_F(LIALogicMkTermsTest, test_Inequality_Simplification)
     );
 }
 
+TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_Commutativity) {
+    PTRef two = logic.mkIntConst(2);
+    PTRef eq1 = logic.mkEq(x, two);
+    PTRef eq2 = logic.mkEq(two, x);
+    ASSERT_EQ(eq1, eq2);
+}
+
 TEST_F(LIALogicMkTermsTest, test_EqualityNormalization) {
     PTRef two = logic.mkIntConst(2);
     PTRef eq1 = logic.mkEq(x, y);
@@ -153,6 +160,15 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_AlreadyNormalized) {
     PTRef eq1 = logic.mkEq(logic.mkPlus(logic.mkTimes(x, two), logic.mkTimes(y, three)), logic.getTerm_IntOne());
     ASSERT_NE(eq1, logic.getTerm_false());
     EXPECT_EQ(logic.getSymRef(eq1), logic.get_sym_Int_EQ());
+}
+
+TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_EqualityToConstant) {
+    PTRef two = logic.mkIntConst(2);
+    PTRef eq = logic.mkEq(x, two);
+    PTRef lhs = logic.getPterm(eq)[0];
+    PTRef rhs = logic.getPterm(eq)[1];
+    EXPECT_NE(logic.getSymRef(lhs), logic.get_sym_Int_TIMES());
+    EXPECT_NE(logic.getSymRef(rhs), logic.get_sym_Int_TIMES());
 }
 
 TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {

@@ -1292,7 +1292,7 @@ opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum)
         }
     }
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Int_PLUS(), std::move(varFactors));
-    // 0 <= normalizedSum + constatValue
+    // 0 <= normalizedSum + constantValue
     constantValue.negate();
     return {std::move(constantValue), normalizedSum};
 }
@@ -1343,6 +1343,11 @@ PTRef ArithLogic::sumToNormalizedEquality(PTRef sum) {
     auto [lhsVal, rhs] = sumToNormalizedPair(sum);
     SRef sort = getSortRef(sum);
     if (isSortInt(sort) and not lhsVal.isInteger()) { return getTerm_false(); }
+    // Ensure that in equality we always have positive leading variable
+    if (hasNegativeLeadingVariable(rhs)) {
+        rhs = mkNeg(rhs);
+        lhsVal.negate();
+    }
     return Logic::mkBinaryEq(mkConst(getSortRef(sum), lhsVal), rhs);
 }
 
@@ -1366,4 +1371,16 @@ std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) {
     Pterm const & term = getPterm(leq);
     assert(isLeq(term.symb()));
     return std::make_pair(term[0], term[1]);
+}
+
+bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) const {
+    if (isNumConst(poly) or isNumVarLike(poly)) { return false; }
+    if (isTimes(poly)) {
+        auto [var, constant] = splitTermToVarAndConst(poly);
+        return isNegative(getNumConst(constant));
+    }
+    assert(isPlus(poly));
+    PTRef leadingTerm = getPterm(poly)[0];
+    auto [var, constant] = splitTermToVarAndConst(leadingTerm);
+    return isNegative(getNumConst(constant));
 }
