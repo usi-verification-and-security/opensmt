@@ -1805,6 +1805,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     if (res == TPropRes::Propagate) { continue; }
                     if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                     assert(res == TPropRes::Decide);
+                    rebuildOrderHeap();
                     best = pickBranchLit();
                     if (best == lit_Undef) {
                         return l_True;
