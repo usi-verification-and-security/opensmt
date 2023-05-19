@@ -299,7 +299,8 @@ void Interpret::interp(ASTNode& n) {
                 } else if (main_solver->getStatus() != s_True) {
                     notify_formatted(true, "Command get-value called, but solver is not in SAT state");
                 } else {
-                    getValue(n.children);
+                    assert(n.children);
+                    getValue(*n.children);
                 }
                 break;
             }
@@ -646,30 +647,102 @@ bool Interpret::getAssignment() {
     return true;
 }
 
-void Interpret::getValue(const std::vector<ASTNode*>* terms)
+namespace { // Helper for get-value command
+void printAstTermNode(ASTNode const & astNode) {
+    ASTType t = astNode.getType();
+    if (t == TERM_T) {
+        const char* name = (**(astNode.children->begin())).getValue();
+        std::cout << name;
+    } else if (t == QID_T) {
+            ASTNode const * symbolNode = (*(astNode.children->begin()));
+            char const * name = symbolNode->getValue();
+            std::cout << name;
+    } else if ( t == LQID_T ) {
+        // Multi-argument term
+        auto node_iter = astNode.children->begin();
+        const char* name = (**node_iter).getValue(); node_iter++;
+        std::cout << "(";
+        std::cout << name << " ";
+        bool first = true;
+        for (; node_iter != astNode.children->end(); node_iter++) {
+            if (not first) {
+                std::cout << " ";
+            }
+            printAstTermNode(**node_iter);
+            first = false;
+        }
+        std::cout << ")";
+    } else if (t == BANG_T) {
+        assert(astNode.children->size() == 2);
+        auto ch = astNode.children->begin();
+        ASTNode& named_term = **ch;
+        ASTNode& attr_l = **(++ ch);
+        assert(attr_l.getType() == GATTRL_T);
+        assert(attr_l.children->size() == 1);
+        ASTNode& name_attr = **(attr_l.children->begin());
+        std::cout << "(!";
+        printAstTermNode(named_term);
+        std::cout << " " << name_attr.getValue();
+        ASTNode const & sym = **(name_attr.children->begin());
+        assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
+        std::cout << " " << sym.getValue();
+        std::cout << ')';
+    } else if (t == LET_T) {
+        std::cout << "(let ";
+        auto ch = astNode.children->begin();
+        // print bindings
+        std::cout << '(';
+        bool first = true;
+        for (ASTNode const* vb : *(**ch).children) {
+            if (not first) { std::cout << ' '; };
+            first = false;
+            std::cout << "(" << vb->getValue() << " ";
+            printAstTermNode(**vb->children->begin());
+            std::cout << ")";
+        }
+        std::cout << ')';
+        // print final term
+        ch++;
+        std::cout << ' ';
+        printAstTermNode(**ch);
+        std::cout << ')';
+    }
+    else {
+        throw std::logic_error("Unsupported term type");
+    }
+}
+}
+
+void Interpret::getValue(std::vector<ASTNode*> const & terms)
 {
-    assert(terms);
     auto model = main_solver->getModel();
     Logic & logic = main_solver->getLogic();
-    std::vector<opensmt::pair<PTRef,PTRef>> values;
-    for (auto termNode : *terms) {
+    using ValPair = opensmt::pair<ASTNode const * const,PTRef>;
+    std::vector<ValPair> values;
+    for (auto termNode : terms) {
         ASTNode const & term = *termNode;
         LetRecords tmp;
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
-            values.emplace_back(opensmt::pair<PTRef,PTRef>{tr, model->evaluate(tr)});
+            values.push_back({termNode, model->evaluate(tr)});
             auto pt_str = logic.printTerm(tr);
             comment_formatted("Found the term %s", pt_str.c_str());
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
     }
-    std::cout << "(";
-    for (auto const & valPair : values) {
-        auto name = logic.printTerm(valPair.first);
-        auto value = logic.printTerm(valPair.second);
-        std::cout << "(" << name.c_str() << " " << value.c_str() << ")";
+    try {
+        std::cout << '(';
+        for (auto const & valPair : values) {
+            std::cout << '(';
+            printAstTermNode(*valPair.first);
+            auto value = logic.printTerm(valPair.second);
+            std::cout << " " << value << ')';
+        }
+        std::cout << ')' << std::endl;
     }
-    std::cout << ")" << std::endl;
+    catch (std::logic_error & e) {
+        reportError("Error in evaluating (get-value) command");
+    }
 }
 
 namespace {
