@@ -1628,9 +1628,9 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         }
                         if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
                             // checking if all vars are set
-                            if (checkTheory(true) != TPropRes::Decide)
+                            if (checkTheory(true, conflictC) != TPropRes::Decide)
                                 return l_False; // Problem is trivially unsat
-                            assert(checkTheory(true) == TPropRes::Decide);
+                            assert(checkTheory(true, conflictC) == TPropRes::Decide);
                             return l_True; // Stands for SAT
                         }
                         continue;
@@ -1659,6 +1659,21 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             diff = false;
                             while ((cr = propagate()) != CRef_Undef) {
                                 if (decisionLevel() == 0) return l_False; // Unsat
+                                                                          // NO CONFLICT
+                                if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
+                                    // Reached bound on number of conflicts:
+                                    progress_estimate = progressEstimate();
+                                    cancelUntil(0);
+                                    return l_Undef;
+                                }
+
+                                conflicts++;
+                                conflictC++;
+
+                                if (conflicts > conflictsUntilFlip) {
+                                    flipState = not flipState;
+                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
+                                }
 
                                 vec<Lit> out_learnt;
                                 int out_btlevel;
@@ -1685,7 +1700,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                 learntSizeAdjust();
                             }
                             if (!diff) {
-                                TPropRes res = checkTheory(true);
+                                TPropRes res = checkTheory(true, conflictC);
                                 if (res == TPropRes::Unsat) {
                                     return l_False; // Unsat
                                 } else if (res == TPropRes::Propagate) {
@@ -1694,19 +1709,18 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                             }
                         } while (diff);
                         // Else we go on
+
                         if (decisionLevel() == d + 1) {
                             // literal is succesfully propagated
                             ss = trail.size() - ss;
                         } else if (decisionLevel() == d) {
                             // propagation resulted in backtrack
-                            conflicts++;
                             iterator = 0;
                             best = lit_Undef;
                             best_id = 0;
                             continue ;
                         } else {
                             // Backtracking should happen.
-                            conflicts++;
                             conflict = true;
                             break ;
                         }
@@ -1719,20 +1733,15 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     }
 
                 }
+
                 preprocessing = true;
-                //                TPropRes res = checkTheory(true);
-                //                if (res == TPropRes::Unsat) {
-                //                    return zeroLevelConflictHandler(); // Unsat
-                //                }
                 if(conflict){
                     auto end = std::chrono::steady_clock::now();
                     auto diff = end - start;
                     lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
                     continue ;
                 }
-                if(config.sat_picky() && order_heap.size() != 0){
-                    assert(iterator == 1 && j >= iterator);
-                }
+
                 clauses_num = ca.size();
                 auto end = std::chrono::steady_clock::now();
                 auto diff = end - start;
@@ -1744,9 +1753,6 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     if (res == TPropRes::Propagate) { continue; }
                     if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
                     assert(res == TPropRes::Decide);
-//                    rebuildOrderHeap();
-//                    best = pickBranchLit();
-//                    if (best == lit_Undef) {
                     if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
                         return l_True;
                     }
@@ -1965,8 +1971,8 @@ lbool CoreSMTSolver::solve_()
         // XXX
         status = search((int)nof_conflicts);
         nof_conflicts = restartNextLimit(nof_conflicts);
-        //        printf("Conflicts found: %d\n", conflicts);
-        //        printf("CA size: %d\n", ca.size());
+//        printf("Conflicts found: %d\n", conflicts);
+//        printf("CA size: %d\n", ca.size());
     }
 
     if (status == l_True) {
