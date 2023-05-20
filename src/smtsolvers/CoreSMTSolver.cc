@@ -1565,202 +1565,201 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
             //            if( lookahead_time * 10 <= vsids_time ) {
             if( config.sat_picky() ) {
+                Var next = var_Undef;
+
+                // Pick a variable either randomly or based on activity
+                next = doRandomDecision();
                 decisions++;
-                auto start = std::chrono::steady_clock::now();
+                if( next == var_Undef || value(next) != l_Undef || !decision[next]) {
+                    auto start = std::chrono::steady_clock::now();
 
-                int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                if (pickyWidth == -1) {
-                    pickyWidth = order_heap.size();
-                }
-                int j = 0;
-                int d = decisionLevel();
+                    int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                    if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+                    int j = 0;
+                    int d = decisionLevel();
 
-                bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
-                int skipped_vars_due_to_logic = 0;
-                bool conflict = false;
-                int best_id = 0;
-                Lit best = lit_Undef;
-                int props = assumptions.size();
+                    bool respect_logic_partitioning_hints = config.respect_logic_partitioning_hints();
+                    int skipped_vars_due_to_logic = 0;
+                    bool conflict = false;
+                    int best_id = 0;
+                    Lit best = lit_Undef;
+                    int props = assumptions.size();
 
-                if (config.sat_picky()) {
-                    int k = 0, l = 0;
-                    while (k < order_heap.size() && l < pickyWidth) {
-                        if (value(order_heap[k]) == l_Undef) {
-                            l++;
-                            k++;
-                        } else {
-                            order_heap.remove(order_heap[k]);
+                    if (config.sat_picky()) {
+                        int k = 0, l = 0;
+                        while (k < order_heap.size() && l < pickyWidth) {
+                            if (value(order_heap[k]) == l_Undef) {
+                                l++;
+                                k++;
+                            } else {
+                                order_heap.remove(order_heap[k]);
+                            }
                         }
+                        //                    rebuildOrderHeap();
+                        pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                        if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
                     }
-                    //                    rebuildOrderHeap();
-                    pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                    if(pickyWidth == -1){
-                        pickyWidth = order_heap.size();
-                    }
-                }
 
-                int iterator = 0;
+                    int iterator = 0;
 
-                for (; (!config.sat_picky() && iterator < order_heap.size()) || (config.sat_picky() && iterator < pickyWidth); iterator++, j++) {
-                    Var v = config.sat_picky() ? order_heap[((j)) % pickyWidth] : order_heap[j % order_heap.size()];
+                    for (; (!config.sat_picky() && iterator < order_heap.size()) ||
+                           (config.sat_picky() && iterator < pickyWidth);
+                         iterator++, j++) {
+                        Var v = config.sat_picky() ? order_heap[((j)) % pickyWidth] : order_heap[j % order_heap.size()];
 
-                    if(conflict){
-                        break ;
-                    }
-                    if(!decision[v]){
+                        if (conflict) { break; }
+                        if (!decision[v]) {
+                            if (config.sat_picky()) {
+                                order_heap.remove(order_heap[0]);
+                                //                    rebuildOrderHeap();
+                                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                                if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+                            }
+                            continue;
+                        }
+                        if (value(v) != l_Undef) {
+                            if (config.sat_picky()) {
+                                rebuildOrderHeap();
+                                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                                if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+                            }
+                            if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
+                                // checking if all vars are set
+                                if (checkTheory(true, conflictC) != TPropRes::Decide)
+                                    return l_False; // Problem is trivially unsat
+                                assert(checkTheory(true, conflictC) == TPropRes::Decide);
+                                return l_True; // Stands for SAT
+                            }
+                            continue;
+                            //                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                            //                            // checking if all vars are set
+                            //                            TPropRes res = checkTheory(true, conflictC);
+                            //                            d = decisionLevel();
+                            //                            if (res == TPropRes::Propagate) { continue; }
+                            //                            if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); } assert(res == TPropRes::Decide);
+                            //                            if (static_cast<unsigned int>(trail.size()) >= nVars() || dec_vars > nVars()) {
+                            //                                return l_True;
+                            //                            }
+                            //                        }
+                            //                        continue;
+                        }
                         if (config.sat_picky()) {
-                            order_heap.remove(order_heap[0]);
-                            //                    rebuildOrderHeap();
-                            pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                            if(pickyWidth == -1){
-                                pickyWidth = order_heap.size();
-                            }
-                        }
-                        continue ;
-                    }
-                    if (value(v) != l_Undef) {
-                        if (config.sat_picky()) {
-                            rebuildOrderHeap();
-                            pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                            if(pickyWidth == -1){
-                                pickyWidth = order_heap.size();
-                            }
-                        }
-                        if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
-                            // checking if all vars are set
-                            if (checkTheory(true, conflictC) != TPropRes::Decide)
-                                return l_False; // Problem is trivially unsat
-                            assert(checkTheory(true, conflictC) == TPropRes::Decide);
-                            return l_True; // Stands for SAT
-                        }
-                        continue;
-                        //                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
-                        //                            // checking if all vars are set
-                        //                            TPropRes res = checkTheory(true, conflictC);
-                        //                            d = decisionLevel();
-                        //                            if (res == TPropRes::Propagate) { continue; }
-                        //                            if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                        //                            assert(res == TPropRes::Decide);
-                        //                            if (static_cast<unsigned int>(trail.size()) >= nVars() || dec_vars > nVars()) {
-                        //                                return l_True;
-                        //                            }
-                        //                        }
-                        //                        continue;
-                    }
-                    if(config.sat_picky()){
-                        assert(decisionLevel() == d);
-                        double ss = trail.size();
-                        newDecisionLevel();
-                        Lit l = choosePolarity(v);
-                        uncheckedEnqueue(l);
-                        CRef cr;
-                        bool diff;
-                        do {
-                            diff = false;
-                            while ((cr = propagate()) != CRef_Undef) {
-                                if (decisionLevel() == 0) return l_False; // Unsat
-                                                                          // NO CONFLICT
-                                if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
-                                    // Reached bound on number of conflicts:
-                                    progress_estimate = progressEstimate();
-                                    cancelUntil(0);
-                                    return l_Undef;
-                                }
+                            assert(decisionLevel() == d);
+                            double ss = trail.size();
+                            newDecisionLevel();
+                            Lit l = choosePolarity(v);
+                            uncheckedEnqueue(l);
+                            CRef cr;
+                            bool diff;
+                            do {
+                                diff = false;
+                                while ((cr = propagate()) != CRef_Undef) {
+                                    if (decisionLevel() == 0)
+                                        return l_False; // Unsat
+                                                        // NO CONFLICT
+                                    if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
+                                        // Reached bound on number of conflicts:
+                                        progress_estimate = progressEstimate();
+                                        cancelUntil(0);
+                                        return l_Undef;
+                                    }
 
-                                conflicts++;
-                                conflictC++;
+                                    conflicts++;
+                                    conflictC++;
 
-                                if (conflicts > conflictsUntilFlip) {
-                                    flipState = not flipState;
-                                    conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
-                                }
+                                    if (conflicts > conflictsUntilFlip) {
+                                        flipState = not flipState;
+                                        conflictsUntilFlip += flipState ? flipIncrement / 10 : flipIncrement;
+                                    }
 
-                                vec<Lit> out_learnt;
-                                int out_btlevel;
-                                analyze(cr, out_learnt, out_btlevel);
-                                // Backtracking back to the second best decision level in the clause
-                                cancelUntil(out_btlevel);
-                                assert(value(out_learnt[0]) == l_Undef);
-                                if (out_learnt.size() == 1) {
-                                    CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                                    if (logsProofForInterpolation()) { proof->endChain(unitClause); }
-                                    uncheckedEnqueue(out_learnt[0], unitClause);
-                                } else {
-                                    CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
-                                    if (logsProofForInterpolation()) { proof->endChain(crd); }
-                                    learnts.push(crd);
-                                    attachClause(crd);
-                                    uncheckedEnqueue(out_learnt[0], crd);
-                                    claBumpActivity(ca[crd]);
-                                }
-                                diff = true;
-                                varDecayActivity();
-                                claDecayActivity();
-
-                                learntSizeAdjust();
-                            }
-                            if (!diff) {
-                                TPropRes res = checkTheory(true, conflictC);
-                                if (res == TPropRes::Unsat) {
-                                    return l_False; // Unsat
-                                } else if (res == TPropRes::Propagate) {
+                                    vec<Lit> out_learnt;
+                                    int out_btlevel;
+                                    analyze(cr, out_learnt, out_btlevel);
+                                    // Backtracking back to the second best decision level in the clause
+                                    cancelUntil(out_btlevel);
+                                    assert(value(out_learnt[0]) == l_Undef);
+                                    if (out_learnt.size() == 1) {
+                                        CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
+                                        if (logsProofForInterpolation()) { proof->endChain(unitClause); }
+                                        uncheckedEnqueue(out_learnt[0], unitClause);
+                                    } else {
+                                        CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+                                        if (logsProofForInterpolation()) { proof->endChain(crd); }
+                                        learnts.push(crd);
+                                        attachClause(crd);
+                                        uncheckedEnqueue(out_learnt[0], crd);
+                                        claBumpActivity(ca[crd]);
+                                    }
                                     diff = true;
-                                }
-                            }
-                        } while (diff);
-                        // Else we go on
+                                    varDecayActivity();
+                                    claDecayActivity();
 
-                        if (decisionLevel() == d + 1) {
-                            // literal is succesfully propagated
-                            ss = trail.size() - ss;
-                        } else if (decisionLevel() == d) {
-                            // propagation resulted in backtrack
-                            iterator = 0;
-                            best = lit_Undef;
-                            best_id = 0;
-                            continue ;
-                        } else {
-                            // Backtracking should happen.
-                            conflict = true;
-                            break ;
+                                    learntSizeAdjust();
+                                }
+                                if (!diff) {
+                                    TPropRes res = checkTheory(true, conflictC);
+                                    if (res == TPropRes::Unsat) {
+                                        return l_False; // Unsat
+                                    } else if (res == TPropRes::Propagate) {
+                                        diff = true;
+                                    }
+                                }
+                            } while (diff);
+                            // Else we go on
+
+                            if (decisionLevel() == d + 1) {
+                                // literal is succesfully propagated
+                                ss = trail.size() - ss;
+                            } else if (decisionLevel() == d) {
+                                // propagation resulted in backtrack
+                                iterator = 0;
+                                best = lit_Undef;
+                                best_id = 0;
+                                continue;
+                            } else {
+                                // Backtracking should happen.
+                                conflict = true;
+                                break;
+                            }
+                            if (ss > best_id) {
+                                best_id = ss;
+                                best = l;
+                            }
+                            // Update also the clause deletion heuristic?
+                            cancelUntil(decisionLevel() - 1);
                         }
-                        if(ss > best_id){
-                            best_id = ss;
-                            best = l;
-                        }
-                        // Update also the clause deletion heuristic?
-                        cancelUntil(decisionLevel() - 1);
                     }
 
-                }
+                    preprocessing = true;
+                    if (conflict) {
+                        auto end = std::chrono::steady_clock::now();
+                        auto diff = end - start;
+                        lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+                        continue;
+                    }
 
-                preprocessing = true;
-                if(conflict){
+                    clauses_num = ca.size();
                     auto end = std::chrono::steady_clock::now();
                     auto diff = end - start;
-                    lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-                    continue ;
-                }
-
-                clauses_num = ca.size();
-                auto end = std::chrono::steady_clock::now();
-                auto diff = end - start;
-                //                clauses_num = ca.size();
-                lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds> (diff).count();
-                if( best == lit_Undef ){
-                    // checking if all vars are set
-                    TPropRes res = checkTheory(true, conflictC);
-                    if (res == TPropRes::Propagate) { continue; }
-                    if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
-                    assert(res == TPropRes::Decide);
-                    if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
-                        return l_True;
+                    //                clauses_num = ca.size();
+                    lookahead_time += std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+                    if (best == lit_Undef) {
+                        // checking if all vars are set
+                        TPropRes res = checkTheory(true, conflictC);
+                        if (res == TPropRes::Propagate) { continue; }
+                        if (res == TPropRes::Unsat) { return zeroLevelConflictHandler(); }
+                        assert(res == TPropRes::Decide);
+                        if (static_cast<unsigned int>(trail.size()) >= dec_vars || dec_vars > nVars()) {
+                            return l_True;
+                        }
+                        continue;
                     }
-                    continue;
+                    assert(value(best) == l_Undef);
+                    newDecisionLevel();
+                    uncheckedEnqueue(best);
+                } else {
+                    uncheckedEnqueue(choosePolarity(next));
                 }
-                assert(value(best) == l_Undef);
-                newDecisionLevel();
-                uncheckedEnqueue(best);
 
             } else {
                 auto start = std::chrono::steady_clock::now();
