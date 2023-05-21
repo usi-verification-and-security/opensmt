@@ -360,9 +360,13 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
     for (auto const & [var, polyIndices] : varToPolyIndices) {
         if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
         auto index = polyIndices[0];
-        auto [it, inserted] = processedIndices.insert(index);
-        if (not inserted) { continue; }
+        if (processedIndices.find(index) != processedIndices.end()) { continue; }
         auto & poly = zeroPolynomials[index];
+        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
+            if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
+                    return term.var != PTRef_Undef and not logic.isVar(term.var);
+                })) { continue; }
+        }
         auto coeff = poly.removeVar(var);
         coeff.negate();
         if (not coeff.isOne()) {
@@ -370,6 +374,7 @@ Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vect
         }
         PTRef val = polyToPTRef(logic, poly);
         substitutions.insert(var, val);
+        processedIndices.insert(index);
     }
     // Remove processed polynomials
     std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
@@ -430,6 +435,12 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
             // Already have a substitution for this variable; skip this equality, let the main loop deal with this
             continue;
         }
+        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
+            if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
+                    return term.var != PTRef_Undef and not logic.isVar(term.var);
+                })) { continue; }
+        }
+
         auto coeff = poly.removeVar(var);
         coeff.negate();
         if (not coeff.isOne()) {
