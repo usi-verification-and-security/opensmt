@@ -2,6 +2,8 @@
 
 Bug fixes:
  - SMT-LIB frontend: Fix spurious error when a formal argument in define-fun command had the same name, but different sort than a declared variable
+ - SMT-LIB fronted: Fix response to get-value command
+ - Preprocessing: Fix infinite cycle in computation of substitutions
 
 ### 2.5.0 (2023-03-27)
 
