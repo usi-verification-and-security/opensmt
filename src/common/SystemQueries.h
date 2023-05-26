@@ -29,9 +29,10 @@ namespace opensmt {
 #if defined(__linux__)
     static inline int memReadStat(int field)
 {
-    char name[256];
+    constexpr std::size_t BUFF_SIZE = 256;
+    char name[BUFF_SIZE];
     pid_t pid = getpid();
-    sprintf(name, "/proc/%d/statm", pid);
+    snprintf(name, BUFF_SIZE, "/proc/%d/statm", pid);
     FILE*   in = fopen(name, "rb");
     if (in == NULL) return 0;
     int value;
@@ -48,12 +49,13 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
 #elif defined(__FreeBSD__) || defined(__OSX__) || defined(__APPLE__)
     static inline uint64_t memUsed()
     {
-        char name[256];
+        constexpr std::size_t BUFF_SIZE = 256;
+        char name[BUFF_SIZE];
         FILE *pipe;
-        char buf[1024];
+        char buf[4*BUFF_SIZE];
         uint64_t value=0;
         pid_t pid = getpid();
-        sprintf(name,"ps -o rss -p %d | grep -v RSS", pid);
+        snprintf(name, BUFF_SIZE,"ps -o rss -p %d | grep -v RSS", pid);
         pipe = popen(name, "r");
         if (pipe)
         {

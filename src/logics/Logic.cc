@@ -1297,7 +1297,7 @@ std::string Logic::dumpWithLets(PTRef formula) const {
 void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
     uint32_t random_Idx = 0;
     vector<PTRef> unprocessed_enodes;
-    map<PTRef, string> enode_to_def;
+    std::map<PTRef, std::string> enode_to_def;
     unsigned num_lets = 0;
 
     unprocessed_enodes.push_back(formula);
@@ -1314,39 +1314,30 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
         }
 
         bool unprocessed_children = false;
-        const Pterm & term = getPterm(e);
-        for (int i = 0; i < term.size(); ++i) {
-            PTRef pref = term[i];
-            //assert(isTerm(pref));
-            //
+        auto const & term = getPterm(e);
+        for (PTRef pref : term) {
             // Push only if it is unprocessed
-            //
             if (enode_to_def.find(pref) == enode_to_def.end() && (isBooleanOperator(pref) || isEquality(pref))) {
                 unprocessed_enodes.push_back(pref);
                 unprocessed_children = true;
             }
         }
-        //
-        // SKip if unprocessed_children
-        //
         if (unprocessed_children) continue;
 
         unprocessed_enodes.pop_back();
 
-        char buf[32];
-        sprintf(buf, "?def%d", random_Idx++);
-
+        std::string definition = "?def" + std::to_string(random_Idx++);
         // Open let
         dump_out << "(let ";
         // Open binding
-        dump_out << "((" << buf << " ";
+        dump_out << "((" << definition << " ";
 
         if (term.size() > 0) dump_out << "(";
         dump_out << printSym(term.symb());
-        for (int i = 0; i < term.size(); ++i) {
-            PTRef pref = term[i];
-            if (isBooleanOperator(pref) || isEquality(pref))
+        for (PTRef pref : term) {
+            if (isBooleanOperator(pref) || isEquality(pref)) {
                 dump_out << " " << enode_to_def[pref];
+            }
             else {
                 dump_out << " " << printTerm(pref);
                 if (isAnd(e)) dump_out << endl;
@@ -1360,7 +1351,7 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
         num_lets++;
 
         assert(enode_to_def.find(e) == enode_to_def.end());
-        enode_to_def[e] = buf;
+        enode_to_def[e] = std::move(definition);
     }
     dump_out << '\n' << enode_to_def[formula] << '\n';
 
