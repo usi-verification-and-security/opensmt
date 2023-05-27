@@ -370,6 +370,8 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             theory = new LATheory<ArithLogic, IDLTHandler>(config, liaLogic);
             break;
         }
+        case Logic_t::QF_UFRDL:
+        case Logic_t::QF_UFIDL:
         case Logic_t::QF_UFLRA:
         case Logic_t::QF_UFLIA:
         case Logic_t::QF_ALRA:

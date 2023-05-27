@@ -24,6 +24,8 @@ opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_CUF") return opensmt::Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return opensmt::Logic_t::QF_UFLRA;
     if (name == "QF_UFLIA") return opensmt::Logic_t::QF_UFLIA;
+    if (name == "QF_UFRDL") return opensmt::Logic_t::QF_UFRDL;
+    if (name == "QF_UFIDL") return opensmt::Logic_t::QF_UFIDL;
     if (name == "QF_AX") return opensmt::Logic_t::QF_AX;
     if (name == "QF_ALRA") return opensmt::Logic_t::QF_ALRA;
     if (name == "QF_ALIA") return opensmt::Logic_t::QF_ALIA;
