@@ -1,10 +1,12 @@
 #include "UFLATheory.h"
 
-#include "ArrayHelpers.h"
-#include "OsmtInternalException.h"
-#include "TreeOps.h"
-#include "Substitutor.h"
 #include "ArithmeticEqualityRewriter.h"
+#include "ArrayHelpers.h"
+#include "DistinctRewriter.h"
+#include "LATheory.h"
+#include "OsmtInternalException.h"
+#include "Substitutor.h"
+#include "TreeOps.h"
 
 bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
 {
@@ -14,6 +16,8 @@ bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int cu
     } else {
         PTRef coll_f = getCollateFunction(formulas, curr);
         PTRef fla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
+        fla = rewriteDistincts(getLogic(), fla);
+        fla = rewriteDivMod<ArithLogic>(logic, fla);
         PTRef purified = purify(fla);
         if (logic.hasArrays()) {
             purified = instantiateReadOverStore(logic, purified);
