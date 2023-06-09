@@ -809,7 +809,7 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
 
     if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
-
+    if (isOne(divisor) or isMinusOne(divisor)) { return getTerm_IntZero(); }
     if (isConstant(dividend)) {
         auto const& dividendValue = getNumConst(dividend);
         auto const& divisorValue = getNumConst(divisor);
@@ -831,6 +831,8 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     PTRef divisor = args[1];
     if (not isConstant(divisor) and not isConstant(dividend)) { throw LANonLinearException("Divisor or dividend must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
+    if (isOne(divisor)) { return dividend; }
+    if (isMinusOne(divisor)) { return mkNeg(dividend); }
 
     if (isConstant(divisor) and isConstant(dividend)) {
         auto const& dividendValue = getNumConst(dividend);

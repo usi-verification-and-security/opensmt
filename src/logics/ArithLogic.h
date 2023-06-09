@@ -278,7 +278,10 @@ public:
 
     bool isOne(PTRef tr) const { return isIntOne(tr) or isRealOne(tr); }
     bool isIntOne(PTRef tr) const { return tr == getTerm_IntOne(); }
+    bool isMinusOne(PTRef tr) const { return isIntMinusOne(tr) or isRealMinusOne(tr); }
+    bool isIntMinusOne(PTRef tr) const { return tr == getTerm_IntMinusOne(); }
     bool isRealOne(PTRef tr) const { return tr == getTerm_RealOne(); }
+    bool isRealMinusOne(PTRef tr) const { return tr == getTerm_RealMinusOne(); }
     bool isIntOne(SymRef sr) const { return sr == sym_Int_ONE; }
     bool isRealOne(SymRef sr) const { return sr == sym_Real_ONE; }
 
