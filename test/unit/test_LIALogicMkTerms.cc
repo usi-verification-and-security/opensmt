@@ -81,6 +81,16 @@ TEST_F(LIALogicMkTermsTest, testMod_Leq) {
     EXPECT_EQ(logic.getSymRef(leq), logic.get_sym_Int_LEQ());
 }
 
+TEST_F(LIALogicMkTermsTest, testMod_One) {
+    PTRef one = logic.getTerm_IntOne();
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef mod = logic.mkMod(x, one);
+    EXPECT_EQ(mod, zero);
+    PTRef minusOne = logic.getTerm_IntMinusOne();
+    mod = logic.mkMod(x, minusOne);
+    EXPECT_EQ(mod, zero);
+}
+
 TEST_F(LIALogicMkTermsTest, testDiv_Constants_PosPos) {
     PTRef two = logic.mkIntConst(2);
     PTRef three = logic.mkIntConst(3);
@@ -117,6 +127,16 @@ TEST_F(LIALogicMkTermsTest, testDiv_Constants_NegNeg) {
     EXPECT_EQ(div, logic.getTerm_IntOne());
     EXPECT_EQ(mod, logic.getTerm_IntOne());
 }
+
+TEST_F(LIALogicMkTermsTest, testDiv_One) {
+    PTRef one = logic.getTerm_IntOne();
+    PTRef div = logic.mkIntDiv(x, one);
+    EXPECT_EQ(div, x);
+    PTRef minusOne = logic.getTerm_IntMinusOne();
+    div = logic.mkIntDiv(x, minusOne);
+    EXPECT_EQ(div, logic.mkNeg(x));
+}
+
 
 TEST_F(LIALogicMkTermsTest, test_Inequality_Simplification)
 {
