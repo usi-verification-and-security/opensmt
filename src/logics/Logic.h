@@ -150,7 +150,10 @@ class Logic {
     std::string         printSort  (SRef s)    const;
     std::size_t         getSortSize(SRef s)    const;
     SRef declareUninterpretedSort(std::string const &);
+
     bool isArraySort(SRef sref) const { return sort_store[sref].getSymRef() == sym_ArraySort; }
+    SRef getArraySort(SRef domain, SRef codomain);
+
     bool hasArrays() const { return opensmt::QFLogicToProperties.at(logicType).ufProperty.hasArrays; }
     bool isArrayStore(SymRef) const;
     bool isArrayStore(PTRef) const;
@@ -261,7 +264,7 @@ public:
     void        instantiateArrayFunctions(SRef);
 
     bool        hasSortSymbol(SortSymbol const &);
-    bool        peekSortSymbol(SortSymbol const &, SSymRef&);
+    bool        peekSortSymbol(SortSymbol const &, SSymRef &) const;
     SSymRef     declareSortSymbol(SortSymbol symbol);
     SRef        getSort(SSymRef, vec<SRef> && args);
 

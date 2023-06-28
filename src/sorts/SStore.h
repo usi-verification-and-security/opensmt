@@ -63,7 +63,7 @@ class SStore
     //===========================================================================
     // Public APIs for sort construction/destruction
 
-    bool peek(SortSymbol const & symbol, SSymRef & outRef);
+    bool peek(SortSymbol const & symbol, SSymRef & outRef) const;
     SSymRef newSortSymbol(SortSymbol symbol);
 
     Sort const & operator [](SRef sr)               const { return sa[sr]; }

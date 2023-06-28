@@ -245,3 +245,12 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SATSolverTypes.cc"
 
 target_link_libraries(SATSolverTypesTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET SATSolverTypesTest)
+
+
+add_executable(ArraysTest)
+target_sources(ArraysTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Arrays.cc"
+        )
+
+target_link_libraries(ArraysTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET ArraysTest)

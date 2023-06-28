@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
-bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) {
+bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) const {
     auto it = this->sortSymbolTable.find(symbol.name);
     if (it != sortSymbolTable.end()) {
         outRef = it->second;

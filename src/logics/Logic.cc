@@ -318,7 +318,7 @@ bool Logic::hasSortSymbol(const SortSymbol & symbol) {
     return sort_store.peek(symbol, unused);
 }
 
-bool Logic::peekSortSymbol(SortSymbol const & symbol, SSymRef & out) {
+bool Logic::peekSortSymbol(SortSymbol const & symbol, SSymRef & out) const {
     return sort_store.peek(symbol, out);
 }
 
@@ -1574,6 +1574,10 @@ bool        Logic::isArraySelect(SymRef sr) const { return selects.has(sr); }
 bool        Logic::isArraySelect(PTRef tr) const { return isArraySelect(getPterm(tr).symb()); }
 bool        Logic::isArrayStore(SymRef sr) const { return stores.has(sr); }
 bool        Logic::isArrayStore(PTRef tr) const { return isArrayStore(getPterm(tr).symb()); }
+
+SRef Logic::getArraySort(SRef domain, SRef codomain) {
+    return getSort(sym_ArraySort, {domain, codomain});
+}
 
 void Logic::termSort(vec<PTRef>& v) const { sort(v, std::less<PTRef>{}); }
 
