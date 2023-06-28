@@ -109,7 +109,8 @@ class CUFLogic: public Logic
     ~CUFLogic();
     virtual std::string const getName() const override { return "QF_CUF"; }
 
-//    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
+    PTRef insertTerm(SymRef sym, vec<PTRef> && terms) override;
+
     using Logic::mkConst;
     virtual PTRef         mkConst   (const int c) { return mkCUFConst(c); }
     PTRef                 mkCUFConst   (const int c) { std::string num = std::to_string(c); PTRef tr = Logic::mkConst(sort_CUFNUM, num.c_str()); return tr; }

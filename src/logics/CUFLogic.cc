@@ -100,12 +100,58 @@ CUFLogic::CUFLogic(opensmt::Logic_t logicType) :
 CUFLogic::~CUFLogic()
 {}
 
-//PTRef
-//CUFLogic::insertTerm(SymRef sym, vec<PTRef>& terms, char **msg)
-//{
-//    assert(false);
-//    return PTRef_Undef;
-//}
+PTRef CUFLogic::insertTerm(SymRef sym, vec<PTRef> && terms) {
+    if (isCUFNeg(sym))
+        return mkCUFNeg(terms[0]);
+    if (isCUFMinus(sym))
+        return mkCUFMinus(terms);
+    if (isCUFPlus(sym))
+        return mkCUFPlus(terms);
+    if (isCUFTimes(sym))
+        return mkCUFTimes(terms);
+    if (isCUFDiv(sym))
+        return mkCUFDiv(terms);
+    if (isCUFLeq(sym))
+        return mkCUFLeq(terms);
+    if (isCUFLt(sym))
+        return mkCUFLt(terms);
+    if (isCUFGeq(sym))
+        return mkCUFGeq(terms);
+    if (isCUFGt(sym))
+        return mkCUFGt(terms);
+    if (isCUFMod(sym))
+        return mkCUFMod(terms);
+    if (isCUFLshift(sym))
+        return mkCUFLshift(terms);
+    if (isCUFLRshift(sym))
+        return mkCUFLRshift(terms);
+    if (isCUFARshift(sym))
+        return mkCUFARshift(terms);
+    if (isCUFBwAnd(sym))
+        return mkCUFBwAnd(terms);
+    if (isCUFBwOr(sym))
+        return mkCUFBwOr(terms);
+    if (isCUFNeq(sym))
+        return mkCUFNeq(terms);
+    if (isCUFBwxor(sym))
+        return mkCUFBwXor(terms);
+    if (isCUFAddrof(sym))
+        return mkCUFAddrof(terms);
+    if (isCUFCompl(sym))
+        return mkCUFCompl(terms);
+    if (isCUFInc(sym))
+        return mkCUFInc(terms);
+    if (isCUFDec(sym))
+        return mkCUFDec(terms);
+    if (isCUFLand(sym))
+        return mkCUFLand(terms);
+    if (isCUFLor(sym))
+        return mkCUFLor(terms);
+    if (isCUFPtr(sym))
+        return mkCUFPtr(terms);
+
+    return Logic::insertTerm(sym, std::move(terms));
+}
 
 PTRef
 CUFLogic::mkCUFNeg(PTRef tr)
