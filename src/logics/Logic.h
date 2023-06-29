@@ -109,7 +109,6 @@ class Logic {
     static const char*  tk_val_bool_default;
     static const char*  tk_true;
     static const char*  tk_false;
-    static const char*  tk_anon;   // The anonymous symbol for enodes for propositional formulas
     static const char*  tk_uf_not; // The symbol for propositional not in UF.
     static const char*  tk_not;
     static const char*  tk_equals;
