@@ -27,7 +27,7 @@ typedef enum
   , qf_auflra     // Arrays + UF + LRA
   , qf_auflia     // Arrays + UF + LIA
   , qf_bool       // Only booleans
-  , qf_ct         // Cost 
+  , qf_auflira    // Arrays + UF + (LIA or LRA)
 } opensmt_logic;
 
 class Opensmt

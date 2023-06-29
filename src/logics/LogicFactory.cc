@@ -13,7 +13,7 @@
 std::array<std::string, 23> logicToName = {{"Undef", "Empty", "QF_UF", "QF_CUF", "QF_BV", "QF_RDL", "QF_IDL",
                                            "QF_LRA", "QF_LIA", "QF_UFRDL", "QF_UFIDL", "QF_UFLRA", "QF_UFLIA",
                                            "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_ALRA", "QF_ALIA", "QF_AUFLRA",
-                                           "QF_AUFLIA", "QF_BOOL", "QF_AUFBV", "QF_CT"}};
+                                           "QF_AUFLIA", "QF_BOOL", "QF_AUFBV", "QF_AUFLIRA"}};
 
 opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
@@ -31,6 +31,7 @@ opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
     if (name == "QF_ALIA") return opensmt::Logic_t::QF_ALIA;
     if (name == "QF_AUFLRA") return opensmt::Logic_t::QF_AUFLRA;
     if (name == "QF_AUFLIA") return opensmt::Logic_t::QF_AUFLIA;
+    if (name == "QF_AUFLIRA") return opensmt::Logic_t::QF_AUFLIRA;
     return opensmt::Logic_t::UNDEF;
 }
 
@@ -54,6 +55,7 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
         case Logic_t::QF_UFLIA:
         case Logic_t::QF_ALIA:
         case Logic_t::QF_AUFLIA:
+        case Logic_t::QF_AUFLIRA:
         {
             l = new ArithLogic(logicType);
             break;

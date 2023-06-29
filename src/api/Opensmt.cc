@@ -39,8 +39,8 @@ opensmt::Logic_t convert(opensmt_logic logic) {
           return opensmt::Logic_t::QF_AUFLRA;
         case qf_auflia:
           return opensmt::Logic_t::QF_AUFLIA;
-        case qf_ct:
-            return opensmt::Logic_t::QF_CT;
+        case qf_auflira:
+            return opensmt::Logic_t::QF_AUFLIRA;
         default:
             return opensmt::Logic_t::UNDEF;
     }
