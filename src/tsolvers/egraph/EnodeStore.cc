@@ -71,9 +71,8 @@ ERef EnodeStore::addTerm(PTRef term, bool ignoreChildren) {
     }();
     ERef newEnode = ea.alloc(symref, argSpan, term);
 
+    assert(not termToERef.has(term));
     termToERef.insert(term, newEnode);
-    assert(not ERefToTerm.has(newEnode));
-    ERefToTerm.insert(newEnode, term);
     termEnodes.push(newEnode);
     return newEnode;
 }

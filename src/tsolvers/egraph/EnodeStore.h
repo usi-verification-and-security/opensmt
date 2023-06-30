@@ -78,7 +78,6 @@ class EnodeStore {
     uint32_t       dist_idx;
 
     Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
-    Map<ERef,PTRef,ERefHash,Equal<ERef> >      ERefToTerm;
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
     vec<ERef>      termEnodes;
@@ -108,7 +107,7 @@ public:
      * @return true if tr is in the store, false if not.
      */
     bool         peekERef(PTRef tr, ERef& er)  const { return termToERef.peek(tr, er); }
-    PTRef        getPTRef(ERef er)     const { return ERefToTerm[er]; }
+    PTRef        getPTRef(ERef er)     const { return ea[er].getTerm(); }
 
     vec<PTRefERefPair> constructTerm(PTRef tr);
 
