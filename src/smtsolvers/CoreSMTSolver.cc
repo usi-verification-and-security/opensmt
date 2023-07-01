@@ -1563,7 +1563,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:;
             }
 
-            //            if( lookahead_time * 10 <= vsids_time ) {
+//            if( lookahead_time * 10 <= vsids_time ) {
             if( config.sat_picky() ) {
                 Var next = var_Undef;
 
@@ -1584,20 +1584,25 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                     int best_id = 0;
                     Lit best = lit_Undef;
                     int props = assumptions.size();
-
+                    int activity_m = -1;
                     if (config.sat_picky()) {
                         int k = 0, l = 0;
-                        while (k < order_heap.size() && l < pickyWidth) {
+                        pickyWidth = 0;
+                        while (k < order_heap.size() && (activity[order_heap[k]] == activity_m || activity_m == -1) ) {
+                            activity[order_heap[k]];
                             if (value(order_heap[k]) == l_Undef) {
+                                pickyWidth++;
+                                if(activity_m == -1) activity_m = activity[order_heap[k]];
                                 l++;
                                 k++;
+
                             } else {
                                 order_heap.remove(order_heap[k]);
                             }
                         }
                         //                    rebuildOrderHeap();
-                        pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                        if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+//                        pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+//                        if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
                     }
 
                     int iterator = 0;
