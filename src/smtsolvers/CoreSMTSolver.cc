@@ -1604,7 +1604,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
 //                    printf("New decision level pick %d from %d candidates with %f weight\n",
 //                           decisionLevel(), pickyWidth, activity_m);
-                    if(pickyWidth > 1 || decisionLevel() < 3){
+                    if(pickyWidth > 1 && activity_m != 0){
                         int iterator = 0;
                         for (; (!config.sat_picky() && iterator < order_heap.size()) ||
                                (config.sat_picky() && iterator < pickyWidth);
