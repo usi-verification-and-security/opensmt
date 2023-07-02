@@ -1573,7 +1573,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 if( next == var_Undef || value(next) != l_Undef || !decision[next]) {
                     auto start = std::chrono::steady_clock::now();
 
-                    int pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
+                    int pickyWidth = 0;
                     if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
                     int j = 0;
                     int d = decisionLevel();
@@ -1600,9 +1600,6 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                                 order_heap.remove(order_heap[k]);
                             }
                         }
-                        //                    rebuildOrderHeap();
-//                        pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-//                        if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
                     }
 
                     int iterator = 0;
@@ -1611,22 +1608,47 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                            (config.sat_picky() && iterator < pickyWidth);
                          iterator++, j++) {
                         Var v = config.sat_picky() ? order_heap[((j)) % pickyWidth] : order_heap[j % order_heap.size()];
-
+//                        assert(activity[v] == activity_m);
                         if (conflict) { break; }
                         if (!decision[v]) {
                             if (config.sat_picky()) {
                                 order_heap.remove(order_heap[0]);
-                                //                    rebuildOrderHeap();
-                                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                                if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+                                activity_m = -1;
+                                int k = 0, l = 0;
+                                pickyWidth = 0;
+                                while (k < order_heap.size() && (activity[order_heap[k]] == activity_m || activity_m == -1) ) {
+                                    activity[order_heap[k]];
+                                    if (value(order_heap[k]) == l_Undef) {
+                                        pickyWidth++;
+                                        if(activity_m == -1) activity_m = activity[order_heap[k]];
+                                        l++;
+                                        k++;
+
+                                    } else {
+                                        order_heap.remove(order_heap[k]);
+                                    }
+                                }
                             }
                             continue;
                         }
                         if (value(v) != l_Undef) {
                             if (config.sat_picky()) {
                                 rebuildOrderHeap();
-                                pickyWidth = std::min(order_heap.size(), config.sat_picky_w());
-                                if (pickyWidth == -1) { pickyWidth = order_heap.size(); }
+                                activity_m = -1;
+                                int k = 0, l = 0;
+                                pickyWidth = 0;
+                                while (k < order_heap.size() && (activity[order_heap[k]] == activity_m || activity_m == -1) ) {
+                                    activity[order_heap[k]];
+                                    if (value(order_heap[k]) == l_Undef) {
+                                        pickyWidth++;
+                                        if(activity_m == -1) activity_m = activity[order_heap[k]];
+                                        l++;
+                                        k++;
+
+                                    } else {
+                                        order_heap.remove(order_heap[k]);
+                                    }
+                                }
                             }
                             if (static_cast<unsigned int>(trail.size()) == nVars() || order_heap.empty()) {
                                 // checking if all vars are set
