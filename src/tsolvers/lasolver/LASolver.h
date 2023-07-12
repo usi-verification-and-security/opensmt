@@ -69,11 +69,10 @@ private:
 
     vec<PtAsgn>          LABoundRefToLeqAsgn;
     PtAsgn getAsgnByBound(LABoundRef br) const;
-    vec<LABoundRefPair>  LeqToLABoundRefPair;
-    LABoundRefPair getBoundRefPair(const PTRef leq) const {
-        auto index = Idx(logic.getPterm(leq).getId());
-        assert(index < LeqToLABoundRefPair.size_());
-        return LeqToLABoundRefPair[index];
+    Map<PTRef, LABoundRefPair, PTRefHash>  LeqToLABoundRefPair;
+    LABoundRefPair getBoundRefPair(PTRef leq) const {
+        assert(LeqToLABoundRefPair.has(leq));
+        return LeqToLABoundRefPair[leq];
     }
 
     // Possible internal states of the solver
@@ -84,7 +83,6 @@ private:
 
     LASolverStats laSolverStats;
 
-    void setBound(PTRef leq);
     bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
 
     PTRef getVarPTRef(LVRef v) const {
@@ -151,7 +149,7 @@ private:
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
     bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const;
-    LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
+    LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVar(ref); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
 
     // Random splitting heuristic

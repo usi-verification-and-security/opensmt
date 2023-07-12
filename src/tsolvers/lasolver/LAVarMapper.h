@@ -9,6 +9,7 @@
 #define OPENSMT_LAVARMAPPER_H
 
 #include "LARefs.h"
+#include "Map.h"
 #include "Pterm.h"
 #include "Vec.h"
 
@@ -28,7 +29,7 @@ class ArithLogic;
 class LAVarMapper {
 private:
     /** Mapping of linear Pterms to LVRefs */
-    vec<LVRef>      ptermToLavar;
+    Map<PTRef, LVRef, PTRefHash> ptermToLavar;
 
     /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
     vec<PTRef>      laVarToPTRef;
@@ -39,9 +40,8 @@ public:
 
     void   registerNewMapping(LVRef lv, PTRef e_orig);
 
-    LVRef  getVarByPTId(PTId i) const;
+    LVRef  getVar(PTRef) const;
 
-    bool   hasVar(PTId i) const;
     bool   hasVar(PTRef tr) const;
 
     inline PTRef getVarPTRef(LVRef ref) const { return laVarToPTRef[ref.x]; }
