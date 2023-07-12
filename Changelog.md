@@ -1,4 +1,12 @@
-### 2.5.1 (unreleased)
+### 2.5.3 (unreleased)
+
+
+### 2.5.2 (2023-07-12)
+
+Bug fixes:
+ - ArithLogic: Fix corner cases for div and mod operators
+
+### 2.5.1 (2023-05-23)
 
 Bug fixes:
  - SMT-LIB frontend: Fix spurious error when a formal argument in define-fun command had the same name, but different sort than a declared variable
