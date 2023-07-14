@@ -448,16 +448,11 @@ bool LASolver::assertLit(PtAsgn asgn)
 //    printf("Asserting %s (%d)\n", boundStore.printBound(bound_ref), asgn.tr.x);
 //    printf(" - equal to %s%s\n", asgn.sgn == l_True ? "" : "not ", logic.pp(asgn.tr));
 
-    LVRef it = getVarForLeq(asgn.tr);
-    // Constraint to push was not found in local storage. Most likely it was not read properly before
-    assert(it != LVRef::Undef);
-
-    if (assertBoundOnVar( it, bound_ref))
-    {
+    if (assertBound(bound_ref)) {
         assert(getStatus());
         setPolarity(asgn.tr, asgn.sgn);
         pushDecision(asgn);
-        getSimpleDeductions(it, bound_ref);
+        getSimpleDeductions(bound_ref);
         generalTSolverStats.sat_calls++;
     } else {
         generalTSolverStats.unsat_calls++;
@@ -466,12 +461,10 @@ bool LASolver::assertLit(PtAsgn asgn)
     return getStatus();
 }
 
-bool LASolver::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
+bool LASolver::assertBound(LABoundRef boundRef) {
     // No check whether the bounds are consistent for the polynomials.  This is done later with Simplex.
-
     assert(status == SAT);
-    assert(it != LVRef::Undef);
-    storeExplanation(simplex.assertBoundOnVar(it, itBound_ref));
+    storeExplanation(simplex.assertBound(boundRef));
 
     if (explanation.size() > 0) {
         return setStatus(UNSAT);
@@ -621,12 +614,13 @@ bool LASolver::setStatus( LASolverStatus s )
 }
 
 
-void LASolver::getSimpleDeductions(LVRef v, LABoundRef br)
+void LASolver::getSimpleDeductions(LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
 //    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
 
-    const LABound& bound = boundStore[br];
+    auto const & bound = boundStore[br];
+    LVRef v = bound.getLVRef();
     if (bound.getType() == bound_l) {
         for (int it = bound.getIdx().x - 1; it >= 0; it = it - 1) {
             LABoundRef bound_prop_ref = boundStore.getBoundByIdx(v, it);

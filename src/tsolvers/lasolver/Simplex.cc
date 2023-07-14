@@ -229,27 +229,27 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
     return y_found;
 }
 
-Simplex::Explanation Simplex::assertBoundOnVar(LVRef it, LABoundRef itBound_ref) {
-    assert(!model->isUnbounded(it));
-    assert(boundStore[itBound_ref].getLVRef() == it);
+Simplex::Explanation Simplex::assertBound(LABoundRef boundRef) {
+    LVRef boundTerm = boundStore[boundRef].getLVRef();
+    assert(!model->isUnbounded(boundTerm));
 
     // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
-    if (model->boundTriviallyUnsatisfied(it, itBound_ref)) {
-        const LABound & itBound = boundStore[itBound_ref];
+    if (model->boundTriviallyUnsatisfied(boundTerm, boundRef)) {
+        const LABound & itBound = boundStore[boundRef];
         assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
-        LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(it) : model->readUBoundRef(it);
-        return {{br, 1}, {itBound_ref, 1}};
+        LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(boundTerm) : model->readUBoundRef(boundTerm);
+        return {{br, 1}, {boundRef, 1}};
     }
 
     // Here we count the bound as activated
-    boundActivated(it);
+    boundActivated(boundTerm);
 
     // Check if simple SAT can be given
-    if (model->boundTriviallySatisfied(it, itBound_ref)) { return {}; }
+    if (model->boundTriviallySatisfied(boundTerm, boundRef)) { return {}; }
 
-    model->pushBound(itBound_ref);
+    model->pushBound(boundRef);
 
-    bufferOfActivatedBounds.emplace_back(it, itBound_ref);
+    bufferOfActivatedBounds.emplace_back(boundTerm, boundRef);
     return {};
 }
 

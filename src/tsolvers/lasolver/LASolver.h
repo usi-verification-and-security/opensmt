@@ -85,7 +85,7 @@ private:
     LASolverStats laSolverStats;
 
     void setBound(PTRef leq);
-    bool assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
+    bool assertBound(LABoundRef boundRef);
 
     PTRef getVarPTRef(LVRef v) const {
         return laVarMapper.getVarPTRef(v);
@@ -161,7 +161,7 @@ private:
     bool shouldTryCutFromProof() const;
 
     void getSuggestions( vec<PTRef>& dst, SolverId solver_id );                                   // find possible suggested atoms
-    void getSimpleDeductions(LVRef v, LABoundRef);      // find deductions from actual bounds position
+    void getSimpleDeductions(LABoundRef);                   // find deductions from actual bounds position
     unsigned getIteratorByPTRef( PTRef e, bool );                                                 // find bound iterator by the PTRef
     inline bool getStatus( );                               // Read the status of the solver in lbool
     bool setStatus( LASolverStatus );               // Sets and return status of the solver

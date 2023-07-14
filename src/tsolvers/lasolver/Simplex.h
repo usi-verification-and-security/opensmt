@@ -82,7 +82,7 @@ public:
 
     void quasiToBasic(LVRef it);
 
-    Explanation assertBoundOnVar(LVRef it, LABoundRef itBound_ref);
+    Explanation assertBound(LABoundRef boundRef);
     bool isProcessedByTableau  (LVRef var) const;
     inline bool isModelOutOfBounds    (LVRef v) const { return isModelOutOfUpperBound(v) || isModelOutOfLowerBound(v); }
     inline bool isModelOutOfUpperBound(LVRef v) const { return ( model->hasUBound(v) && model->read(v) > model->Ub(v) ); }

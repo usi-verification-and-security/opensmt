@@ -1,6 +1,9 @@
-//
-// Created by prova on 08.10.19.
-//
+/*
+*  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+*  Copyright (c) 2023, Martin Blicha <martin.blicha@gmail.com>
+*
+*  SPDX-License-Identifier: MIT
+*/
 
 #include <gtest/gtest.h>
 #include <lasolver/Simplex.h>
@@ -65,13 +68,13 @@ TEST(Simplex_test, test_ops_in_Simplex)
     Delta sum = s.getValuation(y_minus_x);
     std::cout << sum.R() + sum.D() * d << '\n';
 
-    s.assertBoundOnVar(x, x_strict_0.lb);
-    s.assertBoundOnVar(y, y_strict_0.lb);
+    s.assertBound(x_strict_0.lb);
+    s.assertBound(y_strict_0.lb);
 
     s.pushBacktrackPoint();
 
-    s.assertBoundOnVar(x, x_strict_1.ub);
-    s.assertBoundOnVar(y, y_strict_1.ub);
+    s.assertBound(x_strict_1.ub);
+    s.assertBound(y_strict_1.ub);
 
     ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 0);
@@ -83,7 +86,7 @@ TEST(Simplex_test, test_ops_in_Simplex)
     sum = s.getValuation(y_minus_x);
     std::cout << sum.R() + sum.D() * d << '\n';
 
-    ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_1.lb);
+    ex = s.assertBound(y_minus_x_nostrict_1.lb);
     ASSERT_EQ(ex.size(), 0); // not detectable at this point
     ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 3);
@@ -91,9 +94,9 @@ TEST(Simplex_test, test_ops_in_Simplex)
     s.popBacktrackPoint();
     s.finalizeBacktracking();
 
-    ex = s.assertBoundOnVar(y_minus_x, y_minus_x_nostrict_0.lb);
-    s.assertBoundOnVar(x, x_nostrict_1.lb);
-    s.assertBoundOnVar(y, y_nostrict_1.lb);
+    s.assertBound(y_minus_x_nostrict_0.lb);
+    s.assertBound(x_nostrict_1.lb);
+    s.assertBound(y_nostrict_1.lb);
     ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 0);
     d = s.computeDelta();
@@ -137,11 +140,11 @@ TEST(Simplex_test, test_Assignment)
     s.newRow(y_minus_x, std::move(p_y_plus_x));
 
     s.initModel();
-    s.assertBoundOnVar(x_nostrict_1.v, x_nostrict_1.ub);
-    s.assertBoundOnVar(x_strict_m5.v, x_strict_m5.lb);
-    s.assertBoundOnVar(y_strict_0.v, y_strict_0.ub);
-    s.assertBoundOnVar(y_minus_x_strict_0.v, y_minus_x_strict_0.lb);
-    s.assertBoundOnVar(y_minus_x_nostrict_0.v, y_minus_x_nostrict_0.ub);
+    s.assertBound(x_nostrict_1.ub);
+    s.assertBound(x_strict_m5.lb);
+    s.assertBound(y_strict_0.ub);
+    s.assertBound(y_minus_x_strict_0.lb);
+    s.assertBound(y_minus_x_nostrict_0.ub);
 
     Simplex::Explanation ex = s.checkSimplex();
     ASSERT_EQ(ex.size(), 0);
