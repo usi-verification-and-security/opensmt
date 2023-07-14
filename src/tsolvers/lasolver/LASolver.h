@@ -149,7 +149,6 @@ private:
     LABoundStore::BoundValuePair getBoundsValueForRealVar(const Real & c, bool strict);
 
     LVRef getLAVar_single(PTRef term);                      // Initialize a new LA var if needed, otherwise return the old var
-    bool hasVar(PTRef expr);
     LVRef getVarForLeq(PTRef ref)  const;
     LVRef getVarForTerm(PTRef ref) const  { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
     void notifyVar(LVRef);                             // Notify the solver of the existence of the var. This is so that LIA can add it to integer vars list.
@@ -172,8 +171,6 @@ private:
     void computeModel() override;
 
     std::vector<opensmt::Real> concrete_model;              // Save here the concrete model for the vars indexed by Id
-
-    opensmt::Real evaluateTerm(PTRef tr);
 
     LASolverStatus status;                  // Internal status of the solver (different from bool)
 

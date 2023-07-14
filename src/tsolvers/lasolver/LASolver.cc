@@ -235,12 +235,6 @@ void LASolver::markVarAsInt(LVRef v) {
     }
 }
 
-bool LASolver::hasVar(PTRef expr) {
-    expr =  laVarMapper.isNegated(expr) ? logic.mkNeg(expr) : expr;
-    PTId id = logic.getPterm(expr).getId();
-    return laVarMapper.hasVar(id);
-}
-
 LVRef LASolver::getVarForLeq(PTRef ref) const {
     assert(logic.isLeq(ref));
     auto [constant, term] = logic.leqToConstantAndTerm(ref);
@@ -664,29 +658,6 @@ void LASolver::getConflict(vec<PtAsgn> & conflict) {
     for (PtAsgn lit : explanation) {
         conflict.push(lit);
     }
-}
-
-// We may assume that the term is of the following forms
-// (1) (* x c)
-// (2) (* c x)
-// (3) c
-opensmt::Number LASolver::evaluateTerm(PTRef tr)
-{
-    opensmt::Real val(0);
-    // Case (3)
-    if (logic.isNumConst(tr))
-        return logic.getNumConst(tr);
-
-    // Cases (1) & (2)
-    auto [var, coeff] = logic.splitTermToVarAndConst(tr);
-    if (!hasVar(var)) {
-        // MB: This variable is not known to the LASolver. Most probably it was not part of the query.
-        // We can assign it any value.
-        return 0;
-    }
-    val += logic.getNumConst(coeff) * concrete_model[getVarId(getVarForTerm(var))];
-
-    return val;
 }
 
 void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
