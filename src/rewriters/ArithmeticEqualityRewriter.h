@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ * Copyright (c) 2021-2023, Martin Blicha <martin.blicha@gmail.com>
  *
  *  SPDX-License-Identifier: MIT
  *
@@ -18,9 +18,7 @@ public:
     EqualityRewriterConfig(ArithLogic & logic) : logic(logic), notOkToPartition(new Map<PTRef, bool, PTRefHash>()) {}
 
     std::unique_ptr<Map<PTRef, bool, PTRefHash>> getAndClearNotOkToPartition() {
-        auto tmp = std::unique_ptr<Map<PTRef, bool, PTRefHash>>(new Map<PTRef, bool, PTRefHash>());
-        std::swap(tmp, notOkToPartition);
-        return tmp;
+        return std::exchange(notOkToPartition, std::make_unique<Map<PTRef, bool, PTRefHash>>());
     }
 
     bool previsit(PTRef term) override { return logic.hasSortBool(term) and not logic.isIte(term); }
@@ -44,7 +42,8 @@ class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
     EqualityRewriterConfig config;
 
 public:
-    ArithmeticEqualityRewriter(ArithLogic & logic) : Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
+    explicit ArithmeticEqualityRewriter(ArithLogic & logic)
+        : Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
     std::unique_ptr<Map<PTRef, bool, PTRefHash>> getAndClearNotOkToPartition() {
         return config.getAndClearNotOkToPartition();
     }
