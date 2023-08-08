@@ -14,7 +14,7 @@ STPSolver<T>::STPSolver(SMTConfig &c, ArithLogic &l)
         : TSolver((SolverId) descr_stp_solver, (const char *) descr_stp_solver, c), logic(l),
           mapper(l, store)          // store is initialized before mapper and graph, so these constructors are valid
         , graphMgr(store, mapper)   // similarly, mapper is initialized before graph (per declaration in header)
-        , inv_bpoint(-1), inv_asgn(PtAsgn_Undef) {}
+        , inv_bpoint(0), inv_asgn(PtAsgn_Undef) {}
 
 template<class T>
 STPSolver<T>::~STPSolver() = default;
@@ -153,11 +153,21 @@ TRes STPSolver<T>::check(bool) {
 }
 
 template<class T>
-void STPSolver<T>::clearSolver() {
-    TSolver::clearSolver();
+void STPSolver<T>::reset() {
+    TSolver::reset();
     graphMgr.clear();
     mapper.clear();
     store.clear();
+}
+
+template<class T>
+bool STPSolver<T>::verifyFullyBacktracked() const {
+    bool ok = TSolver::verifyFullyBacktracked();
+    ok &= inv_bpoint == 0;
+    ok &= inv_asgn == PtAsgn_Undef;
+    ok &= graphMgr.verifyFullyBacktracked();
+    assert(ok);
+    return ok;
 }
 
 template<class T>

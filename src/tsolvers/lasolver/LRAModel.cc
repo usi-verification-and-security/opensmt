@@ -86,6 +86,17 @@ void LRAModel::clear() {
     bound_limits.push(0);
 }
 
+bool LRAModel::verifyProperlyBacktracked() const {
+    bool ok = true;
+    ok &= std::all_of(int_lbounds.begin(), int_lbounds.end(), [](auto const& elem) { return elem.size() == 0;});
+    ok &= std::all_of(int_ubounds.begin(), int_ubounds.end(), [](auto const& elem) { return elem.size() == 0;});
+    ok &= changed_vars_vec.size() == 0;
+    ok &= changed_vars_set.empty();
+    ok &= bound_trace.size() == 0;
+    ok &= bound_limits.size() == 1;
+    return ok;
+}
+
 int LRAModel::backtrackLevel() { return bound_limits.size() - 1; }
 
 

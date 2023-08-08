@@ -228,7 +228,8 @@ public:
 #endif // STATISTICS
     }
 
-    void clearSolver() override { clearModel(); } // Only clear the possible computed values
+    void reset() override;
+    bool verifyProperlyBacktracked() const;
 
 protected:
     inline Enode & getEnode(ERef er) { return enode_store[er]; }
@@ -278,7 +279,6 @@ public:
     TRes       check                   (bool) override { return TRes::SAT; }// Check satisfiability
     void       computeModel            () override;
     void       fillTheoryFunctions     (ModelBuilder & modelBuilder) const override;
-    void       clearModel              ();
 
     vec<PTRef> collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 

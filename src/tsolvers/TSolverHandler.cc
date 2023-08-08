@@ -42,11 +42,16 @@ bool TSolverHandler::assertLit(PtAsgn asgn)
 
 
 // Clear the vars of the solvers
-void TSolverHandler::clearSolver()
+void TSolverHandler::reset()
 {
     for (auto solver : solverSchedule) {
-        solver->clearSolver();
+        solver->reset();
     }
+}
+
+bool TSolverHandler::verifyFullyBacktracked() const {
+    return std::all_of(solverSchedule.begin(), solverSchedule.end(),
+                       [](auto * solver) { return solver->verifyFullyBacktracked(); });
 }
 
 void TSolverHandler::declareAtom(PTRef tr) {

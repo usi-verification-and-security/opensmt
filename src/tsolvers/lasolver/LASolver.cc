@@ -119,14 +119,14 @@ void LASolver::pushDecision(PtAsgn asgn)
     decision_trace.push(asgn);
 }
 
-void LASolver::clearSolver()
+void LASolver::reset()
 {
+    TSolver::reset();
     status = INIT;
     simplex.clear();
     decision_trace.clear();
     int_decisions.clear();
     dec_limit.clear();
-    TSolver::clearSolver();
 
     laVarStore.clear();
     laVarMapper.clear();
@@ -136,8 +136,17 @@ void LASolver::clearSolver()
 
     int_vars.clear();
     int_vars_map.clear();
-    // TODO: clear statistics
-//    this->egraphStats.clear();
+}
+
+bool LASolver::verifyFullyBacktracked() const {
+    bool ok = TSolver::verifyFullyBacktracked();
+    ok &= decision_trace.size() == 0;
+    ok &= int_decisions.size() == 0;
+    ok &= dec_limit.size() == 1;
+    ok &= simplex.verifyFullyBacktracked();
+    assert(ok);
+    return ok;
+
 }
 
 void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {

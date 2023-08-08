@@ -321,7 +321,8 @@ std::string THandler::printAssertion(Lit assertion) {
 //}
 #endif
 
-void THandler::clear() { declared.clear(); getSolverHandler().clearSolver(); }  // Clear the solvers from their states
+void THandler::reset() { declared.clear();
+    getSolverHandler().reset(); }  // Clear the solvers from their states
 
 Theory& THandler::getTheory() { return theory; }
 Logic&  THandler::getLogic()  { return theory.getLogic(); }

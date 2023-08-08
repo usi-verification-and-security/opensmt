@@ -106,7 +106,6 @@ void STPGraphManager<T>::removeAfter(uint32_t point) {
         EdgeRef eRef = graph.addedEdges[i];
         auto &edge = store.getEdge(eRef);
         if (edge.setTime <= point) {  // edges appear in 'addedEdges' in timestamp order
-            timestamp = edge.setTime;
             break;
         }
         // edges are added in the same order to all three lists - no need to check the values of incoming / outgoing
@@ -116,6 +115,7 @@ void STPGraphManager<T>::removeAfter(uint32_t point) {
         edge.setTime = 0;
         mapper.removeAssignment(eRef);
     }
+    timestamp = point;
 
     if (deductions.empty()) return;
     for (int i = deductions.size() - 1; i >= 0; --i) {
@@ -177,6 +177,17 @@ template<class T>
 void STPGraphManager<T>::clear() {
     timestamp = 0;
     graph.clear();
+}
+
+template<class T>
+bool STPGraphManager<T>::verifyFullyBacktracked() const {
+    bool ok = true;
+    ok &= timestamp == 0;
+    ok &= graph.addedEdges.empty();
+    ok &= std::all_of(graph.incoming.begin(), graph.incoming.end(), [](auto const & el) { return el.empty(); });
+    ok &= std::all_of(graph.outgoing.begin(), graph.outgoing.end(), [](auto const & el) { return el.empty(); });
+    assert(ok);
+    return ok;
 }
 
 #endif //OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP

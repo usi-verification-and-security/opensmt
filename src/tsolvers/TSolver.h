@@ -161,8 +161,12 @@ public:
 
     virtual ~TSolver () = default;
 
-    // Called after every check-sat.
-    virtual void clearSolver();
+    /**
+     * Clears all information in this theory solver. As if we created new instance.
+     */
+    virtual void reset();
+
+    virtual bool verifyFullyBacktracked() const;
 
     virtual bool                assertLit           (PtAsgn) = 0              ;  // Assert a theory literal
     virtual void                pushBacktrackPoint  ( )                       ;  // Push a backtrack point

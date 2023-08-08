@@ -52,7 +52,8 @@ public:
 
     virtual ~TSolverHandler();
 
-    virtual void clearSolver(); // Clear the solver state
+    virtual void reset(); // Clear the solver state
+    virtual bool verifyFullyBacktracked() const;
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;

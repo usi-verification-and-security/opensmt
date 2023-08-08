@@ -69,6 +69,7 @@ public:
     void initModel() { model->init(); }
 
     void clear() { model->clear(); candidates.clear(); tableau.clear(); boundsActivated.clear(); }
+    bool verifyFullyBacktracked() const;
     Explanation checkSimplex();
     void pushBacktrackPoint() { model->pushBacktrackPoint(); }
     void popBacktrackPoint()  { model->popBacktrackPoint(); }

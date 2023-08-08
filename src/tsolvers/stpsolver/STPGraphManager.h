@@ -53,6 +53,8 @@ public:
     void removeAfter(uint32_t point);
 
     void clear();
+
+    bool verifyFullyBacktracked() const;
 };
 
 #include "STPGraphManager_implementations.hpp"

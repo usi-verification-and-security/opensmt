@@ -91,6 +91,7 @@ public:
     }
 
     void clear();
+    bool verifyProperlyBacktracked() const;
 };
 
 #endif //OPENSMT_LRAMODEL_H

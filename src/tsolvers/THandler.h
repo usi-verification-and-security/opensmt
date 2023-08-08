@@ -51,7 +51,7 @@ public:
 
     ~THandler() = default;
 
-    void clear();  // Clear the solvers from their states
+    void reset();  // Clear the solvers from their states
 
     bool isDeclared (Var v) { return v < declared.size() and declared[v]; } // Has v been declared to the theory solvers?
 

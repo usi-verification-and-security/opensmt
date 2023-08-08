@@ -19,9 +19,21 @@ ArraySolver::ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config) :
     egraph(egraph)
     { }
 
-void ArraySolver::clearSolver() {
+void ArraySolver::reset() {
     clear();
-    TSolver::clearSolver();
+    TSolver::reset();
+}
+
+bool ArraySolver::verifyFullyBacktracked() const {
+    bool ok = TSolver::verifyFullyBacktracked();
+    ok &= lemmas.empty();
+    ok &= selectsInfo.empty();
+    ok &= nodes.empty();
+    ok &= rootsMap.empty();
+    ok &= not valid;
+    ok &= assertedLiterals.size() == 0;
+    assert(ok);
+    return ok;
 }
 
 bool ArraySolver::assertLit(PtAsgn literal) {

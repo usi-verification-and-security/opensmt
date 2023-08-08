@@ -1617,7 +1617,7 @@ double CoreSMTSolver::progressEstimate() const
 void CoreSMTSolver::declareVarsToTheories()
 {
     // First empty the solver
-    theory_handler.clear();
+    assert(theory_handler.getSolverHandler().verifyFullyBacktracked());
     for (int i = 0; i < var_seen.size(); i++)
         var_seen[i] = false;
 

@@ -189,16 +189,8 @@ void Egraph::getConflict(vec<PtAsgn> & conflict)
 #endif
 }
 
-void Egraph::clearModel()
-{
-    values.reset(nullptr);
-}
-
 void Egraph::computeModel( )
 {
-    if (values != nullptr)
-        return;
-
     values = std::make_unique<Values>();
     for (ERef er : enode_store.getTermEnodes()) {
         ERef root_r = enode_store[er].getRoot();
@@ -1647,4 +1639,22 @@ vec<PTRef> Egraph::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_
         }
     }
     return equalities;
+}
+
+void Egraph::reset() {
+    TSolver::reset();
+    undo_stack_main.clear();
+    pending.clear();
+    values = nullptr;
+    termToNegatedERef.clear();
+    declared.clear();
+    // TODO: term_store.clear();
+}
+
+bool Egraph::verifyProperlyBacktracked() const {
+    bool ok = TSolver::verifyFullyBacktracked();
+    ok &= undo_stack_main.size() == 0;
+    ok &= pending.size() == 0;
+    ok &= not values;
+    return ok;
 }

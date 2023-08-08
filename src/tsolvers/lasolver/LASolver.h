@@ -101,7 +101,8 @@ public:
 
     virtual void printStatistics(std::ostream &) override;
 
-    virtual void clearSolver() override; // Remove all problem specific data from the solver.  Should be called each time the solver is being used after a push or a pop in the incremental interface.
+    virtual void reset() override;
+    virtual bool verifyFullyBacktracked() const override;
 
     void getNewSplits(vec<PTRef>& splits) override;
     void  declareAtom        (PTRef tr) override;                // Inform the theory solver about the existence of an atom

@@ -2,7 +2,7 @@
 #include "Logic.h"
 #include "OsmtInternalException.h"
 
-void TSolver::clearSolver()
+void TSolver::reset()
 {
     explanation.clear();
     th_deductions.clear();
@@ -13,6 +13,21 @@ void TSolver::clearSolver()
     informed_PTRefs.clear();
     has_explanation = false;
     backtrack_points.clear();
+}
+
+bool TSolver::verifyFullyBacktracked() const {
+    bool ok = true;
+    ok &= th_deductions.size() == 0;
+    ok &= explanation.size() == 0;
+    ok &= deductions_next == 0u;
+    ok &= deductions_lim.size() == 0;
+    ok &= deductions_last.size() == 0;
+    ok &= suggestions.size() == 0;
+    // we keep `informed_PTRefs` on backtracking
+    ok &= not has_explanation;
+    ok &= backtrack_points.size() == 0;
+    assert(ok);
+    return ok;
 }
 
 void TSolver::popBacktrackPoints(unsigned int counter) {

@@ -516,3 +516,12 @@ void Simplex::processBufferOfActivatedBounds() {
     }
 }
 
+bool Simplex::verifyFullyBacktracked() const {
+    bool ok = true;
+    ok &= std::all_of(boundsActivated.begin(), boundsActivated.end(), [](auto count) { return count == 0; });
+    ok &= bufferOfActivatedBounds.empty();
+    ok &= candidates.empty();
+    ok &= model->verifyProperlyBacktracked();
+    return ok;
+}
+

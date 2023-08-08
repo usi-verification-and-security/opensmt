@@ -107,7 +107,9 @@ public:
 
     ~ArraySolver() = default;
 
-    void clearSolver() override;
+    void reset() override;
+
+    bool verifyFullyBacktracked() const override;
 
     bool assertLit(PtAsgn asgn) override;
 
