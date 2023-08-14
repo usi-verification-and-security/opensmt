@@ -923,7 +923,12 @@ TRes LASolver::cutFromProof() {
         assert(not val.hasDelta());
         auto const & rhs = val.R();
         assert(rhs.isInteger());
-        constraints.push_back(DefiningConstraint{term, rhs});
+        if (isOnLower and isOnUpper) {
+            constraints.insert(constraints.begin(), DefiningConstraint{term, rhs});
+        } else {
+            constraints.push_back(DefiningConstraint{term, rhs});
+        }
+
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
