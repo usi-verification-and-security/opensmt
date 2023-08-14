@@ -913,6 +913,7 @@ TRes LASolver::cutFromProof() {
     auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
     // Step 1: Gather defining constraints
     std::vector<DefiningConstraint> constraints;
+    std::vector<DefiningConstraint> equalities;
     for (LVRef var : int_vars) {
         bool isOnLower = isOnLowerBound(var);
         bool isOnUpper = isOnUpperBound(var);
@@ -924,13 +925,16 @@ TRes LASolver::cutFromProof() {
         auto const & rhs = val.R();
         assert(rhs.isInteger());
         if (isOnLower and isOnUpper) {
-            constraints.insert(constraints.begin(), DefiningConstraint{term, rhs});
+            equalities.push_back(DefiningConstraint{term, rhs});
         } else {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
-
-//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
+    for (DefiningConstraint & constraint : equalities) {
+        constraints.push_back(std::move(constraint));
+    }
+    std::reverse(constraints.begin(), constraints.end());
+
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
