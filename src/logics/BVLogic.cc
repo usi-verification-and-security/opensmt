@@ -9,7 +9,6 @@ Module: New Logic for BitVector
 #include "SStore.h"
 #include "PtStore.h"
 #include "BVLogic.h"
-#include "CUFLogic.h"
 
 const char* BVLogic::tk_bv_neg   = "-";
 const char* BVLogic::tk_bv_eq    = "==";
@@ -40,13 +39,12 @@ const char* BVLogic::tk_bv_compl  = "~";
 const char*  BVLogic::s_sort_bvnum = "BVNum";
 //const char*  BVLogic::s_sort_bvstr = "BVStr";
 
-const char* BVLogic::s_uf_extract_base = ".ex";
 const char* BVLogic::tk_bv_coll32 = ".coll32";
 
 const int BVLogic::i_default_bitwidth = 32;
 
 BVLogic::BVLogic(opensmt::Logic_t type, int width) :
-      CUFLogic(type)
+      Logic(type)
     , bitwidth(width)
     , sort_BVNUM(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_bvnum, 0, SortSymbol::INTERNAL)), {}))
     , term_BV_ZERO(mkBVConst(0))
@@ -78,18 +76,8 @@ BVLogic::BVLogic(opensmt::Logic_t type, int width) :
     , sym_BV_LOR(declareFun_NoScoping_LeftAssoc(tk_bv_lor, sort_BVNUM, {sort_BVNUM, sort_BVNUM}))
     , sym_BV_NOT(declareFun_NoScoping(tk_bv_not, sort_BVNUM, {sort_BVNUM}))
     , sym_BV_COMPL(declareFun_NoScoping(tk_bv_compl, sort_BVNUM, {sort_BVNUM}))
-    , sym_BV_COLLATE32(declareFun_NoScoping(tk_bv_coll32, sort_CUFNUM,
-        {sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
-         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
-         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL,
-         sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL, sort_BOOL}))
 {
     equalities.insert(sym_BV_EQ, true);
-    for (int i = 0; i < 32; i++) {
-        std::string sym_name {s_uf_extract_base};
-        sym_name += std::to_string(i);
-        declareFun_NoScoping(sym_name.c_str(), sort_BOOL, {sort_CUFNUM});
-    }
 }
 
 BVLogic::~BVLogic()

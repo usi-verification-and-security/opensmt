@@ -4,9 +4,6 @@ target_sources(logics
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LogicFactory.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/BVLogic.h"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFLogic.cc"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFLogic.h"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/CUFTheory.cc"
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Logic.cc"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Logic.h"
 	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/LATheory.h"
@@ -23,7 +20,7 @@ target_sources(logics
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SubstLoopBreaker.cc"
 )
 
-install(FILES LogicFactory.h Theory.h Logic.h ArithLogic.h CUFLogic.h BVLogic.h FunctionTools.h
+install(FILES LogicFactory.h Theory.h Logic.h ArithLogic.h BVLogic.h FunctionTools.h
  DESTINATION ${INSTALL_HEADERS_DIR})
 
 

@@ -57,9 +57,6 @@ public:
     {
         return dynamic_cast<ArithLogic&>(*logic);
     }
-    CUFLogic& getCUFLogic() {
-        return dynamic_cast<CUFLogic&>(*logic);
-    }
     MainSolver& getMainSolver() { return *mainSolver; }
     SimpSMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
 private:

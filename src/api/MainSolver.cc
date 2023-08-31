@@ -339,13 +339,6 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             theory = new ArrayTheory(config, logic);
             break;
         }
-        case Logic_t::QF_CUF:
-        case Logic_t::QF_BV:
-        {
-            BVLogic & bvLogic = dynamic_cast<BVLogic &>(logic);
-            theory = new CUFTheory(config, bvLogic);
-            break;
-        }
         case Logic_t::QF_LRA:
         {
             ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);

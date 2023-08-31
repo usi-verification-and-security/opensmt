@@ -29,11 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <memory>
 
 #include "Logic.h"
-#include "CUFLogic.h"
 #include "BVLogic.h"
 
 #include "UFTHandler.h"
-#include "CUFTHandler.h"
 #include "Alloc.h"
 
 #include "PartitionManager.h"
@@ -192,26 +190,6 @@ class UFTheory : public Theory
     virtual const Logic&      getLogic() const override { return uflogic; }
     virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
-};
-
-class CUFTheory : public Theory
-{
-  private:
-    BVLogic &   cuflogic;
-    CUFTHandler tshandler;
-    static const int i_default_bitwidth;
-  public:
-    CUFTheory(SMTConfig & c, BVLogic & logic)
-      : Theory(c)
-      , cuflogic(logic)
-      , tshandler(c, cuflogic)
-    { }
-    ~CUFTheory() {}
-    virtual BVLogic&           getLogic() override { return cuflogic; }
-    virtual const BVLogic&     getLogic() const override { return cuflogic; }
-    virtual CUFTHandler&       getTSolverHandler() override { return tshandler; }
-    virtual const CUFTHandler& getTSolverHandler() const { return tshandler; }
     virtual bool simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override;
 };
 

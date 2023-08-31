@@ -8,21 +8,10 @@ Module: New Logic for BitVector
 #ifndef BVLOGIC_H
 #define BVLOGIC_H
 #include "Logic.h"
-#include "CUFLogic.h"
 #include "NumberUtils.h"
 
-class BVLogic: public CUFLogic
+class BVLogic: public Logic
 {
-//  protected:
-//    Map<PTRef,bool,PTRefHash> comm_eqs;         // a+b <-> b+a
-//    Map<PTRef,bool,PTRefHash> diseq_eqs;        // a>b -> a != b
-//    Map<PTRef,bool,PTRefHash> diseq_split;      // a != b -> (a>b) || (a<b)
-//    Map<PTRef,bool,PTRefHash> mod_ineqs;        // b > 0 -> 0 <= a % b < b, b < 0 -> b < a % b <= 0
-//    Map<PTRef,bool,PTRefHash> inc_diseqs;       // a++ != a (< is not safe for overflows for some compiler semantics)
-//    Map<PTRef,bool,PTRefHash> compl_diseqs;     // ~a != a
-
-//  public:
-//    void getCommEqs(vec<PTRef>& out) const { comm_eqs.getKeys(out); }
 
   protected:
 
@@ -88,7 +77,6 @@ class BVLogic: public CUFLogic
     SymRef              sym_BV_LOR;    // ||
     SymRef              sym_BV_NOT;    // !
     SymRef              sym_BV_COMPL;  // ~
-    SymRef              sym_BV_COLLATE32; // .coll32
     SymRef              sym_BV_INC;    // ++
     SymRef              sym_BV_DEC;    // --
     SymRef              sym_BV_NEQ;    // !=
@@ -105,9 +93,9 @@ class BVLogic: public CUFLogic
     PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
     PTRef         mkBVConst   (const char* c) { char* num; opensmt::wordToBinary(opensmt::Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
-    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)) || CUFLogic::isBuiltinSortSym(ssr); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM) /*|| (sr == sort_BVSTR)*/ || CUFLogic::isBuiltinSort(sr); }
-    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr) || CUFLogic::isBuiltinConstant(sr); }
+    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)); }
+    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM); }
+    virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }
 
@@ -254,8 +242,8 @@ class BVLogic: public CUFLogic
 
     PTRef mkBVEq      (const vec<PTRef>& args) {assert(args.size() == 2); return mkBVEq(args[0], args[1]);}
     PTRef mkBVEq      (const PTRef, const PTRef);
-    virtual PTRef mkEq(const PTRef a1, const PTRef a2) { if (hasSortBVNUM(a1)) assert(false); return CUFLogic::mkEq(a1, a2); }
-    virtual PTRef mkEq(vec<PTRef>&& args) { if (hasSortBVNUM(args[0])) assert(false); return CUFLogic::mkEq(std::move(args)); }
+    virtual PTRef mkEq(const PTRef a1, const PTRef a2) { if (hasSortBVNUM(a1)) assert(false); return Logic::mkEq(a1, a2); }
+    virtual PTRef mkEq(vec<PTRef>&& args) { if (hasSortBVNUM(args[0])) assert(false); return Logic::mkEq(std::move(args)); }
 
 
     PTRef mkBVNeq(const vec<PTRef>& args) {assert(args.size() == 2); return mkBVNeq(args[0], args[1]);}
