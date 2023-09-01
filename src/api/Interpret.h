@@ -154,7 +154,6 @@ class Interpret {
     void                        getInfo(ASTNode& n);
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
-    void                        writeState(const char* fname);
     bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
     bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
     bool                        defineFun(const ASTNode& n);

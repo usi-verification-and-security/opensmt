@@ -225,7 +225,6 @@ class MainSolver
     void  printFramesAsQuery() const;
     sstat getStatus       () const { return status; }
     bool  solverEmpty     () const { return ts.solverEmpty(); }
-    bool  writeSolverState_smtlib2 (const char* file, char** msg) const;
 
     // Values
     lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }

@@ -314,21 +314,6 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
-
-            case t_writestate: {
-                if (not isInitialized()) {
-                    notify_formatted(true, "Illegal command before set-logic: write-state");
-                } else {
-                    if (main_solver->solverEmpty()) {
-                        sstat status = main_solver->simplifyFormulas();
-                        if (status == s_Error)
-                            notify_formatted(true, "write-state");
-                    } else {
-                        writeState((**(n.children->begin())).getValue());
-                    }
-                }
-                break;
-            }
             case t_echo: {
                 const char *str = (**(n.children->begin())).getValue();
                 notify_formatted(false, "%s", str);
@@ -572,15 +557,6 @@ sstat Interpret::checkSat() {
         else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
             notify_formatted(false, "(error \"check status which says unsat\")");
         }
-    }
-
-    if (res == s_Undef) {
-        const SMTOption& o_dump_state = config.getOption(":dump-state");
-        const SpType o_split = config.sat_split_type();
-        char* name = config.dump_state();
-        if (!o_dump_state.isEmpty() && o_split == spt_none)
-            writeState(name);
-        free(name);
     }
 
     return res;
@@ -875,18 +851,6 @@ std::string Interpret::printDefinitionSmtlib(TemplateFunction const & templateFu
     ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
     ss << "    " << logic->printTerm(templateFun.getBody()) << ")\n";
     return ss.str();
-}
-
-void Interpret::writeState(const char* filename)
-{
-    char* msg;
-    bool rval;
-
-    rval = main_solver->writeSolverState_smtlib2(filename, &msg);
-
-    if (!rval) {
-        notify_formatted("%s", msg);
-    }
 }
 
 bool Interpret::declareFun(ASTNode const & n) // (const char* fname, const vec<SRef>& args)

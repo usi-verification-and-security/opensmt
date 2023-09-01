@@ -218,31 +218,6 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     );
 }
 
-bool MainSolver::writeSolverState_smtlib2(const char* file, char** msg) const
-{
-    char* name;
-    int written = asprintf(&name, "%s.smt2", file);
-    assert(written >= 0);
-    std::ofstream file_s;
-    file_s.open(name);
-    if (file_s.is_open()) {
-        logic.dumpHeaderToFile(file_s);
-        logic.dumpFormulaToFile(file_s, root_instance.getRoot());
-        logic.dumpChecksatToFile(file_s);
-        file_s.close();
-    }
-    else {
-        written = asprintf(msg, "Failed to open file %s\n", name);
-        assert(written >= 0);
-        free(name);
-        return false;
-    }
-    (void)written;
-    free(name);
-    return true;
-}
-
-
 void MainSolver::printFramesAsQuery() const
 {
     char* base_name = config.dump_query_name();

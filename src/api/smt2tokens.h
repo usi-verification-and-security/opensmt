@@ -67,8 +67,6 @@ namespace osmttokens {
         t_setlogic,
         t_getinterpolants,
         t_theory,
-        t_writestate,
-        t_readstate,
         t_simplify,
         t_let,
         t_echo
@@ -144,8 +142,6 @@ namespace osmttokens {
         {t_setlogic, "set-logic"},
         {t_getinterpolants, "get-interpolants"},
         {t_theory, "theory"},
-        {t_writestate, "write-state"},
-        {t_readstate, "read-state"},
         {t_simplify, "simplify"},
         {t_let, "let"},
         {t_echo, "echo"}
