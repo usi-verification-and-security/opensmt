@@ -54,8 +54,7 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
             );
     PTRef fla = lialogic.mkAnd(conj, eq);
     // x = 2y  AND (a => x=1) AND (~a => x=1)
-    char* msg;
-    mainSolver.insertFormula(fla, &msg);
+    mainSolver.insertFormula(fla);
     auto res = mainSolver.check();
     ASSERT_EQ(res, s_False);
 }

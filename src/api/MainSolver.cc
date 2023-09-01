@@ -72,42 +72,14 @@ MainSolver::pop()
         }
         return true;
     }
-    else
-        return false;
+    return false;
 }
 
-sstat
-MainSolver::push(PTRef root)
+
+void MainSolver::insertFormula(PTRef root)
 {
-
-    push();
-    char* msg;
-    sstat res = insertFormula(root, &msg);
-    if (res == s_Error)
-        printf("%s\n", msg);
-    return res;
-}
-
-void
-MainSolver::insertFormula(PTRef fla) {
-    char* msg;
-    auto res = insertFormula(fla, &msg);
-    if (res == s_Error) {
-        OsmtApiException ex(msg);
-        free(msg);
-        throw ex;
-    }
-}
-
-sstat
-MainSolver::insertFormula(PTRef root, char** msg)
-{
-    if (logic.getSortRef(root) != logic.getSort_bool())
-    {
-        int chars_written = asprintf(msg, "Top-level assertion sort must be %s, got %s",
-                 Logic::s_sort_bool, logic.printSort(logic.getSortRef(root)).c_str());
-        (void)chars_written;
-        return s_Error;
+    if (logic.getSortRef(root) != logic.getSort_bool()) {
+        throw OsmtApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(root)));
     }
 
     root = logic.conjoinExtras(root);
@@ -129,7 +101,6 @@ MainSolver::insertFormula(PTRef root, char** msg)
     lastFrame.root = PTRef_Undef;
     // New formula has been added to the last frame. If the frame has been simplified before, we need to do it again
     frames.setSimplifiedUntil(std::min(frames.getSimplifiedUntil(), frames.size() - 1));
-    return s_Undef;
 }
 
 sstat MainSolver::simplifyFormulas()

@@ -217,29 +217,19 @@ void Interpret::interp(ASTNode& n) {
             }
             case t_assert: {
                 if (isInitialized()) {
-                    sstat status;
-                    ASTNode &asrt = **(n.children->begin());
+                    ASTNode const & asrt = **(n.children->begin());
                     LetRecords letRecords;
                     PTRef tr = parseTerm(asrt, letRecords);
                     if (tr == PTRef_Undef)
                         notify_formatted(true, "assertion returns an unknown sort");
                     else {
                         assertions.push(tr);
-                        char *err_msg = NULL;
-                        status = main_solver->insertFormula(tr, &err_msg);
-
-                        if (status == s_Error)
-                            notify_formatted(true, "Error");
-                        else if (status == s_Undef)
+                        try {
+                            main_solver->insertFormula(tr);
                             notify_success();
-                        else if (status == s_False)
-                            notify_success();
-
-                        if (err_msg != NULL && status == s_Error)
-                            notify_formatted(true, err_msg);
-                        if (err_msg != NULL && status != s_Error)
-                            comment_formatted(err_msg);
-                        free(err_msg);
+                        } catch (OsmtApiException const & e) {
+                            notify_formatted(true, e.what());
+                        }
                     }
                 } else {
                     notify_formatted(true, "Illegal command before set-logic: assert");

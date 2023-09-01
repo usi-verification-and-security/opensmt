@@ -5,8 +5,7 @@ int main()
 {
     Logic logic{opensmt::Logic_t::QF_UF}; // UF Logic
     SMTConfig c;
-    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
-    MainSolver& mainSolver = *mainSolver_;
+    MainSolver mainSolver(logic, c, "test solver");
     PTRef v = logic.mkBoolVar("a");
     PTRef v_neg = logic.mkNot(v);
     vec<PTRef> args;
@@ -14,7 +13,7 @@ int main()
     args.push(v_neg);
     PTRef a = logic.mkAnd(args);
 
-    mainSolver.push(a);
+    mainSolver.insertFormula(a);
     printf("Running check!\n");
     sstat r = mainSolver.check();
 

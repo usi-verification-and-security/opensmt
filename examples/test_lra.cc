@@ -21,7 +21,7 @@ int main()
     // assertion (<= -1 0)
     PTRef le1 = logic.mkLeq(cons, logic.getTerm_RealZero());
 
-    mainSolver.push(le1);
+    mainSolver.insertFormula(le1);
 
     // Check
     sstat r = mainSolver.check();

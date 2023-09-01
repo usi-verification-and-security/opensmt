@@ -5,8 +5,7 @@ int main()
 {
     Logic logic{opensmt::Logic_t::QF_UF}; // UF Logic
     SMTConfig c;
-    MainSolver* mainSolver_ = new MainSolver(logic, c, "test solver");
-    MainSolver& mainSolver = *mainSolver_;
+    MainSolver mainSolver(logic, c, "test solver");
 
     PTRef v1 = logic.mkBoolVar("a");
     PTRef v2 = logic.mkBoolVar("b");
@@ -14,17 +13,17 @@ int main()
 
     args.push(logic.mkNot(v1));
     args.push(logic.mkNot(v2));
-    mainSolver.push(logic.mkOr(args));
+    mainSolver.insertFormula(logic.mkOr(args));
 
     args.clear();
     args.push(v1);
     args.push(logic.mkNot(v2));
-    mainSolver.push(logic.mkOr(args));
+    mainSolver.insertFormula(logic.mkOr(args));
 
     args.clear();
     args.push(logic.mkNot(v1));
     args.push(v2);
-    mainSolver.push(logic.mkOr(args));
+    mainSolver.insertFormula(logic.mkOr(args));
 
     sstat r = mainSolver.check();
 

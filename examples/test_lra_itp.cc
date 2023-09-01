@@ -44,9 +44,8 @@ int main()
     args2.push(l4);
     PTRef ass2 = logic.mkAnd(args2);
 
-    char* msg_2;
-    mainSolver.insertFormula(ass1, &msg_2);
-    mainSolver.insertFormula(ass2, &msg_2);
+    mainSolver.insertFormula(ass1);
+    mainSolver.insertFormula(ass2);
 
     // Check
     sstat r = mainSolver.check();

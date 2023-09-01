@@ -94,34 +94,21 @@ BitBlaster::inform (PTRef tr)
 {
     BVRef result = bbTerm( tr );
 
-    char* msg;
-
     vec<PTRef> bv;
     bs.copyAsgnTo(result, bv);
     PTRef tr_out = logic.mkImpl(bs[result].getActVar(), logic.mkAnd(bv));
-    sstat status = mainSolver.insertFormula(tr_out, &msg);
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else
-        return l_Undef;
+    mainSolver.insertFormula(tr_out);
+    return l_Undef;
 }
 
 lbool
 BitBlaster::insert(PTRef tr, BVRef& out)
 {
-    char* msg;
     out = bbTerm(tr);
 
     PTRef last_bit = logic.mkEq(bs[out].lsb(), logic.getTerm_true());
-    sstat status = mainSolver.insertFormula(last_bit, &msg);
-
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else return l_Undef;
+    mainSolver.insertFormula(last_bit);
+    return l_Undef;
 }
 
 lbool
@@ -2195,14 +2182,7 @@ BitBlaster::notifyEquality(PTRef tr)
         and_args.push(logic.mkEq(bs[bv0_r][i], bs[bv1_r][i]));
     PTRef iff_tr = logic.mkEq(tr, logic.mkAnd(and_args));
 
-    char* msg;
-    sstat status = mainSolver.insertFormula(iff_tr, &msg);
-
-    if (status == s_True)
-        return l_True;
-    else if (status == s_False)
-        return l_False;
-    else
-        return l_Undef;
+    mainSolver.insertFormula(iff_tr);
+    return l_Undef;
 }
 

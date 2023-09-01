@@ -1,0 +1,2 @@
+(error "Top-level assertion sort must be Bool, got Real")
+

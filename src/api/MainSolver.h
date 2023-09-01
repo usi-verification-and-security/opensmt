@@ -210,10 +210,8 @@ class MainSolver
     Theory   &getTheory()   { return *theory; }
     const Theory &getTheory() const { return *theory; }
     PartitionManager &getPartitionManager() { return pmanager; }
-    sstat     push(PTRef root);
     void      push();
     bool      pop();
-    sstat     insertFormula(PTRef root, char** msg);
     void      insertFormula(PTRef fla);
 
     void      initialize() { ts.solver.initialize(); ts.initialize(); }
