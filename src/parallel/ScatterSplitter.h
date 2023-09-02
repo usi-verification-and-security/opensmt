@@ -56,7 +56,7 @@ private:
 protected:
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
     opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
-    bool     excludeAssumptions(vec<Lit> const & neg_constrs);                // Add a clause to the database and propagate
+    bool     excludeAssumptions(vec<Lit> && neg_constrs);                     // Add a clause to the database and propagate
     bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
 
     lbool solve_() override;

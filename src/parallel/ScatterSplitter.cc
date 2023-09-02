@@ -116,13 +116,13 @@ opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions()
     }
 
     cancelUntil(0);
-    lbool res = excludeAssumptions(constraints_negated) ? l_Undef : l_False;
+    lbool res = excludeAssumptions(std::move(constraints_negated)) ? l_Undef : l_False;
 
     return {std::move(splitData), res};
 }
 
-bool ScatterSplitter::excludeAssumptions(vec<Lit> const & neg_constrs) {
-    addOriginalClause(neg_constrs);
+bool ScatterSplitter::excludeAssumptions(vec<Lit> && neg_constrs) {
+    addOriginalClause(std::move(neg_constrs));
     simplify();
     return ok;
 }

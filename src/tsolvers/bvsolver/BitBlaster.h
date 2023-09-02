@@ -80,7 +80,7 @@ private:
     THandler&      thandler;
     SimpSMTSolver& solverP;                       // Solver with proof logger
 
-    bool addClause(vec<Lit> & c);
+    bool addClause(vec<Lit> && c);
 
     static const char* s_bbEq;
     static const char* s_bbAnd;

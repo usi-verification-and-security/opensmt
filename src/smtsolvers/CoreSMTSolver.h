@@ -106,21 +106,19 @@ protected:
     virtual Var newVar(bool dvar); // Add a new variable with parameters specifying variable mode.
 public:
     void    addVar(Var v); // Anounce the existence of a variable to the solver
-    bool    addOriginalClause(const vec<Lit> & ps);
-    bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+    bool    addOriginalClause(vec<Lit> && ps);
     bool    addOriginalClause(Lit p);                                  // Add a unit clause to the solver.
     bool    addOriginalClause(Lit p, Lit q);                           // Add a binary clause to the solver.
     bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
-    bool addOriginalClause_(const vec<Lit> & _ps);                                          // Add a clause to the solver
-    bool addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver without making superflous internal copy. Will change the passed vector 'ps'.  Write the new clause to cr
+    bool addOriginalClause_(vec<Lit> && _ps);                                          // Add a clause to the solver
+    bool addOriginalClause_(vec<Lit> && _ps, opensmt::pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver and return the references for the added class before and after simplification
 public:
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
     void    declareVarsToTheories();                 // Declare the seen variables to the theories
     bool    solve        ( const vec< Lit > & assumps );                 // Search for a model that respects a given set of assumptions.
-    void    crashTest    (int, Var, Var);           // Stress test the theory solver
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
     void    toDimacs     (const char *file, const vec<Lit>& assumps);
@@ -350,7 +348,6 @@ protected:
     vec<char>           seen;
     vec<Lit>            analyze_stack;
     vec<Lit>            analyze_toclear;
-    vec<Lit>            add_tmp;
 
     double              max_learnts;
     double              learntsize_adjust_confl;
@@ -651,35 +648,22 @@ inline bool     CoreSMTSolver::enqueue         (Lit p, CRef from)
     return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 
-inline bool     CoreSMTSolver::addOriginalClause(const vec<Lit> & ps)
+inline bool     CoreSMTSolver::addOriginalClause(vec<Lit> && ps)
 {
-    return addOriginalClause_(ps);
+    return addOriginalClause_(std::move(ps));
 }
-inline bool     CoreSMTSolver::addEmptyClause  ()
+
+inline bool CoreSMTSolver::addOriginalClause(Lit p)
 {
-    add_tmp.clear();
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_({p});
 }
-inline bool     CoreSMTSolver::addOriginalClause(Lit p)
+inline bool CoreSMTSolver::addOriginalClause(Lit p, Lit q)
 {
-    add_tmp.clear();
-    add_tmp.push(p);
-    return addOriginalClause_(add_tmp);
-}
-inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q)
-{
-    add_tmp.clear();
-    add_tmp.push(p);
-    add_tmp.push(q);
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_({p,q});
 }
 inline bool     CoreSMTSolver::addOriginalClause(Lit p, Lit q, Lit r)
 {
-    add_tmp.clear();
-    add_tmp.push(p);
-    add_tmp.push(q);
-    add_tmp.push(r);
-    return addOriginalClause_(add_tmp);
+    return addOriginalClause_({p,q,r});
 }
 
 

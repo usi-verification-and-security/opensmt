@@ -41,272 +41,92 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TRACE_FLA_VEC(v)
 #endif // PEDANTIC_DEBUG
 
-using namespace std;
+Cnfizer::Cnfizer(Logic & logic, TermMapper & tmap)
+    : logic(logic), tmap(tmap) {}
 
-Cnfizer::Cnfizer ( SMTConfig       &config_
-                   , Logic         &logic_
-                   , PartitionManager &pmanager_
-                   , TermMapper    &tmap
-                   , SimpSMTSolver &solver_
-                 ) :
-      solver   (solver_)
-    , config   (config_  )
-    , logic    (logic_)
-    , pmanager (pmanager_)
-    , tmap     (tmap)
-    , s_empty  (true)
-    , alreadyAsserted(logic.getTerm_true())
-    , frame_terms({logic.getTerm_true()}) // Frame 0 does not have an enabling var
-    , current_frame_term(frame_terms[0])
-{ }
 
-void Cnfizer::initialize()
-{
-    // TODO: MB: why is all this initialization necessary?
-    currentPartition = 0;
-    vec<Lit> c;
-    Lit l = this->getOrCreateLiteralFor (logic.getTerm_true());
-    c.push (l);
-    addClause(c);
-    c.pop();
-    l = this->getOrCreateLiteralFor (logic.getTerm_false());
-    c.push (~l);
-    addClause(c);
-    currentPartition = -1;
-}
-
-lbool
-Cnfizer::solve(vec<FrameId>& en_frames)
-{
-    vec<Lit> assumps;
-    // Initialize so that by default frames are disabled
-    for (PTRef tr : frame_terms) {
-        assumps.push(this->getOrCreateLiteralFor(tr));
-    }
-
-    // Enable the terms which are listed in en_frames
-    // At this point assumps has the same size as frame_terms and the
-    // elements are in the same order.  We simply invert the
-    // corresponding literals
-    uint32_t prevId = UINT32_MAX;
-    for (FrameId fid : en_frames) {
-        assumps[fid.id] = ~assumps[fid.id];
-        solver.mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id, prevId);
-    }
-
-    // Filter out the lit_Trues and lit_Falses used as empty values
-    Lit lit_true = this->getOrCreateLiteralFor(logic.getTerm_true());
-    int i, j;
-    for (i = j = 0; i < assumps.size(); i++) {
-        if (assumps[i] != lit_true && assumps[i] != ~lit_true)
-            assumps[j++] = assumps[i];
-    }
-    assumps.shrink(i-j);
-    return solver.solve(assumps, !config.isIncremental(), config.isIncremental());
-
-}
-
-void Cnfizer::setFrameTerm(FrameId frame_id)
-{
-    while (static_cast<unsigned int>(frame_terms.size()) <= frame_id.id) {
-        frame_terms.push(logic.getTerm_true());
-    }
-    // frame_id == {0} is for the bottom frame and we don't want to add
-    // literals to it since it is never retracted.
-    if (frame_id != FrameId_bottom && frame_terms[frame_id.id] == logic.getTerm_true()) {
-        std::string name {Logic::s_framev_prefix};
-        name += std::to_string(frame_id.id);
-        PTRef frame_term = logic.mkBoolVar(name.c_str());
-        frame_terms[frame_id.id] = frame_term;
-    }
-
-    current_frame_term = frame_terms[frame_id.id];
-}
-
-//
 // Main Routine. Examine formula and give it to the solver
-//
-lbool Cnfizer::cnfizeAndGiveToSolver(PTRef formula, FrameId frame_id)
-{
-    // Get the variable for the incrementality.
-    setFrameTerm(frame_id);
-
-    if (!solver.isOK()) return l_False;
-
-    assert ( formula != PTRef_Undef);
+void Cnfizer::cnfize(PTRef formula, FrameId frame_id) {
+   currentFrameId = frame_id;
+    assert(formula != PTRef_Undef and logic.getSortRef(formula) == logic.getSort_bool());
     TRACE("cnfizerAndGiveToSolver: " << logic.printTerm (formula))
 
-    if (keepPartitionInfo()) {
-        assert(pmanager.getPartitionIndex(formula) != -1);
-        currentPartition = pmanager.getPartitionIndex(formula);
-    }
-    // Retrieve top-level formulae - this is a list constructed from a conjunction
-    vec<PTRef> top_level_formulae = topLevelConjuncts(logic, formula);
+    vec<PTRef> top_level_formulae = ::topLevelConjuncts(logic, formula);
     assert (top_level_formulae.size() != 0);
     TRACE("Top level formulae:")
     TRACE_FLA_VEC(top_level_formulae)
-    bool res = true;
 
     // For each top-level conjunct
-    for (unsigned i = 0 ; i < top_level_formulae.size_() && (res == true) ; i ++)
+    for (PTRef topLevelConjunct : top_level_formulae)
     {
-        PTRef f = top_level_formulae[i];
-        assert(not logic.isAnd(f)); // Conjunction should have been split when retrieving top-level formulae
-        if (alreadyAsserted.contains(f, current_frame_term)) {
+        assert(not logic.isAnd(topLevelConjunct)); // Conjunction should have been split when retrieving top-level formulae
+        if (alreadyProcessed.contains(topLevelConjunct, frame_id)) {
             continue;
         }
         TRACE("Adding clause " << logic.printTerm (f))
         // Give it to the solver if already in CNF
-        if (isClause(f)) {
+        if (isClause(topLevelConjunct)) {
             TRACE(" => Already a clause")
-            res = assertClause(f);
-        } else if (checkDeMorgan(f)) {
+            processClause(topLevelConjunct);
+        } else if (checkDeMorgan(topLevelConjunct)) {
             // Check whether it can be rewritten using deMorgan laws
             TRACE(" => Will be de Morganized")
-            res = deMorganize (f);
+            deMorganize(topLevelConjunct);
         } else {
             TRACE(" => proper cnfization")
-            res = cnfizeAndAssert (f); // Perform actual cnfization (implemented in subclasses)
+            cnfizeAndAssert(topLevelConjunct); // Perform actual cnfization (implemented in subclasses)
         }
-        alreadyAsserted.insert(f, current_frame_term);
+        alreadyProcessed.insert(topLevelConjunct, frame_id);
     }
-    s_empty = false; // solver no longer empty
-    if (res) {
-        vec<PTRef> nestedBoolRoots = getNestedBoolRoots(formula);
-        for (PTRef tr : nestedBoolRoots) {
-            res &= cnfize(tr); // cnfize the formula without asserting the top level
-        }
-        assert(res);
-        declareVars(logic.propFormulasAppearingInUF);
+    vec<PTRef> nestedBoolRoots = logic.getNestedBoolRoots(formula);
+    for (PTRef tr : nestedBoolRoots) {
+        cnfize(tr); // cnfize the formula without asserting the top level
     }
-
-    currentPartition = -1;
-    return res == false ? l_False : l_Undef;
 }
 
-bool Cnfizer::cnfizeAndAssert(PTRef formula) {
-    assert(formula != PTRef_Undef);
-    // Top level formula must not be and anymore
-    assert(!logic.isAnd(formula));
-    bool res = true;
+void Cnfizer::cnfizeAndAssert(PTRef formula) {
+    assert(formula != PTRef_Undef and not logic.isAnd(formula));
     // Add the top level literal as a unit to solver.
-    vec<Lit> clause;
-    clause.push(this->getOrCreateLiteralFor(formula));
-    res &= addClause(clause);
-
-    res &= cnfize(formula);
-    return res;
+    addClause({this->getOrCreateLiteralFor(formula)});
+    cnfize(formula);
 }
 
-void Cnfizer::declareVars(vec<PTRef>& vars)
-{
-    for (PTRef tr : vars) {
-        Lit l = tmap.getOrCreateLit(tr);
-        solver.addVar(var(l));
-    }
-}
-
-//
 // Apply simple de Morgan laws to the formula
-//
-
-bool Cnfizer::deMorganize ( PTRef formula )
-{
-    assert (!logic.isAnd (formula));
-    Pterm &pt = logic.getPterm (formula);
-
-    bool rval = true;
-
-    //
-    // Case (not (and a b)) --> (or (not a) (not b))
-    //
-    if (logic.isNot (formula) && logic.isAnd (pt[0]))
-    {
-        vec<PTRef> conjuncts;
-        vec<Lit> clause;
-
-        retrieveConjuncts (pt[0], conjuncts);
-
-        for (PTRef tr : conjuncts) {
-            clause.push (~this->getOrCreateLiteralFor(tr));
-            TRACE("(not " << logic.printTerm (tr) << ")")
-        }
-
-        rval = addClause(clause);
+void Cnfizer::deMorganize(PTRef formula) {
+    assert(logic.isNot(formula));
+    Pterm const & term = logic.getPterm(formula);
+    assert(logic.isAnd(term[0]));
+    vec<PTRef> conjuncts;
+    vec<Lit> clause;
+    retrieveConjuncts(term[0], conjuncts);
+    for (PTRef tr : conjuncts) {
+        clause.push(~this->getOrCreateLiteralFor(tr));
+        TRACE("(not " << logic.printTerm(tr) << ")")
     }
-
-    return rval;
+    addClause(std::move(clause));
 }
-
-
-
-//
-// Check whether a formula is in cnf
-//
-
-bool Cnfizer::isCnf(PTRef e) {
-    return isConjunctionOfClauses(e);
-}
-
-
-
-bool Cnfizer::isConjunctionOfClauses(PTRef e) {
-    if (isClause(e)) { // Single clause counts as a conjunction of clauses
-        return true;
-    }
-    if (not logic.isAnd(e)) {
-        return false;
-    }
-    vec<PTRef> to_process;
-    to_process.push (e);
-
-    while (to_process.size() != 0) {
-        e = to_process.last();
-        to_process.pop();
-
-        Pterm const & and_t = logic.getPterm(e);
-
-        for (PTRef tr : and_t) {
-            if (logic.isAnd(tr)) {
-                to_process.push(tr);
-            } else if (not isClause(tr)) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 
 //
 // Check whether a formula is a clause
 //
 bool Cnfizer::isClause(PTRef e) {
     assert (e != PTRef_Undef);
-
     if (isLiteral(e)) { // Single literals count as clauses
         return true;
     }
-
     if (not logic.isOr(e)) {
         return false;
     }
-
     vec<PTRef> to_process;
-
-    to_process.push (e);
-
+    to_process.push(e);
     while (to_process.size() != 0) {
-        e = to_process.last();
+        PTRef current = to_process.last();
         to_process.pop();
-
-        Pterm const & or_t = logic.getPterm (e);
-
-        for (PTRef tr : or_t) {
-            if (logic.isOr(tr)) {
-                to_process.push(tr);
+        for (PTRef child : logic.getPterm(current)) {
+            if (logic.isOr(child)) {
+                to_process.push(child);
             } else {
-                if (not isLiteral(tr)) {
+                if (not isLiteral(child)) {
                     return false;
                 }
             }
@@ -317,178 +137,92 @@ bool Cnfizer::isClause(PTRef e) {
 
 
 
-//
-// Check whether it can be easily put in clausal form by means of DeMorgan's Rules
-//
-bool Cnfizer::checkDeMorgan (PTRef e)
-{
-    Map<PTRef, bool, PTRefHash, Equal<PTRef> > check_cache;
-    const Pterm &not_t = logic.getPterm (e);
-
-    if (logic.isNot (e) && checkPureConj (not_t[0], check_cache) ) return true;
-    else return false;
+// Check if this is a negation of a clause
+bool Cnfizer::checkDeMorgan(PTRef e) {
+    Pterm const & term = logic.getPterm(e);
+    if (not logic.isNot(term.symb())) return false;
+    Map<PTRef, bool, PTRefHash, Equal<PTRef>> check_cache;
+    return checkPureConj(term[0], check_cache);
 }
 
-//
 // Check whether it is a pure conjunction of literals
-//
-bool Cnfizer::checkPureConj (PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef> > &check_cache)
-{
-    if (check_cache.has (e))
-        return true;
+bool Cnfizer::checkPureConj(PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef>> & check_cache) {
+    if (check_cache.has(e)) return true;
+    if (not logic.isAnd(e)) return false;
 
     vec<PTRef> to_process;
-    to_process.push (e);
-
-    // Topmost needs to be and
-    if (!logic.isAnd (e)) return false;
-
-    while (to_process.size() != 0)
-    {
-        e = to_process.last();
+    to_process.push(e);
+    while (to_process.size() != 0) {
+        PTRef current = to_process.last();
         to_process.pop();
-        Pterm &and_t = logic.getPterm (e);
 
-        if (logic.isAnd(e)) {
-            for (PTRef tr : and_t) {
+        if (logic.isAnd(current)) {
+            for (PTRef tr : logic.getPterm(current)) {
                 to_process.push(tr);
             }
-        } else if (not isLiteral(e)) {
+        } else if (not isLiteral(current)) {
             return false;
         }
-        check_cache.insert (e, true);
+        check_cache.insert(current, true);
     }
-
     return true;
 }
 
-bool Cnfizer::addClause(const vec<Lit> & c_in)
+void Cnfizer::addClause(vec<Lit> && clause)
 {
-    vec<Lit> c;
-    c_in.copyTo(c);
-    if (current_frame_term != logic.getTerm_true()) {
-        Lit l = this->getOrCreateLiteralFor(current_frame_term);
-        Var v = var(l);
-        tmap.setFrozen(v);
-        solver.addAssumptionVar(v);
-        c.push(l);
-    }
-
-#ifdef PEDANTIC_DEBUG
-    cerr << "== clause start" << endl;
-
-    for (int i = 0; i < c.size(); i++)
-    {
-        cerr << "(" << c[i].x << "," << var (c[i]) << ") * " << (sign (c[i]) ? "not " : "")
-             << logic.printTerm (tmap.varToPTRef (var (c[i])))
-             << " ";
-        cerr << endl;
-    }
-
-#endif
-    opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
-    bool res = solver.addOriginalSMTClause(c, iorefs);
-    if (keepPartitionInfo()) {
-        CRef ref = iorefs.first;
-        if (ref != CRef_Undef) {
-            ipartitions_t parts = 0;
-            assert(currentPartition != -1);
-            opensmt::setbit(parts, static_cast<unsigned int>(currentPartition));
-            pmanager.addClauseClassMask(ref, parts);
-        }
-    }
-    return res;
+    (*clauseCallBack)(std::move(clause));
 }
-//
-// Give the formula to the solver
-//
 
-bool Cnfizer::assertClause (PTRef f)
-{
-    vec<Lit> clause;
 
-    //
-    // A unit clause
-    //
+void Cnfizer::processClause(PTRef f) {
     if (isLiteral(f)) {
-        clause.push(this->getOrCreateLiteralFor(f));
-        return addClause(clause);
+        addClause({getOrCreateLiteralFor(f)});
+        return;
     }
-
-    //
-    // A clause
-    //
-
     if (logic.isOr(f)) {
-        vec<PTRef> lits;
-        retrieveClause (f, lits);
-
-        for (PTRef tr : lits)
-            clause.push(this->getOrCreateLiteralFor(tr));
-
-        return addClause(clause);
+        vec<Lit> lits;
+        retrieveClause(f, lits);
+        addClause(std::move(lits));
+        return;
     }
     throw OsmtInternalException("UNREACHABLE: Unexpected situation in Cnfizer");
 }
 
-//
-// Retrieve a clause
-//
-void Cnfizer::retrieveClause ( PTRef f, vec<PTRef> &clause )
-{
-    assert (isLiteral(f) || logic.isOr (f));
-
+void Cnfizer::retrieveClause(PTRef f, vec<Lit> & clause) {
+    assert(isLiteral(f) or logic.isOr(f));
     if (isLiteral(f)) {
-        clause.push(f);
-    } else if ( logic.isOr (f) ) {
-        Pterm const &t = logic.getPterm (f);
+        clause.push(getOrCreateLiteralFor(f));
+    } else if (logic.isOr(f)) {
+        Pterm const & t = logic.getPterm(f);
         for (PTRef tr : t) {
             retrieveClause(tr, clause);
         }
     }
 }
 
-//
-// Retrieve conjuncts
-//
-void Cnfizer::retrieveConjuncts ( PTRef f, vec<PTRef> &conjuncts )
-{
-    assert (isLiteral(f) || logic.isAnd (f));
-
+void Cnfizer::retrieveConjuncts(PTRef f, vec<PTRef> & conjuncts) {
+    assert(isLiteral(f) or logic.isAnd(f));
     if (isLiteral(f)) {
         conjuncts.push(f);
     } else {
-        Pterm &t = logic.getPterm (f);
-
+        Pterm const & t = logic.getPterm(f);
         for (PTRef tr : t) {
             retrieveConjuncts(tr, conjuncts);
         }
     }
 }
 
-
-lbool Cnfizer::getTermValue (PTRef tr) const
-{
-    assert (solver.isOK());
-    if (tmap.hasLit(tr)) {
-        Lit l = tmap.getLit(tr);
-        lbool val = solver.modelValue(l);
-        assert (val != l_Undef);
-        return val;
-    }
-    else return l_Undef;
+bool Cnfizer::Cache::contains(PTRef term, FrameId frame) {
+    return cache.find({term, frame}) != cache.end()
+        or ( frame != baseFrame and cache.find({term, baseFrame}) != cache.end());
 }
 
-bool Cnfizer::Cache::contains(PTRef term, PTRef frame_term) {
-    return cache.find(std::make_pair<>(term, frame_term)) != cache.end()
-        || ( frame_term != zeroLevelTerm && cache.find(std::make_pair<>(term, zeroLevelTerm)) != cache.end());
+void Cnfizer::Cache::insert(PTRef term, FrameId frame) {
+    assert(!contains(term, frame));
+    cache.insert({term, frame});
 }
 
-void Cnfizer::Cache::insert(PTRef term, PTRef frame_term) {
-    assert(!contains(term, frame_term));
-    cache.insert(std::make_pair<>(term, frame_term));
-}
-
+// TODO: Fix isAtom!!! (everything that is not a boolean connective should be considered as atom
 bool Cnfizer::isLiteral(PTRef ptr) const {
     return (logic.isNot(ptr) and logic.isAtom(logic.getPterm(ptr)[0])) or logic.isAtom(ptr);
 }

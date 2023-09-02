@@ -210,8 +210,6 @@ bool Logic::isTheoryTerm(PTRef ptr) const {
 }
 
 bool Logic::isTheorySymbol(SymRef tr) const {
-    // True and False are special cases, we count them as theory symbols
-    if (tr == sym_TRUE || tr == sym_FALSE) return true;
     const Symbol& t = sym_store[tr];
     // Boolean var
     if (t.rsort() == sort_BOOL && t.nargs() == 0) return false;
@@ -1450,8 +1448,6 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
     }
 }
 
-
-PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
 // Fetching sorts
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }

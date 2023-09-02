@@ -8,25 +8,22 @@
 #include "Substitutor.h"
 #include "TreeOps.h"
 
-bool UFLATheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
-{
-    auto & currentFrame = pfstore[formulas[curr]];
-    if (this->keepPartitions()) {
-        throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
-    } else {
-        PTRef coll_f = getCollateFunction(formulas, curr);
-        PTRef fla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
-        fla = rewriteDistincts(getLogic(), fla);
-        fla = rewriteDivMod<ArithLogic>(logic, fla);
-        PTRef purified = purify(fla);
-        if (logic.hasArrays()) {
-            purified = instantiateReadOverStore(logic, purified);
-        }
-        PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
-        this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
-        currentFrame.root = noArithmeticEqualities;
+PTRef UFLATheory::simplifyTogether(vec<PTRef> const & assertions, bool) {
+    PTRef frameFormula = getLogic().mkAnd(assertions);
+    frameFormula = applySubstitutionBasedSimplificationIfEnabled(frameFormula);
+    frameFormula = rewriteDistincts(getLogic(), frameFormula);
+    frameFormula = rewriteDivMod<ArithLogic>(logic, frameFormula);
+    PTRef purified = purify(frameFormula);
+    if (logic.hasArrays()) {
+        purified = instantiateReadOverStore(logic, purified);
     }
-    return true;
+    PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
+    this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
+    return noArithmeticEqualities;
+}
+
+vec<PTRef> UFLATheory::simplifyIndividually(vec<PTRef> const &, PartitionManager &, bool) {
+    throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
 }
 
 namespace {

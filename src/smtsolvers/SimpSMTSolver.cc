@@ -180,7 +180,7 @@ lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs)
+bool SimpSMTSolver::addOriginalSMTClause(vec<Lit> && smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     inOutCRefs = {CRef_Undef, CRef_Undef};
     assert( config.sat_preprocess_theory == 0 );
@@ -208,7 +208,7 @@ bool SimpSMTSolver::addOriginalSMTClause(const vec<Lit> & smt_clause, opensmt::p
         std::cerr << "XXX skipped handling of unary theory literal?" << '\n';
     }
     int nclauses = clauses.size();
-    if (!CoreSMTSolver::addOriginalClause_(smt_clause, inOutCRefs))
+    if (!CoreSMTSolver::addOriginalClause_(std::move(smt_clause), inOutCRefs))
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1)
@@ -614,11 +614,11 @@ bool SimpSMTSolver::eliminateVar(Var v)
         removeClause(cls[i]);
 
     // Produce clauses in cross product:
-    vec<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++) {
         for (int j = 0; j < neg.size(); j++) {
+            vec<Lit> resolvent;
             opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
-            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(resolvent, dummy))
+            if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(std::move(resolvent), dummy))
                 return false;
         }
     }
@@ -646,12 +646,11 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
     setDecisionVar(v, false);
     const vec<CRef>& cls = occurs.lookup(v);
 
-    vec<Lit>& subst_clause = add_tmp;
     for (int i = 0; i < cls.size(); i++)
     {
         Clause& c = ca[cls[i]];
 
-        subst_clause.clear();
+        vec<Lit> subst_clause;
         for (unsigned j = 0; j < c.size(); j++)
         {
             Lit p = c[j];
@@ -661,7 +660,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
         removeClause(cls[i]);
 
         opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
-        if (!addOriginalSMTClause(subst_clause, dummy))
+        if (!addOriginalSMTClause(std::move(subst_clause), dummy))
             return ok = false;
     }
 

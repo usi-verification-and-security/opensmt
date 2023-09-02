@@ -1,26 +1,28 @@
 #include "Theory.h"
 #include "TreeOps.h"
 #include "DistinctRewriter.h"
-//
-// Simplify with unit propagation, add the diamond equalities if
-// present.  If partitions cannot mix, do no simplifications but just
-// update the root.
-//
-bool UFTheory::simplify(const vec<PFRef>& formulas, PartitionManager &, int curr)
+
+PTRef UFTheory::simplifyTogether(vec<PTRef> const & assertions, bool isBaseFrame) {
+    PTRef frameFormula = getLogic().mkAnd(assertions);
+    PTRef trans = getLogic().learnEqTransitivity(frameFormula);
+    frameFormula = getLogic().mkAnd(frameFormula, trans);
+    frameFormula = applySubstitutionBasedSimplificationIfEnabled(frameFormula);
+    frameFormula = isBaseFrame ? rewriteDistinctsKeepTopLevel(getLogic(), frameFormula)
+                                  : rewriteDistincts(getLogic(), frameFormula);
+    AppearsInUfVisitor(getLogic()).visit(frameFormula);
+    return frameFormula;
+}
+
+vec<PTRef> UFTheory::simplifyIndividually(vec<PTRef> const& formulas, PartitionManager &, bool isBaseFrame)
 {
-    auto & currentFrame = pfstore[formulas[curr]];
-    if (this->keepPartitions()) {
-        currentFrame.root = getLogic().mkAnd(currentFrame.formulas);
+    vec<PTRef> rewrittenFormulas;
+    formulas.copyTo(rewrittenFormulas);
+    AppearsInUfVisitor visitor(getLogic());
+
+    for (PTRef & fla : rewrittenFormulas) {
+        fla = isBaseFrame ? rewriteDistinctsKeepTopLevel(getLogic(), fla) : rewriteDistincts(getLogic(), fla);
+        visitor.visit(fla);
     }
-    else {
-        PTRef coll_f = getCollateFunction(formulas, curr);
-        PTRef trans = getLogic().learnEqTransitivity(coll_f);
-        coll_f = getLogic().mkAnd(coll_f, trans);
-        currentFrame.root = applySubstitutionBasedSimplificationIfEnabled(coll_f);
-    }
-    currentFrame.root = curr == 0 ? rewriteDistinctsKeepTopLevel(getLogic(), currentFrame.root)
-        : rewriteDistincts(getLogic(), currentFrame.root);
-    AppearsInUfVisitor(getLogic()).visit(currentFrame.root);
-    return true;
+    return rewrittenFormulas;
 }
 

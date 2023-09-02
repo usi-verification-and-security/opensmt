@@ -133,8 +133,6 @@ class Logic {
     Logic            (Logic&&) = default;
     Logic& operator =(Logic&&) = delete;
 
-    virtual PTRef conjoinExtras(PTRef root);
-
     virtual std::string const getName() const { return opensmt::QFLogicToProperties.at(logicType).name; }
     opensmt::Logic_t getLogic() const { return logicType; }
 

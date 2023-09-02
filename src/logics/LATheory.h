@@ -1,6 +1,10 @@
-//
-// Created by Antti on 10.03.21.
-//
+/*
+* Copyright (c) 2021-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+* Copyright (c) 2023, Martin Blicha <martin.blicha@gmail.com>
+*
+*  SPDX-License-Identifier: MIT
+*
+*/
 
 #ifndef OPENSMT_LATHEORY_H
 #define OPENSMT_LATHEORY_H
@@ -24,7 +28,9 @@ public:
     virtual LinAlgLogic&          getLogic() override { return lalogic; }
     virtual const LinAlgLogic&    getLogic() const override { return lalogic; }
     virtual LinAlgTHandler&       getTSolverHandler() override { return latshandler; }
-    virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
+
+    virtual PTRef simplifyTogether(vec<PTRef> const & assertions, bool isBaseFrame) override;
+    virtual vec<PTRef> simplifyIndividually(vec<PTRef> const & assertions, PartitionManager & pmanager, bool isBaseFrame) override;
 };
 
 namespace {
@@ -40,34 +46,33 @@ PTRef rewriteDivMod<ArithLogic>(ArithLogic & logic, PTRef fla) {
 
 }
 
-//
-// Unit propagate with simplifications and split equalities into
-// inequalities.  If partitions cannot mix, only do the splitting to
-// inequalities.
-//
+
 template<typename LinAlgLogic, typename LinAlgTSHandler>
-bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas, PartitionManager& pmanager, int curr)
-{
-    auto & currentFrame = pfstore[formulas[curr]];
+PTRef LATheory<LinAlgLogic,LinAlgTSHandler>::simplifyTogether(const vec<PTRef> & assertions, bool) {
+    PTRef frameFormula = getLogic().mkAnd(assertions);
+    frameFormula = applySubstitutionBasedSimplificationIfEnabled(frameFormula);
+    frameFormula = rewriteDistincts(getLogic(), frameFormula);
+    frameFormula = rewriteDivMod<LinAlgLogic>(lalogic, frameFormula);
     ArithmeticEqualityRewriter equalityRewriter(lalogic);
-    if (this->keepPartitions()) {
-        vec<PTRef> & flas = currentFrame.formulas;
-        for (PTRef & fla : flas) {
-            PTRef old = fla;
-            fla = rewriteDistincts(getLogic(), fla);
-            fla = rewriteDivMod<LinAlgLogic>(lalogic, fla);
-            fla = equalityRewriter.rewrite(fla);
-            pmanager.transferPartitionMembership(old, fla);
-        }
-        currentFrame.root = getLogic().mkAnd(flas);
-    } else {
-        PTRef coll_f = getCollateFunction(formulas, curr);
-        PTRef finalFla = applySubstitutionBasedSimplificationIfEnabled(coll_f);
-        finalFla = rewriteDistincts(getLogic(), finalFla);
-        finalFla = rewriteDivMod<LinAlgLogic>(lalogic, finalFla);
-        currentFrame.root = equalityRewriter.rewrite(finalFla);
-    }
-    return true;
+    frameFormula = equalityRewriter.rewrite(frameFormula);
+    return frameFormula;
 }
+
+template<typename LinAlgLogic, typename LinAlgTSHandler>
+vec<PTRef> LATheory<LinAlgLogic,LinAlgTSHandler>::simplifyIndividually(const vec<PTRef> & assertions, PartitionManager & pmanager, bool) {
+    ArithmeticEqualityRewriter equalityRewriter(lalogic);
+    vec<PTRef> rewrittenAssertions;
+    assertions.copyTo(rewrittenAssertions);
+    for (PTRef & fla : rewrittenAssertions) {
+        PTRef old = fla;
+        fla = rewriteDistincts(getLogic(), fla);
+        fla = rewriteDivMod<LinAlgLogic>(lalogic, fla);
+        fla = equalityRewriter.rewrite(fla);
+        pmanager.transferPartitionMembership(old, fla);
+    }
+    return rewrittenAssertions;
+
+}
+
 
 #endif //OPENSMT_LATHEORY_H

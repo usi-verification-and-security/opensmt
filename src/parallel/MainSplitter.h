@@ -20,21 +20,21 @@
 class MainSplitter : public MainSolver {
 
 private:
-    inline bool isSplitTypeScatter() const &       { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeScatter(); }
+    inline bool isSplitTypeScatter() const &       { return dynamic_cast<Splitter&>(*smt_solver).isSplitTypeScatter(); }
 
-    inline bool isSplitTypeNone()    const &       { return dynamic_cast<Splitter&>(ts.solver).isSplitTypeNone(); }
+    inline bool isSplitTypeNone()    const &       { return dynamic_cast<Splitter&>(*smt_solver).isSplitTypeNone(); }
 
     inline PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & getChannel() const { return getSplitter().getChannel(); }
 
     inline ScatterSplitter & getScatterSplitter()  { return dynamic_cast<ScatterSplitter&>(getSMTSolver()); }
 
-    inline Splitter & getSplitter()  const         { return dynamic_cast<Splitter&>(ts.solver); }
+    inline Splitter & getSplitter()  const         { return dynamic_cast<Splitter&>(*smt_solver); }
 
     void notifyResult(sstat const & result);
 
     vec<PTRef> addToConjunction(std::vector<vec<PtAsgn>> const &) const;
 
-    sstat solve_(vec<FrameId> & enabledFrames) override;
+    sstat solve_(vec<FrameId> const & enabledFrames) override;
 
     sstat check() override;
 

@@ -19,7 +19,7 @@ void MainSplitter::notifyResult(sstat const & result)
 sstat MainSplitter::check() {
     if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
         //push frames size should match with length of the solver branch
-        if (frames.size() !=
+        if (frames.frameCount() !=
             static_cast<std::size_t>(getSplitter().getSolverBranch().size() + 1))
             throw PTPLib::common::Exception(__FILE__, __LINE__,
                                             ";assert: Inconsistency in push frames size and length of the solver address");
@@ -30,7 +30,7 @@ sstat MainSplitter::check() {
     return res;
 }
 
-sstat MainSplitter::solve_(vec<FrameId> & enabledFrames) {
+sstat MainSplitter::solve_(vec<FrameId> const & enabledFrames) {
     if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
         vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().getSolverBranch();
         if (enabledFrames.size() > solverBranch.size() + 1) {
@@ -121,7 +121,7 @@ bool MainSplitter::verifyPartitions(vec<PTRef> const & partitions) const {
             ok = false;
         } else {
             // Removing the models of the partial partitions from the root instance must yield unsat
-            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(root_instance.getRoot()))) {
+            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(currentRootInstance()))) {
                 error += "[Non-covering partial partitioning: partial partitions do not contain all models of original instance] ";
                 ok = false;
             }

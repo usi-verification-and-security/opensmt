@@ -68,34 +68,68 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver
 {
-  protected:
-
-    class PushFramesWrapper {
-    private:
-        vec<PFRef> frames;
-        std::size_t simplified_until = 0; // The frame have been simplified up to (excluding) frames[simplified_until].
-    public:
-        PFRef last() const { assert(frames.size() > 0); return frames.last(); }
-
-        std::size_t size() const { return frames.size_(); }
-
-        const vec<PFRef>& getFrameReferences() const { return frames; }
-
-        PFRef getFrameReference(std::size_t i) const { return frames[i]; }
-
-        std::size_t getSimplifiedUntil() const { return simplified_until; }
-
-        void setSimplifiedUntil(std::size_t n) { simplified_until = n; }
-
-        void push(PFRef frame_ref) { frames.push(frame_ref); }
-
-        void pop() {
-            frames.pop();
-            if (simplified_until > size()) { simplified_until = size(); }
-        }
-
+public:
+    struct FrameId
+    {
+        uint32_t id;
+        bool operator== (const FrameId other) const { return id == other.id; }
+        bool operator!= (const FrameId other) const { return id != other.id; }
     };
 
+protected:
+    struct PushFrame {
+
+    private:
+        FrameId id;
+
+    public:
+        FrameId getId() const { return id; }
+        int size() const { return formulas.size(); }
+        void push(PTRef tr) { formulas.push(tr); }
+        PTRef operator[](int i) const { return formulas[i]; }
+        vec<PTRef> formulas;
+        bool unsat; // If true then the stack of frames with this frame at top is UNSAT
+
+        PushFrame(PushFrame const &) = delete;
+        PushFrame(PushFrame &&) = default;
+        explicit PushFrame(uint32_t id) : id({id}), unsat(false) {}
+    };
+
+    class AssertionStack {
+    private:
+        std::vector<PushFrame> frames;
+        uint32_t frameId = 0;
+
+    public:
+        [[nodiscard]] PushFrame const & last() const {
+            assert(not frames.empty());
+            return frames.back();
+        }
+        [[nodiscard]] PushFrame & last() {
+            assert(not frames.empty());
+            return frames.back();
+        }
+
+        [[nodiscard]] std::size_t frameCount() const { return frames.size(); }
+
+        PushFrame const & operator[](std::size_t i) const {
+            assert(i < frames.size());
+            return frames[i];
+        }
+        PushFrame & operator[](std::size_t i) {
+            assert(i < frames.size());
+            return frames[i];
+        }
+
+        void push() { frames.emplace_back(frameId++); }
+
+        void pop() { frames.pop_back(); }
+
+        void add(PTRef fla) {
+            assert(frameCount() > 0);
+            last().push(fla);
+        }
+    };
 
     std::unique_ptr<Theory>         theory;
     std::unique_ptr<TermMapper>     term_mapper;
@@ -104,49 +138,52 @@ class MainSolver
     Logic&                          logic;
     PartitionManager                pmanager;
     SMTConfig&                      config;
-    PushFrameAllocator&             pfstore;
     Tseitin                         ts;
-    PushFramesWrapper               frames;
+    AssertionStack                  frames;
+    vec<PTRef> frameTerms;
+
+    std::size_t firstNotSimplifiedFrame = 0;
+
 
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
-    int            check_called;     // A counter on how many times check was called.
-    sstat          status;           // The status of the last solver call (initially s_Undef)
+    int            check_called = 0;     // A counter on how many times check was called.
+    sstat          status = s_Undef;  // The status of the last solver call
     unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
 
-    class FContainer {
-        PTRef   root;
+    sstat solve();
 
-      public:
-              FContainer(PTRef r) : root(r)     {}
-        void  setRoot   (PTRef r)               { root = r; }
-        PTRef getRoot   ()        const         { return root; }
-    };
+    virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
-    FContainer root_instance; // Contains the root of the instance once simplifications are done
-
-    sstat solve           ();
-
-    virtual sstat solve_(vec<FrameId> & enabledFrames) {
-        return ts.solve(enabledFrames);
-    }
-
-    sstat giveToSolver(PTRef root, FrameId push_id) {
-        if (ts.cnfizeAndGiveToSolver(root, push_id) == l_False) return s_False;
-        return s_Undef; }
+    sstat giveToSolver(PTRef root, FrameId push_id);
 
     PTRef rewriteMaxArity(PTRef);
 
+    [[nodiscard]] PTRef currentRootInstance() const;
+
     // helper private methods
-    PushFrame& getLastFrame() const { return pfstore[frames.last()]; }
-    bool isLastFrameUnsat() const { return getLastFrame().unsat; }
-    void rememberLastFrameUnsat() { getLastFrame().unsat = true; }
+    PTRef newFrameTerm(FrameId frameId);
+    bool isLastFrameUnsat() const { return frames.last().unsat; }
+    void rememberLastFrameUnsat() { frames.last().unsat = true; }
     void rememberUnsatFrame(std::size_t frameIndex) {
-        assert(frameIndex < frames.size());
-        for (; frameIndex < frames.size(); ++frameIndex) {
-            pfstore[frames.getFrameReference(frameIndex)].unsat = true;
+        assert(frameIndex < frames.frameCount());
+        for (; frameIndex < frames.frameCount(); ++frameIndex) {
+            frames[frameIndex].unsat = true;
         }
+    }
+
+    void printFramesAsQuery(std::ostream & s) const
+    {
+        logic.dumpHeaderToFile(s);
+        for (std::size_t i = 0; i < frames.frameCount(); ++i) {
+            if (i > 0)
+                s << "(push 1)\n";
+            for (PTRef assertion : frames[i].formulas) {
+                logic.dumpFormulaToFile(s, assertion);
+            }
+        }
+        logic.dumpChecksatToFile(s);
     }
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
@@ -163,17 +200,14 @@ class MainSolver
             logic(thandler->getLogic()),
             pmanager(logic),
             config(conf),
-            pfstore(getTheory().pfstore),
-            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
-            solver_name {std::move(name)},
-            check_called(0),
-            status(s_Undef),
-            root_instance(logic.getTerm_true())
+            ts(logic, *term_mapper),
+            solver_name {std::move(name)}
     {
         conf.setUsedForInitiliazation();
-        frames.push(pfstore.alloc());
-        PushFrame& last = pfstore[frames.last()];
-        last.push(logic.getTerm_true());
+        // Special handling of zero-level frame
+        frames.push();
+        frameTerms.push(logic.getTerm_true());
+        initialize();
     }
 
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
@@ -186,17 +220,13 @@ class MainSolver
             logic(thandler->getLogic()),
             pmanager(logic),
             config(conf),
-            pfstore(getTheory().pfstore),
-            ts( config, logic, pmanager, *term_mapper, *smt_solver ),
-            solver_name {std::move(name)},
-            check_called(0),
-            status(s_Undef),
-            root_instance(logic.getTerm_true())
+            ts(logic,*term_mapper),
+            solver_name {std::move(name)}
     {
         conf.setUsedForInitiliazation();
-        frames.push(pfstore.alloc());
-        PushFrame& last = pfstore[frames.last()];
-        last.push(logic.getTerm_true());
+        frames.push();
+        frameTerms.push(logic.getTerm_true());
+        initialize();
     }
 
     virtual ~MainSolver() = default;
@@ -206,7 +236,7 @@ class MainSolver
     MainSolver& operator = (MainSolver&&) = delete;
 
     SMTConfig& getConfig() { return config; }
-    SimpSMTSolver& getSMTSolver() { return *smt_solver; }
+    SimpSMTSolver & getSMTSolver() { return *smt_solver; }
     SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
     THandler &getTHandler() { return *thandler; }
@@ -218,7 +248,7 @@ class MainSolver
     bool      pop();
     void      insertFormula(PTRef fla);
 
-    void      initialize() { ts.solver.initialize(); ts.initialize(); }
+    void      initialize();
 
     virtual sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
@@ -226,15 +256,14 @@ class MainSolver
 
     void  printFramesAsQuery() const;
     sstat getStatus       () const { return status; }
-    bool  solverEmpty     () const { return ts.solverEmpty(); }
 
     // Values
-    lbool   getTermValue   (PTRef tr) const { return ts.getTermValue(tr); }
+    lbool   getTermValue   (PTRef tr) const;
 
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
-    void stop() { ts.solver.stop = true; }
+    void stop() { smt_solver->stop = true; }
 
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
@@ -242,4 +271,4 @@ class MainSolver
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 };
 
-#endif //
+#endif // MAINSOLVER_H

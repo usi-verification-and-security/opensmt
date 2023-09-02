@@ -52,7 +52,6 @@ Opensmt::Opensmt(opensmt_logic _logic, const char* name)
     config = std::unique_ptr<SMTConfig>(new SMTConfig());
     logic.reset(opensmt::LogicFactory::getInstance(convert(_logic)));
     mainSolver = std::unique_ptr<MainSolver>(new MainSolver(*logic, *config, name));
-    mainSolver->initialize();
 }
 
 Opensmt::Opensmt(opensmt_logic logic_, const char* name, std::unique_ptr<SMTConfig> config_)
@@ -60,5 +59,4 @@ Opensmt::Opensmt(opensmt_logic logic_, const char* name, std::unique_ptr<SMTConf
     this->config = std::move(config_);
     logic.reset(opensmt::LogicFactory::getInstance(convert(logic_)));
     mainSolver = std::unique_ptr<MainSolver>(new MainSolver(*logic, *this->config, name));
-    mainSolver->initialize();
 }

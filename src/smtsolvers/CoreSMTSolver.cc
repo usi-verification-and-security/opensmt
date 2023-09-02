@@ -230,20 +230,18 @@ Var CoreSMTSolver::newVar(bool dvar)
 }
 
 
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps)
+bool CoreSMTSolver::addOriginalClause_(vec<Lit> && _ps)
 {
     opensmt::pair<CRef, CRef> fake;
-    return addOriginalClause_(_ps, fake);
+    return addOriginalClause_(std::move(_ps), fake);
 }
 
-bool CoreSMTSolver::addOriginalClause_(const vec<Lit> & _ps, opensmt::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(vec<Lit> && ps, opensmt::pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
     inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
     bool logsProofForInterpolation = this->logsProofForInterpolation();
-    vec<Lit> ps;
-    _ps.copyTo(ps);
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     std::vector<Lit> resolvedUnits;

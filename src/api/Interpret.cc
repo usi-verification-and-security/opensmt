@@ -161,7 +161,6 @@ void Interpret::interp(ASTNode& n) {
                     }
                     initializeLogic(logic_type);
                     main_solver = createMainSolver(logic_name);
-                    main_solver->initialize();
                     notify_success();
                 }
                 break;

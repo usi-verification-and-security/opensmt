@@ -38,41 +38,47 @@ class SimpSMTSolver;
 class THandler;
 struct SMTConfig;
 
+
+
 //
 // Generic class for conversion into CNF
 //
 class Cnfizer
 {
 public:
-    SimpSMTSolver&      solver;
+    struct ClauseCallBack {
+        virtual void operator()(vec<Lit> &&) = 0;
+    };
 protected:
-    SMTConfig&          config;
-    Logic&              logic;
-    PartitionManager&   pmanager;
-    TermMapper&         tmap;
-    bool                s_empty;
+    using FrameId = uint32_t; // TODO: Unify this with FrameId of MainSolver
 
     class Cache {
-        PTRef zeroLevelTerm;
-        using CacheEntry = std::pair<PTRef, PTRef>;
-        std::unordered_set<CacheEntry, PTRefPairHash > cache;
+        using CacheEntry = std::pair<PTRef, FrameId>;
+
+        struct EntryHash {
+            std::size_t operator () (CacheEntry entry) const {
+                std::hash<uint32_t> hasher;
+                return (hasher(entry.first.x) ^ hasher(entry.second));
+            }
+        };
+
+        FrameId baseFrame = 0;
+        std::unordered_set<CacheEntry, EntryHash> cache;
     public:
-        Cache(PTRef zeroLevelTerm): zeroLevelTerm(zeroLevelTerm) {}
-        bool contains(PTRef term, PTRef frame_term);
-        void insert(PTRef term, PTRef frame_term);
+        Cache() = default;
+        bool contains(PTRef term, FrameId frame);
+        void insert(PTRef term, FrameId frame);
     };
 
-    Cache alreadyAsserted;
+    Logic & logic;
+    TermMapper & tmap;
+    Cache alreadyProcessed;
+    ClauseCallBack * clauseCallBack;
+
 
 public:
 
-    Cnfizer( SMTConfig &    config_
-           , Logic&        logic_
-           , PartitionManager& pmanager_
-           , TermMapper&    tmap_
-           , SimpSMTSolver& solver_
-           );
-
+    Cnfizer(Logic & logic, TermMapper & tmap);
 
     virtual ~Cnfizer() = default;
     Cnfizer             (const Cnfizer&) = delete;
@@ -80,53 +86,31 @@ public:
     Cnfizer             (Cnfizer&&) = default;
     Cnfizer& operator = (Cnfizer&&) = delete;
 
-    lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
+    void cnfize(PTRef, FrameId frame_id);
 
-    lbool  getTermValue(PTRef) const;
-
-    void   initialize      ();
-    lbool  solve           (vec<FrameId>& en_frames);
-
-    bool  solverEmpty      ()                     const { return s_empty; }
+    void setClauseCallBack(ClauseCallBack * callback) { assert(callback); this->clauseCallBack = callback; }
 
 protected:
+    virtual void cnfize(PTRef) = 0; // Actual cnfization. To be implemented in derived classes
+    void cnfizeAndAssert(PTRef);    // Cnfize and assert the top-level.
 
-    virtual bool cnfizeAndAssert        ( PTRef );       // Cnfize and assert the top-level.
-    virtual bool cnfize                 ( PTRef ) = 0;   // Actual cnfization. To be implemented in derived classes
-    bool     deMorganize                ( PTRef );       // Apply deMorgan rules whenever feasible
-    void     declareVars                (vec<PTRef>&);   // Declare a set of Boolean atoms to the solver (without asserting them)
+    bool isClause(PTRef);
+    bool checkDeMorgan(PTRef);
+    void processClause(PTRef f);
+    void addClause(vec<Lit> &&);
+    void deMorganize(PTRef);
 
-public:
-    bool     isClause                   (PTRef);
-    bool     isCnf                      (PTRef);
-    bool     checkDeMorgan              ( PTRef );                      // Check if formula can be deMorganized
-protected:
-
-    bool     assertClause               (PTRef f);                              // Gives formula to the SAT solver
-
-
-    bool addClause(const vec<Lit> &);
-
-    void  retrieveClause             ( PTRef, vec<PTRef> & );         // Retrieve a clause from a formula
-    void  retrieveConjuncts          ( PTRef, vec<PTRef> & );         // Retrieve the list of conjuncts
+    void retrieveClause(PTRef, vec<Lit> &);
+    void retrieveConjuncts(PTRef, vec<PTRef> &); // Retrieve the list of conjuncts
 
 private:
-
-    bool    isConjunctionOfClauses (PTRef);
-    bool    checkPureConj        (PTRef, Map<PTRef,bool,PTRefHash>& check_cache); // Check if a formula is purely a conjuntion
+    bool checkPureConj(PTRef, Map<PTRef, bool, PTRefHash> & check_cache); // Check if a formula is purely a conjuntion
 
 protected:
     bool isLiteral(PTRef ptr) const;
     inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
-    inline vec<PTRef> getNestedBoolRoots(PTRef ptr) { return logic.getNestedBoolRoots(ptr); }
 
-    bool keepPartitionInfo() const { return config.produce_inter(); }
-
-    int currentPartition = -1;
-
-    vec<PTRef> frame_terms;
-    PTRef current_frame_term;
-    void setFrameTerm(FrameId frame_id);
+    FrameId currentFrameId = 0;
 };
 
 #endif

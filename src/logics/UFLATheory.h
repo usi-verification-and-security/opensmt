@@ -44,7 +44,9 @@ class UFLATheory : public Theory
     virtual ArithLogic&       getLogic() override { return logic; }
     virtual const ArithLogic& getLogic() const override { return logic; }
     virtual UFLATHandler&  getTSolverHandler() override { return uflatshandler; }
-    virtual bool            simplify(const vec<PFRef>&, PartitionManager&, int) override;
+
+    virtual PTRef simplifyTogether(vec<PTRef> const & assertions, bool isBaseFrame) override;
+    virtual vec<PTRef> simplifyIndividually(vec<PTRef> const & assertions, PartitionManager & pmanager, bool isBaseFrame) override;
 
 protected:
     PTRef purify(PTRef fla);

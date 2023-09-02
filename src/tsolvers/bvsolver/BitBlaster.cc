@@ -142,7 +142,7 @@ BitBlaster::assertLit (PtAsgn pta)
     //
     vec< Lit > clause;
     clause.push( mkLit( act_var, (pta.sgn == l_True ? false : true) ) );
-    bool res = addClause(clause);
+    bool res = addClause(std::move(clause));
 
     return res;
 }
@@ -1449,9 +1449,9 @@ BitBlaster::bbDistinct(PTRef tr)
 }
 
 bool
-BitBlaster::addClause(vec<Lit> & c)
+BitBlaster::addClause(vec<Lit> && c)
 {
-    return solverP.addOriginalClause(c);
+    return solverP.addOriginalClause(std::move(c));
 }
 
 //=============================================================================
