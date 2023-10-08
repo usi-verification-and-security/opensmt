@@ -132,7 +132,7 @@ std::string Logic::disambiguateName(std::string const & protectedName, SRef sort
         return protectedName;
     }
 
-    auto isQuoted = [](std::string const &s) { return s.size() > 3 and *s.begin() == '|' and *(s.end()-1) == '|'; };
+    auto isQuoted = [](std::string const &s) { return s.size() > 2 and *s.begin() == '|' and *(s.end()-1) == '|'; };
     auto name = isQuoted(protectedName) ?
             std::string_view(protectedName.data()+1, protectedName.size()-2) : std::string_view(protectedName);
 
