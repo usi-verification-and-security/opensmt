@@ -174,6 +174,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
+    if (status != s_True) { throw OsmtApiException("Model cannot be created if solver is not in SAT state"); }
 
     ModelBuilder modelBuilder {logic};
     ts.solver.fillBooleanVars(modelBuilder);
