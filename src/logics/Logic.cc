@@ -97,46 +97,28 @@ bool Logic::isReservedWord(std::string const & name) const {
 }
 
 //
-// Escape the symbol name if it contains a prohibited character from the
-// list defined by the quotable[] table below
+// Escape the symbol name if it contains a prohibited character.
 //
 bool Logic::hasQuotableChars(std::string const & name) const
 {
-    // Entry is 1 if the corresponding ascii character requires quoting
-    const bool quotable[256] =
-    {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 1, 1, 0, 0, 0, 1, // <space>, ", #, $, '
-        1, 1, 0, 0, 1, 0, 0, 0, 0, 0, // (, ), <,>
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, // :, ;
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, \, ], `
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0, 1, 0, 0, 0, 0, // {, }
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    };
-
     if (name.front() == '|' and name.back() == '|') return false; // Already quoted
 
     for (auto c : name) {
-        if (quotable[(int)c])
-            return true;
+        switch (c) {
+            case ' ':
+            case '"':
+            case '#':
+            case '$':
+            case '\'':
+            case ':':
+            case ';':
+            case '[':
+            case '\\':
+            case ']':
+            case '{':
+            case '}':
+                return true;
+        }
     }
     return false;
 }
