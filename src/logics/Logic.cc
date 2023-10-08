@@ -15,6 +15,7 @@
 #include "Substitutor.h"
 #include "smt2tokens.h"
 #include "IteHandler.h"
+#include "Interpret.h"
 
 #include <iostream>
 #include <map>
@@ -738,6 +739,18 @@ PTRef Logic::mkBoolVar(const char* name)
     SymRef sr = declareFun(name, sort_BOOL, {});
     assert(sr != SymRef_Undef);
     return mkFun(sr, {});
+}
+
+PTRef Logic::parseFormula(std::string input) {
+    SMTConfig config = SMTConfig();
+    Interpret repl = Interpret(config, *this);
+
+    int rval = repl.interpFile(input.data());
+    if (rval != 0) {
+      throw OsmtApiException("Failed to parse input formula");
+    }
+
+    return repl.getParsedFormula();
 }
 
 void Logic::instantiateFunctions(SRef sr)

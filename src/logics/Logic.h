@@ -277,6 +277,8 @@ public:
     void dumpWithLets(std::ostream & out, PTRef formula) const;
     std::string dumpWithLets(PTRef formula) const;
 
+    PTRef parseFormula(std::string input);
+
     PTRef instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTRef> const & args);
 
     SSymRef       getSortSymIndexed()              const { return sym_IndexedSort; }
