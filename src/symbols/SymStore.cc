@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "string.h"
 #include "SymStore.h"
 #include "Symbol.h"
+#include "OsmtApiException.h"
 
 const char* SymStore::e_duplicate_symbol = "Symbol Store: symbol already exists";
 const int   SymStore::symstore_buf_offs_idx = 1;
@@ -55,7 +56,12 @@ SymRef SymStore::newSymb(const char * fname, SRef rsort, vec<SRef> const & args,
                 }
             }
         }
+        if (!symConfig.isInterpreted) {
+          // Only builtin functions like "=" or "+" should be polymorphic
+          throw OsmtApiException("Symbol `" + std::string(fname) + "` has conflicting definitions");
+        }
     }
+
     bool newsym = (symrefs == nullptr);
     SymRef tr = ta.alloc(rsort, args, symConfig);
     SymId id = symbols.size();
