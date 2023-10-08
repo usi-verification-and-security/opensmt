@@ -170,6 +170,7 @@ std::string getStringFromLogic(const Logic_t logic);
 class LogicFactory {
 public:
     static Logic * getInstance(Logic_t);
+    static ArithLogic * getLAInstance(Logic_t);
     static ArithLogic * getLRAInstance();
     static ArithLogic * getLIAInstance();
 };

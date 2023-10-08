@@ -79,6 +79,8 @@ Logic * opensmt::LogicFactory::getInstance(Logic_t logicType) {
     return l;
 }
 
+ArithLogic * opensmt::LogicFactory::getLAInstance(Logic_t logicType) { return dynamic_cast<ArithLogic*>(getInstance(logicType)); }
+
 ArithLogic * opensmt::LogicFactory::getLRAInstance() { return new ArithLogic(Logic_t::QF_LRA); }
 
 ArithLogic * opensmt::LogicFactory::getLIAInstance() { return new ArithLogic(Logic_t::QF_LIA); }
