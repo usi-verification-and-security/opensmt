@@ -13,6 +13,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include "Vec.h"
 #include <stack>
 #include <vector>
+#include <mutex>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -71,6 +72,7 @@ class FastRational
 {
     class mpqPool
     {
+        std::mutex cs; // We use a mutex to make the pool thread-safe
         std::stack<mpq_class> store; // uses deque as storage to avoid realloc
         std::stack<mpq_ptr, std::vector<mpq_ptr>> pool;
     public:
