@@ -48,20 +48,20 @@ struct SymbolConfig {
 };
 
 namespace SymConf {
-    constexpr auto Default = SymbolConfig{false, false, false, SymbolProperty::None};
-    constexpr auto Interpreted = SymbolConfig{true, false, false, SymbolProperty::None};
-    constexpr auto LeftAssoc = SymbolConfig{false, false, false, SymbolProperty::LeftAssoc};
-    constexpr auto RightAssoc = SymbolConfig{false, false, false, SymbolProperty::RightAssoc};
-    constexpr auto Chainable = SymbolConfig{false, false, false, SymbolProperty::Chainable};
-    constexpr auto Pairwise = SymbolConfig{false, false, false, SymbolProperty::Pairwise};
-    constexpr auto NoScopingLeftAssoc = SymbolConfig{true, false, true, SymbolProperty::LeftAssoc};
-    constexpr auto NoScopingRightAssoc = SymbolConfig{true, false, true, SymbolProperty::RightAssoc};
-    constexpr auto NoScopingPairwise = SymbolConfig{true, false, true, SymbolProperty::Pairwise};
-    constexpr auto NoScopingChainable = SymbolConfig{true, false, true, SymbolProperty::Chainable};
-    constexpr auto NoScoping = SymbolConfig{true, false, true, SymbolProperty::None};
-    constexpr auto CommutativeNoScopingLeftAssoc = SymbolConfig{true, true, true, SymbolProperty::LeftAssoc};
-    constexpr auto CommutativeNoScopingChainable = SymbolConfig{true, true, true, SymbolProperty::Chainable};
-    constexpr auto CommutativeNoScopingPairwise = SymbolConfig{true, true, true, SymbolProperty::Pairwise};
+    constexpr SymbolConfig Default = SymbolConfig{false, false, false, SymbolProperty::None};
+    constexpr SymbolConfig Interpreted = SymbolConfig{true, false, false, SymbolProperty::None};
+    constexpr SymbolConfig LeftAssoc = SymbolConfig{false, false, false, SymbolProperty::LeftAssoc};
+    constexpr SymbolConfig RightAssoc = SymbolConfig{false, false, false, SymbolProperty::RightAssoc};
+    constexpr SymbolConfig Chainable = SymbolConfig{false, false, false, SymbolProperty::Chainable};
+    constexpr SymbolConfig Pairwise = SymbolConfig{false, false, false, SymbolProperty::Pairwise};
+    constexpr SymbolConfig NoScopingLeftAssoc = SymbolConfig{true, false, true, SymbolProperty::LeftAssoc};
+    constexpr SymbolConfig NoScopingRightAssoc = SymbolConfig{true, false, true, SymbolProperty::RightAssoc};
+    constexpr SymbolConfig NoScopingPairwise = SymbolConfig{true, false, true, SymbolProperty::Pairwise};
+    constexpr SymbolConfig NoScopingChainable = SymbolConfig{true, false, true, SymbolProperty::Chainable};
+    constexpr SymbolConfig NoScoping = SymbolConfig{true, false, true, SymbolProperty::None};
+    constexpr SymbolConfig CommutativeNoScopingLeftAssoc = SymbolConfig{true, true, true, SymbolProperty::LeftAssoc};
+    constexpr SymbolConfig CommutativeNoScopingChainable = SymbolConfig{true, true, true, SymbolProperty::Chainable};
+    constexpr SymbolConfig CommutativeNoScopingPairwise = SymbolConfig{true, true, true, SymbolProperty::Pairwise};
 }
 
 enum class SymbolMatcher : char {
