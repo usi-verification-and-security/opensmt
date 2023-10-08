@@ -144,6 +144,8 @@ class Logic {
     void        markConstant  (SymId sid);
 
   public:
+    const Sort&       getSortDefinition (SRef s)     const;
+
     SRef                getSortRef (PTRef tr)  const;
     SRef                getSortRef (SymRef sr) const;
     std::string         printSort  (SRef s)    const;

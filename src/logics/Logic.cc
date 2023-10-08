@@ -1488,6 +1488,8 @@ Logic::collectStats(PTRef root, int& n_of_conn, int& n_of_eq, int& n_of_uf, int&
 
 PTRef Logic::conjoinExtras(PTRef root) { return root; }
 
+Sort const&       Logic::getSortDefinition (SRef s)     const { return sort_store[s]; }
+
 // Fetching sorts
 SRef        Logic::getSortRef    (const PTRef tr)        const { return getSortRef(getPterm(tr).symb()); }
 SRef        Logic::getSortRef    (const SymRef sr)       const { return getSym(sr).rsort(); }
