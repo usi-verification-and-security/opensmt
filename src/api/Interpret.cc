@@ -1021,11 +1021,13 @@ void Interpret::comment_formatted(const char* fmt_str, ...) const {
 
 
 void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
+    std::stringstream out;
+
     va_list ap;
     int d;
     char c1, *t;
     if (error)
-        std::cout << "(error \"";
+        out << "(error \"";
 
     va_start(ap, fmt_str);
     while (true) {
@@ -1034,25 +1036,31 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
             switch (*fmt_str++) {
             case 's':
                 t = va_arg(ap, char *);
-                std::cout << t;
+                out << t;
                 break;
             case 'd':
                 d = va_arg(ap, int);
-                std::cout << d;
+                out << d;
                 break;
             case '%':
-                std::cout << '%';
+                out << '%';
                 break;
             }
         }
         else if (c1 != '\0')
-            std::cout << c1;
+            out << c1;
         else break;
     }
     va_end(ap);
+
     if (error)
-        std::cout << "\")" << '\n';
-    std::cout << std::endl;
+        out << "\")" << '\n';
+    out << std::endl;
+
+    if (error)
+      throw new OsmtApiException(out.str());
+
+    std::cout << out.str();
 }
 
 void Interpret::notify_success() {
