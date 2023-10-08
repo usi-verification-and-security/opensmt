@@ -4,7 +4,7 @@
 #include "Number.h"
 #include <numeric>
 
-class LANonLinearException : std::runtime_error
+class LANonLinearException : public std::runtime_error
 {
     std::string msg;
 public:
