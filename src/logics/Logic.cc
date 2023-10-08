@@ -32,7 +32,7 @@ const char* Logic::e_argnum_mismatch = "incorrect number of arguments";
 const char* Logic::e_bad_constant    = "incorrect constant for logic";
 
 const char* Logic::tk_val_uf_default   = "UFDefault";
-const char* Logic::tk_val_bool_default = "true";
+const char* Logic::tk_val_bool_default = "false";
 
 const char* Logic::tk_true     = "true";
 const char* Logic::tk_false    = "false";
@@ -391,7 +391,7 @@ Logic::getDefaultValue(const PTRef tr) const
 
 PTRef
 Logic::getDefaultValuePTRef(const SRef sref) const {
-    if (sref == sort_BOOL) { return term_TRUE; }
+    if (sref == sort_BOOL) { return term_FALSE; }
     else {
         return defaultValueForSort[sref];
 
