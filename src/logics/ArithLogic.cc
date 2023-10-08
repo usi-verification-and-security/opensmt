@@ -1177,7 +1177,7 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
         char* tmp_str;
         opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
         opensmt::Number v(tmp_str);
-        if (!isNonNegNumConst(tr)) {
+        if (!isNonNegative(v)) {
             v.negate();
             is_neg = true;
         }
