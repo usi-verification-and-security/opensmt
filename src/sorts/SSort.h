@@ -40,7 +40,7 @@ struct SSymRef {
     inline friend bool operator!= (SSymRef a1, SSymRef a2) {return a1.x != a2.x; }
 };
 
-const static struct SSymRef SSymRef_Undef = {INT32_MAX};
+static const struct SSymRef SSymRef_Undef = {INT32_MAX};
 
 struct SSymRefHash {
     uint32_t operator () (SSymRef s) const {
@@ -66,8 +66,8 @@ struct SRef {
     inline friend bool operator!= (SRef a1, SRef a2) {return a1.x != a2.x; }
 };
 
-const static struct SRef SRef_Undef = {INT32_MAX};
-const static struct SRef SRef_Nil   = {INT32_MAX-1};
+static const struct SRef SRef_Undef = {INT32_MAX};
+static const struct SRef SRef_Nil   = {INT32_MAX-1};
 
 struct SRefHash {
     uint32_t operator () (const SRef& s) const {

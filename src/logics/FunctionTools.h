@@ -33,7 +33,7 @@ class TemplateFunction {
     FunctionSignature signature;
     PTRef tr_body;
 
-    inline static std::string_view constexpr template_arg_prefix = ".arg";
+    inline static constexpr std::string_view template_arg_prefix = ".arg";
     inline static std::size_t template_arg_counter = 0;
 public:
     static std::string nextFreeArgumentName() { return std::string(template_arg_prefix) + std::to_string(template_arg_counter++); }

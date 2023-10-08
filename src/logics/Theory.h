@@ -100,7 +100,7 @@ struct PFRef {
     inline friend bool operator== (const PFRef& a1, const PFRef& a2) { return a1.x == a2.x; };
 };
 
-const static struct PFRef PFRef_Undef = {INT32_MAX};
+static const struct PFRef PFRef_Undef = {INT32_MAX};
 
 // No global variable for storing the push frame id.  I decided to
 // implement this as my own memory allocation.  There's no free though
