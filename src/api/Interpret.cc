@@ -43,11 +43,6 @@ Interpret::~Interpret() {
     for (int i = 0; i < term_names.size(); ++i) {
         free(term_names[i]);
     }
-
-    // if the logic is given in the constructor and was not set via string-input, we cleanup the reference
-    if (!ownsLogic) {
-        logic.release();
-    }
 }
 
 PTRef

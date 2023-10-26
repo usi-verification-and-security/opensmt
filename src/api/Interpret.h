@@ -135,7 +135,6 @@ class Interpret {
     std::unique_ptr<MainSolver> main_solver;
 
     bool            f_exit;
-    bool            ownsLogic;
 
     // Named terms for getting variable values
     MapWithKeys<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
@@ -189,19 +188,7 @@ class Interpret {
     Interpret(SMTConfig & c)
         : config     (c)
         , f_exit     (false)
-        , ownsLogic  (true)
         { }
-
-    /** This constructor reuses the existing logic from caller context. */
-    Interpret(SMTConfig & c, Logic & l)
-        : config     (c)
-        , f_exit     (false)
-        , ownsLogic  (false)
-        {
-          logic.reset(&l);
-          main_solver = createMainSolver(l.getName().c_str());
-          main_solver->initialize();
-        }
 
     ~Interpret();
 
