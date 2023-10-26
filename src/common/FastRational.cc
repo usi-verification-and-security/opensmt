@@ -11,22 +11,18 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 mpq_ptr FastRational::mpqPool::alloc()
 {
     mpq_ptr r;
-    cs.lock();
     if (!pool.empty()) {
         r = pool.top();
         pool.pop();
     } else {
         r = store.emplace().get_mpq_t();
     }
-    cs.unlock();
     return r;
 }
 
 void FastRational::mpqPool::release(mpq_ptr ptr)
 {
-    cs.lock();
     pool.push(ptr);
-    cs.unlock();
 }
 
 FastRational::FastRational( const char * s, const int base )
