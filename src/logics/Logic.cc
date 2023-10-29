@@ -96,49 +96,15 @@ bool Logic::isReservedWord(std::string const & name) const {
     return osmttokens::tokenNames.find(name) != osmttokens::tokenNames.end();
 }
 
-//
-// Escape the symbol name if it contains a prohibited character from the
-// list defined by the quotable[] table below
-//
+// Escape the symbol name if it contains a character not allowed in the simple symbol, as defined by SMT-LIB 2.6
 bool Logic::hasQuotableChars(std::string const & name) const
 {
-    // Entry is 1 if the corresponding ascii character requires quoting
-    const bool quotable[256] =
-    {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 1, 1, 0, 0, 0, 1, // <space>, ", #, $, '
-        1, 1, 0, 0, 1, 0, 0, 0, 0, 0, // (, ), <,>
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, // :, ;
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 1, 0, 0, 1, 0, 0, 0, // [, \, ], `
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0, 1, 0, 0, 0, 0, // {, }
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    };
-
     if (name.front() == '|' and name.back() == '|') return false; // Already quoted
 
-    for (auto c : name) {
-        if (quotable[(int)c])
-            return true;
-    }
-    return false;
+    // SMT-LIB 2.6 standard, page 23, paragraph symbols: https://smtlib.cs.uiowa.edu/papers/smt-lib-reference-v2.6-r2021-05-12.pdf
+    return name.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+                               "0123456789~!@$%^&*_-+=<>.?/") != std::string::npos;
+
 }
 
 // If the symbol corresponding to the one specified in the arguments would be ambiguous, i.e., either not known by
