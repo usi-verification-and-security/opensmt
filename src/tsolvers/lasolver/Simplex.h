@@ -100,6 +100,7 @@ public:
     bool checkValueConsistency() const;
     bool invariantHolds() const;
 
+    static const opensmt::Real maxDelta;
     opensmt::Real computeDelta() const;
     Delta getValuation(LVRef) const;                     // Understands also variables deleted by gaussian elimination
 //    Delta read(LVRef v) const { assert(!tableau.isQuasiBasic(v)); return model->read(v); } // ignores unsafely variables deleted by gaussian elimination
