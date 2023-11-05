@@ -1543,6 +1543,7 @@ bool        Logic::isArrayStore(SymRef sr) const { return stores.has(sr); }
 bool        Logic::isArrayStore(PTRef tr) const { return isArrayStore(getPterm(tr).symb()); }
 
 SRef Logic::getArraySort(SRef domain, SRef codomain) {
+    if (not hasArrays()) { throw OsmtApiException("Selected logic does not support arrays"); }
     return getSort(sym_ArraySort, {domain, codomain});
 }
 
