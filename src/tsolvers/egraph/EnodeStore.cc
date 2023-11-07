@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Symbol.h"
 #include "Logic.h"
 
+#include <algorithm>
+
 EnodeStore::EnodeStore(Logic& l)
       : logic(l)
       , ea(1024*1024)

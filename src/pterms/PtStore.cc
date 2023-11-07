@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "OsmtApiException.h"
 
 #include <sstream>
+#include <algorithm>
 
 const int PtStore::ptstore_vec_idx = 1;
 const int PtStore::ptstore_buf_idx = 2;

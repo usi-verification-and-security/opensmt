@@ -21,6 +21,7 @@
 #include <queue>
 #include <set>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 

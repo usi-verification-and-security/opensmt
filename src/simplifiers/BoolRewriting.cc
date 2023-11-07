@@ -5,6 +5,7 @@
 #include "BoolRewriting.h"
 #include "Logic.h"
 #include <unordered_set>
+#include <algorithm>
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
