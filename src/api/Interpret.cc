@@ -134,8 +134,14 @@ void Interpret::exit() {
 }
 
 using opensmt::Logic_t;
-using opensmt::getLogicFromString;
 using namespace osmttokens;
+
+namespace {
+    Logic_t getLogicFromString(std::string_view string_name) {
+        if (string_name == "ALL") { return opensmt::getLogicFromString("QF_AUFLIRA"); }
+        return opensmt::getLogicFromString(string_name);
+    }
+}
 
 void Interpret::interp(ASTNode& n) {
     assert(n.getType() == CMD_T);
