@@ -1,5 +1,6 @@
 ### 2.5.3 (unreleased)
-
+New features:
+ - Support `ALL` as a valid argument to `set-logic` command. This becomes an alias for `QF_AUFLIRA`.
 
 ### 2.5.2 (2023-07-12)
 

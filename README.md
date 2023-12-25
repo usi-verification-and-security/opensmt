@@ -79,8 +79,9 @@ The install directory can be customized using cmake variable CMAKE_INSTALL_PREFI
 This installs the library in the folder `<INSTALL_DIR>/lib` and puts the necessary header files in the folder `<INSTALL_DIR>/include/opensmt`.
 
 ## Capabilities and usage examples
-OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT currently supports the following SMT-LIB logics: `QF_UF`, `QF_RDL`, `QF_IDL`, `QF_LRA`, `QF_LIA`, `QF_UFLRA` and `QF_UFLIA`, both in a single-query and an incremental mode.
-Support for `QF_AX` is preliminary and only in a single-query mode.
+OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT supports *quantifier-free* SMT-LIB logics, namely any combination of arrays, uninterpreted functions and linear arithmetic or difference logic over reals or integers, both in a single-query and an incremental mode.
+The exception is that the combination of reals and integers is not supported.
+To streamline upstream usage, OpenSMT supports `ALL` as an argument to `set-logic` command. This is an alias for `QF_AUFLIRA`. Note, however, that while this allows users to specify problems over reals or integers, the restriction that their combination is not allowed still stands!
 
 To run OpenSMT on a SMT-LIB2 file (.smt2) simply pass the path to the file as an argument to the executable:
 ```
