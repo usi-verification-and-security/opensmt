@@ -15,7 +15,7 @@ std::array<std::string, 23> logicToName = {{"Undef", "Empty", "QF_UF", "QF_CUF",
                                            "QF_UFBV", "QF_AX", "QF_AXDIFF", "QF_ALRA", "QF_ALIA", "QF_AUFLRA",
                                            "QF_AUFLIA", "QF_BOOL", "QF_AUFBV", "QF_AUFLIRA"}};
 
-opensmt::Logic_t opensmt::getLogicFromString(const std::string& name) {
+opensmt::Logic_t opensmt::getLogicFromString(std::string_view name) {
     if (name == "QF_UF") return opensmt::Logic_t::QF_UF;
     if (name == "QF_LRA") return opensmt::Logic_t::QF_LRA;
     if (name == "QF_RDL") return opensmt::Logic_t::QF_RDL;

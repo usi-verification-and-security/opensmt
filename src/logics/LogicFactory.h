@@ -6,6 +6,7 @@
 #define OPENSMT_LOGICFACTORY_H
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 class Logic;
@@ -162,7 +163,7 @@ inline const std::unordered_map<Logic_t, LogicProperty> QFLogicToProperties  {
                             no_bv}}
 };
 
-Logic_t getLogicFromString(const std::string & name);
+Logic_t getLogicFromString(std::string_view name);
 
 std::string getStringFromLogic(const Logic_t logic);
 
