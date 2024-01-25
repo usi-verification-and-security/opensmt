@@ -66,8 +66,8 @@ class Map {
     int        size;
 
     // Don't allow copying (error prone):
-    Map<K,D,H,E>&  operator = (Map<K,D,H,E>& other) = delete;
-                   Map        (Map<K,D,H,E>& other) = delete;
+    Map&  operator = (Map& other) = delete;
+    Map              (Map& other) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -142,7 +142,7 @@ class Map {
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 d = ps[i].data;
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -311,7 +311,7 @@ public:
         // printf(" --- rehashing, old-cap=%d, new-cap=%d\n", cap, newsize);
     }
 
-    
+
  public:
 
     VecMap () : table(NULL), cap(0), size(0) {}
@@ -352,7 +352,7 @@ public:
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 ps[i].data.copyTo(d);
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -506,7 +506,7 @@ class VecKeyMap {
         for (int i = 0; i < ps.size(); i++)
             if (equals(ps[i].key, k)){
                 d = ps[i].data;
-                return true; } 
+                return true; }
         return false;
     }
 
@@ -565,8 +565,8 @@ class MapVec
     int cap;
 
     // Don't allow copying (error prone):
-    MapVec<K,D,H>&  operator = (MapVec<K,D,H>& other) = delete;
-    MapVec<K,D,H,E>            (MapVec<K,D,H,E>& other) = delete;
+    MapVec&  operator = (MapVec& other) = delete;
+    MapVec              (MapVec& other) = delete;
 
     // Helpers for calculating next capacity:
     static inline int  imax   (int x, int y) { int mask = (y-x) >> (sizeof(int)*8-1); return (x&mask) + (y&(~mask)); }
