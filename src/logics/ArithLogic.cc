@@ -182,7 +182,7 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
     return false;
 }
 
-const FastRational&
+const opensmt::Number&
 ArithLogic::getNumConst(PTRef tr) const
 {
     SymId id = sym_store[getPterm(tr).symb()].getId();
@@ -604,7 +604,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     Map<PTRef,uint32_t,PTRefHash> varIndices;
     struct Entry {
         PTRef var;
-        std::variant<PTRef,FastRational> coeff;
+        std::variant<PTRef,opensmt::Number> coeff;
     };
     std::vector<Entry> simplified;
     simplified.reserve(args.size());
@@ -622,13 +622,13 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
             if (std::holds_alternative<PTRef>(entry.coeff)) {
                 entry.coeff = this->getNumConst(std::get<PTRef>(entry.coeff));
             }
-            assert(std::holds_alternative<FastRational>(entry.coeff));
-            std::get<FastRational>(entry.coeff) += this->getNumConst(c);
+            assert(std::holds_alternative<opensmt::Number>(entry.coeff));
+            std::get<opensmt::Number>(entry.coeff) += this->getNumConst(c);
         }
     }
     flattened_args.clear();
     for (auto const & [var,coeff] : simplified) {
-        PTRef coeffTerm = std::holds_alternative<PTRef>(coeff) ? std::get<PTRef>(coeff) : this->mkConst(this->getSortRef(var), std::get<FastRational>(coeff));
+        PTRef coeffTerm = std::holds_alternative<PTRef>(coeff) ? std::get<PTRef>(coeff) : this->mkConst(this->getSortRef(var), std::get<opensmt::Number>(coeff));
         if (isZero(coeffTerm)) { continue; }
         if (var == PTRef_Undef) {
             flattened_args.push(coeffTerm);
@@ -864,6 +864,7 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args)
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
+        // this assumes that `Number` is `FastRational`
         args_new[1] = mkRealConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
@@ -917,7 +918,7 @@ PTRef ArithLogic::mkConst(SRef s, const char* name)
         for (auto i = numbers.size(); i <= id; i++)
             numbers.emplace_back(nullptr);
         if (numbers[id] != nullptr) { delete numbers[id]; }
-        numbers[id] = new FastRational(rat);
+        numbers[id] = new opensmt::Number(rat);
         free(rat);
         markConstant(id);
     } else
@@ -1241,7 +1242,7 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
  * @param sum
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
-opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
+opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
@@ -1259,6 +1260,7 @@ opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum)
                                    [](opensmt::Number const & coeff) { return coeff.isInteger(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
+        // this would probably not work when `Number` is not `FastRational`
         using Integer = FastRational; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
         auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
@@ -1339,7 +1341,7 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef 
     return {std::move(constantValue), normalizedSum};
 }
 
-opensmt::pair<FastRational, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
+opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
     SRef sr = getUniqueArgSort(sum);
     assert(isSortInt(sr) or isSortReal(sr));
     return isSortInt(sr) ? sumToNormalizedIntPair(sum) : sumToNormalizedRealPair(sum);

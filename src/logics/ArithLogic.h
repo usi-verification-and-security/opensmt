@@ -27,7 +27,7 @@ class ArithLogic: public Logic
 {
     friend class LessThan_deepPTRef;
 protected:
-    std::vector<FastRational*> numbers;
+    std::vector<opensmt::Number*> numbers;
 
     static const std::string e_nonlinear_term;
 
@@ -147,7 +147,7 @@ public:
     bool yieldsSortNum(SymRef sr) const { return yieldsSortInt(sr) or yieldsSortReal(sr); }
     bool yieldsSortNum(PTRef tr)  const { return yieldsSortInt(tr) or yieldsSortReal(tr); }
 
-    const FastRational & getNumConst(PTRef tr) const;
+    const opensmt::Number & getNumConst(PTRef tr) const;
 
     bool           isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
     bool           isAtom(PTRef tr) const override { return isNumEq(tr) || isLt(tr) || isGt(tr) || isLeq(tr) || isGeq(tr) || Logic::isAtom(tr); }
@@ -397,9 +397,9 @@ protected:
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
-    opensmt::pair<FastRational, PTRef> sumToNormalizedPair(PTRef sum);
-    opensmt::pair<FastRational, PTRef> sumToNormalizedIntPair(PTRef sum);
-    opensmt::pair<FastRational, PTRef> sumToNormalizedRealPair(PTRef sum);
+    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedPair(PTRef sum);
+    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedIntPair(PTRef sum);
+    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
 };
