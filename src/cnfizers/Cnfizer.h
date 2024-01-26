@@ -75,6 +75,10 @@ public:
 
 
     virtual ~Cnfizer() = default;
+    Cnfizer             (const Cnfizer&) = delete;
+    Cnfizer& operator = (const Cnfizer&) = delete;
+    Cnfizer             (Cnfizer&&) = default;
+    Cnfizer& operator = (Cnfizer&&) = delete;
 
     lbool cnfizeAndGiveToSolver (PTRef, FrameId frame_id); // Main routine
 

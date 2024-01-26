@@ -200,6 +200,10 @@ class MainSolver
     }
 
     virtual ~MainSolver() = default;
+    MainSolver             (const MainSolver&) = delete;
+    MainSolver& operator = (const MainSolver&) = delete;
+    MainSolver             (MainSolver&&) = default;
+    MainSolver& operator = (MainSolver&&) = delete;
 
     SMTConfig& getConfig() { return config; }
     SimpSMTSolver& getSMTSolver() { return *smt_solver; }

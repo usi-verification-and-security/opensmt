@@ -407,6 +407,11 @@ public:
         free(info_names[i]);
   }
 
+  SMTConfig             (const SMTConfig&) = delete;
+  SMTConfig& operator = (const SMTConfig&) = delete;
+  SMTConfig             (SMTConfig&&) = default;
+  SMTConfig& operator = (SMTConfig&&) = default;
+
   bool             setOption(const char* name, const SMTOption& value, const char*& msg);
   const SMTOption& getOption(const char* name) const;
 
@@ -443,7 +448,7 @@ public:
   inline void setReductionLoops(int r) { insertOption(o_proof_red_trans, new SMTOption(r)); }
 
   // Set interpolation algorithms
-  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) { 
+  inline void setBooleanInterpolationAlgorithm( ItpAlgorithm i ) {
       insertOption(o_itp_bool_alg, new SMTOption(i.x)); }
 
   inline void setEUFInterpolationAlgorithm( ItpAlgorithm i ) { insertOption(o_itp_euf_alg, new SMTOption(i.x)); }

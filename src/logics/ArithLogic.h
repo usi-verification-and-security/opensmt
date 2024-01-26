@@ -105,6 +105,11 @@ protected:
 public:
     ArithLogic(opensmt::Logic_t type);
     ~ArithLogic() { for (auto number : numbers) { delete number; } }
+    ArithLogic            (const ArithLogic&) = delete;
+    ArithLogic& operator =(const ArithLogic&) = delete;
+    ArithLogic            (ArithLogic&&) = default;
+    ArithLogic& operator =(ArithLogic&&) = delete;
+
     bool             isBuiltinFunction(SymRef sr) const override;
     PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
     SRef             getSort_real     () const { return sort_REAL; }

@@ -38,7 +38,12 @@ class SymStore {
     vec<char*>                                  idToName;
 
   public:
+    SymStore() = default;
     ~SymStore();
+    SymStore            (const SymStore&) = delete;
+    SymStore& operator =(const SymStore&) = delete;
+    SymStore            (SymStore&&) = default;
+    SymStore& operator =(SymStore&&) = default;
     // Constructs a new symbol.
     SymRef newSymb(const char *fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig);
     SymRef newSymb(const char *fname, SRef rsort, vec<SRef> const & args) { return newSymb(fname, rsort, args, SymConf::Default); }

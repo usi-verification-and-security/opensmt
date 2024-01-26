@@ -278,8 +278,8 @@ public:
     int        size;
 
     // Don't allow copying (error prone):
-    VecMap<K,D,H,E>&  operator = (VecMap<K,D,H,E>& ) = delete;
-                   VecMap        (VecMap<K,D,H,E>& ) = delete;
+    VecMap&  operator = (VecMap&) = delete;
+    VecMap              (VecMap&) = delete;
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
@@ -317,6 +317,8 @@ public:
     VecMap () : table(NULL), cap(0), size(0) {}
     VecMap (const H& h, const E& e) : hash(h), equals(e), table(NULL), cap(0), size(0){}
     ~VecMap () { delete [] table; }
+    VecMap&  operator = (VecMap&&) = default;
+    VecMap              (VecMap&&) = default;
 
     // PRECONDITION: the key must already exist in the map.
     const vec<D>& operator [] (const K& k) const

@@ -128,6 +128,10 @@ class Logic {
 
     Logic(opensmt::Logic_t type);
     virtual ~Logic() = default;
+    Logic            (const Logic&) = delete;
+    Logic& operator =(const Logic&) = delete;
+    Logic            (Logic&&) = default;
+    Logic& operator =(Logic&&) = delete;
 
     virtual PTRef conjoinExtras(PTRef root);
 

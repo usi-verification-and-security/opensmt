@@ -33,6 +33,13 @@ typedef enum
 class Opensmt
 {
 public:
+    Opensmt             (const Opensmt&) = delete;
+    Opensmt& operator = (const Opensmt&) = delete;
+    Opensmt             (Opensmt&&) = default;
+    Opensmt& operator = (Opensmt&&) = default;
+
+    ~Opensmt() = default;
+
     Opensmt(opensmt_logic _logic, const char* name);
 
     /**
