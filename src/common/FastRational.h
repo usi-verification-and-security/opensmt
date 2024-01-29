@@ -13,6 +13,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include "Vec.h"
 #include <stack>
 #include <vector>
+#include <optional>
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -165,6 +166,7 @@ private:
     }
     void force_ensure_mpq_valid() const
     {
+        // TK: I am afraid that this is UB
         const_cast<FastRational *>(this)->ensure_mpq_valid();
     }
     void ensure_mpq_memory_allocated()
@@ -243,6 +245,20 @@ public:
         else {
             return FastRational(mpq_numref(mpq));
         }
+    }
+
+    std::optional<std::pair<word, uword>> tryGetNumDen() const {
+        if (!wordPartValid()) return {};
+        return std::make_pair(num, den);
+    }
+
+    mpq_class getMpq() const {
+        if (wordPartValid()) {
+            static_assert(sizeof(long) == 8);
+            return mpq_class{static_cast<long>(num), static_cast<long>(den)};
+        }
+        assert(mpqPartValid());
+        return mpq_class{mpq};
     }
 
     inline int compare(const FastRational& b) const;
