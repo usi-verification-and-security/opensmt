@@ -171,7 +171,7 @@ class Theory
     SubstitutionResult      computeSubstitutions(PTRef fla);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
     virtual bool            okToPartition(PTRef) const { return true; }
-    virtual                ~Theory() {};
+    virtual                ~Theory() = default;
 };
 
 class UFTheory : public Theory
@@ -185,7 +185,6 @@ class UFTheory : public Theory
         , uflogic(logic)
         , tshandler(c, uflogic)
     { }
-    ~UFTheory() {}
     virtual Logic&            getLogic() override { return uflogic; }
     virtual const Logic&      getLogic() const override { return uflogic; }
     virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }

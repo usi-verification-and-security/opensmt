@@ -33,8 +33,6 @@ BVSolver::BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l)
  , B(id, c, mainSolver, l, explanation, suggestions)
 { }
 
-BVSolver::~BVSolver () { }
-
 //
 // The solver is informed of the existence of
 // atom e. It might be useful for initializing

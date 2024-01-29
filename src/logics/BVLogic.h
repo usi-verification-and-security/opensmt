@@ -85,7 +85,6 @@ class BVLogic: public Logic
 
   public:
     BVLogic(opensmt::Logic_t type, int width = i_default_bitwidth);
-    ~BVLogic();
     virtual int          getBitWidth() const { return bitwidth; }
     virtual std::string const getName() const override { return "QF_BV"; }
 
@@ -284,7 +283,3 @@ class BVLogic: public Logic
 
 };
 #endif
-
-
-
-

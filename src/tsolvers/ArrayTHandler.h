@@ -17,8 +17,6 @@ class ArrayTHandler : public TSolverHandler {
 public:
     ArrayTHandler(SMTConfig & c, Logic & l);
 
-    ~ArrayTHandler() override = default;
-
     Logic & getLogic() override { return logic; };
 
     Logic const & getLogic() const override { return logic; }

@@ -105,8 +105,6 @@ class ArraySolver : public TSolver {
 public:
     ArraySolver(Logic & logic, Egraph & egraph, SMTConfig & config);
 
-    ~ArraySolver() = default;
-
     void clearSolver() override;
 
     bool assertLit(PtAsgn asgn) override;

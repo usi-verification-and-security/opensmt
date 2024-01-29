@@ -62,8 +62,3 @@ Opensmt::Opensmt(opensmt_logic logic_, const char* name, std::unique_ptr<SMTConf
     mainSolver = std::unique_ptr<MainSolver>(new MainSolver(*logic, *this->config, name));
     mainSolver->initialize();
 }
-
-Opensmt::~Opensmt()
-{
-
-}

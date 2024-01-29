@@ -45,7 +45,6 @@ public:
      * @param config Configuration for the OpenSMT instance
      */
     Opensmt(opensmt_logic _logic, const char* name, std::unique_ptr<SMTConfig> config);
-    ~Opensmt();
 
     SMTConfig& getConfig() { return *config; }
     Logic& getLogic() { return *logic; }

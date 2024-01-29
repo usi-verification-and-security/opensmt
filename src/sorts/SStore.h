@@ -58,7 +58,6 @@ class SStore
   public:
 
     SStore() = default;
-    ~SStore() = default;
 
     //===========================================================================
     // Public APIs for sort construction/destruction

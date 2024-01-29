@@ -55,7 +55,6 @@ class SimpSMTSolver : public CoreSMTSolver
     // Constructor/Destructor:
     //
     SimpSMTSolver (SMTConfig &, THandler&);
-    ~SimpSMTSolver( );
 
     void         initialize           ( );
 
@@ -69,7 +68,7 @@ public:
     bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
     // Variable mode:
-    // 
+    //
     void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
     bool    isEliminated(Var v) const;
 
@@ -81,7 +80,7 @@ public:
     lbool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);
     lbool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
     lbool    solve       (Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
-    bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification. 
+    bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
     // Memory managment:
     //
@@ -200,7 +199,7 @@ inline lbool SimpSMTSolver::solve        (                     bool do_simp, boo
 inline lbool SimpSMTSolver::solve        (Lit p       ,        bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p}, do_simp, turn_off_simp); }
 inline lbool SimpSMTSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p,q}, do_simp, turn_off_simp); }
 inline lbool SimpSMTSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { return solve(vec<Lit>{p,q,r}, do_simp, turn_off_simp); }
-inline lbool SimpSMTSolver::solve        (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){ 
+inline lbool SimpSMTSolver::solve        (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){
     budgetOff(); setAssumptions(assumps); return solve_(do_simp, turn_off_simp); }
 inline lbool SimpSMTSolver::solveLimited (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){
     setAssumptions(assumps); return solve_(do_simp, turn_off_simp); }

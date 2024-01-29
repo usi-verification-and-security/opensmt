@@ -12,8 +12,6 @@ UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
     setSolverSchedule({egraph});
 }
 
-UFTHandler::~UFTHandler() { }
-
 Logic &UFTHandler::getLogic()
 {
     return logic;
@@ -35,4 +33,3 @@ PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels
     assert(iegraph);
     return iegraph->getInterpolant(mask, labels, pmanager);
 }
-

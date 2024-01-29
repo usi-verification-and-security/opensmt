@@ -991,4 +991,3 @@ void InterpolationContext::ensureNoLiteralsWithoutPartition() {
         proof_graph->eliminateNoPartitionTheoryVars(noPartitionVars);
     }
 }
-

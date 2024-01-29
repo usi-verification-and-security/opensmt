@@ -127,7 +127,7 @@ class Logic {
     static const char*  s_abstract_value_prefix;
 
     Logic(opensmt::Logic_t type);
-    virtual ~Logic();
+    virtual ~Logic() = default;
 
     virtual PTRef conjoinExtras(PTRef root);
 
@@ -418,4 +418,3 @@ public:
 };
 
 #endif // LOGIC_H
-

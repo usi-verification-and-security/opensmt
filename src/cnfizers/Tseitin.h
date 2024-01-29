@@ -48,9 +48,6 @@ public:
         , alreadyCnfized(logic_.getTerm_true())
       {}
 
-    ~Tseitin( ) { }
-
-
 private:
 
     // Cache of already cnfized terms. Note that this is different from Cnfizer cache of already processed top-level flas

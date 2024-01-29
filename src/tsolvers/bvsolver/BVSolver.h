@@ -34,7 +34,6 @@ class BVSolver : public TSolver
 {
 public:
     BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l);
-    ~BVSolver ( );
 
     bool            assertLit          ( PtAsgn ) override;
     void            pushBacktrackPoint ( )        override;

@@ -72,8 +72,6 @@ public:
 , cv  ( -1 )
 { }
 
-	~RuleContext ( ) { }
-
 	inline void reset( )
 	{
 		type = rNO;

@@ -84,8 +84,6 @@ Logic::Logic(opensmt::Logic_t _logicType) :
     sym_ArraySort = sort_store.newSortSymbol(SortSymbol("Array", 2, SortSymbol::INTERNAL));
 }
 
-Logic::~Logic() = default;
-
 bool Logic::isBuiltinFunction(const SymRef sr) const
 {
     if (sr == sym_TRUE || sr == sym_FALSE || sr == sym_AND || sr == sym_OR || sr == sym_XOR || sr == sym_NOT || sr == sym_EQ || sr == sym_IMPLIES || sr == sym_DISTINCT || sr == sym_ITE) return true;

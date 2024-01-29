@@ -80,9 +80,6 @@ BVLogic::BVLogic(opensmt::Logic_t type, int width) :
     equalities.insert(sym_BV_EQ, true);
 }
 
-BVLogic::~BVLogic()
-{}
-
 PTRef
 BVLogic::mkBVEq(PTRef a1, PTRef a2)
 {

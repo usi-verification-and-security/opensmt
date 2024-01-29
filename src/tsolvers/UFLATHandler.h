@@ -47,7 +47,6 @@ class UFLATHandler : public TSolverHandler
     std::unordered_set<PTRef, PTRefHash> knownEqualities;
   public:
     UFLATHandler(SMTConfig & c, ArithLogic & l);
-    ~UFLATHandler() override = default;
     Logic & getLogic() override { return logic; }
     Logic const & getLogic() const override { return logic; }
 

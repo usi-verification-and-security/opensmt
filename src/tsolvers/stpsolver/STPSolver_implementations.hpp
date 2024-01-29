@@ -17,9 +17,6 @@ STPSolver<T>::STPSolver(SMTConfig &c, ArithLogic &l)
         , inv_bpoint(-1), inv_asgn(PtAsgn_Undef) {}
 
 template<class T>
-STPSolver<T>::~STPSolver() = default;
-
-template<class T>
 typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
     // inequalities are in the form (c <= (x + (-1 * y)))
     // due to how LALogic creates terms, we won't ever encounter <, >, or >= inequalities

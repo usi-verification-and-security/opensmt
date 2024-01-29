@@ -61,8 +61,6 @@ struct ProofDer
     ProofDer() : ref {0}, type{clause_type::CLA_ORIG} {}
     ProofDer(clause_type type) : ref {0}, type{type} {}
 
-    ~ProofDer( ) = default;
-
     std::vector< CRef >  chain_cla;               // Clauses chain
     std::vector< Var >   chain_var;               // Pivot chain
     int                  ref;                     // Reference counter
@@ -93,7 +91,6 @@ class Proof
 public:
 
     Proof ( ClauseAllocator& cl );
-    ~Proof( ) = default;
 
     // Notifies the proof about a new original clause.
     void newOriginalClause(CRef c) { newLeafClause(c, clause_type::CLA_ORIG); }

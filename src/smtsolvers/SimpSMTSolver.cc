@@ -77,10 +77,6 @@ SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
     remove_satisfied      = false;
 }
 
-
-SimpSMTSolver::~SimpSMTSolver( )
-{ }
-
 void SimpSMTSolver::initialize( )
 {
     CoreSMTSolver::initialize( );

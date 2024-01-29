@@ -22,7 +22,6 @@ public:
             , lalogic(logic)
             , latshandler(c, lalogic)
     { }
-    ~LATheory() {};
     virtual LinAlgLogic&          getLogic() override { return lalogic; }
     virtual const LinAlgLogic&    getLogic() const override { return lalogic; }
     virtual LinAlgTHandler&       getTSolverHandler() override { return latshandler; }

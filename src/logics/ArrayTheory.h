@@ -21,7 +21,6 @@ public:
     , tshandler(c, logic)
     { }
 
-    ~ArrayTheory() {}
     virtual Logic&            getLogic() override { return logic; }
     virtual const Logic&      getLogic() const override { return logic; }
     virtual ArrayTHandler&       getTSolverHandler() override  { return tshandler; }

@@ -44,8 +44,6 @@ private:
 public:
     STPSolver(SMTConfig &c, ArithLogic &l);
 
-    ~STPSolver() override;
-
     void clearSolver() override;
 
     bool assertLit(PtAsgn asgn) override;
