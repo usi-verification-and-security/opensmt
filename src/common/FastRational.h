@@ -78,10 +78,10 @@ class FastRational
         mpq_ptr alloc();
         void release(mpq_ptr);
     };
-    State state;
+    mutable State state;
     word num{0};
     uword den{1};
-    mpq_ptr mpq{nullptr};
+    mutable mpq_ptr mpq{nullptr};
 
     inline static mpqPool pool;
     inline static thread_local mpz_class temp;
@@ -94,17 +94,16 @@ class FastRational
     static const unsigned char mpqValidMask = 0x4;
 
     // Methods for adjusting the inner state
-    inline void setMpqPartValid() {this->state |= State::MPQ_VALID; }
-    inline void setMpqMemoryAllocated() {this->state |= State::MPQ_MEMORY_ALLOCATED; }
-    inline void setMpqAllocatedAndValid() {this->state |= State::MPQ_ALLOCATED_AND_VALID; }
-    inline void setWordPartValid() {this->state |= State::WORD_VALID; }
-    inline void setWordPartInvalid() { assert(mpqPartValid()); this->state = State::MPQ_ALLOCATED_AND_VALID; }
-    inline void setOnlyWordPartValid() {
+    inline void setMpqMemoryAllocated() const {this->state |= State::MPQ_MEMORY_ALLOCATED; }
+    inline void setMpqAllocatedAndValid() const {this->state |= State::MPQ_ALLOCATED_AND_VALID; }
+    inline void setWordPartValid() const {this->state |= State::WORD_VALID; }
+    inline void setWordPartInvalid() const { assert(mpqPartValid()); this->state = State::MPQ_ALLOCATED_AND_VALID; }
+    inline void setOnlyWordPartValid() const {
         setWordPartValid();
         setMpqPartInvalid();
     }
 
-    inline void setMpqPartInvalid() {
+    inline void setMpqPartInvalid() const {
         assert(wordPartValid());
         // clear the bit representing MPQ_VALID
         this->state = static_cast<State>(static_cast<state_t>(this->state) & ~(mpqValidMask));
@@ -153,7 +152,7 @@ private:
             state = State::WORD_VALID;
         }
     }
-    void ensure_mpq_valid() {
+    void ensure_mpq_valid() const {
         if (!mpqPartValid()) {
             assert(wordPartValid());
             if (!mpqMemoryAllocated()) {
@@ -164,12 +163,8 @@ private:
             setMpqAllocatedAndValid();
         }
     }
-    void force_ensure_mpq_valid() const
-    {
-        // TK: I am afraid that this is UB
-        const_cast<FastRational *>(this)->ensure_mpq_valid();
-    }
-    void ensure_mpq_memory_allocated()
+
+    void ensure_mpq_memory_allocated() const
     {
         if (!mpqMemoryAllocated()) {
             mpq = pool.alloc();
@@ -234,7 +229,7 @@ public:
             return FastRational((uword)den);
         }
         else {
-            force_ensure_mpq_valid();
+            ensure_mpq_valid();
             return FastRational(mpq_denref(mpq));
         }
     }
@@ -469,8 +464,8 @@ inline bool FastRational::operator==(const FastRational& b) const {
     if (this->wordPartValid() && b.wordPartValid()) {
         return num == b.num && den == b.den;
     }
-    force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    ensure_mpq_valid();
+    b.ensure_mpq_valid();
     return mpq_equal(mpq, b.mpq);
 }
 
@@ -478,7 +473,7 @@ inline FastRational FastRational::operator-() const {
     if (this->wordPartValid() && num > WORD_MIN) {
         return FastRational(-num, den);
     } else {
-        force_ensure_mpq_valid();
+        ensure_mpq_valid();
         FastRational x;
         x.mpq = pool.alloc();
         mpq_neg(x.mpq, mpq);
@@ -493,7 +488,7 @@ inline void FastRational::negate() {
         num = -num;
         setMpqPartInvalid();
     } else {
-        force_ensure_mpq_valid();
+        ensure_mpq_valid();
         mpq_neg(mpq, mpq);
         // MB: for the special case num == WORD_MIN && wordPartValid
         setWordPartInvalid();
@@ -510,8 +505,8 @@ inline int FastRational::compare(const FastRational& b) const {
             return compare(lword(num)*b.den, lword(b.num)*den);
         }
     }
-    force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    ensure_mpq_valid();
+    b.ensure_mpq_valid();
     return mpq_cmp(mpq, b.mpq);
 }
 
@@ -698,8 +693,8 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
         return;
     }
     overflow:
-    a.force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    a.ensure_mpq_valid();
+    b.ensure_mpq_valid();
     dst.ensure_mpq_memory_allocated();
     mpq_add(dst.mpq, a.mpq, b.mpq);
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
@@ -766,8 +761,8 @@ inline void substraction(FastRational& dst, const FastRational& a, const FastRat
         return;
     }
     overflow:
-    a.force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    a.ensure_mpq_valid();
+    b.ensure_mpq_valid();
     dst.ensure_mpq_memory_allocated();
     mpq_sub(dst.mpq, a.mpq, b.mpq);
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
@@ -817,8 +812,8 @@ inline void multiplication(FastRational& dst, const FastRational& a, const FastR
         return;
     }
     overflow:
-    a.force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    a.ensure_mpq_valid();
+    b.ensure_mpq_valid();
     dst.ensure_mpq_memory_allocated();
     mpq_mul(dst.mpq, a.mpq, b.mpq);
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
@@ -865,8 +860,8 @@ inline void division(FastRational& dst, const FastRational& a, const FastRationa
         return;
     }
     overflow:
-    a.force_ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    a.ensure_mpq_valid();
+    b.ensure_mpq_valid();
     dst.ensure_mpq_memory_allocated();
     mpq_div(dst.mpq, a.mpq, b.mpq);
     dst.state = State::MPQ_ALLOCATED_AND_VALID;
@@ -917,7 +912,7 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
     }
     overflow:
     a.ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    b.ensure_mpq_valid();
     mpq_add(a.mpq, a.mpq, b.mpq);
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
@@ -948,7 +943,7 @@ inline void substractionAssign(FastRational& a, const FastRational& b) {
     }
     overflow:
     a.ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    b.ensure_mpq_valid();
     mpq_sub(a.mpq, a.mpq, b.mpq);
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
@@ -981,7 +976,7 @@ inline void multiplicationAssign(FastRational& a, const FastRational& b) {
     }
     overflow:
     a.ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    b.ensure_mpq_valid();
     mpq_mul(a.mpq, a.mpq, b.mpq);
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
@@ -1013,7 +1008,7 @@ inline void divisionAssign(FastRational& a, const FastRational& b) {
     }
     overflow:
     a.ensure_mpq_valid();
-    b.force_ensure_mpq_valid();
+    b.ensure_mpq_valid();
     mpq_div(a.mpq, a.mpq, b.mpq);
     a.state = State::MPQ_ALLOCATED_AND_VALID;
     a.try_fit_word();
@@ -1042,7 +1037,7 @@ inline FastRational FastRational::inverse() const {
         return dest;
     }
     overflow:
-    force_ensure_mpq_valid();
+    ensure_mpq_valid();
     dest.ensure_mpq_memory_allocated();
     mpq_inv(dest.mpq, mpq);
     dest.state = State::MPQ_ALLOCATED_AND_VALID;
