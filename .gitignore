@@ -27,7 +27,7 @@ src/PySMT/opensmt.py
 .ycm_extra_conf.py
 .ycm_extra_conf.pyc
 authors.txt
-build/
+build*/
 delta/parser/__pycache__/
 examples/_opensmt.so
 examples/opensmt.py
