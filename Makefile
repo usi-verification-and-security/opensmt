@@ -6,23 +6,31 @@ CMAKE_FLAGS =
 RELEASE_CMAKE_FLAGS = $(CMAKE_FLAGS)
 DEBUG_CMAKE_FLAGS = $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug
 
-.PHONY: default all release debug clean clean-all clean-release clean-debug
+.PHONY: default all release debug _dir-release _dir-debug _build-release _build-debug clean clean-all clean-release clean-debug
 
 default: release
 
 all: release debug
 
-release: $(RELEASE_BUILD_DIR)
+release: _dir-release _build-release
 
-debug: $(DEBUG_BUILD_DIR)
+_dir-release: $(RELEASE_BUILD_DIR)
+
+_build-release: | $(RELEASE_BUILD_DIR)
+	cmake --build $(RELEASE_BUILD_DIR)
 
 $(RELEASE_BUILD_DIR):
 	cmake -B $(RELEASE_BUILD_DIR) $(RELEASE_CMAKE_FLAGS)
-	cmake --build $(RELEASE_BUILD_DIR)
+
+debug: _dir-debug _build-debug
+
+_dir-debug: $(DEBUG_BUILD_DIR)
+
+_build-debug: | $(DEBUG_BUILD_DIR)
+	cmake --build $(DEBUG_BUILD_DIR)
 
 $(DEBUG_BUILD_DIR):
 	cmake -B $(DEBUG_BUILD_DIR) $(DEBUG_CMAKE_FLAGS)
-	cmake --build $(DEBUG_BUILD_DIR)
 
 clean: clean-release
 
