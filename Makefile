@@ -70,8 +70,8 @@ clean-debug:
 
 install: install-release
 
-install-release: _dir-release
+install-release: release
 	cmake --install $(RELEASE_BUILD_DIR) $(RELEASE_CMAKE_INSTALL_FLAGS)
 
-install-debug: _dir-debug
+install-debug: debug
 	cmake --install $(DEBUG_BUILD_DIR) $(DEBUG_CMAKE_INSTALL_FLAGS)
