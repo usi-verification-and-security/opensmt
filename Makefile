@@ -1,25 +1,34 @@
 BUILD_DIR_BASE = build
+## These can be customized via command line
 RELEASE_BUILD_DIR = $(BUILD_DIR_BASE)
 DEBUG_BUILD_DIR = $(BUILD_DIR_BASE)-debug
 
 DEFAULT_INSTALL_DIR := /usr/local
 USER_INSTALL_DIR := $(INSTALL_DIR)
+## This can be customized via command line,
+## it takes effect within both `cmake --build` and `cmake --install`
 INSTALL_DIR = $(DEFAULT_INSTALL_DIR)
 
+## These can be customized via command line
+## Arguments for `cmake -B <build_dir>`
 CMAKE_FLAGS += -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
-RELEASE_CMAKE_FLAGS = $(CMAKE_FLAGS)
-DEBUG_CMAKE_FLAGS = $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug
+RELEASE_CMAKE_FLAGS += $(CMAKE_FLAGS)
+DEBUG_CMAKE_FLAGS += $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug
 
+## These can be customized via command line
+## Arguments for `cmake --build <build_dir>`
 CMAKE_BUILD_FLAGS +=
-RELEASE_CMAKE_BUILD_FLAGS = $(CMAKE_BUILD_FLAGS)
-DEBUG_CMAKE_BUILD_FLAGS = $(CMAKE_BUILD_FLAGS)
+RELEASE_CMAKE_BUILD_FLAGS += $(CMAKE_BUILD_FLAGS)
+DEBUG_CMAKE_BUILD_FLAGS += $(CMAKE_BUILD_FLAGS)
 
+## These can be customized via command line
+## Arguments for `cmake --install <build_dir>`
 CMAKE_INSTALL_FLAGS +=
 ifneq ($(USER_INSTALL_DIR),)
   CMAKE_INSTALL_FLAGS += --prefix=$(USER_INSTALL_DIR)
 endif
-RELEASE_CMAKE_INSTALL_FLAGS = $(CMAKE_INSTALL_FLAGS)
-DEBUG_CMAKE_INSTALL_FLAGS = $(CMAKE_INSTALL_FLAGS)
+RELEASE_CMAKE_INSTALL_FLAGS += $(CMAKE_INSTALL_FLAGS)
+DEBUG_CMAKE_INSTALL_FLAGS += $(CMAKE_INSTALL_FLAGS)
 
 ################################################################
 
