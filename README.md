@@ -3,6 +3,7 @@
 [![Gitter](https://badges.gitter.im/usi-verification-and-security/opensmt.svg)](https://gitter.im/usi-verification-and-security/opensmt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # OpenSMT2
+Copyright 2024 Tomáš Kolárik <tomaqa@gmail.com>  
 Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
 Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
@@ -24,41 +25,71 @@ compliant compiler and the following libraries and headers installed:
  - gmp
  - libedit or readline (optional)
 
-In addition the `smtlib2` parser uses `flex` and `bison`.
-OpenSMT2 uses `cmake` as a build system generator. To compile OpenSMT2 (using `make` build system), use the following
-command
-```
-$ mkdir build; cd build; cmake ..; make
-```
+In addition, the `smtlib2` parser uses `flex` and `bison`.
 
-For better interactive experience from shell, OpenSMT can be linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/). You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html). Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed. To enable line editing with editline:
-```
-$ cmake -DENABLE_LINE_EDITING:BOOL=ON ..
-```
+OpenSMT2 uses CMake as a build system generator.
+We use a wrapper `Makefile` (i.e. GNU Make build system) that allows straightforward building and installing of OpenSMT2.
 
+To configure and build the project, run the following command inside the OpenSMT2 directory:
+```
+$ make
+```
+This will run `cmake -B <build_dir>` and `cmake --build <build_dir>`.
+The default `<build_dir>` is `build`, but it can be changed using the command line option `RELEASE_BUILD_DIR`, for example:
+`make RELEASE_BUILD_DIR=build-release`.
+
+If the command is not run for the first time, it only rebuilds the sources that are not up-to-date. In the case the `<build_dir>` was removed, it creates it again.
+
+For better interactive experience from shell, OpenSMT can be linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/).
+You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html).
+Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed.
+
+To enable line editing with editline, run the following instead of the command above:
+```
+$ make CMAKE_FLAGS=-DENABLE_LINE_EDITING:BOOL=ON
+```
 and to enable `readline` and create a GPL-licensed build of OpenSMT:
 ```
-$ cmake -DENABLE_LINE_EDITING:BOOL=ON -DUSE_READLINE:BOOL=ON ..
+$ make CMAKE_FLAGS='-DENABLE_LINE_EDITING:BOOL=ON -DUSE_READLINE:BOOL=ON'
 ```
 
+The option `CMAKE_FLAGS` may be used for any additional arguments to be passed to `cmake -B <build_dir>`.
+Similarly,
+the option `CMAKE_BUILD_FLAGS` may be used for any additional arguments to be passed to `cmake --build <build_dir>`.
+
 ### Changing build type
-The default build type is RELEASE. Different build type can be configured using cmake variable CMAKE_BUILD_TYPE. For example, to create a debug build use
+The default build type is Release and `make` is in fact just an alias to `make release`.
+In order to build in Debug mode, use
 ```
-$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+$ make debug
 ```
+In this case, options that are related to debug build type should use the `*DEBUG*` variants instead of `*RELEASE*`.
+For example `DEBUG_BUILD_DIR=<build_dir>`.
+The default `<build_dir>` in debug mode is `build-debug`.
+
+In order to build all types, run `make all`.
 
 ### Restricting components to build
 
 By default, when building OpenSMT, an executable, a static library, and a shared library are created. However, in certain circumstances, it is desirable not to build components you do not need. In these instances, you *turn off* building components:
 
-- Passing `-DBUILD_STATIC_LIBS:BOOL=OFF` will *turn off* building the static archive for OpenSMT (`libopensmt2.a`)
+- Passing `CMAKE_FLAGS=-DBUILD_STATIC_LIBS:BOOL=OFF` will *turn off* building the static archive for OpenSMT (`libopensmt2.a`)
 
-- Passing `-DBUILD_SHARED_LIBS:BOOL=OFF` will *turn off* building the shared library for OpenSMT (`libopensmt2.so`)
+- Passing `CMAKE_FLAGS=-DBUILD_SHARED_LIBS:BOOL=OFF` will *turn off* building the shared library for OpenSMT (`libopensmt2.so`)
 
-- Passing `-DBUILD_EXECUTABLES:BOOL=OFF` will *turn off* building the OpenSMT executable (`opensmt`)
+- Passing `CMAKE_FLAGS=-DBUILD_EXECUTABLES:BOOL=OFF` will *turn off* building the OpenSMT executable (`opensmt`)
 
 Given how the `opensmt` executable is built, you cannot build the executable (i.e., with the default value of `-DBUILD_EXECUTABLES:BOOL=ON`) with the static archive *off* (i.e., with `-DBUILD_STATIC_LIBS:BOOL=OFF`).
 
+### Clearing the build
+
+In case one for example needs to rebuild the project from scratch, it can be removed at first:
+```
+make clean
+```
+(or `make clean-release`) and then built again with `make` (or `make release`).
+In the case of debug mode, one must run `make clean-debug` and `make debug`.
+To remove all, run `make clean-all`.
 
 ## Unit tests
 
@@ -70,13 +101,54 @@ $ ctest
 ```
 
 ## Installing OpenSMT2
-As long as you haven't disabled building them, the path to the OpenSMT executable is `<BUILD_DIR>/src/bin/opensmt`, the OpenSMT libraries are located in `<BUILD_DIR>/src/api`.
-To install OpenSMT in your system simply run
+[//]: # "the binary should be placed into `<build_dir>/bin/opensmt`"
+As long as you haven't disabled building them, the path to the OpenSMT executable is `<build_dir>/opensmt`, the OpenSMT libraries are located in `<build_dir>/lib`.
+
+To install OpenSMT into your system simply run:
 ```
 $ make install
 ```
-The install directory can be customized using cmake variable CMAKE_INSTALL_PREFIX. The default is `/usr/local`.
-This installs the library in the folder `<INSTALL_DIR>/lib` and puts the necessary header files in the folder `<INSTALL_DIR>/include/opensmt`.
+(or `make install-release`).
+This runs `cmake --install <build_dir>`.
+The install directory can be customized using option `INSTALL_DIR=<install_dir>`.
+The default is `/usr/local`.
+In such a case, the command above may be neccesary to run with `sudo`.
+The default build to be installed is Release. To install the Debug build instead, use `make install-debug`.
+
+The option `INSTALL_DIR` may used with all `make [release|debug]` and `make install[-release|-debug]`.
+In the case of the build rules, the `<install_dir>` is configured within the build directory and is used each time `make install[-release|-debug]` is used without the additional option `INSTALL_DIR`.
+In the case of the install rules, the `<install_dir>` overrides the previously configured one.
+
+Option `CMAKE_INSTALL_FLAGS` may be used for any additional arguments to be passed to `cmake --install <build_dir>`.
+
+The command installs the executable binary into the folder `<install_dir>/bin`, the library into the folder `<install_dir>/lib` and puts the necessary header files into the folder `<install_dir>/include/opensmt`.
+
+### Examples
+
+Build and install with the default values (assuming that writing into `/usr/local` directory requires root priviledges):
+```
+make && sudo make install
+```
+
+Build Release and install into a local directory `local_dir`:
+```
+make release INSTALL_DIR=local_dir && make install-release
+```
+
+Build Debug and install it into a local directory `local_dir-debug`:
+```
+make debug INSTALL_DIR=local_dir-debug && make install-debug
+```
+
+Build (and configure) with the default values but install into `local_dir`:
+```
+make && make install INSTALL_DIR=local_dir
+```
+
+Build and configure to by default install into `local_dir` but also install into `local_dir2`:
+```
+make INSTALL_DIR=local_dir && make install && make install INSTALL_DIR=local_dir2
+```
 
 ## Capabilities and usage examples
 OpenSMT is an SMT solver, it decides satisfiability of logical formulas in fragments of first-order logic. The input format is SMT-LIB2 and OpenSMT supports *quantifier-free* SMT-LIB logics, namely any combination of arrays, uninterpreted functions and linear arithmetic or difference logic over reals or integers, both in a single-query and an incremental mode.
@@ -114,6 +186,4 @@ When using OpenSMT as a library, the option needs to be set in `SMTConfig` **bef
 Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
 
 ## Contact
-If you have questions please mail them to me at antti.hyvarinen@gmail.com, or at [github](https://github.com/usi-verification-and-security/opensmt)
-
-
+If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us a mail at tomaqa@gmail.com or antti.hyvarinen@gmail.com.
