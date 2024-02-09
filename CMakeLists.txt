@@ -85,8 +85,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/tsolvers/egraph
     ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
     ${CMAKE_SOURCE_DIR}/tsolvers/stpsolver
-    ${CMAKE_SOURCE_DIR}/tsolvers/lrasolver
-    ${CMAKE_SOURCE_DIR}/tsolvers/liasolver
     ${CMAKE_SOURCE_DIR}/cnfizers
     ${CMAKE_SOURCE_DIR}/pterms
     ${CMAKE_SOURCE_DIR}/logics

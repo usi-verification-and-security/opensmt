@@ -1,8 +1,0 @@
-//
-// Created by Martin Blicha on 2018-12-18.
-//
-
-#ifndef OPENSMT_FRAMESIMPLIFIER_H
-#define OPENSMT_FRAMESIMPLIFIER_H
-
-#endif //OPENSMT_FRAMESIMPLIFIER_H
