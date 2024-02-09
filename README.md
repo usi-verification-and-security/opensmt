@@ -146,7 +146,7 @@ Build (and configure) with the default values but install into `local_dir`:
 make && make install INSTALL_DIR=local_dir
 ```
 
-Build and configure to by default install into `local_dir` but also install into `local_dir2`:
+Build and configure to install into `local_dir` and install there, but also perform another installation into `local_dir2`:
 ```
 make INSTALL_DIR=local_dir && make install && make install INSTALL_DIR=local_dir2
 ```
