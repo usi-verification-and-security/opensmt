@@ -4,6 +4,7 @@
 
 # OpenSMT2
 Copyright 2024 Tomáš Kolárik <tomaqa@gmail.com>  
+Copyright 2023 Martin Blicha <martin.blicha@gmail.com>  
 Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
 Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
@@ -186,4 +187,4 @@ When using OpenSMT as a library, the option needs to be set in `SMTConfig` **bef
 Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
 
 ## Contact
-If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us a mail at tomaqa@gmail.com or antti.hyvarinen@gmail.com.
+If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us an email at tomaqa@gmail.com, martin.blicha@gmail.com or antti.hyvarinen@gmail.com.
