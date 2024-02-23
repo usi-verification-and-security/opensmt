@@ -8,22 +8,17 @@
 #include "Substitutor.h"
 #include "TreeOps.h"
 
-PTRef UFLATheory::simplifyTogether(vec<PTRef> const & assertions, bool) {
-    PTRef frameFormula = getLogic().mkAnd(assertions);
-    frameFormula = applySubstitutionBasedSimplificationIfEnabled(frameFormula);
-    frameFormula = rewriteDistincts(getLogic(), frameFormula);
-    frameFormula = rewriteDivMod<ArithLogic>(logic, frameFormula);
-    PTRef purified = purify(frameFormula);
+PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const & context) {
+    if (context.perPartition) { throw OsmtInternalException("Mode not supported for QF_UFLRA yet"); }
+    fla = rewriteDistincts(getLogic(), fla);
+    fla = rewriteDivMod<ArithLogic>(logic, fla);
+    PTRef purified = purify(fla);
     if (logic.hasArrays()) {
         purified = instantiateReadOverStore(logic, purified);
     }
     PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
     this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
     return noArithmeticEqualities;
-}
-
-vec<PTRef> UFLATheory::simplifyIndividually(vec<PTRef> const &, PartitionManager &, bool) {
-    throw OsmtInternalException("Mode not supported for QF_UFLRA yet");
 }
 
 namespace {

@@ -36,13 +36,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "PartitionManager.h"
 
+struct PreprocessingContext {
+    std::size_t frameCount {0};
+    bool perPartition {false};
+};
+
 class Theory
 {
   protected:
-    struct SubstitutionResult {
-        Logic::SubstMap usedSubstitution;
-        PTRef result;
-    };
 
     SMTConfig & config;
 
@@ -50,21 +51,15 @@ class Theory
 
     inline bool keepPartitions() const { return config.produce_inter(); }
 
-    /* Computes the final formula from substitution result.
-     * The formula is the computed formula with all substitutions conjoined in form of equalities
-     */
-    PTRef flaFromSubstitutionResult(const SubstitutionResult & sr);
-    PTRef applySubstitutionBasedSimplificationIfEnabled(PTRef);
   public:
 
     virtual Logic          &getLogic()              = 0;
     virtual const Logic    &getLogic() const        = 0;
     virtual TSolverHandler &getTSolverHandler()     = 0;
 
-    virtual PTRef simplifyTogether(vec<PTRef> const & assertions, bool isBaseFrame) = 0;
-    virtual vec<PTRef> simplifyIndividually(vec<PTRef> const & assertions, PartitionManager & pmanager, bool isBaseFrame) = 0;
+    virtual PTRef preprocessBeforeSubstitutions(PTRef fla, PreprocessingContext const &) { return fla; }
+    virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) = 0;
 
-    SubstitutionResult      computeSubstitutions(PTRef fla);
     virtual                ~Theory() = default;
 };
 
@@ -83,8 +78,8 @@ class UFTheory : public Theory
     virtual const Logic&      getLogic() const override { return uflogic; }
     virtual UFTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const UFTHandler& getTSolverHandler() const { return tshandler; }
-    virtual PTRef simplifyTogether(vec<PTRef> const & assertions, bool isBaseFrame) override;
-    virtual vec<PTRef> simplifyIndividually(vec<PTRef> const & assertions, PartitionManager & pmanager, bool isBaseFrame) override;
+    virtual PTRef preprocessBeforeSubstitutions(PTRef, PreprocessingContext const &) override;
+    virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) override;
 };
 
 #endif

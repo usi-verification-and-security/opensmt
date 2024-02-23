@@ -26,8 +26,7 @@ public:
     virtual ArrayTHandler&       getTSolverHandler() override  { return tshandler; }
     virtual const ArrayTHandler& getTSolverHandler() const { return tshandler; }
 
-    virtual PTRef simplifyTogether(vec<PTRef> const & assertions, bool) override;
-    virtual vec<PTRef> simplifyIndividually(vec<PTRef> const & assertions, PartitionManager & pmanager, bool) override;
+    virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) override;
 };
 
 

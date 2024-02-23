@@ -59,6 +59,7 @@ public:
     unsigned getNofPartitions() const { return partitionInfo.getNoOfPartitions(); }
 
     void transferPartitionMembership(PTRef old, PTRef new_ptref) {
+        if (new_ptref == old) { return; }
         this->addIPartitions(new_ptref, getIPartitions(old));
         partitionInfo.transferPartitionMembership(old, new_ptref);
     }

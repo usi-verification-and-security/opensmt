@@ -1,27 +1,10 @@
-/*********************************************************************
-Author: Antti Hyvarinen <antti.hyvarinen@gmail.com>
-
-OpenSMT2 -- Copyright (C) 2012 - 2014 Antti Hyvarinen
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*********************************************************************/
+/*
+ *  Copyright (c) 2012 - 2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
+ *  Copyright (c) 2022 - 2024, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
@@ -68,7 +51,7 @@ const sstat s_Error = toSstat( 2);
 
 class MainSolver
 {
-public:
+protected: /** Helper classes to deal with assertion stack, preprocessing and substitutions **/
     struct FrameId
     {
         uint32_t id;
@@ -76,7 +59,6 @@ public:
         bool operator!= (const FrameId other) const { return id != other.id; }
     };
 
-protected:
     struct PushFrame {
 
     private:
@@ -131,39 +113,46 @@ protected:
         }
     };
 
-    std::unique_ptr<Theory>         theory;
-    std::unique_ptr<TermMapper>     term_mapper;
-    std::unique_ptr<THandler>       thandler;
-    std::unique_ptr<SimpSMTSolver>  smt_solver;
-    Logic&                          logic;
-    PartitionManager                pmanager;
-    SMTConfig&                      config;
-    Tseitin                         ts;
-    AssertionStack                  frames;
+    class Substitutions {
+        std::vector<Logic::SubstMap> perFrameSubst;
+
+    public:
+        void push() { perFrameSubst.emplace_back(); }
+        void pop() { perFrameSubst.pop_back(); }
+
+        void set(std::size_t level, Logic::SubstMap && subs) {
+            perFrameSubst.at(level) = std::move(subs);
+        }
+
+        Logic::SubstMap current() {
+            Logic::SubstMap allSubst;
+            for (auto const & subs : perFrameSubst) {
+                for (PTRef key : subs.getKeys()) {
+                    assert(not allSubst.has(key));
+                    allSubst.insert(key, subs[key]);
+                }
+            }
+            return allSubst;
+        }
+    };
+/** Actual MainSolver members **/
+protected:
+    AssertionStack frames;
+    Substitutions substitutions;
     vec<PTRef> frameTerms;
-
     std::size_t firstNotSimplifiedFrame = 0;
+    unsigned int insertedFormulasCount = 0;
+    sstat status = s_Undef;  // The status of the last solver call
 
-
-
-    opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
-    std::string          solver_name; // Name for the solver
-    int            check_called = 0;     // A counter on how many times check was called.
-    sstat          status = s_Undef;  // The status of the last solver call
-    unsigned int   inserted_formulas_count = 0; // Number of formulas that has been inserted to this solver
-
-    sstat solve();
-
-    virtual sstat solve_(vec<FrameId> const & enabledFrames);
-
-    sstat giveToSolver(PTRef root, FrameId push_id);
-
-    PTRef rewriteMaxArity(PTRef);
-
-    [[nodiscard]] PTRef currentRootInstance() const;
-
-    // helper private methods
-    PTRef newFrameTerm(FrameId frameId);
+    PTRef newFrameTerm(FrameId frameId) {
+        assert(frameId.id != 0);
+        auto name = std::string(Logic::s_framev_prefix) + std::to_string(frameId.id);
+        PTRef frameTerm = logic.mkBoolVar(name.c_str());
+        Lit l = term_mapper->getOrCreateLit(frameTerm);
+        term_mapper->setFrozen(var(l));
+        smt_solver->addAssumptionVar(var(l));
+        return frameTerm;
+    }
     bool isLastFrameUnsat() const { return frames.last().unsat; }
     void rememberLastFrameUnsat() { frames.last().unsat = true; }
     void rememberUnsatFrame(std::size_t frameIndex) {
@@ -173,61 +162,51 @@ protected:
         }
     }
 
-    void printFramesAsQuery(std::ostream & s) const
-    {
-        logic.dumpHeaderToFile(s);
-        for (std::size_t i = 0; i < frames.frameCount(); ++i) {
-            if (i > 0)
-                s << "(push 1)\n";
-            for (PTRef assertion : frames[i].formulas) {
-                logic.dumpFormulaToFile(s, assertion);
-            }
-        }
-        logic.dumpChecksatToFile(s);
-    }
+    PTRef rewriteMaxArity(PTRef root);
+
+    virtual sstat solve_(vec<FrameId> const & enabledFrames);
+
+    sstat giveToSolver(PTRef root, FrameId push_id);
+
+    struct SubstitutionResult {
+        Logic::SubstMap usedSubstitution;
+        PTRef result {PTRef_Undef};
+    };
+
+    PTRef applyLearntSubstitutions(PTRef fla);
+
+    PTRef substitutionPass(PTRef fla, PreprocessingContext const& context);
+
+    SubstitutionResult computeSubstitutions(PTRef fla);
+
+public:
+    std::unique_ptr<Theory>         theory;
+    std::unique_ptr<TermMapper>     term_mapper;
+    std::unique_ptr<THandler>       thandler;
+    std::unique_ptr<SimpSMTSolver>  smt_solver;
+    Logic&                          logic;
+    PartitionManager                pmanager;
+    SMTConfig&                      config;
+    Tseitin                         ts;
+
+    opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
+    std::string          solver_name; // Name for the solver
+    int            check_called = 0;     // A counter on how many times check was called.
+
+    sstat solve();
+
+    [[nodiscard]] PTRef currentRootInstance() const;
+
+    void printFramesAsQuery(std::ostream & s) const;
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
 
   public:
-
-    MainSolver(Logic& logic, SMTConfig& conf, std::string name)
-            :
-            theory(createTheory(logic, conf)),
-            term_mapper(new TermMapper(logic)),
-            thandler(new THandler(getTheory(), *term_mapper)),
-            smt_solver(createInnerSolver(conf, *thandler)),
-            logic(thandler->getLogic()),
-            pmanager(logic),
-            config(conf),
-            ts(logic, *term_mapper),
-            solver_name {std::move(name)}
-    {
-        conf.setUsedForInitiliazation();
-        // Special handling of zero-level frame
-        frames.push();
-        frameTerms.push(logic.getTerm_true());
-        initialize();
-    }
+    MainSolver(Logic& logic, SMTConfig& conf, std::string name);
 
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
-               std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
-            :
-            theory(std::move(th)),
-            term_mapper(std::move(tm)),
-            thandler(std::move(thd)),
-            smt_solver(std::move(ss)),
-            logic(thandler->getLogic()),
-            pmanager(logic),
-            config(conf),
-            ts(logic,*term_mapper),
-            solver_name {std::move(name)}
-    {
-        conf.setUsedForInitiliazation();
-        frames.push();
-        frameTerms.push(logic.getTerm_true());
-        initialize();
-    }
+               std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name);
 
     virtual ~MainSolver() = default;
     MainSolver             (const MainSolver&) = delete;
@@ -243,7 +222,8 @@ protected:
     Logic    &getLogic()    { return logic; }
     Theory   &getTheory()   { return *theory; }
     const Theory &getTheory() const { return *theory; }
-    PartitionManager &getPartitionManager() { return pmanager; }
+    PartitionManager & getPartitionManager();
+
     void      push();
     bool      pop();
     void      insertFormula(PTRef fla);
@@ -255,7 +235,7 @@ protected:
     sstat simplifyFormulas();
 
     void  printFramesAsQuery() const;
-    sstat getStatus       () const { return status; }
+    [[nodiscard]] sstat getStatus() const;
 
     // Values
     lbool   getTermValue   (PTRef tr) const;

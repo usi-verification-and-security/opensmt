@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Martin Blicha <martin.blicha@gmail.com>
+ * Copyright (c) 2021 - 2024, Martin Blicha <martin.blicha@gmail.com>
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,14 +9,10 @@
 #include "ArrayHelpers.h"
 #include "DistinctRewriter.h"
 
-PTRef ArrayTheory::simplifyTogether(const vec<PTRef> & assertions, bool) {
+PTRef ArrayTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const & context) {
+    if (context.perPartition) { throw OsmtInternalException("Interpolation not supported for logics with arrays yet"); }
     // TODO: simplify select over store on the same index
-    PTRef frameFormula = getLogic().mkAnd(assertions);
-    frameFormula = rewriteDistincts(getLogic(), frameFormula);
-    frameFormula = instantiateReadOverStore(getLogic(), frameFormula);
-    return frameFormula;
-}
-
-vec<PTRef> ArrayTheory::simplifyIndividually(const vec<PTRef> &, PartitionManager &, bool) {
-    throw OsmtInternalException("Interpolation not supported for logics with arrays yet");
+    fla = rewriteDistincts(getLogic(), fla);
+    fla = instantiateReadOverStore(getLogic(), fla);
+    return fla;
 }
