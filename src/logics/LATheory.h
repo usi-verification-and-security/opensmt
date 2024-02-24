@@ -15,7 +15,6 @@ class LATheory : public Theory
 protected:
     LinAlgLogic& lalogic;
     LinAlgTHandler  latshandler;
-    std::unique_ptr<Map<PTRef,bool,PTRefHash>> notOkToPartition;
 public:
     LATheory(SMTConfig & c, LinAlgLogic & logic)
             : Theory(c)
@@ -26,7 +25,6 @@ public:
     virtual const LinAlgLogic&    getLogic() const override { return lalogic; }
     virtual LinAlgTHandler&       getTSolverHandler() override { return latshandler; }
     virtual bool               simplify(const vec<PFRef>&, PartitionManager& pmanager, int) override; // Theory specific simplifications
-    virtual bool               okToPartition(PTRef tr) const override { return !notOkToPartition->has(tr); }
 };
 
 namespace {
@@ -69,7 +67,6 @@ bool LATheory<LinAlgLogic,LinAlgTSHandler>::simplify(const vec<PFRef>& formulas,
         finalFla = rewriteDivMod<LinAlgLogic>(lalogic, finalFla);
         currentFrame.root = equalityRewriter.rewrite(finalFla);
     }
-    notOkToPartition = equalityRewriter.getAndClearNotOkToPartition();
     return true;
 }
 

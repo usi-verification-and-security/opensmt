@@ -170,7 +170,6 @@ class Theory
     virtual bool            simplify(const vec<PFRef>&, PartitionManager& pmanager, int) = 0; // Simplify a vector of PushFrames in an incrementality-aware manner
     SubstitutionResult      computeSubstitutions(PTRef fla);
     void                    printFramesAsQuery(const vec<PFRef> & frames, std::ostream & s) const;
-    virtual bool            okToPartition(PTRef) const { return true; }
     virtual                ~Theory() = default;
 };
 

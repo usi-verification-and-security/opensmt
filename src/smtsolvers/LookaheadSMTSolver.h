@@ -72,7 +72,7 @@ protected:
     laresult expandTree(LANode & n, std::unique_ptr<LANode> c1,
                         std::unique_ptr<LANode> c2); // Do lookahead.  On success write the new children to c1 and c2
     std::unique_ptr<LookaheadScore> score;
-    bool okToPartition(Var v) const { return theory_handler.getTheory().okToPartition(theory_handler.varToTerm(v)); };
+    bool okToPartition(Var) const { return true; }
 
 public:
     LookaheadSMTSolver(SMTConfig &, THandler &);
