@@ -50,7 +50,7 @@ public:
         virtual void operator()(vec<Lit> &&) = 0;
     };
 protected:
-    using FrameId = uint32_t; // TODO: Unify this with FrameId of MainSolver
+    using FrameId = uint32_t;
 
     class Cache {
         using CacheEntry = std::pair<PTRef, FrameId>;

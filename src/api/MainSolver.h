@@ -49,18 +49,11 @@ const sstat s_Undef = toSstat( 0);
 const sstat s_Error = toSstat( 2);
 
 
-class MainSolver
-{
+class MainSolver {
 protected: /** Helper classes to deal with assertion stack, preprocessing and substitutions **/
-    struct FrameId
-    {
-        uint32_t id;
-        bool operator== (const FrameId other) const { return id == other.id; }
-        bool operator!= (const FrameId other) const { return id != other.id; }
-    };
+    using FrameId = uint32_t;
 
     struct PushFrame {
-
     private:
         FrameId id;
 
@@ -74,7 +67,7 @@ protected: /** Helper classes to deal with assertion stack, preprocessing and su
 
         PushFrame(PushFrame const &) = delete;
         PushFrame(PushFrame &&) = default;
-        explicit PushFrame(uint32_t id) : id({id}), unsat(false) {}
+        explicit PushFrame(uint32_t id) : id(id), unsat(false) {}
     };
 
     class AssertionStack {
@@ -145,8 +138,8 @@ protected:
     sstat status = s_Undef;  // The status of the last solver call
 
     PTRef newFrameTerm(FrameId frameId) {
-        assert(frameId.id != 0);
-        auto name = std::string(Logic::s_framev_prefix) + std::to_string(frameId.id);
+        assert(frameId != 0);
+        auto name = std::string(Logic::s_framev_prefix) + std::to_string(frameId);
         PTRef frameTerm = logic.mkBoolVar(name.c_str());
         Lit l = term_mapper->getOrCreateLit(frameTerm);
         term_mapper->setFrozen(var(l));
@@ -201,8 +194,6 @@ public:
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
 
-
-  public:
     MainSolver(Logic& logic, SMTConfig& conf, std::string name);
 
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,

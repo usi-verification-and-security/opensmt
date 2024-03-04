@@ -279,12 +279,12 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     };
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
-    ts.Cnfizer::cnfize(root, push_id.id);
+    ts.Cnfizer::cnfize(root, push_id);
     bool keepPartitionsSeparate = getConfig().produce_inter();
-    Lit frameLit = push_id.id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id.id]);
+    Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
-        if (push_id.id != 0) {
+        if (push_id != 0) {
             clause.push(frameLit);
         }
         opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
@@ -371,8 +371,8 @@ sstat MainSolver::solve_(vec<FrameId> const & enabledFrames) {
     // corresponding literals
     uint32_t prevId = UINT32_MAX;
     for (FrameId fid : enabledFrames) {
-        assumps[fid.id] = ~assumps[fid.id];
-        smt_solver->mapEnabledFrameIdToVar(var(assumps[fid.id]), fid.id, prevId);
+        assumps[fid] = ~assumps[fid];
+        smt_solver->mapEnabledFrameIdToVar(var(assumps[fid]), fid, prevId);
     }
     // Drop the assumption variable for the base frame (it is at the first place)
     for (int i = 1; i < assumps.size(); ++i) {

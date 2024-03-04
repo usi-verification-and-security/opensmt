@@ -41,7 +41,7 @@ sstat MainSplitter::solve_(vec<FrameId> const & enabledFrames) {
         }
         for (int i = 0; i < enabledFrames.size(); i++) {
             if (i > 0)
-                getSplitter().addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i].id);
+                getSplitter().addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i]);
         }
     }
     sstat res = MainSolver::solve_(enabledFrames);
