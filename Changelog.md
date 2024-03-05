@@ -1,6 +1,16 @@
-### 2.5.3 (unreleased)
+### 2.6.0 (unreleased)
 New features:
  - Support `ALL` as a valid argument to `set-logic` command. This becomes an alias for `QF_AUFLIRA`.
+ - Simpler builds with single `make` command.
+
+API changes:
+ - Various small fixes for compatibility with JavaSMT and C++20.
+
+Removed features:
+ - Dropped support for `readline` library.
+
+Performance improvements:
+ - Faster preprocessing in incremental solving.
 
 ### 2.5.2 (2023-07-12)
 
