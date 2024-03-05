@@ -45,8 +45,7 @@ option(EXPLICIT_CONGRUENCE_EXPLANATIONS "Construct explicit congruence explanati
 option(MATRIX_DEBUG "Trace matrix operations (noisy output)" OFF)
 option(STATISTICS "Compute and print solver's statistics" OFF)
 
-option(ENABLE_LINE_EDITING "Enable line editing with readline or libedit" OFF)
-option(USE_READLINE "Use readline over libedit" OFF)
+option(ENABLE_LINE_EDITING "Enable line editing with libedit" OFF)
 
 option(BUILD_STATIC_LIBS "Build static library" ON)
 option(BUILD_SHARED_LIBS "Build shared library" ON)
@@ -143,9 +142,6 @@ endif(STATISTICS)
 
 if (ENABLE_LINE_EDITING)
   add_definitions(-DENABLE_LINE_EDITING)
-  if (USE_READLINE)
-    add_definitions(-DUSE_READLINE)
-  endif()
 endif()
 
 if (EXPLICIT_CONGRUENCE_EXPLANATIONS)
@@ -186,10 +182,3 @@ endif()
 
 #########################################################################
 install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
-
-if (ENABLE_LINE_EDITING AND USE_READLINE)
-  message("You have chosen to build OpenSMT against optional GPL-licensed components (readline)."
-          "\n"
-          "As these libraries are covered under the GPL, so will the resulting binary of OpenSMT.")
-endif()
-

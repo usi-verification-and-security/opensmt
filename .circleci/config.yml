@@ -44,7 +44,6 @@ jobs:
                 CMAKE_BUILD_TYPE: Release
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
-                USE_READLINE: OFF
                 PARALLEL: OFF
         steps:
             - checkout
@@ -105,7 +104,6 @@ jobs:
               environment:
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
-                USE_READLINE: OFF
                 CMAKE_BUILD_TYPE: Debug
                 MODEL_VALIDATION: pySMT
 
@@ -126,7 +124,6 @@ jobs:
                 CMAKE_BUILD_TYPE: Release
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
-                USE_READLINE: OFF
                 PARALLEL: ON
         steps:
             - checkout

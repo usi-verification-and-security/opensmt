@@ -24,7 +24,7 @@ To build the system from the source code repository, you need a C++17
 compliant compiler and the following libraries and headers installed:
 
  - gmp
- - libedit or readline (optional)
+ - [libedit](https://thrysoee.dk/editline) (optional)
 
 In addition, the `smtlib2` parser uses `flex` and `bison`.
 
@@ -41,17 +41,10 @@ The default `<build_dir>` is `build`, but it can be changed using the command li
 
 If the command is not run for the first time, it only rebuilds the sources that are not up-to-date. In the case the `<build_dir>` was removed, it creates it again.
 
-For better interactive experience from shell, OpenSMT can be linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline/).
-You can optionally choose to build OpenSMT against the GPL-licensed [GNU Readline Library](https://tiswww.case.edu/php/chet/readline/rltop.html).
-Building OpenSMT in this way means that the resulting binary is GPL licensed, and not MIT licensed.
-
-To enable line editing with editline, run the following instead of the command above:
+For better interactive experience from shell, OpenSMT can be linked against the BSD-licensed line-editing library [Editline Library](https://thrysoee.dk/editline).
+To do so, run the following instead of the command above:
 ```
 $ make CMAKE_FLAGS=-DENABLE_LINE_EDITING:BOOL=ON
-```
-and to enable `readline` and create a GPL-licensed build of OpenSMT:
-```
-$ make CMAKE_FLAGS='-DENABLE_LINE_EDITING:BOOL=ON -DUSE_READLINE:BOOL=ON'
 ```
 
 The option `CMAKE_FLAGS` may be used for any additional arguments to be passed to `cmake -B <build_dir>`.
@@ -187,4 +180,4 @@ When using OpenSMT as a library, the option needs to be set in `SMTConfig` **bef
 Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
 
 ## Contact
-If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us an email at tomaqa@gmail.com, martin.blicha@gmail.com or antti.hyvarinen@gmail.com.
+If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us an email to tomaqa@gmail.com, martin.blicha@gmail.com or antti.hyvarinen@gmail.com.

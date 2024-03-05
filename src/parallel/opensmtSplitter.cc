@@ -19,12 +19,7 @@
 
 
 #ifdef ENABLE_LINE_EDITING
-#if !defined(USE_READLINE)
 #include <editline/readline.h>
-#else
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
 #endif // ENABLE_LINE_EDITING
 
 #if defined(__GLIBC__)
@@ -186,8 +181,7 @@ void interpretInteractive(SplitterInterpret & interpret) {
             if (par == 0) {
                 parse_buf[pb_sz] = '\0';
                 // Parse starting from the command nonterminal
-                // Parsing should be done from a string that I get from the readline
-                // library.
+                // Parsing should be done from a string that I get from the editline library.
                 Smt2newContext context(parse_buf);
                 int rval = smt2newparse(&context);
                 if (rval != 0)

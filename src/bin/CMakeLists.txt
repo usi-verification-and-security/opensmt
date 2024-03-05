@@ -6,13 +6,8 @@ set_target_properties(OpenSMT-bin PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 if (ENABLE_LINE_EDITING)
-    if (NOT USE_READLINE)
-        find_package(LibEdit REQUIRED)
-        target_link_libraries(OpenSMT-bin PUBLIC LibEdit::LibEdit)
-    else()
-        find_package(Readline REQUIRED)
-        target_link_libraries(OpenSMT-bin PUBLIC Readline::Readline)
-    endif()
+    find_package(LibEdit REQUIRED)
+    target_link_libraries(OpenSMT-bin PUBLIC LibEdit::LibEdit)
 endif()
 
 target_link_libraries(OpenSMT-bin PUBLIC OpenSMT-static)

@@ -76,13 +76,8 @@ if (BUILD_EXECUTABLES)
 			OUTPUT_NAME opensmt-splitter
 			RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 	if (ENABLE_LINE_EDITING)
-		if (NOT USE_READLINE)
-			find_package(LibEdit REQUIRED)
-			target_link_libraries(OpenSMT-bin-splitter PUBLIC LibEdit::LibEdit)
-		else()
-			find_package(Readline REQUIRED)
-			target_link_libraries(OpenSMT-bin-splitter PUBLIC Readline::Readline)
-		endif()
+		find_package(LibEdit REQUIRED)
+		target_link_libraries(OpenSMT-bin-splitter PUBLIC LibEdit::LibEdit)
 	endif()
 
 #link splitter executable against OpenSMT-splitter-static, PTPLib and parallel library**********************************
