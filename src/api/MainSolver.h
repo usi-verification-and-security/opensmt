@@ -9,24 +9,23 @@
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
 
-
-#include "Tseitin.h"
-#include "SimpSMTSolver.h"
+#include "InterpolationContext.h"
 #include "Model.h"
 #include "PartitionManager.h"
-#include "InterpolationContext.h"
+#include "SimpSMTSolver.h"
+#include "Tseitin.h"
 
 #include <memory>
-
 
 class Logic;
 
 class sstat {
     char value;
-  public:
+
+public:
     explicit sstat(int v) : value(v) {}
-    bool operator == (sstat s) const { return value == s.value; }
-    bool operator != (sstat s) const { return value != s.value; }
+    bool operator==(sstat s) const { return value == s.value; }
+    bool operator!=(sstat s) const { return value != s.value; }
     sstat() : value(0) {}
     sstat(lbool l) {
         if (l == l_True)
@@ -35,19 +34,21 @@ class sstat {
             value = -1;
         else if (l == l_Undef)
             value = 0;
-        else assert(false);
+        else
+            assert(false);
     }
-    char getValue()            const { return value; }
+    char getValue() const { return value; }
     friend sstat toSstat(int v);
 };
 
-inline sstat toSstat(int v) {return sstat(v); }
+inline sstat toSstat(int v) {
+    return sstat(v);
+}
 
-const sstat s_True  = toSstat( 1);
+const sstat s_True = toSstat(1);
 const sstat s_False = toSstat(-1);
-const sstat s_Undef = toSstat( 0);
-const sstat s_Error = toSstat( 2);
-
+const sstat s_Undef = toSstat(0);
+const sstat s_Error = toSstat(2);
 
 class MainSolver {
 protected: /** Helper classes to deal with assertion stack, preprocessing and substitutions **/
@@ -113,9 +114,7 @@ protected: /** Helper classes to deal with assertion stack, preprocessing and su
         void push() { perFrameSubst.emplace_back(); }
         void pop() { perFrameSubst.pop_back(); }
 
-        void set(std::size_t level, Logic::SubstMap && subs) {
-            perFrameSubst.at(level) = std::move(subs);
-        }
+        void set(std::size_t level, Logic::SubstMap && subs) { perFrameSubst.at(level) = std::move(subs); }
 
         Logic::SubstMap current() {
             Logic::SubstMap allSubst;
@@ -128,14 +127,14 @@ protected: /** Helper classes to deal with assertion stack, preprocessing and su
             return allSubst;
         }
     };
-/** Actual MainSolver members **/
+    /** Actual MainSolver members **/
 protected:
     AssertionStack frames;
     Substitutions substitutions;
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
     unsigned int insertedFormulasCount = 0;
-    sstat status = s_Undef;  // The status of the last solver call
+    sstat status = s_Undef; // The status of the last solver call
 
     PTRef newFrameTerm(FrameId frameId) {
         assert(frameId != 0);
@@ -163,28 +162,28 @@ protected:
 
     struct SubstitutionResult {
         Logic::SubstMap usedSubstitution;
-        PTRef result {PTRef_Undef};
+        PTRef result{PTRef_Undef};
     };
 
     PTRef applyLearntSubstitutions(PTRef fla);
 
-    PTRef substitutionPass(PTRef fla, PreprocessingContext const& context);
+    PTRef substitutionPass(PTRef fla, PreprocessingContext const & context);
 
     SubstitutionResult computeSubstitutions(PTRef fla);
 
 public:
-    std::unique_ptr<Theory>         theory;
-    std::unique_ptr<TermMapper>     term_mapper;
-    std::unique_ptr<THandler>       thandler;
-    std::unique_ptr<SimpSMTSolver>  smt_solver;
-    Logic&                          logic;
-    PartitionManager                pmanager;
-    SMTConfig&                      config;
-    Tseitin                         ts;
+    std::unique_ptr<Theory> theory;
+    std::unique_ptr<TermMapper> term_mapper;
+    std::unique_ptr<THandler> thandler;
+    std::unique_ptr<SimpSMTSolver> smt_solver;
+    Logic & logic;
+    PartitionManager pmanager;
+    SMTConfig & config;
+    Tseitin ts;
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
-    std::string          solver_name; // Name for the solver
-    int            check_called = 0;     // A counter on how many times check was called.
+    std::string solver_name;          // Name for the solver
+    int check_called = 0;             // A counter on how many times check was called.
 
     sstat solve();
 
@@ -192,44 +191,44 @@ public:
 
     void printFramesAsQuery(std::ostream & s) const;
 
-    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig& config, THandler& thandler);
+    static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
 
-    MainSolver(Logic& logic, SMTConfig& conf, std::string name);
+    MainSolver(Logic & logic, SMTConfig & conf, std::string name);
 
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
                std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name);
 
     virtual ~MainSolver() = default;
-    MainSolver             (const MainSolver&) = delete;
-    MainSolver& operator = (const MainSolver&) = delete;
-    MainSolver             (MainSolver&&) = default;
-    MainSolver& operator = (MainSolver&&) = delete;
+    MainSolver(const MainSolver &) = delete;
+    MainSolver & operator=(const MainSolver &) = delete;
+    MainSolver(MainSolver &&) = default;
+    MainSolver & operator=(MainSolver &&) = delete;
 
-    SMTConfig& getConfig() { return config; }
+    SMTConfig & getConfig() { return config; }
     SimpSMTSolver & getSMTSolver() { return *smt_solver; }
     SimpSMTSolver const & getSMTSolver() const { return *smt_solver; }
 
-    THandler &getTHandler() { return *thandler; }
-    Logic    &getLogic()    { return logic; }
-    Theory   &getTheory()   { return *theory; }
-    const Theory &getTheory() const { return *theory; }
-    PartitionManager & getPartitionManager();
+    THandler & getTHandler() { return *thandler; }
+    Logic & getLogic() { return logic; }
+    Theory & getTheory() { return *theory; }
+    const Theory & getTheory() const { return *theory; }
+    PartitionManager & getPartitionManager() { return pmanager; }
 
-    void      push();
-    bool      pop();
-    void      insertFormula(PTRef fla);
+    void push();
+    bool pop();
+    void insertFormula(PTRef fla);
 
-    void      initialize();
+    void initialize();
 
-    virtual sstat check();      // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
+    virtual sstat check(); // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
     sstat simplifyFormulas();
 
-    void  printFramesAsQuery() const;
-    [[nodiscard]] sstat getStatus() const;
+    void printFramesAsQuery() const;
+    [[nodiscard]] sstat getStatus() const { return status; }
 
     // Values
-    lbool   getTermValue   (PTRef tr) const;
+    lbool getTermValue(PTRef tr) const;
 
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
