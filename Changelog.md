@@ -1,4 +1,7 @@
-### 2.6.0 (unreleased)
+### 2.6.1 (unreleased)
+
+
+### 2.6.0 (2024-03-06)
 New features:
  - Support `ALL` as a valid argument to `set-logic` command. This becomes an alias for `QF_AUFLIRA`.
  - Simpler builds with single `make` command.
