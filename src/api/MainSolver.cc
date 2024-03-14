@@ -223,6 +223,14 @@ std::unique_ptr<Model> MainSolver::getModel() {
     return modelBuilder.build();
 }
 
+void MainSolver::printResolutionProofSMT2() const {
+    assert(smt_solver);
+    if (!smt_solver->logsResolutionProof()) { throw OsmtApiException("Proofs are not tracked"); }
+    if (status != s_False) { throw OsmtApiException("Proof cannot be created if solver is not in UNSAT state"); }
+
+    return smt_solver->printResolutionProofSMT2(std::cout);
+}
+
 lbool MainSolver::getTermValue(PTRef tr) const {
     if (logic.getSortRef(tr) != logic.getSort_bool()) { return l_Undef; }
     if (not term_mapper->hasLit(tr)) { return l_Undef; }

@@ -170,6 +170,7 @@ class Interpret {
     bool                        storeDefinedFun(std::string const & fname, const vec<PTRef>& args, SRef ret_sort, const PTRef tr);
 
     virtual void                exit();
+    void                        getProof();
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
 
