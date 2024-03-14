@@ -89,11 +89,11 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
                 CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                if (logsProofForInterpolation()) { proof->endChain(unitClause); }
+                if (logsProof()) { proof->endChain(unitClause); }
                 uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
-                if (logsProofForInterpolation()) { proof->endChain(crd); }
+                if (logsProof()) { proof->endChain(crd); }
                 learnts.push(crd);
                 attachClause(crd);
                 uncheckedEnqueue(out_learnt[0], crd);

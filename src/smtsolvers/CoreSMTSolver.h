@@ -486,7 +486,7 @@ protected:
     //
     // Proof production
     //
-    bool logsProofForInterpolation() const { return static_cast<bool>(proof); }
+    bool logsProof() const { return static_cast<bool>(proof); }
     void finalizeProof(CRef finalConflict);
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
@@ -637,7 +637,7 @@ inline void CoreSMTSolver::checkGarbage(void) { return checkGarbage(garbage_frac
 inline void CoreSMTSolver::checkGarbage(double gf)
 {
     // FIXME Relocation not compatible at the moment with proof tracking
-    if (this->logsProofForInterpolation()) { return; }
+    if (this->logsProof()) { return; }
     if (ca.wasted() > ca.size() * gf) {
         garbageCollect();
     }

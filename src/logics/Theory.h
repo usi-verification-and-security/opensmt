@@ -49,7 +49,7 @@ class Theory
 
     Theory(SMTConfig &c) : config(c) { }
 
-    inline bool keepPartitions() const { return config.produce_inter(); }
+    inline bool keepPartitions() const { return config.produceProof(); }
 
   public:
 
