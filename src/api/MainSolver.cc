@@ -131,7 +131,7 @@ void MainSolver::insertFormula(PTRef fla)
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
-        PreprocessingContext context {.frameCount = i, .perPartition = getConfig().produce_inter() };
+        PreprocessingContext context {.frameCount = i, .perPartition = getConfig().produceProof() };
         firstNotSimplifiedFrame = i + 1;
         if (context.perPartition) {
             vec<PTRef> frameFormulas;
@@ -280,7 +280,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
-    bool keepPartitionsSeparate = getConfig().produce_inter();
+    bool keepPartitionsSeparate = getConfig().produceProof();
     Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
@@ -484,7 +484,7 @@ PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const& contex
 
 MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
     SubstitutionResult result;
-    assert(getConfig().do_substitutions() and not getConfig().produce_inter());
+    assert(getConfig().do_substitutions() and not getConfig().produceProof());
     PTRef root = fla;
     Logic::SubstMap allsubsts;
     while (true) {

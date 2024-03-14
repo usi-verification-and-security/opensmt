@@ -434,6 +434,7 @@ public:
 
   void setUsedForInitiliazation() { usedForInitialization = true; }
 
+  inline void setProduceProofs( ) { insertOption(o_produce_proofs, new SMTOption(1)); }
   inline bool produceProof( ) {
       return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
   }
