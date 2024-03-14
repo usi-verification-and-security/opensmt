@@ -236,6 +236,9 @@ public:
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
+    // Prints proof of the last query (must be in unsatisfiable state)
+    void printResolutionProofSMT2() const;
+
     void stop() { smt_solver->stop = true; }
 
     // Returns interpolation context for the last query (must be in UNSAT state)

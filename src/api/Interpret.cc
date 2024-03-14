@@ -267,6 +267,19 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
+            case t_getproof: {
+                if (config.produce_proof()) {
+                    if (isInitialized()) {
+                        getProof();
+                    } else {
+                        notify_formatted(true, "Illegal command before set-logic: get-proof");
+                    }
+                } else {
+                    notify_formatted(true,
+                                     "Option to produce proofs has not been set, skipping this command ...");
+                }
+                break;
+            }
             case t_getinterpolants: {
                 if (config.produce_inter()) {
                     if (isInitialized()) {
@@ -1258,6 +1271,11 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
         args.push(argSortRef);
     }
     return logic->getSort(symRef, std::move(args));
+}
+
+void Interpret::getProof()
+{
+    main_solver->printResolutionProofSMT2();
 }
 
 void Interpret::getInterpolants(const ASTNode& n)

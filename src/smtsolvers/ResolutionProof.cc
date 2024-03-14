@@ -134,7 +134,7 @@ bool ResolutionProof::deleted(CRef cr)
   return true;
 }
 
-void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler & t)
+void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler & t) const
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
     throw OsmtInternalException("there is no proof of false");
@@ -158,7 +158,7 @@ void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler 
       continue;
     }
     assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-    ResolutionProofDer * d = &clause_to_proof_der.at(cr);
+    ResolutionProofDer const * d = &clause_to_proof_der.at(cr);
 
     // Special case in which there is not
     // a derivation but just an equivalence
@@ -170,7 +170,7 @@ void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler 
       cr = d->chain_cla[0];
       // Retrieve derivation
       assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-      d = &clause_to_proof_der[ cr ];
+      d = &clause_to_proof_der.at(cr);
     }
     assert( d->chain_cla.size( ) != 1 );
     // Look for unprocessed children
@@ -201,8 +201,8 @@ void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler 
       out << "(let (cls_" << cr;
       nof_lets ++;
 
-      std::vector< CRef > & chain_cla = d->chain_cla;
-      std::vector< Var > & chain_var = d->chain_var;
+      auto & chain_cla = d->chain_cla;
+      auto & chain_var = d->chain_var;
 
       assert( chain_cla.size( ) == chain_var.size( ) + 1 );
 
