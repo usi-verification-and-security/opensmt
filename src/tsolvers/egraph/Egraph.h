@@ -254,15 +254,6 @@ public:
 #endif
     void computePolarities (ERef);
 
-    //===========================================================================
-    // Public APIs for Theory Combination with DTC
-
-    void    gatherInterfaceTerms     (ERef);
-    int     getInterfaceTermsNumber  ();
-    ERef    getInterfaceTerm         (const int);
-    bool    isRootUF                 (ERef);
-    ERef    canonizeDTC              (ERef, bool = false);
-
     Logic& getLogic() override { return logic; }
 public:
 

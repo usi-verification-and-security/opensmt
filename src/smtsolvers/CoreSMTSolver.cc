@@ -1868,8 +1868,6 @@ void CoreSMTSolver::printStatistics( ostream & os )
     if ( config.sat_preprocess_theory != 0 )
         os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
     os << "; TSolvers time............: " << tsolvers_time << " s" << endl;
-//  if ( config.sat_lazy_dtc != 0 )
-//    os << "# Interf. equalities.......: " << ie_generated << " out of " << egraph.getInterfaceTermsNumber( ) * (egraph.getInterfaceTermsNumber( )-1) / 2 << endl;
     os << "; Init clauses.............: " << clauses.size() << endl;
     os << "; Variables................: " << nVars() << endl;
     if (config.sat_split_type() != spt_none)

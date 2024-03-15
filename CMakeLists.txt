@@ -80,7 +80,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/options
     ${CMAKE_SOURCE_DIR}/api
     ${CMAKE_SOURCE_DIR}/tsolvers
-    ${CMAKE_SOURCE_DIR}/tsolvers/axdiffsolver
+    ${CMAKE_SOURCE_DIR}/tsolvers/arraysolver
     ${CMAKE_SOURCE_DIR}/tsolvers/egraph
     ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
     ${CMAKE_SOURCE_DIR}/tsolvers/stpsolver
