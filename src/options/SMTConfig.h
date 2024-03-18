@@ -435,9 +435,6 @@ public:
   void setUsedForInitiliazation() { usedForInitialization = true; }
 
   inline void setProduceProofs( ) { insertOption(o_produce_proofs, new SMTOption(1)); }
-  inline bool produceProof( ) {
-      return optionTable.has(o_produce_proofs) ? optionTable[o_produce_proofs]->getValue().numval > 0 : false;
-  }
 
   void setTimeQueries() { insertOption(o_time_queries, new SMTOption(1)); }
   bool timeQueries()    { return optionTable.has(o_time_queries) ? optionTable[o_time_queries]->getValue().numval : false; }
@@ -581,6 +578,11 @@ public:
   int certify_inter() const
     { return optionTable.has(o_certify_inter) ?
         optionTable[o_certify_inter]->getValue().numval : 0; }
+  bool produce_proof() const
+    { // produce_inter => produce_proof
+      if (produce_inter()) return true;
+      return optionTable.has(o_produce_proofs) ?
+        optionTable[o_produce_proofs]->getValue().numval > 0 : false; }
   bool produce_inter() const
     { return optionTable.has(o_produce_inter) ?
         optionTable[o_produce_inter]->getValue().numval > 0 : false; }

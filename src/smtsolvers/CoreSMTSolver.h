@@ -449,7 +449,8 @@ public:
 	std::string printCnfClauses  ();
 	std::string printCnfLearnts  ();
 
-    void   printProofSMT2          (std::ostream &); // Print proof
+    bool logsResolutionProof() const { return static_cast<bool>(proof); }
+    void printResolutionProofSMT2(std::ostream &); // Print proof
 protected:
 
 #ifdef STATISTICS
@@ -486,12 +487,11 @@ protected:
     //
     // Proof production
     //
-    bool logsProof() const { return static_cast<bool>(proof); }
-    void finalizeProof(CRef finalConflict);
+    void finalizeResolutionProof(CRef finalConflict);
     std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     // End of proof production
-    
+
     //
     // Data structures required for incrementality, backtrackability
     //
@@ -637,7 +637,7 @@ inline void CoreSMTSolver::checkGarbage(void) { return checkGarbage(garbage_frac
 inline void CoreSMTSolver::checkGarbage(double gf)
 {
     // FIXME Relocation not compatible at the moment with proof tracking
-    if (this->logsProof()) { return; }
+    if (this->logsResolutionProof()) { return; }
     if (ca.wasted() > ca.size() * gf) {
         garbageCollect();
     }
@@ -862,7 +862,7 @@ inline std::string CoreSMTSolver::printCnfClauses()
 {
 	vec<PTRef> cnf_clauses;
 	this->populateClauses(cnf_clauses, clauses);
-	
+
 	Logic& logic = theory_handler.getLogic();
 	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
 }
@@ -872,7 +872,7 @@ inline std::string CoreSMTSolver::printCnfLearnts()
 	vec<PTRef> cnf_clauses;
 	this->populateClauses(cnf_clauses, learnts, 2);
 	//this->populateClauses(cnf_clauses, trail);
-	
+
 	Logic& logic = theory_handler.getLogic();
 	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
 }

@@ -152,7 +152,7 @@ public:
     bool deleted(CRef);                             // Remove clauses if possible
     inline Clause& getClause(CRef cr) const { return cl_al[cr]; } // Get clause from reference
 
-    void print( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
+    void printSMT2( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
 
     std::vector<Lit> getAssumedLiterals() const {
         std::vector<Lit> res;

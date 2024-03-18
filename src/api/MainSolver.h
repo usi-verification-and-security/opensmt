@@ -155,6 +155,8 @@ protected:
         }
     }
 
+    inline bool trackPartitions() const;
+
     PTRef rewriteMaxArity(PTRef root);
 
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
@@ -241,5 +243,11 @@ public:
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 };
+
+bool MainSolver::trackPartitions() const
+{
+    assert(smt_solver);
+    return smt_solver->logsResolutionProof();
+}
 
 #endif // MAINSOLVER_H

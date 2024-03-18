@@ -82,7 +82,7 @@ void SimpSMTSolver::initialize( )
     CoreSMTSolver::initialize( );
     if (config.verbosity()) verbosity = true;
 
-    if (config.produceProof()) {
+    if (logsResolutionProof()) {
         if (config.sat_preprocess_booleans != 0
             || config.sat_preprocess_theory != 0) {
             if (config.verbosity() > 0) {opensmt_warning("disabling SATElite preprocessing to track proof")};
