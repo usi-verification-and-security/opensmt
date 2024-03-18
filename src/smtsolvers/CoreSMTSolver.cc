@@ -126,7 +126,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-    , proof                 (config.produceProof() ? new Proof(ca ) : nullptr )
+    , proof                 (config.produce_proof() ? new Proof(ca ) : nullptr )
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
@@ -148,7 +148,7 @@ CoreSMTSolver::initialize( )
     ie_generated = 0;
 #endif
 
-    if (config.produceProof() && !proof) {
+    if (config.produce_proof() && !proof) {
         proof = std::unique_ptr<Proof>(new Proof(this->ca));
     }
 
@@ -241,7 +241,7 @@ bool CoreSMTSolver::addOriginalClause_(vec<Lit> && ps, opensmt::pair<CRef, CRef>
     assert(decisionLevel() == 0);
     inOutCRefs = {CRef_Undef, CRef_Undef};
     if (!isOK()) { return false; }
-    bool logProof = this->logsProof();
+    bool logProof = this->logsResolutionProof();
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     std::vector<Lit> resolvedUnits;
@@ -352,7 +352,7 @@ void CoreSMTSolver::removeClause(CRef cr)
     // Don't leave pointers to free'd memory!
     if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
     c.mark(1);
-    if (logsProof()) {
+    if (logsResolutionProof()) {
         // Remove clause and derivations if ref becomes 0
         // If ref is not 0, we keep it and remove later
         if (!proof->deleted(cr)) pleaves.push(cr);
@@ -592,7 +592,7 @@ Lit CoreSMTSolver::pickBranchLit()
 
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
-    bool logProof = this->logsProof();
+    bool logProof = this->logsResolutionProof();
     assert(!logProof || !proof->hasOpenChain());
     assert(confl != CRef_Undef);
     assert(cleanup.size() == 0);       // Cleanup stack must be empty
@@ -828,7 +828,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 {
     // MB: TODO: figure out if this is compatible with proof tracking
-    if ( logsProof() || config.sat_minimize_conflicts <= 0 )
+    if ( logsResolutionProof() || config.sat_minimize_conflicts <= 0 )
         return false;
 
     analyze_stack.clear();
@@ -916,8 +916,8 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
     return true;
 }
 
-void CoreSMTSolver::finalizeProof(CRef finalConflict) {
-    assert(this->logsProof());
+void CoreSMTSolver::finalizeResolutionProof(CRef finalConflict) {
+    assert(this->logsResolutionProof());
     assert(decisionLevel() == 0);
     assert(finalConflict != CRef_Undef);
     proof->beginChain(finalConflict);
@@ -949,7 +949,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     out_conflict.push(p);
 
     seen[var(p)] = 1;
-    if (logsProof()) {
+    if (logsResolutionProof()) {
         CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(~p);
         proof->beginChain(assumptionUnitClause);
     }
@@ -963,7 +963,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             {
                 if (assumptions_order.has(x)) {
                     out_conflict.push(~trail[i]);
-                    if (logsProof()) {
+                    if (logsResolutionProof()) {
                         assert(level(x) > 0);
                         assert(std::find(assumptions.begin(), assumptions.end(), trail[i]) != assumptions.end());
                         // Add a resolution step with unit clauses for this assumption
@@ -985,7 +985,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         seen[var(r[j])] = 1;
                     }
                     cancelUntilVarTempDone();
-                    if (logsProof()) {
+                    if (logsResolutionProof()) {
                         CRef theoryClause = ca.alloc(r);
                         vardata[x].reason = theoryClause;
                         proof->newTheoryClause(theoryClause);
@@ -999,7 +999,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                     for (unsigned j = 1; j < c.size(); j++) {
                         seen[var(c[j])] = 1;
                     }
-                    if (logsProof()) {
+                    if (logsResolutionProof()) {
                         proof->addResolutionStep(reason(x), x);
                     }
                 }
@@ -1009,7 +1009,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     }
     assert(seen[var(p)] == 0);
     seen[var(p)] = 0;
-    if (logsProof()) {
+    if (logsResolutionProof()) {
         // MB: Hopefully we have resolved away all literals including assumptions
         proof->endChain(CRef_Undef);
     }
@@ -1099,12 +1099,12 @@ CRef CoreSMTSolver::propagate()
                 while (i < end) {
                     *j++ = *i++;
                 }
-                if (decisionLevel() == 0 && this->logsProof()) {
-                    this->finalizeProof(confl);
+                if (decisionLevel() == 0 && this->logsResolutionProof()) {
+                    this->finalizeResolutionProof(confl);
                 }
             }
             else {  // clause is unit under assignment:
-                if (decisionLevel() == 0 && this->logsProof()) {
+                if (decisionLevel() == 0 && this->logsResolutionProof()) {
                     // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
                     //     is not constructed correctly
                     proof->beginChain(cr);
@@ -1176,7 +1176,7 @@ void CoreSMTSolver::reduceDB()
     }
     learnts.shrink(i - j);
     checkGarbage();
-    if (logsProof()) {
+    if (logsResolutionProof()) {
         // Remove unused leaves
         // FIXME deal with theory lemmata when proofs will be extended to theories
         for (i = j = 0; i < pleaves.size(); i++) {
@@ -1458,7 +1458,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
             if (learnt_clause.size() == 1) {
                 CRef reason = CRef_Undef;
-                if (logsProof()) {
+                if (logsResolutionProof()) {
                     CRef cr = ca.alloc(learnt_clause);
                     proof->endChain(cr);
                     reason = cr;
@@ -1471,7 +1471,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
 
                 CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
 
-                if (logsProof()) {
+                if (logsResolutionProof()) {
                     proof->endChain(cr);
                 }
                 learnts.push(cr);

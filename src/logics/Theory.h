@@ -49,8 +49,6 @@ class Theory
 
     Theory(SMTConfig &c) : config(c) { }
 
-    inline bool keepPartitions() const { return config.produceProof(); }
-
   public:
 
     virtual Logic          &getLogic()              = 0;

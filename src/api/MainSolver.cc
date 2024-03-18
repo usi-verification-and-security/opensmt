@@ -82,7 +82,7 @@ void MainSolver::push()
 bool MainSolver::pop()
 {
     if (frames.frameCount() > 1) {
-        if (config.produce_inter() > 0) {
+        if (trackPartitions()) {
             auto const & partitionsToInvalidate = frames.last().formulas;
             ipartitions_t mask = 0;
             for (PTRef partition : partitionsToInvalidate) {
@@ -115,7 +115,7 @@ void MainSolver::insertFormula(PTRef fla)
     // TODO: Move this to preprocessing of the formulas
     fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
 
-    if (getConfig().produce_inter()) {
+    if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
         unsigned int partition_index = insertedFormulasCount++;
@@ -131,7 +131,7 @@ void MainSolver::insertFormula(PTRef fla)
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
-        PreprocessingContext context {.frameCount = i, .perPartition = getConfig().produceProof() };
+        PreprocessingContext context {.frameCount = i, .perPartition = trackPartitions() };
         firstNotSimplifiedFrame = i + 1;
         if (context.perPartition) {
             vec<PTRef> frameFormulas;
@@ -280,7 +280,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
-    bool keepPartitionsSeparate = getConfig().produceProof();
+    const bool keepPartitionsSeparate = trackPartitions();
     Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
@@ -484,7 +484,7 @@ PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const& contex
 
 MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
     SubstitutionResult result;
-    assert(getConfig().do_substitutions() and not getConfig().produceProof());
+    assert(getConfig().do_substitutions() and not getSMTSolver().logsResolutionProof());
     PTRef root = fla;
     Logic::SubstMap allsubsts;
     while (true) {

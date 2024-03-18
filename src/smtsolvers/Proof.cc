@@ -134,7 +134,7 @@ bool Proof::deleted( CRef cr )
   return true;
 }
 
-void Proof::print( std::ostream & out, CoreSMTSolver & s, THandler & t )
+void Proof::printSMT2( std::ostream & out, CoreSMTSolver & s, THandler & t )
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
     throw OsmtInternalException("there is no proof of false");
@@ -267,8 +267,8 @@ void Proof::cleanAssumedLiteral(Lit l) {
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
-void CoreSMTSolver::printProofSMT2( std::ostream & out )
-{ proof->print( out, *this, theory_handler ); }
+void CoreSMTSolver::printResolutionProofSMT2( std::ostream & out )
+{ proof->printSMT2( out, *this, theory_handler ); }
 
 std::ostream & operator<<(std::ostream & os, clause_type val) {
     switch (val){
@@ -289,4 +289,3 @@ std::ostream & operator<<(std::ostream & os, clause_type val) {
     }
     return os;
 }
-

@@ -7,7 +7,7 @@ UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
     : TSolverHandler(c)
     , logic(l)
 {
-    egraph = config.produce_inter() > 0 ? new InterpolatingEgraph(config, logic)
+    egraph = config.produce_inter() ? new InterpolatingEgraph(config, logic)
             : new Egraph(config, logic);
     setSolverSchedule({egraph});
 }

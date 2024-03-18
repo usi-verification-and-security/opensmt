@@ -1278,7 +1278,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     }
     letRecords.popFrame();
 
-    if (!(config.produce_inter() > 0))
+    if (!config.produce_inter())
         throw OsmtApiException("Cannot interpolate");
 
     assert(grouping.size() >= 2);
@@ -1353,6 +1353,3 @@ void Interpret::initializeLogic(opensmt::Logic_t logicType) {
 std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
     return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
 }
-
-
-
