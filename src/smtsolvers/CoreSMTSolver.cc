@@ -55,7 +55,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iomanip>
 #include <algorithm>
 
-#include "Proof.h"
+#include "ResolutionProof.h"
 #include "SystemQueries.h"
 #include "ReportUtils.h"
 
@@ -126,7 +126,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     , luby_i                (0)
     , luby_k                (1)
     , cuvti                 (false)
-    , proof                 (config.produce_proof() ? new Proof(ca ) : nullptr )
+    , resolutionProof       (config.produce_proof() ? new ResolutionProof(ca) : nullptr)
 #ifdef STATISTICS
     , preproc_time          (0)
     , elim_tvars            (0)
@@ -134,7 +134,7 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
 { }
 
 void
-CoreSMTSolver::initialize( )
+CoreSMTSolver::initialize()
 {
     random_seed = config.getRandomSeed();
     restart_first = config.sat_restart_first();
@@ -148,8 +148,8 @@ CoreSMTSolver::initialize( )
     ie_generated = 0;
 #endif
 
-    if (config.produce_proof() && !proof) {
-        proof = std::unique_ptr<Proof>(new Proof(this->ca));
+    if (config.produce_proof() && !resolutionProof) {
+        resolutionProof = std::make_unique<ResolutionProof>(this->ca);
     }
 
     init = true;
@@ -158,9 +158,9 @@ CoreSMTSolver::initialize( )
 CoreSMTSolver::~CoreSMTSolver()
 {
 #ifdef STATISTICS
-    if ( config.produceStats() != 0 ) printStatistics ( config.getStatsOut( ) );
+    if (config.produceStats() != 0) printStatistics(config.getStatsOut());
     // TODO added for convenience
-    if ( config.print_stats != 0 ) printStatistics ( cerr );
+    if (config.print_stats != 0) printStatistics(cerr);
 
     cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
     cerr << "; avg dec time " << branchTimer.getTime()/decisions << endl;
@@ -223,7 +223,7 @@ Var CoreSMTSolver::newVar(bool dvar)
 
     // Added Lines
     // Skip undo for varTrue and varFalse
-    if ( v != 0 && v != 1 )
+    if (v != 0 && v != 1)
         undo_stack.push(undo_stack_el(undo_stack_el::NEWVAR, v));
 
     return v;
@@ -277,15 +277,15 @@ bool CoreSMTSolver::addOriginalClause_(vec<Lit> && ps, opensmt::pair<CRef, CRef>
         CRef outputClause = resolvedUnits.empty() ? inputClause :
                 ps.size() == 0 ? CRef_Undef : ca.alloc(ps);
         inOutCRefs = {inputClause, outputClause};
-        proof->newOriginalClause(inputClause);
+        resolutionProof->newOriginalClause(inputClause);
         if (!resolvedUnits.empty()) {
-            proof->beginChain( inputClause );
+            resolutionProof->beginChain( inputClause );
             for(Lit l : resolvedUnits) {
                 Var v = var(l);
                 assert(reason(v) != CRef_Undef);
-                proof->addResolutionStep(reason(v), v);
+                resolutionProof->addResolutionStep(reason(v), v);
             }
-            proof->endChain(outputClause);
+            resolutionProof->endChain(outputClause);
         }
     }
     if (ps.size() == 0) {
@@ -355,7 +355,7 @@ void CoreSMTSolver::removeClause(CRef cr)
     if (logsResolutionProof()) {
         // Remove clause and derivations if ref becomes 0
         // If ref is not 0, we keep it and remove later
-        if (!proof->deleted(cr)) pleaves.push(cr);
+        if (!resolutionProof->deleted(cr)) pleaves.push(cr);
     }
     else {
         ca.free(cr);
@@ -396,7 +396,7 @@ void CoreSMTSolver::cancelUntil(int level)
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
 
-        //if ( first_model_found )
+        //if (first_model_found)
         theory_handler.backtrack(trail.size());
     }
 }
@@ -429,7 +429,7 @@ void CoreSMTSolver::cancelUntilVar( Var v )
     trail.shrink(trail.size( ) - c );
     qhead = trail.size( );
 
-    if ( decisionLevel( ) > level(v) )
+    if (decisionLevel( ) > level(v))
     {
         assert( c > 0 );
         assert( c - 1 < trail.size( ) );
@@ -450,7 +450,7 @@ void CoreSMTSolver::cancelUntilVarTempInit( Var v )
     assert( cuvti == false );
     cuvti = true;
     int c;
-    for ( c = trail.size( )-1 ; var(trail[ c ]) != v ; c -- )
+    for (c = trail.size()-1; var(trail[ c ]) != v; c--)
     {
         Lit p = trail[ c ];
         Var x = var( p );
@@ -496,7 +496,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     theory_handler.checkTrailConsistency(trail);
 #endif
     // Flush conflict if unsat
-    if ( !res )
+    if (!res)
     {
 //    assert(false);
         vec< Lit > conflicting;
@@ -593,7 +593,7 @@ Lit CoreSMTSolver::pickBranchLit()
 void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 {
     bool logProof = this->logsResolutionProof();
-    assert(!logProof || !proof->hasOpenChain());
+    assert(!logProof || !resolutionProof->hasOpenChain());
     assert(confl != CRef_Undef);
     assert(cleanup.size() == 0);       // Cleanup stack must be empty
     assert(std::all_of(seen.begin(), seen.end(), [](char c) { return c == 0; })); // seen must be cleared
@@ -608,7 +608,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     out_btlevel = 0;
 
     if (logProof) {
-        proof->beginChain(confl);
+        resolutionProof->beginChain(confl);
     }
 
     do
@@ -643,7 +643,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                 else if (logProof) {
                     assert(level(var(q)) == 0);
                     assert(reason(var(q)) != CRef_Undef);
-                    proof->addResolutionStep(reason(var(q)), var(q));
+                    resolutionProof->addResolutionStep(reason(var(q)), var(q));
                 }
             }
         }
@@ -675,7 +675,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 #endif
 
             CRef ctr = CRef_Undef;
-            if ( r.size() > config.sat_learn_up_to_size )
+            if (r.size() > config.sat_learn_up_to_size)
             {
                 ctr = ca.alloc(r);
                 cleanup.push(ctr);
@@ -688,13 +688,13 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
                 undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ctr));
                 claBumpActivity(ca[ctr]);
                 learnt_t_lemmata ++;
-                if ( !config.sat_temporary_learn )
+                if (!config.sat_temporary_learn)
                     perm_learnt_t_lemmata ++;
             }
-            assert( ctr != CRef_Undef );
+            assert(ctr != CRef_Undef);
             vardata[var(p)].reason = ctr;
             if (logProof) {
-                proof->newTheoryClause(ctr);
+                resolutionProof->newTheoryClause(ctr);
             }
         }
 
@@ -725,9 +725,9 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         pathC--;
         // Add resolution step only if this is not the last literal from current level
         // The last literal is not resolved! It is a part of the learnt clause
-        if ( logProof && pathC > 0 )
+        if (logProof && pathC > 0)
         {
-            proof->addResolutionStep(confl, var(p));
+            resolutionProof->addResolutionStep(confl, var(p));
         }
     }
     while (pathC > 0);
@@ -828,7 +828,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
 {
     // MB: TODO: figure out if this is compatible with proof tracking
-    if ( logsResolutionProof() || config.sat_minimize_conflicts <= 0 )
+    if (logsResolutionProof() || config.sat_minimize_conflicts <= 0)
         return false;
 
     analyze_stack.clear();
@@ -853,7 +853,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             // Restoring trail
             cancelUntilVarTempDone( );
             CRef ct = CRef_Undef;
-            if ( r.size( ) > config.sat_learn_up_to_size )
+            if (r.size() > config.sat_learn_up_to_size)
             {
                 ct = ca.alloc(r);
                 tmp_reas.push(ct);
@@ -867,7 +867,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
                 attachClause(ct);
                 claBumpActivity(ca[ct]);
                 learnt_t_lemmata ++;
-                if ( !config.sat_temporary_learn )
+                if (!config.sat_temporary_learn)
                     perm_learnt_t_lemmata ++;
             }
             vardata[v].reason = ct;
@@ -920,7 +920,7 @@ void CoreSMTSolver::finalizeResolutionProof(CRef finalConflict) {
     assert(this->logsResolutionProof());
     assert(decisionLevel() == 0);
     assert(finalConflict != CRef_Undef);
-    proof->beginChain(finalConflict);
+    resolutionProof->beginChain(finalConflict);
 
     Clause const & c = ca[finalConflict];
     for (unsigned j = 0; j < c.size(); ++j) {
@@ -929,9 +929,9 @@ void CoreSMTSolver::finalizeResolutionProof(CRef finalConflict) {
         assert(level(varToResolve) == 0);
         CRef unitReason = reason(varToResolve);
         assert(ca[unitReason].size() == 1 && ca[unitReason][0] == ~c[j]);
-        proof->addResolutionStep(unitReason, varToResolve);
+        resolutionProof->addResolutionStep(unitReason, varToResolve);
     }
-    proof->endChain(CRef_Undef);
+    resolutionProof->endChain(CRef_Undef);
 }
 
 /*_________________________________________________________________________________________________
@@ -950,8 +950,8 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
     seen[var(p)] = 1;
     if (logsResolutionProof()) {
-        CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(~p);
-        proof->beginChain(assumptionUnitClause);
+        CRef assumptionUnitClause = resolutionProof->getUnitForAssumptionLiteral(~p);
+        resolutionProof->beginChain(assumptionUnitClause);
     }
 
     for (int i = trail.size()-1; i >= 0; i--)
@@ -967,8 +967,8 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         assert(level(x) > 0);
                         assert(std::find(assumptions.begin(), assumptions.end(), trail[i]) != assumptions.end());
                         // Add a resolution step with unit clauses for this assumption
-                        CRef assumptionUnitClause = proof->getUnitForAssumptionLiteral(trail[i]);
-                        proof->addResolutionStep(assumptionUnitClause, x);
+                        CRef assumptionUnitClause = resolutionProof->getUnitForAssumptionLiteral(trail[i]);
+                        resolutionProof->addResolutionStep(assumptionUnitClause, x);
                     }
                 }
             }
@@ -988,8 +988,8 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                     if (logsResolutionProof()) {
                         CRef theoryClause = ca.alloc(r);
                         vardata[x].reason = theoryClause;
-                        proof->newTheoryClause(theoryClause);
-                        proof->addResolutionStep(theoryClause, x);
+                        resolutionProof->newTheoryClause(theoryClause);
+                        resolutionProof->addResolutionStep(theoryClause, x);
                     }
                 }
                 else
@@ -1000,7 +1000,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                         seen[var(c[j])] = 1;
                     }
                     if (logsResolutionProof()) {
-                        proof->addResolutionStep(reason(x), x);
+                        resolutionProof->addResolutionStep(reason(x), x);
                     }
                 }
             }
@@ -1011,7 +1011,7 @@ void CoreSMTSolver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     seen[var(p)] = 0;
     if (logsResolutionProof()) {
         // MB: Hopefully we have resolved away all literals including assumptions
-        proof->endChain(CRef_Undef);
+        resolutionProof->endChain(CRef_Undef);
     }
 }
 
@@ -1107,16 +1107,16 @@ CRef CoreSMTSolver::propagate()
                 if (decisionLevel() == 0 && this->logsResolutionProof()) {
                     // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
                     //     is not constructed correctly
-                    proof->beginChain(cr);
+                    resolutionProof->beginChain(cr);
                     for (unsigned k = 1; k < c.size(); k++)
                     {
                         assert(level(var(c[k])) == 0);
                         assert(reason(var(c[k])) != CRef_Fake);
                         assert(reason(var(c[k])) != CRef_Undef);
-                        proof->addResolutionStep(reason(var(c[k])), var(c[k]));
+                        resolutionProof->addResolutionStep(reason(var(c[k])), var(c[k]));
                     }
                     CRef unitClause = ca.alloc(vec<Lit>{first});
-                    proof->endChain(unitClause);
+                    resolutionProof->endChain(unitClause);
                     // Replace the reason for enqueing the literal with the unit clause.
                     // Necessary for correct functioning of proof logging in analyze()
                     cr = unitClause;
@@ -1182,7 +1182,7 @@ void CoreSMTSolver::reduceDB()
         for (i = j = 0; i < pleaves.size(); i++) {
             CRef cr = pleaves[i];
             assert(ca[cr].mark() == 1);
-            if (!proof->deleted(cr)) pleaves[j++] = pleaves[i];
+            if (!resolutionProof->deleted(cr)) pleaves[j++] = pleaves[i];
         }
         pleaves.shrink(i - j);
     }
@@ -1407,7 +1407,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
     // (Incomplete) Check of Level-0 atoms
 
     TPropRes res = checkTheory(false, conflictC);
-    if ( res == TPropRes::Unsat) {
+    if (res == TPropRes::Unsat) {
         return zeroLevelConflictHandler();
     }
 
@@ -1460,7 +1460,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 CRef reason = CRef_Undef;
                 if (logsResolutionProof()) {
                     CRef cr = ca.alloc(learnt_clause);
-                    proof->endChain(cr);
+                    resolutionProof->endChain(cr);
                     reason = cr;
                 }
                 uncheckedEnqueue(learnt_clause[0], reason);
@@ -1472,7 +1472,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
 
                 if (logsResolutionProof()) {
-                    proof->endChain(cr);
+                    resolutionProof->endChain(cr);
                 }
                 learnts.push(cr);
                 attachClause(cr);
@@ -1560,13 +1560,13 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 decisions++;
                 next = pickBranchLit();
                 // Complete Call
-                if ( next == lit_Undef ) {
+                if (next == lit_Undef) {
                     TPropRes res = checkTheory(true, conflictC);
 
-                    if ( res == TPropRes::Propagate ) {
+                    if (res == TPropRes::Propagate) {
                         continue;
                     }
-                    if ( res == TPropRes::Unsat )
+                    if (res == TPropRes::Unsat)
                     {
                         return zeroLevelConflictHandler();
                     }
@@ -1821,17 +1821,17 @@ void CoreSMTSolver::setAssumptions(vec<Lit> const & assumps) {
             assumptions_order.insert(var(assumps[i]), active_assumptions++);
         }
     }
-    if(proof) {
-        proof->setCurrentAssumptionLiterals(&assumps[0], &assumps[0] + assumps.size());
+    if(logsResolutionProof()) {
+        resolutionProof->setCurrentAssumptionLiterals(&assumps[0], &assumps[0] + assumps.size());
     }
 }
 
 int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
 {
     // Luby's restart
-    if ( config.sat_use_luby_restart )
+    if (config.sat_use_luby_restart)
     {
-        if ( ++luby_i == (unsigned) ((1 << luby_k) - 1))
+        if (++luby_i == (unsigned) ((1 << luby_k) - 1))
             luby_previous.push_back( 1 << ( luby_k ++ - 1) );
         else
             luby_previous.push_back( luby_previous[luby_i - (1 << (luby_k - 1))]);
@@ -1862,10 +1862,10 @@ void CoreSMTSolver::printStatistics( ostream & os )
     os << "; Average learnts size.....: " << learnts_size/conflicts << endl;
     os << "; Top level literals.......: " << top_level_lits << endl;
     os << "; Search time..............: " << search_timer.getTime() << " s" << endl;
-    if ( config.sat_preprocess_booleans != 0
-            || config.sat_preprocess_theory != 0 )
+    if (config.sat_preprocess_booleans != 0
+            || config.sat_preprocess_theory != 0)
         os << "; Preprocessing time.......: " << preproc_time << " s" << endl;
-    if ( config.sat_preprocess_theory != 0 )
+    if (config.sat_preprocess_theory != 0)
         os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
     os << "; TSolvers time............: " << tsolvers_time << " s" << endl;
     os << "; Init clauses.............: " << clauses.size() << endl;

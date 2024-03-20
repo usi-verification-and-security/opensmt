@@ -27,28 +27,28 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "CoreSMTSolver.h"
 
 #include "OsmtInternalException.h"
-#include "Proof.h"
+#include "ResolutionProof.h"
 
 #include <unordered_map>
 
 
-  Proof::Proof( ClauseAllocator& cl )
-  : begun     ( false )
-  , cl_al		( cl )
+  ResolutionProof::ResolutionProof(ClauseAllocator& cl)
+  : begun     (false)
+  , cl_al     (cl)
 { }
 
-void Proof::newLeafClause(CRef c, clause_type t)
+void ResolutionProof::newLeafClause(CRef c, clause_type t)
 {
     assert(c != CRef_Undef);
     assert(clause_to_proof_der.find(c) == clause_to_proof_der.end());
-    clause_to_proof_der.emplace(c, ProofDer{t});
+    clause_to_proof_der.emplace(c, ResolutionProofDer{t});
 }
 
 
 //
 // This is the beginning of a derivation chain.
 //
-void Proof::beginChain( CRef c )
+void ResolutionProof::beginChain(CRef c)
 {
     assert( c != CRef_Undef );
     assert( !hasOpenChain() );
@@ -64,7 +64,7 @@ void Proof::beginChain( CRef c )
 // Store a resolution step with chain_cla.back( ) and c
 // on the pivot variable p
 //
-void Proof::addResolutionStep(CRef c, Var p)
+void ResolutionProof::addResolutionStep(CRef c, Var p)
 {
     assert(hasOpenChain());
     assert( c != CRef_Undef );
@@ -75,7 +75,7 @@ void Proof::addResolutionStep(CRef c, Var p)
 }
 
 // Finalize and store the temporary chain
-void Proof::endChain( CRef conclusion )
+void ResolutionProof::endChain(CRef conclusion)
 {
   assert(hasOpenChain());
   begun = false;
@@ -110,12 +110,12 @@ void Proof::endChain( CRef conclusion )
   }
 }
 
-bool Proof::deleted( CRef cr )
+bool ResolutionProof::deleted(CRef cr)
 {
   // Never remove units
   if ( cl_al[cr].size( ) == 1 ) return false;
   assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-  const ProofDer& d = clause_to_proof_der[ cr ];
+  const ResolutionProofDer& d = clause_to_proof_der[ cr ];
   assert( d.ref >= 0 );
   // This clause is still used somewhere else, keep it
   if ( d.ref > 0 ) { return false; }
@@ -124,7 +124,7 @@ bool Proof::deleted( CRef cr )
   for ( unsigned i = 0 ; i < d.chain_cla.size( ) ; i ++ )
   {
     assert( clause_to_proof_der.find( d.chain_cla[i] ) != clause_to_proof_der.end( ) );
-    ProofDer & parent = clause_to_proof_der.at(d.chain_cla[i]);
+    ResolutionProofDer & parent = clause_to_proof_der.at(d.chain_cla[i]);
     parent.ref--;
   }
   assert( d.ref == 0 );
@@ -134,7 +134,7 @@ bool Proof::deleted( CRef cr )
   return true;
 }
 
-void Proof::printSMT2( std::ostream & out, CoreSMTSolver & s, THandler & t )
+void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler & t)
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
     throw OsmtInternalException("there is no proof of false");
@@ -158,7 +158,7 @@ void Proof::printSMT2( std::ostream & out, CoreSMTSolver & s, THandler & t )
       continue;
     }
     assert( clause_to_proof_der.find( cr ) != clause_to_proof_der.end( ) );
-    ProofDer * d = &clause_to_proof_der.at(cr);
+    ResolutionProofDer * d = &clause_to_proof_der.at(cr);
 
     // Special case in which there is not
     // a derivation but just an equivalence
@@ -257,7 +257,7 @@ void Proof::printSMT2( std::ostream & out, CoreSMTSolver & s, THandler & t )
   out << ")" << '\n';
 }
 
-void Proof::cleanAssumedLiteral(Lit l) {
+void ResolutionProof::cleanAssumedLiteral(Lit l) {
     CRef unit = assumed_literals.at(l);
     assert(clause_to_proof_der.find(unit) != clause_to_proof_der.end());
     clause_to_proof_der.erase(unit);
@@ -267,8 +267,8 @@ void Proof::cleanAssumedLiteral(Lit l) {
 //=============================================================================
 // The following functions are declared in CoreSMTSolver.h
 
-void CoreSMTSolver::printResolutionProofSMT2( std::ostream & out )
-{ proof->printSMT2( out, *this, theory_handler ); }
+void CoreSMTSolver::printResolutionProofSMT2(std::ostream & out)
+{ resolutionProof->printSMT2( out, *this, theory_handler ); }
 
 std::ostream & operator<<(std::ostream & os, clause_type val) {
     switch (val){

@@ -8,7 +8,7 @@
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-#include "Proof.h"
+#include "ResolutionProof.h"
 #include "PTRef.h"
 #include "Theory.h"
 #include "THandler.h"
@@ -21,7 +21,7 @@
 
 using namespace opensmt;
 
-class Proof;
+class ResolutionProof;
 class Logic;
 struct SMTConfig;
 
@@ -200,7 +200,7 @@ public:
 	ProofGraph ( SMTConfig &  c
             , Logic & logic
             , TermMapper const & termMapper
-            , Proof const &   proof
+            , ResolutionProof const &   proof
 			)
 : config   ( c )
 , logic_ ( logic )
@@ -352,8 +352,8 @@ public:
     void eliminateNoPartitionTheoryVars(std::vector<Var> const & noParititionTheoryVars);
 
 private:
-    void buildProofGraph(Proof const & proof);
-    ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, Proof const & proof); // Helper method for building the proof graph
+    void buildProofGraph(ResolutionProof const & proof);
+    ProofNode * createProofNodeFor(CRef cref, clause_type _ctype, ResolutionProof const & proof); // Helper method for building the proof graph
 
     inline void       addLeaf(clauseid_t id)      {  leaves_ids.insert(id); }
     inline void       removeLeaf(clauseid_t id)   {  leaves_ids.erase(id); }

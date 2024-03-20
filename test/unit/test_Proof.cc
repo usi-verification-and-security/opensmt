@@ -120,7 +120,7 @@ protected:
     PartitionManager partitionManager;
     TermMapper termMapper;
     ClauseAllocator ca;
-    Proof proof;
+    ResolutionProof proof;
 
     PTRef a_term;
     PTRef b_term;

@@ -3,7 +3,7 @@
 //
 
 #include "LookaheadSMTSolver.h"
-#include "Proof.h"
+#include "ResolutionProof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
     : SimpSMTSolver(c, thandler), idx(0),
@@ -89,11 +89,11 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
             assert(value(out_learnt[0]) == l_Undef);
             if (out_learnt.size() == 1) {
                 CRef unitClause = ca.alloc(vec<Lit>{out_learnt[0]});
-                if (logsResolutionProof()) { proof->endChain(unitClause); }
+                if (logsResolutionProof()) { resolutionProof->endChain(unitClause); }
                 uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
                 CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
-                if (logsResolutionProof()) { proof->endChain(crd); }
+                if (logsResolutionProof()) { resolutionProof->endChain(crd); }
                 learnts.push(crd);
                 attachClause(crd);
                 uncheckedEnqueue(out_learnt[0], crd);

@@ -56,10 +56,10 @@ std::ostream &operator<<(std::ostream &os, clause_type enumTmp);
  * If this represents a proper resolution from assumptions, then number of clauses must be 1 + number of vars
  * and for each i, variables chain_var[i] is a pivot of a resolution between chain_cla[i] and chain_cla[i+1]
  */
-struct ProofDer
+struct ResolutionProofDer
 {
-    ProofDer() : ref {0}, type{clause_type::CLA_ORIG} {}
-    ProofDer(clause_type type) : ref {0}, type{type} {}
+    ResolutionProofDer() : ref {0}, type{clause_type::CLA_ORIG} {}
+    ResolutionProofDer(clause_type type) : ref {0}, type{type} {}
 
     std::vector< CRef >  chain_cla;               // Clauses chain
     std::vector< Var >   chain_var;               // Pivot chain
@@ -74,7 +74,7 @@ struct ProofDer
 };
 
 
-class Proof
+class ResolutionProof
 {
     struct LitHash {
         std::size_t operator()(Lit l) const noexcept
@@ -83,14 +83,14 @@ class Proof
 
     bool begun; // For debugging
 
-    ProofDer current_chain;
-    std::unordered_map< CRef, ProofDer>     clause_to_proof_der;
+    ResolutionProofDer current_chain;
+    std::unordered_map< CRef, ResolutionProofDer>     clause_to_proof_der;
     ClauseAllocator&            cl_al;
     std::unordered_map<Lit, CRef, LitHash> assumed_literals;
 
 public:
 
-    Proof ( ClauseAllocator& cl );
+    ResolutionProof(ClauseAllocator&);
 
     // Notifies the proof about a new original clause.
     void newOriginalClause(CRef c) { newLeafClause(c, clause_type::CLA_ORIG); }
@@ -124,7 +124,7 @@ public:
             else {
                 CRef assumed_unit = cl_al.alloc(vec<Lit>{lit});
                 // And store it
-                clause_to_proof_der.emplace(assumed_unit, ProofDer{clause_type::CLA_ASSUMPTION});
+                clause_to_proof_der.emplace(assumed_unit, ResolutionProofDer{clause_type::CLA_ASSUMPTION});
                 replacement.insert(std::make_pair<>(lit, assumed_unit));
             }
         }
@@ -152,7 +152,7 @@ public:
     bool deleted(CRef);                             // Remove clauses if possible
     inline Clause& getClause(CRef cr) const { return cl_al[cr]; } // Get clause from reference
 
-    void printSMT2( std::ostream &, CoreSMTSolver &, THandler & );     // Print proof in SMT-LIB format
+    void printSMT2(std::ostream &, CoreSMTSolver &, THandler &);     // Print proof in SMT-LIB format
 
     std::vector<Lit> getAssumedLiterals() const {
         std::vector<Lit> res;
@@ -163,7 +163,7 @@ public:
         return res;
     }
 
-    std::unordered_map<CRef, ProofDer> const & getProof() const { return clause_to_proof_der; }
+    std::unordered_map<CRef, ResolutionProofDer> const & getProof() const { return clause_to_proof_der; }
 
 private:
     // Helper methods

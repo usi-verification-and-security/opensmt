@@ -34,8 +34,8 @@ if(PRINT_UNITS)
 endif()
 
 target_sources(proof
-	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Proof.h"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Proof.cc")
+	PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ResolutionProof.h"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ResolutionProof.cc")
 
 install(FILES TheoryInterpolator.h
 	 DESTINATION ${INSTALL_HEADERS_DIR})
