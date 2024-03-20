@@ -13,3 +13,6 @@
 
 ./src/smtsolvers/LookaheadSMTSolver.h
 ./src/smtsolvers/LookaheadSMTSolver.cc
+
+./src/api/MainSolver.h
+./src/api/MainSolver.cc
