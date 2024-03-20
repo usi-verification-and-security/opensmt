@@ -13,7 +13,7 @@
 #include "Theory.h"
 
 // forward declaration
-class Proof;
+class ResolutionProof;
 class ProofGraph;
 
 class InterpolationContext {
@@ -24,7 +24,7 @@ class InterpolationContext {
     PartitionManager & pmanager;
     std::unique_ptr<ProofGraph> proof_graph;
 public:
-    InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, Proof const & t,
+    InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, ResolutionProof const & t,
                          PartitionManager & pmanager);
 
     ~InterpolationContext();

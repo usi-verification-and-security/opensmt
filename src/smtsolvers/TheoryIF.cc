@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <TSolver.h>
 #include "CoreSMTSolver.h"
-#include "Proof.h"
+#include "ResolutionProof.h"
 
 #include <algorithm>
 #include <numeric>
@@ -74,7 +74,7 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
         clauses.push(cr);
         if (logsResolutionProof()) {
             // MB: the proof needs to know about the new clause
-            proof->newSplitClause(cr);
+            resolutionProof->newSplitClause(cr);
         }
         return cr;
     };
@@ -178,15 +178,15 @@ CoreSMTSolver::handleSat()
             assert(reasonLits.size() > 0);
             CRef theoryReason = ca.alloc(reasonLits);
             CRef unit = ca.alloc(vec<Lit>{l});
-            proof->newTheoryClause(theoryReason);
-            proof->beginChain(theoryReason);
+            resolutionProof->newTheoryClause(theoryReason);
+            resolutionProof->beginChain(theoryReason);
             Clause const & clause = ca[theoryReason];
             for (unsigned j = 0; j < clause.size(); ++j) {
                 if (clause[j] != l) {
-                    proof->addResolutionStep(reason(var(clause[j])), var(clause[j]));
+                    resolutionProof->addResolutionStep(reason(var(clause[j])), var(clause[j]));
                 }
             }
-            proof->endChain(unit);
+            resolutionProof->endChain(unit);
             vardata[var(l)].reason = unit;
             deducedReason = unit;
         }
@@ -232,7 +232,7 @@ CoreSMTSolver::handleUnsat()
         if (logsResolutionProof()) {
             // All conflicting atoms are dec-level 0
             CRef confl = config.sat_temporary_learn ? ca.alloc(conflicting, {true, computeGlue(conflicting)}) : ca.alloc(conflicting);
-            proof->newTheoryClause(confl);
+            resolutionProof->newTheoryClause(confl);
             this->finalizeResolutionProof(confl);
         }
         return TPropRes::Unsat;
@@ -261,7 +261,7 @@ CoreSMTSolver::handleUnsat()
 
     learnt_clause.clear();
     if (logsResolutionProof()) {
-        proof->newTheoryClause(confl);
+        resolutionProof->newTheoryClause(confl);
     }
     analyze(confl, learnt_clause, backtrack_level);
 
@@ -281,7 +281,7 @@ CoreSMTSolver::handleUnsat()
         if (logsResolutionProof())
         {
             CRef cr = ca.alloc(learnt_clause);
-            proof->endChain(cr);
+            resolutionProof->endChain(cr);
             reason = cr;
         }
         uncheckedEnqueue(learnt_clause[0], reason);
@@ -293,7 +293,7 @@ CoreSMTSolver::handleUnsat()
         CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
 
         if (logsResolutionProof()) {
-            proof->endChain(cr);
+            resolutionProof->endChain(cr);
         }
         learnts.push(cr);
         learnt_theory_conflicts++;

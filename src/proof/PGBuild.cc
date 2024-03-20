@@ -58,7 +58,7 @@ struct ProofBuildingStatistics {
 };
 }
 
-ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proof const & proof) {
+ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, ResolutionProof const & proof) {
     ProofNode * n = new ProofNode();
     if (isLeafClauseType(_ctype)) {
         n->initClause(proof.getClause(clause));
@@ -75,7 +75,7 @@ ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Proo
     return n;
 }
 
-void ProofGraph::buildProofGraph(const Proof & proof) {
+void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
     if (verbose()) { std::cerr << "# " << "Proof graph building begin" << '\n'; }
     if (verbose() > 0) {
         uint64_t mem_used = memUsed();

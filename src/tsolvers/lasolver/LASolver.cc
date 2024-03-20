@@ -807,7 +807,6 @@ void LASolver::printStatistics(std::ostream & out) {
     laSolverStats.printStatistics(out);
 }
 
-//? TK: I do not understand this, is it related directly to inter. or to resolution proofs?
 bool LASolver::shouldTryCutFromProof() const {
     if (this->config.produce_inter()) { return false; }
     static unsigned long counter = 0;

@@ -63,7 +63,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Timer.h"
 
-class Proof;
+class ResolutionProof;
 class ModelBuilder;
 
 // Helper method to print Literal to a stream
@@ -96,7 +96,7 @@ public:
     //
     CoreSMTSolver(SMTConfig&, THandler&);
     virtual ~CoreSMTSolver();
-    void     initialize       ( );
+    void     initialize       ();
     void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
     // Problem specification:
@@ -150,7 +150,7 @@ public:
 
     void fillBooleanVars(ModelBuilder & modelBuilder);
 
-    Proof const & getProof() const { assert(proof); return *proof; }
+    ResolutionProof const & getResolutionProof() const { assert(resolutionProof); return *resolutionProof; }
 
     // Resource contraints:
     //
@@ -399,8 +399,8 @@ protected:
 
     // Added Line
 //    void     boolVarDecActivity( );                    // Decrease boolean atoms activity
-    void     claDecayActivity  ( );                    // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
-    void     claBumpActivity   ( Clause & c );         // Increase a clause with the current 'bump' value.
+    void     claDecayActivity  ();                     // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+    void     claBumpActivity   (Clause & c);           // Increase a clause with the current 'bump' value.
     // Increase a clause with the current 'bump' value.
 
 
@@ -449,7 +449,7 @@ public:
 	std::string printCnfClauses  ();
 	std::string printCnfLearnts  ();
 
-    bool logsResolutionProof() const { return static_cast<bool>(proof); }
+    bool logsResolutionProof() const { return static_cast<bool>(resolutionProof); }
     void printResolutionProofSMT2(std::ostream &); // Print proof
 protected:
 
@@ -485,10 +485,10 @@ protected:
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
 
     //
-    // Proof production
+    // ResolutionProof production
     //
     void finalizeResolutionProof(CRef finalConflict);
-    std::unique_ptr<Proof> proof;                 // (Pointer to) Proof store
+    std::unique_ptr<ResolutionProof> resolutionProof;                 // (Pointer to) ResolutionProof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
     // End of proof production
 
@@ -605,7 +605,7 @@ inline void CoreSMTSolver::varBumpActivity(Var v)
 }
 inline void CoreSMTSolver::varBumpActivity(Var v, double inc)
 {
-    if ( (activity[v] += inc) > 1e100 )
+    if ((activity[v] += inc) > 1e100)
     {
         // Rescale:
         for (int i = 0; i < nVars(); i++)
@@ -624,7 +624,7 @@ inline void CoreSMTSolver::varBumpActivity(Var v, double inc)
 inline void CoreSMTSolver::claDecayActivity() { cla_inc *= clause_decay; }
 inline void CoreSMTSolver::claBumpActivity (Clause& c)
 {
-    if ( (c.activity() += cla_inc) > 1e20 )
+    if ((c.activity() += cla_inc) > 1e20)
     {
         // Rescale:
         for (int i = 0; i < learnts.size(); i++)
@@ -884,58 +884,58 @@ inline std::string CoreSMTSolver::printCnfLearnts()
 template<class C>
 inline void CoreSMTSolver::printSMTClause(std::ostream & os, const C& c )
 {
-    if ( c.size( ) == 0 ) os << "-";
-    if ( c.size( ) > 1 ) os << "(or ";
+    if (c.size( ) == 0) os << "-";
+    if (c.size( ) > 1) os << "(or ";
     for (unsigned i = 0; i < c.size(); i++)
     {
         Var v = var(c[i]);
-        if ( v <= 1 ) continue;
+        if (v <= 1) continue;
         os << (sign(c[i]) ? "(not " : "") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
     }
-    if ( c.size( ) > 1 ) os << ")";
+    if (c.size( ) > 1) os << ")";
 }
 
 inline void CoreSMTSolver::printSMTClause(std::ostream & os, vec< Lit > & c, bool ids )
 {
-    if ( c.size( ) == 0 ) os << "-";
-    if ( c.size( ) > 1 ) os << "(or ";
+    if (c.size( ) == 0) os << "-";
+    if (c.size( ) > 1) os << "(or ";
     for (int i = 0; i < c.size(); i++)
     {
         Var v = var(c[i]);
-        if ( v <= 1 ) continue;
-        if ( ids )
+        if (v <= 1) continue;
+        if (ids)
             os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
             os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i]) ? ") " : " ");
         }
     }
-    if ( c.size( ) > 1 ) os << ")";
+    if (c.size( ) > 1) os << ")";
 }
 
 inline void CoreSMTSolver::printSMTClause(std::ostream & os, std::vector< Lit > & c, bool ids )
 {
-    if ( c.size( ) == 0 ) os << "-";
-    if ( c.size( ) > 1 ) os << "(or ";
+    if (c.size( ) == 0) os << "-";
+    if (c.size( ) > 1) os << "(or ";
     for (size_t i = 0; i < c.size(); i++)
     {
         Var v = var(c[i]);
-        if ( v <= 1 ) continue;
-        if ( ids )
+        if (v <= 1) continue;
+        if (ids)
             os << (sign(c[i]) ? "-":" ") << v << " ";
         else
         {
             os << (sign(c[i]) ? "(not ":"") << theory_handler.getVarName(v) << (sign(c[i])?") " : " ");
         }
     }
-    if ( c.size( ) > 1 ) os << ")";
+    if (c.size( ) > 1) os << ")";
 }
 
 inline void CoreSMTSolver::printSMTLit(std::ostream & os, const Lit l )
 {
     Var v = var( l );
-    if ( v == 0 ) os << "true";
-    else if ( v == 1 ) os << "false";
+    if (v == 0) os << "true";
+    else if (v == 1) os << "false";
     else
     {
         os << (sign(l) ? "(not " : "") << theory_handler.getVarName(v) << (sign(l) ? ") " : " ");
