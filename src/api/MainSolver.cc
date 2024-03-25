@@ -24,7 +24,7 @@
 
 namespace opensmt { bool stop; }
 
-MainSolver::MainSolver(Logic& logic, SMTConfig& conf, std::string name)
+MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     :
       theory(createTheory(logic, conf)),
       term_mapper(new TermMapper(logic)),
@@ -102,10 +102,6 @@ bool MainSolver::pop()
     }
     return false;
 }
-
-PartitionManager & MainSolver::getPartitionManager() { return pmanager; }
-
-sstat MainSolver::getStatus() const { return status; }
 
 void MainSolver::insertFormula(PTRef fla)
 {
@@ -214,6 +210,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root)
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
+    if (!config.produce_models()) { throw OsmtApiException("Producing models is not enabled"); }
     if (status != s_True) { throw OsmtApiException("Model cannot be created if solver is not in SAT state"); }
 
     ModelBuilder modelBuilder {logic};
@@ -242,6 +239,7 @@ lbool MainSolver::getTermValue(PTRef tr) const {
 }
 
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
+    if (!config.produce_inter()) { throw OsmtApiException("Producing interpolants is not enabled"); }
     if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
     return std::make_unique<InterpolationContext>(
             config, *theory, *term_mapper, getSMTSolver().getResolutionProof(), pmanager
