@@ -7,10 +7,6 @@
 #include <MainSolver.h>
 #include "VerificationUtils.h"
 
-bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask, Logic & logic) {
-    return VerificationUtils(logic).verifyInterpolantInternal(pManager.getPartition(Amask, PartitionManager::part::A), pManager.getPartition(Amask, PartitionManager::part::B), itp);
-}
-
 class UFInterpolationTest : public ::testing::Test {
 protected:
     UFInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
@@ -42,8 +38,14 @@ protected:
     PTRef x, y, x1, x2, x3, x4, y1, y2, z1, z2, z3, z4, z5, z6, z7, z8;
     SymRef f, g, p;
 
-    bool verifyInterpolant(PTRef itp, PartitionManager & pManager, ipartitions_t const & Amask) {
-        return ::verifyInterpolant(itp, pManager, Amask, logic);
+    MainSolver makeSolver() {
+        const char* msg = "ok";
+        config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+        return {logic, config, "ufinterpolator"};
+    }
+
+    bool verifyInterpolant(PTRef A, PTRef B, PTRef itp) {
+        return VerificationUtils(logic).verifyInterpolantInternal(A, B, itp);
     }
 };
 
@@ -54,12 +56,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(y,z1);
     PTRef eq3 = logic.mkEq(z1,x);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
+    PTRef neq3 = logic.mkNot(eq3);
+    auto solver = makeSolver();
     solver.insertFormula(eq1);
     solver.insertFormula(eq2);
-    solver.insertFormula(logic.mkNot(eq3));
+    solver.insertFormula(neq3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -67,11 +68,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(eq1, logic.mkAnd(eq2, neq3), interpolants[0]));
     interpolants.clear();
     opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd(eq1, eq2), neq3, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
@@ -81,10 +82,9 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(y,z1);
     PTRef eq3 = logic.mkEq(z1,x);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkNot(eq3));
+    PTRef neq3 = logic.mkNot(eq3);
+    auto solver = makeSolver();
+    solver.insertFormula(neq3);
     solver.insertFormula(eq2);
     solver.insertFormula(eq1);
     auto res = solver.check();
@@ -94,11 +94,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(neq3, logic.mkAnd(eq2, eq1), interpolants[0]));
     interpolants.clear();
     opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd(neq3, eq2), eq1, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleCongruence){
@@ -107,11 +107,12 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
      */
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(logic.mkUninterpFun(f, {x}), logic.mkUninterpFun(f, {y}));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(eq1);
-    solver.insertFormula(logic.mkNot(eq2));
+    PTRef neq2 = logic.mkNot(eq2);
+    PTRef A = eq1;
+    PTRef B = neq2;
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -119,7 +120,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
@@ -128,11 +129,12 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
      */
     PTRef eq1 = logic.mkEq(x,y);
     PTRef eq2 = logic.mkEq(logic.mkUninterpFun(f, {x}), logic.mkUninterpFun(f, {y}));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkNot(eq2));
-    solver.insertFormula(eq1);
+    PTRef neq2 = logic.mkNot(eq2);
+    PTRef A = neq2;
+    PTRef B = eq1;
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -140,7 +142,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
@@ -151,11 +153,11 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(g, {x,z2}),z3);
     PTRef eqB1 = logic.mkEq(y,z2);
     PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {z1,y}),z3);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd(eqA1, eqA2));
-    solver.insertFormula(logic.mkAnd(eqB1, logic.mkNot(eqB2)));
+    PTRef A = logic.mkAnd(eqA1, eqA2);
+    PTRef B = logic.mkAnd(eqB1, logic.mkNot(eqB2));
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -163,12 +165,12 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
@@ -180,11 +182,11 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     PTRef eqB2 = logic.mkEq(logic.mkUninterpFun(g, {x,z2}),z3);
     PTRef eqA1 = logic.mkEq(y,z2);
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(g, {z1,y}),z3);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd(eqA1, logic.mkNot(eqA2)));
-    solver.insertFormula(logic.mkAnd(eqB1, eqB2));
+    PTRef A = logic.mkAnd(eqA1, logic.mkNot(eqA2));
+    PTRef B = logic.mkAnd(eqB1, eqB2);
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -192,12 +194,12 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_JustificationRequired){
@@ -219,11 +221,11 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     PTRef eqB4 = logic.mkEq(y1,z7);
     PTRef eqB5 = logic.mkEq(z8,y2);
     PTRef eqB6 = logic.mkEq(y1,y2);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, eqA6, eqA7, eqA8}));
-    solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, logic.mkNot(eqB6)}));
+    PTRef A = logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, eqA6, eqA7, eqA8});
+    PTRef B = logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, logic.mkNot(eqB6)});
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -231,12 +233,12 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
@@ -259,11 +261,11 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     PTRef eqA4 = logic.mkEq(y1,z7);
     PTRef eqA5 = logic.mkEq(z8,y2);
     PTRef eqA6 = logic.mkEq(y1,y2);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, logic.mkNot(eqA6)}));
-    solver.insertFormula(logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, eqB6, eqB7,eqB8}));
+    PTRef A = logic.mkAnd({eqA1, eqA2, eqA3, eqA4, eqA5, logic.mkNot(eqA6)});
+    PTRef B = logic.mkAnd({eqB1, eqB2, eqB3, eqB4, eqB5, eqB6, eqB7,eqB8});
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -271,12 +273,12 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
@@ -286,12 +288,11 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     PTRef eq = logic.mkEq(x,y);
     PTRef px = logic.mkUninterpFun(p, {x});
     PTRef py = logic.mkUninterpFun(p, {y});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
+    PTRef npy = logic.mkNot(py);
+    auto solver = makeSolver();
     solver.insertFormula(px);
     solver.insertFormula(eq);
-    solver.insertFormula(logic.mkNot(py));
+    solver.insertFormula(npy);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -299,7 +300,7 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(px, logic.mkAnd(eq, npy), interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_ConstantsConflict){
@@ -310,11 +311,11 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     PTRef d = logic.mkConst(ufsort, "d");
     PTRef eqA = logic.mkEq(c,x);
     PTRef eqB = logic.mkEq(x,d);
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(eqA);
-    solver.insertFormula(eqB);
+    PTRef A = eqA;
+    PTRef B = eqB;
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -322,7 +323,7 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_TwoLevelJustification){
@@ -337,11 +338,11 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
     PTRef eqA3 = logic.mkEq(z3,z4);
     PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3, dis}));
-    solver.insertFormula(logic.mkAnd({eqB1, eqB2}));
+    PTRef A = logic.mkAnd({eqA1, eqA2, eqA3, dis});
+    PTRef B = logic.mkAnd({eqB1, eqB2});
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -349,12 +350,12 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
@@ -369,11 +370,11 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     PTRef eqA2 = logic.mkEq(logic.mkUninterpFun(f, {z2}), x2);
     PTRef eqA3 = logic.mkEq(z3,z4);
     PTRef dis = logic.mkNot(logic.mkEq(x1, x2));
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd({eqA1, eqA2, eqA3}));
-    solver.insertFormula(logic.mkAnd({eqB1, eqB2, dis}));
+    PTRef A = logic.mkAnd({eqA1, eqA2, eqA3});
+    PTRef B = logic.mkAnd({eqB1, eqB2, dis});
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -381,12 +382,12 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     ipartitions_t mask;
     opensmt::setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
     config.setEUFInterpolationAlgorithm(itp_euf_alg_weak);
     interpolants.clear();
     itpCtx->getSingleInterpolant(interpolants, mask);
-    EXPECT_TRUE(verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
@@ -397,7 +398,6 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
      */
 
     // Note: this requires a set-up in specific order, different from the set-up we have in UFInterpolationTest
-    Logic logic{opensmt::Logic_t::QF_UF};
     SRef ufsort = logic.declareUninterpretedSort("U");
     SymRef P = logic.declareFun("P", logic.getSort_bool(), {ufsort});
     SymRef f = logic.declareFun("f", ufsort, {ufsort, ufsort});
@@ -422,7 +422,8 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     PTRef f_x_y = logic.mkUninterpFun(f, {x,y});
     PTRef P_f = logic.mkUninterpFun(P, {f_x_y});
     PTRef eqB1 = logic.mkEq(r1, f_a1_b1);
-    PTRef eqB2 = logic.mkEq(r2,f_a2_b2);
+    PTRef eqB2 = logic.mkEq(r2, f_a2_b2);
+    PTRef B = logic.mkAnd(eqB1, eqB2);
     PTRef A = logic.mkAnd({
         P_f,
         logic.mkEq(a1, x),
@@ -432,10 +433,8 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
         logic.mkNot(logic.mkEq(r1, r2))
     });
 
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd(eqB1, eqB2));
+    auto solver = makeSolver();
+    solver.insertFormula(B);
     solver.insertFormula(A);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
@@ -445,7 +444,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     opensmt::setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
 //    std::cout << logic.printTerm(interpolants[0]) << std::endl;
-    EXPECT_TRUE(::verifyInterpolant(interpolants[0], solver.getPartitionManager(), mask, logic));
+    EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 
 TEST_F(UFInterpolationTest, test_DistinctInA){
@@ -456,11 +455,11 @@ TEST_F(UFInterpolationTest, test_DistinctInA){
     PTRef eqA1 = logic.mkEq(x1,x2);
     PTRef eqA2 = logic.mkEq(x2,x3);
     PTRef deqB = logic.mkDistinct({x1,x4,x3});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(logic.mkAnd(eqA1, eqA2));
-    solver.insertFormula(deqB);
+    PTRef A = logic.mkAnd(eqA1, eqA2);
+    PTRef B = deqB;
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -469,8 +468,8 @@ TEST_F(UFInterpolationTest, test_DistinctInA){
     itpCtx->getSingleInterpolant(interpolants, mask);
     PTRef itp = interpolants[0];
 //    std::cout << "Interpolant: " << logic.pp(itp) << std::endl;
-    EXPECT_TRUE(verifyInterpolant(itp, solver.getPartitionManager(), mask));
-    ASSERT_EQ(itp, logic.mkEq(x1,x3));
+    EXPECT_TRUE(verifyInterpolant(A, B, itp));
+    ASSERT_EQ(itp, logic.mkEq(x1, x3));
 }
 
 TEST_F(UFInterpolationTest, test_DistinctInB){
@@ -481,11 +480,11 @@ TEST_F(UFInterpolationTest, test_DistinctInB){
     PTRef eqB1 = logic.mkEq(x1,x2);
     PTRef eqB2 = logic.mkEq(x2,x3);
     PTRef deqA = logic.mkDistinct({x1,x4,x3});
-    const char* msg = "ok";
-    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-    MainSolver solver(logic, config, "ufinterpolator");
-    solver.insertFormula(deqA);
-    solver.insertFormula(logic.mkAnd(eqB1, eqB2));
+    PTRef A = deqA;
+    PTRef B = logic.mkAnd(eqB1, eqB2);
+    auto solver = makeSolver();
+    solver.insertFormula(A);
+    solver.insertFormula(B);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto itpCtx = solver.getInterpolationContext();
@@ -494,8 +493,6 @@ TEST_F(UFInterpolationTest, test_DistinctInB){
     itpCtx->getSingleInterpolant(interpolants, mask);
     PTRef itp = interpolants[0];
 //    std::cout << "Interpolant: " << logic.pp(itp) << std::endl;
-    EXPECT_TRUE(verifyInterpolant(itp, solver.getPartitionManager(), mask));
-    ASSERT_EQ(itp, logic.mkNot(logic.mkEq(x1,x3)));
+    EXPECT_TRUE(verifyInterpolant(A, B, itp));
+    ASSERT_EQ(itp, logic.mkNot(logic.mkEq(x1, x3)));
 }
-
-
