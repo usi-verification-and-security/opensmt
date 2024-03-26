@@ -61,6 +61,20 @@ $(DEBUG_BUILD_DIR):
 
 ################################
 
+.PHONY: test test-all test-release test-debug
+
+test: test-release
+
+test-all: test-release test-debug
+
+test-release:
+	ctest --test-dir $(RELEASE_BUILD_DIR)
+
+test-debug:
+	ctest --test-dir $(DEBUG_BUILD_DIR)
+
+################################
+
 .PHONY: clean clean-all clean-release clean-debug
 
 clean: clean-release
