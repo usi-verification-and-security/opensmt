@@ -17,7 +17,7 @@ void MainSplitter::notifyResult(sstat const & result)
 }
 
 sstat MainSplitter::check() {
-    if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
+    if (getChannel().isSolverInParallelMode() and not getConfig().sat_solver_limit()) {
         //push frames size should match with length of the solver branch
         if (frames.frameCount() !=
             static_cast<std::size_t>(getSplitter().getSolverBranch().size() + 1))
@@ -31,7 +31,7 @@ sstat MainSplitter::check() {
 }
 
 sstat MainSplitter::solve_(vec<FrameId> const & enabledFrames) {
-    if (getChannel().isSolverInParallelMode() and not config.sat_solver_limit()) {
+    if (getChannel().isSolverInParallelMode() and not getConfig().sat_solver_limit()) {
         vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().getSolverBranch();
         if (enabledFrames.size() > solverBranch.size() + 1) {
             throw PTPLib::common::Exception(__FILE__, __LINE__,
@@ -58,7 +58,7 @@ sstat MainSplitter::solve() {
 };
 
 void MainSplitter::writeSplits(std::string const & baseName) const {
-    assert(config.sat_split_type() != spt_none);
+    assert(getConfig().sat_split_type() != spt_none);
     auto const & splits = getSplitter().getSplits();
 
     auto splitStrings = getPartitionClauses();
@@ -94,6 +94,7 @@ std::unique_ptr<SimpSMTSolver> MainSplitter::createInnerSolver(SMTConfig & confi
 bool MainSplitter::verifyPartitions(vec<PTRef> const & partitions) const {
     bool ok = true;
     std::string error;
+    auto & logic = getLogic();
     VerificationUtils verifier(logic);
     for (int i = 0; i < partitions.size(); i++) {
         for (int j = i + 1; j < partitions.size(); j++) {
@@ -108,7 +109,7 @@ bool MainSplitter::verifyPartitions(vec<PTRef> const & partitions) const {
     for (PTRef tr : partitions) {
         partitionCoverageQuery.push(logic.mkNot(tr));
     }
-    if (partitions.size() == config.sat_split_num()) {
+    if (partitions.size() == getConfig().sat_split_num()) {
         // The partitions need to cover the full search space, i.e., the conjunction of the negated partitions must be unsatisfiable
         if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.getTerm_false())) {
             error += "[Non-covering partitioning: " + logic.pp(logic.mkAnd(partitionCoverageQuery)) + " is satisfiable] ";
@@ -137,10 +138,11 @@ bool MainSplitter::verifyPartitions(vec<PTRef> const & partitions) const {
 std::vector<std::string> MainSplitter::getPartitionClauses() const {
     assert(not isSplitTypeNone());
     auto const & splits = getSplitter().getSplits();
+    auto & logic = getLogic();
     vec<PTRef> partitionsTr;
     partitionsTr.capacity(splits.size());
     for (auto const &split : splits) {
-        auto conj_vec = addToConjunction(split.splitToPtAsgns(*thandler));
+        auto conj_vec = addToConjunction(split.splitToPtAsgns(getTHandler()));
         partitionsTr.push(logic.mkAnd(conj_vec));
     }
 
@@ -157,6 +159,7 @@ std::vector<std::string> MainSplitter::getPartitionClauses() const {
 
 vec<PTRef> MainSplitter::addToConjunction(std::vector<vec<PtAsgn>> const & in) const {
     vec<PTRef> out;
+    auto & logic = getLogic();
     for (const auto & constr : in) {
         vec<PTRef> disj_vec;
         for (const auto & pta : constr) {

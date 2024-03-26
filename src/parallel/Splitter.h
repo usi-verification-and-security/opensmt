@@ -32,7 +32,7 @@ public:
     , channel(ch)
     {}
 
-    std::vector<SplitData>      const & getSplits() { return splitContext.getSplits(); }
+    std::vector<SplitData>      const & getSplits() const { return splitContext.getSplits(); }
 
     bool isSplitTypeScatter()   const  { return splitContext.isSplitTypeScatter(); }
 

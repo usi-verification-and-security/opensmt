@@ -20,15 +20,17 @@
 class MainSplitter : public MainSolver {
 
 private:
-    inline bool isSplitTypeScatter() const &       { return dynamic_cast<Splitter&>(*smt_solver).isSplitTypeScatter(); }
+    inline bool isSplitTypeScatter() const       { return dynamic_cast<Splitter const &>(getSMTSolver()).isSplitTypeScatter(); }
 
-    inline bool isSplitTypeNone()    const &       { return dynamic_cast<Splitter&>(*smt_solver).isSplitTypeNone(); }
+    inline bool isSplitTypeNone()    const       { return dynamic_cast<Splitter const &>(getSMTSolver()).isSplitTypeNone(); }
 
     inline PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & getChannel() const { return getSplitter().getChannel(); }
 
-    inline ScatterSplitter & getScatterSplitter()  { return dynamic_cast<ScatterSplitter&>(getSMTSolver()); }
+    inline ScatterSplitter const & getScatterSplitter() const { return dynamic_cast<ScatterSplitter const &>(getSMTSolver()); }
+    inline ScatterSplitter & getScatterSplitter()             { return dynamic_cast<ScatterSplitter &>(getSMTSolver()); }
 
-    inline Splitter & getSplitter()  const         { return dynamic_cast<Splitter&>(*smt_solver); }
+    inline Splitter const & getSplitter()  const   { return dynamic_cast<Splitter const &>(getSMTSolver()); }
+    inline Splitter & getSplitter()                { return dynamic_cast<Splitter &>(getSMTSolver()); }
 
     void notifyResult(sstat const & result);
 
@@ -58,8 +60,6 @@ public:
     void writeSplits(std::string const &)  const;
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
-
-    inline TermMapper& getTermMapper() const { return *term_mapper;}
 };
 
 
