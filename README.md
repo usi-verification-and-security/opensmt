@@ -61,6 +61,12 @@ In this case, options that are related to debug build type should use the `*DEBU
 For example `DEBUG_BUILD_DIR=<build_dir>`.
 The default `<build_dir>` in debug mode is `build-debug`.
 
+One can also build a parallel version of OpenSMT which can be used with [SMTS](https://github.com/usi-verification-and-security/SMTS):
+```
+$ make parallel
+```
+or to make the corresponding debug type: `make parallel-debug`.
+
 In order to build all types, run `make all`.
 
 ### Restricting components to build
@@ -83,16 +89,17 @@ make clean
 ```
 (or `make clean-release`) and then built again with `make` (or `make release`).
 In the case of debug mode, one must run `make clean-debug` and `make debug`.
+It works the same way with `*-parallel*`.
 To remove all, run `make clean-all`.
 
 ## Unit tests
 
-If you have cmake version 3.11 or higher, the build system will construct unit
-tests.  These are available through
+If you have cmake version 3.11 or higher, the build system will construct unit tests. These are available through
 
 ```
-$ ctest
+$ make test
 ```
+(or `make test-debug`, `make test-parallel`, `make test-all`).
 
 ## Installing OpenSMT2
 [//]: # "the binary should be placed into `<build_dir>/bin/opensmt`"
@@ -108,10 +115,12 @@ The install directory can be customized using option `INSTALL_DIR=<install_dir>`
 The default is `/usr/local`.
 In such a case, the command above may be neccesary to run with `sudo`.
 The default build to be installed is Release. To install the Debug build instead, use `make install-debug`.
+To install the parallel variants, use the corresponding `*-parallel*` rules.
 
 The option `INSTALL_DIR` may used with all `make [release|debug]` and `make install[-release|-debug]`.
 In the case of the build rules, the `<install_dir>` is configured within the build directory and is used each time `make install[-release|-debug]` is used without the additional option `INSTALL_DIR`.
 In the case of the install rules, the `<install_dir>` overrides the previously configured one.
+The above works the same way with the corresponding `*parallel*` rules.
 
 Option `CMAKE_INSTALL_FLAGS` may be used for any additional arguments to be passed to `cmake --install <build_dir>`.
 
