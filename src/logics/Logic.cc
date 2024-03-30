@@ -649,8 +649,11 @@ PTRef Logic::mkNot(PTRef arg) {
 PTRef Logic::mkConst(const char* name)
 {
     //assert(0);
-    //return PTRef_Undef;
-    assert(strlen(name) > 0);
+    // return PTRef_Undef;
+    if (strlen(name) == 0) {
+        std::cerr << "Error in Logic::mkConst: empty name" << std::endl;
+        return PTRef_Undef;
+    }
     return resolveTerm(name, {});
 }
 
