@@ -560,12 +560,9 @@ PTRef ArithLogic::mkMinus(vec<PTRef> && args)
     if (args.size() == 1) {
         return mkNeg(args[0]);
     }
-    assert(args.size() == 2);
-    if (args.size() > 2) { throw OsmtApiException("Too many terms provided to LALogic::mkNumMinus"); }
-
-    PTRef fact = mkNeg(args[1]);
-    assert(fact != PTRef_Undef);
-    args[1] = fact;
+    // Minus is left associative according to SMT-LIB
+    for (int i = 1; i < args.size(); ++i)
+        args[i] = mkNeg(args[i]);
     return mkPlus(std::move(args));
 }
 
