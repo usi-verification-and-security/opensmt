@@ -90,31 +90,42 @@ void ProofGraph::getGraphInfo()
 }
 
 std::vector<clauseid_t> ProofGraph::topolSortingTopDown() const {
-    std::vector<clauseid_t> DFS;
-    std::deque<clauseid_t> q;
-    DFS.reserve(getGraphSize());
-    // Enqueue leaves first
-    q.assign(leaves_ids.begin(),leaves_ids.end());
-    do {
-        clauseid_t id = q.front();
-        q.pop_front();
+    std::vector<clauseid_t> order;
+    order.reserve(getGraphSize());
+
+    enum class Mark : char { def = 0, open, closed };
+    std::vector<Mark> marks(getGraphSize(), Mark::def);
+
+    std::vector<clauseid_t> unprocessed;
+    unprocessed.push_back(getRoot()->getId());
+
+    auto enqueueIfNotVisited = [&](auto parentId) {
+        auto parentMark = marks.at(parentId);
+        assert(parentMark != Mark::open);
+        if (parentMark == Mark::def) { unprocessed.push_back(parentId); }
+    };
+
+    while (not unprocessed.empty()) {
+        auto id = unprocessed.back();
+        auto & mark = marks.at(id);
+        if (mark == Mark::closed) { // already processed
+            unprocessed.pop_back();
+            continue;
+        }
         ProofNode * n = getNode(id);
         assert(n);
-        if (not isSetVisited1(id)) {
-            // Process node if both antecedents visited
-            if ((not n->getAnt1() or isSetVisited1(n->getAnt1()->getId())) and
-                (not n->getAnt2() or isSetVisited1(n->getAnt2()->getId()))) {
-                for (clauseid_t resolvent_id: n->getResolvents()) {
-                    if (getNode(resolvent_id)) q.push_back(resolvent_id);
-                }
-                setVisited1(id);
-                DFS.push_back(id);
-            }
+        if (mark == Mark::open or n->isLeaf()) { // returning from processing parents or is leaf => mark as done
+            mark = Mark::closed;
+            order.push_back(id);
+            unprocessed.pop_back();
+            continue;
         }
+        mark = Mark::open;
+        assert(n->getAnt1() and n->getAnt2());
+        enqueueIfNotVisited(n->getAnt1()->getId());
+        enqueueIfNotVisited(n->getAnt2()->getId());
     }
-    while(not q.empty());
-    resetVisited1();
-    return DFS;
+    return order;
 }
 
 std::vector<clauseid_t> ProofGraph::topolSortingBotUp() const {
