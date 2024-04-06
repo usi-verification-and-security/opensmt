@@ -192,53 +192,47 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
 ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
 
     ite::Dag dag;
-
-    vec<PTRef> queue;
-    vec<type> flag;
-    flag.growTo(logic.getNumberOfTerms());
+    vec<PTRef> stack;
+    Map<PTRef, type, PTRefHash> flags;
 
     if (logic.isIte(root)) {
         dag.addTopLevelIte(root);
     }
 
-    queue.push(root);
-    while (queue.size() != 0) {
-        PTRef tr = queue.last();
-        const Pterm &t = logic.getPterm(tr);
-        auto index = Idx(t.getId());
-        if (flag[index] == ite::type::black) {
-            queue.pop();
+    stack.push(root);
+    while (stack.size() != 0) {
+        PTRef tr = stack.last();
+        type mark = type::white;
+        bool found = flags.peek(tr, mark);
+        assert(not found or mark != type::white);
+        if (mark == type::black) {
+            stack.pop();
             continue;
         }
 
-        flag[index] = type::gray;
-
-        bool unprocessed_children = false;
-
-        for (int i = 0; i < t.size(); i++) {
-            auto childIndex = Idx(logic.getPterm(t[i]).getId());
-            if (flag[childIndex] == type::white) {
-                queue.push(t[i]);
-                unprocessed_children = true;
+        Pterm const & t = logic.getPterm(tr);
+        if (not found) {
+            flags.insert(tr, type::gray);
+            bool unprocessed_children = false;
+            for (PTRef child : t) {
+                if (not flags.has(child)) {
+                    stack.push(child);
+                    unprocessed_children = true;
+                }
             }
+            if (unprocessed_children) { continue; }
         }
 
-        if (unprocessed_children) {
-            continue;
-        }
-
-        flag[index] = type::black;
-
-        queue.pop();
+        assert(flags[tr] == type::gray);
+        flags[tr] = type::black;
+        stack.pop();
 
         if (logic.isIte(tr)) {
-
             dag.addItePTRef(tr);
-
-            const Pterm &ite = logic.getPterm(tr);
-            PTRef cond_tr = ite[0];
-            PTRef true_tr = ite[1];
-            PTRef false_tr = ite[2];
+            assert(t.size() == 3);
+            PTRef cond_tr = t[0];
+            PTRef true_tr = t[1];
+            PTRef false_tr = t[2];
             {
                 ite::NodeRef true_node = dag.getNodeOrCreateLeafNode(true_tr);
                 ite::NodeRef false_node = dag.getNodeOrCreateLeafNode(false_tr);
@@ -250,11 +244,11 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
             }
 
         } else { // not Ite
-            for (int i = 0; i < t.size(); i++) {
-                if (logic.isIte(t[i]) and !dag.isTopLevelIte(t[i])) {
-                    // Term t[i] is an ite which appears as a child of a non-ite.
+            for (PTRef child : t) {
+                if (logic.isIte(child) and !dag.isTopLevelIte(child)) {
+                    // Term child is an ite which appears as a child of a non-ite.
                     // We store this term for an expansion into a switch.
-                    dag.addTopLevelIte(t[i]);
+                    dag.addTopLevelIte(child);
                 }
             }
         }
