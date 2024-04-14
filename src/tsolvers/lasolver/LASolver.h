@@ -19,6 +19,7 @@
 #include "FarkasInterpolator.h"
 #include "LAVarMapper.h"
 
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -130,6 +131,7 @@ private:
     Map<LVRef, bool, LVRefHash> int_vars_map; // stores problem variables for duplicate check
     vec<LVRef> int_vars;                      // stores the list of problem variables without duplicates
     double seed = 123;
+    std::default_random_engine rng;
 
     LABoundStore::BoundInfo addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);

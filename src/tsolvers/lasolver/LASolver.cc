@@ -14,6 +14,8 @@
 #include "CutCreator.h"
 #include "Random.h"
 
+#include <algorithm>
+#include <random>
 #include <unordered_set>
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
@@ -103,6 +105,7 @@ LASolver::LASolver(SolverDescr dls, SMTConfig & c, ArithLogic & l)
         , laVarMapper(l)
         , boundStore(laVarStore)
         , simplex(boundStore)
+        , rng(seed)
 {
     dec_limit.push(0);
     status = INIT;
@@ -913,6 +916,7 @@ TRes LASolver::cutFromProof() {
     auto isOnUpperBound = [this](LVRef var) { return simplex.hasUBound(var) and not simplex.isModelStrictlyUnderUpperBound(var); };
     // Step 1: Gather defining constraints
     std::vector<DefiningConstraint> constraints;
+    std::size_t equalitiesEnd = 0;
     for (LVRef var : int_vars) {
         bool isOnLower = isOnLowerBound(var);
         bool isOnUpper = isOnUpperBound(var);
@@ -925,12 +929,14 @@ TRes LASolver::cutFromProof() {
         assert(rhs.isInteger());
         if (isOnLower and isOnUpper) {
             constraints.insert(constraints.begin(), DefiningConstraint{term, rhs});
+            equalitiesEnd++;
         } else {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
 
 //        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
+    std::shuffle(constraints.begin() + equalitiesEnd, constraints.end(), rng);
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
         LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
