@@ -135,7 +135,7 @@ jobs:
     build-macos:
         macos:
             xcode: 14.2.0
-        resource_class: macos.x86.medium.gen2
+        resource_class: macos.m1.medium.gen1
         steps:
             - run:
                 name: Packages
@@ -147,7 +147,7 @@ jobs:
             - checkout
             - run:
                 name: Store path
-                command: echo 'export PATH=/usr/local/opt/flex/bin:/usr/local/opt/bison/bin:$PATH' >> $BASH_ENV
+                command: echo 'export PATH=/opt/homebrew/opt/flex/bin:/opt/homebrew/opt/bison/bin:$PATH' >> $BASH_ENV
             - run:
                 name: Release build OS X
                 command: ./ci/run_travis_commands.sh
