@@ -304,6 +304,7 @@ public:
   static const char* o_sat_split_randomize_lookahead;
   static const char* o_sat_split_randomize_lookahead_buf;
   static const char* o_produce_models;
+  static const char* o_produce_unsat_cores;
   static const char* o_sat_remove_symmetries;
   static const char* o_dryrun;
   static const char* o_do_substitutions;
@@ -511,6 +512,9 @@ public:
       return optionTable.has(o_produce_models) ?
               optionTable[o_produce_models]->getValue().numval :
               1; }
+  bool produce_unsat_cores() const {
+      return optionTable.has(o_produce_unsat_cores) && optionTable[o_produce_unsat_cores]->getValue().numval > 0;
+  }
   int          produceStats() const
      { return optionTable.has(o_produce_stats) ?
         optionTable[o_produce_stats]->getValue().numval == 1: false; }
@@ -579,8 +583,8 @@ public:
     { return optionTable.has(o_certify_inter) ?
         optionTable[o_certify_inter]->getValue().numval : 0; }
   bool produce_proof() const
-    { // produce_inter => produce_proof
-      if (produce_inter()) return true;
+    { // produce_inter or produce_unsat_core => produce_proof
+      if (produce_inter() or produce_unsat_cores()) return true;
       return optionTable.has(o_produce_proofs) ?
         optionTable[o_produce_proofs]->getValue().numval > 0 : false; }
   bool produce_inter() const

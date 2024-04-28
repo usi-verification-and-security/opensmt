@@ -148,6 +148,14 @@ target_sources(InterpolationTest
 target_link_libraries(InterpolationTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET InterpolationTest)
 
+add_executable(UnsatCoreTest)
+target_sources(UnsatCoreTest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_UnsatCore.cc"
+    )
+
+target_link_libraries(UnsatCoreTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET UnsatCoreTest)
+
 add_executable(ExplainTest)
 target_sources(ExplainTest
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Explain.cc"

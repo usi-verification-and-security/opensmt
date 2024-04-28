@@ -92,6 +92,8 @@ public:
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
+    vec<PTRef> getUnsatCore() const;
+
     // Prints proof of the last query (must be in unsatisfiable state)
     void printResolutionProofSMT2() const;
 

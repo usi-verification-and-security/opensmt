@@ -151,6 +151,7 @@ public:
     void fillBooleanVars(ModelBuilder & modelBuilder);
 
     ResolutionProof const & getResolutionProof() const { assert(resolutionProof); return *resolutionProof; }
+    vec<CRef> getUnsatCoreClauses() const;
 
     // Resource contraints:
     //

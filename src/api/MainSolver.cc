@@ -228,6 +228,20 @@ void MainSolver::printResolutionProofSMT2() const {
     return smt_solver->printResolutionProofSMT2(std::cout);
 }
 
+vec<PTRef> MainSolver::getUnsatCore() const {
+    using Partitions = ipartitions_t;
+    if (not config.produce_unsat_cores()) { throw OsmtApiException("Producing unsat cores is not enabled"); }
+    if (status != s_False) { throw OsmtApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
+
+    vec<CRef> clauseRefs = smt_solver->getUnsatCoreClauses();
+    Partitions partitions;
+    for (CRef cref : clauseRefs) {
+        auto const & partition = pmanager.getClauseClassMask(cref);
+        opensmt::orbit(partitions, partitions, partition);
+    }
+    return pmanager.getPartitions(partitions);
+}
+
 lbool MainSolver::getTermValue(PTRef tr) const {
     if (logic.getSortRef(tr) != logic.getSort_bool()) { return l_Undef; }
     if (not term_mapper->hasLit(tr)) { return l_Undef; }

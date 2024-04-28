@@ -445,6 +445,7 @@ const Info& SMTConfig::getInfo(const char* name) const {
 }
 
 const char* SMTConfig::o_produce_models = ":produce-models";
+const char* SMTConfig::o_produce_unsat_cores = ":produce-unsat-cores";
 const char* SMTConfig::o_verbosity      = ":verbosity";
 const char* SMTConfig::o_incremental    = ":incremental";
 const char* SMTConfig::o_produce_stats  = ":produce-stats";
