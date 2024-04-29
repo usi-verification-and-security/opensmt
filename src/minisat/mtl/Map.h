@@ -351,10 +351,11 @@ public:
     bool peek   (const K& k, vec<D>& d) const {
         if (size == 0) return false;
         const std::vector<Pair>& ps = table[index(k)];
-        for (int i = 0; i < ps.size(); i++)
-            if (equals(ps[i].key, k)){
-                ps[i].data.copyTo(d);
-                return true; }
+        for (auto const & [key, data] : ps)
+            if (equals(key, k)) {
+                data.copyTo(d);
+                return true;
+            }
         return false;
     }
 
