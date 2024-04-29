@@ -171,6 +171,7 @@ class Interpret {
 
     virtual void                exit();
     void                        getProof();
+    void                        getUnsatCore();
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
 

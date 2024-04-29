@@ -280,6 +280,19 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
+            case t_getunsatcore: {
+                if (config.produce_unsat_cores()) {
+                    if (isInitialized()) {
+                        getUnsatCore();
+                    } else {
+                        notify_formatted(true, "Illegal command before set-logic: get-unsat-core");
+                    }
+                } else {
+                    notify_formatted(true,
+                                     "Option to produce proofs has not been set, skipping this command ...");
+                }
+                break;
+            }
             case t_getinterpolants: {
                 if (config.produce_inter()) {
                     if (isInitialized()) {
@@ -1276,6 +1289,19 @@ SRef Interpret::sortFromASTNode(ASTNode const & node) const {
 void Interpret::getProof()
 {
     main_solver->printResolutionProofSMT2();
+}
+
+void Interpret::getUnsatCore() {
+    auto unsatCore = main_solver->getUnsatCore();
+    std::cout << "( ";
+    for (PTRef fla : unsatCore) {
+        vec<const char*> names;
+        bool present = termToNames.peek(fla, names);
+        if (not present) { continue; }
+        assert(names.size() != 0);
+        std::cout << names[0] << ' ';
+    }
+    std::cout << ')' << std::endl;
 }
 
 void Interpret::getInterpolants(const ASTNode& n)
