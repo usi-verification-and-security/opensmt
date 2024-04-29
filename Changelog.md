@@ -1,5 +1,6 @@
 ### 2.6.1 (unreleased)
-
+New features:
+ - Experimental support for unsat cores.
 
 ### 2.6.0 (2024-03-06)
 New features:
