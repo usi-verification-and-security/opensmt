@@ -20,56 +20,68 @@
 
 template<typename TConfig>
 class TermVisitor {
-    Logic const & logic;
-    TConfig & cfg;
 public:
     TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
-    virtual void visit(PTRef root) {
-        // Avoid initializations if no traversal will be done
-        if (logic.isVar(root)) {
-            if (cfg.previsit(root))
-                cfg.visit(root);
-            return;
-        }
-        struct DFSEntry {
-            DFSEntry(PTRef term) : term(term) {}
-            PTRef term;
-            unsigned int nextChild = 0;
-        };
+    // FIXME: These should be non-virtual, but we need to modify PtermNodeCounter first
+    virtual void visit(opensmt::span<const PTRef> roots);
+    virtual void visit(PTRef root);
 
-        auto termMarks = logic.getTermMarks(logic.getPterm(root).getId());
-        std::vector<DFSEntry> toProcess;
-        toProcess.emplace_back(root);
-        while (not toProcess.empty()) {
-            auto & currentEntry = toProcess.back();
-            PTRef currentRef = currentEntry.term;
-            auto currentId = logic.getPterm(currentRef).getId();
-            if (not cfg.previsit(currentRef)) {
-                toProcess.pop_back();
-                termMarks.mark(currentId);
-                continue;
-            }
-            assert(not termMarks.isMarked(currentId));
-            Pterm const & term = logic.getPterm(currentRef);
-            unsigned childrenCount = term.size();
-            if (currentEntry.nextChild < childrenCount) {
-                PTRef nextChild = term[currentEntry.nextChild];
-                ++currentEntry.nextChild;
-                auto childId = logic.getPterm(nextChild).getId();
-                if (not termMarks.isMarked(childId)) {
-                    toProcess.push_back(DFSEntry(nextChild));
-                }
-                continue;
-            }
-            // If we are here, we have already processed all children
-            assert(not termMarks.isMarked(currentId));
-            cfg.visit(currentRef);
-            termMarks.mark(currentId);
-            toProcess.pop_back();
-        }
-    }
+private:
+    Logic const & logic;
+    TConfig & cfg;
 };
+
+template<typename TConfig> void TermVisitor<TConfig>::visit(opensmt::span<const PTRef> roots) {
+    struct DFSEntry {
+        explicit DFSEntry(PTRef term) : term(term) {}
+        PTRef term;
+        unsigned int nextChild = 0;
+    };
+
+    std::vector<DFSEntry> toProcess;
+    toProcess.reserve(roots.size());
+    PTId maxId{0};
+    for (const PTRef root : roots) {
+        toProcess.emplace_back(root);
+        auto id = logic.getPterm(root).getId();
+        if (id.x > maxId.x) { maxId = id; }
+    }
+    auto termMarks = logic.getTermMarks(maxId);
+    while (not toProcess.empty()) {
+        auto & currentEntry = toProcess.back();
+        PTRef currentRef = currentEntry.term;
+        auto currentId = logic.getPterm(currentRef).getId();
+        if (not cfg.previsit(currentRef)) {
+            toProcess.pop_back();
+            termMarks.mark(currentId);
+            continue;
+        }
+        assert(not termMarks.isMarked(currentId));
+        Pterm const & term = logic.getPterm(currentRef);
+        unsigned childrenCount = term.size();
+        if (currentEntry.nextChild < childrenCount) {
+            PTRef nextChild = term[currentEntry.nextChild];
+            ++currentEntry.nextChild;
+            auto childId = logic.getPterm(nextChild).getId();
+            if (not termMarks.isMarked(childId)) { toProcess.push_back(DFSEntry(nextChild)); }
+            continue;
+        }
+        // If we are here, we have already processed all children
+        assert(not termMarks.isMarked(currentId));
+        cfg.visit(currentRef);
+        termMarks.mark(currentId);
+        toProcess.pop_back();
+    }
+}
+template<typename TConfig> void TermVisitor<TConfig>::visit(PTRef root) {
+    // Avoid initializations if no traversal will be done
+    if (logic.isVar(root)) {
+        if (cfg.previsit(root)) cfg.visit(root);
+        return;
+    }
+    return visit(opensmt::span<const PTRef>(&root, 1));
+}
 
 class DefaultVisitorConfig {
 public:
