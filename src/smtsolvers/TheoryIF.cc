@@ -120,9 +120,13 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             std::swap(splitClause[0],splitClause[impliedIndex]);
             CRef cr = processNewClause(splitClause);
             propData.push_back(PropagationData{.lit = implied, .reason = cr});
+            if (decisionLevel() == 0 and logsResolutionProof()) {
+                CRef unitClause = logUnitClauseDerivationAtLevelZero(cr);
+                propData.back().reason = unitClause;
+            }
             res = TPropRes::Propagate;
         } else {
-            // MB: ensure that that the first literal is not falsified
+            // MB: ensure that the first literal is not falsified
             if (value(splitClause[0]) == l_False and impliedIndex != -1) {
                 std::swap(splitClause[0],splitClause[impliedIndex]);
             }

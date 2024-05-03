@@ -491,6 +491,11 @@ protected:
     void finalizeResolutionProof(CRef finalConflict);
     std::unique_ptr<ResolutionProof> resolutionProof;                 // (Pointer to) ResolutionProof store
     vec< CRef >         pleaves;                  // Store clauses that are still involved in the proof
+
+    /// Given a clause that is unit under assigment at level 0, creates the actual unit clause and logs its derivation
+    /// @returns CRef of the newly created unit clause
+    /// Assumes that literal at index 0 is unassigned and all other literals are falsified by current assignment
+    CRef logUnitClauseDerivationAtLevelZero(CRef);
     // End of proof production
 
     //

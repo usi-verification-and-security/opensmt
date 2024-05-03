@@ -934,6 +934,27 @@ void CoreSMTSolver::finalizeResolutionProof(CRef finalConflict) {
     resolutionProof->endChain(CRef_Undef);
 }
 
+
+CRef CoreSMTSolver::logUnitClauseDerivationAtLevelZero(CRef cref) {
+    assert(logsResolutionProof() and decisionLevel() == 0);
+    resolutionProof->beginChain(cref);
+    Clause const & c = ca[cref];
+    assert(c.size() >= 2);
+    assert(value(c[0]) == l_Undef);
+    for (unsigned k = 1; k < c.size(); ++k) {
+        Lit l = c[k];
+        assert(value(l) == l_False);
+        Var v = var(l);
+        assert(level(v) == 0);
+        assert(reason(v) != CRef_Fake);
+        assert(reason(v) != CRef_Undef);
+        resolutionProof->addResolutionStep(reason(v), v);
+    }
+    CRef unitClause = ca.alloc(vec<Lit>{c[0]});
+    resolutionProof->endChain(unitClause);
+    return unitClause;
+}
+
 /*_________________________________________________________________________________________________
   |
   |  analyzeFinal : (p : Lit)  ->  [void]
@@ -1105,21 +1126,8 @@ CRef CoreSMTSolver::propagate()
             }
             else {  // clause is unit under assignment:
                 if (decisionLevel() == 0 && this->logsResolutionProof()) {
-                    // MB: we need to log the derivation of the unit clauses at level 0, otherwise the proof
-                    //     is not constructed correctly
-                    resolutionProof->beginChain(cr);
-                    for (unsigned k = 1; k < c.size(); k++)
-                    {
-                        assert(level(var(c[k])) == 0);
-                        assert(reason(var(c[k])) != CRef_Fake);
-                        assert(reason(var(c[k])) != CRef_Undef);
-                        resolutionProof->addResolutionStep(reason(var(c[k])), var(c[k]));
-                    }
-                    CRef unitClause = ca.alloc(vec<Lit>{first});
-                    resolutionProof->endChain(unitClause);
-                    // Replace the reason for enqueing the literal with the unit clause.
-                    // Necessary for correct functioning of proof logging in analyze()
-                    cr = unitClause;
+                    // MB: Proof is not constructed correctly if we don't log derivation of the unit clauses at level 0
+                    cr = logUnitClauseDerivationAtLevelZero(cr);
                 }
                 uncheckedEnqueue(first, cr);
             }
