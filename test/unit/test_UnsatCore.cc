@@ -11,6 +11,7 @@
 
 #include <memory>
 
+/// Pure propositional and uninterpreted functions
 class UFUnsatCoreTest : public ::testing::Test {
 protected:
     UFUnsatCoreTest(): logic{opensmt::Logic_t::QF_UF} {}
@@ -81,4 +82,134 @@ TEST_F(UFUnsatCoreTest, Bool_ReuseProofChain) {
     ASSERT_EQ(core.size(), 2);
     EXPECT_TRUE(core[0] == a1 or core[1] == a1);
     EXPECT_TRUE(core[0] == a2 or core[1] == a2);
+}
+
+TEST_F(UFUnsatCoreTest, UF_Simple) {
+    // a1 := x = y
+    // a2 := g(x,y) = g(y,x)
+    // a3 := f(x) != f(y)
+    MainSolver solver = makeSolver();
+    PTRef a1 = logic.mkEq(x,y);
+    PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
+    PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
+    solver.insertFormula(a1);
+    solver.insertFormula(a2);
+    solver.insertFormula(a3);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    ASSERT_EQ(core.size(), 2);
+    EXPECT_TRUE(core[0] == a1 or core[1] == a1);
+    EXPECT_TRUE(core[0] == a3 or core[1] == a3);
+}
+
+/// Linear integer arithmetic
+class LIAUnsatCoreTest : public ::testing::Test {
+protected:
+    LIAUnsatCoreTest(): logic{opensmt::Logic_t::QF_LIA} {}
+    void SetUp() override {
+        x = logic.mkIntVar("x");
+        y = logic.mkIntVar("y");
+        z = logic.mkIntVar("z");
+        b1 = logic.mkBoolVar("b1");
+        b2 = logic.mkBoolVar("b2");
+        b3 = logic.mkBoolVar("b3");
+        b4 = logic.mkBoolVar("b4");
+        b5 = logic.mkBoolVar("b5");
+        nb1 = logic.mkNot(b1);
+        nb2 = logic.mkNot(b2);
+        nb3 = logic.mkNot(b3);
+        nb4 = logic.mkNot(b4);
+        nb5 = logic.mkNot(b5);
+    }
+    ArithLogic logic;
+    SMTConfig config;
+    PTRef x, y, z, b1, b2, b3, b4, b5;
+    PTRef nb1, nb2, nb3, nb4, nb5;
+
+    MainSolver makeSolver() {
+        const char* msg = "ok";
+        config.setOption(SMTConfig::o_produce_unsat_cores, SMTOption(true), msg);
+        return {logic, config, "unsat_core"};
+    }
+};
+
+TEST_F(LIAUnsatCoreTest, LIA_Simple) {
+    // a1 := x >= y
+    // a2 := y >= z
+    // a3 := x + y + z < 0
+    // a4 := x < z
+    MainSolver solver = makeSolver();
+    PTRef a1 = logic.mkGeq(x,y);
+    PTRef a2 = logic.mkGeq(y,z);
+    PTRef a3 = logic.mkLt(logic.mkPlus(vec<PTRef>{x,y,z}), logic.getTerm_IntZero());
+    PTRef a4 = logic.mkLt(x,z);
+    solver.insertFormula(a1);
+    solver.insertFormula(a2);
+    solver.insertFormula(a3);
+    solver.insertFormula(a4);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    ASSERT_EQ(core.size(), 3);
+    auto isInCore = [&](PTRef fla) -> bool { return std::find(core.begin(), core.end(), fla) != core.end(); };
+    EXPECT_TRUE(isInCore(a1));
+    EXPECT_TRUE(isInCore(a2));
+    EXPECT_TRUE(isInCore(a4));
+}
+
+/// Arrays + Linear integer arithmetic
+class ALIAUnsatCoreTest : public ::testing::Test {
+protected:
+    ALIAUnsatCoreTest(): logic{opensmt::Logic_t::QF_ALIA} {}
+    void SetUp() override {
+        intIntArraySort = logic.getArraySort(logic.getSort_int(), logic.getSort_int());
+        arr1 = logic.mkVar(intIntArraySort, "a1");
+        arr2 = logic.mkVar(intIntArraySort, "a2");
+        x = logic.mkIntVar("x");
+        y = logic.mkIntVar("y");
+        z = logic.mkIntVar("z");
+        b1 = logic.mkBoolVar("b1");
+        b2 = logic.mkBoolVar("b2");
+        b3 = logic.mkBoolVar("b3");
+        b4 = logic.mkBoolVar("b4");
+        b5 = logic.mkBoolVar("b5");
+        nb1 = logic.mkNot(b1);
+        nb2 = logic.mkNot(b2);
+        nb3 = logic.mkNot(b3);
+        nb4 = logic.mkNot(b4);
+        nb5 = logic.mkNot(b5);
+    }
+    ArithLogic logic;
+    SMTConfig config;
+    SRef intIntArraySort;
+    PTRef arr1, arr2;
+    PTRef x, y, z, b1, b2, b3, b4, b5;
+    PTRef nb1, nb2, nb3, nb4, nb5;
+
+    MainSolver makeSolver() {
+        const char* msg = "ok";
+        config.setOption(SMTConfig::o_produce_unsat_cores, SMTOption(true), msg);
+        return {logic, config, "unsat_core"};
+    }
+};
+
+TEST_F(ALIAUnsatCoreTest, ALIA_Simple) {
+    // a1 := select(arr1, x) != select(arr1,y)
+    // a2 := select(arr1, x) == 0
+    // a3 := x == y
+    MainSolver solver = makeSolver();
+    PTRef a1 = logic.mkNot(logic.mkEq(logic.mkSelect({arr1, x}), logic.mkSelect({arr1,y})));
+    PTRef a2 = logic.mkEq(logic.mkSelect({arr1,x}), logic.getTerm_IntZero());
+    PTRef a3 = logic.mkEq(x,y);
+    solver.insertFormula(a1);
+    solver.insertFormula(a2);
+    solver.insertFormula(a3);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    ASSERT_EQ(core.size(), 2);
+    auto isInCore = [&](PTRef fla) -> bool { return std::find(core.begin(), core.end(), fla) != core.end(); };
+    EXPECT_TRUE(isInCore(a1));
+    EXPECT_TRUE(isInCore(a3));
 }

@@ -8,8 +8,7 @@
 #include "Substitutor.h"
 #include "TreeOps.h"
 
-PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const & context) {
-    if (context.perPartition) { throw OsmtInternalException("Mode not supported for QF_UFLRA yet"); }
+PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
     fla = rewriteDistincts(getLogic(), fla);
     fla = rewriteDivMod<ArithLogic>(logic, fla);
     PTRef purified = purify(fla);
