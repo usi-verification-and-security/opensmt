@@ -26,11 +26,16 @@ public:
 
     template<typename TFun>
     void popScope(TFun callback);
+
+    [[nodiscard]] std::size_t size() const { return elements.size(); }
+
+    [[nodiscard]] T * data() { return elements.data(); }
+    [[nodiscard]] T const * data() const { return elements.data(); }
 };
 
 template<typename T>
 void ScopedVector<T>::popScope() {
-    popScope([](){});
+    popScope([](T const &){});
 }
 
 template<typename T>
