@@ -60,7 +60,7 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
 void MainSolver::initialize() {
     frames.push();
     frameTerms.push(logic.getTerm_true());
-    substitutions.push();
+    preprocessor.initialize();
     smt_solver->initialize();
     opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     smt_solver->addOriginalSMTClause({term_mapper->getOrCreateLit(logic.getTerm_true())}, iorefs);
@@ -74,7 +74,7 @@ void MainSolver::push()
 {
     bool alreadyUnsat = isLastFrameUnsat();
     frames.push();
-    substitutions.push();
+    preprocessor.push();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
@@ -93,7 +93,7 @@ bool MainSolver::pop()
             pmanager.invalidatePartitions(mask);
         }
         frames.pop();
-        substitutions.pop();
+        preprocessor.pop();
         firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
         if (not isLastFrameUnsat()) {
             getSMTSolver().restoreOK();
@@ -135,10 +135,12 @@ sstat MainSolver::simplifyFormulas() {
                 PTRef processed = theory->preprocessAfterSubstitutions(fla, context);
                 pmanager.transferPartitionMembership(fla, processed);
                 frameFormulas.push(processed);
+                preprocessor.addPreprocessedFormula(processed);
             }
             if (frameFormulas.size() == 0 or std::all_of(frameFormulas.begin(), frameFormulas.end(), [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
                 continue;
             }
+            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
             for (PTRef fla : frameFormulas) {
                 if (fla == logic.getTerm_true()) { continue; }
                 assert(pmanager.getPartitionIndex(fla) != -1);
@@ -167,6 +169,8 @@ sstat MainSolver::simplifyFormulas() {
                 status = s_False;
                 break;
             }
+            preprocessor.addPreprocessedFormula(frameFormula);
+            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
             // Optimize the dag for cnfization
             if (logic.isBooleanOperator(frameFormula)) {
                 frameFormula = rewriteMaxArity(frameFormula);
@@ -481,7 +485,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
 }
 
 PTRef MainSolver::applyLearntSubstitutions(PTRef fla) {
-    Logic::SubstMap knownSubst = substitutions.current();
+    Logic::SubstMap knownSubst = preprocessor.getCurrentSubstitutions();
     PTRef res = Substitutor(getLogic(), knownSubst).rewrite(fla);
     return res;
 }
@@ -498,7 +502,7 @@ PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const& contex
     args.push(res.result);
     PTRef withSubs = logic.mkAnd(std::move(args));
 
-    substitutions.set(context.frameCount, std::move(res.usedSubstitution));
+    preprocessor.setSubstitutions(context.frameCount, std::move(res.usedSubstitution));
     return withSubs;
 }
 
@@ -549,4 +553,26 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
     result.result = root;
     result.usedSubstitution = std::move(allsubsts);
     return result;
+}
+
+void MainSolver::Preprocessor::initialize() {
+    substitutions.push();
+}
+
+void MainSolver::Preprocessor::push() {
+    substitutions.push();
+    preprocessedFormulas.pushScope();
+}
+
+void MainSolver::Preprocessor::pop() {
+    substitutions.pop();
+    preprocessedFormulas.popScope();
+}
+
+void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
+    preprocessedFormulas.push(fla);
+}
+
+opensmt::span<const PTRef> MainSolver::Preprocessor::getPreprocessedFormulas() const {
+    return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
 }

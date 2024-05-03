@@ -15,6 +15,7 @@
 #include "Model.h"
 #include "PartitionManager.h"
 #include "InterpolationContext.h"
+#include "ScopedVector.h"
 
 #include <memory>
 
@@ -157,32 +158,44 @@ protected:
         uint32_t frameId = 0;
     };
 
-    class Substitutions {
-    public:
-        void push() { perFrameSubst.emplace_back(); }
-        void pop() { perFrameSubst.pop_back(); }
-
-        void set(std::size_t level, Logic::SubstMap && subs) {
-            perFrameSubst.at(level) = std::move(subs);
-        }
-
-        Logic::SubstMap current() {
-            Logic::SubstMap allSubst;
-            for (auto const & subs : perFrameSubst) {
-                for (PTRef key : subs.getKeys()) {
-                    assert(not allSubst.has(key));
-                    allSubst.insert(key, subs[key]);
-                }
-            }
-            return allSubst;
-        }
-    private:
-        std::vector<Logic::SubstMap> perFrameSubst;
-    };
-
     struct SubstitutionResult {
         Logic::SubstMap usedSubstitution;
         PTRef result {PTRef_Undef};
+    };
+
+    class Preprocessor {
+    public:
+        void push();
+        void pop();
+        void initialize();
+        void addPreprocessedFormula(PTRef);
+        [[nodiscard]] opensmt::span<const PTRef> getPreprocessedFormulas() const;
+        [[nodiscard]] Logic::SubstMap getCurrentSubstitutions() const { return substitutions.current(); }
+        void setSubstitutions(std::size_t level, Logic::SubstMap && subs) { substitutions.set(level, std::move(subs)); }
+
+    private:
+        class Substitutions {
+        public:
+            void push() { perFrameSubst.emplace_back(); }
+            void pop() { perFrameSubst.pop_back(); }
+
+            void set(std::size_t level, Logic::SubstMap && subs) { perFrameSubst.at(level) = std::move(subs); }
+
+            [[nodiscard]] Logic::SubstMap current() const {
+                Logic::SubstMap allSubst;
+                for (auto const & subs : perFrameSubst) {
+                    for (PTRef key : subs.getKeys()) {
+                        assert(not allSubst.has(key));
+                        allSubst.insert(key, subs[key]);
+                    }
+                }
+                return allSubst;
+            }
+        private:
+            std::vector<Logic::SubstMap> perFrameSubst;
+        };
+        Substitutions substitutions;
+        opensmt::ScopedVector<PTRef> preprocessedFormulas;
     };
 
     Theory & getTheory()   { return *theory; }
@@ -242,12 +255,12 @@ private:
     PartitionManager                pmanager;
     SMTConfig &                     config;
     Tseitin                         ts;
+    Preprocessor                    preprocessor;
 
     opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
     std::string          solver_name; // Name for the solver
     int            check_called = 0;     // A counter on how many times check was called.
 
-    Substitutions substitutions;
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
     unsigned int insertedFormulasCount = 0;

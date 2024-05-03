@@ -17,8 +17,11 @@ PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext c
         purified = instantiateReadOverStore(logic, purified);
     }
     PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
-    this->getTSolverHandler().setInterfaceVars(getInterfaceVars(noArithmeticEqualities));
     return noArithmeticEqualities;
+}
+
+void UFLATheory::afterPreprocessing(opensmt::span<const PTRef> preprocessedFormulas) {
+    this->getTSolverHandler().setInterfaceVars(getInterfaceVars(preprocessedFormulas));
 }
 
 namespace {
@@ -201,9 +204,9 @@ public:
 
 
 
-vec<PTRef> UFLATheory::getInterfaceVars(PTRef fla) {
+vec<PTRef> UFLATheory::getInterfaceVars(opensmt::span<const PTRef> flas) {
     CollectInterfaceVariablesConfig config(logic);
-    TermVisitor(logic, config).visit(fla);
+    TermVisitor(logic, config).visit(flas);
     vec<PTRef> const & interfaceVars = config.getInterfaceVars();
     vec<PTRef> ret;
     interfaceVars.copyTo(ret);
