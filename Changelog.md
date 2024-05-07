@@ -1,8 +1,13 @@
 ### 2.6.1 (unreleased)
+
+Bug fixes:
+ - Fix unsoundness in incremental solving involving theory combination (introduced in 2.6.0).
+
 New features:
  - Experimental support for unsat cores.
 
 ### 2.6.0 (2024-03-06)
+
 New features:
  - Support `ALL` as a valid argument to `set-logic` command. This becomes an alias for `QF_AUFLIRA`.
  - Simpler builds with single `make` command.
