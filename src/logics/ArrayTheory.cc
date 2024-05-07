@@ -9,8 +9,7 @@
 #include "ArrayHelpers.h"
 #include "DistinctRewriter.h"
 
-PTRef ArrayTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const & context) {
-    if (context.perPartition) { throw OsmtInternalException("Interpolation not supported for logics with arrays yet"); }
+PTRef ArrayTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
     // TODO: simplify select over store on the same index
     fla = rewriteDistincts(getLogic(), fla);
     fla = instantiateReadOverStore(getLogic(), fla);

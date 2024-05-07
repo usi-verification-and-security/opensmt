@@ -103,6 +103,54 @@ TEST_F(UFUnsatCoreTest, UF_Simple) {
     EXPECT_TRUE(core[0] == a3 or core[1] == a3);
 }
 
+/// Pure arrays
+class AXUnsatCoreTest : public ::testing::Test {
+protected:
+    AXUnsatCoreTest(): logic{opensmt::Logic_t::QF_AX} {}
+    void SetUp() override {
+        indexSort = logic.declareUninterpretedSort("Index");
+        elementSort = logic.declareUninterpretedSort("Element");
+        arraySort = logic.getArraySort(indexSort, elementSort);
+        i = logic.mkVar(indexSort, "i");
+        j = logic.mkVar(indexSort, "j");
+        k = logic.mkVar(indexSort, "k");
+        e = logic.mkVar(elementSort, "e");
+        a = logic.mkVar(arraySort, "a");
+    }
+    Logic logic;
+    SMTConfig config;
+    SRef indexSort;
+    SRef elementSort;
+    SRef arraySort;
+    PTRef i, j, k, e, a;
+
+    MainSolver makeSolver() {
+        const char* msg = "ok";
+        config.setOption(SMTConfig::o_produce_unsat_cores, SMTOption(true), msg);
+        return {logic, config, "unsat_core"};
+    }
+};
+
+TEST_F(AXUnsatCoreTest, AX_Simple) {
+    // a1 := i != j
+    // a2 := a[j] != a<i -> e>[j]
+    // a3 := a[k] = e
+    MainSolver solver = makeSolver();
+    PTRef a1 = logic.mkNot(logic.mkEq(i,j));
+    PTRef a2 = logic.mkNot(logic.mkEq(logic.mkSelect({a,j}), logic.mkSelect({logic.mkStore({a,i,e}),j})));
+    PTRef a3 = logic.mkEq(logic.mkSelect({a,k}), e);
+    solver.insertFormula(a1);
+    solver.insertFormula(a2);
+    solver.insertFormula(a3);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    ASSERT_EQ(core.size(), 2);
+    auto isInCore = [&](PTRef fla) -> bool { return std::find(core.begin(), core.end(), fla) != core.end(); };
+    EXPECT_TRUE(isInCore(a1));
+    EXPECT_TRUE(isInCore(a2));
+}
+
 /// Linear integer arithmetic
 class LIAUnsatCoreTest : public ::testing::Test {
 protected:
