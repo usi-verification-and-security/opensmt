@@ -624,18 +624,16 @@ inline bool FastRational::wordAndMpqEqual() const {
 
 inline FastRational::FastRational(word n, uword d) : state{State::WORD_VALID} {
     assert(d > 0);
-    if (n == 0) {
-        num = 0;
-        den = 1;
+    uword absN = absVal(n);
+    uword common = gcd<uword>(absN, d);
+    if (common > 1) {
+        uword absNum = absN / common;
+        assert(absNum <= WORD_MAX);
+        num = n >= 0 ? static_cast<word>(absNum) : -static_cast<word>(absNum);
+        den = d / common;
     } else {
-        uword common = gcd<uword>(absVal(n), d);
-        if (common > 1) {
-            num = n / common;
-            den = d / common;
-        } else {
-            num = n;
-            den = d;
-        }
+        num = n;
+        den = d;
     }
 }
 

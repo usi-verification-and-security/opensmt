@@ -2,6 +2,7 @@
 
 Bug fixes:
  - Fix unsoundness in incremental solving involving theory combination (introduced in 2.6.0).
+ - Fix bug in one of the constructors of FastRational.
 
 New features:
  - Experimental support for unsat cores.

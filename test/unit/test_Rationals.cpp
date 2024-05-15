@@ -492,3 +492,14 @@ TEST(Rationals_test, testWordRepresentation_Inverse) {
     ASSERT_TRUE(a.wordPartValid());
 }
 
+TEST(Rationals_test, testNormalization) {
+    word num = -3703870;
+    uword den = 10000000;
+    // GCD of num and den is 10
+    FastRational a(num, den);
+    auto maybeNumDenPair = a.tryGetNumDen();
+    ASSERT_TRUE(maybeNumDenPair.has_value());
+    auto [normalizedNum, normalizedDen] = maybeNumDenPair.value();
+    EXPECT_EQ(normalizedNum, -370387);
+    EXPECT_EQ(normalizedDen, 1000000);
+}
