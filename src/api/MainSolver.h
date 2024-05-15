@@ -172,6 +172,7 @@ protected:
         [[nodiscard]] opensmt::span<const PTRef> getPreprocessedFormulas() const;
         [[nodiscard]] Logic::SubstMap getCurrentSubstitutions() const { return substitutions.current(); }
         void setSubstitutions(std::size_t level, Logic::SubstMap && subs) { substitutions.set(level, std::move(subs)); }
+        void prepareForProcessingFrame(std::size_t frameIndex);
 
     private:
         class Substitutions {
@@ -194,8 +195,14 @@ protected:
         private:
             std::vector<Logic::SubstMap> perFrameSubst;
         };
+
+        void pushInternal();
+        void popInternal();
+
         Substitutions substitutions;
         opensmt::ScopedVector<PTRef> preprocessedFormulas;
+        std::size_t solverFrameCount {1};
+        std::size_t internalFrameCount {1};
     };
 
     Theory & getTheory()   { return *theory; }

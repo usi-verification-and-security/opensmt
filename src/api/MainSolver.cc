@@ -128,6 +128,7 @@ sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
         PreprocessingContext context {.frameCount = i, .perPartition = trackPartitions() };
+        preprocessor.prepareForProcessingFrame(i);
         firstNotSimplifiedFrame = i + 1;
         if (context.perPartition) {
             vec<PTRef> frameFormulas;
@@ -559,12 +560,33 @@ void MainSolver::Preprocessor::initialize() {
     substitutions.push();
 }
 
+void MainSolver::Preprocessor::prepareForProcessingFrame(std::size_t frameIndex) {
+    assert(frameIndex < solverFrameCount);
+    while (internalFrameCount <= frameIndex) {
+        pushInternal();
+    }
+}
 void MainSolver::Preprocessor::push() {
+    assert(solverFrameCount >= internalFrameCount);
+    ++solverFrameCount;
+}
+
+void MainSolver::Preprocessor::pop() {
+    assert(solverFrameCount >= internalFrameCount);
+    --solverFrameCount;
+    if (solverFrameCount >= internalFrameCount) { return; }
+    popInternal();
+    assert(solverFrameCount == internalFrameCount);
+}
+
+void MainSolver::Preprocessor::pushInternal() {
+    ++internalFrameCount;
     substitutions.push();
     preprocessedFormulas.pushScope();
 }
 
-void MainSolver::Preprocessor::pop() {
+void MainSolver::Preprocessor::popInternal() {
+    --internalFrameCount;
     substitutions.pop();
     preprocessedFormulas.popScope();
 }
