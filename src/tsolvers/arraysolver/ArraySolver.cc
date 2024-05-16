@@ -450,10 +450,10 @@ std::vector<ArraySolver::LemmaConditions> ArraySolver::collectLemmaConditions(Lo
         // TODO: Figure out better way how to compute all candidates for lemmas
         for (auto first : selects) {
             ERef firstRoot = getRoot(first);
+            NodeRef arrayFirst = getNodeRef(getRoot(getArrayFromSelect(first)));
             for (auto secondIt = selects.begin(); *secondIt != first; ++secondIt) {
                 ERef second = *secondIt;
                 if (firstRoot == getRoot(second)) { continue; } // The selects are already the same, no lemma needed
-                NodeRef arrayFirst = getNodeRef(getRoot(getArrayFromSelect(first)));
                 NodeRef arraySecond = getNodeRef(getRoot(getArrayFromSelect(second)));
                 if (arrayFirst == arraySecond or getIndexedRepresentative(arrayFirst, index) == getIndexedRepresentative(arraySecond, index)) {
                     std::unordered_set<PTRef, PTRefHash> undecidedEqualities;
