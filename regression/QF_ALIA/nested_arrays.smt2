@@ -1,0 +1,7 @@
+(set-logic QF_ALIA)
+(declare-fun a () (Array Int (Array Int Int)))
+(declare-fun b () (Array Int Int))
+(assert (not (= b (select a 1))))
+(assert (= a (store (store a 1 b) 0 b)))
+(set-info :status unsat)
+(check-sat)

@@ -138,13 +138,16 @@ void ArraySolver::declareAtom(PTRef tr) {
         : logic(logic), arrayTerms(arrayTerms), storeTerms(storeTerms), selectTerms(selectTerms), egraph(egraph) {}
 
         void visit(PTRef term) override {
+            assert(not logic.isArrayStore(term) or logic.isArraySort(logic.getSortRef(term))); // store is of array sort
             if (logic.isArraySort(logic.getSortRef(term))) {
                 ERef eref = egraph.termToERef(term);
                 arrayTerms.insert(eref);
                 if (logic.isArrayStore(term)) {
                     storeTerms.insert(eref);
+                    return;
                 }
-            } else if (logic.isArraySelect(term)) {
+            }
+            if (logic.isArraySelect(term)) { // NOTE: Select can yield array sort in case of nested arrays
                 ERef eref = egraph.termToERef(term);
                 selectTerms.insert(eref);
             }
