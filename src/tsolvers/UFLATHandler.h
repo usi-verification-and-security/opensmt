@@ -44,7 +44,7 @@ class UFLATHandler : public TSolverHandler
     ArraySolver * arraySolver;
     vec<PTRef> interfaceVars;
     vec<PTRef> equalitiesToPropagate;
-    std::unordered_set<PTRef, PTRefHash> knownEqualities;
+    std::unordered_set<PTRef, PTRefHash> equalitiesWithAddedInterfaceClauses;
   public:
     UFLATHandler(SMTConfig & c, ArithLogic & l);
     Logic & getLogic() override { return logic; }
@@ -53,8 +53,6 @@ class UFLATHandler : public TSolverHandler
     PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
 
     lbool getPolaritySuggestion(PTRef pt) const override;
-
-    void declareAtom(PTRef atom) override;
 
     TRes check(bool complete) override;
 

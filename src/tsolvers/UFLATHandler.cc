@@ -33,21 +33,14 @@ lbool UFLATHandler::getPolaritySuggestion(PTRef pt) const {
 TRes UFLATHandler::check(bool full) {
     auto res = TSolverHandler::check(full);
     if (full and res == TRes::SAT and not lasolver->hasNewSplits() and (not arraySolver or not arraySolver->hasNewSplits())) {
-        equalitiesToPropagate = ufsolver->collectEqualitiesFor(interfaceVars, knownEqualities);
+        equalitiesToPropagate = ufsolver->collectEqualitiesFor(interfaceVars, equalitiesWithAddedInterfaceClauses);
         // MB: Only collect equalities from LASolver if there are none from UF solver.
         //  This prevents duplication of equalities
         if (equalitiesToPropagate.size() == 0) {
-            equalitiesToPropagate = lasolver->collectEqualitiesFor(interfaceVars, knownEqualities);
+            equalitiesToPropagate = lasolver->collectEqualitiesFor(interfaceVars, equalitiesWithAddedInterfaceClauses);
         }
     }
     return res;
-}
-
-void UFLATHandler::declareAtom(PTRef atom) {
-    TSolverHandler::declareAtom(atom);
-    if (logic.isEquality(atom)) {
-        knownEqualities.insert(atom);
-    }
 }
 
 namespace {
@@ -78,24 +71,21 @@ vec<PTRef> UFLATHandler::getSplitClauses() {
         return res;
     }
     if (arraySolver and arraySolver->hasNewSplits()) {
+        auto isInterfaceVar = [this](PTRef term) { return logic.isVar(term) or logic.isNumConst(term); };
         arraySolver->getNewSplits(res);
         vec<PTRef> arrayLemmas;
         res.copyTo(arrayLemmas);
-        std::unordered_set<PTRef, PTRefHash> equalitiesWithAddedClauses;
         // HACK: If array solver needs to decide equality on interface vars, we need to add corresponding lemmas already here
         for (PTRef lemma : arrayLemmas) {
             if (logic.isOr(lemma)) {
                 for (PTRef lit : logic.getPterm(lemma)) {
                     PTRef atom = logic.isNot(lit) ? logic.getPterm(lit)[0] : lit;
-                    if (logic.isNumEq(atom) and knownEqualities.find(atom) == knownEqualities.end() and
-                        equalitiesWithAddedClauses.find(atom) == equalitiesWithAddedClauses.end()) {
+                    if (logic.isNumEq(atom) and equalitiesWithAddedInterfaceClauses.find(atom) == equalitiesWithAddedInterfaceClauses.end()) {
                         PTRef lhs = logic.getPterm(atom)[0];
                         PTRef rhs = logic.getPterm(atom)[1];
-                        if (std::find(interfaceVars.begin(), interfaceVars.end(), lhs) != interfaceVars.end() and
-                            std::find(interfaceVars.begin(), interfaceVars.end(), rhs) != interfaceVars.end()
-                        ) {
+                        if (isInterfaceVar(lhs) and isInterfaceVar(rhs)) {
                             addInterfaceClausesForEquality(logic, atom, res);
-                            equalitiesWithAddedClauses.insert(atom);
+                            equalitiesWithAddedInterfaceClauses.insert(atom);
                         }
                     }
                 }
@@ -103,11 +93,8 @@ vec<PTRef> UFLATHandler::getSplitClauses() {
         }
         return res;
     }
-    if (equalitiesToPropagate.size() == 0) {
-        return res;
-    }
     for (PTRef eq : equalitiesToPropagate) {
-        if (knownEqualities.find(eq) == knownEqualities.end()) {
+        if (auto [_, inserted] = equalitiesWithAddedInterfaceClauses.insert(eq); inserted) {
             addInterfaceClausesForEquality(logic, eq, res);
         }
     }

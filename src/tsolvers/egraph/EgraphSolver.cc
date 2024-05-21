@@ -1632,17 +1632,11 @@ vec<PTRef> Egraph::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_
         it->second.push(eref);
     }
 
-    for (auto const & entry : eqClasses) {
-        auto const & equivalentVars = entry.second;
+    for (auto const & [_, equivalentVars] : eqClasses) {
         for (int i = 0; i < equivalentVars.size(); ++i) {
             for (int j = i + 1; j < equivalentVars.size(); ++j) {
                 PTRef eq = logic.mkEq(ERefToTerm(equivalentVars[i]), ERefToTerm(equivalentVars[j]));
-                if (not enode_store.has(eq)) {
-                    if (knownEqualities.find(eq) != knownEqualities.end()) {
-                        throw OsmtInternalException("Internal error in computing interface equalities in Egraph");
-                    }
-                    equalities.push(eq);
-                }
+                if (knownEqualities.find(eq) == knownEqualities.end()) { equalities.push(eq); }
             }
         }
     }
