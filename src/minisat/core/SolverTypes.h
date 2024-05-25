@@ -22,16 +22,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_SolverTypes_h
 #define Minisat_SolverTypes_h
 
-#include <assert.h>
-
-#include "osmtinttypes.h"
 #include "Alg.h"
 #include "Vec.h"
 #include "Map.h"
 #include "Alloc.h"
-#include "TypeUtils.h"
 
-
+#include <cassert>
 //=================================================================================================
 // Variables, literals, lifted booleans, clauses:
 
@@ -234,10 +230,9 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         RegionAllocator<uint32_t>::moveTo(to); }
 
     template<class Lits>
-    CRef alloc(const Lits& ps, opensmt::pair<bool,uint32_t> learntAndGlue = {false, 0}) {
+    CRef alloc(const Lits& ps, bool learnt = false, uint32_t glue = 0) {
         assert(sizeof(Lit)      == sizeof(uint32_t));
         assert(sizeof(float)    == sizeof(uint32_t));
-        auto [learnt, glue] = learntAndGlue;
         bool use_extra = learnt | extra_clause_field;
 
         CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
@@ -267,7 +262,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
 
         if (c.reloced()) { cr = c.relocation(); return; }
 
-        cr = to.alloc(c, {c.learnt(), c.getGlue()});
+        cr = to.alloc(c, c.learnt(), c.getGlue());
         c.relocate(cr);
 
         // Copy extra data-fields:

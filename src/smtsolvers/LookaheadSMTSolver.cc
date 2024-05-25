@@ -92,7 +92,7 @@ lbool LookaheadSMTSolver::laPropagateWrapper() {
                 if (logsResolutionProof()) { resolutionProof->endChain(unitClause); }
                 uncheckedEnqueue(out_learnt[0], unitClause);
             } else {
-                CRef crd = ca.alloc(out_learnt, {true, computeGlue(out_learnt)});
+                CRef crd = ca.alloc(out_learnt, true, computeGlue(out_learnt));
                 if (logsResolutionProof()) { resolutionProof->endChain(crd); }
                 learnts.push(crd);
                 attachClause(crd);
