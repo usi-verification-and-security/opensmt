@@ -235,7 +235,7 @@ CoreSMTSolver::handleUnsat()
     {
         if (logsResolutionProof()) {
             // All conflicting atoms are dec-level 0
-            CRef confl = config.sat_temporary_learn ? ca.alloc(conflicting, {true, computeGlue(conflicting)}) : ca.alloc(conflicting);
+            CRef confl = config.sat_temporary_learn ? ca.alloc(conflicting, true, computeGlue(conflicting)) : ca.alloc(conflicting);
             resolutionProof->newTheoryClause(confl);
             this->finalizeResolutionProof(confl);
         }
@@ -253,7 +253,7 @@ CoreSMTSolver::handleUnsat()
     }
     // Learn theory lemma
     else {
-        confl = config.sat_temporary_learn ? ca.alloc(conflicting, {true, computeGlue(conflicting)}) : ca.alloc(conflicting);
+        confl = config.sat_temporary_learn ? ca.alloc(conflicting, true, computeGlue(conflicting)) : ca.alloc(conflicting);
         learnts.push(confl);
         attachClause(confl);
         claBumpActivity(ca[confl]);
@@ -294,7 +294,7 @@ CoreSMTSolver::handleUnsat()
         learnts_size += learnt_clause.size( );
         all_learnts ++;
 
-        CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
+        CRef cr = ca.alloc(learnt_clause, true, computeGlue(learnt_clause));
 
         if (logsResolutionProof()) {
             resolutionProof->endChain(cr);
