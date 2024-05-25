@@ -1,11 +1,11 @@
-add_library(common OBJECT "FastRational.cc" Real.h)
+add_library(common OBJECT "")
 
 target_sources(common
-    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FastRational.h"
-    PUBLIC "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
+    PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/FastRational.cc"
+        "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
+        "${CMAKE_CURRENT_LIST_DIR}/Real.h"
     PRIVATE
-    "${CMAKE_CURRENT_LIST_DIR}/Alloc.h"
-    "${CMAKE_CURRENT_LIST_DIR}/XAlloc.h"
     "${CMAKE_CURRENT_LIST_DIR}/SystemQueries.h"
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"
@@ -22,7 +22,7 @@ target_sources(common
 )
 
 install(FILES
-        Integer.h Number.h FastRational.h XAlloc.h Alloc.h StringMap.h Timer.h osmtinttypes.h
+        Integer.h Number.h FastRational.h StringMap.h Timer.h osmtinttypes.h
         TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h
         NumberUtils.h NatSet.h ScopedVector.h
 DESTINATION ${INSTALL_HEADERS_DIR})

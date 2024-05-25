@@ -541,7 +541,6 @@ void
 SMTConfig::initializeConfig( )
 {
   // Set Global Default configuration
-  status                        = l_Undef;
   insertOption(o_produce_stats, new SMTOption(0));
 //  produce_stats                 = 0;
 //  produce_models                = 0;

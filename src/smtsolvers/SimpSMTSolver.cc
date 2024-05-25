@@ -47,7 +47,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SimpSMTSolver.h"
 
 #include "ReportUtils.h"
-#include "Sort.h"
 
 //=================================================================================================
 // Constructor/Destructor:

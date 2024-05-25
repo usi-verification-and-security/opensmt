@@ -26,15 +26,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef THEORY_H
 #define THEORY_H
 
-#include <memory>
-
-#include "Logic.h"
 #include "BVLogic.h"
-
-#include "UFTHandler.h"
-#include "Alloc.h"
-
+#include "Logic.h"
 #include "PartitionManager.h"
+#include "UFTHandler.h"
+
+#include <memory>
 
 struct PreprocessingContext {
     std::size_t frameCount {0};

@@ -48,18 +48,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "ModelBuilder.h"
 #include "OsmtInternalException.h"
-#include "Sort.h"
+#include "Random.h"
+#include "ReportUtils.h"
+#include "ResolutionProof.h"
+#include "SystemQueries.h"
 
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-
-#include "ResolutionProof.h"
-#include "SystemQueries.h"
-#include "ReportUtils.h"
-
-#include "Random.h"
 
 namespace opensmt {
     extern bool stop;
