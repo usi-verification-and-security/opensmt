@@ -28,8 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SSTORE_H
 
 #include "SSort.h"
-#include "Alloc.h"
 #include "TypeUtils.h"
+#include <minisat/core/Alloc.h>
 
 
 #include <unordered_map>

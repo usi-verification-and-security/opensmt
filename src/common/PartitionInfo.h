@@ -10,8 +10,8 @@
 #include "InterpolationUtils.h"
 #include "PTRef.h"
 #include "SymRef.h"
-#include "SolverTypes.h"
 #include "FlaPartitionMap.h"
+#include <minisat/core/SolverTypes.h>
 
 
 class PartitionInfo {

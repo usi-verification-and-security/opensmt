@@ -26,8 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TERMMAPPER_H
 #define TERMMAPPER_H
 #include "Logic.h"
-#include "Map.h"
 #include "PTRef.h"
+#include <minisat/mtl/Map.h>
 
 class TermMapper {
 private:

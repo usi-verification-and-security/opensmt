@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef OPENSMT_SYMREF_H
 #define OPENSMT_SYMREF_H
 
-#include "Map.h"
+#include <minisat/mtl/Map.h>
 
 struct SymRef {
     uint32_t x;

@@ -8,8 +8,8 @@
 #ifndef OPENSMT_PTHELPERSTRUCTS_H
 #define OPENSMT_PTHELPERSTRUCTS_H
 
-#include "SolverTypes.h"
 #include "PTRef.h"
+#include <minisat/core/SolverTypes.h>
 
 class PtAsgn {
 public:

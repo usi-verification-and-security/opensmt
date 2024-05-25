@@ -22,9 +22,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_SolverTypes_h
 #define Minisat_SolverTypes_h
 
-#include "Alg.h"
-#include "Vec.h"
-#include "Map.h"
+#include <minisat/mtl/Alg.h>
+#include <minisat/mtl/Vec.h>
+#include <minisat/mtl/Map.h>
 #include "Alloc.h"
 
 #include <cassert>

@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef STRINGMAP_H
 #define STRINGMAP_H
 
-#include "Map.h"
+#include <minisat/mtl/Map.h>
 
 //===================================================================================================
 // Specializations for string hashing (Map from mtl)

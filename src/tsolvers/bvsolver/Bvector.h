@@ -25,11 +25,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef BVECTOR_H
 #define BVECTOR_H
-#include "Vec.h"
-#include "Alloc.h"
+
 #include "PTRef.h"
 
-#include "Map.h"
+#include <minisat/core/Alloc.h>
+#include <minisat/mtl/Map.h>
+#include <minisat/mtl/Vec.h>
 
 struct BVRef {
     uint32_t x;

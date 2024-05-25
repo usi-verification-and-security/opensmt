@@ -22,13 +22,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_Vec_h
 #define Minisat_Vec_h
 
+#include <minisat/core/XAlloc.h>
+
 #include <cassert>
-#include <new>
+#include <climits>
+#include <cstdint>
 #include <initializer_list>
-#include <vector>
+#include <new>
 #include <utility>
-#include "osmtinttypes.h"
-#include "XAlloc.h"
+#include <vector>
 
 //=================================================================================================
 // Automatically resizable arrays

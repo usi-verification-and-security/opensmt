@@ -5,13 +5,14 @@
 #ifndef OPENSMT_LRAMODEL_H
 #define OPENSMT_LRAMODEL_H
 
-#include <cstdint>
 #include "Delta.h"
 #include "LABounds.h"
-#include "Vec.h"
 #include "LARefs.h"
 #include "LAVarMapper.h"
 #include "NatSet.h"
+#include <minisat/mtl/Vec.h>
+
+#include <cstdint>
 
 //
 // Class for maintaining the model of a variable

@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "SolverTypes.h"
+#include <minisat/core/SolverTypes.h>
 #include <numeric>
 
 class SATSolverTypesTest : public ::testing::Test {

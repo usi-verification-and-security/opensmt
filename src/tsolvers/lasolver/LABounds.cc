@@ -1,6 +1,6 @@
 #include "LABounds.h"
-#include "Map.h"
-#include "Sort.h"
+#include <minisat/mtl/Map.h>
+#include <minisat/mtl/Sort.h>
 
 LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
     : type(type.t)

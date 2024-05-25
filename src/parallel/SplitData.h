@@ -8,8 +8,8 @@
 #ifndef PARALLEL_SPLITDATA_H
 #define PARALLEL_SPLITDATA_H
 
-#include "SolverTypes.h"
 #include "THandler.h"
+#include <minisat/core/SolverTypes.h>
 
 // -----------------------------------------------------------------------------------------
 // The splits

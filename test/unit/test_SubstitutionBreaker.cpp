@@ -3,10 +3,8 @@
 //
 #include <gtest/gtest.h>
 #include <Logic.h>
-#include <Map.h>
 #include <SubstLoopBreaker.h>
 
-typedef Map<PTRef,PtAsgn,PTRefHash>::Pair spair;
 
 class SubstitutionBreaker : public ::testing::Test {
 public:

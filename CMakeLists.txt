@@ -68,8 +68,7 @@ find_package(Threads REQUIRED)
 
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/minisat/mtl
-    ${CMAKE_SOURCE_DIR}/minisat/core
+    ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/common
     ${CMAKE_SOURCE_DIR}/sorts
     ${CMAKE_SOURCE_DIR}/symbols

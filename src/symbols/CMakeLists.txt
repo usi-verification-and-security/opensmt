@@ -7,7 +7,5 @@ PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.h"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SymStore.cc"
 )
 
-#target_link_libraries(symbols sorts)
-
 install(FILES Symbol.h SymStore.h SymRef.h DESTINATION ${INSTALL_HEADERS_DIR})
 

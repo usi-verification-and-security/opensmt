@@ -27,9 +27,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SMTCONFIG_H
 #define SMTCONFIG_H
 
-#include "SolverTypes.h"
 #include "StringMap.h"
 #include "smt2tokens.h"
+
+#include <minisat/mtl/Vec.h>
 
 #include <cstring>
 #include <libgen.h>
@@ -503,7 +504,6 @@ public:
     }
   }
 
-  lbool        status;                       // Status of the benchmark
 //  int          incremental;                  // Incremental solving
   int           isIncremental() const
      { return optionTable.has(o_incremental) ?

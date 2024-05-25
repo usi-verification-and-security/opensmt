@@ -46,8 +46,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef SIMP_SMT_SOLVER_H
 #define SIMP_SMT_SOLVER_H
 
-#include "Queue.h"
 #include "CoreSMTSolver.h"
+#include <minisat/mtl/Queue.h>
 
 class SimpSMTSolver : public CoreSMTSolver
 {

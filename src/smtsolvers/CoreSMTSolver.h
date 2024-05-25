@@ -55,11 +55,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector>
 
-#include "Vec.h"
-#include "Heap.h"
-#include "Alg.h"
+#include <minisat/mtl/Vec.h>
+#include <minisat/mtl/Heap.h>
+#include <minisat/mtl/Alg.h>
 
-#include "SolverTypes.h"
+#include <minisat/core/SolverTypes.h>
 
 #include "Timer.h"
 

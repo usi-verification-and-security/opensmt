@@ -4,13 +4,14 @@
 
 #ifndef OPENSMT_SUBSTLOOPBREAKER_H
 #define OPENSMT_SUBSTLOOPBREAKER_H
-#include <stdint.h>
+
 #include <PTRef.h>
-#include <Sort.h>
-#include <Alloc.h>
-#include <assert.h>
 #include <PtStructs.h>
 #include <Logic.h>
+#include <minisat/mtl/Sort.h>
+
+#include <cassert>
+#include <cstdint>
 
 // For breaking substitution loops
 enum class NStatus { inStack, complete, unseen };

@@ -28,8 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
-#include "Vec.h"
-#include "Alloc.h"
+#include <minisat/mtl/Vec.h>
+#include <minisat/core/Alloc.h>
 #include "SSort.h"
 
 #include "SymRef.h"

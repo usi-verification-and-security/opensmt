@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PROOF2_H
 #define PROOF2_H
 
-#include "SolverTypes.h"
+#include <minisat/core/SolverTypes.h>
 #include <vector>
 #include <unordered_map>
 #include <iosfwd>

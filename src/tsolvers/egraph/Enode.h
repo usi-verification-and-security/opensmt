@@ -27,13 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ENODE_H
 #define ENODE_H
 
-#include "Vec.h"
-#include "Alloc.h"
-
 #include "PtStructs.h"
 #include "SymRef.h"
 #include "TypeUtils.h"
 #include "CgTypes.h"
+#include <minisat/mtl/Vec.h>
 
 struct ERef {
     uint32_t x;

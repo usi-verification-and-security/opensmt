@@ -151,8 +151,8 @@ TEST_F(ReductionTest, test_recyclePivots) {
         proof.newOriginalClause(cr);
     }
     // Learnt clauses
-    CRef a_c = ca.alloc(vec<Lit>{a,c}, {true, 0});
-    CRef nd = ca.alloc(vec<Lit>{~d}, {true, 0});
+    CRef a_c = ca.alloc(vec<Lit>{a,c}, true, 0);
+    CRef nd = ca.alloc(vec<Lit>{~d}, true, 0);
 
     proof.beginChain(a_b);
     proof.addResolutionStep(nb_c, var(b));
@@ -201,19 +201,19 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents) {
         proof.newOriginalClause(cr);
     }
     // Learnt clauses
-    CRef a_b = ca.alloc(vec<Lit>{a,b}, {true, 0});
+    CRef a_b = ca.alloc(vec<Lit>{a,b}, true, 0);
 
     proof.beginChain(a_d);
     proof.addResolutionStep(b_nd, var(d));
     proof.endChain(a_b);
 
-    CRef b_c = ca.alloc(vec<Lit>{b,c}, {true, 0});
+    CRef b_c = ca.alloc(vec<Lit>{b,c}, true, 0);
 
     proof.beginChain(na_c);
     proof.addResolutionStep(a_b, var(a));
     proof.endChain(b_c);
 
-    CRef ne = ca.alloc(vec<Lit>{~e}, {true, 0});
+    CRef ne = ca.alloc(vec<Lit>{~e}, true, 0);
 
     proof.beginChain(b_nc_nd_ne);
     proof.addResolutionStep(b_c, var(c));
@@ -261,19 +261,19 @@ TEST_F(ReductionTest, test_recyclePivots_IdenticalAntecedents_AfterPhaseOneRepla
         proof.newOriginalClause(cr);
     }
     // Learnt clauses
-    CRef a_b = ca.alloc(vec<Lit>{a,b}, {true, 0});
+    CRef a_b = ca.alloc(vec<Lit>{a,b}, true, 0);
 
     proof.beginChain(a_d);
     proof.addResolutionStep(b_nd, var(d));
     proof.endChain(a_b);
 
-    CRef b_c = ca.alloc(vec<Lit>{b,c}, {true, 0});
+    CRef b_c = ca.alloc(vec<Lit>{b,c}, true, 0);
 
     proof.beginChain(na_c);
     proof.addResolutionStep(a_b, var(a));
     proof.endChain(b_c);
 
-    CRef ne = ca.alloc(vec<Lit>{~e}, {true, 0});
+    CRef ne = ca.alloc(vec<Lit>{~e}, true, 0);
 
     proof.beginChain(b_nc_nd_ne);
     proof.addResolutionStep(b_c, var(c));
@@ -319,7 +319,7 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure) {
         proof.newOriginalClause(cr);
     }
     // Learnt clauses
-    CRef a_d = ca.alloc(vec<Lit>{a,d}, {true, 0});
+    CRef a_d = ca.alloc(vec<Lit>{a,d}, true, 0);
 
     proof.beginChain(a_e);
     proof.addResolutionStep(d_ne, var(e));
@@ -381,13 +381,13 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
     }
 
     // learnt clauses
-    CRef na_c_d = ca.alloc(vec<Lit>{~a,c,d}, {true, 0});
+    CRef na_c_d = ca.alloc(vec<Lit>{~a,c,d}, true, 0);
     proof.beginChain(a_b);
     proof.addResolutionStep(na_c, var(a));
     proof.addResolutionStep(na_nb_d,var(b));
     proof.endChain(na_c_d);
 
-    CRef na_c_e = ca.alloc(vec<Lit>{~a,c,e}, {true, 0});
+    CRef na_c_e = ca.alloc(vec<Lit>{~a,c,e}, true, 0);
     proof.beginChain(nd_e);
     proof.addResolutionStep(na_c_d, var(d));
     proof.endChain(na_c_e);

@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <Real.h>
-#include <stdlib.h>
-#include <Vec.h>
-#include <Sort.h>
+
+#include <vector>
 
 using Real = opensmt::Real;
 
@@ -35,15 +34,15 @@ TEST(Rationals_test, test_normalized)
 
 TEST(Rationals_test, test_hash_function)
 {
-    vec<uint32_t> hashes;
+    std::vector<uint32_t> hashes;
     opensmt::NumberHash hasher;
     for (int i = 0; i < 10; i++) {
         Real r((int)random());
-        hashes.push(hasher(r));
+        hashes.push_back(hasher(r));
     }
     for (int i = 0; i < 10; i++) {
         Real r(i);
-        hashes.push(hasher(r));
+        hashes.push_back(hasher(r));
     }
     for (int i = 0; i < 10; i++) {
         char* str;
@@ -51,7 +50,7 @@ TEST(Rationals_test, test_hash_function)
         assert(written != -1); (void)written;
         Real r(str);
         free(str);
-        hashes.push(hasher(r));
+        hashes.push_back(hasher(r));
     }
 
     for (int i = 0; i < 10; i++) {
@@ -70,7 +69,7 @@ TEST(Rationals_test, test_hash_function)
         assert(written != -1); (void)written;
         Real r(str);
         free(str);
-        hashes.push(hasher(r));
+        hashes.push_back(hasher(r));
     }
 
     for (int k = 0; k < 10; k++) {
@@ -87,12 +86,12 @@ TEST(Rationals_test, test_hash_function)
             assert(written != -1); (void)written;
             Real r(str);
             free(str);
-            hashes.push(hasher(r));
+            hashes.push_back(hasher(r));
         }
     }
-    sort(hashes);
+    std::sort(hashes.begin(), hashes.end());
     int prev = hashes[0];
-    for (int i = 1; i < hashes.size(); i++) {
+    for (std::size_t i = 1; i < hashes.size(); i++) {
         ASSERT_NE(prev, hashes[i]);
         prev = hashes[i];
     }

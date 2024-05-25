@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Heap_h
 
 #include "Vec.h"
-#include "stdio.h"
+#include <cstdio>
 
 //=================================================================================================
 // A heap implementation with support for decrease/increase key.

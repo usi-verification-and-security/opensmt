@@ -5,7 +5,7 @@
 #ifndef OPENSMT_LASCORE_H
 #define OPENSMT_LASCORE_H
 
-#include <SolverTypes.h>
+#include <minisat/core/SolverTypes.h>
 #include <SMTConfig.h>
 #include <TypeUtils.h>
 

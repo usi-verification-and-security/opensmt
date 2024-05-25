@@ -1,11 +1,11 @@
 #ifndef OPENSMT_STPSTORE_H
 #define OPENSMT_STPSTORE_H
 
+#include <Number.h>
+#include <PtStructs.h>
+
 #include <cstdint>
 #include <vector>
-#include <Number.h>
-#include <SolverTypes.h>
-#include <PtStructs.h>
 // implementations of template functions #included below class definitions
 
 struct VertexRef {

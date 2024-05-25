@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DEDUCTIONS_H
 #define DEDUCTIONS_H
 
-#include "SolverTypes.h"
+#include <minisat/core/SolverTypes.h>
 
 struct SolverId {
     uint32_t id;

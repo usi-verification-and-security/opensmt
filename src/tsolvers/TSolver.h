@@ -30,9 +30,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "PtStructs.h"
 #include "SMTConfig.h"
 #include "Deductions.h"
-#include "SolverTypes.h"
 #include "TResult.h"
-#include "MapWithKeys.h"
+#include <minisat/core/SolverTypes.h>
+#include <minisat/mtl/MapWithKeys.h>
 
 #include <unordered_set>
 

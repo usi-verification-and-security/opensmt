@@ -14,11 +14,11 @@
 #include "SStore.h"
 #include "CgTypes.h"
 #include "LogicFactory.h"
-#include "MapWithKeys.h"
 #include "OsmtApiException.h"
 #include "FunctionTools.h"
 #include "TypeUtils.h"
 #include "NatSet.h"
+#include <minisat/mtl/MapWithKeys.h>
 
 #include <cassert>
 #include <cstring>

@@ -13,7 +13,7 @@
 #include "Logic.h"
 #include "NatSet.h"
 #include "Pterm.h"
-#include "Vec.h"
+#include <minisat/mtl/Vec.h>
 
 #include <unordered_set>
 

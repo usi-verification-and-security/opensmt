@@ -10,7 +10,7 @@
 
 #include "LARefs.h"
 #include "Pterm.h"
-#include "Vec.h"
+#include <minisat/mtl/Vec.h>
 
 class ArithLogic;
 

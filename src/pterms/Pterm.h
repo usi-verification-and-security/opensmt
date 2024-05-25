@@ -28,9 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PTERM_H
 #define PTERM_H
 
-#include "Vec.h"
-#include "Sort.h"
-#include "SolverTypes.h"
+#include <minisat/mtl/Vec.h>
+#include <minisat/core/SolverTypes.h>
+#include <minisat/mtl/Sort.h>
 #include "SymRef.h"
 #include "PtStructs.h"
 

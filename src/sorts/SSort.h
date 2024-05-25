@@ -27,8 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SORT_H
 #define SORT_H
 
-#include "Vec.h"
-#include "Alloc.h"
+#include <minisat/mtl/Vec.h>
+#include <minisat/core/Alloc.h>
 
 #include <string>
 

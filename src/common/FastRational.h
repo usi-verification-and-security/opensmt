@@ -6,14 +6,14 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #ifndef FAST_RATIONALS_H
 #define FAST_RATIONALS_H
-#include <string>
 #include <gmpxx.h>
 #include <cassert>
 #include <climits>
-#include "Vec.h"
-#include <stack>
-#include <vector>
+#include <cstdint>
 #include <optional>
+#include <stack>
+#include <string>
+#include <vector>
 
 typedef int32_t  word;
 typedef uint32_t uword;
