@@ -1,4 +1,4 @@
-### 2.6.1 (unreleased)
+### 2.7.0 (unreleased)
 
 Bug fixes:
  - Fix unsoundness in incremental solving involving theory combination (introduced in 2.6.0).
