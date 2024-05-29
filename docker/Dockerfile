@@ -2,7 +2,9 @@
 # Eternal glory to him
 # Eternal suffering for every mistake
 
-FROM debian:latest
+ARG TARGET=debian:latest
+
+FROM $TARGET
 USER root
 
 RUN apt-get update -y
@@ -21,4 +23,4 @@ WORKDIR opensmt
 RUN make
 # RUN make install
 
-ENTRYPOINT ["build/opensmt"]
+# ENTRYPOINT ["build/opensmt"]
