@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace opensmt {
+
 class Tableau {
 
     class Column {
@@ -118,5 +120,6 @@ private:
     }
     void normalizeRow(LVRef row);
 };
+} // namespace opensmt
 
 #endif // OPENSMT_TABLEAU_H

@@ -30,7 +30,7 @@ class Simplex {
     std::unique_ptr<LRAModel> model;
     LABoundStore& boundStore;
 
-    Tableau tableau;
+    opensmt::Tableau tableau;
     SimplexStats simplex_stats;
     void  pivot(LVRef basic, LVRef nonBasic);
     LVRef getBasicVarToFixByBland() const;
@@ -95,7 +95,7 @@ public:
 
     void newNonbasicVar(LVRef v) { newVar(v); tableau.newNonbasicVar(v); }
     void nonbasicVar(LVRef v)    { newVar(v); tableau.nonbasicVar(v); }
-    void newRow(LVRef x, std::unique_ptr<Tableau::Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }
+    void newRow(LVRef x, std::unique_ptr<opensmt::Tableau::Polynomial> poly) { newVar(x); tableau.newRow(x, std::move(poly)); }
     Explanation getConflictingBounds(LVRef x, bool conflictOnLower);
     bool checkValueConsistency() const;
     bool invariantHolds() const;

@@ -16,6 +16,8 @@
 
 #include <unordered_set>
 
+using namespace opensmt;
+
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
 
