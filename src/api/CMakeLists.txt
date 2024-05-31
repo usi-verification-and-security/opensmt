@@ -53,7 +53,7 @@ if (BUILD_SHARED_LIBS)
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
+        INCLUDES DESTINATION include ${INSTALL_HEADERS_DIR}
     )
 
     install(EXPORT OpenSMTTargets

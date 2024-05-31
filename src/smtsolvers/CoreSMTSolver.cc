@@ -48,18 +48,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "ModelBuilder.h"
 #include "OsmtInternalException.h"
-#include "Sort.h"
+#include "Random.h"
+#include "ReportUtils.h"
+#include "ResolutionProof.h"
+#include "SystemQueries.h"
 
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-
-#include "ResolutionProof.h"
-#include "SystemQueries.h"
-#include "ReportUtils.h"
-
-#include "Random.h"
 
 namespace opensmt {
     extern bool stop;
@@ -682,7 +679,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             }
             else
             {
-                ctr = config.sat_temporary_learn ? ca.alloc(r, {true, computeGlue(r)}) : ca.alloc(r);
+                ctr = config.sat_temporary_learn ? ca.alloc(r, true, computeGlue(r)) : ca.alloc(r);
                 learnts.push(ctr);
                 attachClause(ctr);
                 undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ctr));
@@ -860,7 +857,7 @@ bool CoreSMTSolver::litRedundant(Lit p, uint32_t abstract_levels)
             }
             else
             {
-                ct = config.sat_temporary_learn ? ca.alloc(r, {true, computeGlue(r)}) : ca.alloc(r);
+                ct = config.sat_temporary_learn ? ca.alloc(r, true, computeGlue(r)) : ca.alloc(r);
                 learnts.push(ct);
                 if (config.isIncremental() != 0)
                     undo_stack.push(undo_stack_el(undo_stack_el::NEWLEARNT, ct));
@@ -1477,7 +1474,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 learnts_size += learnt_clause.size( );
                 all_learnts ++;
 
-                CRef cr = ca.alloc(learnt_clause, {true, computeGlue(learnt_clause)});
+                CRef cr = ca.alloc(learnt_clause, true, computeGlue(learnt_clause));
 
                 if (logsResolutionProof()) {
                     resolutionProof->endChain(cr);

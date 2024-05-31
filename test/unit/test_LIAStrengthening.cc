@@ -3,10 +3,6 @@
 //
 #include <gtest/gtest.h>
 #include <Real.h>
-#include <stdlib.h>
-#include <Vec.h>
-#include <Sort.h>
-#include <SMTConfig.h>
 #include <ArithLogic.h>
 
 class LIAStrengthening: public ::testing::Test {

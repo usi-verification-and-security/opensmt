@@ -1,11 +1,7 @@
 #include <gtest/gtest.h>
 #include <Real.h>
-#include <stdlib.h>
-#include <Vec.h>
-#include <Sort.h>
 #include <SMTConfig.h>
 #include <lasolver/Simplex.h>
-#include <lasolver/LASolver.h>
 
 using Polynomial = PolynomialT<LVRef>;
 
@@ -64,62 +60,4 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
 
     Simplex::Explanation explanation = s->checkSimplex();
     ASSERT_EQ(explanation.size(), 0); //this property has to be failed as the system is UNSAT then explanation size has to be >0
-
 }
-
-
-/*
- *
-vec<PtAsgn> ex;
-ex.clear();
-bool complete;
-ex = s->check_simplex(complete);
-ASSERT_EQ(ex.size(), 0);
-
-Real d = s->computeDelta();
-Delta x_val = s.getValuation(x);
-cout << x_val.R() + x_val.D() * d << endl;
-
-Delta y_val = s.getValuation(y);
-cout << y_val.R() + y_val.D() * d << endl;
-
-Delta sum = s.getValuation(y_minus_x);
-cout << sum.R() + sum.D() * d << endl;
-
-//call initialize function and check delta part to see if initilize did its job
-
-///up to now we created vars, polynomial, checked simplex on them and if simplex not UNSAT then compute equal basis
-
-std::unique_ptr<LRAModel> eqBasisModel = model.copyFlat(); // copy the model as a snapshot of the most recent values
-auto eqBasisSimplex = std::unique_ptr<Simplex>(new Simplex(config, *eqBasisModel, boundStore));
-eqBasisSimplex->initFromSimplex(s);  // Initialize the new simplex (mostly tableau) from the old simplex
-
-//removes all bounds that cannot produce equalities and turns Ax<=b to Ax<b
-initialize(*eqBasisSimplex, *eqBasisModel);
-
-//if delta part is zero it means <=, otherwise <. Hence call simplex to solve it
-
-std::vector<LABoundRef> explanationBounds;
-eqBasisSimplex->checkSimplex(explanationBounds, explanationCoefficients);
-
-//size of explanation now has to increase, should not be zero
-
-d = eqBasisSimplex->computeDelta();
-Delta x_val = eqBasisSimplex.getValuation(x);
-cout << x_val.R() + x_val.D() * d << endl;
-cout << x_val.D() << endl;
-
-Delta y_val = eqBasisSimplex.getValuation(y);
-cout << y_val.R() + y_val.D() * d << endl;
-cout << y_val.D() << endl;
-
-Delta sum = eqBasisSimplex.getValuation(y_minus_x);
-cout << sum.R() + sum.D() * d << endl;
-cout << sum.D() << endl;
-
-//1. give an example of inequallity system that implies equality
-//2. give it bounds
-//3. initialize removes all bounds that cannot produce equalities and turns Ax<=b to Ax<b
-//4. ckeck simplex on Ax<b if Ax<b is UNSAT then AX<=b implies equality
-*/
-
