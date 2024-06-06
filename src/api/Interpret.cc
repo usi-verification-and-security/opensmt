@@ -39,11 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Class defining interpreter
  ***********************************************************/
 
-Interpret::~Interpret() {
-    for (int i = 0; i < term_names.size(); ++i) {
-        free(term_names[i]);
-    }
-}
+Interpret::~Interpret() = default;
 
 PTRef
 Interpret::getParsedFormula()
@@ -535,19 +531,11 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         if (strcmp(name_attr.getValue(), ":named") == 0) {
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
-            if (nameToTerm.has(sym.getValue())) {
+            if (termNames.has(sym.getValue())) {
                 notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
             }
-            char* name = strdup(sym.getValue());
-            // MB: term_names becomes the owner of the string and is responsible for deleting
-            term_names.push(name);
-            nameToTerm.insert(name, tr);
-            if (!termToNames.has(tr)) {
-                vec<const char*> v;
-                termToNames.insert(tr, v);
-            }
-            termToNames[tr].push(name);
+            termNames.insert(sym.getValue(), tr, not config.declarations_are_global());
         }
         return tr;
     }
@@ -592,6 +580,7 @@ void Interpret::push(int n) {
         } else {
             while (n--) {
                 defined_functions.pushScope();
+                termNames.pushScope();
                 main_solver->push();
             }
             notify_success();
@@ -607,7 +596,10 @@ void Interpret::pop(int n) {
             bool success = true;
             while (n-- and success) {
                 success = main_solver->pop();
-                if (success) { defined_functions.popScope(); }
+                if (success) {
+                    defined_functions.popScope();
+                    termNames.popScope();
+                }
             }
             if (success) {
                 notify_success();
@@ -629,18 +621,15 @@ bool Interpret::getAssignment() {
        notify_formatted(true, "Last solver call not satisfiable");
        return false;
     }
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << '(';
-    for (int i = 0; i < term_names.size(); i++) {
-        const char* name = term_names[i];
-        PTRef tr = nameToTerm[name];
-        lbool val = main_solver->getTermValue(tr);
-        ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown"))
-            << ')' << (i < term_names.size() - 1 ? " " : "");
-    }
+    termNames.forEachNamedTerm([&](auto const & name, PTRef term) {
+        lbool val = main_solver->getTermValue(term);
+        ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown")) << ')' << " ";
+    });
+    ss.seekp(-1, std::ios::cur);
     ss << ')';
-    const std::string& out = ss.str();
-    notify_formatted(false, out.c_str());
+    notify_formatted(false, ss.str().c_str());
     return true;
 }
 
@@ -1295,11 +1284,11 @@ void Interpret::getUnsatCore() {
     auto unsatCore = main_solver->getUnsatCore();
     std::cout << "( ";
     for (PTRef fla : unsatCore) {
-        vec<const char*> names;
-        bool present = termToNames.peek(fla, names);
-        if (not present) { continue; }
-        assert(names.size() != 0);
-        std::cout << names[0] << ' ';
+        if (termNames.has(fla)) {
+            auto const & names = termNames.namesForTerm(fla);
+            assert(not names.empty());
+            std::cout << names[0] << ' ';
+        }
     }
     std::cout << ')' << std::endl;
 }
@@ -1310,10 +1299,9 @@ void Interpret::getInterpolants(const ASTNode& n)
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
-    for (auto key : nameToTerm.getKeys()) {
-        letRecords.addBinding(key, nameToTerm[key]);
-    }
-
+    termNames.forEachNamedTerm([&](auto const & name, PTRef term) {
+        letRecords.addBinding(name, term);
+    });
     for (auto e : exps) {
         ASTNode& c = *e;
         PTRef tr = parseTerm(c, letRecords);

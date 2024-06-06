@@ -64,6 +64,54 @@ public:
     }
 };
 
+class TermNames {
+public:
+    bool has(std::string const & name) const { return nameToTerm.find(name) != nameToTerm.end(); }
+    bool has(PTRef term) const { return termToNames.find(term) != termToNames.end(); }
+
+    void insert(std::string const & name, PTRef term, bool scoped = false) {
+        assert(not has(name));
+        nameToTerm.emplace(name, term);
+        termToNames[term].push_back(name);
+        if (scoped) { scopedNames.push(name); }
+    }
+
+    void pushScope() { scopedNames.pushScope(); }
+
+    void popScope() {
+        scopedNames.popScope([&](std::string const & name) {
+            auto it = nameToTerm.find(name);
+            if (it == nameToTerm.end()) { return; }
+            PTRef term = it->second;
+            assert(termToNames.find(term) != termToNames.end());
+            auto & names = termToNames.at(term);
+            names.erase(std::find(names.begin(), names.end(), name));
+            nameToTerm.erase(it);
+        });
+    }
+
+    PTRef termByName(std::string const & name) const {
+        assert(has(name));
+        return nameToTerm.at(name);
+    }
+
+    std::vector<std::string> const & namesForTerm(PTRef term) const {
+        assert(has(term));
+        return termToNames.at(term);
+    }
+
+    template<typename TAction>
+    void forEachNamedTerm(TAction action) {
+        for (auto const & name : scopedNames) {
+            action(name, termByName(name));
+        }
+    }
+private:
+    opensmt::ScopedVector<std::string> scopedNames;
+    std::unordered_map<std::string, PTRef> nameToTerm;
+    std::unordered_map<PTRef, std::vector<std::string>, PTRefHash> termToNames;
+};
+
 class LetBinder {
     PTRef currentValue;
     vec<PTRef> shadowedValues;
@@ -136,14 +184,10 @@ class Interpret {
 
     bool            f_exit;
 
-    // Named terms for getting variable values
-    MapWithKeys<const char*,PTRef,StringHash,Equal<const char*>> nameToTerm;
-    VecMap<PTRef,const char*,PTRefHash,Equal<PTRef> > termToNames;
-    vec<char*>      term_names; // For (! <t> :named <n>) constructs.  if Itp is enabled, this maps a
-                                            // partition to it name.
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
     DefinedFunctions defined_functions;
+    TermNames termNames;
 
     void                        initializeLogic(opensmt::Logic_t logicType);
     bool                        isInitialized() const { return logic != nullptr; }
@@ -154,8 +198,8 @@ class Interpret {
     void                        getInfo(ASTNode& n);
     void                        setOption(ASTNode& n);
     void                        getOption(ASTNode& n);
-    bool                        declareFun(ASTNode const & n); //(const char* fname, const vec<SRef>& args);
-    bool                        declareConst(ASTNode& n); //(const char* fname, const SRef ret_sort);
+    bool                        declareFun(ASTNode const & n);
+    bool                        declareConst(ASTNode& n);
     bool                        defineFun(const ASTNode& n);
     virtual sstat               checkSat();
     void                        getValue(std::vector<ASTNode*> const & terms);
