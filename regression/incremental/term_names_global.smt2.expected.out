@@ -1,0 +1,5 @@
+(error "name c0 already exists")
+
+(error "assertion returns an unknown sort")
+
+sat
