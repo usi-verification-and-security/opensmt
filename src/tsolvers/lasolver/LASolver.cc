@@ -997,14 +997,15 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
         }
         for (auto const & val : valuesWithDelta) {
             for (auto const & entry : eqClasses) {
-                // check if entry.first - val could be 0 for some value of delta, with 0 < delta <= 1
+                // check if entry.first - val could be 0 for some value of delta, with 0 < delta <= maxDelta
                 auto diff = entry.first - val;
                 if (not diff.hasDelta()) { continue; } // MB: This takes care also of the case where val == entry.first
                 if (isNonNegative(diff.R()) and isPositive(diff.D())) { continue; }
                 if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
                 auto ratio = diff.R() / diff.D();
                 assert(isNegative(ratio));
-                if (ratio < FastRational(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+                ratio.negate(); // MB: delta is the negated ratio
+                if (ratio > Simplex::maxDelta) { continue; } // No chance of collision
 
                 // They could be equal for the right value of delta, add equalities for cross-product
                 vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);
