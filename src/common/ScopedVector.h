@@ -31,6 +31,9 @@ public:
 
     [[nodiscard]] T * data() { return elements.data(); }
     [[nodiscard]] T const * data() const { return elements.data(); }
+
+    [[nodiscard]] auto begin() const { return elements.begin(); }
+    [[nodiscard]] auto end() const { return elements.end(); }
 };
 
 template<typename T>

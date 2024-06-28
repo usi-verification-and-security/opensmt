@@ -1,0 +1,8 @@
+(set-logic QF_LIA)
+(declare-fun o () Int)
+(declare-fun i () Bool)
+(push 1)
+(assert (! (< o 0) :named c0))
+(pop 1)
+(assert (! i :named c0))
+(check-sat)
