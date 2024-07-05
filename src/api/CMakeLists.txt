@@ -65,7 +65,7 @@ if (BUILD_SHARED_LIBS)
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file( "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake"
         VERSION ${OPENSMT_VERSION}
-        COMPATIBILITY SameMajorVersion # SameMinorVersion available only from CMake 3.11 
+        COMPATIBILITY SameMinorVersion
     )
 
     configure_package_config_file(OpenSMTConfig.cmake.in

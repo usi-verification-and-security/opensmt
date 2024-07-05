@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
-
-if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need a check, otherwise older version would give an error
-cmake_policy(SET CMP0074 NEW)
-endif()
+cmake_minimum_required(VERSION 3.12)
 
 set(OPENSMT_VERSION_MAJOR 2)
 set(OPENSMT_VERSION_MINOR 7)
@@ -159,25 +155,17 @@ if(PACKAGE_TESTS)
     if (NOT BUILD_SHARED_LIBS)
       message(FATAL_ERROR "Building tests requires shared libraries")
     endif()
-    if(CMAKE_VERSION VERSION_LESS 3.11)
-        MESSAGE(WARNING "Minimum CMAKE version for building tests is 3.11")
-    else(CMAKE_VERSION VERSION_LESS 3.11)
-        enable_testing()
-        add_subdirectory(${PROJECT_SOURCE_DIR}/test)
-        if (PARALLEL)
-            add_subdirectory(${PROJECT_SOURCE_DIR}/parallel-test)
-        endif()
-    endif(CMAKE_VERSION VERSION_LESS 3.11)
+    enable_testing()
+    add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+    if (PARALLEL)
+        add_subdirectory(${PROJECT_SOURCE_DIR}/parallel-test)
+    endif()
 endif()
 #########################################################################
 ################# BENCHMARKING ##########################################
 
 if (PACKAGE_BENCHMARKS)
-    if(CMAKE_VERSION VERSION_LESS 3.11)
-        MESSAGE(WARNING "Minimum CMAKE version for building benchmarking is 3.11")
-    else()
-        add_subdirectory(${PROJECT_SOURCE_DIR}/benchmark)
-    endif()
+    add_subdirectory(${PROJECT_SOURCE_DIR}/benchmark)
 endif()
 
 #########################################################################

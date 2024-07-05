@@ -1,11 +1,7 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.12)
 project(opensmt-examples)
 
 set(CMAKE_CXX_STANDARD 17)
-
-if (POLICY CMP0074) # Policy 0074 has been introduced in CMake 3.12, so we need a check, otherwise older version would give an error
-cmake_policy(SET CMP0074 NEW)
-endif()
 
 set(OpenSMT_DIR CACHE PATH "Path to OpenSMT installation directory")
 
