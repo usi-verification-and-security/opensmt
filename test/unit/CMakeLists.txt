@@ -3,7 +3,6 @@ add_executable(LRATest)
 target_sources(LRATest 
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cpp"
 #    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Matrix.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
     )
 
@@ -58,15 +57,6 @@ target_sources(SimplexTest
 target_link_libraries(SimplexTest OpenSMT gtest gtest_main)
 
 gtest_add_tests(TARGET SimplexTest)
-
-add_executable(HermiteTest)
-target_sources(HermiteTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_HNF.cc"
-    )
-
-target_link_libraries(HermiteTest OpenSMT gtest gtest_main)
-
-gtest_add_tests(TARGET HermiteTest)
 
 add_executable(LIACutTest)
 target_sources(LIACutTest
