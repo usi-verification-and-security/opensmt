@@ -1,5 +1,7 @@
 ### 2.7.1 (unreleased)
 
+Build:
+ - Switch to C++20.
 
 ### 2.7.0 (2024-05-29)
 

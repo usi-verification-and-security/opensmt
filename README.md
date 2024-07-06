@@ -20,7 +20,7 @@ API; the distribution includes a minimal example how to use the API.
 
 ## Building from source
 
-To build the system from the source code repository, you need a C++17
+To build the system from the source code repository, you need a C++20
 compliant compiler and the following libraries and headers installed:
 
  - gmp
