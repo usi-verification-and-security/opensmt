@@ -15,9 +15,10 @@
 
 using namespace opensmt;
 namespace {
-template<class C, class E> inline bool contains(const C & container, const E & elem) {
-    return container.find(elem) != container.end();
-}
+    template<class C, class E>
+    inline bool contains(C const & container, E const & elem) {
+        return container.find(elem) != container.end();
+    }
 } // namespace
 
 void Tableau::nonbasicVar(LVRef v) {
@@ -50,17 +51,17 @@ std::size_t Tableau::getPolySize(LVRef basicVar) const {
     return rows[basicVar.x]->size();
 }
 
-const opensmt::Real & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const {
+opensmt::Real const & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const {
     assert(rows[basicVar.x]);
     return rows[basicVar.x]->getCoeff(nonBasicVar);
 }
 
-const Tableau::column_t & Tableau::getColumn(LVRef nonBasicVar) const {
+Tableau::column_t const & Tableau::getColumn(LVRef nonBasicVar) const {
     assert(cols[nonBasicVar.x]);
     return *cols[nonBasicVar.x];
 }
 
-const Tableau::Polynomial & Tableau::getRowPoly(LVRef basicVar) const {
+Tableau::Polynomial const & Tableau::getRowPoly(LVRef basicVar) const {
     assert(rows[basicVar.x]);
     return *rows[basicVar.x];
 }
@@ -70,7 +71,7 @@ Tableau::Polynomial & Tableau::getRowPoly(LVRef basicVar) {
     return *rows[basicVar.x];
 }
 
-const Tableau::rows_t & Tableau::getRows() const {
+Tableau::rows_t const & Tableau::getRows() const {
     return rows;
 }
 
@@ -124,7 +125,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
     assert(!rows[nv.x]);
     {
         Polynomial & nvPoly = getRowPoly(bv);
-        const auto coeff = nvPoly.removeVar(nv);
+        auto const coeff = nvPoly.removeVar(nv);
         if (not coeff.isOne()) { nvPoly.divideBy(coeff); }
         nvPoly.negate();
         nvPoly.addTerm(bv, coeff.inverse());
@@ -149,7 +150,7 @@ void Tableau::pivot(LVRef bv, LVRef nv) {
         if (rowVar == nv || isQuasiBasic(rowVar)) { continue; }
         // update the polynomials
         auto & poly = getRowPoly(rowVar);
-        const auto nvCoeff = poly.removeVar(nv);
+        auto const nvCoeff = poly.removeVar(nv);
         poly.merge(
             nvPoly, nvCoeff, tmp_storage,
             // informAdded
@@ -193,7 +194,7 @@ void Tableau::print() const {
     for (unsigned i = 0; i != rows.size(); ++i) {
         if (!rows[i]) { continue; }
         std::cout << "Var of the row: " << i << ';';
-        for (const auto & term : this->getRowPoly(LVRef{i})) {
+        for (auto const & term : this->getRowPoly(LVRef{i})) {
             std::cout << "( " << term.coeff << " | " << term.var.x << " ) ";
         }
         std::cout << '\n';

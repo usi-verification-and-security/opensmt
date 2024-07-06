@@ -68,7 +68,7 @@ public:
      * Handles the sign of the term correctly, i.e., it returned negative literal for negative term and
      * positive literal for positive term.
      */
-    const Lit getOrCreateLit(PTRef ptr);
+    Lit const getOrCreateLit(PTRef ptr);
 
     // Returns the variable corresponding to the term. The connection must already exist.
     Var getVar(PTRef) const;

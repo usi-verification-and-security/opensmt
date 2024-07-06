@@ -1,12 +1,17 @@
 ---
 Language: Cpp
-BasedOnStyle:  LLVM
+Standard: c++20
+BasedOnStyle: LLVM
 ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -4
 PointerAlignment: Middle
+QualifierAlignment: Right
+AlignOperands: AlignAfterOperator
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortBlocksOnASingleLine: Always
 AllowShortIfStatementsOnASingleLine: WithoutElse
 IndentCaseLabels: True
+NamespaceIndentation: All
+AlwaysBreakTemplateDeclarations: Yes
 SpaceAfterTemplateKeyword: False

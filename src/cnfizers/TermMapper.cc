@@ -84,7 +84,7 @@ Var TermMapper::getVar(PTRef r) const {
     return v;
 }
 
-const Lit TermMapper::getOrCreateLit(PTRef ptr) {
+Lit const TermMapper::getOrCreateLit(PTRef ptr) {
     PTRef p_tr;
     bool sgn;
     Var v = var_Undef;

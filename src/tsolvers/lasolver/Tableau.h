@@ -67,11 +67,11 @@ public:
     void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
-    const opensmt::Real & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
-    const column_t & getColumn(LVRef nonBasicVar) const;
-    const Polynomial & getRowPoly(LVRef basicVar) const;
+    opensmt::Real const & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
+    column_t const & getColumn(LVRef nonBasicVar) const;
+    Polynomial const & getRowPoly(LVRef basicVar) const;
     Polynomial & getRowPoly(LVRef basicVar);
-    const rows_t & getRows() const;
+    rows_t const & getRows() const;
 
     void clear();
     void pivot(LVRef bv, LVRef nv);
