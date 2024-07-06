@@ -110,9 +110,9 @@ jobs:
         steps:
             - checkout
             - run:
-                name: Debug build gcc under devtoolset-8
+                name: Debug build gcc under devtoolset-9
                 command: |
-                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
+                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-9 bash
 
     build-starexec-release:
         docker:
@@ -128,9 +128,9 @@ jobs:
         steps:
             - checkout
             - run:
-                name: Release build gcc under devtoolset-8
+                name: Release build gcc under devtoolset-9
                 command: |
-                    cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
+                    cat ./ci/build_maximally_static.sh |scl enable devtoolset-9 bash
 
     build-macos:
         macos:
