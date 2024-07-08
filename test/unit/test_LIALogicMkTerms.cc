@@ -8,6 +8,8 @@
 #include "IteHandler.h"
 #include "TreeOps.h"
 
+#include <algorithm>
+
 class LIALogicMkTermsTest: public ::testing::Test {
 protected:
     LIALogicMkTermsTest() : logic(opensmt::Logic_t::QF_LIA) {}

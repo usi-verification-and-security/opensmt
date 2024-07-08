@@ -13,6 +13,7 @@
 #include "Polynomial.h"
 #include <vector>
 #include <numeric>
+#include <cassert>
 
 struct ColumnCount {
     uint32_t count;
@@ -39,7 +40,7 @@ inline constexpr IndexType IndexType::Undef = IndexType { INT32_MAX };
 class SparseColMatrix {
 public:
     using ColumnPolynomial = PolynomialT<IndexType>;
-    using TermVec = std::vector<std::pair<IndexType, FastRational>>;
+    using TermVec = std::vector<std::pair<IndexType, opensmt::Real>>;
     class Col {
         ColumnPolynomial poly;
     public:
@@ -54,14 +55,14 @@ public:
         uint32_t size() const { return poly.size(); }
 
         void negate();
-        void add(Col const & other, FastRational const & multiple);
+        void add(Col const & other, opensmt::Real const & multiple);
 
         bool isFirst(RowIndex row) const { return poly.size() > 0 and poly.begin()->var.x == row.count; }
-        FastRational const * tryGetFirstCoeff() const { return poly.size() > 0 ? &poly.begin()->coeff : nullptr; }
-        FastRational const & getFirstCoeff() const { assert(poly.size() > 0); return poly.begin()->coeff; }
-        FastRational const * tryGetCoeffFor(RowIndex rowIndex) const;
+        opensmt::Real const * tryGetFirstCoeff() const { return poly.size() > 0 ? &poly.begin()->coeff : nullptr; }
+        opensmt::Real const & getFirstCoeff() const { assert(poly.size() > 0); return poly.begin()->coeff; }
+        opensmt::Real const * tryGetCoeffFor(RowIndex rowIndex) const;
 
-        FastRational product(std::vector<FastRational> const & values) const;
+        opensmt::Real product(std::vector<opensmt::Real> const & values) const;
         TermVec toVector() const;
     };
 
@@ -106,7 +107,7 @@ public:
 
 struct SparseLinearSystem {
     SparseColMatrix A;
-    std::vector<FastRational> rhs;
+    std::vector<opensmt::Real> rhs;
 };
 
 #endif //OPENSMT_SPARSEMATRIX_H

@@ -9,10 +9,13 @@
 #define OPENSMT_POLYNOMIAL_H
 
 #include "Real.h"
+
 #include <vector>
 #include <unordered_map>
 #include <functional>
 #include <iostream>
+#include <algorithm>
+#include <cassert>
 
 template<typename VarType>
 class PolynomialT {
@@ -101,7 +104,7 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
     auto myEnd = std::make_move_iterator(poly.end());
     auto otherEnd = other.poly.cend();
     TermCmp cmp;
-    FastRational tmp;
+    opensmt::Real tmp;
     while(true) {
         if (myIt == myEnd) {
             for (auto it = otherIt; it != otherEnd; ++it) {
@@ -185,7 +188,7 @@ unsigned long PolynomialT<VarType>::size() const {
 }
 
 template<typename VarType>
-const FastRational &PolynomialT<VarType>::getCoeff(VarType var) const {
+opensmt::Real const & PolynomialT<VarType>::getCoeff(VarType var) const {
     assert(contains(var));
     return findTermForVar(var)->coeff;
 }

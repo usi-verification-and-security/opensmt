@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Delta.h"
 #include <iostream>
+#include <cassert>
 
 //
 // Set Delta to 0

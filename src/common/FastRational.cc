@@ -5,6 +5,7 @@ David Monniaux, VERIMAG 2008-2009
 Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #include "FastRational.h"
+
 #include <sstream>
 #include <algorithm>
 

@@ -861,8 +861,7 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args)
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
-        // this assumes that `Number` is `FastRational`
-        args_new[1] = mkRealConst(FastRational_inverse(getNumConst(args_new[1]))); //mkConst(1/getRealConst(args_new[1]));
+        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); //mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
     PTRef tr = mkFun(s_new, std::move(args_new));

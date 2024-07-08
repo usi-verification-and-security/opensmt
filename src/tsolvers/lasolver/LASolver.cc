@@ -855,7 +855,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
 
     uint32_t rows = constraints.size();
     SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
-    std::vector<FastRational> rhs(rows);
+    std::vector<opensmt::Number> rhs(rows);
     std::vector<SparseColMatrix::ColumnPolynomial> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
@@ -953,7 +953,7 @@ TRes LASolver::cutFromProof() {
 vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
-            FastRationalHash hasher;
+            opensmt::NumberHash hasher;
             return (hasher(d.R()) ^ hasher(d.D()));
         }
     };
@@ -1004,7 +1004,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
                 if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
                 auto ratio = diff.R() / diff.D();
                 assert(isNegative(ratio));
-                if (ratio < FastRational(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+                if (ratio < opensmt::Number(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
 
                 // They could be equal for the right value of delta, add equalities for cross-product
                 vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);

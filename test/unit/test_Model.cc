@@ -249,7 +249,7 @@ TEST_F(LAModelTest, test_constants) {
     EXPECT_EQ(model->evaluate(fortytwo), fortytwo);
     PTRef one = logic.mkRealConst(1);
     EXPECT_EQ(model->evaluate(one), logic.getTerm_RealOne());
-    PTRef zero = logic.mkRealConst(FastRational(0));
+    PTRef zero = logic.mkRealConst(opensmt::Number(0));
     EXPECT_EQ(model->evaluate(zero), logic.getTerm_RealZero());
 }
 
@@ -398,5 +398,3 @@ TEST_F(ModelIntegrationTest, testIteWithSubstitution_SubtermsHaveValue) {
     EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
     EXPECT_EQ(model->evaluate(c), logic.getTerm_false());
 }
-
-

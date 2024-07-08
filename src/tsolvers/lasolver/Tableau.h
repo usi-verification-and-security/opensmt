@@ -11,6 +11,7 @@
 #include "Polynomial.h"
 #include "Real.h"
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <set>

@@ -8,6 +8,8 @@
 #include <IteHandler.h>
 #include <TreeOps.h>
 
+#include <algorithm>
+
 class LogicIteTest: public ::testing::Test {
 public:
     Logic logic;

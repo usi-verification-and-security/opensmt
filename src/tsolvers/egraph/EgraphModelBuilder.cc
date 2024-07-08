@@ -16,8 +16,8 @@ Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder
     ArithLogic & arithLogic = dynamic_cast<ArithLogic &>(logic);
     Map<ERef, PTRef, ERefHash> updatedValues;
     std::unordered_set<ERef, ERefHash> delayedNumericTerms;
-    FastRational maxModelValue = 0;
-    auto updateMaxValue = [&maxModelValue](FastRational const & newVal) {
+    opensmt::Number maxModelValue = 0;
+    auto updateMaxValue = [&maxModelValue](opensmt::Number const & newVal) {
         if (newVal > maxModelValue) { maxModelValue = newVal; }
     };
     for (ERef eref : enode_store.getTermEnodes()) {
@@ -45,7 +45,7 @@ Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder
         // continue with next Enode
     }
     for (ERef delayedTerm : delayedNumericTerms) {
-        FastRational nextValue = maxModelValue + 1;
+        opensmt::Number nextValue = maxModelValue + 1;
         SRef sort = logic.getSortRef(getEnode(delayedTerm).getTerm());
         if (arithLogic.isSortInt(sort)) {
             nextValue = nextValue.floor();

@@ -1,35 +1,35 @@
 #ifndef OPENSMT_RDLSOLVER_H
 #define OPENSMT_RDLSOLVER_H
 
-#include "STPSolver.h"
-#include "Delta.h"
 #include "Converter.h"
+#include "Delta.h"
 #include "ModelBuilder.h"
+#include "STPSolver.h"
 
 class RDLSolver : public STPSolver<Delta> {
 public:
-    RDLSolver(SMTConfig &c, ArithLogic &l) : STPSolver(c, l) {};
+    RDLSolver(SMTConfig & c, ArithLogic & l) : STPSolver(c, l){};
 };
 
 template<>
-Delta Converter<Delta>::getValue(const FastRational &val) {
+Delta Converter<Delta>::getValue(opensmt::Number const & val) {
     return Delta(val, 0);
 }
 
 template<>
 Delta Converter<Delta>::getValue(ptrdiff_t val) {
-    return Delta(FastRational(val, 1), 0);
+    return Delta(opensmt::Number(val, 1), 0);
 }
 
 template<>
-Delta Converter<Delta>::negate(const Delta &val) {
+Delta Converter<Delta>::negate(Delta const & val) {
     assert(!val.hasDelta());
     // not(a-b <= c) == (b-a < -c) == (b-a <= -c-delta)
     return Delta(-val.R(), -1);
 }
 
 template<>
-std::string Converter<Delta>::show(const Delta &val) {
+std::string Converter<Delta>::show(Delta const & val) {
     return val.printValue();
 }
 
@@ -39,14 +39,14 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     // Now we need to compute the proper values as Rationals, not as \delta-Rationals
     // Compute the right value for delta:
     Delta delta;
-    FastRational deltaVal;
+    opensmt::Number deltaVal;
     bool deltaSet = false;
     // I need to iterate over all edges and find the minimum from deltas making the edges true
     auto const & edges = this->model->getGraph().addedEdges;
     for (EdgeRef edgeRef : edges) {
-        auto const &edge = store.getEdge(edgeRef);
+        auto const & edge = store.getEdge(edgeRef);
         Delta realDiff = knownValues.at(edge.from) - knownValues.at(edge.to);
-        Delta const &upperBound = edge.cost;
+        Delta const & upperBound = edge.cost;
         assert(upperBound.R() >= realDiff.R());
         if (realDiff.R() < upperBound.R() and realDiff.D() > upperBound.D()) {
             Real valOfDelta = (upperBound.R() - realDiff.R()) / (realDiff.D() - upperBound.D());
@@ -60,7 +60,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     if (not deltaSet || delta > 1) {
         deltaVal = opensmt::Number(1);
     } else {
-        deltaVal = delta.R()/2;
+        deltaVal = delta.R() / 2;
     }
 
     for (auto const & entry : knownValues) {
@@ -68,10 +68,10 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         if (var == PTRef_Undef) { continue; }
         assert(logic.isVar(var));
         Delta const & varDeltaValue = entry.second;
-        FastRational varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
+        opensmt::Number varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
         PTRef val = logic.mkRealConst(varValue);
         modelBuilder.addVarValue(var, val);
     }
 }
 
-#endif //OPENSMT_RDLSOLVER_H
+#endif // OPENSMT_RDLSOLVER_H

@@ -242,7 +242,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         return true;
     }
 
-    bool check_basis(std::vector<std::vector<FastRational>> const & basis) {
+    bool check_basis(std::vector<std::vector<Real>> const & basis) {
         return std::all_of(basis.begin(), basis.end(), [](std::vector<Real> const & baseVec) {
             return std::none_of(baseVec.begin(), baseVec.end(), [](const Real & el) { return el < 0; });
         });
@@ -260,7 +260,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         std::cout << '\n';
     }
 
-    void print_basis(std::vector<std::vector<FastRational>> const & nullBasis) {
+    void print_basis(std::vector<std::vector<Real>> const & nullBasis) {
         (void)print_basis; // MB: to supress compiler warning for this unused helpful debug method
         std::cout << "Basis: " << '\n';
         for (auto const & base : nullBasis) {

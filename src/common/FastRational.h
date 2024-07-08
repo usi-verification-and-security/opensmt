@@ -192,11 +192,11 @@ private:
         }
     }
     friend inline void addition            (FastRational &, const FastRational &, const FastRational &);
-    friend inline void substraction        (FastRational &, const FastRational &, const FastRational &);
+    friend inline void subtraction         (FastRational &, const FastRational &, const FastRational &);
     friend inline void multiplication      (FastRational &, const FastRational &, const FastRational &);
     friend inline void division            (FastRational &, const FastRational &, const FastRational &);
     friend inline void additionAssign      (FastRational &, const FastRational &);
-    friend inline void substractionAssign  (FastRational &, const FastRational &);
+    friend inline void subtractionAssign   (FastRational &, const FastRational &);
     friend inline void multiplicationAssign(FastRational &, const FastRational &);
     friend inline void divisionAssign      (FastRational &, const FastRational &);
     friend FastRational gcd                (FastRational const &, FastRational const &);
@@ -327,7 +327,7 @@ public:
         FastRational dest;
         assert(isWellFormed());
         assert(b.isWellFormed());
-        substraction(dest, *this, b);
+        subtraction(dest, *this, b);
         assert(dest.isWellFormed());
         return dest;
     }
@@ -361,7 +361,7 @@ public:
     {
         assert(isWellFormed());
         assert(b.isWellFormed());
-        substractionAssign(*this, b);
+        subtractionAssign(*this, b);
         assert(isWellFormed());
         return *this;
     }
@@ -699,7 +699,7 @@ inline void addition(FastRational& dst, const FastRational& a, const FastRationa
     dst.try_fit_word();
 }
 
-inline void substraction(FastRational& dst, const FastRational& a, const FastRational& b) {
+inline void subtraction(FastRational& dst, const FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         if (b.num == 0) {
             dst.num = a.num;
@@ -916,7 +916,7 @@ inline void additionAssign(FastRational& a, const FastRational& b) {
     a.try_fit_word();
 }
 
-inline void substractionAssign(FastRational& a, const FastRational& b) {
+inline void subtractionAssign(FastRational& a, const FastRational& b) {
     if (a.wordPartValid() && b.wordPartValid()) {
         uword common = gcd(a.den, b.den);
         COMPUTE_WORD(n1, lword(a.num) * (b.den / common));
@@ -1044,32 +1044,12 @@ inline FastRational FastRational::inverse() const {
     return dest;
 }
 
-inline FastRational abs(const FastRational& x) {
+inline FastRational abs(FastRational const & x) {
     if (x.sign() >= 0) {
         return x;
     } else {
         return -x;
     }
-}
-
-inline FastRational FastRational_inverse(const FastRational& x) {
-    return x.inverse();
-}
-
-inline bool isNegative(FastRational const& num) {
-    return num.sign() < 0;
-}
-
-inline bool isPositive(FastRational const& num) {
-    return num.sign() > 0;
-}
-
-inline bool isNonNegative(FastRational const& num) {
-    return num.sign() >= 0;
-}
-
-inline bool isNonPositive(FastRational const& num) {
-    return num.sign() <= 0;
 }
 
 FastRational get_multiplicand(const std::vector<FastRational>& reals);

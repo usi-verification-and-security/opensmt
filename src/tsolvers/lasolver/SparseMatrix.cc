@@ -16,7 +16,7 @@ void SparseColMatrix::Col::add(Col const & other, opensmt::Real const & multiple
     this->poly.merge(other.poly, multiple);
 }
 
-opensmt::Real SparseColMatrix::Col::product(const std::vector<FastRational> & values) const {
+opensmt::Real SparseColMatrix::Col::product(const std::vector<opensmt::Real> & values) const {
     opensmt::Real sum = 0;
     for (auto const & term : poly) {
         uint32_t index = term.var.x;
@@ -27,7 +27,7 @@ opensmt::Real SparseColMatrix::Col::product(const std::vector<FastRational> & va
 }
 
 SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
-    std::vector<std::pair<IndexType, FastRational>> args;
+    std::vector<std::pair<IndexType, opensmt::Real>> args;
     args.reserve(poly.size());
     for (auto & term : poly) {
         args.emplace_back(term.var, term.coeff);
@@ -35,7 +35,7 @@ SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
     return args;
 }
 
-const FastRational * SparseColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
+opensmt::Real const * SparseColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
     IndexType bound {rowIndex.count};
     auto it = std::lower_bound(poly.begin(), poly.end(), bound, [](auto const & term, IndexType val) {
         return term.var.x < val.x;

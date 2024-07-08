@@ -8,7 +8,6 @@
 #define FAST_RATIONALS 1
 
 #ifdef FAST_RATIONALS
-
 #include "FastRational.h"
 #else
 #include <gmpxx.h>
@@ -16,10 +15,27 @@
 
 namespace opensmt {
 #ifdef FAST_RATIONALS
-    typedef FastRational Number;
+    using Number = FastRational;
+    using NumberHash = FastRationalHash;
 #else
-    typedef mpq_class Number;
+    using Number = mpq_class;
 #endif
+} // namespace opensmt
+
+inline bool isNegative(opensmt::Number const & num) {
+    return num.sign() < 0;
 }
 
-#endif //OPENSMT_NUMBER_H
+inline bool isPositive(opensmt::Number const & num) {
+    return num.sign() > 0;
+}
+
+inline bool isNonNegative(opensmt::Number const & num) {
+    return num.sign() >= 0;
+}
+
+inline bool isNonPositive(opensmt::Number const & num) {
+    return num.sign() <= 0;
+}
+
+#endif // OPENSMT_NUMBER_H
