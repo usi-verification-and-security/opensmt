@@ -95,28 +95,48 @@ jobs:
                 name: Release build llvm
                 command: ./ci/run_travis_commands.sh
 
-    build-starexec-debug:
+    build-fedora-debug:
         docker:
-            - image: usiverify/verify-env:starexec
+            - image: usiverify/verify-env:fedora
               auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
               environment:
+                CMAKE_BUILD_TYPE: Debug
+                MODEL_VALIDATION: Dolmen
+                ENABLE_LINE_EDITING: ON
+                PARALLEL: ON
                 FLAGS: -Wall -Wextra -Werror
                 OSMT_INSTALL: ~/osmt-install
-                CMAKE_BUILD_TYPE: Debug
-                MODEL_VALIDATION: pySMT
 
         steps:
             - checkout
             - run:
-                name: Debug build gcc under devtoolset-8
+                name: Debug build gcc in Fedora
                 command: |
-                    cat ./ci/run_travis_commands.sh |scl enable devtoolset-8 bash
+                    eval $(opam env)
+                    ./ci/run_travis_commands.sh
 
-    build-starexec-release:
+    build-fedora-release:
         docker:
-            - image: usiverify/verify-env:starexec
+            - image: usiverify/verify-env:fedora
+              auth:
+                username: mydockerhub-user
+                password: $DOCKERHUB_PASSWORD
+              environment:
+                CMAKE_BUILD_TYPE: Release
+                FLAGS: -Wall -Wextra -Werror
+                OSMT_INSTALL: ~/osmt-install
+                PARALLEL: OFF
+        steps:
+            - checkout
+            - run:
+                name: Release build gcc in Fedora
+                command: ./ci/run_travis_commands.sh
+
+    build-fedora-release-static:
+        docker:
+            - image: usiverify/verify-env:fedora
               auth:
                 username: mydockerhub-user
                 password: $DOCKERHUB_PASSWORD
@@ -128,9 +148,8 @@ jobs:
         steps:
             - checkout
             - run:
-                name: Release build gcc under devtoolset-8
-                command: |
-                    cat ./ci/build_maximally_static.sh |scl enable devtoolset-8 bash
+                name: Release static build gcc in Fedora
+                command: ./ci/build_maximally_static.sh
 
     build-macos:
         macos:
@@ -161,11 +180,14 @@ workflows:
   build-test:
       jobs:
         - formatter
-        - build-starexec-debug:
+        - build-fedora-debug:
           filters: &filters-build-test
             tags:
               only: /^v.*/
-        - build-starexec-release:
+        - build-fedora-release:
+          filters:
+            <<: *filters-build-test
+        - build-fedora-release-static:
           filters:
             <<: *filters-build-test
         - build-recent-gcc-debug:
