@@ -1,18 +1,22 @@
-//
-// Created by Martin Blicha on 17.05.20.
-//
+/*
+ * Copyright (c) 2020-2024 Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <BoolRewriting.h>
-#include <Logic.h>
-#include <ArithmeticEqualityRewriter.h>
-#include <DivModRewriter.h>
-#include <MainSolver.h>
-#include <DistinctRewriter.h>
+
+#include "ArithLogic.h"
+#include "BoolRewriting.h"
+#include "Logic.h"
+#include "ArithmeticEqualityRewriter.h"
+#include "MainSolver.h"
+#include "Rewritings.h"
 
 #include <algorithm>
 
+using namespace opensmt;
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
 {
@@ -79,7 +83,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     PTRef div = logic.mkIntDiv(x,two);
     PTRef mod = logic.mkMod(x,two);
     PTRef fla = logic.mkAnd(logic.mkEq(div, two), logic.mkEq(mod, logic.getTerm_IntZero()));
-    PTRef rewritten = DivModRewriter(logic).rewrite(fla);
+    PTRef rewritten = rewriteDivMod(logic, fla);
 //    std::cout << logic.printTerm(rewritten) << std::endl;
     SMTConfig config;
     MainSolver solver(logic, config, "test");
@@ -112,16 +116,16 @@ protected:
 TEST_F(RewriteDistinctTest, test_RewriteDistinct_TopLevel) {
     PTRef dist = logic.mkDistinct({x, y, z});
     PTRef fla = logic.mkAnd(b, dist); // dist is top-level distinct
-    EXPECT_NE(::rewriteDistincts(logic, fla), fla); // fla should be rewritten
-    EXPECT_EQ(::rewriteDistinctsKeepTopLevel(logic, fla), fla); // fla should be kept the same
+    EXPECT_NE(rewriteDistincts(logic, fla), fla); // fla should be rewritten
+    EXPECT_EQ(rewriteDistinctsKeepTopLevel(logic, fla), fla); // fla should be kept the same
 }
 
 TEST_F(RewriteDistinctTest, test_RewriteDistinct_Negated) {
     PTRef dist = logic.mkDistinct({x, y, z});
     PTRef fla = logic.mkNot(dist); // dist is not top-level distinct
-    PTRef rewritten1 = ::rewriteDistincts(logic, fla);
+    PTRef rewritten1 = rewriteDistincts(logic, fla);
     EXPECT_NE(rewritten1, fla); // fla should be rewritten
-    PTRef rewritten2 = ::rewriteDistinctsKeepTopLevel(logic, fla);
+    PTRef rewritten2 = rewriteDistinctsKeepTopLevel(logic, fla);
     EXPECT_NE(rewritten2, fla); // fla should be rewritten
     EXPECT_EQ(rewritten1, rewritten2);
     ASSERT_TRUE(logic.isNot(rewritten1));

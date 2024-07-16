@@ -3,9 +3,9 @@
 //
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include "DivModRewriter.h"
+#include "ArithLogic.h"
 #include "IteHandler.h"
+#include "Rewritings.h"
 #include "TreeOps.h"
 
 #include <algorithm>
@@ -194,27 +194,10 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_EqualityToConstant) {
 }
 
 TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
-
-    static constexpr std::initializer_list<std::string_view> prefixes = {IteHandler::itePrefix, DivModConfig::divPrefix, DivModConfig::modPrefix};
-
-
     auto hasAuxSymbols = [this](PTRef tr) {
-        class AuxSymbolMatcher {
-            ArithLogic const & logic;
-
-        public:
-            AuxSymbolMatcher(ArithLogic const & logic) : logic(logic) {}
-            bool operator()(PTRef tr) {
-                std::string_view const name = logic.getSymName(tr);
-                return std::any_of(prefixes.begin(), prefixes.end(), [&name](std::string_view const prefix) {
-                    return name.compare(0, prefix.size(), prefix) == 0;
-                });
-            };
-        };
-        auto predicate = AuxSymbolMatcher(logic);
-        auto config = TermCollectorConfig(predicate);
-        TermVisitor(logic, config).visit(tr);
-        return config.extractCollectedTerms().size() > 0;
+        auto auxiliaryVarsInTerm = matchingSubTerms(logic, tr, [&](PTRef subTerm) {
+            return opensmt::tryGetOriginalDivModTerm(logic, subTerm).has_value(); });
+        return auxiliaryVarsInTerm.size() > 0;
     };
 
     PTRef a = logic.mkIntVar("a");
@@ -231,8 +214,7 @@ TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
     PTRef nested = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(ite, c));
 
     for (PTRef tr : {term, eq, nested}) {
-
-        PTRef termWithAux = DivModRewriter(logic).rewrite(IteHandler(logic).rewrite(tr));
+        PTRef termWithAux = opensmt::rewriteDivMod(logic, IteHandler(logic).rewrite(tr));
         ASSERT_TRUE(hasAuxSymbols(termWithAux));
 
         PTRef termWithoutAux = logic.removeAuxVars(termWithAux);

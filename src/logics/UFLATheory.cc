@@ -2,14 +2,14 @@
 
 #include "ArithmeticEqualityRewriter.h"
 #include "ArrayHelpers.h"
-#include "DistinctRewriter.h"
 #include "LATheory.h"
 #include "OsmtInternalException.h"
-#include "Substitutor.h"
+#include "Rewritings.h"
 #include "TreeOps.h"
 
+
 PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
-    fla = rewriteDistincts(getLogic(), fla);
+    fla = opensmt::rewriteDistincts(getLogic(), fla);
     fla = rewriteDivMod<ArithLogic>(logic, fla);
     PTRef purified = purify(fla);
     if (logic.hasArrays()) {

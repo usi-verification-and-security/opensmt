@@ -10,8 +10,7 @@
 #define OPENSMT_LATHEORY_H
 #include "Theory.h"
 #include "ArithmeticEqualityRewriter.h"
-#include "DistinctRewriter.h"
-#include "DivModRewriter.h"
+#include "Rewritings.h"
 
 template<typename LinAlgLogic, typename LinAlgTHandler>
 class LATheory : public Theory
@@ -40,14 +39,14 @@ PTRef rewriteDivMod(TLogic &, PTRef fla) { return fla; }
 template<>
 PTRef rewriteDivMod<ArithLogic>(ArithLogic & logic, PTRef fla) {
     // Real logic cannot have div and mod
-    return not logic.hasIntegers() ? fla : DivModRewriter(logic).rewrite(fla);
+    return not logic.hasIntegers() ? fla : opensmt::rewriteDivMod(logic, fla);
 }
 
 }
 
 template<typename LinAlgLogic, typename LinAlgTSHandler>
 PTRef LATheory<LinAlgLogic,LinAlgTSHandler>::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
-    fla = rewriteDistincts(getLogic(), fla);
+    fla = opensmt::rewriteDistincts(getLogic(), fla);
     fla = rewriteDivMod<LinAlgLogic>(lalogic, fla);
     ArithmeticEqualityRewriter equalityRewriter(lalogic);
     fla = equalityRewriter.rewrite(fla);

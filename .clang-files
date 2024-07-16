@@ -6,9 +6,10 @@
 ./src/proof/PGCheck.cc
 ./src/rewriters/ArithmeticEqualityRewriter.h
 ./src/rewriters/DistinctRewriter.h
-./src/rewriters/DistinctRewriter.cc
 ./src/rewriters/DivModRewriter.h
 ./src/rewriters/Rewriter.h
+./src/rewriters/Rewritings.cc
+./src/rewriters/Rewritings.h
 ./src/rewriters/Substitutor.h
 
 ./src/tsolvers/lasolver/CutCreator.h

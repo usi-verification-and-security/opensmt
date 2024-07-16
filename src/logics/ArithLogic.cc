@@ -1,10 +1,11 @@
 #include "ArithLogic.h"
 
-#include "DivModRewriter.h"
 #include "FastRational.h"
 #include "OsmtApiException.h"
 #include "OsmtInternalException.h"
 #include "Polynomial.h"
+#include "Rewriter.h"
+#include "Rewritings.h"
 #include "PtStore.h"
 #include "SStore.h"
 #include "StringConv.h"
@@ -1147,16 +1148,9 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
     class AuxSymbolMatcherConfig : public DefaultRewriterConfig {
         ArithLogic & logic;
     public:
-        AuxSymbolMatcherConfig(ArithLogic & logic) : logic(logic) {}
+        explicit AuxSymbolMatcherConfig(ArithLogic & logic) : logic(logic) {}
         PTRef rewrite(PTRef tr) override {
-            if (not logic.isVar(tr)) return tr; // Only variables can match
-            auto symName = std::string_view(logic.getSymName(tr));
-            if (symName.compare(0, DivModConfig::divPrefix.size(), DivModConfig::divPrefix) == 0) {
-                return DivModConfig::getDivTermFor(logic, tr);
-            } else if (symName.compare(0, DivModConfig::divPrefix.size(), DivModConfig::modPrefix) == 0){
-                return DivModConfig::getModTermFor(logic, tr);
-            }
-            return tr;
+            return opensmt::tryGetOriginalDivModTerm(logic, tr).value_or(tr);
         }
     };
     // Note: this has negligible impact on performance, no need to check if there are divs or mods

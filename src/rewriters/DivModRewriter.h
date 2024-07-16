@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, Martin Blicha <martin.blicha@gmail.com>
+ * Copyright (c) 2021-2024, Martin Blicha <martin.blicha@gmail.com>
  *
  *  SPDX-License-Identifier: MIT
  *
@@ -8,17 +8,9 @@
 #ifndef OPENSMT_DIVMODREWRITER_H
 #define OPENSMT_DIVMODREWRITER_H
 
-#include "Rewriter.h"
-
 #include "ArithLogic.h"
-#include "PTRef.h"
-
-#include "OsmtApiException.h"
 #include "OsmtInternalException.h"
-#include "TypeUtils.h"
-
-#include <string>
-#include <unordered_map>
+#include "Rewriter.h"
 
 class DivModConfig : public DefaultRewriterConfig {
     ArithLogic & logic;
@@ -64,7 +56,7 @@ public:
     static std::string_view constexpr divPrefix = ".div";
     static std::string_view constexpr modPrefix = ".mod";
 
-    DivModConfig(ArithLogic & logic) : logic(logic) {}
+    explicit DivModConfig(ArithLogic & logic) : logic(logic) {}
 
     PTRef rewrite(PTRef term) override {
         SymRef symRef = logic.getSymRef(term);
@@ -125,7 +117,7 @@ class DivModRewriter : Rewriter<DivModConfig> {
     DivModConfig config;
 
 public:
-    DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
+    explicit DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
 
     PTRef rewrite(PTRef term) override {
         if (term == PTRef_Undef or not logic.hasSortBool(term)) {
@@ -139,9 +131,4 @@ public:
     }
 };
 
-// Simple single-use version
-inline PTRef rewriteDivMod(ArithLogic & logic, PTRef root) {
-    return DivModRewriter(logic).rewrite(root);
-}
-
-#endif // OPENSMT_DIVMODEREWRITER_H
+#endif // OPENSMT_DIVMODREWRITER_H
