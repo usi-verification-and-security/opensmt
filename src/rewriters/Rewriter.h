@@ -11,6 +11,12 @@
 
 #include "Logic.h"
 
+/**
+ * Defines a base class for rewriting terms.
+ * Custom rewriters can be obtained by providing a config which defines local rewrites.
+ * This base class takes care of propagating the local rewrites to the root of the term structure
+ * and ensures that each subterm is visited only once.
+ */
 template<typename TConfig>
 class Rewriter {
 protected:
