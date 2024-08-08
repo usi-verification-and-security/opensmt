@@ -6,13 +6,12 @@
  */
 
 #include "Rewritings.h"
-
 #include "DistinctRewriter.h"
 #include "DivModRewriter.h"
-#include "TreeOps.h"
+
+#include <common/TreeOps.h>
 
 namespace opensmt {
-
     PTRef rewriteDistincts(Logic & logic, PTRef fla) {
         return DistinctRewriter(logic).rewrite(fla);
     }

@@ -20,22 +20,22 @@ namespace opensmt {
 #else
     using Number = mpq_class;
 #endif
+
+    inline bool isNegative(Number const & num) {
+        return num.sign() < 0;
+    }
+
+    inline bool isPositive(Number const & num) {
+        return num.sign() > 0;
+    }
+
+    inline bool isNonNegative(Number const & num) {
+        return num.sign() >= 0;
+    }
+
+    inline bool isNonPositive(Number const & num) {
+        return num.sign() <= 0;
+    }
 } // namespace opensmt
-
-inline bool isNegative(opensmt::Number const & num) {
-    return num.sign() < 0;
-}
-
-inline bool isPositive(opensmt::Number const & num) {
-    return num.sign() > 0;
-}
-
-inline bool isNonNegative(opensmt::Number const & num) {
-    return num.sign() >= 0;
-}
-
-inline bool isNonPositive(opensmt::Number const & num) {
-    return num.sign() <= 0;
-}
 
 #endif // OPENSMT_NUMBER_H

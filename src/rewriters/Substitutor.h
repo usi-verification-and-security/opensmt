@@ -10,28 +10,30 @@
 
 #include "Rewriter.h"
 
-class SubstitutionConfig : public DefaultRewriterConfig {
-public:
-    using SubMap = Logic::SubstMap;
+namespace opensmt {
+    class SubstitutionConfig : public DefaultRewriterConfig {
+    public:
+        using SubMap = Logic::SubstMap;
 
-private:
-    SubMap const & subMap;
+        SubstitutionConfig(SubMap const & subMap) : subMap(subMap) {}
+        PTRef rewrite(PTRef term) override {
+            PTRef result;
+            return subMap.peek(term, result) ? result : term;
+        }
 
-public:
-    SubstitutionConfig(SubMap const & subMap) : subMap(subMap) {}
-    PTRef rewrite(PTRef term) override {
-        PTRef result;
-        return subMap.peek(term, result) ? result : term;
-    }
-};
+    private:
+        SubMap const & subMap;
+    };
 
-class Substitutor : public Rewriter<SubstitutionConfig> {
-    SubstitutionConfig config;
+    class Substitutor : public Rewriter<SubstitutionConfig> {
+    public:
+        Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs)
+            : Rewriter<SubstitutionConfig>(logic, config),
+              config(substs) {}
 
-public:
-    Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs)
-        : Rewriter<SubstitutionConfig>(logic, config),
-          config(substs) {}
-};
+    private:
+        SubstitutionConfig config;
+    };
+} // namespace opensmt
 
 #endif // OPENSMT_SUBSTITUTOR_H

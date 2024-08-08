@@ -12,67 +12,71 @@
 
 #include <unordered_set>
 
-class DistinctRewriteConfig : public DefaultRewriterConfig {
-protected:
-    Logic & logic;
+namespace opensmt {
+    class DistinctRewriteConfig : public DefaultRewriterConfig {
+    public:
+        DistinctRewriteConfig(Logic & logic) : logic(logic) {}
 
-public:
-    DistinctRewriteConfig(Logic & logic) : logic(logic) {}
+        bool previsit(PTRef term) override { return logic.hasSortBool(term); }
 
-    bool previsit(PTRef term) override { return logic.hasSortBool(term); }
-
-    PTRef rewrite(PTRef ptr) override {
-        if (logic.isDisequality(ptr) and doRewriteDistinct(ptr)) {
-            Pterm const & term = logic.getPterm(ptr);
-            vec<PTRef> args;
-            args.capacity(term.nargs());
-            for (PTRef arg : term) {
-                args.push(arg);
-            }
-            vec<PTRef> inequalities;
-            for (int i = 0; i < args.size(); ++i) {
-                for (int j = i + 1; j < args.size(); ++j) {
-                    inequalities.push(logic.mkNot(logic.mkEq(args[i], args[j])));
+        PTRef rewrite(PTRef ptr) override {
+            if (logic.isDisequality(ptr) and doRewriteDistinct(ptr)) {
+                Pterm const & term = logic.getPterm(ptr);
+                vec<PTRef> args;
+                args.capacity(term.nargs());
+                for (PTRef arg : term) {
+                    args.push(arg);
                 }
+                vec<PTRef> inequalities;
+                for (int i = 0; i < args.size(); ++i) {
+                    for (int j = i + 1; j < args.size(); ++j) {
+                        inequalities.push(logic.mkNot(logic.mkEq(args[i], args[j])));
+                    }
+                }
+                return logic.mkAnd(std::move(inequalities));
             }
-            return logic.mkAnd(std::move(inequalities));
+            return ptr;
         }
-        return ptr;
-    }
 
-    virtual bool doRewriteDistinct(PTRef) const { return true; }
-};
+        virtual bool doRewriteDistinct(PTRef) const { return true; }
 
-class KeepTopLevelDistinctRewriteConfig : public DistinctRewriteConfig {
-public:
-    using TopLevelDistincts = std::unordered_set<PTRef, PTRefHash>;
-    KeepTopLevelDistinctRewriteConfig(Logic & logic, std::unordered_set<PTRef, PTRefHash> topLevelDistincts)
-        : DistinctRewriteConfig(logic),
-          topLevelDistincts(std::move(topLevelDistincts)) {}
+    protected:
+        Logic & logic;
+    };
 
-    bool doRewriteDistinct(PTRef dist) const override {
-        return topLevelDistincts.find(dist) == topLevelDistincts.end();
-    }
+    class KeepTopLevelDistinctRewriteConfig : public DistinctRewriteConfig {
+    public:
+        using TopLevelDistincts = std::unordered_set<PTRef, PTRefHash>;
+        KeepTopLevelDistinctRewriteConfig(Logic & logic, std::unordered_set<PTRef, PTRefHash> topLevelDistincts)
+            : DistinctRewriteConfig(logic),
+              topLevelDistincts(std::move(topLevelDistincts)) {}
 
-private:
-    TopLevelDistincts topLevelDistincts;
-};
+        bool doRewriteDistinct(PTRef dist) const override {
+            return topLevelDistincts.find(dist) == topLevelDistincts.end();
+        }
 
-class DistinctRewriter : public Rewriter<DistinctRewriteConfig> {
-    DistinctRewriteConfig config;
+    private:
+        TopLevelDistincts topLevelDistincts;
+    };
 
-public:
-    DistinctRewriter(Logic & logic) : Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
-};
+    class DistinctRewriter : public Rewriter<DistinctRewriteConfig> {
+    public:
+        DistinctRewriter(Logic & logic) : Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
 
-class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig> {
-    KeepTopLevelDistinctRewriteConfig config;
+    private:
+        DistinctRewriteConfig config;
+    };
 
-public:
-    using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
-    KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts)
-        : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
-          config(logic, std::move(topLevelDistincts)) {}
-};
+    class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig> {
+    public:
+        using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
+        KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts)
+            : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
+              config(logic, std::move(topLevelDistincts)) {}
+
+    private:
+        KeepTopLevelDistinctRewriteConfig config;
+    };
+} // namespace opensmt
 
 #endif // OPENSMT_DISTINCTREWRITER_H

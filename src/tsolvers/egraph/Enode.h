@@ -27,11 +27,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ENODE_H
 #define ENODE_H
 
-#include "PtStructs.h"
-#include "SymRef.h"
-#include "TypeUtils.h"
 #include "CgTypes.h"
+
+#include <common/TypeUtils.h>
 #include <minisat/mtl/Vec.h>
+#include <pterms/PtStructs.h>
+#include <symbols/SymRef.h>
+
+namespace opensmt {
 
 struct ERef {
     uint32_t x;
@@ -287,7 +290,7 @@ public:
         elists.push(elid);
         referenced_by.emplace_back();
         referenced_by.back().push(owner);
-        
+
         return elid;
     }
 
@@ -351,5 +354,7 @@ public:
 #endif
     }
 };
+
+}
 
 #endif

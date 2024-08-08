@@ -28,67 +28,67 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SSTORE_H
 
 #include "SSort.h"
-#include "TypeUtils.h"
+
+#include <common/TypeUtils.h>
 #include <minisat/core/Alloc.h>
 
-
-#include <unordered_map>
 #include <iosfwd>
+#include <unordered_map>
 
-
-struct SortHash {
-    uint32_t operator() (const SortKey& s) const {
-        auto v = (uint32_t)s.sym.x;
-        for (SRef arg : s.args) {
-            v += (uint32_t)arg.x;
-        }
-        return v;
-    }
-};
-
-class SStore
-{
-  private:
-    SortAllocator sa {512};
-    SortSymbolAllocator ssa {512};
-    std::unordered_map<SortKey, SRef, SortHash> sortTable;
-    std::unordered_map<std::string, SSymRef> sortSymbolTable;
-    vec<SRef> sorts;
-    vec<SSymRef> sortSymbols;
-  public:
-
-    SStore() = default;
-
-    //===========================================================================
-    // Public APIs for sort construction/destruction
-
-    bool peek(SortSymbol const & symbol, SSymRef & outRef) const;
-    SSymRef newSortSymbol(SortSymbol symbol);
-
-    Sort const & operator [](SRef sr)               const { return sa[sr]; }
-    SortSymbol const & operator [](SSymRef sr)      const { return ssa[sr]; }
-
-    opensmt::pair<SRef,bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
-    SSymRef getSortSym(SRef sr) const { return sa[sr].getSymRef(); }
-    std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
-    std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }
-    unsigned int getSortSymSize(SSymRef ssr) const { return ssa[ssr].arity; }
-    std::string printSort (SRef sr) const {
-        std::string name = getSortSymName(sr);
-        if (sa[sr].getSize() > 0) {
-            name = "(" + name + " ";
-            for (unsigned i = 0; i < sa[sr].getSize(); i++) {
-                name += printSort(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+namespace opensmt {
+    struct SortHash {
+        uint32_t operator()(SortKey const & s) const {
+            auto v = (uint32_t)s.sym.x;
+            for (SRef arg : s.args) {
+                v += (uint32_t)arg.x;
             }
-            name += ")";
+            return v;
         }
-        return name;
-    }
+    };
 
-    int  getSize(SRef sr) const { return sa[sr].getSize(); }
-    const vec<SRef>& getSorts() const { return sorts; }
-    const vec<SSymRef>& getSortSyms() const { return sortSymbols; }
-    int     numSorts() const { return sorts.size(); }
-};
+    class SStore {
+    public:
+        SStore() = default;
+
+        //===========================================================================
+        // Public APIs for sort construction/destruction
+
+        bool peek(SortSymbol const & symbol, SSymRef & outRef) const;
+        SSymRef newSortSymbol(SortSymbol symbol);
+
+        Sort const & operator[](SRef sr) const { return sa[sr]; }
+        SortSymbol const & operator[](SSymRef sr) const { return ssa[sr]; }
+
+        opensmt::pair<SRef, bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
+        SSymRef getSortSym(SRef sr) const { return sa[sr].getSymRef(); }
+        std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
+        std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }
+        unsigned int getSortSymSize(SSymRef ssr) const { return ssa[ssr].arity; }
+        std::string printSort(SRef sr) const {
+            std::string name = getSortSymName(sr);
+            if (sa[sr].getSize() > 0) {
+                name = "(" + name + " ";
+                for (unsigned i = 0; i < sa[sr].getSize(); i++) {
+                    name += printSort(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+                }
+                name += ")";
+            }
+            return name;
+        }
+
+        int getSize(SRef sr) const { return sa[sr].getSize(); }
+        vec<SRef> const & getSorts() const { return sorts; }
+        vec<SSymRef> const & getSortSyms() const { return sortSymbols; }
+        int numSorts() const { return sorts.size(); }
+
+    private:
+        SortAllocator sa{512};
+        SortSymbolAllocator ssa{512};
+        std::unordered_map<SortKey, SRef, SortHash> sortTable;
+        std::unordered_map<std::string, SSymRef> sortSymbolTable;
+        vec<SRef> sorts;
+        vec<SSymRef> sortSymbols;
+    };
+} // namespace opensmt
 
 #endif

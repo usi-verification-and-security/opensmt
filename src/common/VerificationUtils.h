@@ -8,21 +8,25 @@
 #ifndef OPENSMT_VERIFICATIONUTILS_H
 #define OPENSMT_VERIFICATIONUTILS_H
 
-#include "Logic.h"
+#include <logics/Logic.h>
 
-class VerificationUtils {
-    Logic & logic;
-public:
-    VerificationUtils(Logic & logic) : logic(logic) {}
+namespace opensmt {
+    class VerificationUtils {
+    public:
+        VerificationUtils(Logic & logic) : logic(logic) {}
 
-    bool verifyInterpolantInternal(PTRef partA, PTRef partB, PTRef itp); // Verify interpolant internally, using OpenSMT's MainSolver
+        bool verifyInterpolantInternal(PTRef partA, PTRef partB,
+                                       PTRef itp); // Verify interpolant internally, using OpenSMT's MainSolver
 
-    bool impliesInternal(PTRef antecedent, PTRef consequent); // Verify validity of implication `antecedent -> consequent`, using OpenSMT's MainSolver
+        bool impliesInternal(
+            PTRef antecedent,
+            PTRef consequent); // Verify validity of implication `antecedent -> consequent`, using OpenSMT's MainSolver
 
-private:
-    bool checkSubsetCondition(PTRef p1, PTRef p2) const;
-};
+    private:
+        bool checkSubsetCondition(PTRef p1, PTRef p2) const;
 
+        Logic & logic;
+    };
+} // namespace opensmt
 
-
-#endif //OPENSMT_VERIFICATIONUTILS_H
+#endif // OPENSMT_VERIFICATIONUTILS_H

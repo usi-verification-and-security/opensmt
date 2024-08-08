@@ -8,69 +8,73 @@
 #ifndef OPENSMT_INTERPOLATIONCONTEXT_H
 #define OPENSMT_INTERPOLATIONCONTEXT_H
 
+#include <logics/Theory.h>
+
 #include <memory>
 
-#include "Theory.h"
+namespace opensmt {
+    // forward declaration
+    class ResolutionProof;
+    class ProofGraph;
 
-// forward declaration
-class ResolutionProof;
-class ProofGraph;
+    class InterpolationContext {
+    public:
+        InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, ResolutionProof const & t,
+                             PartitionManager & pmanager);
 
-class InterpolationContext {
-    SMTConfig & config;
-    Theory & theory;
-    TermMapper & termMapper;
-    Logic & logic;
-    PartitionManager & pmanager;
-    std::unique_ptr<ProofGraph> proof_graph;
-public:
-    InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, ResolutionProof const & t,
-                         PartitionManager & pmanager);
+        ~InterpolationContext();
 
-    ~InterpolationContext();
+        void printProofDotty();
 
-    void printProofDotty();
+        // Create interpolants with each A consisting of the specified partitions
+        void getInterpolants(std::vector<vec<int>> const & partitions, vec<PTRef> & interpolants);
 
-    // Create interpolants with each A consisting of the specified partitions
-    void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
+        void getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask);
 
-    void getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask);
+        void getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask);
 
-    void getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask);
+        bool getPathInterpolants(vec<PTRef> & interpolants, std::vector<ipartitions_t> const & A_masks);
 
-    bool getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks);
+    private:
+        void reduceProofGraph();
 
-private:
-    void reduceProofGraph();
+        void transformProofForCNFInterpolants();
 
-    void transformProofForCNFInterpolants();
+        bool verifyInterpolant(PTRef itp, ipartitions_t const & A_mask) const;
 
-    bool verifyInterpolant(PTRef itp, ipartitions_t const & A_mask) const;
+        PTRef simplifyInterpolant(PTRef itp) const;
 
-    PTRef simplifyInterpolant(PTRef itp) const;
+        void ensureNoLiteralsWithoutPartition();
 
-    void ensureNoLiteralsWithoutPartition();
+        /***** CONFIGURATION ****/
 
-    /***** CONFIGURATION ****/
+        int verbose() const { return config.verbosity(); }
 
-    int verbose() const { return config.verbosity(); }
+        bool usingMcMillanInterpolation() const {
+            return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan;
+        }
 
-    bool usingMcMillanInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillan; }
+        bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
 
-    bool usingPudlakInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pudlak; }
+        bool usingMcMillanPrimeInterpolation() const {
+            return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp;
+        }
 
-    bool usingMcMillanPrimeInterpolation() const {
-        return config.getBooleanInterpolationAlgorithm() == itp_alg_mcmillanp;
-    }
+        bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
 
-    bool usingPSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_ps; }
+        bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
 
-    bool usingPSWInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_psw; }
+        bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
 
-    bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
+        bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
 
-    bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
-};
+        SMTConfig & config;
+        Theory & theory;
+        TermMapper & termMapper;
+        Logic & logic;
+        PartitionManager & pmanager;
+        std::unique_ptr<ProofGraph> proof_graph;
+    };
+} // namespace opensmt
 
-
-#endif //OPENSMT_INTERPOLATIONCONTEXT_H
+#endif // OPENSMT_INTERPOLATIONCONTEXT_H

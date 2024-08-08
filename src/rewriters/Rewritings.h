@@ -8,13 +8,12 @@
 #ifndef OPENSMT_REWRITINGS_H
 #define OPENSMT_REWRITINGS_H
 
-#include "ArithLogic.h"
-#include "PTRef.h"
+#include <logics/ArithLogic.h>
+#include <pterms/PTRef.h>
 
 #include <optional>
 
 namespace opensmt {
-
     PTRef rewriteDistincts(Logic & logic, PTRef fla);
 
     PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla);
@@ -22,7 +21,6 @@ namespace opensmt {
     PTRef rewriteDivMod(ArithLogic & logic, PTRef fla);
 
     std::optional<PTRef> tryGetOriginalDivModTerm(ArithLogic & logic, PTRef term);
-
 } // namespace opensmt
 
 #endif // OPENSMT_REWRITINGS_H

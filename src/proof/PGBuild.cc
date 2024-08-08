@@ -7,11 +7,13 @@
 
 #include "PG.h"
 
-#include "SystemQueries.h"
-#include "OsmtInternalException.h"
-#include "ReportUtils.h"
+#include <common/SystemQueries.h>
+#include <common/InternalException.h>
+#include <common/ReportUtils.h>
 
 #include <deque>
+
+namespace opensmt {
 
 std::ostream& operator<< (std::ostream &out, RuleContext &ra)
 {
@@ -537,4 +539,6 @@ void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noParti
     for (Var v : noPartitionTheoryVars) {
         this->proof_variables.erase(v);
     }
+}
+
 }

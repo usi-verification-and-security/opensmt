@@ -26,38 +26,35 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SStore.h"
 
-#include <string>
-#include <sstream>
-
-bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) const {
-    auto it = this->sortSymbolTable.find(symbol.name);
-    if (it != sortSymbolTable.end()) {
-        outRef = it->second;
-        return true;
-    }
-    return false;
-}
-
-SSymRef SStore::newSortSymbol(SortSymbol symbol) {
-    SSymRef res;
-    assert(not peek(symbol, res));
-    res = ssa.alloc(symbol);
-    sortSymbolTable.insert({std::move(symbol.name), res});
-    sortSymbols.push(res);
-    return res;
-}
-
-opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest)
-{
-    SortKey key(symbolRef, std::move(rest));
-    auto it = sortTable.find(key);
-    if (it != sortTable.end()) {
-        return {it->second, false};
+namespace opensmt {
+    bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) const {
+        auto it = this->sortSymbolTable.find(symbol.name);
+        if (it != sortSymbolTable.end()) {
+            outRef = it->second;
+            return true;
+        }
+        return false;
     }
 
-    SRef sr = sa.alloc(key);
-    sorts.push(sr);
-    auto emplaceRes = sortTable.emplace(std::move(key), sr);
-    assert(emplaceRes.second); (void)emplaceRes;
-    return {sr, true};
-}
+    SSymRef SStore::newSortSymbol(SortSymbol symbol) {
+        SSymRef res;
+        assert(not peek(symbol, res));
+        res = ssa.alloc(symbol);
+        sortSymbolTable.insert({std::move(symbol.name), res});
+        sortSymbols.push(res);
+        return res;
+    }
+
+    opensmt::pair<SRef, bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest) {
+        SortKey key(symbolRef, std::move(rest));
+        auto it = sortTable.find(key);
+        if (it != sortTable.end()) { return {it->second, false}; }
+
+        SRef sr = sa.alloc(key);
+        sorts.push(sr);
+        auto emplaceRes = sortTable.emplace(std::move(key), sr);
+        assert(emplaceRes.second);
+        (void)emplaceRes;
+        return {sr, true};
+    }
+} // namespace opensmt

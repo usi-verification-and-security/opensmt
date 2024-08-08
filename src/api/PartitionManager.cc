@@ -7,92 +7,84 @@
  */
 
 #include "PartitionManager.h"
-#include "TreeOps.h"
-#include "OsmtInternalException.h"
 
-void PartitionManager::propagatePartitionMask(PTRef root) {
-    ipartitions_t& p = getIPartitions(root);
-    std::vector<bool> seen;
-    // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
-    auto size = Idx(logic.getPterm(root).getId()) + 1;
-    seen.resize(size, false);
-    std::vector<PTRef> queue {root};
-    while (!queue.empty()) {
-        PTRef current = queue.back();
-        queue.pop_back();
-        const Pterm& c_term = logic.getPterm(current);
-        auto id = Idx(c_term.getId());
-        assert(id < size);
-        if (!seen[id]) {
-            addIPartitions(current, p);
-            for (int j = 0; j < c_term.size(); ++j) {
-                queue.push_back(c_term[j]);
+#include <common/OsmtInternalException.h>
+#include <common/TreeOps.h>
+
+namespace opensmt {
+    void PartitionManager::propagatePartitionMask(PTRef root) {
+        ipartitions_t & p = getIPartitions(root);
+        std::vector<bool> seen;
+        // MB: Relies on invariant: Every subterm was created before its parent, so it has lower id
+        auto size = Idx(logic.getPterm(root).getId()) + 1;
+        seen.resize(size, false);
+        std::vector<PTRef> queue{root};
+        while (!queue.empty()) {
+            PTRef current = queue.back();
+            queue.pop_back();
+            Pterm const & c_term = logic.getPterm(current);
+            auto id = Idx(c_term.getId());
+            assert(id < size);
+            if (!seen[id]) {
+                addIPartitions(current, p);
+                for (int j = 0; j < c_term.size(); ++j) {
+                    queue.push_back(c_term[j]);
+                }
+                if (logic.isUF(current) || logic.isUP(current)) { addIPartitions(c_term.symb(), p); }
+                seen[id] = true;
             }
-            if (logic.isUF(current) || logic.isUP(current)) {
-                addIPartitions(c_term.symb(), p);
+        }
+    }
+
+    ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
+        vec<PTRef> vars = variables(logic, p);
+        if (vars.size() == 0) { return 0; }
+        ipartitions_t allowed = getIPartitions(vars[0]);
+        for (int i = 1; i < vars.size(); ++i) {
+            allowed &= getIPartitions(vars[i]);
+        }
+        return allowed;
+    }
+
+    PTRef PartitionManager::getPartition(ipartitions_t const & mask, PartitionManager::part p) {
+        auto isLocalToP = [p](ipartitions_t const & p_mask, ipartitions_t const & mask) {
+            return p == part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask);
+        };
+        auto hasNoPartition = [](ipartitions_t const & p_mask, ipartitions_t const & mask) {
+            return !isAlocal(p_mask, mask) and !isBlocal(p_mask, mask);
+        };
+        auto parts = getPartitions();
+        vec<PTRef> args;
+        for (auto part : parts) {
+            int partitionIndex = getPartitionIndex(part);
+            if (partitionIndex < 0) { throw OsmtInternalException("Internal error in partition bookkeeping"); }
+            ipartitions_t p_mask = 0;
+            setbit(p_mask, static_cast<unsigned>(partitionIndex));
+            if (isLocalToP(p_mask, mask)) {
+                args.push(part);
+            } else if (hasNoPartition(p_mask, mask)) {
+                throw OsmtInternalException("Assertion is neither A or B");
             }
-            seen[id] = true;
         }
+        PTRef requestedPartition = logic.mkAnd(std::move(args));
+        return requestedPartition;
     }
-}
 
-ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
-    vec<PTRef> vars = variables(logic, p);
-    if (vars.size() == 0) { return 0; }
-    ipartitions_t allowed = getIPartitions(vars[0]);
-    for (int i = 1; i < vars.size(); ++i) {
-        allowed &= getIPartitions(vars[i]);
+    vec<PTRef> PartitionManager::getPartitions(ipartitions_t const & mask) const {
+        vec<PTRef> res;
+        for (PTRef topLevelPartition : getPartitions()) {
+            int index = getPartitionIndex(topLevelPartition);
+            assert(index >= 0);
+            if (tstbit(mask, static_cast<unsigned>(index))) { res.push(topLevelPartition); }
+        }
+        return res;
     }
-    return allowed;
-}
 
-using opensmt::isAlocal;
-using opensmt::isBlocal;
-
-PTRef PartitionManager::getPartition(const ipartitions_t& mask, PartitionManager::part p)
-{
-    auto isLocalToP = [p](const ipartitions_t& p_mask, const ipartitions_t& mask){ return p == part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask); };
-    auto hasNoPartition = [](const ipartitions_t& p_mask, const ipartitions_t&mask) { return !isAlocal(p_mask, mask) and !isBlocal(p_mask, mask); };
-    auto parts = getPartitions();
-    vec<PTRef> args;
-    for (auto part : parts)
-    {
-        int partitionIndex = getPartitionIndex(part);
-        if (partitionIndex < 0) {
-            throw OsmtInternalException("Internal error in partition bookkeeping");
-        }
-        ipartitions_t p_mask = 0;
-        opensmt::setbit(p_mask, static_cast<unsigned>(partitionIndex));
-        if (isLocalToP(p_mask, mask)) {
-            args.push(part);
-        }
-        else if (hasNoPartition(p_mask, mask)) {
-            throw OsmtInternalException("Assertion is neither A or B");
-        }
+    void PartitionManager::addClauseClassMask(CRef c, ipartitions_t const & toadd) {
+        partitionInfo.addClausePartition(c, toadd);
     }
-    PTRef requestedPartition = logic.mkAnd(std::move(args));
-    return requestedPartition;
-}
 
-vec<PTRef> PartitionManager::getPartitions(ipartitions_t const & mask) const {
-    vec<PTRef> res;
-    for (PTRef topLevelPartition : getPartitions()) {
-        int index = getPartitionIndex(topLevelPartition);
-        assert(index >= 0);
-        if (opensmt::tstbit(mask, static_cast<unsigned>(index))) {
-            res.push(topLevelPartition);
-        }
+    void PartitionManager::invalidatePartitions(ipartitions_t const & toinvalidate) {
+        partitionInfo.invalidatePartitions(toinvalidate);
     }
-    return res;
-}
-
-void
-PartitionManager::addClauseClassMask(CRef c, const ipartitions_t& toadd)
-{
-    partitionInfo.addClausePartition(c, toadd);
-}
-
-void
-PartitionManager::invalidatePartitions(const ipartitions_t& toinvalidate) {
-    partitionInfo.invalidatePartitions(toinvalidate);
-}
+} // namespace opensmt

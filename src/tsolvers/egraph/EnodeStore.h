@@ -28,7 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENODESTORE_H
 
 #include "Enode.h"
-#include "OsmtInternalException.h"
+
+#include <common/InternalException.h>
+
+namespace opensmt {
 
 class Logic;
 
@@ -155,5 +158,7 @@ public:
         assert(containsSig(e));
     }
 };
+
+}
 
 #endif
