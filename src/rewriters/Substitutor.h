@@ -30,7 +30,8 @@ class Substitutor : public Rewriter<SubstitutionConfig> {
 
 public:
     Substitutor(Logic & logic, SubstitutionConfig::SubMap const & substs)
-        : Rewriter<SubstitutionConfig>(logic, config), config(substs) {}
+        : Rewriter<SubstitutionConfig>(logic, config),
+          config(substs) {}
 };
 
 #endif // OPENSMT_SUBSTITUTOR_H

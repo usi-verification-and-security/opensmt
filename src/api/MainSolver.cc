@@ -7,26 +7,29 @@
  */
 
 #include "MainSolver.h"
-#include "BoolRewriting.h"
-#include "LookaheadSMTSolver.h"
-#include "GhostSMTSolver.h"
-#include "UFLATheory.h"
-#include "LATheory.h"
-#include "LATHandler.h"
+
 #include "ArrayTheory.h"
-#include "OsmtApiException.h"
-#include "ModelBuilder.h"
-#include "IteHandler.h"
-#include "RDLTHandler.h"
+#include "BoolRewriting.h"
+#include "GhostSMTSolver.h"
 #include "IDLTHandler.h"
+#include "IteHandler.h"
+#include "LATHandler.h"
+#include "LATheory.h"
+#include "LookaheadSMTSolver.h"
+#include "ModelBuilder.h"
+#include "OsmtApiException.h"
+#include "RDLTHandler.h"
 #include "Substitutor.h"
+#include "UFLATheory.h"
+
 #include <thread>
 
-namespace opensmt { bool stop; }
+namespace opensmt {
+    bool stop;
+}
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
-    :
-      theory(createTheory(logic, conf)),
+    : theory(createTheory(logic, conf)),
       term_mapper(new TermMapper(logic)),
       thandler(new THandler(getTheory(), *term_mapper)),
       smt_solver(createInnerSolver(conf, *thandler)),
@@ -34,25 +37,22 @@ MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
       pmanager(logic),
       config(conf),
       ts(logic, *term_mapper),
-      solver_name {std::move(name)}
-{
+      solver_name{std::move(name)} {
     conf.setUsedForInitiliazation();
     initialize();
 }
 
 MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
-           std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
-    :
-      theory(std::move(th)),
+                       std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name)
+    : theory(std::move(th)),
       term_mapper(std::move(tm)),
       thandler(std::move(thd)),
       smt_solver(std::move(ss)),
       logic(thandler->getLogic()),
       pmanager(logic),
       config(conf),
-      ts(logic,*term_mapper),
-      solver_name {std::move(name)}
-{
+      ts(logic, *term_mapper),
+      solver_name{std::move(name)} {
     conf.setUsedForInitiliazation();
     initialize();
 }
@@ -70,8 +70,7 @@ void MainSolver::initialize() {
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
 }
 
-void MainSolver::push()
-{
+void MainSolver::push() {
     bool alreadyUnsat = isLastFrameUnsat();
     frames.push();
     preprocessor.push();
@@ -79,8 +78,7 @@ void MainSolver::push()
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
 
-bool MainSolver::pop()
-{
+bool MainSolver::pop() {
     if (frames.frameCount() > 1) {
         if (trackPartitions()) {
             auto const & partitionsToInvalidate = frames.last().formulas;
@@ -95,16 +93,13 @@ bool MainSolver::pop()
         frames.pop();
         preprocessor.pop();
         firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
-        if (not isLastFrameUnsat()) {
-            getSMTSolver().restoreOK();
-        }
+        if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
         return true;
     }
     return false;
 }
 
-void MainSolver::insertFormula(PTRef fla)
-{
+void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
         throw OsmtApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
     }
@@ -112,13 +107,16 @@ void MainSolver::insertFormula(PTRef fla)
     fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
 
     if (trackPartitions()) {
-        // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted formulas,
-        //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this easily
+        // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
+        // formulas,
+        //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this
+        //     easily
         unsigned int partition_index = insertedFormulasCount++;
         pmanager.assignTopLevelPartitionIndex(partition_index, fla);
         assert(pmanager.getPartitionIndex(fla) != -1);
+    } else {
+        ++insertedFormulasCount;
     }
-    else { ++insertedFormulasCount; }
 
     frames.add(fla);
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount() - 1);
@@ -127,7 +125,7 @@ void MainSolver::insertFormula(PTRef fla)
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
-        PreprocessingContext context {.frameCount = i, .perPartition = trackPartitions() };
+        PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
         preprocessor.prepareForProcessingFrame(i);
         firstNotSimplifiedFrame = i + 1;
         if (context.perPartition) {
@@ -138,7 +136,8 @@ sstat MainSolver::simplifyFormulas() {
                 frameFormulas.push(processed);
                 preprocessor.addPreprocessedFormula(processed);
             }
-            if (frameFormulas.size() == 0 or std::all_of(frameFormulas.begin(), frameFormulas.end(), [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
+            if (frameFormulas.size() == 0 or std::all_of(frameFormulas.begin(), frameFormulas.end(),
+                                                         [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
                 continue;
             }
             theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
@@ -158,9 +157,7 @@ sstat MainSolver::simplifyFormulas() {
             }
         } else {
             PTRef frameFormula = logic.mkAnd(frames[i].formulas);
-            if (context.frameCount > 0) {
-                frameFormula = applyLearntSubstitutions(frameFormula);
-            }
+            if (context.frameCount > 0) { frameFormula = applyLearntSubstitutions(frameFormula); }
             frameFormula = theory->preprocessBeforeSubstitutions(frameFormula, context);
             frameFormula = substitutionPass(frameFormula, context);
             frameFormula = theory->preprocessAfterSubstitutions(frameFormula, context);
@@ -173,9 +170,7 @@ sstat MainSolver::simplifyFormulas() {
             preprocessor.addPreprocessedFormula(frameFormula);
             theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
             // Optimize the dag for cnfization
-            if (logic.isBooleanOperator(frameFormula)) {
-                frameFormula = rewriteMaxArity(frameFormula);
-            }
+            if (logic.isBooleanOperator(frameFormula)) { frameFormula = rewriteMaxArity(frameFormula); }
             status = giveToSolver(frameFormula, frames[i].getId());
         }
     }
@@ -189,15 +184,13 @@ sstat MainSolver::simplifyFormulas() {
 void MainSolver::printFramesAsQuery(std::ostream & s) const {
     logic.dumpHeaderToFile(s);
     for (std::size_t i = 0; i < frames.frameCount(); ++i) {
-        if (i > 0)
-            s << "(push 1)\n";
+        if (i > 0) s << "(push 1)\n";
         for (PTRef assertion : frames[i].formulas) {
             logic.dumpFormulaToFile(s, assertion);
         }
     }
     logic.dumpChecksatToFile(s);
 }
-
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
@@ -209,8 +202,7 @@ void MainSolver::printFramesAsQuery(std::ostream & s) const {
 // term appears as a child in more than one term, we will not flatten
 // that structure.
 //
-PTRef MainSolver::rewriteMaxArity(PTRef root)
-{
+PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return ::rewriteMaxArityClassic(logic, root);
 }
 
@@ -218,7 +210,7 @@ std::unique_ptr<Model> MainSolver::getModel() {
     if (!config.produce_models()) { throw OsmtApiException("Producing models is not enabled"); }
     if (status != s_True) { throw OsmtApiException("Model cannot be created if solver is not in SAT state"); }
 
-    ModelBuilder modelBuilder {logic};
+    ModelBuilder modelBuilder{logic};
     smt_solver->fillBooleanVars(modelBuilder);
     thandler->fillTheoryFunctions(modelBuilder);
 
@@ -259,10 +251,11 @@ lbool MainSolver::getTermValue(PTRef tr) const {
 
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
     if (!config.produce_inter()) { throw OsmtApiException("Producing interpolants is not enabled"); }
-    if (status != s_False) { throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state"); }
-    return std::make_unique<InterpolationContext>(
-            config, *theory, *term_mapper, getSMTSolver().getResolutionProof(), pmanager
-    );
+    if (status != s_False) {
+        throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state");
+    }
+    return std::make_unique<InterpolationContext>(config, *theory, *term_mapper, getSMTSolver().getResolutionProof(),
+                                                  pmanager);
 }
 
 PTRef MainSolver::currentRootInstance() const {
@@ -276,13 +269,12 @@ PTRef MainSolver::currentRootInstance() const {
     return logic.mkAnd(std::move(assertions));
 }
 
-void MainSolver::printFramesAsQuery() const
-{
-    char* base_name = config.dump_query_name();
+void MainSolver::printFramesAsQuery() const {
+    char * base_name = config.dump_query_name();
     if (base_name == NULL)
         printFramesAsQuery(std::cout);
     else {
-        char* s_file_name;
+        char * s_file_name;
         int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
         (void)chars_written;
         std::ofstream stream;
@@ -298,20 +290,16 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
 
     struct ClauseCallBack : public Cnfizer::ClauseCallBack {
         std::vector<vec<Lit>> clauses;
-        void operator()(vec<Lit> && c) override {
-            clauses.push_back(std::move(c));
-        }
+        void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
-    const bool keepPartitionsSeparate = trackPartitions();
+    bool const keepPartitionsSeparate = trackPartitions();
     Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
-        if (push_id != 0) {
-            clause.push(frameLit);
-        }
+        if (push_id != 0) { clause.push(frameLit); }
         opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
         bool res = smt_solver->addOriginalSMTClause(std::move(clause), iorefs);
         if (keepPartitionsSeparate) {
@@ -328,27 +316,21 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     return s_Undef;
 }
 
-sstat MainSolver::check()
-{
+sstat MainSolver::check() {
     ++check_called;
     if (config.timeQueries()) {
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
         opensmt::StopWatch sw(query_timer);
     }
-    if (isLastFrameUnsat()) {
-        return s_False;
-    }
+    if (isLastFrameUnsat()) { return s_False; }
     sstat rval = simplifyFormulas();
 
-    if (config.dump_query())
-        printFramesAsQuery();
+    if (config.dump_query()) printFramesAsQuery();
 
     if (rval == s_Undef) {
         try {
             rval = solve();
-        } catch (std::overflow_error const& error) {
-            rval = s_Error;
-        }
+        } catch (std::overflow_error const & error) { rval = s_Error; }
         if (rval == s_False) {
             assert(not smt_solver->isOK());
             rememberUnsatFrame(smt_solver->getConflictFrame());
@@ -358,11 +340,8 @@ sstat MainSolver::check()
     return rval;
 }
 
-sstat MainSolver::solve()
-{
-    if (!smt_solver->isOK()){
-        return s_False;
-    }
+sstat MainSolver::solve() {
+    if (!smt_solver->isOK()) { return s_False; }
 
     // FIXME: Find a better way to deal with Bools in UF
     for (PTRef tr : logic.propFormulasAppearingInUF) {
@@ -376,8 +355,7 @@ sstat MainSolver::solve()
     }
     status = solve_(en_frames);
 
-    if (status == s_True && config.produce_models())
-        thandler->computeModel();
+    if (status == s_True && config.produce_models()) thandler->computeModel();
     smt_solver->clearSearch();
     return status;
 }
@@ -401,7 +379,7 @@ sstat MainSolver::solve_(vec<FrameId> const & enabledFrames) {
     }
     // Drop the assumption variable for the base frame (it is at the first place)
     for (int i = 1; i < assumps.size(); ++i) {
-        assumps[i-1] = assumps[i];
+        assumps[i - 1] = assumps[i];
     }
     assumps.pop();
     return smt_solver->solve(assumps, !config.isIncremental(), config.isIncremental());
@@ -413,7 +391,7 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     } else if (config.use_ghost_vars()) {
         return std::make_unique<GhostSMTSolver>(config, thandler);
     } else if (config.sat_picky()) {
-    return std::make_unique<LookaheadSMTSolver>(config, thandler);
+        return std::make_unique<LookaheadSMTSolver>(config, thandler);
     } else {
         return std::make_unique<SimpSMTSolver>(config, thandler);
     }
@@ -422,39 +400,33 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
     using Logic_t = opensmt::Logic_t;
     Logic_t logicType = logic.getLogic();
-    Theory* theory = nullptr;
+    Theory * theory = nullptr;
     switch (logicType) {
         case Logic_t::QF_UF:
-        case Logic_t::QF_BOOL:
-        {
+        case Logic_t::QF_BOOL: {
             theory = new UFTheory(config, logic);
             break;
         }
-        case Logic_t::QF_AX:
-        {
+        case Logic_t::QF_AX: {
             theory = new ArrayTheory(config, logic);
             break;
         }
-        case Logic_t::QF_LRA:
-        {
+        case Logic_t::QF_LRA: {
             ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LATHandler>(config, lraLogic);
+            theory = new LATheory<ArithLogic, LATHandler>(config, lraLogic);
             break;
         }
-        case Logic_t::QF_LIA:
-        {
+        case Logic_t::QF_LIA: {
             ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
-            theory = new LATheory<ArithLogic,LATHandler>(config, liaLogic);
+            theory = new LATheory<ArithLogic, LATHandler>(config, liaLogic);
             break;
         }
-        case Logic_t::QF_RDL:
-        {
-            ArithLogic& lraLogic = dynamic_cast<ArithLogic &>(logic);
+        case Logic_t::QF_RDL: {
+            ArithLogic & lraLogic = dynamic_cast<ArithLogic &>(logic);
             theory = new LATheory<ArithLogic, RDLTHandler>(config, lraLogic);
             break;
         }
-        case Logic_t::QF_IDL:
-        {
+        case Logic_t::QF_IDL: {
             ArithLogic & liaLogic = dynamic_cast<ArithLogic &>(logic);
             theory = new LATheory<ArithLogic, IDLTHandler>(config, liaLogic);
             break;
@@ -467,8 +439,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         case Logic_t::QF_ALIA:
         case Logic_t::QF_AUFLRA:
         case Logic_t::QF_AUFLIA:
-        case Logic_t::QF_AUFLIRA:
-        {
+        case Logic_t::QF_AUFLIRA: {
             ArithLogic & laLogic = dynamic_cast<ArithLogic &>(logic);
             theory = new UFLATheory(config, laLogic);
             break;
@@ -479,7 +450,6 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
         default:
             assert(false);
             throw std::logic_error{"Unreachable code - error in logic selection"};
-
     };
 
     return std::unique_ptr<Theory>(theory);
@@ -491,11 +461,11 @@ PTRef MainSolver::applyLearntSubstitutions(PTRef fla) {
     return res;
 }
 
-PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const& context) {
+PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const & context) {
     if (not config.do_substitutions()) { return fla; }
     auto res = computeSubstitutions(fla);
     vec<PTRef> args;
-    const auto & entries = res.usedSubstitution.getKeys();
+    auto const & entries = res.usedSubstitution.getKeys();
     for (auto entry : entries) {
         auto target = res.usedSubstitution[entry];
         args.push(logic.mkEq(entry, target));
@@ -517,15 +487,13 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
         PTRef simp_formula = root;
         // l_True : exists and is valid
         // l_False : exists but has been disabled to break symmetries
-        MapWithKeys<PTRef,lbool,PTRefHash> new_units;
+        MapWithKeys<PTRef, lbool, PTRefHash> new_units;
         vec<PtAsgn> current_units_vec;
         bool rval = logic.getNewFacts(simp_formula, new_units);
-        if (not rval) {
-            return SubstitutionResult{{}, logic.getTerm_false()};
-        }
+        if (not rval) { return SubstitutionResult{{}, logic.getTerm_false()}; }
         // Add the newly obtained units to the list of all substitutions
         // Clear the previous units
-        const auto & new_units_vec = new_units.getKeys();
+        auto const & new_units_vec = new_units.getKeys();
         for (PTRef key : new_units_vec) {
             current_units_vec.push(PtAsgn{key, new_units[key]});
         }
@@ -533,17 +501,15 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
         auto [res, newsubsts] = logic.retrieveSubstitutions(current_units_vec);
         logic.substitutionsTransitiveClosure(newsubsts);
 
-
         // remember the substitutions for models
         for (PTRef key : newsubsts.getKeys()) {
             if (!allsubsts.has(key)) {
-                const auto target = newsubsts[key];
+                auto const target = newsubsts[key];
                 allsubsts.insert(key, target);
             }
         }
 
-        if (res != l_Undef)
-            root = (res == l_True ? logic.getTerm_true() : logic.getTerm_false());
+        if (res != l_Undef) root = (res == l_True ? logic.getTerm_true() : logic.getTerm_false());
 
         PTRef new_root = Substitutor(logic, newsubsts).rewrite(root);
 
@@ -595,6 +561,6 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
     preprocessedFormulas.push(fla);
 }
 
-opensmt::span<const PTRef> MainSolver::Preprocessor::getPreprocessedFormulas() const {
+opensmt::span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
 }

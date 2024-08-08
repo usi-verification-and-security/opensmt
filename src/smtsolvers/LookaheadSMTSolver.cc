@@ -6,7 +6,8 @@
 #include "ResolutionProof.h"
 
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
-    : SimpSMTSolver(c, thandler), idx(0),
+    : SimpSMTSolver(c, thandler),
+      idx(0),
       score(c.lookahead_score_deep() ? (LookaheadScore *)(new LookaheadScoreDeep(assigns, c))
                                      : (LookaheadScore *)(new LookaheadScoreClassic(assigns, c))) {}
 

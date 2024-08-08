@@ -1,9 +1,14 @@
-./src/common/Number.h
-./src/common/Real.h
+./src/api/MainSolver.h
+./src/api/MainSolver.cc
 
 ./src/cnfizers/TermMapper.cc
 ./src/cnfizers/TermMapper.h
+
+./src/common/Number.h
+./src/common/Real.h
+
 ./src/proof/PGCheck.cc
+
 ./src/rewriters/ArithmeticEqualityRewriter.h
 ./src/rewriters/DistinctRewriter.h
 ./src/rewriters/DivModRewriter.h
@@ -12,12 +17,12 @@
 ./src/rewriters/Rewritings.h
 ./src/rewriters/Substitutor.h
 
+./src/smtsolvers/LookaheadSMTSolver.h
+./src/smtsolvers/LookaheadSMTSolver.cc
+
 ./src/tsolvers/lasolver/CutCreator.h
 ./src/tsolvers/lasolver/Tableau.h
 ./src/tsolvers/lasolver/Tableau.cc
 ./src/tsolvers/stpsolver/Converter.h
 ./src/tsolvers/stpsolver/IDLSolver.h
 ./src/tsolvers/stpsolver/RDLSolver.h
-
-./src/smtsolvers/LookaheadSMTSolver.h
-./src/smtsolvers/LookaheadSMTSolver.cc

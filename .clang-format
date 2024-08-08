@@ -15,3 +15,5 @@ IndentCaseLabels: True
 NamespaceIndentation: All
 AlwaysBreakTemplateDeclarations: Yes
 SpaceAfterTemplateKeyword: False
+PackConstructorInitializers: CurrentLine
+

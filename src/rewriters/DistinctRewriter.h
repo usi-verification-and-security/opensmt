@@ -47,7 +47,8 @@ class KeepTopLevelDistinctRewriteConfig : public DistinctRewriteConfig {
 public:
     using TopLevelDistincts = std::unordered_set<PTRef, PTRefHash>;
     KeepTopLevelDistinctRewriteConfig(Logic & logic, std::unordered_set<PTRef, PTRefHash> topLevelDistincts)
-        : DistinctRewriteConfig(logic), topLevelDistincts(std::move(topLevelDistincts)) {}
+        : DistinctRewriteConfig(logic),
+          topLevelDistincts(std::move(topLevelDistincts)) {}
 
     bool doRewriteDistinct(PTRef dist) const override {
         return topLevelDistincts.find(dist) == topLevelDistincts.end();
@@ -70,7 +71,8 @@ class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewrite
 public:
     using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
     KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts)
-        : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config), config(logic, std::move(topLevelDistincts)) {}
+        : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
+          config(logic, std::move(topLevelDistincts)) {}
 };
 
 #endif // OPENSMT_DISTINCTREWRITER_H

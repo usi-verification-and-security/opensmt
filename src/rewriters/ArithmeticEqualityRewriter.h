@@ -36,7 +36,8 @@ class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
 
 public:
     explicit ArithmeticEqualityRewriter(ArithLogic & logic)
-        : Rewriter<EqualityRewriterConfig>(logic, config), config(logic) {}
+        : Rewriter<EqualityRewriterConfig>(logic, config),
+          config(logic) {}
 };
 
 #endif // OPENSMT_ARITHMETICEQUALITYREWRITER_H
