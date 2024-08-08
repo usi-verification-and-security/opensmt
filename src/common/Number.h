@@ -5,10 +5,13 @@
 #ifndef OPENSMT_NUMBER_H
 #define OPENSMT_NUMBER_H
 
-#define FAST_RATIONALS 1
+//- #define FAST_RATIONALS
+#define FLOATS
 
 #ifdef FAST_RATIONALS
 #include "FastRational.h"
+#elif defined(FLOATS)
+#include "Float.h"
 #else
 #include <gmpxx.h>
 #endif
@@ -17,6 +20,9 @@ namespace opensmt {
 #ifdef FAST_RATIONALS
     using Number = FastRational;
     using NumberHash = FastRationalHash;
+#elif defined(FLOATS)
+    using Number = Float;
+    using NumberHash = Float::Hash;
 #else
     using Number = mpq_class;
 #endif

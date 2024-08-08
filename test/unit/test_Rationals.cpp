@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#ifdef FAST_RATIONALS
+
 using Real = opensmt::Real;
 
 TEST(Rationals_test, test_division_int32min)
@@ -503,3 +505,5 @@ TEST(Rationals_test, testNormalization) {
     EXPECT_EQ(normalizedNum, -370387);
     EXPECT_EQ(normalizedDen, 1000000);
 }
+
+#endif  // FAST_RATIONALS

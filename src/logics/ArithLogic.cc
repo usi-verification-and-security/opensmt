@@ -550,6 +550,13 @@ PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
     SymId id = sym_store[getPterm(ptr).symb()].getId();
     for (auto i = numbers.size(); i <= id; i++) { numbers.emplace_back(); }
     if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
+    //- std::cerr << c << std::endl;
+    //- std::cerr << val << std::endl;
+    //- std::cerr << *numbers[id] << std::endl;
+    //- double i;
+    //- std::cerr << modf(c.value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << modf(numbers[id]->value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << std::endl;
     assert(c == *numbers[id]);
     markConstant(id);
     return ptr;
@@ -1251,9 +1258,10 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef s
     if (not allIntegers) {
         // first ensure that all coeffs are integers
         // this would probably not work when `Number` is not `FastRational`
-        using Integer = FastRational; // TODO: change when we have FastInteger
+        //- using Integer = FastRational; // TODO: change when we have FastInteger
+        using Integer = opensmt::Number; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
-        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](opensmt::Number const & next) {
             if (next.isInteger()) {
                 // denominator is 1 => lcm of denominators stays the same
                 return;

@@ -141,6 +141,3 @@ TEST_F(RewriteDistinctTest, test_RewriteDistinct_Negated) {
         EXPECT_TRUE(std::find(disequalities.begin(), disequalities.end(), arg) != disequalities.end());
     }
 }
-
-
-
