@@ -9,7 +9,10 @@
 #define PARALLEL_SPLITTERINTERPRET_H
 
 #include "MainSplitter.h"
-#include "Interpret.h"
+
+#include <api/Interpret.h>
+
+namespace opensmt::parallel {
 
 class SplitterInterpret : public Interpret {
 private:
@@ -39,5 +42,7 @@ private:
         return dynamic_cast<Splitter&>(getMainSplitter().getSMTSolver());
     }
 };
+
+}
 
 #endif //PARALLEL_SPLITTERINTERPRET_H

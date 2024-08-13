@@ -8,14 +8,17 @@
 #ifndef PARALLEL_MAINSPLITTER_H
 #define PARALLEL_MAINSPLITTER_H
 
-#include "MainSolver.h"
 #include "SplitData.h"
 #include "ScatterSplitter.h"
-#include "OsmtInternalException.h"
 #include "LookaheadSplitter.h"
 #include "Splitter.h"
 
+#include <api/MainSolver.h>
+#include <common/InternalException.h>
+
 #include <cmath>
+
+namespace opensmt::parallel {
 
 class MainSplitter : public MainSolver {
 
@@ -42,7 +45,7 @@ private:
 
     void throwWithLocationInfo(std::string const & str) const {
         std::scoped_lock<std::mutex> s_lk(getChannel().getMutex());
-        throw OsmtInternalException(getChannel().get_current_header().at(PTPLib::common::Param.NODE + " " + str));
+        throw InternalException(getChannel().get_current_header().at(PTPLib::common::Param.NODE + " " + str));
     }
 
     bool verifyPartitions(vec<PTRef> const & partitions) const;
@@ -62,5 +65,6 @@ public:
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig &, THandler &, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &);
 };
 
+}
 
 #endif //PARALLEL_MAINSPLITTER_H

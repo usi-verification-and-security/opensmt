@@ -5,8 +5,11 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ScatterSplitter.h"
-#include "Random.h"
-#include "TreeOps.h"
+
+#include <common/Random.h>
+#include <common/TreeOps.h>
+
+namespace opensmt::parallel {
 
 ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & ch)
 : SimpSMTSolver         (c, t)
@@ -367,4 +370,6 @@ void ScatterSplitter::mapEnabledFrameIdToVar(Var v, uint32_t fid, uint32_t & pre
 
 vec<opensmt::pair<int,int>> const & ScatterSplitter::getBranchOfVar(Var v) {
     return frameIdToSolverBranch[get_FrameId(v)];
+}
+
 }

@@ -13,6 +13,8 @@
 
 #include <PTPLib/net/Channel.hpp>
 
+namespace opensmt::parallel {
+
 class Splitter {
 
 private:
@@ -44,7 +46,7 @@ public:
 
     PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & getChannel() const   { return channel; }
 
-    inline void setSolverBranch(vec<opensmt::pair<int,int>> && vec) { solverBranch = std::move(vec); }
+    inline void setSolverBranch(vec<opensmt::pair<int,int>> && vec_) { solverBranch = std::move(vec_); }
 
     void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid);
 
@@ -53,5 +55,7 @@ public:
     vec<opensmt::pair<int,int>> const &  getSolverBranch()  const  { return solverBranch; }
 
 };
+
+}
 
 #endif //PARALLEL_SPLITTER_H

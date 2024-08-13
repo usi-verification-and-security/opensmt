@@ -8,8 +8,10 @@
 #ifndef PARALLEL_SPLITCONTEXT_H
 #define PARALLEL_SPLITCONTEXT_H
 
-#include "SMTConfig.h"
-#include "SystemQueries.h"
+#include <common/SystemQueries.h>
+#include <options/SMTConfig.h>
+
+namespace opensmt::parallel {
 
 class SplitContext {
     SMTConfig const & config;
@@ -123,5 +125,6 @@ public:
     SplitContext(const SMTConfig & config) : config(config) { reset(0); }
 };
 
+}
 
 #endif //PARALLEL_SPLITCONTEXT_H

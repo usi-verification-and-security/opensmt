@@ -7,6 +7,8 @@
 
 #include "LookaheadSplitter.h"
 
+namespace opensmt::parallel {
+
 LookaheadSMTSolver::LALoopRes LookaheadSplitter::solveLookahead() {
 
     auto [result, node] = buildAndTraverse<LASplitNode, SplitBuildConfig>(SplitBuildConfig(*this));
@@ -70,3 +72,4 @@ void LookaheadSplitter::copySplits(LASplitNode const & root)
     }
 }
 
+}

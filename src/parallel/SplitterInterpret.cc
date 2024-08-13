@@ -7,6 +7,8 @@
 
 #include "SplitterInterpret.h"
 
+namespace opensmt::parallel {
+
 /***********************************************************
  * Class defining Splitter-Interpreter
  * Usage: Parallel solver
@@ -17,7 +19,7 @@ void SplitterInterpret::writeSplits(const char* filename)
     try {
         dynamic_cast<MainSplitter &>(getMainSolver()).writeSplits(filename);
     }
-    catch (OsmtApiException const & e) {
+    catch (ApiException const & e) {
         std::cout << "While writing splits: " << e.what() << std::endl;
     }
 }
@@ -34,10 +36,10 @@ sstat SplitterInterpret::checkSat() {
     return res;
 }
 
-sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec, bool shouldUpdateSolverBranch, bool s) {
+sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec_, bool shouldUpdateSolverBranch, bool s) {
     search = s;
     if (shouldUpdateSolverBranch)
-        getSplitter().setSolverBranch(std::forward<::vec<opensmt::pair<int,int>>>(vec));
+        getSplitter().setSolverBranch(std::forward<vec<opensmt::pair<int,int>>>(vec_));
 
     int rval = Interpret::interpFile(content);
     if (rval != 0)
@@ -63,5 +65,4 @@ std::unique_ptr<MainSolver> SplitterInterpret::createMainSolver(const char* logi
         return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
 }
 
-
-
+}

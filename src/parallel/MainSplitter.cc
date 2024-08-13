@@ -6,7 +6,10 @@
  */
 
 #include "MainSplitter.h"
-#include "VerificationUtils.h"
+
+#include <common/VerificationUtils.h>
+
+namespace opensmt::parallel {
 
 void MainSplitter::notifyResult(sstat const & result)
 {
@@ -76,7 +79,7 @@ void MainSplitter::writeSplits(std::string const & baseName) const {
             outFile << "(assert " << splitString << ")\n";
             outFile.close();
         } else {
-            throw OsmtApiException("Failed to open file " + name);
+            throw ApiException("Failed to open file " + name);
         }
     }
 }
@@ -168,4 +171,6 @@ vec<PTRef> MainSplitter::addToConjunction(std::vector<vec<PtAsgn>> const & in) c
         out.push(logic.mkOr(std::move(disj_vec)));
     }
     return out;
+}
+
 }

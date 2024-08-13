@@ -8,8 +8,10 @@
 #ifndef PARALLEL_SPLITDATA_H
 #define PARALLEL_SPLITDATA_H
 
-#include "THandler.h"
+#include <tsolvers/THandler.h>
 #include <minisat/core/SolverTypes.h>
+
+namespace opensmt::parallel {
 
 // -----------------------------------------------------------------------------------------
 // The splits
@@ -51,5 +53,7 @@ public:
     std::vector<vec<Lit>> & getSplitAssumptions()               { return split_assumptions; }
     [[nodiscard]] std::vector<vec<Lit>> const & peekSplitAssumptions() const  { return split_assumptions; }
 };
+
+}
 
 #endif //PARALLEL_SPLITDATA_H

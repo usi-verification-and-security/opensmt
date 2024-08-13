@@ -8,9 +8,12 @@
 #ifndef PARALLEL_LOOKAHEADSPLITTER_H
 #define PARALLEL_LOOKAHEADSPLITTER_H
 
-#include "LookaheadSMTSolver.h"
 #include "SplitData.h"
 #include "Splitter.h"
+
+#include <smtsolvers/LookaheadSMTSolver.h>
+
+namespace opensmt::parallel {
 
 static inline int getLog2Ceil(int i)
 {
@@ -79,5 +82,7 @@ protected:
         SplitBuildConfig(LookaheadSplitter & splitter_) : splitter(splitter_) {}
     };
 };
+
+}
 
 #endif //PARALLEL_LOOKAHEADSPLITTER_H

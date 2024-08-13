@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "SplitterInterpret.h"
+#include <parallel/SplitterInterpret.h>
 
 #include <cstdlib>
 #include <cstdio>
@@ -26,11 +26,10 @@
 #include <fpu_control.h>
 #endif
 
-namespace opensmt {
+namespace opensmt::parallel {
 
 void        catcher            ( int );
 
-}
 
 /*****************************************************************************\
  *                                                                           *
@@ -40,10 +39,14 @@ void        catcher            ( int );
 
 void interpretInteractive(SplitterInterpret & interpret);
 
+}
+
 int main( int argc, char * argv[] )
 {
-    signal( SIGTERM, opensmt::catcher );
-    signal( SIGINT , opensmt::catcher );
+    using namespace opensmt;
+
+    signal( SIGTERM, parallel::catcher );
+    signal( SIGINT , parallel::catcher );
 
     //
     // This trick (copied from Main.C of MiniSAT) is to allow
@@ -98,7 +101,7 @@ int main( int argc, char * argv[] )
         }
     }
     auto channel = std::make_unique<PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma>>();
-    SplitterInterpret interpreter(c, *channel);
+    parallel::SplitterInterpret interpreter(c, *channel);
 
     if (argc - optind == 0) {
         c.setInstanceName("stdin");
@@ -106,7 +109,7 @@ int main( int argc, char * argv[] )
             interpreter.interpPipe();
         }
         else {
-            interpretInteractive(interpreter);
+            parallel::interpretInteractive(interpreter);
         }
     }
     else {
@@ -136,6 +139,8 @@ int main( int argc, char * argv[] )
 
     return 0;
 }
+
+namespace opensmt::parallel {
 
 #ifndef ENABLE_LINE_EDITING
 void interpretInteractive(SplitterInterpret & interpret) {
@@ -183,7 +188,7 @@ void interpretInteractive(SplitterInterpret & interpret) {
                 // Parse starting from the command nonterminal
                 // Parsing should be done from a string that I get from the editline library.
                 Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
+                int rval = osmt_yyparse(&context);
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
@@ -207,8 +212,6 @@ void interpretInteractive(SplitterInterpret & interpret) {
     if (line_read) free(line_read);
 }
 #endif
-
-namespace opensmt {
 
 void catcher( int sig )
 {

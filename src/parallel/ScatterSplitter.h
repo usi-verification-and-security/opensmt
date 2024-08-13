@@ -7,15 +7,18 @@
 #ifndef PARALLEL_SCATTERSPLITTER_H
 #define PARALLEL_SCATTERSPLITTER_H
 
-#include "SimpSMTSolver.h"
 #include "SplitData.h"
 #include "SplitContext.h"
 #include "Splitter.h"
-#include "TreeOps.h"
+
+#include <smtsolvers/SimpSMTSolver.h>
+#include <common/TreeOps.h>
 
 #include <PTPLib/net/Channel.hpp>
 #include <PTPLib/common/Exception.hpp>
 #include <PTPLib/common/Printer.hpp>
+
+namespace opensmt::parallel {
 
 class ScatterSplitter :  public SimpSMTSolver, public Splitter {
 public:
@@ -89,5 +92,6 @@ protected:
     vec<opensmt::pair<int,int>> const & getBranchOfVar(Var v);
 };
 
+}
 
 #endif //PARALLEL_SCATTERSPLITTER_H

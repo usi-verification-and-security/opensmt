@@ -7,6 +7,7 @@
 
 #include "Splitter.h"
 
+namespace opensmt::parallel {
 
 void Splitter::addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid) {
     vec<opensmt::pair<int,int>> addrVector;
@@ -19,4 +20,6 @@ void Splitter::addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> &
 
 void Splitter::mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress) {
     frameIdToSolverBranch[fid] = std::move(solverAddress);
+}
+
 }
