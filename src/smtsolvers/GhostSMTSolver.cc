@@ -93,7 +93,7 @@ GhostSMTSolver::pickRandomBranchVar() {
     if (order_heap.empty())
         return var_Undef;
     else
-        return order_heap[opensmt::irand(random_seed,order_heap.size())];
+        return order_heap[irand(random_seed,order_heap.size())];
 }
 
 // Activity based decision:
@@ -151,10 +151,10 @@ GhostSMTSolver::pickBranchPolarity(Var next) {
 Lit
 GhostSMTSolver::pickBranchLit() {
 #ifdef STATISTICS
-    opensmt::StopWatch s(branchTimer);
+    StopWatch s(branchTimer);
 #endif
 
-    if ((opensmt::drand(random_seed) < random_var_freq) && !order_heap.empty()) {
+    if ((drand(random_seed) < random_var_freq) && !order_heap.empty()) {
         Var v = pickRandomBranchVar();
         if (v != var_Undef && value(v) == l_Undef) {
             Lit l = pickBranchPolarity(v);

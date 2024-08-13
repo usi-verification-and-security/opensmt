@@ -46,7 +46,7 @@ const char* BVLogic::tk_bv_coll32 = ".coll32";
 
 const int BVLogic::i_default_bitwidth = 32;
 
-BVLogic::BVLogic(opensmt::Logic_t type, int width) :
+BVLogic::BVLogic(Logic_t type, int width) :
       Logic(type)
     , bitwidth(width)
     , sort_BVNUM(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_bvnum, 0, SortSymbol::INTERNAL)), {}))

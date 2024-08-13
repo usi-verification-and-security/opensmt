@@ -17,9 +17,9 @@ PTRef rewriteDistincts(Logic & logic, PTRef fla) {
 }
 
 PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla) {
-    vec<PTRef> topLevelConjuncts = opensmt::topLevelConjuncts(logic, fla);
+    vec<PTRef> topLevelConjuncts_ = topLevelConjuncts(logic, fla);
     KeepTopLevelDistinctRewriter::TopLevelDistincts topLevelDistincts;
-    for (PTRef conj : topLevelConjuncts) {
+    for (PTRef conj : topLevelConjuncts_) {
         if (logic.isDisequality(conj)) { topLevelDistincts.insert(conj); }
     }
     return KeepTopLevelDistinctRewriter(logic, std::move(topLevelDistincts)).rewrite(fla);

@@ -21,7 +21,7 @@ template<class EV>
 class LABestLitBuf {
 private:
     int size;
-    using EVLitPair = opensmt::pair<EV, Lit>;
+    using EVLitPair = pair<EV, Lit>;
     vec<EVLitPair> buf;
     const vec<lbool> &assigns;
     EV  heur_worst;     // the lowest heuristic value currently in buf

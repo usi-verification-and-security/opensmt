@@ -319,7 +319,7 @@ TRes ArraySolver::checkExtensionality() {
 
     std::unordered_map<NodeRef, ExtensionalityInfo, NodeRefHash> extensionalityInfos;
     std::unordered_map<ExtensionalityInfo, NodeRef, ExtensionalityInfoHash> inverseExtensionalityInfos;
-    vec<opensmt::pair<NodeRef, NodeRef>> equalitiesToPropagate;
+    vec<pair<NodeRef, NodeRef>> equalitiesToPropagate;
 
     vec<NodeRef> queue;
     queue.capacity(rootsMap.size());

@@ -41,7 +41,7 @@ namespace opensmt {
 
 class DefinedFunctions {
     std::unordered_map<std::string,TemplateFunction> defined_functions;
-    opensmt::ScopedVector<std::string> scopedNames;
+    ScopedVector<std::string> scopedNames;
 
 public:
     bool has(std::string const & name) const { return defined_functions.find(name) != defined_functions.end(); }
@@ -109,7 +109,7 @@ public:
         }
     }
 private:
-    opensmt::ScopedVector<std::string> scopedNames;
+    ScopedVector<std::string> scopedNames;
     std::unordered_map<std::string, PTRef> nameToTerm;
     std::unordered_map<PTRef, std::vector<std::string>, PTRefHash> termToNames;
 };
@@ -192,7 +192,7 @@ class Interpret {
     DefinedFunctions defined_functions;
     TermNames termNames;
 
-    void                        initializeLogic(opensmt::Logic_t logicType);
+    void                        initializeLogic(Logic_t logicType);
     bool                        isInitialized() const { return logic != nullptr; }
     SRef                        sortFromASTNode(ASTNode const & n) const;
     static SortSymbol           sortSymbolFromASTNode(ASTNode const & node);

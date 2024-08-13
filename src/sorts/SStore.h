@@ -59,7 +59,7 @@ public:
     Sort const & operator[](SRef sr) const { return sa[sr]; }
     SortSymbol const & operator[](SSymRef sr) const { return ssa[sr]; }
 
-    opensmt::pair<SRef, bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
+    pair<SRef, bool> getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest);
     SSymRef getSortSym(SRef sr) const { return sa[sr].getSymRef(); }
     std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
     std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }

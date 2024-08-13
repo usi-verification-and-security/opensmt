@@ -358,7 +358,7 @@ private:
     void    undoDistinction ( PTRef );                            // Undoes a distinction
 
 
-    vec<opensmt::pair<ERef,ERef>> pending;                          // Pending merges
+    vec<pair<ERef,ERef>> pending;                          // Pending merges
     vec<Undo>                 undo_stack_main;                  // Keeps track of terms involved in operations
 
     void reanalyze(ERef);

@@ -88,13 +88,13 @@ class BVLogic: public Logic
     static const int i_default_bitwidth;
 
   public:
-    BVLogic(opensmt::Logic_t type, int width = i_default_bitwidth);
+    BVLogic(Logic_t type, int width = i_default_bitwidth);
     virtual int          getBitWidth() const { return bitwidth; }
     virtual std::string const getName() const override { return "QF_BV"; }
 
 //    virtual PTRef         insertTerm(SymRef sym, vec<PTRef>& terms, char** msg);
-    PTRef         mkBVConst   (const int c) { char* num; opensmt::wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
-    PTRef         mkBVConst   (const char* c) { char* num; opensmt::wordToBinary(opensmt::Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
+    PTRef         mkBVConst   (const int c) { char* num; wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
+    PTRef         mkBVConst   (const char* c) { char* num; wordToBinary(Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
     virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)); }
     virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM); }

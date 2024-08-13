@@ -49,12 +49,12 @@ class UFLATheory : public Theory
     virtual UFLATHandler&  getTSolverHandler() override { return uflatshandler; }
 
     virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) override;
-    virtual void afterPreprocessing(opensmt::span<const PTRef> preprocessedFormulas) override;
+    virtual void afterPreprocessing(span<const PTRef> preprocessedFormulas) override;
 
 protected:
     PTRef purify(PTRef fla);
     PTRef splitArithmeticEqualities(PTRef fla);
-    vec<PTRef> getInterfaceVars(opensmt::span<const PTRef> flas);
+    vec<PTRef> getInterfaceVars(span<const PTRef> flas);
 };
 
 }

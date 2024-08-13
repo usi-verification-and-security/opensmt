@@ -200,7 +200,7 @@ Number const & ArithLogic::getNumConst(PTRef tr) const {
     return *numbers[id];
 }
 
-opensmt::pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
+pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     assert(isPlus(sum));
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
@@ -221,7 +221,7 @@ opensmt::pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) c
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
+pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
     if (isTimes(term)) {
         assert(getPterm(term).size() == 2);
@@ -463,7 +463,7 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
     return l_Undef;
 }
 
-opensmt::pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const & facts) {
+pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const & facts) {
     auto resAndSubsts = Logic::retrieveSubstitutions(facts);
     if (resAndSubsts.first != l_Undef) return resAndSubsts;
     vec<PTRef> top_level_arith;
@@ -1192,7 +1192,7 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
  * @param sum
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
-opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
+pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
@@ -1273,7 +1273,7 @@ opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
 
-opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
+pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
@@ -1293,7 +1293,7 @@ opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
     return {std::move(constantValue), normalizedSum};
 }
 
-opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
+pair<Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
     SRef sr = getUniqueArgSort(sum);
     assert(isSortInt(sr) or isSortReal(sr));
     return isSortInt(sr) ? sumToNormalizedIntPair(sum) : sumToNormalizedRealPair(sum);

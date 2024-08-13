@@ -94,8 +94,7 @@ private:
         return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
     }
 
-    static opensmt::pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name,
-                                                             std::string_view const prefix) {
+    static pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name, std::string_view const prefix) {
         std::string dividendNumberStr;
         std::string divisorNumberStr;
         bool parsingDividend = true;

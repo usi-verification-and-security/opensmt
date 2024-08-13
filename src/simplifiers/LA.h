@@ -67,7 +67,7 @@ public:
 
     void print(std::ostream &) const;
 
-    opensmt::pair<PTRef, PTRef> getSubst();    // Get a valid substitution
+    pair<PTRef, PTRef> getSubst();    // Get a valid substitution
 
     // Adds an expression to the current one multiplied by Real
     void addExprWithCoeff(const LAExpression &, const Real &);

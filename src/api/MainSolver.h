@@ -175,7 +175,7 @@ protected:
         void pop();
         void initialize();
         void addPreprocessedFormula(PTRef);
-        [[nodiscard]] opensmt::span<PTRef const> getPreprocessedFormulas() const;
+        [[nodiscard]] span<PTRef const> getPreprocessedFormulas() const;
         [[nodiscard]] Logic::SubstMap getCurrentSubstitutions() const { return substitutions.current(); }
         void setSubstitutions(std::size_t level, Logic::SubstMap && subs) { substitutions.set(level, std::move(subs)); }
         void prepareForProcessingFrame(std::size_t frameIndex);

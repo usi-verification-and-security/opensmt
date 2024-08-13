@@ -18,12 +18,12 @@ namespace opensmt::parallel {
 class Splitter {
 
 private:
-    vec<opensmt::pair<int,int>> solverBranch;
+    vec<pair<int,int>> solverBranch;
 
 protected:
     SplitContext splitContext;
     PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> &  channel;
-    using map_frameId_solverBranch = std::map<uint32_t, vec<opensmt::pair<int,int>>>;
+    using map_frameId_solverBranch = std::map<uint32_t, vec<pair<int,int>>>;
     map_frameId_solverBranch frameIdToSolverBranch;
     using map_var_frameId = std::map<Var ,uint32_t>;
     map_var_frameId varToFrameId;
@@ -46,13 +46,13 @@ public:
 
     PTPLib::net::Channel<PTPLib::net::SMTS_Event, PTPLib::net::Lemma> & getChannel() const   { return channel; }
 
-    inline void setSolverBranch(vec<opensmt::pair<int,int>> && vec_) { solverBranch = std::move(vec_); }
+    inline void setSolverBranch(vec<pair<int,int>> && vec_) { solverBranch = std::move(vec_); }
 
-    void addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const> && solver_branch, uint32_t fid);
+    void addBranchToFrameId(span<pair<int, int> const> && solver_branch, uint32_t fid);
 
-    void mapSolverBranchToFrameId(uint32_t fid, vec<opensmt::pair<int,int>> && solverAddress);
+    void mapSolverBranchToFrameId(uint32_t fid, vec<pair<int,int>> && solverAddress);
 
-    vec<opensmt::pair<int,int>> const &  getSolverBranch()  const  { return solverBranch; }
+    vec<pair<int,int>> const &  getSolverBranch()  const  { return solverBranch; }
 
 };
 

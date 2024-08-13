@@ -889,7 +889,7 @@ bool Logic::isAtom(PTRef r) const {
 //
 // The substitutions for the term riddance from osmt1
 //
-opensmt::pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & facts) {
+pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & facts) {
     MapWithKeys<PTRef, PtAsgn, PTRefHash> substs;
     for (int i = 0; i < facts.size(); i++) {
         PTRef tr = facts[i].tr;

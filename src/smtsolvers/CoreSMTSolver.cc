@@ -228,11 +228,11 @@ Var CoreSMTSolver::newVar(bool dvar)
 
 bool CoreSMTSolver::addOriginalClause_(vec<Lit> && _ps)
 {
-    opensmt::pair<CRef, CRef> fake;
+    pair<CRef, CRef> fake;
     return addOriginalClause_(std::move(_ps), fake);
 }
 
-bool CoreSMTSolver::addOriginalClause_(vec<Lit> && ps, opensmt::pair<CRef, CRef> & inOutCRefs)
+bool CoreSMTSolver::addOriginalClause_(vec<Lit> && ps, pair<CRef, CRef> & inOutCRefs)
 {
     assert(decisionLevel() == 0);
     inOutCRefs = {CRef_Undef, CRef_Undef};

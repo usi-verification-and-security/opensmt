@@ -50,7 +50,7 @@ PTRef rewriteDivMod<ArithLogic>(ArithLogic & logic, PTRef fla) {
 
 template<typename LinAlgLogic, typename LinAlgTSHandler>
 PTRef LATheory<LinAlgLogic,LinAlgTSHandler>::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
-    fla = opensmt::rewriteDistincts(getLogic(), fla);
+    fla = rewriteDistincts(getLogic(), fla);
     fla = rewriteDivMod<LinAlgLogic>(lalogic, fla);
     ArithmeticEqualityRewriter equalityRewriter(lalogic);
     fla = equalityRewriter.rewrite(fla);

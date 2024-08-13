@@ -153,7 +153,7 @@ void LASolver::storeExplanation(Simplex::Explanation &&explanationBounds) {
 }
 
 bool LASolver::check_simplex(bool complete) {
-    // opensmt::StopWatch check_timer(egraphStats.simplex_timer);
+    // StopWatch check_timer(egraphStats.simplex_timer);
 //    printf(" - check %d\n", debug_check_count++);
     (void)complete;
     // check if we stop reading constraints
@@ -351,7 +351,7 @@ void LASolver::declareAtom(PTRef leq_tr)
 }
 
 LVRef LASolver::splitOnRandom(vec<LVRef> const & varsToFix) {
-    int pick = opensmt::irand(seed, varsToFix.size());
+    int pick = irand(seed, varsToFix.size());
     return varsToFix[pick];
 }
 

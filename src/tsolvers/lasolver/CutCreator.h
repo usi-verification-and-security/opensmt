@@ -21,7 +21,7 @@ class CutCreator {
 public:
     explicit CutCreator(std::function<Real(PTRef)> && varValue) : varValue(std::move(varValue)) {}
 
-    using Cut = opensmt::pair<SparseColMatrix::TermVec, Real>;
+    using Cut = pair<SparseColMatrix::TermVec, Real>;
     using ColumnMapping = std::vector<PTRef>;
     Cut makeCut(SparseLinearSystem && constraints, ColumnMapping const &);
 

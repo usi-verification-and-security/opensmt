@@ -10,7 +10,7 @@
 namespace opensmt {
 
 PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
-    fla = opensmt::rewriteDistincts(getLogic(), fla);
+    fla = rewriteDistincts(getLogic(), fla);
     fla = rewriteDivMod<ArithLogic>(logic, fla);
     PTRef purified = purify(fla);
     if (logic.hasArrays()) {
@@ -20,7 +20,7 @@ PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext c
     return noArithmeticEqualities;
 }
 
-void UFLATheory::afterPreprocessing(opensmt::span<const PTRef> preprocessedFormulas) {
+void UFLATheory::afterPreprocessing(span<const PTRef> preprocessedFormulas) {
     this->getTSolverHandler().setInterfaceVars(getInterfaceVars(preprocessedFormulas));
 }
 
@@ -204,7 +204,7 @@ public:
 
 
 
-vec<PTRef> UFLATheory::getInterfaceVars(opensmt::span<const PTRef> flas) {
+vec<PTRef> UFLATheory::getInterfaceVars(span<const PTRef> flas) {
     CollectInterfaceVariablesConfig config(logic);
     TermVisitor(logic, config).visit(flas);
     vec<PTRef> const & interfaceVars = config.getInterfaceVars();

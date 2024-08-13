@@ -114,7 +114,7 @@ void Egraph::pushBacktrackPoint( )
 // Pops a backtrack point
 //
 void Egraph::popBacktrackPoint() {
-//    opensmt::StopWatch sw(egraphStats.egraph_backtrack_timer);
+//    StopWatch sw(egraphStats.egraph_backtrack_timer);
     assert( backtrack_points.size( ) > 0 );
     size_t undo_stack_new_size = backtrack_points.last();
     backtrack_points.pop();
@@ -1530,7 +1530,7 @@ bool Egraph::childDuplicatesClass(ERef parent, uint32_t childIndex) {
     Enode const & parentNode = getEnode(parent);
     ERef child = parentNode[childIndex];
     auto childClass = getEnode(getEnode(child).getRoot()).getCid();
-    auto precedingChildren = opensmt::span(parentNode.begin(), childIndex);
+    auto precedingChildren = span(parentNode.begin(), childIndex);
     return std::any_of(precedingChildren.begin(), precedingChildren.end(), [&](ERef precChild) {
        return childClass == getEnode(getEnode(precChild).getRoot()).getCid();
     });

@@ -66,13 +66,13 @@ ERef EnodeStore::addTerm(PTRef term, bool ignoreChildren) {
     SymRef symref = pterm.symb();
     vec<ERef> args;
     auto argSpan = [&](){
-        if (ignoreChildren) { return opensmt::span<ERef>(nullptr, 0); }
+        if (ignoreChildren) { return span<ERef>(nullptr, 0); }
         args.capacity(pterm.nargs());
         for (PTRef arg : pterm) {
             assert(termToERef.has(arg));
             args.push(termToERef[arg]);
         }
-        return opensmt::span(args.begin(), args.size_());
+        return span(args.begin(), args.size_());
     }();
     ERef newEnode = ea.alloc(symref, argSpan, term);
 

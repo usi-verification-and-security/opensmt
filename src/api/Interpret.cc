@@ -380,7 +380,7 @@ void Interpret::interp(ASTNode& n) {
 }
 
 bool Interpret::addLetFrame(ASTNode const & bindingsNode, LetRecords & letRecords) {
-    std::vector<opensmt::pair<PTRef, std::string>> bindings;
+    std::vector<pair<PTRef, std::string>> bindings;
 
     // First read the term declarations in the let statement
     for (ASTNode const* vb : *bindingsNode.children) {
@@ -705,7 +705,7 @@ void Interpret::getValue(std::vector<ASTNode*> const & terms)
 {
     auto model = main_solver->getModel();
     Logic & logic = main_solver->getLogic();
-    using ValPair = opensmt::pair<ASTNode const * const,PTRef>;
+    using ValPair = pair<ASTNode const * const,PTRef>;
     std::vector<ValPair> values;
     for (auto termNode : terms) {
         ASTNode const & term = *termNode;

@@ -58,7 +58,7 @@ private:
 
 protected:
     bool     scatterLevel();                                                  // Are we currently on a scatter level.
-    opensmt::pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
+    pair<SplitData,lbool> createSplitAndBlockAssumptions();          // Create a split formula and place it to the splits vector.
     bool     excludeAssumptions(vec<Lit> && neg_constrs);                     // Add a clause to the database and propagate
     bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
 
@@ -74,7 +74,7 @@ protected:
     void exposeLongerClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
     bool exposeClauses(std::vector<PTPLib::net::Lemma> & learnedLemmas);
 
-    bool isPrefix(const vec<opensmt::pair<int,int>> &  prefix, const vec<opensmt::pair<int,int>> &  full)
+    bool isPrefix(const vec<pair<int,int>> &  prefix, const vec<pair<int,int>> &  full)
     {
         if (prefix.size() > full.size())
             return false;
@@ -89,7 +89,7 @@ protected:
 
     void addAssumptionVar(Var v) override { assumptionVars.insert(v); }
 
-    vec<opensmt::pair<int,int>> const & getBranchOfVar(Var v);
+    vec<pair<int,int>> const & getBranchOfVar(Var v);
 };
 
 }

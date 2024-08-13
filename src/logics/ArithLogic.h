@@ -345,15 +345,15 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
-    opensmt::pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
-    opensmt::pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
+    pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
+    pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
     PTRef sumToNormalizedEquality(PTRef sum);
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
-    opensmt::pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
+    pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
     void termSort(vec<PTRef> & v) const override;
 
     PTRef removeAuxVars(PTRef) override;
@@ -381,9 +381,9 @@ protected:
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
-    opensmt::pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
-    opensmt::pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
-    opensmt::pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
+    pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
+    pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
+    pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
 

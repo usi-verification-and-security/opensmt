@@ -45,7 +45,7 @@ SSymRef SStore::newSortSymbol(SortSymbol symbol) {
     return res;
 }
 
-opensmt::pair<SRef, bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest) {
+pair<SRef, bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest) {
     SortKey key(symbolRef, std::move(rest));
     auto it = sortTable.find(key);
     if (it != sortTable.end()) { return {it->second, false}; }

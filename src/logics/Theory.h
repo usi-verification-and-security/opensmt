@@ -57,7 +57,7 @@ class Theory
 
     virtual PTRef preprocessBeforeSubstitutions(PTRef fla, PreprocessingContext const &) { return fla; }
     virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) = 0;
-    virtual void afterPreprocessing(opensmt::span<const PTRef>) {}
+    virtual void afterPreprocessing(span<const PTRef>) {}
 
     virtual                ~Theory() = default;
 };

@@ -1145,11 +1145,11 @@ BitBlaster::bbBvlshift(PTRef tr)
     BVRef a = bbTerm(arg1);
     BVRef b = bbTerm(arg2);
 
-    assert(opensmt::isPowOfTwo(bs[a].size()));
-    assert(opensmt::isPowOfTwo(bs[b].size()));
+    assert(isPowOfTwo(bs[a].size()));
+    assert(isPowOfTwo(bs[b].size()));
 
     int l = bs[a].size();
-    int n = opensmt::getLogFromPowOfTwo(bs[a].size());
+    int n = getLogFromPowOfTwo(bs[a].size());
 
     std::vector<vec<PTRef> > ls;
     for (int s = -1; s <= n-1; s++) {
@@ -1206,11 +1206,11 @@ BitBlaster::bbBvrshift(PTRef tr, bool arith)
     BVRef a = bbTerm(arg1);
     BVRef b = bbTerm(arg2);
 
-    assert(opensmt::isPowOfTwo(bs[a].size()));
-    assert(opensmt::isPowOfTwo(bs[b].size()));
+    assert(isPowOfTwo(bs[a].size()));
+    assert(isPowOfTwo(bs[b].size()));
 
     int l = bs[a].size();
-    int n = opensmt::getLogFromPowOfTwo(bs[a].size());
+    int n = getLogFromPowOfTwo(bs[a].size());
 
     std::vector<vec<PTRef>> ls;
     for (int s = -1; s <= n-1; s++) {

@@ -60,7 +60,7 @@ void MainSolver::initialize() {
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
     smt_solver->initialize();
-    opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
+    pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     smt_solver->addOriginalSMTClause({term_mapper->getOrCreateLit(logic.getTerm_true())}, iorefs);
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
 
@@ -298,7 +298,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
         if (push_id != 0) { clause.push(frameLit); }
-        opensmt::pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
+        pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
         bool res = smt_solver->addOriginalSMTClause(std::move(clause), iorefs);
         if (keepPartitionsSeparate) {
             CRef ref = iorefs.first;
@@ -558,7 +558,7 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
     preprocessedFormulas.push(fla);
 }
 
-opensmt::span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
+span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
 }
 } // namespace opensmt

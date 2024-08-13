@@ -36,10 +36,10 @@ sstat SplitterInterpret::checkSat() {
     return res;
 }
 
-sstat SplitterInterpret::interpSMTContent(char *content, vec<opensmt::pair<int,int>> && vec_, bool shouldUpdateSolverBranch, bool s) {
+sstat SplitterInterpret::interpSMTContent(char *content, vec<pair<int,int>> && vec_, bool shouldUpdateSolverBranch, bool s) {
     search = s;
     if (shouldUpdateSolverBranch)
-        getSplitter().setSolverBranch(std::forward<vec<opensmt::pair<int,int>>>(vec_));
+        getSplitter().setSolverBranch(std::forward<vec<pair<int,int>>>(vec_));
 
     int rval = Interpret::interpFile(content);
     if (rval != 0)

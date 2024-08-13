@@ -30,7 +30,7 @@ namespace opensmt {
 cgId Enode::cgid_ctr = cgId_Nil+1;
 UseVectorIndex UseVectorIndex::NotValidIndex = {UINT32_MAX};
 
-Enode::Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef term) :
+Enode::Enode(SymRef symbol, span<ERef> children, ERef myRef, PTRef term) :
     root(myRef),
     cid(cgid_ctr++),
     eq_next(myRef),

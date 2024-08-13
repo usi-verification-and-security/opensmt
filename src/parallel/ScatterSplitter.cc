@@ -18,7 +18,7 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Chann
 {}
 
 bool ScatterSplitter::branchLitRandom() {
-    return ((not splitContext.isInSplittingCycle() and opensmt::drand(random_seed) < random_var_freq) or
+    return ((not splitContext.isInSplittingCycle() and drand(random_seed) < random_var_freq) or
             (splitContext.isInSplittingCycle() and splitContext.preferRandom()))
            and not order_heap.empty();
 }
@@ -95,7 +95,7 @@ bool ScatterSplitter::scatterLevel() {
     return d == decisionLevel() - assumptions.size();
 }
 
-opensmt::pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
+pair<SplitData,lbool> ScatterSplitter::createSplitAndBlockAssumptions() {
     SplitData splitData;
     vec<Lit> constraints_negated;
     // Add the literals on the decision levels.
@@ -263,7 +263,7 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
             }
 
             if (isAssumptionVar(v)) {
-                vec<opensmt::pair<int, int>> const & solverBranch_perVar = getBranchOfVar(v);
+                vec<pair<int, int>> const & solverBranch_perVar = getBranchOfVar(v);
                 if (isPrefix(solverBranch_perVar, getSolverBranch())) {
                     int result = solverBranch_perVar.size();
                     assert([&]() {
@@ -368,7 +368,7 @@ void ScatterSplitter::mapEnabledFrameIdToVar(Var v, uint32_t fid, uint32_t & pre
     var_frameId[v] = fid ;
 }
 
-vec<opensmt::pair<int,int>> const & ScatterSplitter::getBranchOfVar(Var v) {
+vec<pair<int,int>> const & ScatterSplitter::getBranchOfVar(Var v) {
     return frameIdToSolverBranch[get_FrameId(v)];
 }
 

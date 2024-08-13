@@ -24,7 +24,7 @@ public:
     TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     // FIXME: These should be non-virtual, but we need to modify PtermNodeCounter first
-    virtual inline void visit(opensmt::span<PTRef const> roots);
+    virtual inline void visit(span<PTRef const> roots);
     virtual inline void visit(PTRef root);
 
 private:
@@ -33,7 +33,7 @@ private:
 };
 
 template<typename TConfig>
-void TermVisitor<TConfig>::visit(opensmt::span<PTRef const> roots) {
+void TermVisitor<TConfig>::visit(span<PTRef const> roots) {
     struct DFSEntry {
         explicit DFSEntry(PTRef term) : term(term) {}
         PTRef term;
@@ -82,7 +82,7 @@ void TermVisitor<TConfig>::visit(PTRef root) {
         if (cfg.previsit(root)) cfg.visit(root);
         return;
     }
-    return visit(opensmt::span<PTRef const>(&root, 1));
+    return visit(span<PTRef const>(&root, 1));
 }
 
 class DefaultVisitorConfig {

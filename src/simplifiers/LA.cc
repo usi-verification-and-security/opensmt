@@ -155,7 +155,7 @@ void LAExpression::print(std::ostream & os) const {
     os << '\n';
 }
 
-opensmt::pair<PTRef, PTRef> LAExpression::getSubst() {
+pair<PTRef, PTRef> LAExpression::getSubst() {
     if (polynome.size() == 1) {
         assert(polynome.find(PTRef_Undef) != polynome.end());
         return {PTRef_Undef, PTRef_Undef};

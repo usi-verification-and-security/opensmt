@@ -14,12 +14,12 @@
 namespace opensmt {
     typedef mpz_class Integer; //PS. related to BV logic
 
-    void static inline wordToBinary(const opensmt::Integer x, char *&bin, const int width) {
+    void static inline wordToBinary(const Integer x, char *&bin, const int width) {
         bin = (char *) malloc(width + 1);
 
         int p = 0;
-        opensmt::Integer one = 1;
-        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
+        Integer one = 1;
+        for (Integer i = (one << (width - 1)); i > 0; i >>= 1)
             bin[p++] = ((x & i) == i) ? '1' : '0';
         bin[p] = '\0';
     }
@@ -28,8 +28,8 @@ namespace opensmt {
         bin = (char *) malloc(width + 1);
 
         int p = 0;
-        opensmt::Integer one = 1;
-        for (opensmt::Integer i = (one << (width - 1)); i > 0; i >>= 1)
+        Integer one = 1;
+        for (Integer i = (one << (width - 1)); i > 0; i >>= 1)
             bin[p++] = ((x & i) == i) ? '1' : '0';
         bin[p] = '\0';
     }

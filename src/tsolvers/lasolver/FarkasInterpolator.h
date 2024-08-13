@@ -81,7 +81,7 @@ private:
 
     bool isInPartitionOfColor(icolor_t color, PTRef atom) const {
         auto atomColor = getColorFor(atom);
-        return (color & atomColor) != opensmt::icolor_t::I_UNDEF;
+        return (color & atomColor) != icolor_t::I_UNDEF;
     }
 
     icolor_t getColorFor(PTRef term) const {

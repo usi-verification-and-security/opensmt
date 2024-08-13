@@ -112,14 +112,13 @@ protected:
         vec<ValuationNode *> nodes;
     };
 
-    ValuationNode * addToValuationTree(vec<opensmt::pair<PTRef, PTRef>> const & valuation, PTRef value,
-                                       ValuationNode * root);
+    ValuationNode * addToValuationTree(vec<pair<PTRef, PTRef>> const & valuation, PTRef value, ValuationNode * root);
     PTRef valuationTreeToFunctionBody(ValuationNode const *, SRef sr);
 
     ValuationNodeFactory valuationNodeFactory;
 
     std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
-    std::unordered_map<SymRef, opensmt::pair<FunctionSignature, ValuationNode *>, SymRefHash> definitions;
+    std::unordered_map<SymRef, pair<FunctionSignature, ValuationNode *>, SymRefHash> definitions;
 
     Logic & logic;
     int uniqueNum;

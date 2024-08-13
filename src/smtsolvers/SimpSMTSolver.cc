@@ -181,7 +181,7 @@ lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
 //=================================================================================================
 // Added code
 
-bool SimpSMTSolver::addOriginalSMTClause(vec<Lit> && smt_clause, opensmt::pair<CRef, CRef> & inOutCRefs)
+bool SimpSMTSolver::addOriginalSMTClause(vec<Lit> && smt_clause, pair<CRef, CRef> & inOutCRefs)
 {
     inOutCRefs = {CRef_Undef, CRef_Undef};
     assert( config.sat_preprocess_theory == 0 );
@@ -618,7 +618,7 @@ bool SimpSMTSolver::eliminateVar(Var v)
     for (int i = 0; i < pos.size(); i++) {
         for (int j = 0; j < neg.size(); j++) {
             vec<Lit> resolvent;
-            opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
+            pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
             if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addOriginalSMTClause(std::move(resolvent), dummy))
                 return false;
         }
@@ -660,7 +660,7 @@ bool SimpSMTSolver::substitute(Var v, Lit x)
 
         removeClause(cls[i]);
 
-        opensmt::pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
+        pair<CRef,CRef> dummy {CRef_Undef, CRef_Undef};
         if (!addOriginalSMTClause(std::move(subst_clause), dummy))
             return ok = false;
     }

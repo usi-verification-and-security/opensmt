@@ -34,7 +34,7 @@ private:
 
     virtual ~SplitterInterpret() = default;
 
-    sstat interpSMTContent(char *content, vec<opensmt::pair<int,int>> &&, bool, bool);
+    sstat interpSMTContent(char *content, vec<pair<int,int>> &&, bool, bool);
 
     inline MainSplitter & getMainSplitter() { return dynamic_cast<MainSplitter&>(getMainSolver()); };
 

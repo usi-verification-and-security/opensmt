@@ -327,7 +327,7 @@ public:
 
     // Top-level equalities based substitutions
     bool getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts);
-    virtual opensmt::pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & units);
+    virtual pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & units);
 
     void substitutionsTransitiveClosure(SubstMap & substs);
 

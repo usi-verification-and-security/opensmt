@@ -102,7 +102,7 @@ private:
     ERef args[0];
 
     friend class EnodeAllocator;
-    Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef ptr);
+    Enode(SymRef symbol, span<ERef> children, ERef myRef, PTRef ptr);
     // Set the bit b to 1 and leave the others to 0
     static uint32_t setbit(uint32_t b) { return 1 << b; }
 public:
@@ -165,7 +165,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         to.n_enodes = n_enodes;
     }
 
-    ERef alloc(SymRef symbol, opensmt::span<ERef> children, PTRef term) {
+    ERef alloc(SymRef symbol, span<ERef> children, PTRef term) {
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 

@@ -35,7 +35,7 @@ sstat MainSplitter::check() {
 
 sstat MainSplitter::solve_(vec<FrameId> const & enabledFrames) {
     if (getChannel().isSolverInParallelMode() and not getConfig().sat_solver_limit()) {
-        vec<opensmt::pair<int, int>> const & solverBranch = getSplitter().getSolverBranch();
+        vec<pair<int, int>> const & solverBranch = getSplitter().getSolverBranch();
         if (enabledFrames.size() > solverBranch.size() + 1) {
             throw PTPLib::common::Exception(__FILE__, __LINE__,
                                             ";assert: inconsistency in solverBranch length and enabled_frame size: " +
@@ -44,7 +44,7 @@ sstat MainSplitter::solve_(vec<FrameId> const & enabledFrames) {
         }
         for (int i = 0; i < enabledFrames.size(); i++) {
             if (i > 0)
-                getSplitter().addBranchToFrameId(opensmt::span<opensmt::pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i]);
+                getSplitter().addBranchToFrameId(span<pair<int, int> const>(solverBranch.begin(), i), enabledFrames[i]);
         }
     }
     sstat res = MainSolver::solve_(enabledFrames);

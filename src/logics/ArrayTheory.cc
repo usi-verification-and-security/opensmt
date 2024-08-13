@@ -13,7 +13,7 @@ namespace opensmt {
 
 PTRef ArrayTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
     // TODO: simplify select over store on the same index
-    fla = opensmt::rewriteDistincts(getLogic(), fla);
+    fla = rewriteDistincts(getLogic(), fla);
     fla = instantiateReadOverStore(getLogic(), fla);
     return fla;
 }

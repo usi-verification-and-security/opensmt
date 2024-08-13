@@ -43,11 +43,11 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> const & vals, PTRef
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
         FunctionSignature templateSig(logic.protectName(sr), std::move(formalArgs), logic.getSortRef(sr));
-        definitions.insert({sr, opensmt::pair<FunctionSignature, ValuationNode *>{std::move(templateSig), nullptr}});
+        definitions.insert({sr, pair<FunctionSignature, ValuationNode *>{std::move(templateSig), nullptr}});
     }
     auto & signatureAndValuation = definitions.at(sr);
     vec<PTRef> const & formalArgs = signatureAndValuation.first.getArgs();
-    vec<opensmt::pair<PTRef, PTRef>> valuation;
+    vec<pair<PTRef, PTRef>> valuation;
     valuation.capacity(vals.size());
     for (int i = 0; i < vals.size(); i++) {
         valuation.push({formalArgs[i], vals[i]});
@@ -56,8 +56,8 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> const & vals, PTRef
     signatureAndValuation.second = addToValuationTree(valuation, val, signatureAndValuation.second);
 }
 
-ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(vec<opensmt::pair<PTRef, PTRef>> const & valuation,
-                                                               PTRef value, ValuationNode * root) {
+ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(vec<pair<PTRef, PTRef>> const & valuation, PTRef value,
+                                                               ValuationNode * root) {
     assert(valuation.size() >= 1);
 
     if (root == nullptr) { root = valuationNodeFactory.getValuationNode(valuation[0].first, PTRef_Undef); }

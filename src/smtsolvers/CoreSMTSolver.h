@@ -106,7 +106,7 @@ public:
     bool    addOriginalClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 protected:
     bool addOriginalClause_(vec<Lit> && _ps);                                          // Add a clause to the solver
-    bool addOriginalClause_(vec<Lit> && _ps, opensmt::pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver and return the references for the added class before and after simplification
+    bool addOriginalClause_(vec<Lit> && _ps, pair<CRef, CRef> & inOutCRefs);  // Add a clause to the solver and return the references for the added class before and after simplification
 public:
     // Solving:
     //
@@ -209,8 +209,8 @@ public:
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 #ifdef STATISTICS
-    opensmt::TimeVal search_timer;
-    opensmt::TimeVal branchTimer;
+    TimeVal search_timer;
+    TimeVal branchTimer;
 #endif
     double learnts_size;
     uint64_t all_learnts;
