@@ -27,9 +27,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define UFLRATHandler_H
 
 #include "TSolverHandler.h"
-#include "ArithLogic.h"
+
+#include <logics/ArithLogic.h>
 
 #include <unordered_set>
+
+namespace opensmt {
 
 class Egraph;
 class LASolver;
@@ -62,5 +65,7 @@ class UFLATHandler : public TSolverHandler
 
     void fillTheoryFunctions(ModelBuilder & modelBuilder) const override;
 };
+
+}
 
 #endif

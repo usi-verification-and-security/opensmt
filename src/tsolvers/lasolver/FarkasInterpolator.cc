@@ -2,10 +2,9 @@
 // Created by Martin Blicha on 22.05.18.
 //
 
-
-//#ifndef NDEBUG
-//#define TRACE
-//#endif
+// #ifndef NDEBUG
+// #define TRACE
+// #endif
 
 #ifdef TRACE
 #define trace(x) x
@@ -13,61 +12,60 @@
 #define trace(x)
 #endif
 
-
 #include "FarkasInterpolator.h"
-#include "ArithLogic.h"
-#include "Real.h"
-#include "LA.h"
-#include "OsmtInternalException.h"
-#include "OsmtApiException.h"
 
-#include <unordered_map>
+#include <common/ApiException.h>
+#include <common/InternalException.h>
+#include <common/Real.h>
+#include <logics/ArithLogic.h>
+#include <simplifiers/LA.h>
+
 #include <functional>
+#include <unordered_map>
 
-using namespace opensmt;
-
+namespace opensmt {
 using matrix_t = std::vector<std::vector<Real>>;
 
 // initializing static member
-DecomposedStatistics FarkasInterpolator::stats {};
+DecomposedStatistics FarkasInterpolator::stats{};
 
 namespace {
+    // TODO: when is explanation negated?
+    struct ItpHelper {
+        ItpHelper(ArithLogic & logic, PtAsgn ineq, Real coeff)
+            : explanation(ineq.tr),
+              negated(ineq.sgn == l_False),
+              expl_coeff(std::move(coeff)),
+              expr(logic, ineq.tr, false) {}
+        PTRef explanation;
+        bool negated;
+        Real expl_coeff;
+        LAExpression expr;
+    };
 
-// TODO: when is explanation negated?
-struct ItpHelper {
-    ItpHelper(ArithLogic & logic, PtAsgn ineq, Real coeff) : explanation(ineq.tr), negated(ineq.sgn == l_False),
-                                                          expl_coeff(std::move(coeff)), expr(logic, ineq.tr, false) {}
-    PTRef explanation;
-    bool negated;
-    Real expl_coeff;
-    LAExpression expr;
-};
+    struct LinearTerm {
+        LinearTerm(PTRef var_, Real coeff_) : var(var_), coeff(std::move(coeff_)) {}
+        PTRef var;
+        Real coeff;
+    };
 
-struct LinearTerm {
-    LinearTerm(PTRef var_, Real coeff_): var(var_), coeff(std::move(coeff_)) {}
-    PTRef var;
-    Real coeff;
-};
+    using Basis = std::vector<std::vector<Real>>;
+    using Coordinates = std::vector<Real>;
 
-using Basis = std::vector<std::vector<Real>>;
-using Coordinates = std::vector<Real>;
-
-std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bool(PTRef)> isLocal){
-    std::vector<LinearTerm> res;
-    for (auto factor : helper.expr) {
-        auto var_ref = factor.first;
-        if (var_ref != PTRef_Undef) {
-            if (isLocal(var_ref)) {
-                auto coeff = factor.second;
-                if (helper.negated) {
-                    coeff.negate();
+    std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bool(PTRef)> isLocal) {
+        std::vector<LinearTerm> res;
+        for (auto factor : helper.expr) {
+            auto var_ref = factor.first;
+            if (var_ref != PTRef_Undef) {
+                if (isLocal(var_ref)) {
+                    auto coeff = factor.second;
+                    if (helper.negated) { coeff.negate(); }
+                    res.emplace_back(var_ref, coeff);
                 }
-                res.emplace_back(var_ref, coeff);
             }
         }
+        return res;
     }
-    return res;
-}
 
     /**
      *
@@ -76,11 +74,9 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
      * @param startRow
      * @return Index of row >= startRow that contains the pivot for given column pivotCol
      */
-    std::size_t getPivotRow(const matrix_t & matrix, std::size_t pivotCol, std::size_t startRow) {
+    std::size_t getPivotRow(matrix_t const & matrix, std::size_t pivotCol, std::size_t startRow) {
         for (auto i = startRow; i < matrix.size(); ++i) {
-            if (matrix[i][pivotCol] != 0) {
-                return i;
-            }
+            if (matrix[i][pivotCol] != 0) { return i; }
         }
         return matrix.size();
     }
@@ -91,7 +87,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
      * @param what vector being added
      * @param coeff The multiple
      */
-    void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, const Real & coeff) {
+    void addToWithCoeff(std::vector<Real> & to, std::vector<Real> const & what, Real const & coeff) {
         assert(to.size() == what.size());
         for (std::size_t i = 0; i < what.size(); ++i) {
             to[i] += coeff * what[i];
@@ -104,7 +100,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         for (std::size_t i = 0; i < col; ++i) {
             assert(row[i] == 0);
         }
-#endif //NDEBUG
+#endif // NDEBUG
         auto val = row[col].inverse();
         for (; col < row.size(); ++col) {
             row[col] *= val;
@@ -119,30 +115,25 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         std::vector<std::size_t> pivotColInds;
         std::size_t column = 0;
         for (auto & row : matrix) {
-            auto it = std::find_if(row.begin() + column, row.end(), [](const Real & el) {return !el.isZero();});
-            if (it == row.end()) {continue;}
+            auto it = std::find_if(row.begin() + column, row.end(), [](Real const & el) { return !el.isZero(); });
+            if (it == row.end()) { continue; }
             column = it - row.begin();
             assert(pivotColInds.empty() || pivotColInds.back() < column);
             pivotColInds.push_back(column);
-            if (row[column] != 1) {
-                normalize(row, column);
-            }
+            if (row[column] != 1) { normalize(row, column); }
         }
 
         // TODO: use long instead of int?
-        for (auto rowInd = (int) (matrix.size() - 1); rowInd >= 0; --rowInd) {
+        for (auto rowInd = (int)(matrix.size() - 1); rowInd >= 0; --rowInd) {
             auto & row = matrix[rowInd];
             auto pivotColInd = pivotColInds.back();
-            if (row[pivotColInd].isZero()) {
-                continue;
-            }
+            if (row[pivotColInd].isZero()) { continue; }
             pivotColInds.pop_back();
             assert(row[pivotColInd] == 1);
             for (int rowInd2 = rowInd - 1; rowInd2 >= 0; --rowInd2) {
                 if (matrix[rowInd2][pivotColInd].isZero()) { continue; }
                 addToWithCoeff(matrix[rowInd2], row, -matrix[rowInd2][pivotColInd]);
             }
-
         }
     }
 
@@ -163,9 +154,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
                 continue;
             }
             // put it to correct place
-            if (nextRow != pivotRow) {
-                std::swap(matrix[pivotRow], matrix[nextRow]);
-            }
+            if (nextRow != pivotRow) { std::swap(matrix[pivotRow], matrix[nextRow]); }
             // now zero out the column after the current row
             for (auto row = pivotRow + 1; row < matrix.size(); ++row) {
                 if (matrix[row][pivotCol] == 0) { continue; }
@@ -223,19 +212,16 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         assert(cols == matrix[0].size());
         std::size_t pivotRow = 0;
         for (unsigned int col = 0; col < pivotColsBitMap.size(); ++col) {
-            if(pivotColsBitMap[col]) {
+            if (pivotColsBitMap[col]) {
                 for (std::size_t row = 0; row < matrix.size(); ++row) {
                     if ((row != pivotRow && matrix[row][col] != 0) || (row == pivotRow && matrix[row][col] != 1)) {
                         return false;
                     }
                 }
                 ++pivotRow;
-            }
-            else { // free column (not pivot)
+            } else { // free column (not pivot)
                 for (auto row = pivotRow; row < matrix.size(); ++row) {
-                    if (matrix[row][col] != 0) {
-                        return false;
-                    }
+                    if (matrix[row][col] != 0) { return false; }
                 }
             }
         }
@@ -244,7 +230,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
     bool check_basis(std::vector<std::vector<Real>> const & basis) {
         return std::all_of(basis.begin(), basis.end(), [](std::vector<Real> const & baseVec) {
-            return std::none_of(baseVec.begin(), baseVec.end(), [](const Real & el) { return el < 0; });
+            return std::none_of(baseVec.begin(), baseVec.end(), [](Real const & el) { return el < 0; });
         });
     }
 
@@ -276,8 +262,9 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
     bool isDecomposition(Basis const & basis, Coordinates const & coordinates, std::vector<Real> const & original) {
         assert(coordinates.size() == basis.size());
-        assert(std::all_of(basis.begin(), basis.end(),
-                           [&original](std::vector<Real> const & baseVec) { return baseVec.size() == original.size(); }));
+        assert(std::all_of(basis.begin(), basis.end(), [&original](std::vector<Real> const & baseVec) {
+            return baseVec.size() == original.size();
+        }));
         for (std::size_t i = 0; i < original.size(); ++i) {
             Real sum = 0;
             for (std::size_t j = 0; j < basis.size(); ++j) {
@@ -304,9 +291,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         assert(cols == pivotColsBitMap.size());
         // for non-pivot columns generate a new base vector
         for (std::size_t col = 0; col < cols; ++col) {
-            if (pivotColsBitMap[col]) {
-                continue;
-            }
+            if (pivotColsBitMap[col]) { continue; }
             basis.emplace_back();
             auto & base_vector = basis.back();
 
@@ -316,8 +301,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
                 if (pivotColsBitMap[colPos]) {
                     base_vector.push_back(-matrix[pivotRow][col]);
                     ++pivotRow;
-                }
-                else { // free column
+                } else { // free column
                     base_vector.push_back(colPos == col ? 1 : 0);
                 }
             }
@@ -335,32 +319,34 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
         SRef itpSort = logic.getSortRef(logic.getPterm(ineqs[0].explanation)[0]);
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
             auto const & coeff = *it_coeff;
-            if(coeff.isZero()) {continue;} // when some basis is found, some coordinates could be zero; ignore those
+            if (coeff.isZero()) { continue; } // when some basis is found, some coordinates could be zero; ignore those
             auto const & ineq = *it_ineq;
-            trace(std::cout << "Original explanation: " << logic.printTerm(ineq.explanation) << "; negated: " << ineq.negated << '\n';)
-            trace(std::cout << "LAExpr as PTrEf: " << logic.printTerm(ineq.expr.toPTRef()) << '\n';)
-            trace(std::cout << "LAExpr as stored: ";)
-            trace(ineq.expr.print(std::cout); std::cout << std::endl;)
+            trace(std::cout << "Original explanation: " << logic.printTerm(ineq.explanation)
+                            << "; negated: " << ineq.negated << '\n');
+            trace(std::cout << "LAExpr as PTrEf: " << logic.printTerm(ineq.expr.toPTRef()) << '\n');
+            trace(std::cout << "LAExpr as stored: ");
+            trace(ineq.expr.print(std::cout); std::cout << std::endl);
             if (ineq.negated) {
                 delta_flag = true;
                 init.addExprWithCoeff(ineq.expr, -(coeff));
             } else {
                 init.addExprWithCoeff(ineq.expr, coeff);
             }
-            trace(init.print(std::cout);)
+            trace(init.print(std::cout));
         }
-        // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so everything is multiplied by -1
-        // therefore we need to create the inequality with the terms on LHS, because they are treated like LHS when LAExpressions are created
+        // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so
+        // everything is multiplied by -1 therefore we need to create the inequality with the terms on LHS, because
+        // they are treated like LHS when LAExpressions are created
         PTRef rhs = logic.getZeroForSort(itpSort);
         PTRef lhs = init.toPTRef(itpSort);
-//        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
+        //        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
         return delta_flag ? logic.mkLt(lhs, rhs) : logic.mkLeq(lhs, rhs);
     }
 
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, ArithLogic & logic) {
         std::vector<Real> coeffs;
         coeffs.reserve(ineqs.size());
-        for (const auto & helper : ineqs) {
+        for (auto const & helper : ineqs) {
             coeffs.push_back(helper.expl_coeff);
         }
         return sumInequalities(ineqs, coeffs, logic);
@@ -368,7 +354,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
 
     std::vector<Real> getFarkasCoeffs(std::vector<ItpHelper> const & inequalities) {
         std::vector<Real> ret;
-        for (const auto & ineq : inequalities) {
+        for (auto const & ineq : inequalities) {
             ret.push_back(ineq.expl_coeff);
         }
         return ret;
@@ -384,7 +370,7 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
     std::vector<Real> getAlphas(std::vector<Real> const & allFarkasCoeffs, T & isPivot) {
         std::vector<Real> ret;
         for (std::size_t i = 0; i < allFarkasCoeffs.size(); ++i) {
-            if (!isPivot(i)) {ret.push_back(allFarkasCoeffs[i]);}
+            if (!isPivot(i)) { ret.push_back(allFarkasCoeffs[i]); }
         }
         return ret;
     }
@@ -395,36 +381,43 @@ std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bo
             if (baseVec[i] < 0) {
                 auto coeff = (-baseVec[i] / vecToDecompose[i]);
                 // baseVec += coeff * vecToDecompose;
-                for (std::size_t j = 0; j < baseVec.size(); ++j) { baseVec[j] += coeff * vecToDecompose[j]; }
+                for (std::size_t j = 0; j < baseVec.size(); ++j) {
+                    baseVec[j] += coeff * vecToDecompose[j];
+                }
                 // update coordinates
                 Real divisor = Real{1} + (coeff * coordinates[baseVecIndex]);
-                for (Real& coordinate : coordinates) { coordinate /= divisor; }
+                for (Real & coordinate : coordinates) {
+                    coordinate /= divisor;
+                }
             }
         }
     }
 
-    void ensureNonNegativeDecomposition(Basis& basis, Coordinates & coordinates, std::vector<Real> const & vecToDecompose) {
+    void ensureNonNegativeDecomposition(Basis & basis, Coordinates & coordinates,
+                                        std::vector<Real> const & vecToDecompose) {
         for (std::size_t i = 0; i < basis.size(); ++i) {
             ensureNonNegativeVec(basis[i], i, coordinates, vecToDecompose);
         }
     }
 
-    struct StatsHelper{
+    struct StatsHelper {
         bool standAloneIneq = false;
         bool nonTrivialBasis = false;
         bool moreThanOneInequality = false;
     };
 
-}
+} // namespace
 
 PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     assert(color == icolor_t::I_A || color == icolor_t::I_B);
     bool hasColors = ensureHasColorForAllTerms();
     if (not hasColors) {
-        throw OsmtInternalException("Error in computation of decomposed Farkas interpolant, colors could not be determined!");
+        throw InternalException(
+            "Error in computation of decomposed Farkas interpolant, colors could not be determined!");
     }
     StatsHelper statsHelper;
-    // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of given color)
+    // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of
+    // given color)
     std::vector<PTRef> interpolant_inequalities;
     std::vector<std::pair<PtAsgn, Real>> candidates;
     assert(explanations.size() == static_cast<int>(explanation_coeffs.size()));
@@ -432,41 +425,36 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
         assert(explanation_coeffs[i] > 0);
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
         trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
-                  << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n';)
+                        << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n');
         bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
         bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);
-        if(isA){
-            trace(std::cout << "This explanation is from A\n";)
-        }
-        if(isB){
-            trace(std::cout << "This explanation is from B\n";)
-        }
-
+        if (isA) { trace(std::cout << "This explanation is from A\n"); }
+        if (isB) { trace(std::cout << "This explanation is from B\n"); }
     }
-    auto it = std::partition(candidates.begin(), candidates.end(),
-                             [color, this](std::pair<PtAsgn, Real> const & expl) {
-                                 return this->isInPartitionOfColor(color, expl.first.tr);
-                             });
+    auto it = std::partition(candidates.begin(), candidates.end(), [color, this](std::pair<PtAsgn, Real> const & expl) {
+        return this->isInPartitionOfColor(color, expl.first.tr);
+    });
     if (it == candidates.end() || it == candidates.begin()) {
         // all inequalities are of the same color -> trivial interpolant
         // return false for all of color A and true for all of color B
-        return ((it == candidates.end() && color == icolor_t::I_A)
-                || (it == candidates.begin() && color == icolor_t::I_B))
-                ? logic.getTerm_false() : logic.getTerm_true();
+        return ((it == candidates.end() && color == icolor_t::I_A) ||
+                (it == candidates.begin() && color == icolor_t::I_B))
+                 ? logic.getTerm_false()
+                 : logic.getTerm_true();
     }
     std::vector<ItpHelper> helpers;
     ArithLogic & logic = this->logic;
-    std::transform(candidates.begin(), it, std::back_inserter(helpers),
-                   [&logic](std::pair<PtAsgn, Real> const & expl) {
-                       return ItpHelper{logic, expl.first, expl.second};
-                   });
+    std::transform(candidates.begin(), it, std::back_inserter(helpers), [&logic](std::pair<PtAsgn, Real> const & expl) {
+        return ItpHelper{logic, expl.first, expl.second};
+    });
     statsHelper.moreThanOneInequality = helpers.size() > 1;
     using local_terms_t = std::vector<LinearTerm>;
     // create information about local variables for each inequality
     std::vector<local_terms_t> ineqs_local_vars;
     std::vector<ItpHelper> explanations_with_locals;
-    for (const auto & helper : helpers) {
-        local_terms_t local_terms = getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
+    for (auto const & helper : helpers) {
+        local_terms_t local_terms =
+            getLocalTerms(helper, [this, color](PTRef ptr) { return this->isLocalFor(color, ptr); });
 
         // explanataion with all variables shared form standalone partition
         if (local_terms.empty()) {
@@ -483,7 +471,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     if (!ineqs_local_vars.empty()) {
         // assign index to each local var
         std::unordered_map<PTRef, std::size_t, PTRefHash> local_vars;
-        for (const auto & info : ineqs_local_vars) {
+        for (auto const & info : ineqs_local_vars) {
             for (auto const & term : info) {
                 if (local_vars.find(term.var) == local_vars.end()) {
                     auto size = local_vars.size();
@@ -496,7 +484,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
 
         matrix_t matrix{local_vars.size()};
         std::size_t colInd = 0;
-        for (const auto & info : ineqs_local_vars) {
+        for (auto const & info : ineqs_local_vars) {
             // add coefficient to those rows whose corresponding variable occurs in the inequality
             for (auto const & term : info) {
                 auto var = term.var;
@@ -513,56 +501,50 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
             }
             ++colInd;
         }
-        trace(print_matrix(matrix);)
+        trace(print_matrix(matrix));
         gaussianElimination(matrix);
-        trace(print_matrix(matrix);)
+        trace(print_matrix(matrix));
         auto nullity = getNullity(matrix);
         // if the space of solutions does not have at least two vector in basis, we cannot do anything
         if (nullity <= 1) {
-//            std::cout << "Nullity space has single-vector basis" << '\n';
+            //            std::cout << "Nullity space has single-vector basis" << '\n';
             interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, logic));
         } else {
             toReducedRowEcholonForm(matrix);
-            trace(print_matrix(matrix);)
+            trace(print_matrix(matrix));
             auto nullBasis = getNullBasis(matrix);
-            trace(print_basis(nullBasis);)
+            trace(print_basis(nullBasis));
             assert(explanations_with_locals.size() == matrix[0].size());
             auto farkasCoeffs = getFarkasCoeffs(explanations_with_locals);
-            const auto pivotColIndexBitMap = getPivotColsBitMap(matrix);
+            auto const pivotColIndexBitMap = getPivotColsBitMap(matrix);
             assert(farkasCoeffs.size() == pivotColIndexBitMap.size());
             auto isPivotColIndex = [&pivotColIndexBitMap](std::size_t index) { return pivotColIndexBitMap[index]; };
             auto alphas = getAlphas(farkasCoeffs, isPivotColIndex);
-            assert(std::all_of(alphas.begin(), alphas.end(), [](const Real& v) {return v > 0;}));
+            assert(std::all_of(alphas.begin(), alphas.end(), [](Real const & v) { return v > 0; }));
             assert(alphas.size() == nullBasis.size());
             assert(isDecomposition(nullBasis, alphas, farkasCoeffs));
             ensureNonNegativeDecomposition(nullBasis, alphas, farkasCoeffs);
-            assert(std::all_of(alphas.begin(), alphas.end(), [](const Real& v) {return v > 0;}));
+            assert(std::all_of(alphas.begin(), alphas.end(), [](Real const & v) { return v > 0; }));
             assert(check_basis(nullBasis));
             assert(isDecomposition(nullBasis, alphas, farkasCoeffs));
             statsHelper.nonTrivialBasis = true;
-            // foreach vector in the basis, cycle over the inequalities and sum it all up, with corresponding coefficient
-            for (const auto & base : nullBasis) {
+            // foreach vector in the basis, cycle over the inequalities and sum it all up, with corresponding
+            // coefficient
+            for (auto const & base : nullBasis) {
                 interpolant_inequalities.push_back(sumInequalities(explanations_with_locals, base, logic));
             }
         }
-    }
-    else{
+    } else {
         assert(explanations_with_locals.empty());
     }
 
     if (!interpolant_inequalities.empty()) {
-        if (statsHelper.moreThanOneInequality) {
-            FarkasInterpolator::stats.decompositionOpportunities++;
-        }
+        if (statsHelper.moreThanOneInequality) { FarkasInterpolator::stats.decompositionOpportunities++; }
         if (interpolant_inequalities.size() > 1) {
             FarkasInterpolator::stats.decomposedItps++;
             assert(statsHelper.nonTrivialBasis || statsHelper.standAloneIneq);
-            if (statsHelper.nonTrivialBasis) {
-                FarkasInterpolator::stats.nonTrivialBasis++;
-            }
-            if (statsHelper.standAloneIneq) {
-                FarkasInterpolator::stats.standAloneIneq++;
-            }
+            if (statsHelper.nonTrivialBasis) { FarkasInterpolator::stats.nonTrivialBasis++; }
+            if (statsHelper.standAloneIneq) { FarkasInterpolator::stats.standAloneIneq++; }
         }
     }
 
@@ -571,9 +553,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
         args.push(itp);
     }
     PTRef itp = logic.mkAnd(args);
-    if (color == icolor_t::I_B) {
-        itp = logic.mkNot(itp);
-    }
+    if (color == icolor_t::I_B) { itp = logic.mkNot(itp); }
     return itp;
 }
 
@@ -598,7 +578,7 @@ PTRef FarkasInterpolator::getDualFarkasInterpolant() {
     return getFarkasInterpolant(icolor_t::I_B);
 }
 
-PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Real>> const & system) {
+PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system) {
     LAExpression interpolant(logic);
     bool delta_flag = false;
     SRef sumSort = SRef_Undef;
@@ -624,14 +604,14 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, opensmt::Rea
         assert(sumSort != SRef_Undef);
         PTRef itpRef = interpolant.toPTRef(sumSort);
         SRef itpSort = logic.getSortRef(itpRef);
-        vec<PTRef> args {logic.getZeroForSort(itpSort), itpRef};
+        vec<PTRef> args{logic.getZeroForSort(itpSort), itpRef};
         itp = delta_flag ? logic.mkLt(args) : logic.mkLeq(args);
     }
     return itp;
 }
 
 PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
-    std::vector<std::pair<PtAsgn, opensmt::Real>> system;
+    std::vector<std::pair<PtAsgn, Real>> system;
     for (int i = 0; i < explanations.size(); ++i) {
         auto litColor = getColorFor(explanations[i].tr);
         if (litColor == color or litColor == icolor_t::I_AB) {
@@ -643,15 +623,15 @@ PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
     return color == icolor_t::I_B ? logic.mkNot(itp) : itp;
 }
 
-PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
-    if (strengthFactor < 0 or strengthFactor >= 1) {
-        throw OsmtApiException("LRA strength factor has to be in [0,1)");
-    }
-    std::vector<std::pair<PtAsgn, opensmt::Real>> systemA;
-    std::vector<std::pair<PtAsgn, opensmt::Real>> systemB;
+PTRef FarkasInterpolator::getFlexibleInterpolant(Real strengthFactor) {
+    if (strengthFactor < 0 or strengthFactor >= 1) { throw ApiException("LRA strength factor has to be in [0,1)"); }
+    std::vector<std::pair<PtAsgn, Real>> systemA;
+    std::vector<std::pair<PtAsgn, Real>> systemB;
     for (int i = 0; i < explanations.size(); ++i) {
         auto litColor = getColorFor(explanations[i].tr);
-        if (litColor == icolor_t::I_A or litColor == icolor_t::I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
+        if (litColor == icolor_t::I_A or
+            litColor ==
+                icolor_t::I_AB) { // We put shared literals to A (arbitrary decision, but cannot be in both A and B)
             systemA.emplace_back(explanations[i], explanation_coeffs[i]);
         } else if (litColor == icolor_t::I_B) {
             systemB.emplace_back(explanations[i], explanation_coeffs[i]);
@@ -674,12 +654,12 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(opensmt::Real strengthFactor) {
     auto sidesA = extractSides(itpA);
     auto sidesB = extractSides(itpB);
     assert(sidesA.first == logic.mkNeg(sidesB.first));
-    opensmt::Real c1 = logic.getNumConst(sidesA.second);
-    opensmt::Real c2 = logic.getNumConst(sidesB.second);
-    opensmt::Real lowerBound = c1;
-    opensmt::Real upperBound = -c2;
-    opensmt::Real strengthDiff = upperBound - lowerBound;
-    opensmt::Real newConstant = lowerBound + (strengthDiff * strengthFactor);
+    Real c1 = logic.getNumConst(sidesA.second);
+    Real c2 = logic.getNumConst(sidesB.second);
+    Real lowerBound = c1;
+    Real upperBound = -c2;
+    Real strengthDiff = upperBound - lowerBound;
+    Real newConstant = lowerBound + (strengthDiff * strengthFactor);
     SRef itpSort = logic.getSortRef(sidesA.first);
     PTRef itp = logic.mkLeq(logic.mkConst(itpSort, newConstant), sidesA.first);
     return itp;
@@ -691,3 +671,4 @@ bool FarkasInterpolator::ensureHasColorForAllTerms() {
     termColorInfo.reset(new LocalTermColorInfo(labels, logic));
     return true;
 }
+} // namespace opensmt

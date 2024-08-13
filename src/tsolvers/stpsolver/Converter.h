@@ -1,15 +1,18 @@
 #ifndef OPENSMT_CONVERTER_H
 #define OPENSMT_CONVERTER_H
 
-#include "Number.h"
+#include <common/Number.h>
+
 #include <concepts>
 #include <cstddef>
 
+namespace opensmt {
 template<class T>
-class Converter {
-public:
+struct Converter {
+    Converter() = delete;
+
     // Converts a given value to a T value
-    static T getValue(opensmt::Number const & val);
+    static T getValue(Number const & val);
     static T getValue(ptrdiff_t val);
     static T getValue(std::signed_integral auto val) { return getValue(static_cast<ptrdiff_t>(val)); }
 
@@ -18,8 +21,7 @@ public:
 
     // Converts given T to a string
     static std::string show(T const & val);
-
-    Converter() = delete;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_CONVERTER_H

@@ -1,8 +1,12 @@
 #ifndef LABOUNDREFS_H
 #define LABOUNDREFS_H
-#include "osmtinttypes.h"
+
+#include <common/inttypes.h>
+
 #include <ostream>
 #include <cassert>
+
+namespace opensmt {
 
 struct BoundT {
     char t;
@@ -46,5 +50,7 @@ struct LVRefHash {
 struct LVRefComp {
     bool operator()(LVRef a, LVRef b) const { return a.x < b.x; }
 };
+
+}
 
 #endif

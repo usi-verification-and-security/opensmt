@@ -8,8 +8,8 @@
 #ifndef OPENSMT_ARRAYSOLVER_H
 #define OPENSMT_ARRAYSOLVER_H
 
-#include "TSolver.h"
-#include "Egraph.h"
+#include <tsolvers/TSolver.h>
+#include <tsolvers/egraph/Egraph.h>
 
 /*
  * This is an implementation of a theory solver for the theory of arrays with extensionality.
@@ -51,6 +51,8 @@
  *  select-over-store axiom has been added to the formula: `(= v (select i (store a i v)))`.
  *  This is currently done in the preprocessing.
  */
+
+namespace opensmt {
 
 struct NodeRef { unsigned int id; };
 const struct NodeRef NodeRef_Undef = {UINT32_MAX};
@@ -324,5 +326,6 @@ private:
     }
 };
 
+}
 
 #endif //OPENSMT_ARRAYSOLVER_H

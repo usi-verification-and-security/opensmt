@@ -1,18 +1,18 @@
 #ifndef THEORY_INTERPOLATOR_H
 #define THEORY_INTERPOLATOR_H
 
-#include "PtStore.h"
-#include "PartitionManager.h"
-#include "OsmtInternalException.h"
+#include <api/PartitionManager.h>
+#include <common/InternalException.h>
+#include <pterms/PtStore.h>
 
-#include <memory>
 #include <algorithm>
+#include <memory>
 
+namespace opensmt {
 class TermColorInfo {
 public:
     virtual icolor_t getColorFor(PTRef term) = 0;
     virtual ~TermColorInfo() = default;
-
 };
 
 class GlobalTermColorInfo : public TermColorInfo {
@@ -22,16 +22,11 @@ public:
     icolor_t getColorFor(PTRef term) override {
         auto const & termMask = pmanager.getIPartitions(term);
         auto res = getColorForMask(termMask);
-        if (res == icolor_t::I_UNDEF) {
-            throw OsmtInternalException("No color detected for term");
-        }
+        if (res == icolor_t::I_UNDEF) { throw InternalException("No color detected for term"); }
         return res;
     }
 
 private:
-    PartitionManager & pmanager;
-    ipartitions_t mask;
-
     icolor_t getColorForMask(ipartitions_t const & otherMask) {
         bool isInA = (otherMask & mask) != 0;
         bool isInB = (otherMask & ~mask) != 0;
@@ -40,6 +35,9 @@ private:
         if (isInA and isInB) { return icolor_t::I_AB; }
         return icolor_t::I_UNDEF;
     }
+
+    PartitionManager & pmanager;
+    ipartitions_t mask;
 };
 
 /*
@@ -51,7 +49,6 @@ private:
  */
 class LocalTermColorInfo : public TermColorInfo {
 public:
-
     template<typename TMap>
     LocalTermColorInfo(TMap const & topLevelMap, Logic const & logic) {
         termColors[logic.getTerm_true()] = icolor_t::I_AB;
@@ -61,19 +58,16 @@ public:
 
     icolor_t getColorFor(PTRef term) override {
         auto it = termColors.find(term);
-        if (it == termColors.end()) {
-            throw OsmtInternalException("No color detected for term");
-        }
+        if (it == termColors.end()) { throw InternalException("No color detected for term"); }
         return it->second;
     }
 
 private:
-    std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
-
     template<typename TMap>
     void computeColorsForAllSubterms(TMap const & topLevelColors, Logic const & logic) {
-        // MB: NOTE! If P(a) is A-local, but both symbols P and a are shared, than P(a) should be shared and not A-local
-        using entry_t = std::pair<const PTRef, icolor_t>;
+        // MB: NOTE! If P(a) is A-local, but both symbols P and a are shared, than P(a) should be shared and not
+        // A-local
+        using entry_t = std::pair<PTRef const, icolor_t>;
         auto colorUnion = [](icolor_t f, icolor_t s) { return f | s; };
         std::vector<entry_t> queue;
         for (auto entry : topLevelColors) {
@@ -88,7 +82,8 @@ private:
             auto it = termColors.find(term);
             if (it != termColors.end()) {
                 icolor_t assignedColor = it->second;
-                if (assignedColor == colorToAssign || assignedColor == icolor_t::I_AB) { // already processed, color does not change
+                if (assignedColor == colorToAssign ||
+                    assignedColor == icolor_t::I_AB) { // already processed, color does not change
                     continue;
                 } else { // assigning new color
                     assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B);
@@ -134,13 +129,16 @@ private:
             }
         }
     }
+
+    std::unordered_map<PTRef, icolor_t, PTRefHash> termColors;
 };
 
-class TheoryInterpolator
-{
+class TheoryInterpolator {
 public:
     using ItpColorMap = std::map<PTRef, icolor_t>;
-    virtual PTRef getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager &pmanager) = 0;
+    virtual PTRef getInterpolant(ipartitions_t const &, ItpColorMap *, PartitionManager & pmanager) = 0;
 };
 
-#endif //THEORY_INTERPOLATOR_H
+} // namespace opensmt
+
+#endif // THEORY_INTERPOLATOR_H

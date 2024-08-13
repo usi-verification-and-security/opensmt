@@ -28,10 +28,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#include "PartitionManager.h"
-#include "Deductions.h"
-#include "TermMapper.h"
 #include "TSolver.h"
+#include "Deductions.h"
+
+#include <api/PartitionManager.h>
+#include <cnfizers/TermMapper.h>
+
+namespace opensmt {
 
 class TheoryInterpolator;
 
@@ -39,8 +42,8 @@ class THandler;
 class TSolver;
 class ModelBuilder;
 
-class TSolverHandler
-{
+class TSolverHandler {
+private:
     friend THandler;
     vec<TSolver*>  solverSchedule;
 protected:
@@ -70,4 +73,7 @@ private:
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;
 };
+
+}
+
 #endif

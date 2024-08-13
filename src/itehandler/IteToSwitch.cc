@@ -3,13 +3,12 @@
 //
 
 #include "IteToSwitch.h"
-#include "Logic.h"
 
-ite::Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, uint32_t id)
-    : id(id)
-    , type(cond != PTRef_Undef ? static_cast<bool>(NodeType::inner) : static_cast<bool>(NodeType::leaf))
-    , term(term)
-{
+namespace opensmt::ite {
+Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, uint32_t id)
+    : id(id),
+      type(cond != PTRef_Undef ? static_cast<bool>(NodeType::inner) : static_cast<bool>(NodeType::leaf)),
+      term(term) {
     if (cond != PTRef_Undef) {
         // a leaf node.
         setCond(cond);
@@ -18,19 +17,18 @@ ite::Node::Node(PTRef term, PTRef cond, NodeRef true_node, NodeRef false_node, u
     }
 }
 
-ite::NodeRef ite::Dag::newNode(PTRef val) {
+NodeRef Dag::newNode(PTRef val) {
     return newNode(val, PTRef_Undef, NodeRef_Undef, NodeRef_Undef);
 }
 
-ite::NodeRef ite::Dag::newNode(PTRef tr, PTRef cond, ite::NodeRef true_node, ite::NodeRef false_node)
-{
+NodeRef Dag::newNode(PTRef tr, PTRef cond, NodeRef true_node, NodeRef false_node) {
     assert(not nodes.has(tr));
     nodeRefs.push(na.alloc(tr, cond, true_node, false_node));
     nodes.insert(tr, nodeRefs.last());
     return nodeRefs.last();
 }
 
-void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
+void Dag::annotateWithParentInfo(PTRef root_tr) {
     NodeRef root = getNode(root_tr);
     vec<NodeRef> queue;
     vec<type> flag;
@@ -39,7 +37,7 @@ void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
     queue.push(root);
     while (queue.size() != 0) {
         NodeRef el_r = queue.last();
-        const Node &el = na[el_r];
+        Node const & el = na[el_r];
         if (flag[el.getId()] == type::black) {
             queue.pop();
             continue;
@@ -48,7 +46,7 @@ void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
 
         bool unprocessed_children = false;
 
-        for (lbool childPolarity : { l_False, l_True }) {
+        for (auto childPolarity : {l_False, l_True}) {
             NodeRef child = childPolarity == l_False ? el.getFalseChild() : el.getTrueChild();
             if (child != NodeRef_Undef) {
                 parents[child].insert({el_r, childPolarity});
@@ -57,22 +55,19 @@ void ite::Dag::annotateWithParentInfo(PTRef root_tr) {
                     unprocessed_children = true;
                     queue.push(child);
                 }
-            }
-            else {
+            } else {
                 leaves.insert(el_r);
             }
         }
 
-        if (unprocessed_children) {
-            continue;
-        }
+        if (unprocessed_children) { continue; }
 
         flag[el.getId()] = type::black;
         queue.pop();
     }
 }
 
-ite::Dag ite::Dag::getReachableSubGraph(const Logic &logic, PTRef root) {
+Dag Dag::getReachableSubGraph(Logic const & logic, PTRef root) {
     Dag dag;
     vec<NodeRef> queue;
     vec<type> flag;
@@ -82,7 +77,7 @@ ite::Dag ite::Dag::getReachableSubGraph(const Logic &logic, PTRef root) {
 
     while (queue.size() > 0) {
         NodeRef el_r = queue.last();
-        const Node &el = na[el_r];
+        Node const & el = na[el_r];
         if (flag[el.getId()] == type::black) {
             queue.pop();
             continue;
@@ -97,9 +92,7 @@ ite::Dag ite::Dag::getReachableSubGraph(const Logic &logic, PTRef root) {
             }
         }
 
-        if (unprocessed_children) {
-            continue;
-        }
+        if (unprocessed_children) { continue; }
 
         flag[el.getId()] = type::black;
 
@@ -115,16 +108,14 @@ ite::Dag ite::Dag::getReachableSubGraph(const Logic &logic, PTRef root) {
         } else {
             for (int i = 0; i < logic.getPterm(term).size(); i++) {
                 PTRef c = logic.getPterm(term)[i];
-                if (logic.isIte(c) and isTopLevelIte(c)) {
-                    dag.addTopLevelIte(c);
-                }
+                if (logic.isIte(c) and isTopLevelIte(c)) { dag.addTopLevelIte(c); }
             }
         }
     }
     return dag;
 }
 
-vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
+vec<CondValPair> Dag::getCondValPairs(Logic & logic) const {
     // Reverse traversal starting from leaves
     std::map<NodeRef, PTRef> dagNodeToPTRef;
     vec<NodeRef> queue;
@@ -137,7 +128,7 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
 
     while (queue.size() != 0) {
         NodeRef el_r = queue.last();
-        const Node &el = na[el_r];
+        Node const & el = na[el_r];
 
         if (flag[el.getId()] == type::black) {
             queue.pop();
@@ -145,7 +136,7 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
         }
 
         bool unprocessed_parents = false;
-        for (const auto &parentAndPolarity : parents.at(el_r)) {
+        for (auto const & parentAndPolarity : parents.at(el_r)) {
             auto parent = parentAndPolarity.nr;
             if (flag[na[parent].getId()] == type::white) {
                 flag[na[parent].getId()] = type::gray;
@@ -154,20 +145,18 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
             }
         }
 
-        if (unprocessed_parents) {
-            continue;
-        }
+        if (unprocessed_parents) { continue; }
 
         flag[el.getId()] = type::black;
         queue.pop();
 
         if (dagNodeToPTRef.find(el_r) == dagNodeToPTRef.end()) {
-            auto &myParents = parents.at(el_r);
+            auto & myParents = parents.at(el_r);
             vec<PTRef> parentConditions;
             if (myParents.empty()) {
                 parentConditions.push(logic.getTerm_true());
             } else {
-                for (auto &nodeAndPolarity : myParents) {
+                for (auto & nodeAndPolarity : myParents) {
                     PTRef cond = na[nodeAndPolarity.nr].getCond();
                     lbool pol = nodeAndPolarity.sign;
                     PTRef parentCondition = dagNodeToPTRef.at(nodeAndPolarity.nr);
@@ -188,16 +177,15 @@ vec<ite::CondValPair> ite::Dag::getCondValPairs(Logic& logic) const {
 
     return switches;
 }
+} // namespace opensmt::ite
 
-ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
-
+namespace opensmt {
+ite::Dag IteToSwitch::constructIteDag(PTRef root, Logic const & logic) {
     ite::Dag dag;
     vec<PTRef> stack;
     Map<PTRef, type, PTRefHash> flags;
 
-    if (logic.isIte(root)) {
-        dag.addTopLevelIte(root);
-    }
+    if (logic.isIte(root)) { dag.addTopLevelIte(root); }
 
     stack.push(root);
     while (stack.size() != 0) {
@@ -257,7 +245,7 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, const Logic &logic) {
 }
 
 void IteToSwitch::constructSwitches() {
-    const vec<PTRef> & ites = iteDag.getTopLevelItes();
+    vec<PTRef> const & ites = iteDag.getTopLevelItes();
 
     for (auto tl_ite : ites) {
         PTRef switch_tr = makeSwitch(tl_ite);
@@ -279,3 +267,4 @@ PTRef IteToSwitch::makeSwitch(PTRef root) {
 PTRef IteToSwitch::conjoin(PTRef root) {
     return switches.size() == 0 ? root : logic.mkAnd(root, logic.mkAnd(switches));
 };
+} // namespace opensmt

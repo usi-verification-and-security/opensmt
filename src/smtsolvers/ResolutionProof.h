@@ -27,12 +27,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PROOF2_H
 
 #include <minisat/core/SolverTypes.h>
+
 #include <vector>
 #include <unordered_map>
 #include <iosfwd>
 #include <functional>
 
 //=================================================================================================
+
+namespace opensmt {
 
 class CoreSMTSolver;
 class THandler;
@@ -74,8 +77,8 @@ struct ResolutionProofDer
 };
 
 
-class ResolutionProof
-{
+class ResolutionProof {
+private:
     struct LitHash {
         std::size_t operator()(Lit l) const noexcept
         { return std::hash<int>{}(l.x); }
@@ -172,5 +175,7 @@ private:
 };
 
 //=================================================================================================
+
+}
 
 #endif

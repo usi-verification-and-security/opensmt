@@ -4,8 +4,11 @@
 #include "Delta.h"
 #include "LARefs.h"
 #include "LAVar.h"
+
 #include <minisat/core/Alloc.h>
 #include <minisat/mtl/Vec.h>
+
+namespace opensmt {
 
 //
 // Bound index type.  The bounds are ordered in a list, and indexed using a number in the list.
@@ -40,23 +43,23 @@ class LABoundAllocator : public RegionAllocator<uint32_t>
     std::vector<LABoundRef> allocatedBounds;
     static int laboundWord32Size() { return (sizeof(LABound)) / sizeof(uint32_t); }
 public:
-    LABoundAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap) {}
+    LABoundAllocator(uint32_t start_cap) : RegionAllocator(start_cap) {}
     LABoundAllocator() {}
     ~LABoundAllocator() { clear(); }
 
     LABoundRef alloc(BoundT type, LVRef var, Delta && delta);
-    inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator<uint32_t>::operator[](r.x); }
-    inline LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline const LABound* lea       (LABoundRef r) const { return (LABound*)RegionAllocator<uint32_t>::lea(r.x); }
-    inline LABoundRef     ael       (const LABound* t)   { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
+    inline LABound&       operator[](LABoundRef r)       { return (LABound&)RegionAllocator::operator[](r.x); }
+    inline const LABound& operator[](LABoundRef r) const { return (LABound&)RegionAllocator::operator[](r.x); }
+    inline LABound*       lea       (LABoundRef r)       { return (LABound*)RegionAllocator::lea(r.x); }
+    inline const LABound* lea       (LABoundRef r) const { return (LABound*)RegionAllocator::lea(r.x); }
+    inline LABoundRef     ael       (const LABound* t)   { RegionAllocator::Ref r = RegionAllocator::ael((uint32_t*)t); LABoundRef rf; rf.x = r; return rf; }
 
     void clear() override {
         for (LABoundRef ref : allocatedBounds) {
             lea(ref)->LABound::~LABound();
         }
         allocatedBounds.clear();
-        RegionAllocator<uint32_t>::clear();
+        RegionAllocator::clear();
     }
 };
 
@@ -118,5 +121,6 @@ public:
     LAVarStore const& getVarStore() const { return lvstore; }
 };
 
+}
 
 #endif

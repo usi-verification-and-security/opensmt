@@ -25,6 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BVSolver.h"
 
+namespace opensmt {
+
 static SolverDescr descr_bv_solver("UF Solver", "Solver for Quantifier Free Bit Vectors");
 
 BVSolver::BVSolver(SMTConfig & c, MainSolver & s, BVLogic & l)
@@ -126,4 +128,6 @@ TRes BVSolver::check( bool complete )
 void BVSolver::computeModel( )
 {
     B.computeModel( );
+}
+
 }

@@ -5,32 +5,35 @@
 #ifndef OPENSMT_ITEHANDLER_H
 #define OPENSMT_ITEHANDLER_H
 
-#include "PTRef.h"
-#include "Logic.h"
+#include <logics/Logic.h>
+#include <pterms/PTRef.h>
 
 #include <unordered_map>
 
+namespace opensmt {
 class IteHandler {
-private:
-    Logic & logic;
-
-    std::string suffix;
-
-    PTRef getAuxVarFor(PTRef ite);
-
-    PTRef replaceItes(PTRef root);
-
 public:
-
     IteHandler(Logic & logic) : logic(logic) {}
 
-    IteHandler(Logic & logic, unsigned long partitionNumber) : logic(logic), suffix('_' + std::to_string(partitionNumber)) {}
+    IteHandler(Logic & logic, unsigned long partitionNumber)
+        : logic(logic),
+          suffix('_' + std::to_string(partitionNumber)) {}
 
     PTRef rewrite(PTRef root);
 
     static PTRef getIteTermFor(Logic const & logic, PTRef auxVar); // The inverse of getAuxVarFor
 
     static std::string_view constexpr itePrefix = ".ite";
-};
 
-#endif //OPENSMT_ITEHANDLER_H
+private:
+    PTRef getAuxVarFor(PTRef ite);
+
+    PTRef replaceItes(PTRef root);
+
+    Logic & logic;
+
+    std::string suffix;
+};
+} // namespace opensmt
+
+#endif // OPENSMT_ITEHANDLER_H

@@ -7,11 +7,13 @@
 
 #include "PG.h"
 
-#include "SystemQueries.h"
-#include "OsmtInternalException.h"
-#include "ReportUtils.h"
+#include <common/SystemQueries.h>
+#include <common/InternalException.h>
+#include <common/ReportUtils.h>
 
 #include <deque>
+
+namespace opensmt {
 
 std::ostream& operator<< (std::ostream &out, RuleContext &ra)
 {
@@ -129,8 +131,8 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
     //Start from empty clause
     {
         auto it = clause_to_proof_der.find(CRef_Undef);
-        if (it == clause_to_proof_der.end()) { throw OsmtInternalException("Proof building: Empty clause was not derived!"); }
-        if (it->second.isEmpty()) { throw OsmtInternalException("Proof building: Empty clause has no chain!"); }
+        if (it == clause_to_proof_der.end()) { throw InternalException("Proof building: Empty clause was not derived!"); }
+        if (it->second.isEmpty()) { throw InternalException("Proof building: Empty clause has no chain!"); }
     }
 
     // Helper method to process clause seen for the first time
@@ -215,7 +217,7 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
                 } else { // End tree reached: currClause
                     if (clauseToIDMap.find(currClause) == clauseToIDMap.end()) {
                         assert(false);
-                        throw OsmtInternalException("Error in proof building: Learnt clause not processed yet!");
+                        throw InternalException("Error in proof building: Learnt clause not processed yet!");
                     }
                     currId = clauseToIDMap.at(currClause);
                     n = getNode(currId);
@@ -506,7 +508,7 @@ clauseid_t ProofGraph::dupliNode(RuleContext & ra) {
     n->addRes(v_id);
     if (v->getAnt1() == w) v->setAnt1(n);
     else if (v->getAnt2() == w) v->setAnt2(n);
-    else throw OsmtInternalException("Error in node duplication");
+    else throw InternalException("Error in node duplication");
     assert(w->getResolvents().find(v_id) == w->getResolvents().end());
     assert(w->getNumResolvents() == num_old_res - 1);
     // Remember to modify context
@@ -537,4 +539,6 @@ void ProofGraph::eliminateNoPartitionTheoryVars(std::vector<Var> const & noParti
     for (Var v : noPartitionTheoryVars) {
         this->proof_variables.erase(v);
     }
+}
+
 }

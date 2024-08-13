@@ -8,12 +8,14 @@
 
 #include "PG.h"
 
-#include "SystemQueries.h"
-#include "OsmtInternalException.h"
-#include "ReportUtils.h"
+#include <common/SystemQueries.h>
+#include <common/InternalException.h>
+#include <common/ReportUtils.h>
 
 #include <deque>
 #include <unordered_set>
+
+namespace opensmt {
 
 //************************* RECYCLE PIVOTS AND RECYCLE UNITS ***************************
 
@@ -179,7 +181,7 @@ double ProofGraph::recyclePivotsIter() {
                     assert(n == res->getAnt1() or n == res->getAnt2());
                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                    else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
+                    else { throw InternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                     replacing->addRes(resId);
                     assert(not isSetVisited2(resId));
                     q.push_back(resId);
@@ -244,7 +246,7 @@ double ProofGraph::recyclePivotsIter() {
                         assert(res);
                         if (res->getAnt1() == n) { res->setAnt1(replacing); }
                         else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                        else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
+                        else { throw InternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                         replacing->addRes(resId);
                         assert(not isSetVisited2(resId));
                         // Enqueue resolvent
@@ -399,7 +401,7 @@ void ProofGraph::recycleUnits() {
                                     assert(res);
                                     if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                     else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                    else throw OsmtInternalException("Unexpected situation in recycleUnits");
+                                    else throw InternalException("Unexpected situation in recycleUnits");
                                     assert(res->getAnt1() != res->getAnt2());
                                     replacing->addRes(clauseid);
                                 }
@@ -441,7 +443,7 @@ void ProofGraph::recycleUnits() {
                                 assert(res);
                                 if (res->getAnt1() == n) { res->setAnt1(replacing); }
                                 else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                                else throw OsmtInternalException("Unexpected situation in recycleUnits");
+                                else throw InternalException("Unexpected situation in recycleUnits");
                                 assert(res->getAnt1() != res->getAnt2());
                                 replacing->addRes(clauseid);
                             }
@@ -673,7 +675,7 @@ void ProofGraph::proofTransformAndRestructure(const double left_time, const int 
                             assert(res->getAnt1() == n or res->getAnt2() == n);
                             if (res->getAnt1() == n) { res->setAnt1(replacing); }
                             else if (res->getAnt2() == n) { res->setAnt2(replacing); }
-                            else { throw OsmtInternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
+                            else { throw InternalException("Invalid proof structure " + std::string(__FILE__) + ", " + std::to_string(__LINE__)); }
                             replacing->addRes(resolvent);
                             q.push_back(resolvent);
                         }
@@ -827,7 +829,7 @@ void ProofGraph::proofPostStructuralHashing()
 							assert( res );
 							if(res->getAnt1() == n) res->setAnt1( replacing );
 							else if (res->getAnt2() == n) res->setAnt2( replacing );
-							else throw OsmtInternalException("Unexpected situation in proofPostStructuralHashing");
+							else throw InternalException("Unexpected situation in proofPostStructuralHashing");
 							replacing->addRes(resolvent_id);
 						}
 						n->getAnt1()->remRes(id);
@@ -966,7 +968,7 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
             assert(resolvent);
             assert(mustBeEliminated(resolvent->getPivot())); // MB: While there is a problematic variable in the clause, all resolution steps must be on a problematic var
             if (!mustBeEliminated(resolvent->getPivot())) {
-                throw OsmtInternalException("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
+                throw InternalException("Error in post-processing in the proof: Lifting orphaned theory variables did not work properly");
             }
             // resolvent must be theory valid lemma, make it new leaf
             ProofNode * ant1 = resolvent->getAnt1();
@@ -994,3 +996,4 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
     resetVisited1();
 }
 
+}

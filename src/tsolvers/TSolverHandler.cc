@@ -1,6 +1,9 @@
 #include "TSolverHandler.h"
-#include "TreeOps.h"
 #include "TResult.h"
+
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 TSolverHandler::~TSolverHandler()
 {
@@ -99,4 +102,6 @@ TSolver* TSolverHandler::getReasoningSolverFor(PTRef ptref) const {
     }
     assert(false);
     return nullptr;
+}
+
 }

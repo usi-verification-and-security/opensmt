@@ -47,7 +47,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SIMP_SMT_SOLVER_H
 
 #include "CoreSMTSolver.h"
+
 #include <minisat/mtl/Queue.h>
+
+namespace opensmt {
 
 class SimpSMTSolver : public CoreSMTSolver
 {
@@ -117,7 +120,6 @@ public:
 
 // protected:
   public:
-
     // Helper structures:
     //
     struct ElimLt {
@@ -206,4 +208,7 @@ inline lbool SimpSMTSolver::solveLimited (const vec<Lit>& assumps, bool do_simp,
 //inline bool CoreSMTSolver::smtSolve     () { return solve(); }
 
 //=================================================================================================
+
+}
+
 #endif

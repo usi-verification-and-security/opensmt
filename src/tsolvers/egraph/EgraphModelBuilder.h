@@ -10,6 +10,8 @@
 
 #include "Egraph.h"
 
+namespace opensmt {
+
 class EgraphModelBuilder {
     Logic & logic;
     Egraph::Values & values;
@@ -34,5 +36,6 @@ private:
 
 };
 
+}
 
 #endif //OPENSMT_EGRAPHMODELBUILDER_H

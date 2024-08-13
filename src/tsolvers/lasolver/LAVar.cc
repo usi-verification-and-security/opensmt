@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "LAVar.h"
 
+namespace opensmt {
+
 LVRef LAVarStore::getNewVar() {
     auto idx = static_cast<unsigned>(lavars.size());
     LVRef lv {idx};
@@ -36,3 +38,5 @@ LVRef LAVarStore::getNewVar() {
 }
 
 std::size_t LAVarStore::numVars() const { return lavars.size(); }
+
+}

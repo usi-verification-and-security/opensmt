@@ -23,12 +23,16 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #ifndef CGTYPES_H
 #define CGTYPES_H
 
+#include <cstdint>
+
+namespace opensmt {
 typedef uint32_t cgId;
 typedef uint32_t dist_t;
 static cgId const cgId_Nil = 0;
-static int const maxDistinctClasses = 8*sizeof(dist_t);
+static int const maxDistinctClasses = 8 * sizeof(dist_t);
+} // namespace opensmt
+
 #endif

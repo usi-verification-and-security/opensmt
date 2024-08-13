@@ -24,7 +24,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "TermMapper.h"
-//
+
+namespace opensmt {
 // Create the binding to a variable for the reference tr.  tr can be
 // negated, in which case the binding is created to (not tr).  Safe to
 // call several times for both tr and (not tr)
@@ -111,3 +112,4 @@ PTRef TermMapper::toPositive(PTRef term) const {
     getTerm(term, pos, sign);
     return pos;
 }
+} // namespace opensmt

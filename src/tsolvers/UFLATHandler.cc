@@ -1,8 +1,11 @@
 #include "UFLATHandler.h"
 #include "lasolver/LASolver.h"
-#include "TreeOps.h"
-#include "Egraph.h"
-#include "ArraySolver.h"
+#include "egraph/Egraph.h"
+#include "arraysolver/ArraySolver.h"
+
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 UFLATHandler::UFLATHandler(SMTConfig & c, ArithLogic & l)
         : TSolverHandler(c)
@@ -108,3 +111,4 @@ void UFLATHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     ufsolver->fillTheoryFunctions(modelBuilder);
 }
 
+}

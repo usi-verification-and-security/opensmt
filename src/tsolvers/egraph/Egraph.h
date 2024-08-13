@@ -30,14 +30,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // FIXME: make as configure option
 #define MORE_DEDUCTIONS 0
 
-#include "Timer.h"
-#include "SStore.h"
-#include "EnodeStore.h"
 #include "Enode.h"
-#include "TSolver.h"
-#include "SymStore.h"
-#include "PtStore.h"
+#include "EnodeStore.h"
 #include "Explainer.h"
+
+#include <common/Timer.h>
+#include <sorts/SStore.h>
+#include <tsolvers/TSolver.h>
+#include <symbols/SymStore.h>
+#include <pterms/PtStore.h>
 
 #ifdef PEDANTIC_DEBUG
 #include "GCTest.h"
@@ -45,12 +46,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unordered_set>
 
+namespace opensmt {
+
 class UFSolverStats
 {
     public:
-        opensmt::OSMTTimeVal egraph_asrt_timer;
-        opensmt::OSMTTimeVal egraph_backtrack_timer;
-        opensmt::OSMTTimeVal egraph_explain_timer;
+        TimeVal egraph_asrt_timer;
+        TimeVal egraph_backtrack_timer;
+        TimeVal egraph_explain_timer;
         int num_eq_classes;
         UFSolverStats() : num_eq_classes(0) {}
         void printStatistics(std::ostream & os)
@@ -400,5 +403,7 @@ private:
     void processParentsBeforeUnMerge(ERef oldroot);
     void processParentsAfterUnMerge(ERef oldroot);
 };
+
+}
 
 #endif

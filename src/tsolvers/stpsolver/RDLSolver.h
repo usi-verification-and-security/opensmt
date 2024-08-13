@@ -2,23 +2,25 @@
 #define OPENSMT_RDLSOLVER_H
 
 #include "Converter.h"
-#include "Delta.h"
-#include "ModelBuilder.h"
 #include "STPSolver.h"
 
+#include <models/ModelBuilder.h>
+#include <tsolvers/lasolver/Delta.h>
+
+namespace opensmt {
 class RDLSolver : public STPSolver<Delta> {
 public:
     RDLSolver(SMTConfig & c, ArithLogic & l) : STPSolver(c, l) {};
 };
 
 template<>
-Delta Converter<Delta>::getValue(opensmt::Number const & val) {
+Delta Converter<Delta>::getValue(Number const & val) {
     return Delta(val, 0);
 }
 
 template<>
 Delta Converter<Delta>::getValue(ptrdiff_t val) {
-    return Delta(opensmt::Number(val, 1), 0);
+    return Delta(Number(val, 1), 0);
 }
 
 template<>
@@ -39,7 +41,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     // Now we need to compute the proper values as Rationals, not as \delta-Rationals
     // Compute the right value for delta:
     Delta delta;
-    opensmt::Number deltaVal;
+    Number deltaVal;
     bool deltaSet = false;
     // I need to iterate over all edges and find the minimum from deltas making the edges true
     auto const & edges = this->model->getGraph().addedEdges;
@@ -58,7 +60,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         }
     }
     if (not deltaSet || delta > 1) {
-        deltaVal = opensmt::Number(1);
+        deltaVal = Number(1);
     } else {
         deltaVal = delta.R() / 2;
     }
@@ -68,10 +70,11 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         if (var == PTRef_Undef) { continue; }
         assert(logic.isVar(var));
         Delta const & varDeltaValue = entry.second;
-        opensmt::Number varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
+        Number varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
         PTRef val = logic.mkRealConst(varValue);
         modelBuilder.addVarValue(var, val);
     }
 }
+} // namespace opensmt
 
 #endif // OPENSMT_RDLSOLVER_H

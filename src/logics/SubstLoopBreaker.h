@@ -5,13 +5,16 @@
 #ifndef OPENSMT_SUBSTLOOPBREAKER_H
 #define OPENSMT_SUBSTLOOPBREAKER_H
 
-#include <PTRef.h>
-#include <PtStructs.h>
-#include <Logic.h>
+#include "Logic.h"
+
 #include <minisat/mtl/Sort.h>
+#include <pterms/PTRef.h>
+#include <pterms/PtStructs.h>
 
 #include <cassert>
 #include <cstdint>
+
+namespace opensmt {
 
 // For breaking substitution loops
 enum class NStatus { inStack, complete, unseen };
@@ -61,15 +64,15 @@ class TargetVarListAllocator: RegionAllocator<uint32_t> {
         return (sizeof(TargetVarList) + size*sizeof(SNRef))/sizeof(uint32_t);
     }
 public:
-    TargetVarListAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap) {}
+    TargetVarListAllocator(uint32_t start_cap) : RegionAllocator(start_cap) {}
     TargetVarListAllocator() {}
 
     TVLRef alloc(vec<PTRef>&& _children);
 
-          TargetVarList & operator[](TVLRef r)       { return (TargetVarList&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const TargetVarList & operator[](TVLRef r) const { return (TargetVarList&)RegionAllocator<uint32_t>::operator[](r.x); }
+          TargetVarList & operator[](TVLRef r)       { return (TargetVarList&)RegionAllocator::operator[](r.x); }
+    const TargetVarList & operator[](TVLRef r) const { return (TargetVarList&)RegionAllocator::operator[](r.x); }
 private:
-    TargetVarList* lea(TVLRef r) { return (TargetVarList*)RegionAllocator<uint32_t>::lea(r.x); }
+    TargetVarList* lea(TVLRef r) { return (TargetVarList*)RegionAllocator::lea(r.x); }
 };
 
 
@@ -145,16 +148,16 @@ private:
     Map<PTRef,SNRef,PTRefHash> SourceToSNRef;
     vec<SNRef> SNRefs;
 public:
-    SubstNodeAllocator(TargetVarListAllocator& tla, const Logic& l, uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), tla(tla), logic(l) {}
+    SubstNodeAllocator(TargetVarListAllocator& tla, const Logic& l, uint32_t start_cap) : RegionAllocator(start_cap), tla(tla), logic(l) {}
 
     SNRef alloc(PTRef tr, PTRef target);
 
-          SubstNode& operator[](SNRef r)       { return (SubstNode&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const SubstNode& operator[](SNRef r) const { return (SubstNode&)RegionAllocator<uint32_t>::operator[](r.x); }
+          SubstNode& operator[](SNRef r)       { return (SubstNode&)RegionAllocator::operator[](r.x); }
+    const SubstNode& operator[](SNRef r) const { return (SubstNode&)RegionAllocator::operator[](r.x); }
     SNRef getSNRefBySource(PTRef ptr)    const { return SourceToSNRef[ptr]; }
     void  clearTarjan();
 private:
-    SubstNode* lea(SNRef r) { return (SubstNode*)RegionAllocator<uint32_t>::lea(r.x); }
+    SubstNode* lea(SNRef r) { return (SubstNode*)RegionAllocator::lea(r.x); }
 
 };
 
@@ -189,5 +192,7 @@ public:
     vec<SNRef> minimizeRoots(vec<SNRef>&& roots) { return std::move(roots); }// nothing here, maybe do some attempt?
     Logic::SubstMap constructLooplessSubstitution(MapWithKeys<PTRef,PtAsgn,PTRefHash>&& substs);
 };
+
+}
 
 #endif //OPENSMT_SUBSTLOOPBREAKER_H

@@ -7,8 +7,12 @@ Module: New Logic for BitVector
 \*******************************************************************/
 #ifndef BVLOGIC_H
 #define BVLOGIC_H
+
 #include "Logic.h"
-#include "NumberUtils.h"
+
+#include <common/NumberUtils.h>
+
+namespace opensmt {
 
 class BVLogic: public Logic
 {
@@ -282,4 +286,7 @@ class BVLogic: public Logic
     PTRef mkBVCond     (const PTRef, const PTRef, const PTRef);*/
 
 };
+
+}
+
 #endif

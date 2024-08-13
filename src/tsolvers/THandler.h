@@ -27,9 +27,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef THANDLER_H
 #define THANDLER_H
 
-#include "TermMapper.h"
 #include "TSolverHandler.h"
-#include "Theory.h"
+
+#include <cnfizers/TermMapper.h>
+#include <logics/Theory.h>
+
+namespace opensmt {
 
 class ModelBuilder;
 
@@ -130,5 +133,7 @@ protected:
     std::string printAssertion(Lit);
 #endif
 };
+
+}
 
 #endif

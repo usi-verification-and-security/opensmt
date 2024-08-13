@@ -3,52 +3,46 @@
 //
 
 #include "Model.h"
-#include "Substitutor.h"
+
+#include <rewriters/Substitutor.h>
 
 #include <sstream>
 
-bool Model::isCorrect(const SymbolDefinition & defs) const {
-    for (const auto & entry : defs) {
+namespace opensmt {
+bool Model::isCorrect(SymbolDefinition const & defs) const {
+    for (auto const & entry : defs) {
         SymRef sr = entry.first;
-        const TemplateFunction &templFun = entry.second;
+        TemplateFunction const & templFun = entry.second;
         if (not logic.isUF(sr)) { return false; }
-        const Symbol &s = logic.getSym(sr);
+        Symbol const & s = logic.getSym(sr);
         if (templFun.getName() != logic.getSymName(sr)) { return false; }
         if (s.nargs() != templFun.getArgs().size_()) { return false; }
         if (logic.getSortRef(sr) != templFun.getRetSort()) { return false; }
-        for (auto i = 0; i < (int) s.nargs(); i++)
+        for (auto i = 0; i < (int)s.nargs(); i++)
             if (s[i] != logic.getSortRef(templFun.getArgs()[i])) { return false; }
     }
     return true;
 }
 
-Model::Model(Logic& logic, Evaluation basicEval, SymbolDefinition symbolDef)
-    : varEval(std::move(basicEval))
-    , symDef(std::move(symbolDef))
-    , logic(logic)
-    , formalArgDefaultPrefix("x")
-{
+Model::Model(Logic & logic, Evaluation basicEval, SymbolDefinition symbolDef)
+    : varEval(std::move(basicEval)),
+      symDef(std::move(symbolDef)),
+      logic(logic),
+      formalArgDefaultPrefix("x") {
     assert(isCorrect(symbolDef));
 }
 
 PTRef Model::evaluate(PTRef term) {
-    if (logic.isConstant(term)) {
-        return term;
-    }
-    if (hasDerivedVal(term)) {
-        return getDerivedVal(term);
-    }
+    if (logic.isConstant(term)) { return term; }
+    if (hasDerivedVal(term)) { return getDerivedVal(term); }
     if (logic.isVar(term)) {
-        if (hasVarVal(term)) {
-            return getVarVal(term);
-        }
+        if (hasVarVal(term)) { return getVarVal(term); }
         // else - new variable use and remember default value
         PTRef defaultVal = logic.getDefaultValuePTRef(term);
         // cache value and return
         addDerivedVal(term, defaultVal);
         return defaultVal;
-    }
-    else {
+    } else {
         // complex term not seen before, compute and store the value
         int size = logic.getPterm(term).size();
         vec<PTRef> nargs;
@@ -59,7 +53,7 @@ PTRef Model::evaluate(PTRef term) {
         SymRef symbol = logic.getPterm(term).symb();
         PTRef val;
         if (symDef.find(symbol) != symDef.end()) {
-            const TemplateFunction & tfun = symDef.at(symbol);
+            TemplateFunction const & tfun = symDef.at(symbol);
             val = logic.instantiateFunctionTemplate(tfun, nargs);
         } else {
             val = logic.insertTerm(symbol, std::move(nargs));
@@ -82,8 +76,9 @@ PTRef Model::evaluate(PTRef term) {
  * @param formalArgDefaultPrefix
  * @return a string that is guaranteed to be different from sr
  */
-std::string Model::getFormalArgBaseNameForSymbol(const Logic & logic, SymRef sr, const std::string & formalArgDefaultPrefix) {
-    const std::string & symName(logic.getSymName(sr));
+std::string Model::getFormalArgBaseNameForSymbol(Logic const & logic, SymRef sr,
+                                                 std::string const & formalArgDefaultPrefix) {
+    std::string const & symName(logic.getSymName(sr));
 
     // Collision is possible if formalArgDefaultPrefix can be extended to symName by adding at least one character.
     bool collisionPossible = formalArgDefaultPrefix == symName.substr(0, formalArgDefaultPrefix.size());
@@ -104,7 +99,8 @@ TemplateFunction Model::getDefinition(SymRef sr) const {
     } else {
         // A query for a function not known to egraph.  We create a default function.
         std::string symName = logic.getSymName(sr);
-        vec<PTRef> formalArgs; formalArgs.growTo(logic.getSym(sr).nargs());
+        vec<PTRef> formalArgs;
+        formalArgs.growTo(logic.getSym(sr).nargs());
         std::string varNameBase = getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix);
         for (int i = 0; i < (int)logic.getSym(sr).nargs(); i++) {
             SRef argSort = logic.getSym(sr)[i];
@@ -112,6 +108,8 @@ TemplateFunction Model::getDefinition(SymRef sr) const {
             ss << varNameBase << i;
             formalArgs[i] = logic.mkVar(argSort, ss.str().c_str());
         }
-        return TemplateFunction(symName, formalArgs, logic.getSym(sr).rsort(), logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
+        return TemplateFunction(symName, formalArgs, logic.getSym(sr).rsort(),
+                                logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
     }
 }
+} // namespace opensmt

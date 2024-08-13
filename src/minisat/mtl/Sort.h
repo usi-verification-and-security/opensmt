@@ -22,6 +22,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Vec.h"
 
+namespace opensmt {
+
 //=================================================================================================
 // Some sorting algorithms for vec's
 
@@ -139,4 +141,7 @@ template<class T> void uniq(vec<T>& v) {
 }
 
 //=================================================================================================
+
+}
+
 #endif

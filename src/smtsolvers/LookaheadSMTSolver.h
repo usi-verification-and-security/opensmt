@@ -11,6 +11,7 @@
 #include <memory>
 #include <unistd.h>
 
+namespace opensmt {
 class LookaheadSMTSolver : public SimpSMTSolver {
 protected:
     ConflQuota confl_quota;
@@ -185,5 +186,6 @@ LookaheadSMTSolver::buildAndTraverse(BuildConfig && buildConfig) {
     }
     return {buildConfig.exitState(), std::move(root)};
 }
+} // namespace opensmt
 
 #endif // OPENSMT_LOOKAHEADSMTSOLVER_H

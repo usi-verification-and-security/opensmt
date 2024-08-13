@@ -1,7 +1,10 @@
 #include "UFTHandler.h"
-#include "TreeOps.h"
-#include "Egraph.h"
-#include "InterpolatingEgraph.h"
+#include "egraph/Egraph.h"
+#include "egraph/InterpolatingEgraph.h"
+
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 UFTHandler::UFTHandler(SMTConfig & c, Logic & l)
     : TSolverHandler(c)
@@ -32,4 +35,6 @@ PTRef UFTHandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels
     InterpolatingEgraph* iegraph = dynamic_cast<InterpolatingEgraph*>(egraph);
     assert(iegraph);
     return iegraph->getInterpolant(mask, labels, pmanager);
+}
+
 }

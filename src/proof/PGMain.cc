@@ -7,7 +7,9 @@
 
 #include "PG.h"
 
-#include "SystemQueries.h"
+#include <common/SystemQueries.h>
+
+namespace opensmt {
 
 // Manipulates proofs
 void ProofGraph::printProofGraph( )
@@ -177,11 +179,11 @@ double ProofGraph::doReduction(double solving_time) {
             (ratioReductionSolvingTime() > 0 && numGraphTraversals() > 0) ||
             (reductionTime() > 0 && numGraphTraversals() > 0) ||
             (ratioReductionSolvingTime() == 0 && reductionTime() == 0 && numGraphTraversals() == 0)) {
-                throw OsmtApiException("Please set either ratio or time for reduction or number of proof traversals");
+                throw ApiException("Please set either ratio or time for reduction or number of proof traversals");
         }
 
     }
-    if (reductionLoops() == 0) throw OsmtApiException("Please set number of global reduction loops to at least 1");
+    if (reductionLoops() == 0) throw ApiException("Please set number of global reduction loops to at least 1");
 
     //Transformation time calculation
     double time_init = 0;
@@ -258,4 +260,6 @@ double ProofGraph::doReduction(double solving_time) {
     }
     time_end = cpuTime();
     return time_end - time_init;
+}
+
 }

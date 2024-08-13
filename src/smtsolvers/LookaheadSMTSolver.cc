@@ -5,6 +5,7 @@
 #include "LookaheadSMTSolver.h"
 #include "ResolutionProof.h"
 
+namespace opensmt {
 LookaheadSMTSolver::LookaheadSMTSolver(SMTConfig & c, THandler & thandler)
     : SimpSMTSolver(c, thandler),
       idx(0),
@@ -349,3 +350,4 @@ void LookaheadSMTSolver::cancelUntil(int level) {
         crossed_assumptions = std::min(crossed_assumptions, level);
     }
 }
+} // namespace opensmt

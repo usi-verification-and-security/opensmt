@@ -1,8 +1,9 @@
 #ifndef OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP
 #define OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP
 
-#include <Pterm.h>
 #include "STPMapper.h"
+
+namespace opensmt {
 
 template<class T>
 STPMapper<T>::STPMapper(const ArithLogic &l, const STPStore<T> &s)
@@ -117,6 +118,8 @@ void STPMapper<T>::clear() {
     leqToEdgeRef.clear();
     edgeRefToLeq.clear();
     edgeRefToAsgn.clear();
+}
+
 }
 
 #endif //OPENSMT_STPMAPPER_IMPLEMENTATIONS_HPP

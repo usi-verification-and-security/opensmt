@@ -1,28 +1,19 @@
 #ifndef OPENSMT_STPMAPPER_H
 #define OPENSMT_STPMAPPER_H
 
-#include <vector>
-#include "ArithLogic.h"
-#include <Pterm.h>
 #include "STPStore.h"
 // implementations of template functions #included below class definition
 
+#include <logics/ArithLogic.h>
+#include <pterms/Pterm.h>
+
+#include <vector>
+
+namespace opensmt {
 template<class T>
 class STPMapper {
-private:
-    const ArithLogic &logic;
-
-    const STPStore<T> &store;
-
-    std::vector<PTRef> vertRefToVar;                        // maps VertRefs to variables' PTRefs
-    std::vector<VertexRef> varToVertRef;                    // maps PTRefs of variables to VertRefs
-    std::vector<EdgeRef> leqToEdgeRef;                      // maps PTRefs of inequalities to EdgeRefs
-    std::vector<PTRef> edgeRefToLeq;                        // reverse of leqToEdgeRef
-    std::vector<PtAsgn> edgeRefToAsgn;                      // maps assigned edges to assignments that set them
-    std::vector<std::vector<EdgeRef>> edgesContainingVert;  // list of edges each vertex appears in
-
 public:
-    STPMapper(const ArithLogic &l, const STPStore<T> &s);
+    STPMapper(ArithLogic const & l, STPStore<T> const & s);
 
     void setVert(PTRef var, VertexRef vert);
 
@@ -46,11 +37,24 @@ public:
 
     PTRef getPTRef(EdgeRef edge) const;
 
-    const std::vector<EdgeRef> &edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
+    std::vector<EdgeRef> const & edgesOf(VertexRef v) { return edgesContainingVert[v.x]; }
 
     void clear();
+
+private:
+    ArithLogic const & logic;
+
+    STPStore<T> const & store;
+
+    std::vector<PTRef> vertRefToVar;                       // maps VertRefs to variables' PTRefs
+    std::vector<VertexRef> varToVertRef;                   // maps PTRefs of variables to VertRefs
+    std::vector<EdgeRef> leqToEdgeRef;                     // maps PTRefs of inequalities to EdgeRefs
+    std::vector<PTRef> edgeRefToLeq;                       // reverse of leqToEdgeRef
+    std::vector<PtAsgn> edgeRefToAsgn;                     // maps assigned edges to assignments that set them
+    std::vector<std::vector<EdgeRef>> edgesContainingVert; // list of edges each vertex appears in
 };
+} // namespace opensmt
 
 #include "STPMapper_implementations.hpp"
 
-#endif //OPENSMT_STPMAPPER_H
+#endif // OPENSMT_STPMAPPER_H

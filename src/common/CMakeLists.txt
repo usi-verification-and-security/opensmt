@@ -10,7 +10,7 @@ target_sources(common
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"
     "${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h"
-    "${CMAKE_CURRENT_LIST_DIR}/osmtinttypes.h"
+    "${CMAKE_CURRENT_LIST_DIR}/inttypes.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringConv.h"
     "${CMAKE_CURRENT_LIST_DIR}/Timer.h"
@@ -22,9 +22,7 @@ target_sources(common
 )
 
 install(FILES
-        Integer.h Number.h FastRational.h StringMap.h Timer.h osmtinttypes.h
-        TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h OsmtApiException.h TypeUtils.h
+        Integer.h Number.h FastRational.h StringMap.h Timer.h inttypes.h
+        TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h ApiException.h TypeUtils.h
         NumberUtils.h NatSet.h ScopedVector.h
 DESTINATION ${INSTALL_HEADERS_DIR})
-
-

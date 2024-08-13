@@ -1,6 +1,9 @@
 #include "RDLTHandler.h"
-#include "ArithLogic.h"
-#include "RDLSolver.h"
+#include "stpsolver/RDLSolver.h"
+
+#include <logics/ArithLogic.h>
+
+namespace opensmt {
 
 RDLTHandler::RDLTHandler(SMTConfig &c, ArithLogic &l)
         : TSolverHandler(c)
@@ -20,3 +23,4 @@ const Logic &RDLTHandler::getLogic() const
     return logic;
 }
 
+}

@@ -8,9 +8,13 @@
 
 #ifndef OPENSMT_LATHEORY_H
 #define OPENSMT_LATHEORY_H
+
 #include "Theory.h"
-#include "ArithmeticEqualityRewriter.h"
-#include "Rewritings.h"
+
+#include <rewriters/ArithmeticEqualityRewriter.h>
+#include <rewriters/Rewritings.h>
+
+namespace opensmt {
 
 template<typename LinAlgLogic, typename LinAlgTHandler>
 class LATheory : public Theory
@@ -53,6 +57,6 @@ PTRef LATheory<LinAlgLogic,LinAlgTSHandler>::preprocessAfterSubstitutions(PTRef 
     return fla;
 }
 
-
+}
 
 #endif //OPENSMT_LATHEORY_H

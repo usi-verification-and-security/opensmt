@@ -26,5 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BVStore.h"
 
+namespace opensmt {
+
 BVStore::BVStore() {}
 
+}

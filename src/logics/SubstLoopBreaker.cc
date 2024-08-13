@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 
+namespace opensmt {
 SNRef SubstNode::getNextChild() {
     if (procChild < nChildren()) return operator[](procChild++);
     return SNRef_Undef;
@@ -134,7 +135,6 @@ std::vector<vec<SNRef>> TarjanAlgorithm::getLoops(SNRef startNode) {
     }
     return loops;
 }
-
 
 vec<SNRef> SubstLoopBreaker::constructSubstitutionGraph(const MapWithKeys<PTRef,PtAsgn,PTRefHash>& substs)
 {
@@ -321,4 +321,6 @@ std::string SubstLoopBreaker::printGraphAndLoops(const vec<SNRef> &startNodes, c
     }
     ss << "}";
     return ss.str();
+}
+
 }

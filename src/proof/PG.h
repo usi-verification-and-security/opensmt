@@ -8,18 +8,18 @@
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
-#include "ResolutionProof.h"
-#include "PTRef.h"
-#include "Theory.h"
-#include "THandler.h"
-#include "OsmtInternalException.h"
+#include <smtsolvers/ResolutionProof.h>
+#include <pterms/PTRef.h>
+#include <logics/Theory.h>
+#include <tsolvers/THandler.h>
+#include <common/InternalException.h>
 
 #include <memory>
 #include <map>
 #include <new>
 #include <functional>
 
-using namespace opensmt;
+namespace opensmt {
 
 class ResolutionProof;
 class Logic;
@@ -196,7 +196,6 @@ private:
 class ProofGraph
 {
 public:
-
 	ProofGraph ( SMTConfig &  c
             , Logic & logic
             , TermMapper const & termMapper
@@ -410,5 +409,7 @@ private:
     mutable mpz_t visited_1;
     mutable mpz_t visited_2;
 };
+
+}
 
 #endif

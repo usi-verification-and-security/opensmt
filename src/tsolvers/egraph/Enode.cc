@@ -23,8 +23,9 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #include "Enode.h"
+
+namespace opensmt {
 
 cgId Enode::cgid_ctr = cgId_Nil+1;
 UseVectorIndex UseVectorIndex::NotValidIndex = {UINT32_MAX};
@@ -49,4 +50,6 @@ Enode::Enode(SymRef symbol, opensmt::span<ERef> children, ERef myRef, PTRef term
         args[i] = children[i];
         setIndex(i, UseVectorIndex::NotValidIndex);
     }
+}
+
 }

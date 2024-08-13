@@ -18,7 +18,6 @@
 
 namespace opensmt {
 
-
     static inline double cpuTime(void)
     {
         struct rusage ru;
@@ -71,9 +70,5 @@ static inline uint64_t memUsed() { return (uint64_t)memReadStat(0) * (uint64_t)g
 
 
 } // namespace opensmt
-
-
-using opensmt::cpuTime;
-using opensmt::memUsed;
 
 #endif // SYSTEMQUERIES_H

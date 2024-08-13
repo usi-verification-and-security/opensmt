@@ -8,12 +8,15 @@
 
 #include "THandler.h"
 #include "TSolver.h"
-#include "ModelBuilder.h"
+
+#include <models/ModelBuilder.h>
 
 #include <sys/wait.h>
 #include <cassert>
 #include <sstream>
 #include <unordered_set>
+
+namespace opensmt {
 
 void THandler::backtrack(int lev)
 {
@@ -205,7 +208,7 @@ Lit THandler::getSuggestion( ) {
 //  bool negate = e->getDecPolarity( ) == l_False;
 //  Var v = enodeToVar( e );
 //  return Lit( v, negate );
-    
+
     return tmap.getLit(e);
 }
 
@@ -368,3 +371,5 @@ inline int THandler::irand(double& seed, int size)
 }
 
 inline lbool THandler::value (Lit p, vec<lbool>& assigns) const { return assigns[var(p)] ^ sign(p); }
+
+}

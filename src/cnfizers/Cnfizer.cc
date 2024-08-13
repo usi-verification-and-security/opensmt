@@ -25,45 +25,42 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "Cnfizer.h"
-#include "SimpSMTSolver.h"
-#include "TreeOps.h"
-#include "OsmtInternalException.h"
 
-#include <queue>
+#include <common/InternalException.h>
+#include <common/TreeOps.h>
+#include <smtsolvers/SimpSMTSolver.h>
 
 #ifdef PEDANTIC_DEBUG
 #define TRACE(x) std::cerr << x << std::endl;
-#define TRACE_FLA_VEC(v)    for (unsigned i = 0; i < v.size_(); ++i) \
-                                std::cerr << i << ": " << logic.printTerm(v[i]) << '\n'; \
-                            std::cerr << std::endl;
+#define TRACE_FLA_VEC(v)                                                                                               \
+    for (unsigned i = 0; i < v.size_(); ++i)                                                                           \
+        std::cerr << i << ": " << logic.printTerm(v[i]) << '\n';                                                       \
+    std::cerr << std::endl;
 #else
 #define TRACE(x)
 #define TRACE_FLA_VEC(v)
 #endif // PEDANTIC_DEBUG
 
-Cnfizer::Cnfizer(Logic & logic, TermMapper & tmap)
-    : logic(logic), tmap(tmap) {}
-
+namespace opensmt {
+Cnfizer::Cnfizer(Logic & logic, TermMapper & tmap) : logic(logic), tmap(tmap) {}
 
 // Main Routine. Examine formula and give it to the solver
 void Cnfizer::cnfize(PTRef formula, FrameId frame_id) {
-   currentFrameId = frame_id;
+    currentFrameId = frame_id;
     assert(formula != PTRef_Undef and logic.getSortRef(formula) == logic.getSort_bool());
-    TRACE("cnfizerAndGiveToSolver: " << logic.printTerm (formula))
+    TRACE("cnfizerAndGiveToSolver: " << logic.printTerm(formula))
 
-    vec<PTRef> top_level_formulae = ::topLevelConjuncts(logic, formula);
-    assert (top_level_formulae.size() != 0);
+    vec<PTRef> top_level_formulae = topLevelConjuncts(logic, formula);
+    assert(top_level_formulae.size() != 0);
     TRACE("Top level formulae:")
     TRACE_FLA_VEC(top_level_formulae)
 
     // For each top-level conjunct
-    for (PTRef topLevelConjunct : top_level_formulae)
-    {
-        assert(not logic.isAnd(topLevelConjunct)); // Conjunction should have been split when retrieving top-level formulae
-        if (alreadyProcessed.contains(topLevelConjunct, frame_id)) {
-            continue;
-        }
-        TRACE("Adding clause " << logic.printTerm (f))
+    for (PTRef topLevelConjunct : top_level_formulae) {
+        assert(
+            not logic.isAnd(topLevelConjunct)); // Conjunction should have been split when retrieving top-level formulae
+        if (alreadyProcessed.contains(topLevelConjunct, frame_id)) { continue; }
+        TRACE("Adding clause " << logic.printTerm(f))
         // Give it to the solver if already in CNF
         if (isClause(topLevelConjunct)) {
             TRACE(" => Already a clause")
@@ -110,13 +107,11 @@ void Cnfizer::deMorganize(PTRef formula) {
 // Check whether a formula is a clause
 //
 bool Cnfizer::isClause(PTRef e) {
-    assert (e != PTRef_Undef);
+    assert(e != PTRef_Undef);
     if (isLiteral(e)) { // Single literals count as clauses
         return true;
     }
-    if (not logic.isOr(e)) {
-        return false;
-    }
+    if (not logic.isOr(e)) { return false; }
     vec<PTRef> to_process;
     to_process.push(e);
     while (to_process.size() != 0) {
@@ -126,27 +121,23 @@ bool Cnfizer::isClause(PTRef e) {
             if (logic.isOr(child)) {
                 to_process.push(child);
             } else {
-                if (not isLiteral(child)) {
-                    return false;
-                }
+                if (not isLiteral(child)) { return false; }
             }
         }
     }
     return true;
 }
 
-
-
 // Check if this is a negation of a clause
 bool Cnfizer::checkDeMorgan(PTRef e) {
     Pterm const & term = logic.getPterm(e);
     if (not logic.isNot(term.symb())) return false;
-    Map<PTRef, bool, PTRefHash, Equal<PTRef>> check_cache;
+    Map<PTRef, bool, PTRefHash> check_cache;
     return checkPureConj(term[0], check_cache);
 }
 
 // Check whether it is a pure conjunction of literals
-bool Cnfizer::checkPureConj(PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef>> & check_cache) {
+bool Cnfizer::checkPureConj(PTRef e, Map<PTRef, bool, PTRefHash> & check_cache) {
     if (check_cache.has(e)) return true;
     if (not logic.isAnd(e)) return false;
 
@@ -168,11 +159,9 @@ bool Cnfizer::checkPureConj(PTRef e, Map<PTRef, bool, PTRefHash, Equal<PTRef>> &
     return true;
 }
 
-void Cnfizer::addClause(vec<Lit> && clause)
-{
+void Cnfizer::addClause(vec<Lit> && clause) {
     (*clauseCallBack)(std::move(clause));
 }
-
 
 void Cnfizer::processClause(PTRef f) {
     if (isLiteral(f)) {
@@ -185,7 +174,7 @@ void Cnfizer::processClause(PTRef f) {
         addClause(std::move(lits));
         return;
     }
-    throw OsmtInternalException("UNREACHABLE: Unexpected situation in Cnfizer");
+    throw InternalException("UNREACHABLE: Unexpected situation in Cnfizer");
 }
 
 void Cnfizer::retrieveClause(PTRef f, vec<Lit> & clause) {
@@ -213,8 +202,8 @@ void Cnfizer::retrieveConjuncts(PTRef f, vec<PTRef> & conjuncts) {
 }
 
 bool Cnfizer::Cache::contains(PTRef term, FrameId frame) {
-    return cache.find({term, frame}) != cache.end()
-        or ( frame != baseFrame and cache.find({term, baseFrame}) != cache.end());
+    return cache.find({term, frame}) != cache.end() or
+           (frame != baseFrame and cache.find({term, baseFrame}) != cache.end());
 }
 
 void Cnfizer::Cache::insert(PTRef term, FrameId frame) {
@@ -226,3 +215,4 @@ void Cnfizer::Cache::insert(PTRef term, FrameId frame) {
 bool Cnfizer::isLiteral(PTRef ptr) const {
     return (logic.isNot(ptr) and logic.isAtom(logic.getPterm(ptr)[0])) or logic.isAtom(ptr);
 }
+} // namespace opensmt

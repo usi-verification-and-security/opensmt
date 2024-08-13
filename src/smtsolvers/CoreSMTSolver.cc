@@ -46,12 +46,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "CoreSMTSolver.h"
 
-#include "ModelBuilder.h"
-#include "OsmtInternalException.h"
-#include "Random.h"
-#include "ReportUtils.h"
-#include "ResolutionProof.h"
-#include "SystemQueries.h"
+#include <common/InternalException.h>
+#include <common/Random.h>
+#include <common/ReportUtils.h>
+#include <common/SystemQueries.h>
+#include <models/ModelBuilder.h>
+#include <smtsolvers/ResolutionProof.h>
 
 #include <cmath>
 #include <iostream>
@@ -59,9 +59,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 
 namespace opensmt {
-    extern bool stop;
-}
 
+extern bool stop;
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -204,7 +203,7 @@ Var CoreSMTSolver::newVar(bool dvar)
     watches  .init(mkLit(v, true));
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
-    activity .push(rnd_init_act ? opensmt::drand(random_seed) * 0.00001 : 0);
+    activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     decision .push();
     trail    .capacity(v+1);
@@ -509,7 +508,7 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
 Var CoreSMTSolver::doRandomDecision() {
     Var next = var_Undef;
     if (branchLitRandom()) {
-        next = order_heap[opensmt::irand(random_seed,order_heap.size())];
+        next = order_heap[irand(random_seed,order_heap.size())];
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++;
     }
@@ -517,7 +516,7 @@ Var CoreSMTSolver::doRandomDecision() {
 }
 
 bool CoreSMTSolver::branchLitRandom() {
-    return opensmt::drand(random_seed) < random_var_freq && !order_heap.empty();
+    return drand(random_seed) < random_var_freq && !order_heap.empty();
 }
 
 Var CoreSMTSolver::doActivityDecision() {
@@ -1326,7 +1325,7 @@ void CoreSMTSolver::popBacktrackPoint()
         }
         else
         {
-            throw OsmtInternalException("unknown undo operation in CoreSMTSolver" + std::to_string(op.getType()));
+            throw InternalException("unknown undo operation in CoreSMTSolver" + std::to_string(op.getType()));
         }
 
         undo_stack.pop();
@@ -1387,7 +1386,7 @@ void CoreSMTSolver::learntSizeAdjust() {
 lbool CoreSMTSolver::search(int nof_conflicts)
 {
     // Time my executionto search_timer
-//    opensmt::StopWatch stopwatch = opensmt::StopWatch(search_timer);
+//    StopWatch stopwatch = StopWatch(search_timer);
 #ifdef VERBOSE_SAT
     cerr << "Units when starting search:" << endl;
     for (int i = 2; i < trail.size(); i++)
@@ -1667,7 +1666,7 @@ void CoreSMTSolver::declareVarsToTheories()
 
 lbool CoreSMTSolver::solve_()
 {
-//    opensmt::PrintStopWatch watch("solve time", cerr);
+//    PrintStopWatch watch("solve time", cerr);
 
     for (Lit l : this->assumptions) {
         this->addVar_(var(l));
@@ -1926,4 +1925,6 @@ vec<CRef> CoreSMTSolver::getUnsatCoreClauses() const {
         }
     }
     return unsatCore;
+}
+
 }

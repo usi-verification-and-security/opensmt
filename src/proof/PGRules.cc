@@ -7,8 +7,9 @@
 
 #include "PG.h"
 
-#include "OsmtInternalException.h"
+#include <common/InternalException.h>
 
+namespace opensmt {
 
 // Check if a rule can be applied and if so, determine its context
 // v3 and v are given in input
@@ -159,7 +160,7 @@ RuleContext ProofGraph::getRuleContext(clauseid_t idv3, clauseid_t idv)
     }
     else if(!t1_in_C2 && t0_in_C3 && sign_t0_C3!=sign_t0_v1)
     {	ra.type=rB3; return ra;	}
-    throw OsmtInternalException("Unknown reduction rule context");
+    throw InternalException("Unknown reduction rule context");
 }
 
 //Given a 5 nodes context, applies the corresponding rule
@@ -430,7 +431,7 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
                 std::cerr << u << " detached" << '\n';
-                throw OsmtInternalException("Unexpected situation in rule application");
+                throw InternalException("Unexpected situation in rule application");
             }
     }
 
@@ -444,7 +445,7 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
         assert(res);
         if(res->getAnt1() == v) res->setAnt1( v2 );
         else if (res->getAnt2() == v) res->setAnt2( v2 );
-        else throw OsmtInternalException("Unexpected situation in rule application");
+        else throw InternalException("Unexpected situation in rule application");
         v2->addRes(resolvent_id);
     }
     assert(v->getNumResolvents()>0);
@@ -470,10 +471,11 @@ void ProofGraph::applyRuleB3( RuleContext& ra )
             if(getNode(u) != NULL && !isRoot(getNode(u)) && getNode(u)->getNumResolvents() == 0)
             {
                 std::cerr << u << " detached" << '\n';
-                throw OsmtInternalException("Unexpected situation in rule application");
+                throw InternalException("Unexpected situation in rule application");
             }
     }
 
     B3++;
 }
 
+}

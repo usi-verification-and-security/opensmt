@@ -1,170 +1,118 @@
 #ifndef LALOGIC_H
 #define LALOGIC_H
+
 #include "Logic.h"
-#include "Number.h"
+
+#include <common/Number.h>
+
 #include <numeric>
 
-class LANonLinearException : public std::runtime_error
-{
-    std::string msg;
+namespace opensmt {
+class LANonLinearException : public std::runtime_error {
 public:
-    LANonLinearException(const char* reason_) : runtime_error(reason_) {
+    LANonLinearException(char const * reason_) : runtime_error(reason_) {
         msg = "Term " + std::string(reason_) + " is non-linear";
     }
-    virtual const char* what() const noexcept override {
-        return msg.c_str();
-    }
+    virtual char const * what() const noexcept override { return msg.c_str(); }
+
+private:
+    std::string msg;
 };
 
-class ArithDivisionByZeroException : public std::runtime_error
-{
+class ArithDivisionByZeroException : public std::runtime_error {
 public:
     ArithDivisionByZeroException() : runtime_error("Explicit division by zero encountered!") {}
     ~ArithDivisionByZeroException() = default;
 };
 
-class ArithLogic: public Logic
-{
-    friend class LessThan_deepPTRef;
-protected:
-    std::vector<opensmt::Number*> numbers;
-
-    static const std::string e_nonlinear_term;
-
-    static const std::string tk_val_int_default;
-    static const std::string tk_val_real_default;
-    static const std::string tk_real_zero;
-    static const std::string tk_int_zero;
-    static const std::string tk_real_one;
-    static const std::string tk_int_one;
-    static const std::string tk_real_neg;
-    static const std::string tk_int_neg;
-    static const std::string tk_real_minus;
-    static const std::string tk_int_minus;
-    static const std::string tk_real_plus;
-    static const std::string tk_int_plus;
-    static const std::string tk_real_times;
-    static const std::string tk_int_times;
-    static const std::string tk_real_div;
-    static const std::string tk_int_div;
-    static const std::string tk_int_mod;
-    static const std::string tk_real_leq;
-    static const std::string tk_int_leq;
-    static const std::string tk_real_lt;
-    static const std::string tk_int_lt;
-    static const std::string tk_real_geq;
-    static const std::string tk_int_geq;
-    static const std::string tk_real_gt;
-    static const std::string tk_int_gt;
-    static const std::string s_sort_real;
-    static const std::string s_sort_int;
-
-    // Reals
-    SRef                sort_REAL;
-    PTRef               term_Real_ZERO;
-    PTRef               term_Real_ONE;
-    PTRef               term_Real_MINUSONE;
-
-    SymRef              sym_Real_ZERO;
-    SymRef              sym_Real_ONE;
-    SymRef              sym_Real_NEG;
-    SymRef              sym_Real_MINUS;
-    SymRef              sym_Real_PLUS;
-    SymRef              sym_Real_TIMES;
-    SymRef              sym_Real_DIV;
-    SymRef              sym_Real_EQ;
-    SymRef              sym_Real_LEQ;
-    SymRef              sym_Real_LT;
-    SymRef              sym_Real_GEQ;
-    SymRef              sym_Real_GT;
-    SymRef              sym_Real_ITE;
-    SymRef              sym_Real_DISTINCT;
-
-
-    // Integers
-    SRef                sort_INT;
-    PTRef               term_Int_ZERO;
-    PTRef               term_Int_ONE;
-    PTRef               term_Int_MINUSONE;
-    SymRef              sym_Int_ZERO;
-    SymRef              sym_Int_ONE;
-    SymRef              sym_Int_NEG;
-    SymRef              sym_Int_MINUS;
-    SymRef              sym_Int_PLUS;
-    SymRef              sym_Int_TIMES;
-    SymRef              sym_Int_DIV;
-    SymRef              sym_Int_MOD;
-    SymRef              sym_Int_EQ;
-    SymRef              sym_Int_LEQ;
-    SymRef              sym_Int_LT;
-    SymRef              sym_Int_GEQ;
-    SymRef              sym_Int_GT;
-    SymRef              sym_Int_ITE;
-    SymRef              sym_Int_DISTINCT;
-
+class ArithLogic : public Logic {
 public:
-    ArithLogic(opensmt::Logic_t type);
-    ~ArithLogic() { for (auto number : numbers) { delete number; } }
-    ArithLogic            (const ArithLogic&) = delete;
-    ArithLogic& operator =(const ArithLogic&) = delete;
-    ArithLogic            (ArithLogic&&) = default;
-    ArithLogic& operator =(ArithLogic&&) = delete;
+    ArithLogic(Logic_t type);
+    ~ArithLogic() {
+        for (auto number : numbers) {
+            delete number;
+        }
+    }
+    ArithLogic(ArithLogic const &) = delete;
+    ArithLogic & operator=(ArithLogic const &) = delete;
+    ArithLogic(ArithLogic &&) = default;
+    ArithLogic & operator=(ArithLogic &&) = delete;
 
-    bool             isBuiltinFunction(SymRef sr) const override;
-    PTRef            insertTerm       (SymRef sym, vec<PTRef> && terms) override;
-    SRef             getSort_real     () const { return sort_REAL; }
-    SRef             getSort_int      () const { return sort_INT; }
-    PTRef            mkConst          (const char* name) override;
-    PTRef            mkConst          (SRef s, const char* name) override;
-    PTRef            mkConst          (SRef s, const std::string& name) { return mkConst(s, name.c_str()); }
-    PTRef            mkConst          (SRef s, opensmt::Number const & c);
-    PTRef            mkIntConst       (opensmt::Number const & c) { if (not hasIntegers()) { throw OsmtApiException("Create Int constant in non-integral logic"); } return mkConst(getSort_int(), c); }
-    PTRef            mkRealConst      (opensmt::Number const & c) { if (not hasReals()) { throw OsmtApiException("Create Real constant in non-real logic"); } return mkConst(getSort_real(), c); }
-    PTRef            mkIntVar         (const char* name) { if (not hasIntegers()) { throw OsmtApiException("Create Int var in non-integral logic"); } return mkVar(sort_INT, name, false); }
-    PTRef            mkRealVar        (const char* name) { if (not hasReals()) { throw OsmtApiException("Create Real var in non-real logic"); } return mkVar(sort_REAL, name, false); }
+    bool isBuiltinFunction(SymRef sr) const override;
+    PTRef insertTerm(SymRef sym, vec<PTRef> && terms) override;
+    SRef getSort_real() const { return sort_REAL; }
+    SRef getSort_int() const { return sort_INT; }
+    PTRef mkConst(char const * name) override;
+    PTRef mkConst(SRef s, char const * name) override;
+    PTRef mkConst(SRef s, std::string const & name) { return mkConst(s, name.c_str()); }
+    PTRef mkConst(SRef s, Number const & c);
+    PTRef mkIntConst(Number const & c) {
+        if (not hasIntegers()) { throw ApiException("Create Int constant in non-integral logic"); }
+        return mkConst(getSort_int(), c);
+    }
+    PTRef mkRealConst(Number const & c) {
+        if (not hasReals()) { throw ApiException("Create Real constant in non-real logic"); }
+        return mkConst(getSort_real(), c);
+    }
+    PTRef mkIntVar(char const * name) {
+        if (not hasIntegers()) { throw ApiException("Create Int var in non-integral logic"); }
+        return mkVar(sort_INT, name, false);
+    }
+    PTRef mkRealVar(char const * name) {
+        if (not hasReals()) { throw ApiException("Create Real var in non-real logic"); }
+        return mkVar(sort_REAL, name, false);
+    }
 
-    bool             isBuiltinSort    (SRef sr) const override { return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr); }
-    bool             isBuiltinSortSym (SSymRef ssr) const override { return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) || Logic::isBuiltinSortSym(ssr); }
-    bool             isBuiltinConstant(SymRef sr) const override { return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr)); }
+    bool isBuiltinSort(SRef sr) const override {
+        return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr);
+    }
+    bool isBuiltinSortSym(SSymRef ssr) const override {
+        return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) ||
+               Logic::isBuiltinSortSym(ssr);
+    }
+    bool isBuiltinConstant(SymRef sr) const override {
+        return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr));
+    }
 
-    bool isNumConst (SymRef sr) const { return Logic::isConstant(sr) && yieldsSortNum(sr); }
-    bool isNumConst (PTRef tr)  const { return isNumConst(getPterm(tr).symb()); }
+    bool isNumConst(SymRef sr) const { return Logic::isConstant(sr) && yieldsSortNum(sr); }
+    bool isNumConst(PTRef tr) const { return isNumConst(getPterm(tr).symb()); }
     bool isIntConst(SymRef sr) const { return isNumConst(sr) && yieldsSortInt(sr); }
-    bool isIntConst (PTRef tr) const { return isIntConst(getPterm(tr).symb()); }
+    bool isIntConst(PTRef tr) const { return isIntConst(getPterm(tr).symb()); }
     bool isRealConst(SymRef sr) const { return isNumConst(sr) && yieldsSortReal(sr); }
-    bool isRealConst (PTRef tr) const { return isRealConst(getPterm(tr).symb()); }
+    bool isRealConst(PTRef tr) const { return isRealConst(getPterm(tr).symb()); }
 
-    bool isNonNegNumConst (PTRef tr) const { return isNumConst(tr) && isNonNegative(getNumConst(tr)); }
+    bool isNonNegNumConst(PTRef tr) const { return isNumConst(tr) && isNonNegative(getNumConst(tr)); }
 
     bool isSortInt(SRef sr) const { return sr == getSort_int(); }
     bool isSortReal(SRef sr) const { return sr == getSort_real(); }
     bool isSortNum(SRef sr) const { return isSortInt(sr) or isSortReal(sr); }
 
     bool yieldsSortInt(SymRef sr) const { return isSortInt(sym_store[sr].rsort()); }
-    bool yieldsSortInt(PTRef tr)  const { return yieldsSortInt(getPterm(tr).symb()); }
+    bool yieldsSortInt(PTRef tr) const { return yieldsSortInt(getPterm(tr).symb()); }
     bool yieldsSortReal(SymRef sr) const { return isSortReal(sym_store[sr].rsort()); }
-    bool yieldsSortReal(PTRef tr)  const { return yieldsSortReal(getPterm(tr).symb()); }
+    bool yieldsSortReal(PTRef tr) const { return yieldsSortReal(getPterm(tr).symb()); }
     bool yieldsSortNum(SymRef sr) const { return yieldsSortInt(sr) or yieldsSortReal(sr); }
-    bool yieldsSortNum(PTRef tr)  const { return yieldsSortInt(tr) or yieldsSortReal(tr); }
+    bool yieldsSortNum(PTRef tr) const { return yieldsSortInt(tr) or yieldsSortReal(tr); }
 
-    const opensmt::Number & getNumConst(PTRef tr) const;
+    Number const & getNumConst(PTRef tr) const;
 
-    bool           isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
-    bool           isAtom(PTRef tr) const override { return isNumEq(tr) || isLt(tr) || isGt(tr) || isLeq(tr) || isGeq(tr) || Logic::isAtom(tr); }
-    const char*    getDefaultValue(PTRef tr) const override;
-    PTRef          getDefaultValuePTRef(SRef sref) const override;
+    bool isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
+    bool isAtom(PTRef tr) const override {
+        return isNumEq(tr) || isLt(tr) || isGt(tr) || isLeq(tr) || isGeq(tr) || Logic::isAtom(tr);
+    }
+    char const * getDefaultValue(PTRef tr) const override;
+    PTRef getDefaultValuePTRef(SRef sref) const override;
 
-
-    SymRef get_sym_Int_TIMES () const { return sym_Int_TIMES; }
-    SymRef get_sym_Real_TIMES () const { return sym_Real_TIMES; }
-    SymRef get_sym_Int_DIV () const { return sym_Int_DIV; }
-    SymRef get_sym_Int_MOD () const { return sym_Int_MOD; }
-    SymRef get_sym_Real_DIV () const { return sym_Real_DIV; }
-    SymRef get_sym_Int_MINUS () const { return sym_Int_MINUS; }
-    SymRef get_sym_Real_MINUS () const { return sym_Real_MINUS; }
-    SymRef get_sym_Real_PLUS () const {return sym_Real_PLUS; }
-    SymRef get_sym_Int_PLUS () const {return sym_Int_PLUS; }
-    SymRef get_sym_Int_NEG () const { return sym_Int_NEG; }
+    SymRef get_sym_Int_TIMES() const { return sym_Int_TIMES; }
+    SymRef get_sym_Real_TIMES() const { return sym_Real_TIMES; }
+    SymRef get_sym_Int_DIV() const { return sym_Int_DIV; }
+    SymRef get_sym_Int_MOD() const { return sym_Int_MOD; }
+    SymRef get_sym_Real_DIV() const { return sym_Real_DIV; }
+    SymRef get_sym_Int_MINUS() const { return sym_Int_MINUS; }
+    SymRef get_sym_Real_MINUS() const { return sym_Real_MINUS; }
+    SymRef get_sym_Real_PLUS() const { return sym_Real_PLUS; }
+    SymRef get_sym_Int_PLUS() const { return sym_Int_PLUS; }
+    SymRef get_sym_Int_NEG() const { return sym_Int_NEG; }
     SymRef get_sym_Int_LEQ() const { return sym_Int_LEQ; }
     SymRef get_sym_Real_LEQ() const { return sym_Real_LEQ; }
     SymRef getLeqForSort(SRef sr) const;
@@ -176,33 +124,36 @@ public:
     SymRef get_sym_Real_GT() const { return sym_Real_GT; }
     SymRef get_sym_Int_EQ() const { return sym_Int_EQ; }
     SymRef get_sym_Real_EQ() const { return sym_Real_EQ; }
-    SymRef get_Sym_Int_ZERO () const { return sym_Int_ZERO; }
-    SymRef get_Sym_Real_ZERO () const { return sym_Real_ZERO; }
+    SymRef get_Sym_Int_ZERO() const { return sym_Int_ZERO; }
+    SymRef get_Sym_Real_ZERO() const { return sym_Real_ZERO; }
     SymRef get_Sym_Int_ONE() const { return sym_Int_ONE; }
     SymRef get_Sym_Real_ONE() const { return sym_Real_ONE; }
-    SymRef get_sym_Int_ITE() const { return sym_Int_ITE;}
+    SymRef get_sym_Int_ITE() const { return sym_Int_ITE; }
     SymRef get_sym_Real_ITE() const { return sym_Real_ITE; }
 
     void checkArithSortCompatible(vec<PTRef> const & args, SRef numSort) const {
         for (auto tr : args) {
-            if (getSortRef(tr) != numSort) throw OsmtApiException("Argument sorts disagree"); }
+            if (getSortRef(tr) != numSort) throw ApiException("Argument sorts disagree");
+        }
     }
 
     SRef checkArithSortCompatible(vec<PTRef> const & args) const {
-        if (args.size() == 0) {
-            return SRef_Undef;
-        }
+        if (args.size() == 0) { return SRef_Undef; }
         SRef numSort = getSortRef(args[0]);
         checkArithSortCompatible(args, numSort);
         return numSort;
     }
-    void checkHasReals() const { if (not hasReals()) throw OsmtApiException("Reals not defined for logic"); }
-    void checkHasIntegers() const { if (not hasIntegers()) throw OsmtApiException("Integers not defined for logic"); }
+    void checkHasReals() const {
+        if (not hasReals()) throw ApiException("Reals not defined for logic");
+    }
+    void checkHasIntegers() const {
+        if (not hasIntegers()) throw ApiException("Integers not defined for logic");
+    }
 
     bool isPlus(SymRef sr) const { return isIntPlus(sr) or isRealPlus(sr); }
     bool isPlus(PTRef tr) const { return isPlus(getPterm(tr).symb()); }
     bool isIntPlus(PTRef tr) const { return isIntPlus(getPterm(tr).symb()); }
-    bool isRealPlus(PTRef tr ) const { return isRealPlus(getPterm(tr).symb()); }
+    bool isRealPlus(PTRef tr) const { return isRealPlus(getPterm(tr).symb()); }
     bool isIntPlus(SymRef sr) const { return sr == sym_Int_PLUS; }
     bool isRealPlus(SymRef sr) const { return sr == sym_Real_PLUS; }
 
@@ -232,7 +183,7 @@ public:
     bool isIntDiv(PTRef tr) const { return isIntDiv(getPterm(tr).symb()); }
     bool isIntDiv(SymRef sr) const { return sr == sym_Int_DIV; }
 
-    bool isMod(SymRef sr)   const { return sr == sym_Int_MOD; }
+    bool isMod(SymRef sr) const { return sr == sym_Int_MOD; }
 
     bool isNumEq(SymRef sr) const { return isEquality(sr) and isSortNum(sym_store[sr][0]); }
     bool isNumEq(PTRef tr) const { return isNumEq(getPterm(tr).symb()); }
@@ -271,7 +222,9 @@ public:
 
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef sr) const { return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr); }
+    bool isNumVarLike(SymRef sr) const {
+        return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr);
+    }
     bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
@@ -293,17 +246,25 @@ public:
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
 
-    PTRef getTerm_IntZero()     const { return term_Int_ZERO; }
-    PTRef getTerm_RealZero()    const { return term_Real_ZERO; }
-    PTRef getTerm_IntOne()      const { return term_Int_ONE; }
-    PTRef getTerm_RealOne()     const { return term_Real_ONE; }
+    PTRef getTerm_IntZero() const { return term_Int_ZERO; }
+    PTRef getTerm_RealZero() const { return term_Real_ZERO; }
+    PTRef getTerm_IntOne() const { return term_Int_ONE; }
+    PTRef getTerm_RealOne() const { return term_Real_ONE; }
     PTRef getTerm_IntMinusOne() const { return term_Int_MINUSONE; }
-    PTRef getTerm_RealMinusOne()const { return term_Real_MINUSONE; }
+    PTRef getTerm_RealMinusOne() const { return term_Real_MINUSONE; }
 
-    void checkSortInt(PTRef tr) { if (getSortRef(tr) != getSort_int()) throw OsmtApiException("Expected integral sort"); }
-    void checkSortReal(PTRef tr) { if (getSortRef(tr) != getSort_real()) throw OsmtApiException("Expected real sort"); }
-    void checkSortInt(vec<PTRef> const & args) { if (args.size() > 0) checkSortInt(args[0]); }
-    void checkSortReal(vec<PTRef> const & args) { if (args.size() > 0) checkSortReal(args[0]); }
+    void checkSortInt(PTRef tr) {
+        if (getSortRef(tr) != getSort_int()) throw ApiException("Expected integral sort");
+    }
+    void checkSortReal(PTRef tr) {
+        if (getSortRef(tr) != getSort_real()) throw ApiException("Expected real sort");
+    }
+    void checkSortInt(vec<PTRef> const & args) {
+        if (args.size() > 0) checkSortInt(args[0]);
+    }
+    void checkSortReal(vec<PTRef> const & args) {
+        if (args.size() > 0) checkSortReal(args[0]);
+    }
 
     SymRef getPlusForSort(SRef sort) const;
     SymRef getTimesForSort(SRef sort) const;
@@ -319,28 +280,48 @@ public:
     // Minus
     PTRef mkMinus(vec<PTRef> &&);
     PTRef mkMinus(PTRef a1, PTRef a2) { return mkMinus(vec<PTRef>({a1, a2})); }
-    PTRef mkMinus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkMinus(std::move(tmp)); }
+    PTRef mkMinus(vec<PTRef> const & args) {
+        vec<PTRef> tmp;
+        args.copyTo(tmp);
+        return mkMinus(std::move(tmp));
+    }
 
     // Plus
     PTRef mkPlus(vec<PTRef> &&);
     PTRef mkPlus(PTRef p1, PTRef p2) { return mkPlus(vec<PTRef>({p1, p2})); }
-    PTRef mkPlus(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkPlus(std::move(tmp)); }
+    PTRef mkPlus(vec<PTRef> const & args) {
+        vec<PTRef> tmp;
+        args.copyTo(tmp);
+        return mkPlus(std::move(tmp));
+    }
     PTRef mkPlus(std::vector<PTRef> const & args) { return mkPlus(vec<PTRef>(args)); }
 
     // Times
     PTRef mkTimes(vec<PTRef> && args);
     PTRef mkTimes(PTRef p1, PTRef p2) { return mkTimes(vec<PTRef>{p1, p2}); }
-    PTRef mkTimes(vec<PTRef> const &args) { vec<PTRef> tmp; args.copyTo(tmp); return mkTimes(std::move(tmp)); }
-    PTRef mkTimes(std::vector<PTRef> const &args) { return mkTimes(vec<PTRef>(args)); }
+    PTRef mkTimes(vec<PTRef> const & args) {
+        vec<PTRef> tmp;
+        args.copyTo(tmp);
+        return mkTimes(std::move(tmp));
+    }
+    PTRef mkTimes(std::vector<PTRef> const & args) { return mkTimes(vec<PTRef>(args)); }
 
     // Div
     PTRef mkIntDiv(vec<PTRef> && args);
     PTRef mkIntDiv(PTRef nom, PTRef den) { return mkIntDiv(vec<PTRef>{nom, den}); }
-    PTRef mkIntDiv(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkIntDiv(std::move(tmp)); }
+    PTRef mkIntDiv(vec<PTRef> const & args) {
+        vec<PTRef> tmp;
+        args.copyTo(tmp);
+        return mkIntDiv(std::move(tmp));
+    }
 
     PTRef mkRealDiv(vec<PTRef> && args);
     PTRef mkRealDiv(PTRef nom, PTRef den) { return mkRealDiv(vec<PTRef>{nom, den}); }
-    PTRef mkRealDiv(vec<PTRef> const & args) { vec<PTRef> tmp; args.copyTo(tmp); return mkRealDiv(std::move(tmp)); }
+    PTRef mkRealDiv(vec<PTRef> const & args) {
+        vec<PTRef> tmp;
+        args.copyTo(tmp);
+        return mkRealDiv(std::move(tmp));
+    }
 
     // Mod
     PTRef mkMod(vec<PTRef> && args);
@@ -364,7 +345,7 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
-    opensmt::pair<opensmt::Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
+    opensmt::pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
     opensmt::pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
@@ -372,8 +353,8 @@ public:
     PTRef sumToNormalizedEquality(PTRef sum);
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
-    opensmt::pair<lbool,SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
-    void termSort(vec<PTRef> &v) const override;
+    opensmt::pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
+    void termSort(vec<PTRef> & v) const override;
 
     PTRef removeAuxVars(PTRef) override;
 
@@ -385,23 +366,100 @@ public:
     PTRef getConstantFromLeq(PTRef);
     // Given an inequality 'c <= t', return the term t; checked version
     PTRef getTermFromLeq(PTRef);
-    // Given an inequality 'c <= t', return the pair <c,t> for a constant c and term t; unchecked version, for internal use
+    // Given an inequality 'c <= t', return the pair <c,t> for a constant c and term t; unchecked version, for
+    // internal use
     std::pair<PTRef, PTRef> leqToConstantAndTerm(PTRef);
 
     // MB: In pure LA, there are never nested boolean terms
-    vec<PTRef> getNestedBoolRoots (PTRef)  const override { return vec<PTRef>(); }
+    vec<PTRef> getNestedBoolRoots(PTRef) const override { return vec<PTRef>(); }
 
 protected:
+    friend class LessThan_deepPTRef;
+
     PTRef mkBinaryLeq(PTRef lhs, PTRef rhs);
     PTRef mkBinaryGeq(PTRef lhs, PTRef rhs) { return mkBinaryLeq(rhs, lhs); }
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
-    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedPair(PTRef sum);
-    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedIntPair(PTRef sum);
-    opensmt::pair<opensmt::Number, PTRef> sumToNormalizedRealPair(PTRef sum);
+    opensmt::pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
+    opensmt::pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
+    opensmt::pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
+
+    std::vector<Number *> numbers;
+
+    static std::string const e_nonlinear_term;
+
+    static std::string const tk_val_int_default;
+    static std::string const tk_val_real_default;
+    static std::string const tk_real_zero;
+    static std::string const tk_int_zero;
+    static std::string const tk_real_one;
+    static std::string const tk_int_one;
+    static std::string const tk_real_neg;
+    static std::string const tk_int_neg;
+    static std::string const tk_real_minus;
+    static std::string const tk_int_minus;
+    static std::string const tk_real_plus;
+    static std::string const tk_int_plus;
+    static std::string const tk_real_times;
+    static std::string const tk_int_times;
+    static std::string const tk_real_div;
+    static std::string const tk_int_div;
+    static std::string const tk_int_mod;
+    static std::string const tk_real_leq;
+    static std::string const tk_int_leq;
+    static std::string const tk_real_lt;
+    static std::string const tk_int_lt;
+    static std::string const tk_real_geq;
+    static std::string const tk_int_geq;
+    static std::string const tk_real_gt;
+    static std::string const tk_int_gt;
+    static std::string const s_sort_real;
+    static std::string const s_sort_int;
+
+    // Reals
+    SRef sort_REAL;
+    PTRef term_Real_ZERO;
+    PTRef term_Real_ONE;
+    PTRef term_Real_MINUSONE;
+
+    SymRef sym_Real_ZERO;
+    SymRef sym_Real_ONE;
+    SymRef sym_Real_NEG;
+    SymRef sym_Real_MINUS;
+    SymRef sym_Real_PLUS;
+    SymRef sym_Real_TIMES;
+    SymRef sym_Real_DIV;
+    SymRef sym_Real_EQ;
+    SymRef sym_Real_LEQ;
+    SymRef sym_Real_LT;
+    SymRef sym_Real_GEQ;
+    SymRef sym_Real_GT;
+    SymRef sym_Real_ITE;
+    SymRef sym_Real_DISTINCT;
+
+    // Integers
+    SRef sort_INT;
+    PTRef term_Int_ZERO;
+    PTRef term_Int_ONE;
+    PTRef term_Int_MINUSONE;
+    SymRef sym_Int_ZERO;
+    SymRef sym_Int_ONE;
+    SymRef sym_Int_NEG;
+    SymRef sym_Int_MINUS;
+    SymRef sym_Int_PLUS;
+    SymRef sym_Int_TIMES;
+    SymRef sym_Int_DIV;
+    SymRef sym_Int_MOD;
+    SymRef sym_Int_EQ;
+    SymRef sym_Int_LEQ;
+    SymRef sym_Int_LT;
+    SymRef sym_Int_GEQ;
+    SymRef sym_Int_GT;
+    SymRef sym_Int_ITE;
+    SymRef sym_Int_DISTINCT;
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
@@ -414,12 +472,16 @@ protected:
 //   (* ite v) or (* ite c) or (* v ite) or (* c ite)  => consider {v,c}.ptref
 //   (* ite1 ite2) => consider min(ite1.ptref, ite2.ptref)
 class LessThan_deepPTRef {
+public:
+    LessThan_deepPTRef(ArithLogic const & l) : l(l) {}
+
+    bool operator()(PTRef x_, PTRef y_) const;
+
+private:
     ArithLogic const & l;
     uint32_t getVarIdFromProduct(PTRef term) const;
-public:
-    LessThan_deepPTRef(ArithLogic const& l) : l(l) {}
-
-    bool operator ()  (PTRef x_, PTRef y_) const;
-
 };
+
+} // namespace opensmt
+
 #endif

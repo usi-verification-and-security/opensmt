@@ -12,8 +12,7 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortBlocksOnASingleLine: Always
 AllowShortIfStatementsOnASingleLine: WithoutElse
 IndentCaseLabels: True
-NamespaceIndentation: All
+NamespaceIndentation: Inner
 AlwaysBreakTemplateDeclarations: Yes
 SpaceAfterTemplateKeyword: False
 PackConstructorInitializers: CurrentLine
-

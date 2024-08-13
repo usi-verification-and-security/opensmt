@@ -8,7 +8,10 @@
 #define OPENSMT_ARRAYTHEORY_H
 
 #include "Theory.h"
-#include "ArrayTHandler.h"
+
+#include <tsolvers/ArrayTHandler.h>
+
+namespace opensmt {
 
 class ArrayTheory : public Theory {
 private:
@@ -29,5 +32,6 @@ public:
     virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) override;
 };
 
+}
 
 #endif //OPENSMT_ARRAYTHEORY_H

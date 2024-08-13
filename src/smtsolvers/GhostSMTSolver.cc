@@ -4,11 +4,12 @@
 
 #include "GhostSMTSolver.h"
 
-#include "ReportUtils.h"
-
-#include "Random.h"
+#include <common/ReportUtils.h>
+#include <common/Random.h>
 
 #include <utility>
+
+namespace opensmt {
 
 bool GhostSMTSolver::isGhost(Lit l)
 {
@@ -225,3 +226,4 @@ void GhostSMTSolver::verifyModel()
     // reportf("Verified %d original clauses.\n", clauses.size());
 }
 
+}

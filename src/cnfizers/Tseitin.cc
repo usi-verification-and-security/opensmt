@@ -9,17 +9,16 @@
 
 #include "Tseitin.h"
 
+namespace opensmt {
 void Tseitin::cnfize(PTRef term) {
-    vec<PTRef> unprocessed_terms {term};
+    vec<PTRef> unprocessed_terms{term};
 
     // Visit the DAG of the formula
     while (unprocessed_terms.size() != 0) {
         PTRef ptr = unprocessed_terms.last();
         unprocessed_terms.pop();
         // Skip if the node has already been processed before
-        if (alreadyCnfized.contains(ptr, currentFrameId)){
-            continue;
-        }
+        if (alreadyCnfized.contains(ptr, currentFrameId)) { continue; }
 
         // Here (after the checks) not safe to use Pterm& since cnfize.* can alter the table of terms
         // by calling findLit
@@ -35,15 +34,15 @@ void Tseitin::cnfize(PTRef term) {
         else if (logic.isImplies(ptr))
             cnfizeImplies(ptr);
         // Ites are handled through the ite manager system and treated here as variables
-//        else if (logic.isIte(ptr))
-//            res &= cnfizeIfthenelse(ptr);
+        //        else if (logic.isIte(ptr))
+        //            res &= cnfizeIfthenelse(ptr);
         else if (!logic.isNot(ptr) && sz > 0) { // do not recurse into atoms
             goto tseitin_end;
         }
         for (PTRef child : logic.getPterm(ptr)) {
             unprocessed_terms.push(child);
         }
-tseitin_end:
+    tseitin_end:
         alreadyCnfized.insert(ptr, currentFrameId);
     }
 }
@@ -78,7 +77,7 @@ void Tseitin::cnfizeOr(PTRef or_term) {
         PTRef arg = logic.getPterm(or_term)[i];
         Lit argLit = this->getOrCreateLiteralFor(arg);
         big_clause.push(argLit);
-        addClause({v,~argLit});
+        addClause({v, ~argLit});
     }
     addClause(std::move(big_clause));
 }
@@ -158,3 +157,5 @@ void Tseitin::cnfizeImplies(PTRef impl_term) {
     addClause({v, ~a1});
     addClause({~v, ~a0, a1});
 }
+
+} // namespace opensmt

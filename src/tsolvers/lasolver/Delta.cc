@@ -25,8 +25,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 #include "Delta.h"
+
 #include <iostream>
 #include <cassert>
+
+namespace opensmt {
 
 //
 // Set Delta to 0
@@ -54,3 +57,4 @@ char * Delta::printValue() const {
     return out;
 }
 
+}

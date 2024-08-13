@@ -5,78 +5,24 @@
 #ifndef OPENSMT_MODELBUILDER_H
 #define OPENSMT_MODELBUILDER_H
 
-#include "PTRef.h"
 #include "Model.h"
 
-#include <unordered_map>
-#include <memory>
+#include <pterms/PTRef.h>
 
+#include <memory>
+#include <unordered_map>
+
+namespace opensmt {
 class Logic;
 
 class ModelBuilder {
-protected:
-    class ValuationNodeFactory;
-    class ValuationNode {
-        friend class ModelBuilder::ValuationNodeFactory;
-        int id;
-        std::vector<ValuationNode*> children;
-        PTRef value;
-        PTRef var;
-        ValuationNode(int id) : id(id), value{PTRef_Undef}, var{PTRef_Undef} {}
-        ValuationNode(int id, PTRef var, PTRef val) : id(id), value{val}, var{var} { assert(var != PTRef_Undef); }
-    public:
-        bool operator== (const ValuationNode* o) const { return this->id == o->id; }
-        ValuationNode* operator[] (int i) { return children[i]; }
-        const ValuationNode* operator[] (int i) const { return children[i]; }
-        std::size_t nChildren() const { return children.size(); }
-        bool hasChildren() const { return not children.empty(); }
-        int getId() const { return id; }
-        PTRef getValue() const { return value; }
-        PTRef getVar() const { return var; }
-        std::vector<ModelBuilder::ValuationNode*>::iterator begin() { return children.begin(); }
-        std::vector<ModelBuilder::ValuationNode*>::iterator end() { return children.end(); }
-        ValuationNode* addChild(ValuationNode* n) { children.emplace_back(n); return n; }
-    };
-
-    struct ValuationNodeHash {
-        std::size_t operator() (const ValuationNode* n) const { return std::hash<int>()(n->getId()); }
-    };
-    class ValuationNodeFactory {
-        int numValuationNodes;
-        vec<ValuationNode*> nodes;
-    public:
-        ValuationNodeFactory() : numValuationNodes(0) {}
-        ValuationNode * getValuationNode() {
-            auto vn = new ValuationNode(numValuationNodes++);
-            nodes.push(vn);
-            return vn;
-        }
-        ValuationNode * getValuationNode(PTRef var, PTRef val) {
-            auto vn = new ValuationNode(numValuationNodes++, var, val);
-            nodes.push(vn);
-            return vn;
-        }
-        int numNodes() const { return nodes.size(); }
-        ~ValuationNodeFactory() { for (auto n : nodes) { delete n; } }
-    };
-    ValuationNodeFactory valuationNodeFactory;
-    ValuationNode * addToValuationTree(const vec<opensmt::pair<PTRef,PTRef>> & valuation, PTRef value, ValuationNode * root);
-    PTRef valuationTreeToFunctionBody(const ValuationNode *, SRef sr);
-
-    std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
-    std::unordered_map<SymRef, opensmt::pair<FunctionSignature, ValuationNode*>, SymRefHash> definitions;
-
-    Logic& logic;
-    int uniqueNum;
-    const std::string formalArgDefaultPrefix;
-
 public:
-
     ModelBuilder(Logic & logic) : logic(logic), uniqueNum(0), formalArgDefaultPrefix("x") {}
 
     void addVarValue(PTRef var, PTRef value) {
         auto res = assignment.insert(std::make_pair(var, value));
-        assert(res.second); (void)res;
+        assert(res.second);
+        (void)res;
     }
 
     inline bool hasVarVal(PTRef term) const {
@@ -94,10 +40,10 @@ public:
         assignment.insert(begin, end);
     }
 
-    bool hasTheoryFunction(SymRef sr) const { return definitions.find(sr) != definitions.end();}
+    bool hasTheoryFunction(SymRef sr) const { return definitions.find(sr) != definitions.end(); }
     bool hasTheoryFunction(PTRef tr) const { return hasTheoryFunction(logic.getSymRef(tr)); }
 
-    void addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef val);
+    void addToTheoryFunction(SymRef sr, vec<PTRef> const & vals, PTRef val);
 
     template<typename TIt>
     void addFunctionDefinitions(TIt begin, TIt end) {
@@ -105,7 +51,81 @@ public:
     }
 
     std::unique_ptr<Model> build();
+
+protected:
+    class ValuationNodeFactory;
+    class ValuationNode {
+    public:
+        bool operator==(ValuationNode const * o) const { return this->id == o->id; }
+        ValuationNode * operator[](int i) { return children[i]; }
+        ValuationNode const * operator[](int i) const { return children[i]; }
+        std::size_t nChildren() const { return children.size(); }
+        bool hasChildren() const { return not children.empty(); }
+        int getId() const { return id; }
+        PTRef getValue() const { return value; }
+        PTRef getVar() const { return var; }
+        std::vector<ModelBuilder::ValuationNode *>::iterator begin() { return children.begin(); }
+        std::vector<ModelBuilder::ValuationNode *>::iterator end() { return children.end(); }
+        ValuationNode * addChild(ValuationNode * n) {
+            children.emplace_back(n);
+            return n;
+        }
+
+    private:
+        friend class ModelBuilder::ValuationNodeFactory;
+
+        ValuationNode(int id) : id(id), value{PTRef_Undef}, var{PTRef_Undef} {}
+        ValuationNode(int id, PTRef var, PTRef val) : id(id), value{val}, var{var} { assert(var != PTRef_Undef); }
+
+        int id;
+        std::vector<ValuationNode *> children;
+        PTRef value;
+        PTRef var;
+    };
+
+    struct ValuationNodeHash {
+        std::size_t operator()(ValuationNode const * n) const { return std::hash<int>()(n->getId()); }
+    };
+
+    class ValuationNodeFactory {
+    public:
+        ValuationNodeFactory() : numValuationNodes(0) {}
+        ~ValuationNodeFactory() {
+            for (auto n : nodes) {
+                delete n;
+            }
+        }
+        ValuationNode * getValuationNode() {
+            auto vn = new ValuationNode(numValuationNodes++);
+            nodes.push(vn);
+            return vn;
+        }
+        ValuationNode * getValuationNode(PTRef var, PTRef val) {
+            auto vn = new ValuationNode(numValuationNodes++, var, val);
+            nodes.push(vn);
+            return vn;
+        }
+        int numNodes() const { return nodes.size(); }
+
+    private:
+        int numValuationNodes;
+        vec<ValuationNode *> nodes;
+    };
+
+    ValuationNode * addToValuationTree(vec<opensmt::pair<PTRef, PTRef>> const & valuation, PTRef value,
+                                       ValuationNode * root);
+    PTRef valuationTreeToFunctionBody(ValuationNode const *, SRef sr);
+
+    ValuationNodeFactory valuationNodeFactory;
+
+    std::unordered_map<PTRef, PTRef, PTRefHash> assignment;
+    std::unordered_map<SymRef, opensmt::pair<FunctionSignature, ValuationNode *>, SymRefHash> definitions;
+
+    Logic & logic;
+    int uniqueNum;
+    std::string const formalArgDefaultPrefix;
 };
 
+} // namespace opensmt
 
-#endif //OPENSMT_MODELBUILDER_H
+#endif // OPENSMT_MODELBUILDER_H

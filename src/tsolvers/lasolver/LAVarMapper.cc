@@ -6,7 +6,10 @@
  */
 
 #include "LAVarMapper.h"
-#include "ArithLogic.h"
+
+#include <logics/ArithLogic.h>
+
+namespace opensmt {
 
 /**
  * Remembers the mapping between a linear term (PTRef) and LA var (LVRef).
@@ -71,4 +74,4 @@ void LAVarMapper::clear() {
     this->ptermToLavar.clear();
 }
 
-
+}

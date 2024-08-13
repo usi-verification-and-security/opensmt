@@ -26,16 +26,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef API_INTERPRET_H
 #define API_INTERPRET_H
 
-#include "smt2newcontext.h"
-#include "SStore.h"
-#include "PtStructs.h"
-#include "SymRef.h"
-#include "Logic.h"
-#include "MainSolver.h"
-#include "ScopedVector.h"
+#include <parsers/smt2new/smt2newcontext.h>
+#include <sorts/SStore.h>
+#include <pterms/PtStructs.h>
+#include <symbols/SymRef.h>
+#include <logics/Logic.h>
+#include <api/MainSolver.h>
+#include <common/ScopedVector.h>
 
 #include <unordered_map>
 #include <string>
+
+namespace opensmt {
 
 class DefinedFunctions {
     std::unordered_map<std::string,TemplateFunction> defined_functions;
@@ -178,6 +180,7 @@ public:
 
 class Interpret {
   protected:
+
     SMTConfig &     config;
     std::unique_ptr<Logic> logic;
     std::unique_ptr<MainSolver> main_solver;
@@ -255,5 +258,7 @@ class Interpret {
     int get_assertion_index(PTRef ref);
     MainSolver&     getMainSolver() { return *main_solver; }
 };
+
+}
 
 #endif

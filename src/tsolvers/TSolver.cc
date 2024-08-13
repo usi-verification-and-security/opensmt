@@ -1,6 +1,9 @@
 #include "TSolver.h"
-#include "Logic.h"
-#include "OsmtInternalException.h"
+
+#include <logics/Logic.h>
+#include <common/InternalException.h>
+
+namespace opensmt {
 
 void TSolver::clearSolver()
 {
@@ -77,7 +80,7 @@ vec<PtAsgn> TSolver::getReasonFor(PtAsgn lit) {
     bool sat = assertLit(PtAsgn(lit.tr, lit.sgn == l_True ? l_False : l_True));
     if (sat) {
         assert(false);
-        throw OsmtInternalException("Error in computing reason for theory-propagated literal");
+        throw InternalException("Error in computing reason for theory-propagated literal");
     }
     vec<PtAsgn> conflict;
     getConflict(conflict);
@@ -98,4 +101,6 @@ void TSolver::printStatistics(std::ostream & os) {
     os << "; STATISTICS FOR " << getName() << '\n';
     os << "; -------------------------\n";
     generalTSolverStats.printStatistics(os);
+}
+
 }

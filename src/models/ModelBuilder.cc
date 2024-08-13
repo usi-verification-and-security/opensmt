@@ -5,12 +5,12 @@
 #include "ModelBuilder.h"
 
 #include <sstream>
-#include <unordered_set>
 
+namespace opensmt {
 std::unique_ptr<Model> ModelBuilder::build() {
-    std::unordered_map<SymRef,TemplateFunction,SymRefHash> builtDefinitions;
+    std::unordered_map<SymRef, TemplateFunction, SymRefHash> builtDefinitions;
     for (auto & symbolSigVal : definitions) {
-        const ValuationNode * valuationNode = symbolSigVal.second.second;
+        ValuationNode const * valuationNode = symbolSigVal.second.second;
         SRef sr = logic.getSortRef(symbolSigVal.first);
         PTRef body = valuationTreeToFunctionBody(valuationNode, sr);
         TemplateFunction templateFun(std::move(symbolSigVal.second.first), body);
@@ -19,23 +19,21 @@ std::unique_ptr<Model> ModelBuilder::build() {
     return std::make_unique<Model>(logic, assignment, builtDefinitions);
 }
 
-void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef val)
-{
-    if (logic.getSortRef(sr) != logic.getSortRef(val)) {
-        throw OsmtApiException("Incompatible sort for symbol valuation");
-    }
-    const Symbol & sym = logic.getSym(sr);
+void ModelBuilder::addToTheoryFunction(SymRef sr, vec<PTRef> const & vals, PTRef val) {
+    if (logic.getSortRef(sr) != logic.getSortRef(val)) { throw ApiException("Incompatible sort for symbol valuation"); }
+    Symbol const & sym = logic.getSym(sr);
     if (sym.nargs() != vals.size_()) {
-        throw OsmtApiException("Incorrect valuation for symbol: argument and valuation size do not match");
+        throw ApiException("Incorrect valuation for symbol: argument and valuation size do not match");
     }
     for (int i = 0; i < vals.size(); i++) {
         if (sym[i] != logic.getSortRef(vals[i])) {
-            throw OsmtApiException("Incorrect valuation for symbol: sort mismatch");
+            throw ApiException("Incorrect valuation for symbol: sort mismatch");
         }
     }
 
     if (not hasTheoryFunction(sr)) {
-        vec<PTRef> formalArgs; formalArgs.capacity(vals.size());
+        vec<PTRef> formalArgs;
+        formalArgs.capacity(vals.size());
         // Ensure that no formal arg name collides with the function name
         std::string formalArgPrefix(Model::getFormalArgBaseNameForSymbol(logic, sr, formalArgDefaultPrefix));
 
@@ -45,11 +43,12 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef
             formalArgs.push(logic.mkVar(logic.getSortRef(v), ss.str().c_str()));
         }
         FunctionSignature templateSig(logic.protectName(sr), std::move(formalArgs), logic.getSortRef(sr));
-        definitions.insert({sr,opensmt::pair<FunctionSignature,ValuationNode*>{std::move(templateSig), nullptr}});
+        definitions.insert({sr, opensmt::pair<FunctionSignature, ValuationNode *>{std::move(templateSig), nullptr}});
     }
     auto & signatureAndValuation = definitions.at(sr);
-    const vec<PTRef> & formalArgs = signatureAndValuation.first.getArgs();
-    vec<opensmt::pair<PTRef,PTRef>> valuation; valuation.capacity(vals.size());
+    vec<PTRef> const & formalArgs = signatureAndValuation.first.getArgs();
+    vec<opensmt::pair<PTRef, PTRef>> valuation;
+    valuation.capacity(vals.size());
     for (int i = 0; i < vals.size(); i++) {
         valuation.push({formalArgs[i], vals[i]});
     }
@@ -57,12 +56,11 @@ void ModelBuilder::addToTheoryFunction(SymRef sr, const vec<PTRef> & vals, PTRef
     signatureAndValuation.second = addToValuationTree(valuation, val, signatureAndValuation.second);
 }
 
-ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(const vec<opensmt::pair<PTRef,PTRef>> & valuation, PTRef value, ValuationNode * root) {
+ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(vec<opensmt::pair<PTRef, PTRef>> const & valuation,
+                                                               PTRef value, ValuationNode * root) {
     assert(valuation.size() >= 1);
 
-    if (root == nullptr) {
-        root = valuationNodeFactory.getValuationNode(valuation[0].first, PTRef_Undef);
-    }
+    if (root == nullptr) { root = valuationNodeFactory.getValuationNode(valuation[0].first, PTRef_Undef); }
 
     ValuationNode * current = root;
 
@@ -72,7 +70,7 @@ ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(const vec<opensmt
         assert(current != nullptr);
 
         bool foundChild = false;
-        for (auto child: *current) {
+        for (auto child : *current) {
             if (child->getValue() == val) {
                 current = child;
                 foundChild = true;
@@ -83,21 +81,22 @@ ModelBuilder::ValuationNode * ModelBuilder::addToValuationTree(const vec<opensmt
             // No child found with this value.  Need to create a new child.  If this will be a leaf
             // (i.e., it is the last value in a valuation) the var will by convention be set to the
             // value of this valuation
-            current = current->addChild(valuationNodeFactory.getValuationNode(i == valuation.size()-1 ? value : valuation[i+1].first, val));
+            current = current->addChild(
+                valuationNodeFactory.getValuationNode(i == valuation.size() - 1 ? value : valuation[i + 1].first, val));
         }
     }
     return root;
 }
 
 // Copied from TermVisitor.  Maybe it'd be possible to template TermVisitor to handle also ValuationNodes
-PTRef ModelBuilder::valuationTreeToFunctionBody(const ValuationNode *root, SRef returnSort) {
+PTRef ModelBuilder::valuationTreeToFunctionBody(ValuationNode const * root, SRef returnSort) {
     struct QPair {
-        const ValuationNode * node;
+        ValuationNode const * node;
         std::size_t nextChild;
-        QPair(const ValuationNode* n) : node(n), nextChild(0) {}
+        QPair(ValuationNode const * n) : node(n), nextChild(0) {}
     };
 
-    std::unordered_map<const ValuationNode*,PTRef,ValuationNodeHash> nodeToFormula;
+    std::unordered_map<ValuationNode const *, PTRef, ValuationNodeHash> nodeToFormula;
 
     vec<char> done(valuationNodeFactory.numNodes(), 0);
 
@@ -108,11 +107,9 @@ PTRef ModelBuilder::valuationTreeToFunctionBody(const ValuationNode *root, SRef 
         auto * node = el.node;
         assert(not done[node->getId()]);
         if (el.nextChild < node->nChildren()) {
-            const ValuationNode *child = (*node)[el.nextChild];
-            el.nextChild ++;
-            if (not done[child->getId()]) {
-                queue.push({QPair{child}});
-            }
+            ValuationNode const * child = (*node)[el.nextChild];
+            el.nextChild++;
+            if (not done[child->getId()]) { queue.push({QPair{child}}); }
             continue;
         }
         // All children of the node are processed
@@ -123,8 +120,9 @@ PTRef ModelBuilder::valuationTreeToFunctionBody(const ValuationNode *root, SRef 
             assert(logic.getSortRef(node->getVar()) == returnSort);
         } else {
             PTRef nodeFormula = logic.getDefaultValuePTRef(returnSort);
-            for (int i = node->nChildren()-1; i >= 0; i--) {
-                nodeFormula = logic.mkIte(logic.mkEq(node->getVar(), (*node)[i]->getValue()), nodeToFormula.at((*node)[i]), nodeFormula);
+            for (int i = node->nChildren() - 1; i >= 0; i--) {
+                nodeFormula = logic.mkIte(logic.mkEq(node->getVar(), (*node)[i]->getValue()),
+                                          nodeToFormula.at((*node)[i]), nodeFormula);
             }
             nodeToFormula[node] = nodeFormula;
         }
@@ -133,3 +131,5 @@ PTRef ModelBuilder::valuationTreeToFunctionBody(const ValuationNode *root, SRef 
     }
     return nodeToFormula[root];
 }
+
+} // namespace opensmt

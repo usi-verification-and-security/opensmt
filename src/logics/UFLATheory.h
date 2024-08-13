@@ -27,8 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define UFLRATheory_h
 
 #include "Theory.h"
-#include "UFLATHandler.h"
 #include "ArithLogic.h"
+
+#include <tsolvers/UFLATHandler.h>
+
+namespace opensmt {
 
 class UFLATheory : public Theory
 {
@@ -53,5 +56,7 @@ protected:
     PTRef splitArithmeticEqualities(PTRef fla);
     vec<PTRef> getInterfaceVars(opensmt::span<const PTRef> flas);
 };
+
+}
 
 #endif

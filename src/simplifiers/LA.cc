@@ -29,19 +29,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
 
+namespace opensmt {
+
 void LAExpression::initialize(PTRef e, bool do_canonize) {
     assert(logic.isNumEq(e) || logic.isLeq(e));
 
     PTRef lhs = logic.getPterm(e)[0];
     PTRef rhs = logic.getPterm(e)[1];
     std::vector<PTRef> curr_term{lhs, rhs};
-    std::vector<opensmt::Real> curr_const{1, -1};
+    std::vector<Real> curr_const{1, -1};
 
     while (!curr_term.empty()) {
         PTRef t = curr_term.back();
         assert(logic.yieldsSortNum(t));
         curr_term.pop_back();
-        opensmt::Real c = curr_const.back();
+        Real c = curr_const.back();
         curr_const.pop_back();
         // Only 3 cases are allowed
         //
@@ -56,7 +58,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             // If it is times, then one side must be constant, other
             // is enqueued with a new constant
             auto [var, constant] = logic.splitTermToVarAndConst(t);
-            opensmt::Real new_c = logic.getNumConst(constant);
+            Real new_c = logic.getNumConst(constant);
             new_c *= c;
             curr_term.emplace_back(var);
             curr_const.emplace_back(std::move(new_c));
@@ -64,7 +66,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             // Otherwise it is a variable, Ite, UF or constant
             assert(logic.isNumVarLike(t) || logic.isConstant(t) || logic.isUF(t));
             if (logic.isConstant(t)) {
-                const opensmt::Real tval = logic.getNumConst(t);
+                const Real tval = logic.getNumConst(t);
                 polynome[PTRef_Undef] += tval * c;
             } else {
                 auto it = polynome.find(t);
@@ -97,7 +99,7 @@ PTRef LAExpression::toPTRef(SRef sort) const {
     // There is at least one variable
     //
     vec<PTRef> sum_list;
-    opensmt::Real constant = 0;
+    Real constant = 0;
     for (auto const & [var, factor] : polynome) {
         if (var == PTRef_Undef) {
             constant = factor;
@@ -134,7 +136,7 @@ void LAExpression::print(std::ostream & os) const {
         os << "(=";
     else if (r == OP::LEQ)
         os << "(<=";
-    opensmt::Real constant = 0;
+    Real constant = 0;
     if (polynome.size() == 1)
         os << " " << polynome.at(PTRef_Undef);
     else {
@@ -162,7 +164,7 @@ opensmt::pair<PTRef, PTRef> LAExpression::getSubst() {
     // Solve w.r.t. first variable
     solve();
     vec<PTRef> sum_list;
-    opensmt::Real constant = 0;
+    Real constant = 0;
     PTRef var = PTRef_Undef;
     SRef polySort = SRef_Undef;
     for (auto const & [v, factor] : polynome) {
@@ -208,7 +210,7 @@ PTRef LAExpression::solve() {
     auto it = polynome.begin();
     if (it->first == PTRef_Undef) it++;
     PTRef var = it->first;
-    const opensmt::Real coeff = it->second;
+    const Real coeff = it->second;
     //
     // Divide polynome by coeff
     //
@@ -239,12 +241,12 @@ LAExpression::canonize() {
     auto it = polynome.begin();
     if (it->first == PTRef_Undef) it++;
     if (r == OP::LEQ) {
-        const opensmt::Real abs_coeff = (it->second > 0 ? it->second : opensmt::Real(-it->second));
+        const Real abs_coeff = (it->second > 0 ? it->second : Real(-it->second));
         for (auto & term: polynome) {
             term.second /= abs_coeff;
         }
     } else {
-        const opensmt::Real coeff = it->second;
+        const Real coeff = it->second;
         for (auto & term: polynome) {
             term.second /= coeff;
         }
@@ -252,7 +254,7 @@ LAExpression::canonize() {
     assert(isCanonized());
 }
 
-void LAExpression::addExprWithCoeff(const LAExpression & a, const opensmt::Real & coeff) {
+void LAExpression::addExprWithCoeff(const LAExpression & a, const Real & coeff) {
     //
     // Iterate over expression to add
     //
@@ -267,4 +269,6 @@ void LAExpression::addExprWithCoeff(const LAExpression & a, const opensmt::Real 
             polynome.insert({var, coeff * factor});
         }
     }
+}
+
 }

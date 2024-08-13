@@ -8,7 +8,7 @@
 #include "Number.h"
 
 namespace opensmt {
-    typedef Number Real;
+typedef Number Real;
 }
 
 #endif // OPENSMT_REAL_H

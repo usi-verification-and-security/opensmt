@@ -29,11 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DELTA_H
 #define DELTA_H
 
-#include "Real.h"
+#include <common/Real.h>
 
 #include <iosfwd>
 
-using opensmt::Real;
+namespace opensmt {
 
 //
 // Class to keep the delta values and bounds values for the LAVar
@@ -307,5 +307,7 @@ Delta & Delta::operator=(Delta && other) noexcept {
 
 // Destructor
 Delta::~Delta() = default;
+
+}
 
 #endif

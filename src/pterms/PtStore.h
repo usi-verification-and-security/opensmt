@@ -23,83 +23,86 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #ifndef PTSTORE_H
 #define PTSTORE_H
 
 #include "Pterm.h"
-#include "SymStore.h"
+
+#include <symbols/SymStore.h>
+
 #include <unordered_map>
 
+namespace opensmt {
 class SStore; // forward declaration
 
 class PtermIter {
-  private:
+public:
+    PtermIter(vec<PTRef> & in) : i(0), idToPTRef(in) {}
+    PTRef operator*();              /* {
+                     if (i < idToPTRef.size())
+                         return idToPTRef[i];
+                     else
+                         return PTRef_Undef;
+                 }*/
+    PtermIter const & operator++(); // { i++; return *this; }
+private:
     int i;
-    vec<PTRef>& idToPTRef;
-  public:
-    PtermIter(vec<PTRef>& in) : i(0), idToPTRef(in) {}
-    PTRef operator* ();/* {
-        if (i < idToPTRef.size())
-            return idToPTRef[i];
-        else
-            return PTRef_Undef;
-    }*/
-    const PtermIter& operator++ ();// { i++; return *this; }
+    vec<PTRef> & idToPTRef;
 };
 
 class PtStore {
-    PtermAllocator pta{1024*1024};
-    SymStore&      symstore;
-    vec<PTRef>     idToPTRef;
+public:
+    PtStore(SymStore & symstore) : symstore(symstore) {}
 
-    Map<SymRef,PTRef,SymRefHash,Equal<SymRef> > cterm_map; // Mapping constant symbols to terms
-//    vec<SymRef> cterm_keys;
+    PTRef newTerm(SymRef const sym, vec<PTRef> const & ps); /* {
+          PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
+          assert(idToPTRef.size() == pta.getNumTerms());
+          return tr;
+      }*/
 
-    std::unordered_map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    cplx_map;  // Mapping complex terms to canonical terms
-//    vec<PTLKey> cplx_keys;
-
-    std::unordered_map<PTLKey,PTRef,PTLHash,Equal<PTLKey> >    bool_map;  // Mapping boolean terms to canonical terms
-//    vec<PTLKey> bool_keys;
-//    friend class Logic;
-    static const int ptstore_buf_idx;
-    static const int ptstore_vec_idx;
-  public:
-    PtStore(SymStore& symstore) : symstore(symstore) {}
-
-    PTRef newTerm(const SymRef sym, const vec<PTRef>& ps);/* {
-        PTRef tr = pta.alloc(sym, ps); idToPTRef.push(tr);
-        assert(idToPTRef.size() == pta.getNumTerms());
-        return tr;
-    }*/
-
-    void   free(PTRef r);// { pta.free(r); }  // this is guaranteed to be lazy
+    void free(PTRef r); // { pta.free(r); }  // this is guaranteed to be lazy
 
     bool isAmbiguousNullarySymbolName(std::string_view name) const;
     vec<SymRef> getHomonymousNullarySymbols(std::string_view name) const;
-    SymRef lookupSymbol(const char* s, const vec<PTRef>& args, SymbolMatcher symbolMatcher = SymbolMatcher::Any, SRef sort = SRef_Undef);
+    SymRef lookupSymbol(char const * s, vec<PTRef> const & args, SymbolMatcher symbolMatcher = SymbolMatcher::Any,
+                        SRef sort = SRef_Undef);
 
-    Pterm& operator[] (PTRef tr);// { return pta[tr]; }
-    const Pterm& operator[] (PTRef tr) const;// { return pta[tr]; }
+    Pterm & operator[](PTRef tr);             // { return pta[tr]; }
+    Pterm const & operator[](PTRef tr) const; // { return pta[tr]; }
 
-    bool hasCtermKey(SymRef& k);// { return cterm_map.has(k); }
-    void addToCtermMap(SymRef& k, PTRef tr);/* {
-        cterm_map.insert(k, tr);
-//        cterm_keys.push(k);
-    }*/
-    PTRef getFromCtermMap(SymRef& k);// { return cterm_map[k]; }
+    bool hasCtermKey(SymRef & k);             // { return cterm_map.has(k); }
+    void addToCtermMap(SymRef & k, PTRef tr); /* {
+          cterm_map.insert(k, tr);
+  //        cterm_keys.push(k);
+      }*/
+    PTRef getFromCtermMap(SymRef & k);        // { return cterm_map[k]; }
 
-    bool hasBoolKey(const PTLKey& k);
+    bool hasBoolKey(PTLKey const & k);
     void addToBoolMap(PTLKey && k, PTRef tr);
-    PTRef getFromBoolMap(const PTLKey& k);
+    PTRef getFromBoolMap(PTLKey const & k);
 
-    bool hasCplxKey(const PTLKey& k);
+    bool hasCplxKey(PTLKey const & k);
     void addToCplxMap(PTLKey && k, PTRef tr);
-    PTRef getFromCplxMap(const PTLKey& k);
+    PTRef getFromCplxMap(PTLKey const & k);
 
-    PtermIter getPtermIter();// { return PtermIter(idToPTRef); }
+    PtermIter getPtermIter(); // { return PtermIter(idToPTRef); }
 
     std::size_t getNumberOfTerms() const { return pta.getNumTerms(); }
+
+private:
+    static int const ptstore_buf_idx;
+    static int const ptstore_vec_idx;
+
+    PtermAllocator pta{1024 * 1024};
+    SymStore & symstore;
+    vec<PTRef> idToPTRef;
+
+    Map<SymRef, PTRef, SymRefHash, Equal<SymRef>> cterm_map; // Mapping constant symbols to terms
+
+    std::unordered_map<PTLKey, PTRef, PTLHash, Equal<PTLKey>> cplx_map; // Mapping complex terms to canonical terms
+
+    std::unordered_map<PTLKey, PTRef, PTLHash, Equal<PTLKey>> bool_map; // Mapping boolean terms to canonical terms
 };
+} // namespace opensmt
 
 #endif

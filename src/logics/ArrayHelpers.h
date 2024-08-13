@@ -9,8 +9,12 @@
 
 #include "Logic.h"
 
+namespace opensmt {
+
 PTRef instantiateReadOverStore(Logic & logic, PTRef fla);
 
 vec<PTRef> collectStores(Logic const & logic, PTRef fla);
+
+}
 
 #endif //OPENSMT_ARRAYHELPERS_H

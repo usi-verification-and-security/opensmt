@@ -5,8 +5,9 @@
 #include "IteHandler.h"
 #include "IteToSwitch.h"
 
-#include "OsmtInternalException.h"
+#include <common/InternalException.h>
 
+namespace opensmt {
 PTRef IteHandler::rewrite(PTRef root) {
     IteToSwitch switches(logic, root);
     PTRef new_root = switches.conjoin(root);
@@ -22,7 +23,6 @@ PTRef IteHandler::getAuxVarFor(PTRef ite) {
 }
 
 PTRef IteHandler::getIteTermFor(Logic const & logic, PTRef auxVar) {
-
     std::string const & name = logic.getSymName(auxVar);
     assert(name.compare(0, itePrefix.size(), itePrefix) == 0);
     std::string numberStr;
@@ -34,19 +34,21 @@ PTRef IteHandler::getIteTermFor(Logic const & logic, PTRef auxVar) {
         }
     }
     auto number = static_cast<uint32_t>(std::stoul(numberStr));
-    PTRef ite = { number };
+    PTRef ite = {number};
     assert(logic.isIte(ite));
     return ite;
 }
 
 PTRef IteHandler::replaceItes(PTRef root) {
-    // Note: We cannot use the current rewriting infrastructure because here we want to rewrite ITE without analyzing first its children.
+    // Note: We cannot use the current rewriting infrastructure because here we want to rewrite ITE without
+    // analyzing first its children.
     // TODO: adjust rewriting infrastructure to fit this case as well.
     struct DFSEntry {
         DFSEntry(PTRef term) : term(term) {}
         PTRef term;
         unsigned int nextChild = 0;
     };
+
     // MB: Relies on an invariant that id of a child is lower than id of a parent.
     auto size = Idx(logic.getPterm(root).getId()) + 1;
     std::vector<char> done;
@@ -70,9 +72,7 @@ PTRef IteHandler::replaceItes(PTRef root) {
         if (currentEntry.nextChild < childrenCount) {
             PTRef nextChild = term[currentEntry.nextChild];
             ++currentEntry.nextChild;
-            if (not done[Idx(logic.getPterm(nextChild).getId())]) {
-                toProcess.push_back(DFSEntry(nextChild));
-            }
+            if (not done[Idx(logic.getPterm(nextChild).getId())]) { toProcess.push_back(DFSEntry(nextChild)); }
             continue;
         }
         // If we are here, we have already processed all children
@@ -86,9 +86,7 @@ PTRef IteHandler::replaceItes(PTRef root) {
             newArgs[i] = childChanged ? it->second : term[i];
         }
         PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(newArgs)) : currentRef;
-        if (needsChange) {
-            substitutions.insert({currentRef, newTerm});
-        }
+        if (needsChange) { substitutions.insert({currentRef, newTerm}); }
         done[currentId] = 1;
         toProcess.pop_back();
     }
@@ -97,4 +95,4 @@ PTRef IteHandler::replaceItes(PTRef root) {
     PTRef res = it == substitutions.end() ? root : it->second;
     return res;
 }
-
+} // namespace opensmt

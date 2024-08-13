@@ -25,10 +25,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "EnodeStore.h"
-#include "Symbol.h"
-#include "Logic.h"
+
+#include <symbols/Symbol.h>
+#include <logics/Logic.h>
 
 #include <algorithm>
+
+namespace opensmt {
 
 EnodeStore::EnodeStore(Logic& l)
       : logic(l)
@@ -152,4 +155,6 @@ vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
 bool EnodeStore::needsRecursiveDefinition(PTRef tr) const {
     Pterm const & t = logic.getPterm(tr);
     return std::all_of(t.begin(), t.end(), [this](PTRef ch) { return needsEnode(ch); });
+}
+
 }

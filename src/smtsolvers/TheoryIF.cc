@@ -24,12 +24,15 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#include <TSolver.h>
 #include "CoreSMTSolver.h"
 #include "ResolutionProof.h"
 
+#include <tsolvers/TSolver.h>
+
 #include <algorithm>
 #include <numeric>
+
+namespace opensmt {
 
 namespace {
 std::vector<int> sortByLastAssignedLevel(std::vector<vec<Lit>> & splitClauses, std::function<int(Var)> getVarLevel) {
@@ -382,4 +385,6 @@ void CoreSMTSolver::deduceTheory(vec<LitLev>& deductions)
     }
 #endif
     return;
+}
+
 }

@@ -7,17 +7,19 @@
 
 #include "EgraphModelBuilder.h"
 
-#include "ArithLogic.h"
-#include "ModelBuilder.h"
+#include <logics/ArithLogic.h>
+#include <models/ModelBuilder.h>
 
 #include <sstream>
+
+namespace opensmt {
 
 Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder const & model) const {
     ArithLogic & arithLogic = dynamic_cast<ArithLogic &>(logic);
     Map<ERef, PTRef, ERefHash> updatedValues;
     std::unordered_set<ERef, ERefHash> delayedNumericTerms;
-    opensmt::Number maxModelValue = 0;
-    auto updateMaxValue = [&maxModelValue](opensmt::Number const & newVal) {
+    Number maxModelValue = 0;
+    auto updateMaxValue = [&maxModelValue](Number const & newVal) {
         if (newVal > maxModelValue) { maxModelValue = newVal; }
     };
     for (ERef eref : enode_store.getTermEnodes()) {
@@ -45,7 +47,7 @@ Map<ERef, PTRef, ERefHash> EgraphModelBuilder::computeNumericValues(ModelBuilder
         // continue with next Enode
     }
     for (ERef delayedTerm : delayedNumericTerms) {
-        opensmt::Number nextValue = maxModelValue + 1;
+        Number nextValue = maxModelValue + 1;
         SRef sort = logic.getSortRef(getEnode(delayedTerm).getTerm());
         if (arithLogic.isSortInt(sort)) {
             nextValue = nextValue.floor();
@@ -136,4 +138,6 @@ PTRef EgraphModelBuilder::getAbstractValueForERef(ERef er, SRef sr) {
     PTRef newVal = logic.mkConst(sr, ss.str().c_str());
     rootValues.insert(val_er, newVal);
     return newVal;
+}
+
 }

@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace opensmt {
-
 template<typename T>
 class ScopedVector {
     std::vector<T> elements;
@@ -41,7 +40,7 @@ public:
 
 template<typename T>
 void ScopedVector<T>::popScope() {
-    popScope([](T const &){});
+    popScope([](T const &) {});
 }
 
 template<typename T>
@@ -56,7 +55,6 @@ void ScopedVector<T>::popScope(TFun callback) {
         elements.pop_back();
     }
 }
-
 } // namespace opensmt
 
-#endif //OPENSMT_SCOPEDVECTOR_H
+#endif // OPENSMT_SCOPEDVECTOR_H

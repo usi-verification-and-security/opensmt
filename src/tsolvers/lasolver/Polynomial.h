@@ -8,7 +8,7 @@
 #ifndef OPENSMT_POLYNOMIAL_H
 #define OPENSMT_POLYNOMIAL_H
 
-#include "Real.h"
+#include <common/Real.h>
 
 #include <vector>
 #include <unordered_map>
@@ -17,14 +17,16 @@
 #include <algorithm>
 #include <cassert>
 
+namespace opensmt {
+
 template<typename VarType>
 class PolynomialT {
 private:
     struct Term {
         VarType var;
-        opensmt::Real coeff;
+        Real coeff;
 
-        Term(VarType var, opensmt::Real&& coeff): var{var.x}, coeff{std::move(coeff)} {}
+        Term(VarType var, Real&& coeff): var{var.x}, coeff{std::move(coeff)} {}
     };
     struct TermCmp {
         bool operator()(const Term& first, const Term& second) { return first.var.x < second.var.x; }
@@ -35,24 +37,24 @@ private:
     poly_t poly;
     using mergeFunctionInformerType = void(*)(VarType);
 public:
-    void addTerm(VarType var, opensmt::Real coeff);
+    void addTerm(VarType var, Real coeff);
     std::size_t size() const;
-    const opensmt::Real & getCoeff(VarType var) const;
-    opensmt::Real removeVar(VarType var);
+    const Real & getCoeff(VarType var) const;
+    Real removeVar(VarType var);
     void negate();
-    void divideBy(const opensmt::Real& r);
+    void divideBy(const Real& r);
 
     template <typename ADD = mergeFunctionInformerType, typename REM = mergeFunctionInformerType>
     void merge(
         PolynomialT const & other,
-        opensmt::Real const & coeff,
+        Real const & coeff,
         poly_t & tmp_storage,
         ADD informAdded = [](VarType){},
         REM informRemoved = [](VarType){}
     );
 
     /* Simple version of merge that does not use the hooks and does not need external temporary storage */
-    void merge(PolynomialT const & other, opensmt::Real const & coeff) {
+    void merge(PolynomialT const & other, Real const & coeff) {
         poly_t tmp_storage;
         return merge(other, coeff, tmp_storage);
     }
@@ -79,7 +81,6 @@ public:
         return findTermForVar(var) != poly.end();
     }
 
-
     const_iterator findTermForVar(VarType var) const {
         return std::find_if(poly.begin(), poly.end(), [var](const Term& term) { return term.var == var; });
     }
@@ -93,7 +94,7 @@ public:
 
 template<typename VarType>
 template<typename ADD, typename REM>
-void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Real const & coeff, poly_t & tmp_storage, ADD informAdded,
+void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, Real const & coeff, poly_t & tmp_storage, ADD informAdded,
                   REM informRemoved) {
     if (tmp_storage.size() < this->poly.size() + other.poly.size()) {
         tmp_storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
@@ -104,7 +105,7 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
     auto myEnd = std::make_move_iterator(poly.end());
     auto otherEnd = other.poly.cend();
     TermCmp cmp;
-    opensmt::Real tmp;
+    Real tmp;
     while(true) {
         if (myIt == myEnd) {
             for (auto it = otherIt; it != otherEnd; ++it) {
@@ -175,7 +176,7 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, opensmt::Re
 }
 
 template<typename VarType>
-void PolynomialT<VarType>::addTerm(VarType var, opensmt::Real coeff) {
+void PolynomialT<VarType>::addTerm(VarType var, Real coeff) {
     assert(!contains(var));
     Term term {var, std::move(coeff)};
     auto it = std::upper_bound(poly.begin(), poly.end(), term, TermCmp{});
@@ -188,13 +189,13 @@ unsigned long PolynomialT<VarType>::size() const {
 }
 
 template<typename VarType>
-opensmt::Real const & PolynomialT<VarType>::getCoeff(VarType var) const {
+Real const & PolynomialT<VarType>::getCoeff(VarType var) const {
     assert(contains(var));
     return findTermForVar(var)->coeff;
 }
 
 template<typename VarType>
-opensmt::Real PolynomialT<VarType>::removeVar(VarType var) {
+Real PolynomialT<VarType>::removeVar(VarType var) {
     assert(contains(var));
     iterator it = findTermForVar(var);
     auto coeff = std::move(it->coeff);
@@ -210,7 +211,7 @@ void PolynomialT<VarType>::negate() {
 }
 
 template<typename VarType>
-void PolynomialT<VarType>::divideBy(const opensmt::Real &r) {
+void PolynomialT<VarType>::divideBy(const Real &r) {
     for(auto & term : poly) {
         term.coeff /= r;
     }
@@ -222,4 +223,7 @@ void PolynomialT<VarType>::print() const {
     }
     std::cout << std::endl;
 }
+
+}
+
 #endif //OPENSMT_POLYNOMIAL_H

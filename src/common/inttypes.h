@@ -1,4 +1,4 @@
-/**************************************************************************************[osmtinttypes.h]
+/**************************************************************************************[inttypes.h]
 Copyright (c) 2009-2010, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #else
 #define __STDC_LIMIT_MACROS
-#   include <stdint.h>
+#   include <cstdint>
 //#   include <inttypes.h>
 #ifndef UINT32_MAX
 # define UINT32_MAX		(4294967295U)
@@ -39,7 +39,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #endif
 
-#include <limits.h>
+#include <climits>
 
 //=================================================================================================
 

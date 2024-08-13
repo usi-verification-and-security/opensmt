@@ -7,10 +7,12 @@
 
 #include "PG.h"
 
-#include "OsmtInternalException.h"
+#include <common/InternalException.h>
 
 #include <cmath>
 #include <deque>
+
+namespace opensmt {
 
 short ProofNode::hasOccurrenceBin(Var v) const {
     std::vector<Lit> const & cla = getClause();
@@ -215,5 +217,4 @@ bool ProofGraph::mergeClauses(std::vector<Lit> const & A, std::vector<Lit> const
     return true;
 }
 
-
-
+}

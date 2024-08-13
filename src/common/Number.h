@@ -15,27 +15,27 @@
 
 namespace opensmt {
 #ifdef FAST_RATIONALS
-    using Number = FastRational;
-    using NumberHash = FastRationalHash;
+using Number = FastRational;
+using NumberHash = FastRationalHash;
 #else
-    using Number = mpq_class;
+using Number = mpq_class;
 #endif
-} // namespace opensmt
 
-inline bool isNegative(opensmt::Number const & num) {
+inline bool isNegative(Number const & num) {
     return num.sign() < 0;
 }
 
-inline bool isPositive(opensmt::Number const & num) {
+inline bool isPositive(Number const & num) {
     return num.sign() > 0;
 }
 
-inline bool isNonNegative(opensmt::Number const & num) {
+inline bool isNonNegative(Number const & num) {
     return num.sign() >= 0;
 }
 
-inline bool isNonPositive(opensmt::Number const & num) {
+inline bool isNonPositive(Number const & num) {
     return num.sign() <= 0;
 }
+} // namespace opensmt
 
 #endif // OPENSMT_NUMBER_H

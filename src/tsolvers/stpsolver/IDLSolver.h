@@ -2,17 +2,19 @@
 #define OPENSMT_IDLSOLVER_H
 
 #include "Converter.h"
-#include "ModelBuilder.h"
 #include "STPSolver.h"
 #include "SafeInt.h"
 
+#include <models/ModelBuilder.h>
+
+namespace opensmt {
 class IDLSolver : public STPSolver<SafeInt> {
 public:
     IDLSolver(SMTConfig & c, ArithLogic & l) : STPSolver(c, l) {};
 };
 
 template<>
-SafeInt Converter<SafeInt>::getValue(opensmt::Number const & val) {
+SafeInt Converter<SafeInt>::getValue(Number const & val) {
     assert(val.isInteger());
     return SafeInt(static_cast<ptrdiff_t>(val.get_d()));
 }
@@ -44,5 +46,6 @@ void STPSolver<SafeInt>::fillTheoryFunctions(ModelBuilder & modelBuilder) const 
         modelBuilder.addVarValue(var, val);
     }
 }
+} // namespace opensmt
 
 #endif // OPENSMT_IDLSOLVER_H

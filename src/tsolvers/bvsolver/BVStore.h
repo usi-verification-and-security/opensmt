@@ -29,8 +29,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Bvector.h"
 
+namespace opensmt {
+
 class BVStore
 {
+private:
     BvectorAllocator bva;
     vec<BVRef>  idToBVRef;
     Map<PTRef,BVRef,PTRefHash> bv_map;  // Mapping of a BV variable to the bit vector (automatic)
@@ -59,5 +62,7 @@ public:
 
     int   size() const { return idToBVRef.size(); }
 };
+
+}
 
 #endif

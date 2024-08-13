@@ -7,8 +7,10 @@
 #ifndef OPENSMT_ARRAYTHANDLER_H
 #define OPENSMT_ARRAYTHANDLER_H
 
-#include "ArraySolver.h"
 #include "TSolverHandler.h"
+#include "arraysolver/ArraySolver.h"
+
+namespace opensmt {
 
 class ArrayTHandler : public TSolverHandler {
     Logic & logic;
@@ -21,9 +23,10 @@ public:
 
     Logic const & getLogic() const override { return logic; }
 
-    PTRef getInterpolant(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw OsmtInternalException("Interpolation not supported yet"); };
+    PTRef getInterpolant(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw InternalException("Interpolation not supported yet"); };
 
 };
 
+}
 
 #endif //OPENSMT_ARRAYTHANDLER_H

@@ -4,9 +4,8 @@
 #include <cstddef>
 #include <stdexcept>
 
-struct SafeInt {
-private:
-    ptrdiff_t val;
+namespace opensmt {
+class SafeInt {
 public:
     SafeInt() = default;
 
@@ -22,21 +21,13 @@ public:
         return SafeInt(val + other.val);
     }
 
-    SafeInt &operator-=(SafeInt other) {
+    SafeInt & operator-=(SafeInt other) {
         if ((other.val > 0 && PTRDIFF_MIN + other.val > val) || (other.val < 0 && PTRDIFF_MAX + other.val < val)) {
             throw std::underflow_error("Underflow detected during SafeInt subtraction");
         }
         val -= other.val;
         return *this;
     }
-
-    bool operator==(SafeInt other) const { return val == other.val; }
-
-    bool operator>=(SafeInt other) const { return val >= other.val; }
-
-    bool operator>(SafeInt other) const { return val > other.val; }
-
-    bool operator<=(SafeInt other) const { return val <= other.val; }
 
     SafeInt operator-(SafeInt other) const {
         SafeInt res = *this;
@@ -45,6 +36,15 @@ public:
     }
 
     SafeInt operator-() const { return SafeInt(-val); }
-};
 
-#endif //OPENSMT_SAFEINT_H
+    bool operator==(SafeInt other) const { return val == other.val; }
+    bool operator>=(SafeInt other) const { return val >= other.val; }
+    bool operator>(SafeInt other) const { return val > other.val; }
+    bool operator<=(SafeInt other) const { return val <= other.val; }
+
+private:
+    ptrdiff_t val;
+};
+} // namespace opensmt
+
+#endif // OPENSMT_SAFEINT_H

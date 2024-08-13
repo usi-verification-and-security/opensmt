@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#include "Interpret.h"
+#include <api/Interpret.h>
 
 #include <cstdlib>
 #include <cstdio>
@@ -50,8 +50,6 @@ namespace opensmt {
 
 void        catcher            ( int );
 
-}
-
 /*****************************************************************************\
  *                                                                           *
  *                                  MAIN                                     *
@@ -60,10 +58,14 @@ void        catcher            ( int );
 
 void interpretInteractive(Interpret & interpret);
 
+}
+
 int main( int argc, char * argv[] )
 {
-    signal( SIGTERM, opensmt::catcher );
-    signal( SIGINT , opensmt::catcher );
+    using namespace opensmt;
+
+    signal( SIGTERM, catcher );
+    signal( SIGINT , catcher );
 
 
 #ifdef PEDANTIC_DEBUG
@@ -151,6 +153,8 @@ int main( int argc, char * argv[] )
     return 0;
 }
 
+namespace opensmt {
+
 #ifndef ENABLE_LINE_EDITING
 void interpretInteractive(Interpret & interpret) {
     interpret.interpPipe();
@@ -197,7 +201,7 @@ void interpretInteractive(Interpret & interpret) {
                 // Parse starting from the command nonterminal
                 // Parsing should be done from a string that I get from the editline library.
                 Smt2newContext context(parse_buf);
-                int rval = smt2newparse(&context);
+                int rval = osmt_yyparse(&context);
                 if (rval != 0)
                     interpret.reportError("scanner");
                 else {
@@ -221,8 +225,6 @@ void interpretInteractive(Interpret & interpret) {
     if (line_read) free(line_read);
 }
 #endif
-
-namespace opensmt {
 
 void catcher( int sig )
 {

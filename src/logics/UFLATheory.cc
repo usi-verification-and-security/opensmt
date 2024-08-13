@@ -1,12 +1,13 @@
 #include "UFLATheory.h"
-
-#include "ArithmeticEqualityRewriter.h"
 #include "ArrayHelpers.h"
 #include "LATheory.h"
-#include "OsmtInternalException.h"
-#include "Rewritings.h"
-#include "TreeOps.h"
 
+#include <common/InternalException.h>
+#include <common/TreeOps.h>
+#include <rewriters/ArithmeticEqualityRewriter.h>
+#include <rewriters/Rewritings.h>
+
+namespace opensmt {
 
 PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
     fla = opensmt::rewriteDistincts(getLogic(), fla);
@@ -210,4 +211,6 @@ vec<PTRef> UFLATheory::getInterfaceVars(opensmt::span<const PTRef> flas) {
     vec<PTRef> ret;
     interfaceVars.copyTo(ret);
     return ret;
+}
+
 }

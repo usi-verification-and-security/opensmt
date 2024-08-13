@@ -9,8 +9,11 @@
 #define OPENSMT_LATHANDLER_H
 
 #include "TSolverHandler.h"
-#include "ArithLogic.h"
-#include "LASolver.h"
+#include "lasolver/LASolver.h"
+
+#include <logics/ArithLogic.h>
+
+namespace opensmt {
 
 class LATHandler : public TSolverHandler
 {
@@ -26,5 +29,7 @@ public:
 
     virtual PTRef getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) override;
 };
+
+}
 
 #endif //OPENSMT_LATHANDLER_H

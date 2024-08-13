@@ -3,6 +3,8 @@
 
 #include "STPStore.h"
 
+namespace opensmt {
+
 template<class T>
 VertexRef STPStore<T>::createVertex() {
     return VertexRef{vertices++};
@@ -26,6 +28,8 @@ template<class T>
 void STPStore<T>::clear() {
     edges.clear();
     vertices = 1;   // clear all vertices except zero
+}
+
 }
 
 #endif //OPENSMT_STPSTORE_IMPLEMENTATIONS_HPP

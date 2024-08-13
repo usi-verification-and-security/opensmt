@@ -25,10 +25,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "Interpret.h"
-#include "smt2tokens.h"
-#include "ArithLogic.h"
-#include "LogicFactory.h"
-#include "Substitutor.h"
+
+#include <api/smt2tokens.h>
+#include <logics/ArithLogic.h>
+#include <logics/LogicFactory.h>
+#include <rewriters/Substitutor.h>
 
 #include <string>
 #include <sstream>
@@ -38,6 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /***********************************************************
  * Class defining interpreter
  ***********************************************************/
+
+namespace opensmt {
 
 Interpret::~Interpret() = default;
 
@@ -129,13 +132,12 @@ void Interpret::exit() {
     f_exit = true;
 }
 
-using opensmt::Logic_t;
-using namespace osmttokens;
+using namespace tokens;
 
 namespace {
-    Logic_t getLogicFromString(std::string_view string_name) {
-        if (string_name == "ALL") { return opensmt::getLogicFromString("QF_AUFLIRA"); }
-        return opensmt::getLogicFromString(string_name);
+    Logic_t getLogicFromStringAux(std::string_view string_name) {
+        if (string_name == "ALL") { return getLogicFromString("QF_AUFLIRA"); }
+        return getLogicFromString(string_name);
     }
 }
 
@@ -150,7 +152,7 @@ void Interpret::interp(ASTNode& n) {
                 if (isInitialized()) {
                     notify_formatted(true, "logic has already been set to %s", main_solver->getLogic().getName().data());
                 } else {
-                    auto logic_type = getLogicFromString(logic_name);
+                    auto logic_type = getLogicFromStringAux(logic_name);
                     if (logic_type == Logic_t::UNDEF) {
                         notify_formatted(true, "unknown logic %s", logic_name);
                         break;
@@ -228,7 +230,7 @@ void Interpret::interp(ASTNode& n) {
                         try {
                             main_solver->insertFormula(tr);
                             notify_success();
-                        } catch (OsmtApiException const & e) {
+                        } catch (ApiException const & e) {
                             notify_formatted(true, e.what());
                         }
                     }
@@ -372,7 +374,7 @@ void Interpret::interp(ASTNode& n) {
                 notify_formatted(true, "Unknown command encountered: %s", tokenToName.at(cmd.x).c_str());
             }
         }
-    } catch (OsmtApiException const &e) {
+    } catch (ApiException const &e) {
         notify_formatted(true, e.what());
     }
 }
@@ -409,7 +411,7 @@ PTRef Interpret::resolveQualifiedIdentifier(const char * name, ASTNode const & s
     PTRef tr = PTRef_Undef;
     try {
         tr = resolveTerm(name, {}, sr, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
-    } catch (OsmtApiException & e) {
+    } catch (ApiException & e) {
         reportError(e.what());
     }
     return tr;
@@ -431,7 +433,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         PTRef tr = PTRef_Undef;
         try {
             tr = logic->mkConst(name);
-        } catch (OsmtApiException const & e) {
+        } catch (ApiException const & e) {
             comment_formatted("While processing %s: %s", name, e.what());
         }
         return tr;
@@ -458,7 +460,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
             }
             try {
                 tr = resolveTerm(name, {}, SRef_Undef, isQuoted ? SymbolMatcher::Uninterpreted : SymbolMatcher::Any);
-            } catch (OsmtApiException & e) {
+            } catch (ApiException & e) {
                 reportError(e.what());
             }
             return tr;
@@ -485,7 +487,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
             tr = resolveTerm(name, std::move(args));
         } catch (ArithDivisionByZeroException &ex) {
             reportError(ex.what());
-        } catch (OsmtApiException &e) {
+        } catch (ApiException &e) {
             reportError(e.what());
         }
         return tr;
@@ -1092,7 +1094,7 @@ void Interpret::execute(const ASTNode* r) {
 
 int Interpret::interpFile(FILE* in) {
     Smt2newContext context(in);
-    int rval = smt2newparse(&context);
+    int rval = osmt_yyparse(&context);
 
     if (rval != 0) return rval;
 
@@ -1103,7 +1105,7 @@ int Interpret::interpFile(FILE* in) {
 
 int Interpret::interpFile(char *content){
     Smt2newContext context(content);
-    int rval = smt2newparse(&context);
+    int rval = osmt_yyparse(&context);
 
     if (rval != 0) return rval;
     const ASTNode* r = context.getRoot();
@@ -1205,7 +1207,7 @@ int Interpret::interpPipe() {
 
                     i = -1; // will be incremented to 0 by the loop condition.
                     Smt2newContext context(buf_out);
-                    int rval = smt2newparse(&context);
+                    int rval = osmt_yyparse(&context);
                     if (rval != 0)
                         notify_formatted(true, "scanner");
                     else {
@@ -1311,7 +1313,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     letRecords.popFrame();
 
     if (!config.produce_inter())
-        throw OsmtApiException("Cannot interpolate");
+        throw ApiException("Cannot interpolate");
 
     assert(grouping.size() >= 2);
     std::vector<ipartitions_t> partitionings;
@@ -1324,7 +1326,7 @@ void Interpret::getInterpolants(const ASTNode& n)
         {
             int assertion_index = get_assertion_index(group);
             assert(assertion_index >= 0);
-            opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
+            setbit(p, static_cast<unsigned int>(assertion_index));
         }
         else {
             bool ok = group != PTRef_Undef && logic->isAnd(group);
@@ -1336,7 +1338,7 @@ void Interpret::getInterpolants(const ASTNode& n)
                     if (!ok) { break; }
                     int assertion_index = get_assertion_index(tr);
                     assert(assertion_index >= 0);
-                    opensmt::setbit(p, static_cast<unsigned int>(assertion_index));
+                    setbit(p, static_cast<unsigned int>(assertion_index));
                 }
             }
             if (!ok) {
@@ -1378,10 +1380,12 @@ int Interpret::get_assertion_index(PTRef ref) {
     return -1;
 }
 
-void Interpret::initializeLogic(opensmt::Logic_t logicType) {
-    logic.reset(opensmt::LogicFactory::getInstance(logicType));
+void Interpret::initializeLogic(Logic_t logicType) {
+    logic.reset(LogicFactory::getInstance(logicType));
 }
 
 std::unique_ptr<MainSolver> Interpret::createMainSolver(const char* logic_name) {
     return std::make_unique<MainSolver>(*logic, config, std::string(logic_name) + " solver");
+}
+
 }

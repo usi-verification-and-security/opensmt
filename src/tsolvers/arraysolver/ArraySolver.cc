@@ -7,9 +7,11 @@
 
 #include "ArraySolver.h"
 
-#include "TreeOps.h"
+#include <common/TreeOps.h>
 
 #include <numeric>
+
+namespace opensmt {
 
 static SolverDescr descr_ax_solver("Array Solver", "Solver for Theory of Arrays");
 
@@ -793,4 +795,6 @@ void ArraySolver::ExplanationCursor::collectOnePrimary(IndicesCollection & indic
     }
     indices.insert(traversal.getSolver().getIndexFromStore(store)); // MB: This must be the real index, not its root!
     currentNode = {traversal.getNode(currentNode.ref).primaryEdge, target};
+}
+
 }

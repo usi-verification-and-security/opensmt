@@ -5,6 +5,7 @@
  */
 
 #include "Tableau.h"
+
 #include <iostream>
 
 #ifdef SIMPLEX_DEBUG
@@ -13,7 +14,7 @@
 #define simplex_assert(x)
 #endif // SIMPLEX_DEBUG
 
-using namespace opensmt;
+namespace opensmt {
 namespace {
     template<class C, class E>
     inline bool contains(C const & container, E const & elem) {
@@ -51,7 +52,7 @@ std::size_t Tableau::getPolySize(LVRef basicVar) const {
     return rows[basicVar.x]->size();
 }
 
-opensmt::Real const & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const {
+Real const & Tableau::getCoeff(LVRef basicVar, LVRef nonBasicVar) const {
     assert(rows[basicVar.x]);
     return rows[basicVar.x]->getCoeff(nonBasicVar);
 }
@@ -303,3 +304,4 @@ void Tableau::ensureTableauReadyFor(LVRef v) {
         varTypes.push_back(VarType::NONE);
     }
 }
+} // namespace opensmt

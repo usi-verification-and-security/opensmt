@@ -9,30 +9,31 @@
 #ifndef Common_TreeOps_h
 #define Common_TreeOps_h
 
-
-#include "Logic.h"
 #include "NatSet.h"
-#include "Pterm.h"
+
+#include <logics/Logic.h>
 #include <minisat/mtl/Vec.h>
+#include <pterms/Pterm.h>
 
 #include <unordered_set>
 
-
+namespace opensmt {
 template<typename TConfig>
 class TermVisitor {
 public:
     TermVisitor(Logic const & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
     // FIXME: These should be non-virtual, but we need to modify PtermNodeCounter first
-    virtual void visit(opensmt::span<const PTRef> roots);
-    virtual void visit(PTRef root);
+    virtual inline void visit(opensmt::span<PTRef const> roots);
+    virtual inline void visit(PTRef root);
 
 private:
     Logic const & logic;
     TConfig & cfg;
 };
 
-template<typename TConfig> void TermVisitor<TConfig>::visit(opensmt::span<const PTRef> roots) {
+template<typename TConfig>
+void TermVisitor<TConfig>::visit(opensmt::span<PTRef const> roots) {
     struct DFSEntry {
         explicit DFSEntry(PTRef term) : term(term) {}
         PTRef term;
@@ -42,7 +43,7 @@ template<typename TConfig> void TermVisitor<TConfig>::visit(opensmt::span<const 
     std::vector<DFSEntry> toProcess;
     toProcess.reserve(roots.size());
     PTId maxId{0};
-    for (const PTRef root : roots) {
+    for (PTRef const root : roots) {
         toProcess.emplace_back(root);
         auto id = logic.getPterm(root).getId();
         if (id.x > maxId.x) { maxId = id; }
@@ -74,25 +75,25 @@ template<typename TConfig> void TermVisitor<TConfig>::visit(opensmt::span<const 
         toProcess.pop_back();
     }
 }
-template<typename TConfig> void TermVisitor<TConfig>::visit(PTRef root) {
+template<typename TConfig>
+void TermVisitor<TConfig>::visit(PTRef root) {
     // Avoid initializations if no traversal will be done
     if (logic.isVar(root)) {
         if (cfg.previsit(root)) cfg.visit(root);
         return;
     }
-    return visit(opensmt::span<const PTRef>(&root, 1));
+    return visit(opensmt::span<PTRef const>(&root, 1));
 }
 
 class DefaultVisitorConfig {
 public:
     virtual bool previsit(PTRef) { return true; } // should continue visiting
-    virtual void visit(PTRef) { } // don't do anything
+    virtual void visit(PTRef) {}                  // don't do anything
 };
 
 class AppearsInUFVisitorConfig : public DefaultVisitorConfig {
-    Logic & logic;
 public:
-    AppearsInUFVisitorConfig(Logic & logic): logic(logic) {}
+    AppearsInUFVisitorConfig(Logic & logic) : logic(logic) {}
 
     void visit(PTRef term) override {
         if (logic.isUF(term)) {
@@ -103,17 +104,20 @@ public:
             }
         }
     }
+
+private:
+    Logic & logic;
 };
 
 class AppearsInUfVisitor : public TermVisitor<AppearsInUFVisitorConfig> {
-    AppearsInUFVisitorConfig cfg;
 public:
-    AppearsInUfVisitor(Logic & logic): TermVisitor<AppearsInUFVisitorConfig>(logic, cfg), cfg(logic) {}
+    AppearsInUfVisitor(Logic & logic) : TermVisitor<AppearsInUFVisitorConfig>(logic, cfg), cfg(logic) {}
+
+private:
+    AppearsInUFVisitorConfig cfg;
 };
 
 class TopLevelConjunctsConfig : public DefaultVisitorConfig {
-    Logic const & logic;
-    vec<PTRef> & conjuncts;
 public:
     TopLevelConjunctsConfig(Logic const & logic, vec<PTRef> & res) : logic(logic), conjuncts(res) {}
 
@@ -124,6 +128,10 @@ public:
         }
         return true;
     }
+
+private:
+    Logic const & logic;
+    vec<PTRef> & conjuncts;
 };
 
 inline void topLevelConjuncts(Logic const & logic, PTRef fla, vec<PTRef> & res) {
@@ -139,12 +147,16 @@ inline vec<PTRef> topLevelConjuncts(Logic const & logic, PTRef fla) {
 
 template<typename TPred>
 class TermCollectorConfig : public DefaultVisitorConfig {
-    TPred predicate;
-    vec<PTRef> gatheredTerms;
 public:
     TermCollectorConfig(TPred predicate) : predicate(std::move(predicate)) {}
     vec<PTRef> && extractCollectedTerms() { return std::move(gatheredTerms); }
-    void visit(PTRef term) override { if (predicate(term)) gatheredTerms.push(term); }
+    void visit(PTRef term) override {
+        if (predicate(term)) gatheredTerms.push(term);
+    }
+
+private:
+    TPred predicate;
+    vec<PTRef> gatheredTerms;
 };
 
 template<typename TPred>
@@ -164,47 +176,52 @@ inline vec<PTRef> variables(Logic const & logic, PTRef term) {
 }
 
 class PtermNodeCounterConfig : public DefaultVisitorConfig {
-    friend class PtermNodeCounter;
-    uint32_t nodeCounter = 0;
-    uint32_t maxNodes;
-    std::unordered_map<PTRef,uint32_t,PTRefHash> & countLookup;
-    using Cache = std::pair<uint32_t, std::unordered_map<PTRef,uint32_t,PTRefHash>>;
 public:
+    using Cache = std::pair<uint32_t, std::unordered_map<PTRef, uint32_t, PTRefHash>>;
+
     PtermNodeCounterConfig(Cache & cache) : maxNodes(cache.first), countLookup(cache.second) {}
     bool limitReached() const { return nodeCounter >= maxNodes; }
     void visit(PTRef tr) override {
         auto it = countLookup.find(tr);
         if (it != countLookup.end()) {
-            if (it->second >= maxNodes) {
-                nodeCounter = std::max(nodeCounter, maxNodes);
-            }
+            if (it->second >= maxNodes) { nodeCounter = std::max(nodeCounter, maxNodes); }
         } else {
-            ++ nodeCounter;
+            ++nodeCounter;
         }
     }
     bool previsit(PTRef tr) override {
         auto it = countLookup.find(tr);
-        if (it != countLookup.end() and it->second >= maxNodes) {
-            nodeCounter = std::max(nodeCounter, it->second);
-        }
+        if (it != countLookup.end() and it->second >= maxNodes) { nodeCounter = std::max(nodeCounter, it->second); }
         return (nodeCounter < maxNodes);
     }
     uint32_t getCount() const { return nodeCounter; }
+
+private:
+    friend class PtermNodeCounter;
+
+    uint32_t nodeCounter = 0;
+    uint32_t maxNodes;
+    std::unordered_map<PTRef, uint32_t, PTRefHash> & countLookup;
 };
 
 class PtermNodeCounter : public TermVisitor<PtermNodeCounterConfig> {
-    PtermNodeCounterConfig::Cache cache;
-    PtermNodeCounterConfig cfg;
 public:
-    PtermNodeCounter(Logic const & logic, int countUntil) : TermVisitor<PtermNodeCounterConfig>(logic, cfg), cache(countUntil, std::unordered_map<PTRef,uint32_t,PTRefHash>()), cfg(cache) {}
+    PtermNodeCounter(Logic const & logic, int countUntil)
+        : TermVisitor<PtermNodeCounterConfig>(logic, cfg),
+          cache(countUntil, std::unordered_map<PTRef, uint32_t, PTRefHash>()),
+          cfg(cache) {}
     void visit(PTRef root) override {
         cfg.nodeCounter = 0;
         TermVisitor<PtermNodeCounterConfig>::visit(root);
-        if (cache.second.find(root) == cache.second.end()) {
-            cache.second.insert({root, getCount()});
-        }
+        if (cache.second.find(root) == cache.second.end()) { cache.second.insert({root, getCount()}); }
     }
     bool limitReached() const { return cfg.limitReached(); }
     uint32_t getCount() const { return cfg.getCount(); }
+
+private:
+    PtermNodeCounterConfig::Cache cache;
+    PtermNodeCounterConfig cfg;
 };
+} // namespace opensmt
+
 #endif

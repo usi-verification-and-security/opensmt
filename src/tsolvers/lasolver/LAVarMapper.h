@@ -9,11 +9,13 @@
 #define OPENSMT_LAVARMAPPER_H
 
 #include "LARefs.h"
-#include "Pterm.h"
+
+#include <pterms/Pterm.h>
 #include <minisat/mtl/Vec.h>
 
-class ArithLogic;
+namespace opensmt {
 
+class ArithLogic;
 
 /**
  * A class for maintaining the correspondence between the Pterms and variables of the Simplex algorithm
@@ -51,5 +53,6 @@ public:
     bool   isNegated(PTRef tr) const;
 };
 
+}
 
 #endif //OPENSMT_LAVARMAPPER_H

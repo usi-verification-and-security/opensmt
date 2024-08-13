@@ -5,13 +5,17 @@
  */
 
 #include "ArrayTheory.h"
-
 #include "ArrayHelpers.h"
-#include "Rewritings.h"
+
+#include <rewriters/Rewritings.h>
+
+namespace opensmt {
 
 PTRef ArrayTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext const &) {
     // TODO: simplify select over store on the same index
     fla = opensmt::rewriteDistincts(getLogic(), fla);
     fla = instantiateReadOverStore(getLogic(), fla);
     return fla;
+}
+
 }

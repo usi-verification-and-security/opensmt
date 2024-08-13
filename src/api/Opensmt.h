@@ -1,12 +1,15 @@
 #ifndef OPENSMT_H
 #define OPENSMT_H
 
-#include "SMTConfig.h"
 #include "MainSolver.h"
-#include "Logic.h"
-#include "ArithLogic.h"
+
+#include <logics/Logic.h>
+#include <logics/ArithLogic.h>
+#include <options/SMTConfig.h>
 
 #include <memory>
+
+namespace opensmt {
 
 typedef enum
 {
@@ -30,8 +33,7 @@ typedef enum
   , qf_auflira    // Arrays + UF + (LIA or LRA)
 } opensmt_logic;
 
-class Opensmt
-{
+class Opensmt {
 public:
     Opensmt             (const Opensmt&) = delete;
     Opensmt& operator = (const Opensmt&) = delete;
@@ -51,24 +53,20 @@ public:
      * @param name Name for the solver instance
      * @param config Configuration for the OpenSMT instance
      */
-    Opensmt(opensmt_logic _logic, const char* name, std::unique_ptr<SMTConfig> config);
+    Opensmt(opensmt_logic _logic, const char* name, std::unique_ptr<opensmt::SMTConfig> config);
 
-    SMTConfig& getConfig() { return *config; }
-    Logic& getLogic() { return *logic; }
-    ArithLogic& getLRALogic()
-    {
-        return dynamic_cast<ArithLogic&>(*logic);
-    }
-    ArithLogic& getLIALogic()
-    {
-        return dynamic_cast<ArithLogic&>(*logic);
-    }
-    MainSolver& getMainSolver() { return *mainSolver; }
-    SimpSMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
+    opensmt::SMTConfig& getConfig() { return *config; }
+    opensmt::Logic& getLogic() { return *logic; }
+    opensmt::ArithLogic& getLRALogic() { return dynamic_cast<opensmt::ArithLogic&>(*logic); }
+    opensmt::ArithLogic& getLIALogic() { return dynamic_cast<opensmt::ArithLogic&>(*logic); }
+    opensmt::MainSolver& getMainSolver() { return *mainSolver; }
+    opensmt::SimpSMTSolver& getSolver() { return getMainSolver().getSMTSolver(); }
 private:
-    std::unique_ptr<SMTConfig> config;
-    std::unique_ptr<Logic> logic;
-    std::unique_ptr<MainSolver> mainSolver;
+    std::unique_ptr<opensmt::SMTConfig> config;
+    std::unique_ptr<opensmt::Logic> logic;
+    std::unique_ptr<opensmt::MainSolver> mainSolver;
 };
+
+}
 
 #endif //OPENSMT_H

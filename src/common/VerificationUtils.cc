@@ -7,15 +7,16 @@
 
 #include "VerificationUtils.h"
 
-#include "MainSolver.h"
-#include "TreeOps.h"
+#include <api/MainSolver.h>
+#include <common/TreeOps.h>
 
+namespace opensmt {
 bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bpartition, PTRef itp) {
     SMTConfig validationConfig;
     MainSolver validationSolver(logic, validationConfig, "validator");
-//    std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
-//    std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
-//    std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
+    //    std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
+    //    std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
+    //    std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
     validationSolver.push();
     validationSolver.insertFormula(logic.mkNot(logic.mkImpl(Apartition, itp)));
     auto res = validationSolver.check();
@@ -33,9 +34,7 @@ bool VerificationUtils::checkSubsetCondition(PTRef p1, PTRef p2) const {
     auto vars_p1 = variables(logic, p1);
     auto vars_p2 = variables(logic, p2);
     for (PTRef key : vars_p1) {
-        if (std::find(vars_p2.begin(), vars_p2.end(), key) == vars_p2.end()) {
-            return false;
-        }
+        if (std::find(vars_p2.begin(), vars_p2.end(), key) == vars_p2.end()) { return false; }
     }
     return true;
 }
@@ -48,5 +47,4 @@ bool VerificationUtils::impliesInternal(PTRef antecedent, PTRef consequent) {
     bool valid = res == s_False;
     return valid;
 }
-
-
+} // namespace opensmt

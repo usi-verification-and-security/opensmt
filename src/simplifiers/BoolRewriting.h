@@ -5,12 +5,13 @@
 #ifndef OPENSMT_BOOLREWRITING_H
 #define OPENSMT_BOOLREWRITING_H
 
-#include "PTRef.h"
-#include "Logic.h"
+#include <pterms/PTRef.h>
+#include <logics/Logic.h>
 
 #include <vector>
 #include <unordered_map>
 
+namespace opensmt {
 
 void computeIncomingEdges(const Logic& logic, PTRef tr, std::unordered_map<PTRef,int,PTRefHash>& PTRefToIncoming);
 
@@ -90,7 +91,7 @@ PTRef rewriteMaxArity(Logic & logic, const PTRef root, T doNotRewrite) {
 
         PTRef result = PTRef_Undef;
         if (logic.isAnd(symRef) or logic.isOr(symRef)) {
-            result = ::mergeAndOrArgs(logic, tr, cache, doNotRewrite);
+            result = mergeAndOrArgs(logic, tr, cache, doNotRewrite);
         } else if (logic.isNot(symRef)) {
             PTRef child = t[0];
             PTRef newChild = cache[child];
@@ -112,6 +113,8 @@ PTRef rewriteMaxArity(Logic & logic, const PTRef root, T doNotRewrite) {
     }
     PTRef top_tr = cache[root];
     return top_tr;
+}
+
 }
 
 #endif //OPENSMT_BOOLREWRITING_H

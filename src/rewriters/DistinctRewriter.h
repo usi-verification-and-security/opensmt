@@ -12,10 +12,8 @@
 
 #include <unordered_set>
 
+namespace opensmt {
 class DistinctRewriteConfig : public DefaultRewriterConfig {
-protected:
-    Logic & logic;
-
 public:
     DistinctRewriteConfig(Logic & logic) : logic(logic) {}
 
@@ -41,6 +39,9 @@ public:
     }
 
     virtual bool doRewriteDistinct(PTRef) const { return true; }
+
+protected:
+    Logic & logic;
 };
 
 class KeepTopLevelDistinctRewriteConfig : public DistinctRewriteConfig {
@@ -59,20 +60,23 @@ private:
 };
 
 class DistinctRewriter : public Rewriter<DistinctRewriteConfig> {
-    DistinctRewriteConfig config;
-
 public:
     DistinctRewriter(Logic & logic) : Rewriter<DistinctRewriteConfig>(logic, config), config(logic) {}
+
+private:
+    DistinctRewriteConfig config;
 };
 
 class KeepTopLevelDistinctRewriter : public Rewriter<KeepTopLevelDistinctRewriteConfig> {
-    KeepTopLevelDistinctRewriteConfig config;
-
 public:
     using TopLevelDistincts = KeepTopLevelDistinctRewriteConfig::TopLevelDistincts;
     KeepTopLevelDistinctRewriter(Logic & logic, TopLevelDistincts topLevelDistincts)
         : Rewriter<KeepTopLevelDistinctRewriteConfig>(logic, config),
           config(logic, std::move(topLevelDistincts)) {}
+
+private:
+    KeepTopLevelDistinctRewriteConfig config;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_DISTINCTREWRITER_H

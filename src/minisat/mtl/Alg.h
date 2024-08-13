@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Vec.h"
 
+namespace opensmt {
 
 //=================================================================================================
 // Useful functions on vector-like types:
@@ -78,5 +79,7 @@ template<class T>
 static inline void append(const vec<T>& from, vec<T>& to){ copy(from, to, true); }
 
 //=================================================================================================
+
+}
 
 #endif

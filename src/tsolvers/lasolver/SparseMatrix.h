@@ -9,45 +9,47 @@
 #ifndef OPENSMT_SPARSEMATRIX_H
 #define OPENSMT_SPARSEMATRIX_H
 
-#include "osmtinttypes.h"
 #include "Polynomial.h"
-#include <vector>
-#include <numeric>
-#include <cassert>
 
+#include <common/inttypes.h>
+
+#include <cassert>
+#include <numeric>
+#include <vector>
+
+namespace opensmt {
 struct ColumnCount {
     uint32_t count;
-    operator uint32_t () const { return count; }
+    operator uint32_t() const { return count; }
 };
-
-using ColIndex = ColumnCount;
 
 struct RowCount {
     uint32_t count;
-    operator uint32_t () const { return count; }
+    operator uint32_t() const { return count; }
 };
 
+using ColIndex = ColumnCount;
 using RowIndex = RowCount;
 
 struct IndexType {
     uint32_t x;
     bool operator==(IndexType const o) const { return x == o.x; }
-    static const IndexType Undef;
+    static IndexType const Undef;
 };
 
-inline constexpr IndexType IndexType::Undef = IndexType { INT32_MAX };
+inline constexpr IndexType IndexType::Undef = IndexType{INT32_MAX};
 
 class SparseColMatrix {
 public:
     using ColumnPolynomial = PolynomialT<IndexType>;
-    using TermVec = std::vector<std::pair<IndexType, opensmt::Real>>;
+    using TermVec = std::vector<std::pair<IndexType, Real>>;
+
     class Col {
-        ColumnPolynomial poly;
     public:
         Col() = default;
         Col(Col const &) = delete;
         Col(Col &&) = default;
-        void setPolynomial(ColumnPolynomial && _poly)  {
+        void setPolynomial(ColumnPolynomial && _poly) {
             assert(this->poly.size() == 0);
             this->poly = std::move(_poly);
         }
@@ -55,24 +57,23 @@ public:
         uint32_t size() const { return poly.size(); }
 
         void negate();
-        void add(Col const & other, opensmt::Real const & multiple);
+        void add(Col const & other, Real const & multiple);
 
         bool isFirst(RowIndex row) const { return poly.size() > 0 and poly.begin()->var.x == row.count; }
-        opensmt::Real const * tryGetFirstCoeff() const { return poly.size() > 0 ? &poly.begin()->coeff : nullptr; }
-        opensmt::Real const & getFirstCoeff() const { assert(poly.size() > 0); return poly.begin()->coeff; }
-        opensmt::Real const * tryGetCoeffFor(RowIndex rowIndex) const;
+        Real const * tryGetFirstCoeff() const { return poly.size() > 0 ? &poly.begin()->coeff : nullptr; }
+        Real const & getFirstCoeff() const {
+            assert(poly.size() > 0);
+            return poly.begin()->coeff;
+        }
+        Real const * tryGetCoeffFor(RowIndex rowIndex) const;
 
-        opensmt::Real product(std::vector<opensmt::Real> const & values) const;
+        Real product(std::vector<Real> const & values) const;
         TermVec toVector() const;
+
+    private:
+        ColumnPolynomial poly;
     };
 
-private:
-    RowCount _rowCount;
-    ColumnCount _colCount;
-    std::vector<Col> cols;
-    std::vector<uint32_t> colPermutation;
-
-public:
     explicit SparseColMatrix(RowCount rowCount, ColumnCount colCount) : _rowCount(rowCount), _colCount{colCount} {
         cols.resize(colCount.count);
         colPermutation.resize(colCount);
@@ -82,7 +83,7 @@ public:
     SparseColMatrix(SparseColMatrix const &) = delete;
     SparseColMatrix(SparseColMatrix &&) = default;
 
-    Col &       operator[](uint32_t index)       { return cols[colPermutation[index]]; }
+    Col & operator[](uint32_t index) { return cols[colPermutation[index]]; }
     Col const & operator[](uint32_t index) const { return cols[colPermutation[index]]; }
 
     void swapCols(uint32_t first, uint32_t second) { std::swap(colPermutation[first], colPermutation[second]); }
@@ -94,6 +95,12 @@ public:
         assert(colIndex < _colCount);
         cols[colIndex].setPolynomial(std::move(poly));
     }
+
+private:
+    RowCount _rowCount;
+    ColumnCount _colCount;
+    std::vector<Col> cols;
+    std::vector<uint32_t> colPermutation;
 };
 
 class HermiteNormalForm {
@@ -102,12 +109,14 @@ public:
         SparseColMatrix operations;
         uint32_t HNFdimension;
     };
-    HNFOperationsResult operator() (SparseColMatrix &&) const;
+
+    HNFOperationsResult operator()(SparseColMatrix &&) const;
 };
 
 struct SparseLinearSystem {
     SparseColMatrix A;
-    std::vector<opensmt::Real> rhs;
+    std::vector<Real> rhs;
 };
+} // namespace opensmt
 
-#endif //OPENSMT_SPARSEMATRIX_H
+#endif // OPENSMT_SPARSEMATRIX_H

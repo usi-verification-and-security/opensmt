@@ -7,6 +7,8 @@
 
 #include "TSolverHandler.h"
 
+namespace opensmt {
+
 class ArithLogic;
 class IDLSolver;
 
@@ -27,5 +29,6 @@ public:
 
 };
 
+}
 
 #endif //OPENSMT_IDLTHANDLER_H

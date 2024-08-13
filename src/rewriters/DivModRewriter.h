@@ -8,50 +8,13 @@
 #ifndef OPENSMT_DIVMODREWRITER_H
 #define OPENSMT_DIVMODREWRITER_H
 
-#include "ArithLogic.h"
-#include "OsmtInternalException.h"
 #include "Rewriter.h"
 
+#include <common/InternalException.h>
+#include <logics/ArithLogic.h>
+
+namespace opensmt {
 class DivModConfig : public DefaultRewriterConfig {
-    ArithLogic & logic;
-
-    struct DivModPair {
-        PTRef div;
-        PTRef mod;
-    };
-
-    std::unordered_map<std::pair<PTRef, PTRef>, DivModPair, PTRefPairHash> divModCache;
-    vec<PTRef> definitions;
-
-    DivModPair freshDivModPair(PTRef dividend, PTRef divisor) {
-        std::string id = "_" + std::to_string(dividend.x) + "_" + std::to_string(divisor.x);
-        std::string divName(divPrefix);
-        divName += id;
-        std::string modName(modPrefix);
-        modName += id;
-        return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
-    }
-
-    static opensmt::pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name,
-                                                             std::string_view const prefix) {
-        std::string dividendNumberStr;
-        std::string divisorNumberStr;
-        bool parsingDividend = true;
-        for (auto it = name.begin() + prefix.size() + 1; it != name.end(); ++it) {
-            if (parsingDividend and '0' <= *it and *it <= '9') {
-                dividendNumberStr += *it;
-            } else if (not parsingDividend and '0' <= *it and *it <= '9') {
-                divisorNumberStr += *it;
-            } else if (*it == '_') {
-                if (not parsingDividend)
-                    throw OsmtInternalException("Parse error in auxiliary variable symbol: " + std::string(name));
-                parsingDividend = false;
-            }
-        }
-        return {{static_cast<uint32_t>(std::stoul(dividendNumberStr))},
-                {static_cast<uint32_t>(std::stoul(divisorNumberStr))}};
-    }
-
 public:
     static std::string_view constexpr divPrefix = ".div";
     static std::string_view constexpr modPrefix = ".mod";
@@ -110,18 +73,55 @@ public:
         auto [dividendTr, divisorTr] = getDividendAndDivisor(name, modPrefix);
         return logic.mkMod(dividendTr, divisorTr);
     }
+
+private:
+    ArithLogic & logic;
+
+    struct DivModPair {
+        PTRef div;
+        PTRef mod;
+    };
+
+    std::unordered_map<std::pair<PTRef, PTRef>, DivModPair, PTRefPairHash> divModCache;
+    vec<PTRef> definitions;
+
+    DivModPair freshDivModPair(PTRef dividend, PTRef divisor) {
+        std::string id = "_" + std::to_string(dividend.x) + "_" + std::to_string(divisor.x);
+        std::string divName(divPrefix);
+        divName += id;
+        std::string modName(modPrefix);
+        modName += id;
+        return {logic.mkIntVar(divName.c_str()), logic.mkIntVar(modName.c_str())};
+    }
+
+    static opensmt::pair<PTRef, PTRef> getDividendAndDivisor(std::string_view const name,
+                                                             std::string_view const prefix) {
+        std::string dividendNumberStr;
+        std::string divisorNumberStr;
+        bool parsingDividend = true;
+        for (auto it = name.begin() + prefix.size() + 1; it != name.end(); ++it) {
+            if (parsingDividend and '0' <= *it and *it <= '9') {
+                dividendNumberStr += *it;
+            } else if (not parsingDividend and '0' <= *it and *it <= '9') {
+                divisorNumberStr += *it;
+            } else if (*it == '_') {
+                if (not parsingDividend)
+                    throw InternalException("Parse error in auxiliary variable symbol: " + std::string(name));
+                parsingDividend = false;
+            }
+        }
+        return {{static_cast<uint32_t>(std::stoul(dividendNumberStr))},
+                {static_cast<uint32_t>(std::stoul(divisorNumberStr))}};
+    }
 };
 
 class DivModRewriter : Rewriter<DivModConfig> {
-    ArithLogic & logic;
-    DivModConfig config;
-
 public:
     explicit DivModRewriter(ArithLogic & logic) : Rewriter<DivModConfig>(logic, config), logic(logic), config(logic) {}
 
     PTRef rewrite(PTRef term) override {
         if (term == PTRef_Undef or not logic.hasSortBool(term)) {
-            throw OsmtApiException("Div/Mod rewriting should only be called on formulas, not terms!");
+            throw ApiException("Div/Mod rewriting should only be called on formulas, not terms!");
         }
         PTRef rewritten = Rewriter<DivModConfig>::rewrite(term);
         vec<PTRef> args;
@@ -129,6 +129,11 @@ public:
         config.getDefinitions(args);
         return logic.mkAnd(args);
     }
+
+private:
+    ArithLogic & logic;
+    DivModConfig config;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_DIVMODREWRITER_H

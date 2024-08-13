@@ -3,9 +3,12 @@
 //
 
 #include "LATHandler.h"
-#include "TreeOps.h"
-#include "LASolver.h"
-#include "OsmtInternalException.h"
+#include "lasolver/LASolver.h"
+
+#include <common/InternalException.h>
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 LATHandler::LATHandler(SMTConfig & c, ArithLogic & l)
     : TSolverHandler(c)
@@ -20,10 +23,12 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
         return lasolver->getRealInterpolant(mask, labels, pmanager);
     } else if (logic.hasIntegers() and not logic.hasReals()) {
         if (labels == nullptr) {
-            throw OsmtInternalException("LIA interpolation requires partitioning map, but no map was provided");
+            throw InternalException("LIA interpolation requires partitioning map, but no map was provided");
         }
         return lasolver->getIntegerInterpolant(*labels);
     } else {
-        throw OsmtInternalException("Mixed arithmetic interpolation not supported yet");
+        throw InternalException("Mixed arithmetic interpolation not supported yet");
     }
+}
+
 }

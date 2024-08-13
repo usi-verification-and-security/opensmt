@@ -1,5 +1,6 @@
 #include "STPEdgeGraph.h"
 
+namespace opensmt {
 void EdgeGraph::addEdge(EdgeRef e, VertexRef from, VertexRef to) {
     auto max = std::max(from.x, to.x);
     if (incoming.size() <= max) {
@@ -21,3 +22,4 @@ bool EdgeGraph::isEmpty() const {
     assert(incoming.size() == outgoing.size());
     return incoming.empty();
 }
+} // namespace opensmt

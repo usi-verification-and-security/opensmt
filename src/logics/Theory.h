@@ -28,10 +28,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "BVLogic.h"
 #include "Logic.h"
-#include "PartitionManager.h"
-#include "UFTHandler.h"
+
+#include <api/PartitionManager.h>
+#include <tsolvers/UFTHandler.h>
 
 #include <memory>
+
+namespace opensmt {
 
 struct PreprocessingContext {
     std::size_t frameCount {0};
@@ -77,5 +80,7 @@ class UFTheory : public Theory
     virtual PTRef preprocessBeforeSubstitutions(PTRef, PreprocessingContext const &) override;
     virtual PTRef preprocessAfterSubstitutions(PTRef, PreprocessingContext const &) override;
 };
+
+}
 
 #endif

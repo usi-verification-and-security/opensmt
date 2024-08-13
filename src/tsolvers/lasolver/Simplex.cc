@@ -4,10 +4,10 @@
 
 #include "Simplex.h"
 
-#include "OsmtInternalException.h"
+#include <common/InternalException.h>
 
-#include <limits>
 #include <algorithm>
+#include <limits>
 
 #ifdef SIMPLEX_DEBUG
 #define simplex_assert(x) assert(x)
@@ -15,18 +15,24 @@
 #define simplex_assert(x)
 #endif // SIMPLEX_DEBUG
 
+namespace opensmt {
+Simplex::~Simplex() {
+#ifdef STATISTICS
+    simplex_stats.printStatistics(cerr);
+#endif // STATISTICS
+}
+
 // MB: helper functions
-namespace{
-    bool isBoundSatisfied(Delta const & val, LABound const & bound ) {
-        if (bound.getType() == bound_u){
+namespace {
+    bool isBoundSatisfied(Delta const & val, LABound const & bound) {
+        if (bound.getType() == bound_u) {
             return val <= bound.getValue();
-        }
-        else {
+        } else {
             assert(bound.getType() == bound_l);
             return val >= bound.getValue();
         }
     }
-}
+} // namespace
 
 Simplex::Explanation Simplex::checkSimplex() {
     processBufferOfActivatedBounds();
@@ -38,14 +44,12 @@ Simplex::Explanation Simplex::checkSimplex() {
         repeats++;
         LVRef x = LVRef::Undef;
 
-        if (!bland_rule && (repeats > tableau.getNumOfCols()))
-            bland_rule = true;
+        if (!bland_rule && (repeats > tableau.getNumOfCols())) bland_rule = true;
 
         if (bland_rule) {
             x = getBasicVarToFixByBland();
             ++simplex_stats.num_bland_ops;
-        }
-        else {
+        } else {
             x = getBasicVarToFixByShortestPoly();
             ++simplex_stats.num_pivot_ops;
         }
@@ -58,10 +62,9 @@ Simplex::Explanation Simplex::checkSimplex() {
         }
 
         LVRef y_found = LVRef::Undef;
-        if (bland_rule){
+        if (bland_rule) {
             y_found = findNonBasicForPivotByBland(x);
-        }
-        else{
+        } else {
             y_found = findNonBasicForPivotByHeuristic(x);
         }
         // if it was not found - UNSAT
@@ -71,21 +74,21 @@ Simplex::Explanation Simplex::checkSimplex() {
             model->restoreAssignment();
             return getConflictingBounds(x, isOutOfLowerBound);
         }
-            // if it was found - pivot old Basic x with non-basic y and do the model updates
+        // if it was found - pivot old Basic x with non-basic y and do the model updates
         else {
             pivot(x, y_found);
         }
     }
 }
 
-const Delta Simplex::overBound(LVRef v) const {
+Delta const Simplex::overBound(LVRef v) const {
     assert(isModelOutOfBounds(v));
     if (isModelOutOfUpperBound(v)) {
         return (Delta(model->read(v) - model->Ub(v)));
     } else if (isModelOutOfLowerBound(v)) {
         return (Delta(model->Lb(v) - model->read(v)));
     }
-    assert (false);
+    assert(false);
     printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
     exit(1);
 }
@@ -95,10 +98,9 @@ bool Simplex::isUnbounded(LVRef v) const {
 }
 
 LVRef Simplex::getBasicVarToFixByShortestPoly() const {
-    assert(std::all_of(candidates.begin(), candidates.end(),
-                       [&](LVRef var) {
-                           return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
-                       }));
+    assert(std::all_of(candidates.begin(), candidates.end(), [&](LVRef var) {
+        return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+    }));
     // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getPolySize)
     LVRef current = LVRef::Undef;
     std::size_t current_poly_size = std::numeric_limits<std::size_t>::max();
@@ -113,10 +115,9 @@ LVRef Simplex::getBasicVarToFixByShortestPoly() const {
 }
 
 LVRef Simplex::getBasicVarToFixByBland() const {
-    assert(std::all_of(candidates.begin(), candidates.end(),
-                       [&](LVRef var) {
-                           return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
-                       }));
+    assert(std::all_of(candidates.begin(), candidates.end(), [&](LVRef var) {
+        return var != LVRef::Undef && tableau.isBasic(var) && isModelOutOfBounds(var);
+    }));
     // MB: replace this with std::min_element when ranges are available (to avoid duplicate calls to getVarId)
     auto curr_var_id_x = std::numeric_limits<unsigned>::max();
     LVRef current = LVRef::Undef;
@@ -137,49 +138,47 @@ LVRef Simplex::findNonBasicForPivotByHeuristic(LVRef basicVar) {
     LVRef v_found = LVRef::Undef;
     if (isModelOutOfLowerBound(basicVar)) {
 
-        for (auto const &term : tableau.getRowPoly(basicVar)) {
+        for (auto const & term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
-            auto const &coeff = term.coeff;
-            const bool is_coeff_pos = isPositive(coeff);
+            auto const & coeff = term.coeff;
+            bool const is_coeff_pos = isPositive(coeff);
 
             if ((is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (!is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
                 if (v_found == LVRef::Undef) {
                     v_found = var;
                 }
-                    // heuristic favoring more independent vars
+                // heuristic favoring more independent vars
                 else if (tableau.getColumn(v_found).size() > tableau.getColumn(var).size()) {
                     v_found = var;
                 }
             }
         }
-    }
-    else if (isModelOutOfUpperBound(basicVar)) {
+    } else if (isModelOutOfUpperBound(basicVar)) {
 
-        for (auto const &term : tableau.getRowPoly(basicVar)) {
+        for (auto const & term : tableau.getRowPoly(basicVar)) {
             auto var = term.var;
             assert(tableau.isNonBasic(var));
             assert(var != basicVar);
-            auto const &coeff = term.coeff;
-            const bool is_coeff_pos = isPositive(coeff);
+            auto const & coeff = term.coeff;
+            bool const is_coeff_pos = isPositive(coeff);
 
             if ((!is_coeff_pos && isModelStrictlyUnderUpperBound(var)) ||
                 (is_coeff_pos && isModelStrictlyOverLowerBound(var))) {
                 if (v_found == LVRef::Undef) {
                     v_found = var;
                 }
-                    // heuristic favoring more independent vars
+                // heuristic favoring more independent vars
                 else if (tableau.getColumn(v_found).size() > tableau.getColumn(var).size()) {
                     v_found = var;
                 }
             }
         }
-    }
-    else {
+    } else {
         assert(false);
-        throw OsmtInternalException("Examined basic var is not out of bounds, but it should be!");
+        throw InternalException("Examined basic var is not out of bounds, but it should be!");
     }
     return v_found;
 }
@@ -196,27 +195,26 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
-            auto const &coeff = term.coeff;
-            const bool coeff_is_pos = isPositive(coeff);
-            if ((coeff_is_pos && isModelStrictlyUnderUpperBound(y))
-                || (!coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
+            auto const & coeff = term.coeff;
+            bool const coeff_is_pos = isPositive(coeff);
+            if ((coeff_is_pos && isModelStrictlyUnderUpperBound(y)) ||
+                (!coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
             }
         }
-    }
-    else if (isModelOutOfUpperBound(basicVar)) {
+    } else if (isModelOutOfUpperBound(basicVar)) {
         auto curr_var_id_y = max_var_id;
         // look for nonbasic terms to fix the unbounding
         for (auto const & term : tableau.getRowPoly(basicVar)) {
             auto y = term.var;
             assert(basicVar != y);
             assert(tableau.isNonBasic(y));
-            auto const &coeff = term.coeff;
-            const bool coeff_is_pos = isPositive(coeff);
-            if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y))
-                || (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
+            auto const & coeff = term.coeff;
+            bool const coeff_is_pos = isPositive(coeff);
+            if ((!coeff_is_pos && isModelStrictlyUnderUpperBound(y)) ||
+                (coeff_is_pos && isModelStrictlyOverLowerBound(y))) {
                 // Choose the leftmost nonbasic variable with a negative (reduced) cost
                 y_found = getVarId(y) < curr_var_id_y ? y : y_found;
                 curr_var_id_y = getVarId(y) < curr_var_id_y ? getVarId(y) : curr_var_id_y;
@@ -224,7 +222,7 @@ LVRef Simplex::findNonBasicForPivotByBland(LVRef basicVar) {
         }
     } else {
         assert(false);
-        throw OsmtInternalException("Examined basic var is not out of bounds, but it should be!");
+        throw InternalException("Examined basic var is not out of bounds, but it should be!");
     }
     return y_found;
 }
@@ -233,11 +231,13 @@ Simplex::Explanation Simplex::assertBound(LABoundRef boundRef) {
     LVRef boundTerm = boundStore[boundRef].getLVRef();
     assert(!model->isUnbounded(boundTerm));
 
-    // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting equality.
+    // Check if simple UNSAT can be given.  The last check checks that this is not actually about asserting
+    // equality.
     if (model->boundTriviallyUnsatisfied(boundTerm, boundRef)) {
-        const LABound & itBound = boundStore[boundRef];
+        LABound const & itBound = boundStore[boundRef];
         assert(itBound.getType() == bound_u || itBound.getType() == bound_l);
-        LABoundRef br = itBound.getType() == bound_u ? model->readLBoundRef(boundTerm) : model->readUBoundRef(boundTerm);
+        LABoundRef br =
+            itBound.getType() == bound_u ? model->readLBoundRef(boundTerm) : model->readUBoundRef(boundTerm);
         return {{br, 1}, {boundRef, 1}};
     }
 
@@ -262,12 +262,11 @@ void Simplex::eraseCandidate(LVRef candidateVar) {
     candidates.erase(candidateVar);
 }
 
-
-void Simplex::pivot(const LVRef bv, const LVRef nv){
+void Simplex::pivot(LVRef const bv, LVRef const nv) {
     assert(tableau.isBasic(bv));
     assert(tableau.isNonBasic(nv));
     simplex_assert(valueConsistent(bv));
-//    tableau.print();
+    //    tableau.print();
     updateValues(bv, nv);
     tableau.pivot(bv, nv);
     // after pivot, bv is not longer a candidate
@@ -275,39 +274,35 @@ void Simplex::pivot(const LVRef bv, const LVRef nv){
     // and nv can be a candidate
     if (getNumOfBoundsActive(nv) == 0) {
         tableau.basicToQuasi(nv);
+    } else {
+        if (isModelOutOfBounds(nv)) { newCandidate(nv); }
     }
-    else {
-        if (isModelOutOfBounds(nv)) {
-            newCandidate(nv);
-        }
-    }
-//    tableau.print();
+    //    tableau.print();
     simplex_assert(checkTableauConsistency());
     simplex_assert(checkValueConsistency());
 }
 
-void Simplex::changeValueBy(LVRef var, const Delta & diff) {
+void Simplex::changeValueBy(LVRef var, Delta const & diff) {
     // update var's value
     model->write(var, model->read(var) + diff);
     // update all (active) rows where var is present
-    for ( LVRef row : tableau.getColumn(var)){
+    for (LVRef row : tableau.getColumn(var)) {
         assert(!tableau.isNonBasic(row));
         if (tableau.isBasic(row)) { // skip quasi-basic variables
             model->write(row, model->read(row) + (tableau.getCoeff(row, var) * diff));
             if (isModelOutOfBounds(row)) {
                 newCandidate(row);
-            }
-            else {
+            } else {
                 eraseCandidate(row);
             }
         }
     }
 }
 
-void Simplex::updateValues(const LVRef bv, const LVRef nv){
+void Simplex::updateValues(LVRef const bv, LVRef const nv) {
     assert(isModelOutOfBounds(bv));
     auto const & bvNewVal = (isModelOutOfLowerBound(bv)) ? model->Lb(bv) : model->Ub(bv);
-    const auto & coeff = tableau.getCoeff(bv, nv);
+    auto const & coeff = tableau.getCoeff(bv, nv);
     // nvDiff represents how much we need to change nv, so that bv gets to the right value
     auto nvDiff = (bvNewVal - model->read(bv)) / coeff;
     // update nv's value
@@ -317,13 +312,12 @@ void Simplex::updateValues(const LVRef bv, const LVRef nv){
 //
 // Returns the bounds conflicting with the actual model.
 //
-Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower)
-{
+Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower) {
     LABoundRef br_f = conflictOnLower ? model->readLBoundRef(x) : model->readUBoundRef(x);
     auto const & row = tableau.getRowPoly(x);
     Explanation expl;
     expl.reserve(row.size() + 1);
-    expl.push_back({br_f,1});
+    expl.push_back({br_f, 1});
     // add all bounds for polynomial elements which limit the given bound
     for (auto const & term : row) {
         Real const & coeff = term.coeff;
@@ -332,8 +326,7 @@ Simplex::Explanation Simplex::getConflictingBounds(LVRef x, bool conflictOnLower
         if (isNegative(coeff)) {
             LABoundRef br = conflictOnLower ? model->readLBoundRef(var) : model->readUBoundRef(var);
             expl.push_back({br, -coeff});
-        }
-        else {
+        } else {
             LABoundRef br = conflictOnLower ? model->readUBoundRef(var) : model->readLBoundRef(var);
             expl.push_back({br, coeff});
         }
@@ -346,43 +339,38 @@ bool Simplex::checkValueConsistency() const {
     auto const & rows = tableau.getRows();
     for (unsigned i = 0; i < rows.size(); ++i) {
         if (!rows[i]) { continue; }
-        LVRef var {i};
+        LVRef var{i};
         assert(!tableau.isNonBasic(var));
-        if (tableau.isBasic(var)) {
-            res &= valueConsistent(var);
-        }
+        if (tableau.isBasic(var)) { res &= valueConsistent(var); }
     }
     assert(res);
     return res;
 }
 
-bool Simplex::valueConsistent(LVRef v) const
-{
-    const Delta& value = model->read(v);
+bool Simplex::valueConsistent(LVRef v) const {
+    Delta const & value = model->read(v);
     Delta sum(0);
-    for (auto & term : tableau.getRowPoly(v)){
-      sum += term.coeff * model->read(term.var);
+    for (auto & term : tableau.getRowPoly(v)) {
+        sum += term.coeff * model->read(term.var);
     }
 
     assert(value == sum);
     return value == sum;
 }
 
-
-bool Simplex::invariantHolds() const
-{
+bool Simplex::invariantHolds() const {
     bool rval = true;
     auto vars = tableau.getNonBasicVars();
-    for (auto var : vars){
+    for (auto var : vars) {
         if (isModelOutOfBounds(var)) {
             rval = false;
             if (isModelOutOfUpperBound(var)) {
-                printf("Non-basic (column) LRA var %s has value %s > %s (upper bound)\n",
-                       printVar(var), model->read(var).printValue(), model->Ub(var).printValue());
+                printf("Non-basic (column) LRA var %s has value %s > %s (upper bound)\n", printVar(var),
+                       model->read(var).printValue(), model->Ub(var).printValue());
             }
             if (isModelOutOfLowerBound(var)) {
-                printf("Non-basic (column) LRA var %s has value %s < %s (lower bound)\n",
-                       printVar(var), model->read(var).printValue(), model->Lb(var).printValue());
+                printf("Non-basic (column) LRA var %s has value %s < %s (lower bound)\n", printVar(var),
+                       model->read(var).printValue(), model->Lb(var).printValue());
             }
             assert(false);
         }
@@ -390,32 +378,34 @@ bool Simplex::invariantHolds() const
     return rval;
 }
 
-
 bool Simplex::checkTableauConsistency() const {
     bool res = tableau.checkConsistency();
     assert(res);
     return res;
 }
 
-bool Simplex::isProcessedByTableau(LVRef var) const { return tableau.isProcessed(var); }
+bool Simplex::isProcessedByTableau(LVRef var) const {
+    return tableau.isProcessed(var);
+}
 
-const LABoundRef Simplex::getBound(LVRef v, int idx) const { return boundStore.getBoundByIdx(v, idx); }
+LABoundRef const Simplex::getBound(LVRef v, int idx) const {
+    return boundStore.getBoundByIdx(v, idx);
+}
 
 Delta Simplex::getValuation(LVRef v) const {
-    if (tableau.isQuasiBasic(v)) {
-        (const_cast<Simplex*>(this))->quasiToBasic(v);
-    }
+    if (tableau.isQuasiBasic(v)) { (const_cast<Simplex *>(this))->quasiToBasic(v); }
     Delta val = model->read(v);
     return val;
 }
 
-opensmt::Real Simplex::computeDelta() const {
+Real Simplex::computeDelta() const {
 
     /*
      Delta computation according to the Technical Report accompanying the Simple paper
      https://yices.csl.sri.com/papers/sri-csl-06-01.pdf
-     For a pair (c,k) \in Q_\delta representing Real value c + k * \delta if the inequality (c_1, k_1) <= (c_2, k_2) holds
-     then there exists \delta_0 such that \forall 0 < \epsilon < \delta_0 the inequality c_1 + k_1 * \epsilon <= c_2 + k_2 * \epsilon holds.
+     For a pair (c,k) \in Q_\delta representing Real value c + k * \delta if the inequality (c_1, k_1) <= (c_2, k_2)
+     holds then there exists \delta_0 such that \forall 0 < \epsilon < \delta_0 the inequality c_1 + k_1 * \epsilon
+     <= c_2 + k_2 * \epsilon holds.
 
      \delta_0 can be defined as (c_2 - c_1) / (k_1 - k_2) if c_1 < c_2 and k_1 > k_2 ( and \delta_0 = 1 otherwise)
 
@@ -427,10 +417,9 @@ opensmt::Real Simplex::computeDelta() const {
     Delta delta_abst;
     bool deltaNotSet = true;
 
-    const LAVarStore& laVarStore = boundStore.getVarStore();
-    for (LVRef v : laVarStore)
-    {
-        assert( !isModelOutOfBounds(v) );
+    LAVarStore const & laVarStore = boundStore.getVarStore();
+    for (LVRef v : laVarStore) {
+        assert(!isModelOutOfBounds(v));
 
         if (model->read(v).D() == 0)
             continue; // If values are exact we do not need to consider them for delta computation
@@ -464,17 +453,15 @@ opensmt::Real Simplex::computeDelta() const {
         }
     }
 
-    if (deltaNotSet || delta_abst > 1) {
-        return 1;
-    }
-    return delta_abst.R()/2;
+    if (deltaNotSet || delta_abst > 1) { return 1; }
+    return delta_abst.R() / 2;
 }
 
 void Simplex::quasiToBasic(LVRef it) {
     tableau.quasiToBasic(it);
     // Recompute the value of the row variable
-    // Literals are asserted in groups, so the current assignment might already be different then the last consistent one
-    // Fix the last consistent value for this var, then fix the current value of the var
+    // Literals are asserted in groups, so the current assignment might already be different then the last
+    // consistent one Fix the last consistent value for this var, then fix the current value of the var
     Delta val; // initialized to 0
     assert(model->changed_vars_vec.size() == 0);
     for (auto const & term : tableau.getRowPoly(it)) {
@@ -482,13 +469,6 @@ void Simplex::quasiToBasic(LVRef it) {
         val += term.coeff * model->read(term.var);
     }
     model->restoreVarWithValue(it, std::move(val));
-}
-
-Simplex::~Simplex()
-{
-#ifdef STATISTICS
-     simplex_stats.printStatistics(cerr);
-#endif // STATISTICS
 }
 
 void Simplex::processBufferOfActivatedBounds() {
@@ -500,9 +480,7 @@ void Simplex::processBufferOfActivatedBounds() {
         // Update the Tableau data if a non-basic variable
         if (tableau.isNonBasic(var)) {
             auto const & bound = boundStore[boundRef];
-            if (!isBoundSatisfied(model->read(var), bound)) {
-                changeValueBy(var, bound.getValue() - model->read(var));
-            }
+            if (!isBoundSatisfied(model->read(var), bound)) { changeValueBy(var, bound.getValue() - model->read(var)); }
         } else // basic variable got a new bound, it becomes a possible candidate
         {
             assert(tableau.isBasic(var));
@@ -515,4 +493,4 @@ void Simplex::processBufferOfActivatedBounds() {
         }
     }
 }
-
+} // namespace opensmt

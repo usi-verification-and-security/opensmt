@@ -4,7 +4,10 @@
 
 #ifndef OPENSMT_GHOSTSMTSOLVER_H
 #define OPENSMT_GHOSTSMTSOLVER_H
+
 #include "SimpSMTSolver.h"
+
+namespace opensmt {
 
 class GhostSMTSolver : public SimpSMTSolver
 {
@@ -29,5 +32,7 @@ public:
     void garbageCollect() override;
     void relocAll();
 };
+
+}
 
 #endif //OPENSMT_GHOSTSMTSOLVER_H

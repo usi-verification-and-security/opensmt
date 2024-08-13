@@ -24,6 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cerrno>
 #include <cstdlib>
 
+namespace opensmt {
 
 //=================================================================================================
 // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
@@ -39,5 +40,7 @@ static inline void* xrealloc(void *ptr, size_t size)
 }
 
 //=================================================================================================
+
+}
 
 #endif

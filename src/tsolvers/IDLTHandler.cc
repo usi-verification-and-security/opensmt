@@ -3,9 +3,12 @@
 //
 
 #include "IDLTHandler.h"
-#include "ArithLogic.h"
-#include "IDLSolver.h"
-#include "TreeOps.h"
+#include "stpsolver/IDLSolver.h"
+
+#include <logics/ArithLogic.h>
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 IDLTHandler::IDLTHandler(SMTConfig& c, ArithLogic& l)
         : TSolverHandler(c)
@@ -23,4 +26,6 @@ Logic &IDLTHandler::getLogic()
 const Logic &IDLTHandler::getLogic() const
 {
     return logic;
+}
+
 }

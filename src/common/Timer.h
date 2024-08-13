@@ -26,125 +26,117 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef TIMER_H
 #define TIMER_H
-#include <string.h>
-#include <ostream>
+
+#include <cassert>
+#include <cstring>
 #include <iostream>
-#include <assert.h>
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 
 namespace opensmt {
-
 // A c++ wrapper for struct timeval
 class BTime {
-    time_t tv_sec;
-    suseconds_t tv_usec;
 public:
-    BTime() : tv_sec(0), tv_usec(0) {}
-    BTime(const struct timeval& tv) : tv_sec(tv.tv_sec), tv_usec(tv.tv_usec) {}
-    BTime(const BTime& from) : tv_sec(from.tv_sec), tv_usec(from.tv_usec) {}
-    void operator-= (const BTime& subst)
-    {
-        tv_sec  -= subst.tv_sec;
+    BTime() = default;
+    BTime(BTime const &) = default;
+    BTime(const struct timeval & tv) : tv_sec(tv.tv_sec), tv_usec(tv.tv_usec) {}
+    void operator-=(BTime const & subst) {
+        tv_sec -= subst.tv_sec;
         tv_usec -= subst.tv_usec;
     }
-    BTime operator- (const BTime& subst)
-    {
+    BTime operator-(BTime const & subst) {
         BTime out;
         out.tv_sec = tv_sec - subst.tv_sec;
         out.tv_usec = tv_usec - subst.tv_usec;
         return out;
     }
-    void operator= (const BTime& from)
-    {
+    void operator=(BTime const & from) {
         tv_sec = from.tv_sec;
         tv_usec = from.tv_usec;
     }
-    BTime& operator+= (const BTime& other)
-    {
+    BTime & operator+=(BTime const & other) {
         tv_sec += other.tv_sec;
         tv_usec += other.tv_usec;
         return *this;
     }
-    double getTime()
-    {
-        return tv_sec + tv_usec/(double)1000000;
-    }
+    double getTime() { return tv_sec + tv_usec / (double)1000000; }
+
+private:
+    time_t tv_sec{0};
+    suseconds_t tv_usec{0};
 };
 
-class OSMTTimeVal {
-    BTime usrtime;
-    BTime systime;
+class TimeVal {
 public:
-    OSMTTimeVal() {}
-    OSMTTimeVal(const BTime& usrtime, const BTime& systime) : usrtime(usrtime), systime(systime) {}
+    TimeVal() = default;
+    TimeVal(TimeVal const &) = default;
+    TimeVal(BTime const & usrtime, BTime const & systime) : usrtime(usrtime), systime(systime) {}
+    TimeVal(const struct rusage & res_usage) : usrtime(res_usage.ru_utime), systime(res_usage.ru_stime) {}
 
-    OSMTTimeVal(const struct rusage& res_usage) : usrtime(res_usage.ru_utime), systime(res_usage.ru_stime) {}
-    void operator-= (const OSMTTimeVal& subst) {
+    void operator-=(TimeVal const & subst) {
         usrtime -= subst.usrtime;
         systime -= subst.systime;
     }
-    OSMTTimeVal operator- (const OSMTTimeVal& subst) {
-        OSMTTimeVal out;
+    TimeVal operator-(TimeVal const & subst) {
+        TimeVal out;
         out.usrtime = usrtime - subst.usrtime;
         out.systime = systime - subst.systime;
         return out;
     }
-
-    OSMTTimeVal& operator+= (const OSMTTimeVal& from) {
+    TimeVal & operator+=(TimeVal const & from) {
         usrtime += from.usrtime;
         systime += from.systime;
         return *this;
     }
-    double getTime()
-    {
-        return usrtime.getTime() + systime.getTime();
-    }
+
+    double getTime() { return usrtime.getTime() + systime.getTime(); }
+
+private:
+    BTime usrtime;
+    BTime systime;
 };
 
 class StopWatch {
-    protected:
-        struct rusage tmp_rusage;
-        OSMTTimeVal time_start;
-        OSMTTimeVal &timer;
-    public:
-    StopWatch(OSMTTimeVal& timer)
-        : timer(timer)
-    {
+public:
+    StopWatch(TimeVal & timer) : timer(timer) {
         if (getrusage(RUSAGE_SELF, &tmp_rusage) == 0) {
-            time_start = OSMTTimeVal(tmp_rusage);
-        }
-        else assert(false);
+            time_start = TimeVal(tmp_rusage);
+        } else
+            assert(false);
     }
-    ~StopWatch()
-    {
+    ~StopWatch() {
         if (getrusage(RUSAGE_SELF, &tmp_rusage) == 0) {
-            timer += OSMTTimeVal(tmp_rusage) - time_start;
-        }
-        else assert(false);
+            timer += TimeVal(tmp_rusage) - time_start;
+        } else
+            assert(false);
     }
+
+protected:
+    struct rusage tmp_rusage;
+
+    TimeVal time_start;
+    TimeVal & timer;
 };
 
 class PrintStopWatch {
-    protected:
-        char* name;
-        OSMTTimeVal timer;
-        std::ostream& os;
-        StopWatch* watch;
-    public:
-        PrintStopWatch(const char* _name, std::ostream& os) : os(os), watch(new StopWatch(timer))
-        {
-            int size = strlen(_name);
-            name = (char*)malloc(size+1);
-            strcpy(name, _name);
-        }
-        ~PrintStopWatch()
-        {
-            delete watch;
-            os << "; " << name << " " << timer.getTime() << " s\n";
-            free(name);
-        }
-};
+public:
+    PrintStopWatch(char const * _name, std::ostream & os) : os(os), watch(new StopWatch(timer)) {
+        int size = strlen(_name);
+        name = (char *)malloc(size + 1);
+        strcpy(name, _name);
+    }
+    ~PrintStopWatch() {
+        delete watch;
+        os << "; " << name << " " << timer.getTime() << " s\n";
+        free(name);
+    }
 
-}
+protected:
+    char * name;
+    TimeVal timer;
+    std::ostream & os;
+    StopWatch * watch;
+};
+} // namespace opensmt
+
 #endif

@@ -7,8 +7,9 @@
 
 #include "PG.h"
 
-#include "OsmtInternalException.h"
+#include <common/InternalException.h>
 
+namespace opensmt {
 
 //Input: a context for a swap rule, a predicate to be pushed up
 //Output: true if rule application is allowed
@@ -62,7 +63,7 @@ bool ProofGraph::allowSwapRuleForPredicatePushingDown(RuleContext& ra, Var pred)
 	bool is1 = (pred1==pred);
 	bool is2 = (pred2==pred);
 
-	if(is1 && is2) { throw OsmtInternalException("Incorrect pivot in resolution step"); }
+	if(is1 && is2) { throw InternalException("Incorrect pivot in resolution step"); }
 	else if(is1)
 	{
 		// Upper pred, allow
@@ -92,7 +93,7 @@ bool ProofGraph::allowCutRuleForPredicatePushing(RuleContext& ra, Var pred)
 	bool is1 = (pred1==pred);
 	bool is2 = (pred2==pred);
 
-	if(is1 && is2) { throw OsmtInternalException("Incorrect pivot in resolution step"); }
+	if(is1 && is2) { throw InternalException("Incorrect pivot in resolution step"); }
 	else if(is1) return true;
 	else if(is2) return true;
 	else
@@ -141,7 +142,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForPredicatePushing(RuleConte
 	    bool allowed2;
 		if (is2cut) allowed2 =  (*this.*allowCut)(ra2,pred);
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2,pred);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
@@ -150,7 +151,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForPredicatePushing(RuleConte
 	    bool allowed1;
 		if (is1cut) allowed1 =  (*this.*allowCut)(ra1,pred);
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1,pred);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
@@ -159,11 +160,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForPredicatePushing(RuleConte
         bool allowed1, allowed2;
         if (is1cut) allowed1 =  (*this.*allowCut)(ra1,pred);
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1,pred);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 =  (*this.*allowCut)(ra2,pred);
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2,pred);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		//Neither allowed
 		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
@@ -306,7 +307,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleConte
 	    bool allowed2;
 		if (is2cut) allowed2 = true;
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
@@ -315,7 +316,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleConte
 	    bool allowed1;
 		if (is1cut) allowed1 = true;
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
@@ -324,11 +325,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForUnitsPushingDown(RuleConte
         bool allowed1, allowed2;
         if (is1cut) allowed1 = true;
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = true;
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		//Neither allowed
 		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
@@ -421,7 +422,7 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
 	if( t==rB1 ) return true;
 	else if( t==rB2prime ) return true;
 	else if( t==rB3 ) return true;
-	else throw OsmtInternalException("Unexpected situation in rule application");
+	else throw InternalException("Unexpected situation in rule application");
 }
 
 
@@ -458,7 +459,7 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
         bool allowed2;
         if (is2cut) allowed2 = (*this.*allowCut)(ra2);
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
@@ -467,7 +468,7 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
 	    bool allowed1;
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
@@ -476,11 +477,11 @@ bool ProofGraph::allowCutRuleForReduction(RuleContext& ra)
         bool allowed1, allowed2;
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
 		else if (is1swap) allowed1 = (*this.*allowSwap)(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
 		else if (is2swap) allowed2 = (*this.*allowSwap)(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		//Neither allowed
 		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
@@ -591,7 +592,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
         bool allowed2;
 		if (is2cut) allowed2 = false;
 		else if (is2swap) allowed2 = allowSwap(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
@@ -600,7 +601,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
 	    bool allowed1;
 		if( is1cut ) allowed1 = false;
 		else if( is1swap ) allowed1 = allowSwap(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
@@ -609,11 +610,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForStrongerWeakerInterpolant(
         bool allowed1, allowed2;
         if (is1cut) allowed1 = false;
 		else if (is1swap) allowed1 = allowSwap(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = false;
 		else if (is2swap) allowed2 = allowSwap(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		//Neither allowed
 		if (!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
@@ -691,7 +692,7 @@ bool ProofGraph::allowSwapRuleForCNFinterpolant(RuleContext& ra, std::function<i
 	} else if (piv_w_color == icolor_t::I_A and piv_v_color == icolor_t::I_B) {
 		return false;
 	}
-	else throw OsmtInternalException("Unexpected situation in rule application");
+	else throw InternalException("Unexpected situation in rule application");
 }
 
 using ApplicationResult = ProofGraph::ApplicationResult;
@@ -725,7 +726,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	{
 		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
 		else if(is2swap) allowed2 = allowSwap(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 		return allowed2 ? ApplicationResult::APPLY_SECOND : ApplicationResult::NO_APPLICATION;
 	}
 	//Second not applicable
@@ -733,7 +734,7 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	{
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
 		else if (is1swap) allowed1 = allowSwap(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
         return allowed1 ? ApplicationResult::APPLY_FIRST : ApplicationResult::NO_APPLICATION;
 	}
 	//Both applicable
@@ -741,11 +742,11 @@ ApplicationResult ProofGraph::handleRuleApplicationForCNFinterpolant(RuleContext
 	{
 		if (is1cut) allowed1 = (*this.*allowCut)(ra1);
 		else if (is1swap) allowed1 = allowSwap(ra1);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		if (is2cut) allowed2 = (*this.*allowCut)(ra2);
 		else if (is2swap) allowed2 = allowSwap(ra2);
-		else throw OsmtInternalException("Unexpected situation in rule application");
+		else throw InternalException("Unexpected situation in rule application");
 
 		//Neither allowed
 		if(!allowed1 && !allowed2) return ApplicationResult::NO_APPLICATION;
@@ -826,6 +827,8 @@ bool ProofGraph::chooseReplacingAntecedent( ProofNode* n )
 		}
 	}
 	return choose_ant1;
+}
+
 }
 
 // HEURISTICS TO GUIDE SIMPLIFICATION OF INTERPOLANTS

@@ -6,9 +6,12 @@ Module: New Logic for BitVector
  *  Created on: Jan 16, 2017
 \*******************************************************************/
 
-#include "SStore.h"
-#include "PtStore.h"
 #include "BVLogic.h"
+
+#include <sorts/SStore.h>
+#include <pterms/PtStore.h>
+
+namespace opensmt {
 
 const char* BVLogic::tk_bv_neg   = "-";
 const char* BVLogic::tk_bv_eq    = "==";
@@ -377,4 +380,6 @@ PTRef BVLogic::mkBVNeq(const PTRef a1, const PTRef a2)
 int BVLogic::getBVNUMConst(PTRef tr) const
 {
     return atoi(getSymName(tr));
+}
+
 }

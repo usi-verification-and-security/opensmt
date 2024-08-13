@@ -26,11 +26,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BVECTOR_H
 #define BVECTOR_H
 
-#include "PTRef.h"
-
+#include <pterms/PTRef.h>
 #include <minisat/core/Alloc.h>
 #include <minisat/mtl/Map.h>
 #include <minisat/mtl/Vec.h>
+
+namespace opensmt {
 
 struct BVRef {
     uint32_t x;
@@ -59,6 +60,7 @@ struct NameAsgn {
 };
 
 class Bvector {
+private:
     struct {
         unsigned is_signed  : 1;
         unsigned has_extra  : 1;
@@ -127,20 +129,20 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
         return (sizeof(Bvector) + (sizeof(PTRef) * size )) / sizeof(uint32_t); }
  public:
 
-    BvectorAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_terms(0) {}
+    BvectorAllocator(uint32_t start_cap) : RegionAllocator(start_cap), n_terms(0) {}
     BvectorAllocator() : n_terms(0) {}
 
     int getNumTerms() const { return n_terms; }
 
     void moveTo(BvectorAllocator& to){
         to.n_terms = n_terms;
-        RegionAllocator<uint32_t>::moveTo(to); }
+        RegionAllocator::moveTo(to); }
 
     BVRef alloc(const vec<PTRef> & names, const vec<PTRef> & asgn, PTRef act_var)
     {
         assert(sizeof(PTRef) == sizeof(uint32_t));
         assert(names.size() == asgn.size());
-        uint32_t v = RegionAllocator<uint32_t>::alloc(ptermWord32Size(2*names.size()));
+        uint32_t v = RegionAllocator::alloc(ptermWord32Size(2*names.size()));
         BVRef tid = {v};
         vec<NameAsgn> args;
         args.growTo(names.size());
@@ -155,16 +157,16 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
     BVRef alloc(Bvector&, bool) = delete;
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Bvector&       operator[](BVRef r)         { return (Bvector&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const Bvector& operator[](BVRef r) const   { return (Bvector&)RegionAllocator<uint32_t>::operator[](r.x); }
-    Bvector*       lea       (BVRef r)         { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
-    const Bvector* lea       (BVRef r) const   { return (Bvector*)RegionAllocator<uint32_t>::lea(r.x); }
-    BVRef        ael       (const Bvector* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); BVRef rf; rf.x = r; return rf; }
+    Bvector&       operator[](BVRef r)         { return (Bvector&)RegionAllocator::operator[](r.x); }
+    const Bvector& operator[](BVRef r) const   { return (Bvector&)RegionAllocator::operator[](r.x); }
+    Bvector*       lea       (BVRef r)         { return (Bvector*)RegionAllocator::lea(r.x); }
+    const Bvector* lea       (BVRef r) const   { return (Bvector*)RegionAllocator::lea(r.x); }
+    BVRef        ael       (const Bvector* t)  { RegionAllocator::Ref r = RegionAllocator::ael((uint32_t*)t); BVRef rf; rf.x = r; return rf; }
 
     void free(BVRef tid)
     {
         Bvector& t = operator[](tid);
-        RegionAllocator<uint32_t>::free(ptermWord32Size(t.size()));
+        RegionAllocator::free(ptermWord32Size(t.size()));
     }
 
 //    void reloc(BVRef& tr, BvectorAllocator& to)
@@ -181,4 +183,7 @@ class BvectorAllocator : public RegionAllocator<uint32_t>
 //    }
     friend class BVStore;
 };
+
+}
+
 #endif

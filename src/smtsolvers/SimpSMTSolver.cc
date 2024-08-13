@@ -46,10 +46,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "SimpSMTSolver.h"
 
-#include "ReportUtils.h"
+#include <common/ReportUtils.h>
 
 //=================================================================================================
 // Constructor/Destructor:
+
+namespace opensmt {
 
 SimpSMTSolver::SimpSMTSolver(SMTConfig & c, THandler & t) :
     CoreSMTSolver(c, t)
@@ -122,7 +124,7 @@ lbool SimpSMTSolver::solve_(bool do_simp, bool turn_off_simp)
     lbool    result = l_True;
 
     if (config.sat_preprocess_theory != 0) {
-        throw OsmtApiException("preprocess theory has been temporairly disabled in this version");
+        throw ApiException("preprocess theory has been temporairly disabled in this version");
     }
 
     // Added Code
@@ -859,4 +861,6 @@ void SimpSMTSolver::garbageCollect()
 //        fprintf(stderr, ";|  Garbage collection:   %12d bytes => %12d bytes             |\n",
 //               ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
+}
+
 }

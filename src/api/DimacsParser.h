@@ -49,13 +49,15 @@ SOFTWARE.
 #ifndef DimacsParser_h
 #define DimacsParser_h
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <smtsolvers/SimpSMTSolver.h>
+
+#include <cstdlib>
+#include <cstdio>
 #include <iostream>
-#include "SimpSMTSolver.h"
+
+namespace opensmt {
 
 class DimacsParser {
-
     static inline bool isEof(const char*   in) { return *in == '\0'; }
 
     static void skipWhitespace(const char*& in) {
@@ -137,5 +139,7 @@ class DimacsParser {
         }
     }
 };
+
+}
 
 #endif

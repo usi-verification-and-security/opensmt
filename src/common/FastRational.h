@@ -6,6 +6,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 #ifndef FAST_RATIONALS_H
 #define FAST_RATIONALS_H
+
 #include <gmpxx.h>
 #include <cassert>
 #include <climits>
@@ -14,6 +15,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <stack>
 #include <string>
 #include <vector>
+
+namespace opensmt {
 
 typedef int32_t  word;
 typedef uint32_t uword;
@@ -1053,4 +1056,7 @@ inline FastRational abs(FastRational const & x) {
 }
 
 FastRational get_multiplicand(const std::vector<FastRational>& reals);
+
+}
+
 #endif

@@ -7,6 +7,8 @@
 #include "STPSolver.h"
 #include "Converter.h"
 
+namespace opensmt {
+
 static SolverDescr descr_stp_solver("STP Solver", "Solver for Simple Temporal Problem (Difference Logic)");
 
 template<class T>
@@ -224,6 +226,8 @@ Logic &STPSolver<T>::getLogic() {
 template<class T>
 bool STPSolver<T>::isValid(PTRef tr) {
     return logic.isLeq(tr);
+}
+
 }
 
 #endif //OPENSMT_STPSOLVER_IMPLEMENTATIONS_HPP

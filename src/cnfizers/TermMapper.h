@@ -25,37 +25,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef TERMMAPPER_H
 #define TERMMAPPER_H
-#include "Logic.h"
-#include "PTRef.h"
+
+#include <logics/Logic.h>
 #include <minisat/mtl/Map.h>
+#include <pterms/PTRef.h>
 
+namespace opensmt {
 class TermMapper {
-private:
-    int var_cnt;
-    Logic & logic;
-    vec<bool> frozen;
-    vec<PTRef> varToTerm; // Mapping Var -> PTRef using var's index
-    vec<Var> termToVar;   // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
-
-    // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
-    void getTerm(PTRef tr, PTRef & tr_pos, bool & sgn) const;
-
-    // Given a term returns the positive version of the term.
-    PTRef toPositive(PTRef term) const;
-
-    PTId toId(PTRef term) const { return logic.getPterm(term).getId(); }
-
-    // Giver a term computes the positive term and SAT variable correspoding to the positive term.
-    void getVar(PTRef, PTRef &, Var &) const;
-
-    // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and returns
-    // true.
-    bool peekVar(PTRef positiveTerm, Var & v) const;
-
-    // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times for
-    // the same term.
-    Var addBinding(PTRef tr);
-
 public:
     TermMapper(Logic & l) : var_cnt(0), logic(l) {}
 
@@ -94,6 +70,33 @@ public:
     }
 
     int nVars() const { return varToTerm.size(); }
+
+private:
+    // Given a term computes the positive term and a sign. A -> A, false; (not A) -> A, true
+    void getTerm(PTRef tr, PTRef & tr_pos, bool & sgn) const;
+
+    // Given a term returns the positive version of the term.
+    PTRef toPositive(PTRef term) const;
+
+    PTId toId(PTRef term) const { return logic.getPterm(term).getId(); }
+
+    // Giver a term computes the positive term and SAT variable correspoding to the positive term.
+    void getVar(PTRef, PTRef &, Var &) const;
+
+    // Check if there exists a SAT variable corresponding to the term. On success fill the output paramter v and
+    // returns true.
+    bool peekVar(PTRef positiveTerm, Var & v) const;
+
+    // Creates a new bound between the given term and the returned SAT variable. Must not be called multiple times
+    // for the same term.
+    Var addBinding(PTRef tr);
+
+    int var_cnt;
+    Logic & logic;
+    vec<bool> frozen;
+    vec<PTRef> varToTerm; // Mapping Var -> PTRef using var's index
+    vec<Var> termToVar;   // Mapping PTRef -> Var using term's index; NOTE: Only positive terms are stored!
 };
+} // namespace opensmt
 
 #endif

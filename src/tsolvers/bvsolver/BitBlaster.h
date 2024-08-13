@@ -26,9 +26,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BITBLASTER_H
 #define BITBLASTER_H
 
-#include "SimpSMTSolver.h"
 #include "BVStore.h"
+
+#include <smtsolvers/SimpSMTSolver.h>
+
 #include <unordered_map>
+
+namespace opensmt {
 
 // forward declarations
 class BVLogic;
@@ -38,7 +42,6 @@ class Enode;
 class BitBlaster
 {
 public:
-
     BitBlaster(SolverId, SMTConfig & c, MainSolver & mainSolver, BVLogic & bvlogic, vec<PtAsgn> & ex,
                vec<PTRef> & s);
     ~BitBlaster ( );
@@ -176,5 +179,7 @@ private:
 
     int                             bitwidth;
 };
+
+}
 
 #endif

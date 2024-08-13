@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Vec.h"
 
+namespace opensmt {
 
 //=================================================================================================
 
@@ -63,5 +64,7 @@ public:
 
 
 //=================================================================================================
+
+}
 
 #endif

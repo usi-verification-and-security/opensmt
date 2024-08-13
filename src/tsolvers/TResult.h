@@ -5,8 +5,12 @@
 #ifndef OPENSMT_TRESULT_H
 #define OPENSMT_TRESULT_H
 
+namespace opensmt {
+
 enum class TRes {
     SAT, UNSAT, UNKNOWN, UNDEF
 };
+
+}
 
 #endif //OPENSMT_TRESULT_H

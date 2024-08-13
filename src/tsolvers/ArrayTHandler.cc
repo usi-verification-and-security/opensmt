@@ -5,8 +5,9 @@
  */
 
 #include "ArrayTHandler.h"
+#include "egraph/InterpolatingEgraph.h"
 
-#include "InterpolatingEgraph.h"
+namespace opensmt {
 
 ArrayTHandler::ArrayTHandler(SMTConfig & c, Logic & l)
         : TSolverHandler(c)
@@ -17,4 +18,6 @@ ArrayTHandler::ArrayTHandler(SMTConfig & c, Logic & l)
 
     arraySolver = new ArraySolver(logic, *egraph, c);
     setSolverSchedule({egraph, arraySolver});
+}
+
 }

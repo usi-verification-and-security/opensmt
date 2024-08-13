@@ -7,7 +7,9 @@
 
 #include "ArrayHelpers.h"
 
-#include "TreeOps.h"
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 vec<PTRef> collectStores(Logic const & logic, PTRef fla) {
     class CollectStoresConfig : public DefaultVisitorConfig {
@@ -42,4 +44,6 @@ PTRef instantiateReadOverStore(Logic & logic, PTRef fla) {
     }
     instantiatedAxioms.push(fla);
     return logic.mkAnd(std::move(instantiatedAxioms));
+}
+
 }

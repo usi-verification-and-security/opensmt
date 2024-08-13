@@ -27,8 +27,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef SMT2NEWCONTEXT_H
 #define SMT2NEWCONTEXT_H
 
+#include <options/SMTConfig.h>
+
 #include <iostream>
-#include "SMTConfig.h"
+
+namespace opensmt {
 
 class Smt2newContext {
   private:
@@ -105,6 +108,9 @@ class Smt2newContext {
     }
 };
 
-int smt2newparse(Smt2newContext*);
+}
+
+// Keeping this in the namespace would result in linkage errors
+int osmt_yyparse(opensmt::Smt2newContext*);
 
 #endif

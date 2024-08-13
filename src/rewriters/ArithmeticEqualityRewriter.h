@@ -10,9 +10,10 @@
 
 #include "Rewriter.h"
 
-class EqualityRewriterConfig : public DefaultRewriterConfig {
-    ArithLogic & logic;
+#include <logics/ArithLogic.h>
 
+namespace opensmt {
+class EqualityRewriterConfig : public DefaultRewriterConfig {
 public:
     explicit EqualityRewriterConfig(ArithLogic & logic) : logic(logic) {}
 
@@ -29,15 +30,20 @@ public:
         }
         return term;
     }
+
+private:
+    ArithLogic & logic;
 };
 
 class ArithmeticEqualityRewriter : public Rewriter<EqualityRewriterConfig> {
-    EqualityRewriterConfig config;
-
 public:
     explicit ArithmeticEqualityRewriter(ArithLogic & logic)
         : Rewriter<EqualityRewriterConfig>(logic, config),
           config(logic) {}
+
+private:
+    EqualityRewriterConfig config;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_ARITHMETICEQUALITYREWRITER_H

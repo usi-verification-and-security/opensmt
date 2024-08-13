@@ -3,6 +3,8 @@
 
 #include "TSolverHandler.h"
 
+namespace opensmt {
+
 class ArithLogic;
 class RDLSolver;
 
@@ -22,5 +24,6 @@ public:
 
 };
 
+}
 
 #endif //OPENSMT_RDLTHANDLER_H

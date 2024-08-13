@@ -27,12 +27,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef LA_H
 #define LA_H
 
-#include "PtStructs.h"
-#include "ArithLogic.h"
-#include "Real.h"
+#include <pterms/PtStructs.h>
+#include <logics/ArithLogic.h>
+#include <common/Real.h>
 
 #include <map>
 
+namespace opensmt {
 
 class LAExpression {
     ArithLogic & logic;
@@ -57,7 +58,7 @@ public:
         return polynome.size() == 1 && (r == OP::EQ ? polynome[PTRef_Undef] != 0 : polynome[PTRef_Undef] < 0);
     }
 
-    using polynome_t = std::map<PTRef, opensmt::Real, std::greater<PTRef>>;
+    using polynome_t = std::map<PTRef, Real, std::greater<PTRef>>;
 
     void initialize(PTRef, bool canonize = true);      // Initialize
     PTRef solve();           // Solve w.r.t. some variable
@@ -69,7 +70,7 @@ public:
     opensmt::pair<PTRef, PTRef> getSubst();    // Get a valid substitution
 
     // Adds an expression to the current one multiplied by Real
-    void addExprWithCoeff(const LAExpression &, const opensmt::Real &);
+    void addExprWithCoeff(const LAExpression &, const Real &);
 
     // Export iterator in order to allow external procedures to read the polynomes
     using iterator = polynome_t::iterator;
@@ -108,5 +109,7 @@ private:
         return os;
     }
 };
+
+}
 
 #endif

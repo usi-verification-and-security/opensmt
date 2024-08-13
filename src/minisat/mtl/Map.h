@@ -21,7 +21,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Map_h
 
 #include "Vec.h"
+
 #include <vector>
+
+namespace opensmt {
 
 //=================================================================================================
 // Default hash/equals functions
@@ -628,4 +631,6 @@ public:
 };
 
 //=================================================================================================
+}
+
 #endif

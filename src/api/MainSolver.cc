@@ -8,25 +8,23 @@
 
 #include "MainSolver.h"
 
-#include "ArrayTheory.h"
-#include "BoolRewriting.h"
-#include "GhostSMTSolver.h"
-#include "IDLTHandler.h"
-#include "IteHandler.h"
-#include "LATHandler.h"
-#include "LATheory.h"
-#include "LookaheadSMTSolver.h"
-#include "ModelBuilder.h"
-#include "OsmtApiException.h"
-#include "RDLTHandler.h"
-#include "Substitutor.h"
-#include "UFLATheory.h"
-
-#include <thread>
+#include <common/ApiException.h>
+#include <itehandler/IteHandler.h>
+#include <logics/ArrayTheory.h>
+#include <logics/LATheory.h>
+#include <logics/UFLATheory.h>
+#include <models/ModelBuilder.h>
+#include <rewriters/Substitutor.h>
+#include <simplifiers/BoolRewriting.h>
+#include <smtsolvers/GhostSMTSolver.h>
+#include <smtsolvers/LookaheadSMTSolver.h>
+#include <tsolvers/IDLTHandler.h>
+#include <tsolvers/LATHandler.h>
+#include <tsolvers/RDLTHandler.h>
 
 namespace opensmt {
-    bool stop;
-}
+
+bool stop;
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     : theory(createTheory(logic, conf)),
@@ -86,7 +84,7 @@ bool MainSolver::pop() {
             for (PTRef partition : partitionsToInvalidate) {
                 auto index = pmanager.getPartitionIndex(partition);
                 assert(index != -1);
-                opensmt::setbit(mask, static_cast<unsigned int>(index));
+                setbit(mask, static_cast<unsigned int>(index));
             }
             pmanager.invalidatePartitions(mask);
         }
@@ -101,7 +99,7 @@ bool MainSolver::pop() {
 
 void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
-        throw OsmtApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
+        throw ApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
     }
     // TODO: Move this to preprocessing of the formulas
     fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
@@ -203,12 +201,12 @@ void MainSolver::printFramesAsQuery(std::ostream & s) const {
 // that structure.
 //
 PTRef MainSolver::rewriteMaxArity(PTRef root) {
-    return ::rewriteMaxArityClassic(logic, root);
+    return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
-    if (!config.produce_models()) { throw OsmtApiException("Producing models is not enabled"); }
-    if (status != s_True) { throw OsmtApiException("Model cannot be created if solver is not in SAT state"); }
+    if (!config.produce_models()) { throw ApiException("Producing models is not enabled"); }
+    if (status != s_True) { throw ApiException("Model cannot be created if solver is not in SAT state"); }
 
     ModelBuilder modelBuilder{logic};
     smt_solver->fillBooleanVars(modelBuilder);
@@ -219,22 +217,22 @@ std::unique_ptr<Model> MainSolver::getModel() {
 
 void MainSolver::printResolutionProofSMT2() const {
     assert(smt_solver);
-    if (!smt_solver->logsResolutionProof()) { throw OsmtApiException("Proofs are not tracked"); }
-    if (status != s_False) { throw OsmtApiException("Proof cannot be created if solver is not in UNSAT state"); }
+    if (!smt_solver->logsResolutionProof()) { throw ApiException("Proofs are not tracked"); }
+    if (status != s_False) { throw ApiException("Proof cannot be created if solver is not in UNSAT state"); }
 
     return smt_solver->printResolutionProofSMT2(std::cout);
 }
 
 vec<PTRef> MainSolver::getUnsatCore() const {
     using Partitions = ipartitions_t;
-    if (not config.produce_unsat_cores()) { throw OsmtApiException("Producing unsat cores is not enabled"); }
-    if (status != s_False) { throw OsmtApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
+    if (not config.produce_unsat_cores()) { throw ApiException("Producing unsat cores is not enabled"); }
+    if (status != s_False) { throw ApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
 
     vec<CRef> clauseRefs = smt_solver->getUnsatCoreClauses();
     Partitions partitions;
     for (CRef cref : clauseRefs) {
         auto const & partition = pmanager.getClauseClassMask(cref);
-        opensmt::orbit(partitions, partitions, partition);
+        orbit(partitions, partitions, partition);
     }
     return pmanager.getPartitions(partitions);
 }
@@ -250,9 +248,9 @@ lbool MainSolver::getTermValue(PTRef tr) const {
 }
 
 std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
-    if (!config.produce_inter()) { throw OsmtApiException("Producing interpolants is not enabled"); }
+    if (!config.produce_inter()) { throw ApiException("Producing interpolants is not enabled"); }
     if (status != s_False) {
-        throw OsmtApiException("Interpolation context cannot be created if solver is not in UNSAT state");
+        throw ApiException("Interpolation context cannot be created if solver is not in UNSAT state");
     }
     return std::make_unique<InterpolationContext>(config, *theory, *term_mapper, getSMTSolver().getResolutionProof(),
                                                   pmanager);
@@ -307,7 +305,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
             if (ref != CRef_Undef) {
                 ipartitions_t parts = 0;
                 assert(partitionIndex != -1);
-                opensmt::setbit(parts, static_cast<unsigned int>(partitionIndex));
+                setbit(parts, static_cast<unsigned int>(partitionIndex));
                 pmanager.addClauseClassMask(ref, parts);
             }
         }
@@ -320,7 +318,7 @@ sstat MainSolver::check() {
     ++check_called;
     if (config.timeQueries()) {
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
-        opensmt::StopWatch sw(query_timer);
+        StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) { return s_False; }
     sstat rval = simplifyFormulas();
@@ -398,7 +396,6 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
-    using Logic_t = opensmt::Logic_t;
     Logic_t logicType = logic.getLogic();
     Theory * theory = nullptr;
     switch (logicType) {
@@ -445,7 +442,7 @@ std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & conf
             break;
         }
         case Logic_t::UNDEF:
-            throw OsmtApiException{"Error in creating reasoning engine: Engine type not specified"};
+            throw ApiException{"Error in creating reasoning engine: Engine type not specified"};
             break;
         default:
             assert(false);
@@ -564,3 +561,4 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
 opensmt::span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
 }
+} // namespace opensmt

@@ -6,15 +6,17 @@
  */
 
 #include "LASolver.h"
-
 #include "FarkasInterpolator.h"
-#include "LA.h"
-#include "ModelBuilder.h"
+#include <simplifiers/LA.h>
 #include "LIAInterpolator.h"
 #include "CutCreator.h"
-#include "Random.h"
+
+#include <models/ModelBuilder.h>
+#include <common/Random.h>
 
 #include <unordered_set>
+
+namespace opensmt {
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
 
@@ -36,7 +38,7 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
-        opensmt::Real constr_neg = -logic.getNumConst(const_tr);
+        Real constr_neg = -logic.getNumConst(const_tr);
         bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
@@ -217,7 +219,7 @@ void LASolver::setBound(PTRef leq_tr)
     addBound(leq_tr);
 }
 
-opensmt::Number LASolver::getNum(PTRef r) {
+Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
 }
 
@@ -567,7 +569,7 @@ void LASolver::initSolver()
         status = SAT;
     }
     else {
-        throw OsmtInternalException("Solver can not be initialized in the state different from INIT");
+        throw InternalException("Solver can not be initialized in the state different from INIT");
     }
 }
 
@@ -599,7 +601,7 @@ inline bool LASolver::getStatus( )
         case INIT:
         case ERROR:
         default:
-            throw OsmtApiException("Status is undef!");
+            throw ApiException("Status is undef!");
     }
 }
 
@@ -665,7 +667,7 @@ void LASolver::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
 }
 
 
-void LASolver::computeConcreteModel(LVRef v, const opensmt::Real& delta) {
+void LASolver::computeConcreteModel(LVRef v, const Real& delta) {
     while (concrete_model.size() <= getVarId(v))
         concrete_model.push_back(0);
     Delta val = simplex.getValuation(v);
@@ -680,7 +682,7 @@ void LASolver::computeConcreteModel(LVRef v, const opensmt::Real& delta) {
 void LASolver::computeModel()
 {
     assert( status == SAT );
-    opensmt::Real delta = simplex.computeDelta();
+    Real delta = simplex.computeDelta();
 
     for (LVRef var : laVarStore)
     {
@@ -774,7 +776,7 @@ PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const 
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
-    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(opensmt::Real(config.getLRAStrengthFactor())); }
+    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(Real(config.getLRAStrengthFactor())); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
     else {
@@ -817,7 +819,7 @@ namespace {
 
 struct DefiningConstraint {
     PTRef lhs;
-    opensmt::Real rhs;
+    Real rhs;
 };
 
 /*
@@ -855,7 +857,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
 
     uint32_t rows = constraints.size();
     SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
-    std::vector<opensmt::Number> rhs(rows);
+    std::vector<Number> rhs(rows);
     std::vector<SparseColMatrix::ColumnPolynomial> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
@@ -953,7 +955,7 @@ TRes LASolver::cutFromProof() {
 vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
-            opensmt::NumberHash hasher;
+            NumberHash hasher;
             return (hasher(d.R()) ^ hasher(d.D()));
         }
     };
@@ -1004,7 +1006,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
                 if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
                 auto ratio = diff.R() / diff.D();
                 assert(isNegative(ratio));
-                if (ratio < opensmt::Number(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+                if (ratio < Number(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
 
                 // They could be equal for the right value of delta, add equalities for cross-product
                 vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);
@@ -1024,4 +1026,6 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
         }
     }
     return equalities;
+}
+
 }

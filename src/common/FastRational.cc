@@ -4,10 +4,13 @@ David Monniaux, VERIMAG 2008-2009
 
 Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
+
 #include "FastRational.h"
 
 #include <sstream>
 #include <algorithm>
+
+namespace opensmt {
 
 mpq_ptr FastRational::mpqPool::alloc()
 {
@@ -245,4 +248,6 @@ FastRational get_multiplicand(const std::vector<FastRational>& reals)
     printf("Multiplicand is %s\n", mult.get_str().c_str());
 #endif
     return mult;
+}
+
 }

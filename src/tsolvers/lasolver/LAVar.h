@@ -28,7 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LAVAR_H
 
 #include "LARefs.h"
+
 #include <vector>
+
+namespace opensmt {
 
 class LAVarStore;
 class ArithLogic;
@@ -50,5 +53,6 @@ public:
     const_iterator end() const { return lavars.end(); }
 };
 
+}
 
 #endif

@@ -6,12 +6,14 @@
 #define OPENSMT_LASCORE_H
 
 #include <minisat/core/SolverTypes.h>
-#include <SMTConfig.h>
-#include <TypeUtils.h>
+#include <options/SMTConfig.h>
+#include <common/TypeUtils.h>
 
 #include <limits>
 #include <string>
 #include <sstream>
+
+namespace opensmt {
 
 class LookaheadSMTSolver;
 
@@ -320,4 +322,7 @@ public:
 
     void updateSolverScore(double &ss, const LookaheadSMTSolver *solver) override;
 };
+
+}
+
 #endif //OPENSMT_LASCORE_H

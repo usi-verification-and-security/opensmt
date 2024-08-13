@@ -27,7 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "CoreSMTSolver.h"
 
-#include "ReportUtils.h"
+#include <common/ReportUtils.h>
+
+namespace opensmt {
 
 void CoreSMTSolver::dumpCNF( )
 {
@@ -103,3 +105,4 @@ void CoreSMTSolver::printTrail( )
   }
 }
 
+}

@@ -9,15 +9,17 @@
 #ifndef MAINSOLVER_H
 #define MAINSOLVER_H
 
-#include "InterpolationContext.h"
-#include "Model.h"
 #include "PartitionManager.h"
-#include "ScopedVector.h"
-#include "SimpSMTSolver.h"
-#include "Tseitin.h"
+
+#include <cnfizers/Tseitin.h>
+#include <common/ScopedVector.h>
+#include <models/Model.h>
+#include <proof/InterpolationContext.h>
+#include <smtsolvers/SimpSMTSolver.h>
 
 #include <memory>
 
+namespace opensmt {
 class Logic;
 
 class sstat {
@@ -205,7 +207,7 @@ protected:
         void popInternal();
 
         Substitutions substitutions;
-        opensmt::ScopedVector<PTRef> preprocessedFormulas;
+        ScopedVector<PTRef> preprocessedFormulas;
         std::size_t solverFrameCount{1};
         std::size_t internalFrameCount{1};
     };
@@ -268,9 +270,9 @@ private:
     Tseitin ts;
     Preprocessor preprocessor;
 
-    opensmt::OSMTTimeVal query_timer; // How much time we spend solving.
-    std::string solver_name;          // Name for the solver
-    int check_called = 0;             // A counter on how many times check was called.
+    TimeVal query_timer;     // How much time we spend solving.
+    std::string solver_name; // Name for the solver
+    int check_called = 0;    // A counter on how many times check was called.
 
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
@@ -281,5 +283,6 @@ bool MainSolver::trackPartitions() const {
     assert(smt_solver);
     return smt_solver->logsResolutionProof();
 }
+} // namespace opensmt
 
 #endif // MAINSOLVER_H

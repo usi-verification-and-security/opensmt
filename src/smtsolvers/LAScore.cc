@@ -4,8 +4,10 @@
 
 #include "LAScore.h"
 #include "LookaheadSMTSolver.h"
+
 #include <cmath>
 
+namespace opensmt {
 
 bool LookaheadScoreClassic::isAlreadyChecked(Var v) const {
     return (static_cast<unsigned int>(LAexacts[v].getRound()) == latest_round);
@@ -189,4 +191,4 @@ Lit LookaheadScoreDeep::getBest() {
 
 const LookaheadScoreDeep::DoubleVal LookaheadScoreDeep::DoubleVal::max_val = DoubleVal(std::numeric_limits<int>::max(), std::numeric_limits<double>::max());
 
-
+}

@@ -9,10 +9,13 @@
 #include "LABounds.h"
 #include "LARefs.h"
 #include "LAVarMapper.h"
-#include "NatSet.h"
+
+#include <common/NatSet.h>
 #include <minisat/mtl/Vec.h>
 
 #include <cstdint>
+
+namespace opensmt {
 
 //
 // Class for maintaining the model of a variable
@@ -93,5 +96,7 @@ public:
 
     void clear();
 };
+
+}
 
 #endif //OPENSMT_LRAMODEL_H

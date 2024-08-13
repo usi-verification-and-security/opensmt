@@ -9,8 +9,9 @@
 #ifndef OPENSMT_REWRITER_H
 #define OPENSMT_REWRITER_H
 
-#include "Logic.h"
+#include <logics/Logic.h>
 
+namespace opensmt {
 /**
  * Defines a base class for rewriting terms.
  * Custom rewriters can be obtained by providing a config which defines local rewrites.
@@ -19,10 +20,6 @@
  */
 template<typename TConfig>
 class Rewriter {
-protected:
-    Logic & logic;
-    TConfig & cfg;
-
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
 
@@ -89,6 +86,10 @@ public:
         PTRef res = substitutions.peek(root, target) ? target : root;
         return res;
     }
+
+protected:
+    Logic & logic;
+    TConfig & cfg;
 };
 
 class DefaultRewriterConfig {
@@ -98,10 +99,12 @@ public:
 };
 
 class NoOpRewriter : Rewriter<DefaultRewriterConfig> {
-    DefaultRewriterConfig config;
-
 public:
     NoOpRewriter(Logic & logic) : Rewriter<DefaultRewriterConfig>(logic, config) {}
+
+private:
+    DefaultRewriterConfig config;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_REWRITER_H

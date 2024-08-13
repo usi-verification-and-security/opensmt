@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <minisat/core/SolverTypes.h>
 
+namespace opensmt {
+
 struct SolverId {
     uint32_t id;
     bool operator== (const SolverId id2) const { return id == id2.id; }
@@ -73,5 +75,7 @@ class SolverDescr
 //
 ////static DedElem DedElem_Undef = {SolverId_Undef, l_Undef};
 //static DedElem DedElem_Undef(SolverId_Undef, l_Undef);
+
+}
 
 #endif

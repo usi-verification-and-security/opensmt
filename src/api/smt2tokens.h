@@ -31,7 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 #include <unordered_set>
 
-namespace osmttokens {
+namespace opensmt::tokens {
 //
 // The names for the tokens in the API for smtlib
 //
@@ -152,4 +152,5 @@ namespace osmttokens {
     };
 
 }
+
 #endif

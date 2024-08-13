@@ -23,7 +23,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-
 #ifndef STRINGMAP_H
 #define STRINGMAP_H
 
@@ -33,8 +32,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Specializations for string hashing (Map from mtl)
 //
 
+namespace opensmt {
 struct StringHash {
-    uint32_t operator () (const char* s) const {
+    uint32_t operator()(char const * s) const {
         // http://www.cse.yorku.ca/~oz/hash.html
         size_t h = 5381;
         int c;
@@ -44,13 +44,15 @@ struct StringHash {
     }
 };
 
-template <>
-struct Equal<const char*> {
-    bool operator() (const char* s1, const char* s2) const {
+template<>
+struct Equal<char const *> {
+    bool operator()(char const * s1, char const * s2) const {
         int i = 0;
         for (i = 0; s1[i] != '\0' && s2[i] != '\0'; i++)
             if (s1[i] != s2[i]) break;
-        return (s1[i] == 0 && s2[i] == 0); }
+        return (s1[i] == 0 && s2[i] == 0);
+    }
 };
+} // namespace opensmt
 
 #endif

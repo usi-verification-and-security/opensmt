@@ -3,18 +3,20 @@
 //
 
 #include "LIAInterpolator.h"
-#include "ArithLogic.h"
+
+#include <logics/ArithLogic.h>
 
 #include <memory>
 
+namespace opensmt {
 LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
-                                                  std::vector<opensmt::Real> const & coeffs,
-                                                  ItpColorMap const & labels) {
+                                                 std::vector<Real> const & coeffs, ItpColorMap const & labels) {
     LAExplanations liaExplanations;
     // We need to recompute the labels for the Farkas interpolator!
     // Consider this example: not (0 <= x - y) with label A; not (1 <= y - x) with label B
     // After strengthening we get 1 <= y - x with label A; 0 <= x - y with label B
-    // The labels have been switched for the positive atoms, and we need to make sure that interpolator sees the second version of the labels
+    // The labels have been switched for the positive atoms, and we need to make sure that interpolator sees the
+    // second version of the labels
     for (auto explEntry : explanations) {
         PTRef positiveInequality = explEntry.tr;
         lbool sign = explEntry.sgn;
@@ -40,7 +42,7 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
         auto res = liaExplanations.labels.insert(std::make_pair(nInequality, labels.at(positiveInequality)));
         if (not res.second) {
             // key has been already present
-            throw OsmtInternalException("Error in preparing LIA interpolation");
+            throw InternalException("Error in preparing LIA interpolation");
         }
     }
     liaExplanations.coeffs = coeffs;
@@ -48,5 +50,6 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
 }
 
 LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
-    : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs), std::move(liaExplanations.labels))
-    { }
+    : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs),
+                         std::move(liaExplanations.labels)) {}
+} // namespace opensmt

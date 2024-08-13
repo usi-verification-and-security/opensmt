@@ -4,6 +4,8 @@
 
 #include "LRAModel.h"
 
+namespace opensmt {
+
 void LRAModel::init()
 {
     LAVarStore const & varStore = bs.getVarStore();
@@ -121,5 +123,7 @@ bool LRAModel::boundTriviallyUnsatisfied(LVRef v, LABoundRef b) const
     const LABound& toCompare = is_lower ? readUBound(v) : readLBound(v);
     return (is_lower ? bound.getIdx().x > toCompare.getIdx().x : bound.getIdx().x < toCompare.getIdx().x)
             && bound.getValue() != toCompare.getValue();
+
+}
 
 }

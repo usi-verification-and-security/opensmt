@@ -24,14 +24,14 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
-#include "ModelBuilder.h"
 #include "BitBlaster.h"
 #include "BVStore.h"
-#include "MainSolver.h"
-#include "Real.h"
 
-using opensmt::Real;
+#include <models/ModelBuilder.h>
+#include <api/MainSolver.h>
+#include <common/Real.h>
 
+namespace opensmt {
 
 const char* BitBlaster::s_bbEq          = ".bbEq";
 const char* BitBlaster::s_bbAnd         = ".bbAnd";
@@ -161,7 +161,7 @@ BitBlaster::pushBacktrackPoint ( )
     solverP.pushBacktrackPoint( );
 }
 
-void 
+void
 BitBlaster::popBacktrackPoint ( )
 {
     // Pop solver
@@ -1669,7 +1669,7 @@ BitBlaster::addClause(vec<Lit> && c)
 //  // <=>
 //  //
 //  // aux = ( -aux |  a_0 | a_1 ) & ( -aux | -a_0 | -a_1 ) &
-//  //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 ) 
+//  //       (  aux | -a_0 | a_1 ) & (  aux |  a_0 |  a_1 )
 //  //
 //  assert( list->getArity( ) == 2 );
 //  Lit arg0 = cnf_cache[ list->getCar( )->getId( ) ];
@@ -1758,7 +1758,7 @@ BitBlaster::addClause(vec<Lit> && c)
 //  addClause( clause, atom );
 //}
 
-//void 
+//void
 //BitBlaster::cnfizeIfthenelse( Enode * enode, Lit def, Enode * atom )
 //{
 //  assert( enode );
@@ -2023,7 +2023,7 @@ PTRef BitBlaster::simplify( PTRef formula )
 //    //
 //    assert ( enode->isBooleanOperator( ) );
 //
-//    if ( enode->isAnd( ) 
+//    if ( enode->isAnd( )
 //      || enode->isOr ( ) )
 //    {
 //      assert( enode->isAnd( ) || enode->isOr( ) );
@@ -2186,3 +2186,4 @@ BitBlaster::notifyEquality(PTRef tr)
     return l_Undef;
 }
 
+}

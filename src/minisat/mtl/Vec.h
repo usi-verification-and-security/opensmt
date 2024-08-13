@@ -32,6 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <utility>
 #include <vector>
 
+namespace opensmt {
 //=================================================================================================
 // Automatically resizable arrays
 //
@@ -156,5 +157,6 @@ void vec<T>::reset() {
 }
 
 //=================================================================================================
+}
 
 #endif

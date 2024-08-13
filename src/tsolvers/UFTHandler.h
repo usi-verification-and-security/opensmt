@@ -27,9 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UFTHandler_h
 #define UFTHandler_h
 
-//#include "THandler.h"
 #include "TSolverHandler.h"
-//#include "Egraph.h"
+
+namespace opensmt {
 
 class Egraph;
 class Logic;
@@ -50,5 +50,7 @@ class UFTHandler : public TSolverHandler
 
     virtual PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
 };
+
+}
 
 #endif

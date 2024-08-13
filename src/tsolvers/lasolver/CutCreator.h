@@ -9,24 +9,27 @@
 #ifndef OPENSMT_CUTCREATOR_H
 #define OPENSMT_CUTCREATOR_H
 
-#include "PTRef.h"
 #include "Polynomial.h"
-#include "Real.h"
 #include "SparseMatrix.h"
-#include "TypeUtils.h"
 
+#include <common/Real.h>
+#include <common/TypeUtils.h>
+#include <pterms/PTRef.h>
+
+namespace opensmt {
 class CutCreator {
-private:
-    std::function<opensmt::Real(PTRef)> varValue;
-
-    opensmt::Real evaluate(PTRef var) const { return varValue(var); }
-
 public:
-    explicit CutCreator(std::function<opensmt::Real(PTRef)> && varValue) : varValue(std::move(varValue)) {}
+    explicit CutCreator(std::function<Real(PTRef)> && varValue) : varValue(std::move(varValue)) {}
 
-    using Cut = opensmt::pair<SparseColMatrix::TermVec, opensmt::Real>;
+    using Cut = opensmt::pair<SparseColMatrix::TermVec, Real>;
     using ColumnMapping = std::vector<PTRef>;
     Cut makeCut(SparseLinearSystem && constraints, ColumnMapping const &);
+
+private:
+    Real evaluate(PTRef var) const { return varValue(var); }
+
+    std::function<Real(PTRef)> varValue;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_CUTCREATOR_H

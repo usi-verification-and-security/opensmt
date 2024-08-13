@@ -8,21 +8,16 @@
 #ifndef OPENSMT_INTERPOLATIONCONTEXT_H
 #define OPENSMT_INTERPOLATIONCONTEXT_H
 
+#include <logics/Theory.h>
+
 #include <memory>
 
-#include "Theory.h"
-
+namespace opensmt {
 // forward declaration
 class ResolutionProof;
 class ProofGraph;
 
 class InterpolationContext {
-    SMTConfig & config;
-    Theory & theory;
-    TermMapper & termMapper;
-    Logic & logic;
-    PartitionManager & pmanager;
-    std::unique_ptr<ProofGraph> proof_graph;
 public:
     InterpolationContext(SMTConfig & c, Theory & th, TermMapper & termMapper, ResolutionProof const & t,
                          PartitionManager & pmanager);
@@ -32,13 +27,13 @@ public:
     void printProofDotty();
 
     // Create interpolants with each A consisting of the specified partitions
-    void getInterpolants(const std::vector<vec<int> > & partitions, vec<PTRef> & interpolants);
+    void getInterpolants(std::vector<vec<int>> const & partitions, vec<PTRef> & interpolants);
 
-    void getSingleInterpolant(vec<PTRef> & interpolants, const ipartitions_t & A_mask);
+    void getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask);
 
-    void getSingleInterpolant(std::vector<PTRef>& interpolants, const ipartitions_t& A_mask);
+    void getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask);
 
-    bool getPathInterpolants(vec<PTRef> & interpolants, const std::vector<ipartitions_t> & A_masks);
+    bool getPathInterpolants(vec<PTRef> & interpolants, std::vector<ipartitions_t> const & A_masks);
 
 private:
     void reduceProofGraph();
@@ -70,7 +65,14 @@ private:
     bool usingPSSInterpolation() const { return config.getBooleanInterpolationAlgorithm() == itp_alg_pss; }
 
     bool enabledInterpVerif() const { return (config.certify_inter() >= 1); }
+
+    SMTConfig & config;
+    Theory & theory;
+    TermMapper & termMapper;
+    Logic & logic;
+    PartitionManager & pmanager;
+    std::unique_ptr<ProofGraph> proof_graph;
 };
+} // namespace opensmt
 
-
-#endif //OPENSMT_INTERPOLATIONCONTEXT_H
+#endif // OPENSMT_INTERPOLATIONCONTEXT_H

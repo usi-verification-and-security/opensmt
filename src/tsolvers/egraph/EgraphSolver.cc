@@ -59,10 +59,12 @@ The algorithm and data structures are inspired by the following paper:
 #include "Egraph.h"
 #include "EgraphModelBuilder.h"
 #include "Enode.h"
-#include "TreeOps.h"
-#include "Deductions.h"
-#include "ModelBuilder.h"
 
+#include <common/TreeOps.h>
+#include <tsolvers/Deductions.h>
+#include <models/ModelBuilder.h>
+
+namespace opensmt {
 
 static SolverDescr descr_uf_solver("UF Solver", "Solver for Quantifier Free Theory of Uninterpreted Functions with Equalities");
 
@@ -749,7 +751,7 @@ void Egraph::backtrackToStackSize ( size_t size ) {
             }
             default: {
                 assert(false);
-                throw OsmtInternalException("unknown action");
+                throw InternalException("unknown action");
                 break;
             }
         }
@@ -1145,7 +1147,7 @@ bool Egraph::assertLit(PtAsgn pta)
         res = addDisequality(PtAsgn(pt_r, l_True));
     } else if (isEffectivelyDisequality(pt_r) && sgn == l_False) {
         if (logic.getPterm(pt_r).size() != 2) {
-            throw OsmtInternalException("Internal error: Negated distinct asserted to Egraph");
+            throw InternalException("Internal error: Negated distinct asserted to Egraph");
         }
         res = addEquality(PtAsgn(pt_r, l_False));
     } else if (isEffectivelyUP(pt_r) && sgn == l_True) {
@@ -1641,4 +1643,6 @@ vec<PTRef> Egraph::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_
         }
     }
     return equalities;
+}
+
 }

@@ -1,9 +1,12 @@
 #ifndef OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP
 #define OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP
 
-#include <stack>
 #include "STPGraphManager.h"
 #include "Converter.h"
+
+#include <stack>
+
+namespace opensmt {
 
 template<class T>
 bool STPGraphManager<T>::isTrue(EdgeRef e) const {
@@ -177,6 +180,8 @@ template<class T>
 void STPGraphManager<T>::clear() {
     timestamp = 0;
     graph.clear();
+}
+
 }
 
 #endif //OPENSMT_STPGRAPHMANAGER_IMPLEMENTATIONS_HPP

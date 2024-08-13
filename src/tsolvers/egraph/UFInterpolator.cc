@@ -24,10 +24,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-#include <sys/wait.h>
 #include "UFInterpolator.h"
-#include "Logic.h"
-#include "OsmtInternalException.h"
+
+#include <logics/Logic.h>
+#include <common/InternalException.h>
+
+#include <sys/wait.h>
+
+namespace opensmt {
 
 //#define ITP_DEBUG
 //#define COLOR_DEBUG
@@ -204,7 +208,7 @@ bool UFInterpolator::colorEdgesFrom(CNode * x) {
             x->edge->color = getLitColor(x->edge->reason);
             assert(x->edge->color != icolor_t::I_AB);
             if (x->edge->color == icolor_t::I_AB) {
-                throw OsmtInternalException("Error in coloring information");
+                throw InternalException("Error in coloring information");
             }
         } else { // Congruence edge, recurse on arguments
             assert (logic.getPterm(x->e).size() == logic.getPterm(n->e).size());
@@ -312,7 +316,7 @@ icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, ItpColorM
             bool t2Present = std::find(distinctTerm.begin(), distinctTerm.end(), t2) != distinctTerm.end();
             assert(t1Present and t2Present);
             if (not(t1Present and t2Present)) {
-                throw OsmtInternalException("Error in UF interpolator, could not determine the color of the conflict equality");
+                throw InternalException("Error in UF interpolator, could not determine the color of the conflict equality");
             } else {
                 conf_color = it->second;
                 if (conf_color == icolor_t::I_AB) {
@@ -323,7 +327,7 @@ icolor_t UFInterpolator::determineDisequalityColor(PTRef t1, PTRef t2, ItpColorM
             // equality of two different constants derived
             assert(logic.isConstant(t1) && logic.isConstant(t2));
             if (not(logic.isConstant(t1) && logic.isConstant(t2))) {
-                throw OsmtInternalException("Error in UF interpolator, could not determine the color of the conflict equality");
+                throw InternalException("Error in UF interpolator, could not determine the color of the conflict equality");
             }
             conf_color = resolveABColor();
         }
@@ -344,7 +348,7 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, ItpColorMap * labels,
         colorInfo = std::make_unique<GlobalTermColorInfo>(pmanager, mask);
         litColors = *labels;
     } else {
-        throw OsmtInternalException("Error in UFInterpolator::getInterpolant! No labels passed");
+        throw InternalException("Error in UFInterpolator::getInterpolant! No labels passed");
     }
     srand(2);
     colorCGraph();
@@ -379,7 +383,7 @@ UFInterpolator::getInterpolant(const ipartitions_t & mask, ItpColorMap * labels,
         else if (usingRandom())
             result = (rand() % 2) ? I(pi) : logic.mkNot(IprimeSwap(pi));
     } else {
-        throw OsmtInternalException("something went wrong");
+        throw InternalException("something went wrong");
     }
 
     assert (result != PTRef_Undef);
@@ -1245,4 +1249,6 @@ void UFInterpolator::splitEdge(CEdge * edge, PTRef intermediateTerm) {
             cgraph.addCEdge(to, intermediate_next, intermediate_next_reason);
         }
     }
+}
+
 }

@@ -3,6 +3,7 @@
 
 #include "STPStore.h"
 
+namespace opensmt {
 struct EdgeGraph {
     std::vector<EdgeRef> addedEdges;
     std::vector<std::vector<EdgeRef>> incoming, outgoing;
@@ -13,5 +14,6 @@ struct EdgeGraph {
 
     bool isEmpty() const;
 };
+} // namespace opensmt
 
-#endif //OPENSMT_STPEDGEGRAPH_H
+#endif // OPENSMT_STPEDGEGRAPH_H

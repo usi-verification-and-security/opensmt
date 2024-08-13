@@ -7,6 +7,8 @@
 
 #include "PG.h"
 
+namespace opensmt {
+
 // Prints resolution proof graph to a dot file,
 // with proper colors
 void ProofGraph::printProofAsDotty(std::ostream & out) {
@@ -174,4 +176,4 @@ void ProofGraph::printRuleApplicationStatus()
 	std::cerr << "# swap_ties:    " << swap_ties << '\n';
 }
 
-
+}

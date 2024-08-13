@@ -39,12 +39,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UF_INTERPOLATOR_H
 #define UF_INTERPOLATOR_H
 
-#include "SMTConfig.h"
-#include "PTRef.h"
-#include "TheoryInterpolator.h"
-#include <PartitionManager.h>
+#include <options/SMTConfig.h>
+#include <pterms/PTRef.h>
+#include <smtsolvers/TheoryInterpolator.h>
+#include <api/PartitionManager.h>
 
 #include <unordered_map>
+
+namespace opensmt {
 
 struct CEdge;
 class Logic;
@@ -191,5 +193,7 @@ private:
     std::map<path_t, icolor_t> L;
 
 };
+
+}
 
 #endif

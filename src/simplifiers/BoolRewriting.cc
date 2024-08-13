@@ -3,9 +3,13 @@
 //
 
 #include "BoolRewriting.h"
-#include "Logic.h"
+
+#include <logics/Logic.h>
+
 #include <unordered_set>
 #include <algorithm>
+
+namespace opensmt {
 
 // Replace subtrees consisting only of ands / ors with a single and / or term.
 // Search a maximal section of the tree consisting solely of ands / ors.  The
@@ -174,7 +178,7 @@ PTRef _simplifyUnderAssignment(Logic & logic, PTRef root,
 
 PTRef simplifyUnderAssignment(Logic & logic, PTRef root) {
     std::unordered_map<PTRef, int, PTRefHash> incomingEdges;
-    ::computeIncomingEdges(logic, root, incomingEdges);
+    computeIncomingEdges(logic, root, incomingEdges);
     Map<PTRef, PTRef, PTRefHash> cache;
     return _simplifyUnderAssignment(logic, root, incomingEdges, {},  cache);
 }
@@ -323,4 +327,6 @@ PTRef simplifyUnderAssignment_Aggressive(PTRef root, Logic & logic) {
     assignments[root] = {};
     std::unordered_map<PTRef, PTRef, PTRefHash> cache;
     return simplifyUnderAssignment_Aggressive(root, logic, idom, assignments, cache);
+}
+
 }

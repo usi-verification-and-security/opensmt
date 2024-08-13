@@ -27,14 +27,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef TSOLVER_H
 #define TSOLVER_H
 
-#include "PtStructs.h"
-#include "SMTConfig.h"
 #include "Deductions.h"
 #include "TResult.h"
+
+#include <options/SMTConfig.h>
+#include <pterms/PtStructs.h>
 #include <minisat/core/SolverTypes.h>
 #include <minisat/mtl/MapWithKeys.h>
 
 #include <unordered_set>
+
+namespace opensmt {
 
 // forward declaration
 class TheoryInterpolator;
@@ -199,5 +202,7 @@ protected:
 private:
     MapWithKeys<PTRef,bool,PTRefHash>   informed_PTRefs;
 };
+
+}
 
 #endif

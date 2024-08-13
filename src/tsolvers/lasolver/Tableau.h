@@ -9,7 +9,8 @@
 
 #include "LAVar.h"
 #include "Polynomial.h"
-#include "Real.h"
+
+#include <common/Real.h>
 
 #include <algorithm>
 #include <functional>
@@ -18,15 +19,14 @@
 #include <unordered_map>
 #include <vector>
 
+namespace opensmt {
 class Tableau {
-
+public:
     class Column {
-        std::vector<LVRef> rows;
-
+    public:
         using iterator_t = std::vector<LVRef>::iterator;
         using const_iterator_t = std::vector<LVRef>::const_iterator;
 
-    public:
         void addRow(LVRef row) { rows.push_back(row); }
 
         void removeRow(LVRef row) {
@@ -50,25 +50,23 @@ class Tableau {
         const_iterator_t end() const { return rows.cend(); }
 
         const_iterator_t find(LVRef row) const { return std::find(begin(), end(), row); }
+
+    private:
+        std::vector<LVRef> rows;
     };
 
-public:
     using Polynomial = PolynomialT<LVRef>;
 
-protected:
     // using column_t = std::unordered_set<LVRef, LVRefHash>;
     using column_t = Column;
     using rows_t = std::vector<std::unique_ptr<Polynomial>>;
-    // using vars_t = std::unordered_set<LVRef, LVRefHash>;
-    using vars_t = std::set<LVRef, LVRefComp>;
 
-public:
     void newNonbasicVar(LVRef v);
     void nonbasicVar(LVRef v);
     void newRow(LVRef v, std::unique_ptr<Polynomial> poly);
     std::size_t getNumOfCols() const;
     std::size_t getPolySize(LVRef basicVar) const;
-    opensmt::Real const & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
+    Real const & getCoeff(LVRef basicVar, LVRef nonBasicVar) const;
     column_t const & getColumn(LVRef nonBasicVar) const;
     Polynomial const & getRowPoly(LVRef basicVar) const;
     Polynomial & getRowPoly(LVRef basicVar);
@@ -90,14 +88,12 @@ public:
     bool checkConsistency() const;
     std::vector<LVRef> getNonBasicVars() const;
 
+protected:
+    // using vars_t = std::unordered_set<LVRef, LVRefHash>;
+    using vars_t = std::set<LVRef, LVRefComp>;
+
 private:
-    std::vector<std::unique_ptr<column_t>> cols;
-    rows_t rows;
-
     enum class VarType : char { NONE, BASIC, NONBASIC, QUASIBASIC };
-    std::vector<VarType> varTypes;
-
-    Tableau::Polynomial::poly_t tmp_storage;
 
     void ensureTableauReadyFor(LVRef v);
 
@@ -118,6 +114,14 @@ private:
         cols[col.x]->clear();
     }
     void normalizeRow(LVRef row);
+
+    std::vector<std::unique_ptr<column_t>> cols;
+    rows_t rows;
+
+    std::vector<VarType> varTypes;
+
+    Tableau::Polynomial::poly_t tmp_storage;
 };
+} // namespace opensmt
 
 #endif // OPENSMT_TABLEAU_H

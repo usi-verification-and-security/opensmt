@@ -8,7 +8,7 @@ project(opensmt VERSION ${OPENSMT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_SOURCE_DIR "src")
+set(CMAKE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/src")
 
 get_filename_component(CMAKE_MODULE_PATH
 "${CMAKE_SOURCE_DIR}/../cmake_modules/" ABSOLUTE)
@@ -69,28 +69,6 @@ find_package(Threads REQUIRED)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/sorts
-    ${CMAKE_SOURCE_DIR}/symbols
-    ${CMAKE_SOURCE_DIR}/options
-    ${CMAKE_SOURCE_DIR}/api
-    ${CMAKE_SOURCE_DIR}/tsolvers
-    ${CMAKE_SOURCE_DIR}/tsolvers/arraysolver
-    ${CMAKE_SOURCE_DIR}/tsolvers/egraph
-    ${CMAKE_SOURCE_DIR}/tsolvers/lasolver
-    ${CMAKE_SOURCE_DIR}/tsolvers/stpsolver
-    ${CMAKE_SOURCE_DIR}/cnfizers
-    ${CMAKE_SOURCE_DIR}/pterms
-    ${CMAKE_SOURCE_DIR}/logics
-    ${CMAKE_SOURCE_DIR}/smtsolvers
-    ${CMAKE_SOURCE_DIR}/parsers/smt2new
-    ${CMAKE_SOURCE_DIR}/simplifiers
-    ${CMAKE_SOURCE_DIR}/rewriters
-    ${CMAKE_SOURCE_DIR}/proof
-    ${CMAKE_SOURCE_DIR}/models
-    ${CMAKE_SOURCE_DIR}/itehandler
-    ${CMAKE_SOURCE_DIR}/interpolation
-    ${CMAKE_SOURCE_DIR}/parallel
     ${GMP_INCLUDE_DIR}
 )
 

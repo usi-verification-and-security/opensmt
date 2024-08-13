@@ -28,24 +28,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <minisat/mtl/Map.h>
 
+namespace opensmt {
 struct SymRef {
     uint32_t x;
-    void operator= (uint32_t v) { x = v; }
-    inline friend bool operator== (const SymRef& a1, const SymRef& a2) {return a1.x == a2.x; }
-    inline friend bool operator!= (const SymRef& a1, const SymRef& a2) {return a1.x != a2.x; }
+    void operator=(uint32_t v) { x = v; }
+    inline friend bool operator==(SymRef const & a1, SymRef const & a2) { return a1.x == a2.x; }
+    inline friend bool operator!=(SymRef const & a1, SymRef const & a2) { return a1.x != a2.x; }
 };
 
 static const struct SymRef SymRef_Undef = {INT32_MAX};
-static const struct SymRef SymRef_Nil   = {INT32_MAX-1};
+static const struct SymRef SymRef_Nil = {INT32_MAX - 1};
 
 struct SymRefHash {
-    uint32_t operator () (const SymRef& s) const {
-        return (uint32_t)s.x; }
+    uint32_t operator()(SymRef const & s) const { return (uint32_t)s.x; }
 };
 
-template <>
-struct Equal<const SymRef> {
-    bool operator() (const SymRef& s1, const SymRef& s2) { return s1 == s2; }
+template<>
+struct Equal<SymRef const> {
+    bool operator()(SymRef const & s1, SymRef const & s2) { return s1 == s2; }
 };
+} // namespace opensmt
 
-#endif //OPENSMT_SYMREF_H
+#endif // OPENSMT_SYMREF_H

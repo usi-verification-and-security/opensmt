@@ -26,9 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SStore.h"
 
-#include <string>
-#include <sstream>
-
+namespace opensmt {
 bool SStore::peek(SortSymbol const & symbol, SSymRef & outRef) const {
     auto it = this->sortSymbolTable.find(symbol.name);
     if (it != sortSymbolTable.end()) {
@@ -47,17 +45,16 @@ SSymRef SStore::newSortSymbol(SortSymbol symbol) {
     return res;
 }
 
-opensmt::pair<SRef,bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest)
-{
+opensmt::pair<SRef, bool> SStore::getOrCreateSort(SSymRef symbolRef, vec<SRef> && rest) {
     SortKey key(symbolRef, std::move(rest));
     auto it = sortTable.find(key);
-    if (it != sortTable.end()) {
-        return {it->second, false};
-    }
+    if (it != sortTable.end()) { return {it->second, false}; }
 
     SRef sr = sa.alloc(key);
     sorts.push(sr);
     auto emplaceRes = sortTable.emplace(std::move(key), sr);
-    assert(emplaceRes.second); (void)emplaceRes;
+    assert(emplaceRes.second);
+    (void)emplaceRes;
     return {sr, true};
 }
+} // namespace opensmt

@@ -28,14 +28,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENODESTORE_H
 
 #include "Enode.h"
-#include "OsmtInternalException.h"
+
+#include <common/InternalException.h>
+
+namespace opensmt {
 
 class Logic;
 
 struct PTRefERefPair { PTRef tr; ERef er; };
 
 class EnodeStore {
-
+private:
     struct SignatureHash {
         EnodeAllocator const & ea;
 
@@ -74,10 +77,10 @@ class EnodeStore {
     Map<ERef, ERef, SignatureHash, SignatureEqual> sig_tab;
     ERef           ERef_True;
     ERef           ERef_False;
-    Map<PTRef,char,PTRefHash,Equal<PTRef> > dist_classes;
+    Map<PTRef,char,PTRefHash> dist_classes;
     uint32_t       dist_idx;
 
-    Map<PTRef,ERef,PTRefHash,Equal<PTRef> >    termToERef;
+    Map<PTRef,ERef,PTRefHash>    termToERef;
 
     vec<PTRef>     index_to_dist;                    // Table distinction index --> proper term
     vec<ERef>      termEnodes;
@@ -126,7 +129,7 @@ public:
     void addDistClass(PTRef tr_d) {
         if (dist_classes.has(tr_d)) { return; }
         if (dist_idx >= maxDistinctClasses) {
-            throw OsmtInternalException();
+            throw InternalException();
         }
         dist_classes.insert(tr_d, dist_idx);
         assert(index_to_dist.size_() == dist_idx);
@@ -155,5 +158,7 @@ public:
         assert(containsSig(e));
     }
 };
+
+}
 
 #endif

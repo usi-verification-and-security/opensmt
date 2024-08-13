@@ -26,9 +26,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BVSOLVER_H
 #define BVSOLVER_H
 
-#include "TSolver.h"
 #include "BitBlaster.h"
-#include "BVLogic.h"
+
+#include <logics/BVLogic.h>
+#include <tsolvers/TSolver.h>
+
+namespace opensmt {
 
 class BVSolver : public TSolver
 {
@@ -48,5 +51,7 @@ private:
 //    BVLogic&    logic; // MB: apparently not needed
     BitBlaster  B;
 };
+
+}
 
 #endif

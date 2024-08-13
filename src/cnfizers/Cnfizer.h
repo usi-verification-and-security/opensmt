@@ -27,36 +27,57 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef CNFIZER_H
 #define CNFIZER_H
 
-#include "Theory.h"
-#include "Logic.h"
-#include "PartitionManager.h"
 #include "TermMapper.h"
+
+#include <api/PartitionManager.h>
+#include <logics/Logic.h>
+#include <logics/Theory.h>
 
 #include <unordered_set>
 
+namespace opensmt {
 class SimpSMTSolver;
 class THandler;
 struct SMTConfig;
 
-
-
 //
 // Generic class for conversion into CNF
 //
-class Cnfizer
-{
+class Cnfizer {
 public:
+    using FrameId = uint32_t;
+
     struct ClauseCallBack {
         virtual void operator()(vec<Lit> &&) = 0;
     };
-protected:
-    using FrameId = uint32_t;
 
+    Cnfizer(Logic & logic, TermMapper & tmap);
+
+    virtual ~Cnfizer() = default;
+    Cnfizer(Cnfizer const &) = delete;
+    Cnfizer & operator=(Cnfizer const &) = delete;
+    Cnfizer(Cnfizer &&) = default;
+    Cnfizer & operator=(Cnfizer &&) = delete;
+
+    void cnfize(PTRef, FrameId frame_id);
+
+    void setClauseCallBack(ClauseCallBack * callback) {
+        assert(callback);
+        this->clauseCallBack = callback;
+    }
+
+protected:
     class Cache {
+    public:
+        Cache() = default;
+        bool contains(PTRef term, FrameId frame);
+        void insert(PTRef term, FrameId frame);
+
+    private:
         using CacheEntry = std::pair<PTRef, FrameId>;
 
         struct EntryHash {
-            std::size_t operator () (CacheEntry entry) const {
+            std::size_t operator()(CacheEntry entry) const {
                 std::hash<uint32_t> hasher;
                 return (hasher(entry.first.x) ^ hasher(entry.second));
             }
@@ -64,33 +85,8 @@ protected:
 
         FrameId baseFrame = 0;
         std::unordered_set<CacheEntry, EntryHash> cache;
-    public:
-        Cache() = default;
-        bool contains(PTRef term, FrameId frame);
-        void insert(PTRef term, FrameId frame);
     };
 
-    Logic & logic;
-    TermMapper & tmap;
-    Cache alreadyProcessed;
-    ClauseCallBack * clauseCallBack;
-
-
-public:
-
-    Cnfizer(Logic & logic, TermMapper & tmap);
-
-    virtual ~Cnfizer() = default;
-    Cnfizer             (const Cnfizer&) = delete;
-    Cnfizer& operator = (const Cnfizer&) = delete;
-    Cnfizer             (Cnfizer&&) = default;
-    Cnfizer& operator = (Cnfizer&&) = delete;
-
-    void cnfize(PTRef, FrameId frame_id);
-
-    void setClauseCallBack(ClauseCallBack * callback) { assert(callback); this->clauseCallBack = callback; }
-
-protected:
     virtual void cnfize(PTRef) = 0; // Actual cnfization. To be implemented in derived classes
     void cnfizeAndAssert(PTRef);    // Cnfize and assert the top-level.
 
@@ -103,14 +99,20 @@ protected:
     void retrieveClause(PTRef, vec<Lit> &);
     void retrieveConjuncts(PTRef, vec<PTRef> &); // Retrieve the list of conjuncts
 
-private:
-    bool checkPureConj(PTRef, Map<PTRef, bool, PTRefHash> & check_cache); // Check if a formula is purely a conjuntion
-
-protected:
     bool isLiteral(PTRef ptr) const;
-    inline Lit getOrCreateLiteralFor(PTRef ptr) {return this->tmap.getOrCreateLit(ptr);}
+    inline Lit getOrCreateLiteralFor(PTRef ptr) { return this->tmap.getOrCreateLit(ptr); }
+
+    Logic & logic;
+    TermMapper & tmap;
+    Cache alreadyProcessed;
+    ClauseCallBack * clauseCallBack;
 
     FrameId currentFrameId = 0;
+
+private:
+    // Check if a formula is purely a conjunction
+    bool checkPureConj(PTRef, Map<PTRef, bool, PTRefHash> & check_cache);
 };
+} // namespace opensmt
 
 #endif

@@ -24,7 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
-%option prefix="smt2new"
+%option prefix="osmt_yy"
 %option reentrant
 %option bison-bridge
 %option bison-locations
@@ -42,11 +42,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <list>
 
-#include "smt2tokens.h"
-#include "smt2newcontext.h"
+#include <api/smt2tokens.h>
+#include <parsers/smt2new/smt2newcontext.h>
+
+// TK: I could not arrive at a solution without preceding this before including the gen. header
+using namespace opensmt;
+
 #include "smt2newparser.hh"
 
-using namespace osmttokens;
+using namespace opensmt::tokens;
+
 
 #define YY_EXTRA_TYPE Smt2newContext*
 #define YY_USER_ACTION yyget_lloc(yyscanner)->first_line = yyget_lineno(yyscanner);
@@ -186,4 +191,3 @@ void Smt2newContext::destroy_scanner()
 {
     yylex_destroy(scanner);
 }
-

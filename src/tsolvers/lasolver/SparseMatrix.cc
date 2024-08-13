@@ -7,17 +7,17 @@
 
 #include "SparseMatrix.h"
 
-
+namespace opensmt {
 void SparseColMatrix::Col::negate() {
     this->poly.negate();
 }
 
-void SparseColMatrix::Col::add(Col const & other, opensmt::Real const & multiple) {
+void SparseColMatrix::Col::add(Col const & other, Real const & multiple) {
     this->poly.merge(other.poly, multiple);
 }
 
-opensmt::Real SparseColMatrix::Col::product(const std::vector<opensmt::Real> & values) const {
-    opensmt::Real sum = 0;
+Real SparseColMatrix::Col::product(std::vector<Real> const & values) const {
+    Real sum = 0;
     for (auto const & term : poly) {
         uint32_t index = term.var.x;
         assert(index < values.size());
@@ -27,7 +27,7 @@ opensmt::Real SparseColMatrix::Col::product(const std::vector<opensmt::Real> & v
 }
 
 SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
-    std::vector<std::pair<IndexType, opensmt::Real>> args;
+    std::vector<std::pair<IndexType, Real>> args;
     args.reserve(poly.size());
     for (auto & term : poly) {
         args.emplace_back(term.var, term.coeff);
@@ -35,11 +35,10 @@ SparseColMatrix::TermVec SparseColMatrix::Col::toVector() const {
     return args;
 }
 
-opensmt::Real const * SparseColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
-    IndexType bound {rowIndex.count};
-    auto it = std::lower_bound(poly.begin(), poly.end(), bound, [](auto const & term, IndexType val) {
-        return term.var.x < val.x;
-    });
+Real const * SparseColMatrix::Col::tryGetCoeffFor(RowIndex rowIndex) const {
+    IndexType bound{rowIndex.count};
+    auto it = std::lower_bound(poly.begin(), poly.end(), bound,
+                               [](auto const & term, IndexType val) { return term.var.x < val.x; });
     if (it == poly.end()) { return nullptr; }
     return it->var == bound ? &it->coeff : nullptr;
 }
@@ -66,16 +65,17 @@ namespace {
         U.swapCols(pivotIndex, otherIndex);
     }
 
-    void addColumnMultiple(SparseColMatrix & A, ColIndex colFrom, opensmt::Real const & multiple, ColIndex colTo, SparseColMatrix & U) {
+    void addColumnMultiple(SparseColMatrix & A, ColIndex colFrom, Real const & multiple, ColIndex colTo,
+                           SparseColMatrix & U) {
         A[colTo].add(A[colFrom], multiple);
         // For U we do the inverse operation: colFrom += -multiple * colTo
         U[colFrom].add(U[colTo], -multiple);
     }
 
-/*
- * Normalizes row so that all entries to the right of pivot are zero.
- * Returns true if the pivot is non-zero.
- */
+    /*
+     * Normalizes row so that all entries to the right of pivot are zero.
+     * Returns true if the pivot is non-zero.
+     */
     bool normalizeRow(SparseColMatrix & A, RowIndex rowIndex, ColIndex pivotIndex, SparseColMatrix & U) {
         // Collect all columns with non-zero entry at given row; ensure they are positive
         std::vector<ColIndex> activeColumns;
@@ -84,9 +84,7 @@ namespace {
         for (uint32_t col = pivotIndex; col < size; ++col) {
             if (A[col].isFirst(rowIndex)) {
                 activeColumns.push_back(ColIndex{col});
-                if (A[col].getFirstCoeff().sign() < 0) {
-                    negateColumn(A, ColIndex{col}, U);
-                }
+                if (A[col].getFirstCoeff().sign() < 0) { negateColumn(A, ColIndex{col}, U); }
             }
         }
         if (activeColumns.empty()) { return false; }
@@ -95,10 +93,11 @@ namespace {
         // Current implementation: Find minimal value, reduce others, and repeat
         // Alternative possiblity: Rosser's algorithm (see Yices), which uses largest values to for reductions
         while (activeColumns.size() > 1) {
-            auto it = std::min_element(activeColumns.begin(), activeColumns.end(), [&A](ColIndex first, ColIndex second) {
-                assert(A[first].getFirstCoeff().sign() > 0 and A[second].getFirstCoeff().sign() > 0);
-                return A[first].getFirstCoeff() < A[second].getFirstCoeff();
-            });
+            auto it =
+                std::min_element(activeColumns.begin(), activeColumns.end(), [&A](ColIndex first, ColIndex second) {
+                    assert(A[first].getFirstCoeff().sign() > 0 and A[second].getFirstCoeff().sign() > 0);
+                    return A[first].getFirstCoeff() < A[second].getFirstCoeff();
+                });
             std::iter_swap(it, activeColumns.begin());
             // Now the index of column with smallest value is first in activeColumns
             auto smallestValue = A[activeColumns[0]].getFirstCoeff();
@@ -108,7 +107,8 @@ namespace {
                 auto quotient = -fastrat_fdiv_q(nextCol.getFirstCoeff(), smallestValue);
                 assert(not quotient.isZero());
                 addColumnMultiple(A, activeColumns[0], quotient, activeColumns[nextColIndex], U);
-                if (not nextCol.isFirst(rowIndex)) { // the entry in this column is zero now, remove the column from active set
+                if (not nextCol.isFirst(
+                        rowIndex)) { // the entry in this column is zero now, remove the column from active set
                     std::swap(activeColumns[nextColIndex], activeColumns.back());
                     activeColumns.pop_back();
                     // do not advance index!
@@ -119,9 +119,7 @@ namespace {
         }
         // Single active column left, move it to the pivot's position
         assert(activeColumns.size() == 1);
-        if (activeColumns[0] != pivotIndex) {
-            swapColumns(A, activeColumns[0], pivotIndex, U);
-        }
+        if (activeColumns[0] != pivotIndex) { swapColumns(A, activeColumns[0], pivotIndex, U); }
         return true;
     }
 
@@ -133,15 +131,12 @@ namespace {
             auto const * otherVal = A[col].tryGetCoeffFor(rowIndex);
             if (not otherVal) { continue; }
             auto quotient = -fastrat_fdiv_q(*otherVal, pivotVal);
-            if (not quotient.isZero()) {
-                addColumnMultiple(A, pivotIndex, quotient, ColIndex{col}, U);
-            }
+            if (not quotient.isZero()) { addColumnMultiple(A, pivotIndex, quotient, ColIndex{col}, U); }
         }
     }
-}
+} // namespace
 
-HermiteNormalForm::HNFOperationsResult
-HermiteNormalForm::operator()(SparseColMatrix && A) const {
+HermiteNormalForm::HNFOperationsResult HermiteNormalForm::operator()(SparseColMatrix && A) const {
     // We perform column operations on A to transform it to HNF
     // At the same time we record the inverse operations in U
     // We maintain the invariant that A'*U' = A; starting with U:=I, the identity matrix
@@ -166,3 +161,4 @@ HermiteNormalForm::operator()(SparseColMatrix && A) const {
     }
     return {std::move(UT), pivotCol};
 }
+} // namespace opensmt

@@ -6,6 +6,8 @@
 #include <memory>
 #include <queue>
 
+namespace opensmt {
+
 // returns a list of all vertices present in graph
 template<class T>
 std::vector<VertexRef> STPModel<T>::vertsInGraph() const {
@@ -89,6 +91,8 @@ std::unordered_map<VertexRef, T, VertexRefHash> STPModel<T>::getAllValues() cons
         values.insert({vref, this->getValue(vref)});
     }
     return values;
+}
+
 }
 
 #endif //OPENSMT_STPMODEL_IMPLEMENTATIONS_HPP

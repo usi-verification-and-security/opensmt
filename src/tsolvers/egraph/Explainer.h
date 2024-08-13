@@ -7,7 +7,10 @@
 
 #include "EnodeStore.h"
 #include "UFInterpolator.h"
+
 #include <memory>
+
+namespace opensmt {
 
 class Explainer {
 protected:
@@ -26,7 +29,7 @@ protected:
         DuplicateCheckerData &dc;
         DupChecker(DuplicateCheckerData &dc) : dc(dc) {
             if (!dc.free) {
-                throw OsmtInternalException(); // "Attempt to re-use DuplicateChecker without releasing"
+                throw InternalException(); // "Attempt to re-use DuplicateChecker without releasing"
             }
             dc.free = false;
             if (dc.dup_count < std::numeric_limits<int>::max()) {
@@ -95,5 +98,7 @@ public:
     virtual vec<PtAsgn> explain     (ERef, ERef) override;
     std::unique_ptr<CGraph> getCGraph() { return std::move(cgraph); }
 };
+
+}
 
 #endif //OPENSMT_EXPLAINER_H

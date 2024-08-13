@@ -4,7 +4,10 @@
 
 #ifndef OPENSMT_KEYVALMAP_H
 #define OPENSMT_KEYVALMAP_H
+
 #include "Map.h"
+
+namespace opensmt {
 
 template<class K, class D, class H, class E = Equal<K> >
 class MapWithKeys {
@@ -55,5 +58,7 @@ public:
 
     void clear() { map.clear(); keys.clear(); }
 };
+
+}
 
 #endif //OPENSMT_KEYVALMAP_H

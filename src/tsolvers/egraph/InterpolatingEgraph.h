@@ -5,9 +5,12 @@
 #ifndef OPENSMT_INTERPOLATINGEGRAPH_H
 #define OPENSMT_INTERPOLATINGEGRAPH_H
 
-#include <PartitionManager.h>
 #include "Egraph.h"
 #include "UFInterpolator.h"
+
+#include <api/PartitionManager.h>
+
+namespace opensmt {
 
 class InterpolatingEgraph : public Egraph {
 public:
@@ -22,5 +25,7 @@ public:
         return UFInterpolator(config, logic, *cgraph).getInterpolant(mask, labels, pmanager);
     }
 };
+
+}
 
 #endif //OPENSMT_INTERPOLATINGEGRAPH_H

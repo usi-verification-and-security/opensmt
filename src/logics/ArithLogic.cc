@@ -1,175 +1,186 @@
 #include "ArithLogic.h"
 
-#include "FastRational.h"
-#include "OsmtApiException.h"
-#include "OsmtInternalException.h"
-#include "Polynomial.h"
-#include "Rewriter.h"
-#include "Rewritings.h"
-#include "PtStore.h"
-#include "SStore.h"
-#include "StringConv.h"
-#include "TreeOps.h"
+#include <common/ApiException.h>
+#include <common/FastRational.h>
+#include <common/InternalException.h>
+#include <common/StringConv.h>
+#include <common/TreeOps.h>
+#include <pterms/PtStore.h>
+#include <rewriters/Rewriter.h>
+#include <rewriters/Rewritings.h>
+#include <sorts/SStore.h>
+#include <tsolvers/lasolver/Polynomial.h>
 
 #include <map>
 #include <memory>
 #include <sstream>
 #include <variant>
 
-const std::string ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
+namespace opensmt {
+
+std::string const ArithLogic::e_nonlinear_term = "Logic does not support nonlinear terms";
 
 /***********************************************************
  * Class defining simplifications
  ***********************************************************/
 
-namespace{
-class SimplifyConst {
-protected:
-    ArithLogic& l;
-    virtual void Op(opensmt::Number& s, const opensmt::Number& v) const = 0;
-    virtual opensmt::Number getIdOp() const = 0;
-    virtual void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const = 0;
-public:
-    SimplifyConst(ArithLogic& log) : l(log) {}
-    void simplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new);
-    PTRef simplifyConstOp(const vec<PTRef> & const_terms);
-};
+namespace {
+    class SimplifyConst {
+    protected:
+        ArithLogic & l;
+        virtual void Op(Number & s, Number const & v) const = 0;
+        virtual Number getIdOp() const = 0;
+        virtual void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new,
+                                   vec<PTRef> & terms_new) const = 0;
 
-class SimplifyConstSum : public SimplifyConst {
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { s += v; }
-    opensmt::Number getIdOp() const { return 0; }
-    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
-public:
-    SimplifyConstSum(ArithLogic& log) : SimplifyConst(log) {}
-};
+    public:
+        SimplifyConst(ArithLogic & log) : l(log) {}
+        void simplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new);
+        PTRef simplifyConstOp(vec<PTRef> const & const_terms);
+    };
 
-class SimplifyConstTimes : public SimplifyConst {
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { s *= v; }
-    opensmt::Number getIdOp() const { return 1; }
-    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
-public:
-    SimplifyConstTimes(ArithLogic& log) : SimplifyConst(log) {}
-};
+    class SimplifyConstSum : public SimplifyConst {
+        void Op(Number & s, Number const & v) const { s += v; }
+        Number getIdOp() const { return 0; }
+        void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
-class SimplifyConstDiv : public SimplifyConst {
-    void Op(opensmt::Number& s, const opensmt::Number& v) const { if (v == 0) { printf("explicit div by zero\n"); } s /= v; }
-    opensmt::Number getIdOp() const { return 1; }
-    void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
-public:
-    SimplifyConstDiv(ArithLogic& log) : SimplifyConst(log) {}
-};
-}
+    public:
+        SimplifyConstSum(ArithLogic & log) : SimplifyConst(log) {}
+    };
 
-const std::string ArithLogic::tk_int_zero  = "0";
-const std::string ArithLogic::tk_int_one   = "1";
-const std::string ArithLogic::tk_int_neg   = "-";
-const std::string ArithLogic::tk_int_minus = "-";
-const std::string ArithLogic::tk_int_plus  = "+";
-const std::string ArithLogic::tk_int_times = "*";
-const std::string ArithLogic::tk_int_div   = "div";
-const std::string ArithLogic::tk_int_mod   = "mod";
-const std::string ArithLogic::tk_int_lt    = "<";
-const std::string ArithLogic::tk_int_leq   = "<=";
-const std::string ArithLogic::tk_int_gt    = ">";
-const std::string ArithLogic::tk_int_geq   = ">=";
+    class SimplifyConstTimes : public SimplifyConst {
+        void Op(Number & s, Number const & v) const { s *= v; }
+        Number getIdOp() const { return 1; }
+        void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
-const std::string ArithLogic::s_sort_int = "Int";
+    public:
+        SimplifyConstTimes(ArithLogic & log) : SimplifyConst(log) {}
+    };
 
-const std::string ArithLogic::tk_real_zero  = "0.0";
-const std::string ArithLogic::tk_real_one   = "1.0";
-const std::string ArithLogic::tk_real_neg   = "-";
-const std::string ArithLogic::tk_real_minus = "-";
-const std::string ArithLogic::tk_real_plus  = "+";
-const std::string ArithLogic::tk_real_times = "*";
-const std::string ArithLogic::tk_real_div   = "/";
-const std::string ArithLogic::tk_real_lt    = "<";
-const std::string ArithLogic::tk_real_leq   = "<=";
-const std::string ArithLogic::tk_real_gt    = ">";
-const std::string ArithLogic::tk_real_geq   = ">=";
-const std::string ArithLogic::s_sort_real   = "Real";
+    class SimplifyConstDiv : public SimplifyConst {
+        void Op(Number & s, Number const & v) const {
+            if (v == 0) { printf("explicit div by zero\n"); }
+            s /= v;
+        }
+        Number getIdOp() const { return 1; }
+        void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
-const std::string ArithLogic::tk_val_int_default  = "0";
-const std::string ArithLogic::tk_val_real_default = "0.0";
+    public:
+        SimplifyConstDiv(ArithLogic & log) : SimplifyConst(log) {}
+    };
+} // namespace
 
-ArithLogic::ArithLogic(opensmt::Logic_t type)
+std::string const ArithLogic::tk_int_zero = "0";
+std::string const ArithLogic::tk_int_one = "1";
+std::string const ArithLogic::tk_int_neg = "-";
+std::string const ArithLogic::tk_int_minus = "-";
+std::string const ArithLogic::tk_int_plus = "+";
+std::string const ArithLogic::tk_int_times = "*";
+std::string const ArithLogic::tk_int_div = "div";
+std::string const ArithLogic::tk_int_mod = "mod";
+std::string const ArithLogic::tk_int_lt = "<";
+std::string const ArithLogic::tk_int_leq = "<=";
+std::string const ArithLogic::tk_int_gt = ">";
+std::string const ArithLogic::tk_int_geq = ">=";
+
+std::string const ArithLogic::s_sort_int = "Int";
+
+std::string const ArithLogic::tk_real_zero = "0.0";
+std::string const ArithLogic::tk_real_one = "1.0";
+std::string const ArithLogic::tk_real_neg = "-";
+std::string const ArithLogic::tk_real_minus = "-";
+std::string const ArithLogic::tk_real_plus = "+";
+std::string const ArithLogic::tk_real_times = "*";
+std::string const ArithLogic::tk_real_div = "/";
+std::string const ArithLogic::tk_real_lt = "<";
+std::string const ArithLogic::tk_real_leq = "<=";
+std::string const ArithLogic::tk_real_gt = ">";
+std::string const ArithLogic::tk_real_geq = ">=";
+std::string const ArithLogic::s_sort_real = "Real";
+
+std::string const ArithLogic::tk_val_int_default = "0";
+std::string const ArithLogic::tk_val_real_default = "0.0";
+
+ArithLogic::ArithLogic(Logic_t type)
     : Logic(type)
 
-    , sort_REAL(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_real, 0, SortSymbol::INTERNAL)), {}))
-    , term_Real_ZERO(mkConst(sort_REAL, tk_real_zero.c_str()))
-    , term_Real_ONE(mkConst(sort_REAL, tk_real_one.c_str()))
-    , term_Real_MINUSONE(mkConst(sort_REAL, tk_real_minus + tk_real_one))
-    , sym_Real_ZERO(getSymRef(term_Real_ZERO))
-    , sym_Real_ONE(getSymRef(term_Real_ONE))
-    , sym_Real_NEG(declareFun_NoScoping(tk_real_neg, sort_REAL, {sort_REAL}))
-    , sym_Real_MINUS(declareFun_NoScoping_LeftAssoc(tk_real_minus, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL}))
-    , sym_Real_EQ(sortToEquality[sort_REAL])
-    , sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL}))
-    , sym_Real_LT(declareFun_NoScoping_Chainable(tk_real_lt, sort_BOOL, {sort_REAL, sort_REAL}))
-    , sym_Real_GEQ(declareFun_NoScoping_Chainable(tk_real_geq, sort_BOOL, {sort_REAL, sort_REAL}))
-    , sym_Real_GT(declareFun_NoScoping_Chainable(tk_real_gt, sort_BOOL, {sort_REAL, sort_REAL}))
-    , sym_Real_ITE(sortToIte[sort_REAL])
-    , sym_Real_DISTINCT(sortToDisequality[sort_REAL])
+      ,
+      sort_REAL(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_real, 0, SortSymbol::INTERNAL)), {})),
+      term_Real_ZERO(mkConst(sort_REAL, tk_real_zero.c_str())),
+      term_Real_ONE(mkConst(sort_REAL, tk_real_one.c_str())),
+      term_Real_MINUSONE(mkConst(sort_REAL, tk_real_minus + tk_real_one)),
+      sym_Real_ZERO(getSymRef(term_Real_ZERO)),
+      sym_Real_ONE(getSymRef(term_Real_ONE)),
+      sym_Real_NEG(declareFun_NoScoping(tk_real_neg, sort_REAL, {sort_REAL})),
+      sym_Real_MINUS(declareFun_NoScoping_LeftAssoc(tk_real_minus, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_EQ(sortToEquality[sort_REAL]),
+      sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL})),
+      sym_Real_LT(declareFun_NoScoping_Chainable(tk_real_lt, sort_BOOL, {sort_REAL, sort_REAL})),
+      sym_Real_GEQ(declareFun_NoScoping_Chainable(tk_real_geq, sort_BOOL, {sort_REAL, sort_REAL})),
+      sym_Real_GT(declareFun_NoScoping_Chainable(tk_real_gt, sort_BOOL, {sort_REAL, sort_REAL})),
+      sym_Real_ITE(sortToIte[sort_REAL]),
+      sym_Real_DISTINCT(sortToDisequality[sort_REAL])
 
-    , sort_INT(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_int, 0, SortSymbol::INTERNAL)), {}))
-    , term_Int_ZERO(mkConst(sort_INT, tk_int_zero))
-    , term_Int_ONE(mkConst(sort_INT, tk_int_one.c_str()))
-    , term_Int_MINUSONE(mkConst(sort_INT, tk_int_minus + tk_int_one))
-    , sym_Int_ZERO(getSymRef(term_Int_ZERO))
-    , sym_Int_ONE(getSymRef(term_Int_ONE))
-    , sym_Int_NEG(declareFun_NoScoping(tk_int_neg, sort_INT, {sort_INT}))
-    , sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INT, {sort_INT, sort_INT}))
-    , sym_Int_EQ(sortToEquality[sort_INT])
-    , sym_Int_LEQ(declareFun_NoScoping_Chainable(tk_int_leq, sort_BOOL, {sort_INT, sort_INT}))
-    , sym_Int_LT(declareFun_NoScoping_Chainable(tk_int_lt, sort_BOOL, {sort_INT, sort_INT}))
-    , sym_Int_GEQ(declareFun_NoScoping_Chainable(tk_int_geq, sort_BOOL, {sort_INT, sort_INT}))
-    , sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INT, sort_INT}))
-    , sym_Int_ITE(sortToIte[sort_INT])
-    , sym_Int_DISTINCT(sortToDisequality[sort_INT])
-{ }
+      ,
+      sort_INT(getSort(sort_store.newSortSymbol(SortSymbol(s_sort_int, 0, SortSymbol::INTERNAL)), {})),
+      term_Int_ZERO(mkConst(sort_INT, tk_int_zero)),
+      term_Int_ONE(mkConst(sort_INT, tk_int_one.c_str())),
+      term_Int_MINUSONE(mkConst(sort_INT, tk_int_minus + tk_int_one)),
+      sym_Int_ZERO(getSymRef(term_Int_ZERO)),
+      sym_Int_ONE(getSymRef(term_Int_ONE)),
+      sym_Int_NEG(declareFun_NoScoping(tk_int_neg, sort_INT, {sort_INT})),
+      sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_EQ(sortToEquality[sort_INT]),
+      sym_Int_LEQ(declareFun_NoScoping_Chainable(tk_int_leq, sort_BOOL, {sort_INT, sort_INT})),
+      sym_Int_LT(declareFun_NoScoping_Chainable(tk_int_lt, sort_BOOL, {sort_INT, sort_INT})),
+      sym_Int_GEQ(declareFun_NoScoping_Chainable(tk_int_geq, sort_BOOL, {sort_INT, sort_INT})),
+      sym_Int_GT(declareFun_NoScoping_Chainable(tk_int_gt, sort_BOOL, {sort_INT, sort_INT})),
+      sym_Int_ITE(sortToIte[sort_INT]),
+      sym_Int_DISTINCT(sortToDisequality[sort_INT]) {}
 
 SymRef ArithLogic::getPlusForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? get_sym_Int_PLUS() : get_sym_Real_PLUS();
 }
 
 SymRef ArithLogic::getTimesForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? get_sym_Int_TIMES() : get_sym_Real_TIMES();
 }
 
 SymRef ArithLogic::getMinusForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? get_sym_Int_MINUS() : get_sym_Real_MINUS();
 };
 
 PTRef ArithLogic::getZeroForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? getTerm_IntZero() : getTerm_RealZero();
 }
 
 PTRef ArithLogic::getOneForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? getTerm_IntOne() : getTerm_RealOne();
 }
 
 PTRef ArithLogic::getMinusOneForSort(SRef sort) const {
-    assert (sort == getSort_int() or sort == getSort_real());
+    assert(sort == getSort_int() or sort == getSort_real());
     return sort == getSort_int() ? getTerm_IntMinusOne() : getTerm_RealMinusOne();
 }
 
 bool ArithLogic::isLinearFactor(PTRef tr) const {
     if (isNumConst(tr) || isNumVarLike(tr)) { return true; }
     if (isTimes(tr)) {
-        Pterm const& term = getPterm(tr);
-        return term.size() == 2 && ((isNumConst(term[0]) && (isNumVarLike(term[1])))
-                                    || (isNumConst(term[1]) && (isNumVarLike(term[0]))));
+        Pterm const & term = getPterm(tr);
+        return term.size() == 2 &&
+               ((isNumConst(term[0]) && (isNumVarLike(term[1]))) || (isNumConst(term[1]) && (isNumVarLike(term[0]))));
     }
     return false;
 }
@@ -177,21 +188,19 @@ bool ArithLogic::isLinearFactor(PTRef tr) const {
 bool ArithLogic::isLinearTerm(PTRef tr) const {
     if (isLinearFactor(tr)) { return true; }
     if (isPlus(tr)) {
-        Pterm const& term = getPterm(tr);
+        Pterm const & term = getPterm(tr);
         return std::all_of(term.begin(), term.end(), [this](PTRef tr) { return isLinearFactor(tr); });
     }
     return false;
 }
 
-const opensmt::Number&
-ArithLogic::getNumConst(PTRef tr) const
-{
+Number const & ArithLogic::getNumConst(PTRef tr) const {
     SymId id = sym_store[getPterm(tr).symb()].getId();
     assert(id < static_cast<unsigned int>(numbers.size()) && numbers[id] != nullptr);
     return *numbers[id];
 }
 
-opensmt::pair<opensmt::Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
+opensmt::pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     assert(isPlus(sum));
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
@@ -212,16 +221,13 @@ opensmt::pair<opensmt::Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTR
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const
-{
+opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
     if (isTimes(term)) {
         assert(getPterm(term).size() == 2);
         PTRef fac = getPterm(term)[0];
         PTRef var = getPterm(term)[1];
-        if (not isConstant(fac)) {
-            std::swap(fac, var);
-        }
+        if (not isConstant(fac)) { std::swap(fac, var); }
         assert(isConstant(fac));
         assert(isNumVarLike(var));
         return {var, fac};
@@ -237,10 +243,9 @@ opensmt::pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const
 }
 
 // Normalize a product of the form (* a v) to either v or (* -1 v)
-PTRef ArithLogic::normalizeMul(PTRef mul)
-{
+PTRef ArithLogic::normalizeMul(PTRef mul) {
     assert(isTimes(mul));
-    auto [v,c] = splitTermToVarAndConst(mul);
+    auto [v, c] = splitTermToVarAndConst(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
     } else {
@@ -248,145 +253,148 @@ PTRef ArithLogic::normalizeMul(PTRef mul)
     }
 }
 
-namespace{
-using poly_t = PolynomialT<PTRef>;
+namespace {
+    using poly_t = PolynomialT<PTRef>;
 
-void eraseIndices(std::vector<poly_t> & elements, std::vector<std::size_t> const & indices) {
-    assert(std::is_sorted(indices.begin(), indices.end()));
-    for (auto rit = indices.rbegin(); rit != indices.rend(); ++rit) {
-        elements[*rit] = std::move(elements.back());
-        elements.pop_back();
+    void eraseIndices(std::vector<poly_t> & elements, std::vector<std::size_t> const & indices) {
+        assert(std::is_sorted(indices.begin(), indices.end()));
+        for (auto rit = indices.rbegin(); rit != indices.rend(); ++rit) {
+            elements[*rit] = std::move(elements.back());
+            elements.pop_back();
+        }
     }
-}
 
-Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
-    Logic::SubstMap substitutions;
+    Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+        Logic::SubstMap substitutions;
 
-    while (true) {
-        vec<PTRef> new_keys;
-        std::vector<std::size_t> processedIndices;
-        std::unordered_map<PTRef, std::vector<std::size_t>, PTRefHash> varToPolyIndices;
+        while (true) {
+            vec<PTRef> new_keys;
+            std::vector<std::size_t> processedIndices;
+            std::unordered_map<PTRef, std::vector<std::size_t>, PTRefHash> varToPolyIndices;
 
+            for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
+                auto const & poly = zeroPolynomials[i];
+                if (poly.size() == 0) { // Could happen after first iteration; can safely ignore
+                    processedIndices.push_back(i);
+                    continue;
+                }
+                for (auto const & term : poly) {
+                    varToPolyIndices[term.var].push_back(i);
+                }
+
+                if (poly.size() == 1) {
+                    auto const & term = *poly.begin();
+                    if (term.var == PTRef_Undef) { // FALSE equality
+                        continue;
+                    }
+                    // poly is "x = 0"
+                    PTRef var = term.var;
+                    if (not substitutions.has(var)) {
+                        substitutions.insert(var, logic.getZeroForSort(logic.getSortRef(var)));
+                        new_keys.push(var);
+                    }
+                    processedIndices.push_back(i);
+                    varToPolyIndices.at(var).pop_back();
+                    continue;
+                }
+                assert(poly.begin()->var != PTRef_Undef);
+                if (poly.size() == 2 and (poly.begin() + 1)->var == PTRef_Undef) { // poly is "a*x + c = 0" for c != 0
+                    auto const & [var, coeff] = *poly.begin();
+                    if (not substitutions.has(var)) {
+                        auto val = -((poly.begin() + 1)->coeff) / coeff;
+                        substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
+                        new_keys.push(var);
+                    }
+                    processedIndices.push_back(i);
+                    varToPolyIndices.at(var).pop_back();
+                    continue; // Unnecessary, but clearer this way
+                }
+            }
+
+            // Apply found substitutions
+            bool changed = false;
+            for (PTRef var : new_keys) {
+                for (std::size_t index : varToPolyIndices.at(var)) {
+                    auto & poly = zeroPolynomials[index];
+                    auto coeff = poly.removeVar(var);
+                    auto val = substitutions[var];
+                    if (not logic.isZero(val)) {
+                        poly_t constantPoly;
+                        constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val));
+                        poly.merge(constantPoly, 1);
+                    }
+                    changed = true;
+                }
+            }
+            // remove used polynomials
+            eraseIndices(zeroPolynomials, processedIndices);
+            if (not changed) { break; }
+        }
+        return substitutions;
+    }
+
+    PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
+        vec<PTRef> args;
+        args.capacity(poly.size());
+        assert(poly.size() > 0);
+        assert(poly.begin()->var != PTRef_Undef);
+        SRef sortRef = logic.getSortRef(poly.begin()->var);
+        for (auto const & term : poly) {
+            assert(not term.coeff.isZero());
+            if (term.var == PTRef_Undef) {
+                args.push(logic.mkConst(sortRef, term.coeff));
+            } else if (term.coeff.isOne()) {
+                args.push(term.var);
+            } else {
+                args.push(logic.mkTimes(term.var, logic.mkConst(logic.getSortRef(term.var), term.coeff)));
+            }
+        }
+        return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
+    }
+
+    Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+        // MB: We enforce order to ensure that later-created terms are processed first.
+        //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
+        //     around, which would cause infinite cycle in transitive closure
+        std::map<PTRef, std::vector<std::size_t>, std::greater<PTRef>> varToPolyIndices;
+
+        Logic::SubstMap substitutions;
         for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
             auto const & poly = zeroPolynomials[i];
-            if (poly.size() == 0) { // Could happen after first iteration; can safely ignore
-                processedIndices.push_back(i);
-                continue;
-            }
             for (auto const & term : poly) {
                 varToPolyIndices[term.var].push_back(i);
             }
+        }
 
-            if (poly.size() == 1) {
-                auto const & term = *poly.begin();
-                if (term.var == PTRef_Undef) { // FALSE equality
+        std::unordered_set<std::size_t> processedIndices;
+        for (auto const & [var, polyIndices] : varToPolyIndices) {
+            if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
+            auto index = polyIndices[0];
+            if (processedIndices.find(index) != processedIndices.end()) { continue; }
+            auto & poly = zeroPolynomials[index];
+            if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
+                if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
+                        return term.var != PTRef_Undef and not logic.isVar(term.var);
+                    })) {
                     continue;
                 }
-                // poly is "x = 0"
-                PTRef var = term.var;
-                if (not substitutions.has(var)) {
-                    substitutions.insert(var, logic.getZeroForSort(logic.getSortRef(var)));
-                    new_keys.push(var);
-                }
-                processedIndices.push_back(i);
-                varToPolyIndices.at(var).pop_back();
-                continue;
             }
-            assert(poly.begin()->var != PTRef_Undef);
-            if (poly.size() == 2 and (poly.begin() + 1)->var == PTRef_Undef) { // poly is "a*x + c = 0" for c != 0
-                auto const & [var, coeff] = *poly.begin();
-                if (not substitutions.has(var)) {
-                    auto val = -((poly.begin() + 1)->coeff) / coeff;
-                    substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
-                    new_keys.push(var);
-                }
-                processedIndices.push_back(i);
-                varToPolyIndices.at(var).pop_back();
-                continue; // Unnecessary, but clearer this way
-            }
+            auto coeff = poly.removeVar(var);
+            coeff.negate();
+            if (not coeff.isOne()) { poly.divideBy(coeff); }
+            PTRef val = polyToPTRef(logic, poly);
+            substitutions.insert(var, val);
+            processedIndices.insert(index);
         }
-
-        // Apply found substitutions
-        bool changed = false;
-        for (PTRef var : new_keys) {
-            for (std::size_t index : varToPolyIndices.at(var)) {
-                auto & poly = zeroPolynomials[index];
-                auto coeff = poly.removeVar(var);
-                auto val = substitutions[var];
-                if (not logic.isZero(val)) {
-                    poly_t constantPoly;
-                    constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val));
-                    poly.merge(constantPoly, 1);
-                }
-                changed = true;
-            }
-        }
-        // remove used polynomials
-        eraseIndices(zeroPolynomials, processedIndices);
-        if (not changed) { break; }
+        // Remove processed polynomials
+        std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
+        std::sort(indicesToRemove.begin(), indicesToRemove.end());
+        eraseIndices(zeroPolynomials, indicesToRemove);
+        return substitutions;
     }
-    return substitutions;
-}
+} // namespace
 
-PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
-    vec<PTRef> args;
-    args.capacity(poly.size());
-    assert(poly.size() > 0);
-    assert(poly.begin()->var != PTRef_Undef);
-    SRef sortRef = logic.getSortRef(poly.begin()->var);
-    for (auto const & term : poly) {
-        assert(not term.coeff.isZero());
-        if (term.var == PTRef_Undef) { args.push(logic.mkConst(sortRef, term.coeff)); }
-        else if (term.coeff.isOne()) { args.push(term.var); }
-        else { args.push(logic.mkTimes(term.var, logic.mkConst(logic.getSortRef(term.var), term.coeff))); }
-    }
-    return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
-}
-
-Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
-    // MB: We enforce order to ensure that later-created terms are processed first.
-    //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
-    //     around, which would cause infinite cycle in transitive closure
-    std::map<PTRef, std::vector<std::size_t>, std::greater<PTRef>> varToPolyIndices;
-
-    Logic::SubstMap substitutions;
-    for (std::size_t i = 0; i < zeroPolynomials.size(); ++i) {
-        auto const & poly = zeroPolynomials[i];
-        for (auto const & term : poly) {
-            varToPolyIndices[term.var].push_back(i);
-        }
-    }
-
-    std::unordered_set<std::size_t> processedIndices;
-    for (auto const & [var, polyIndices] : varToPolyIndices) {
-        if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
-        auto index = polyIndices[0];
-        if (processedIndices.find(index) != processedIndices.end()) { continue; }
-        auto & poly = zeroPolynomials[index];
-        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
-            if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
-                    return term.var != PTRef_Undef and not logic.isVar(term.var);
-                })) { continue; }
-        }
-        auto coeff = poly.removeVar(var);
-        coeff.negate();
-        if (not coeff.isOne()) {
-            poly.divideBy(coeff);
-        }
-        PTRef val = polyToPTRef(logic, poly);
-        substitutions.insert(var, val);
-        processedIndices.insert(index);
-    }
-    // Remove processed polynomials
-    std::vector<std::size_t> indicesToRemove(processedIndices.begin(), processedIndices.end());
-    std::sort(indicesToRemove.begin(), indicesToRemove.end());
-    eraseIndices(zeroPolynomials, indicesToRemove);
-    return substitutions;
-}
-}
-
-lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, SubstMap & out_substitutions)
-{
+lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & out_substitutions) {
     ArithLogic & logic = *this;
     auto toPoly = [&logic](PTRef eq) {
         assert(logic.isEquality(eq));
@@ -396,13 +404,13 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
         PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
         assert(logic.isLinearTerm(polyTerm));
         if (logic.isLinearFactor(polyTerm)) {
-            auto [var,c] = logic.splitTermToVarAndConst(polyTerm);
+            auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
             assert(logic.isPlus(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
-                auto [var,c] = logic.splitTermToVarAndConst(factor);
+                auto [var, c] = logic.splitTermToVarAndConst(factor);
                 auto coeff = logic.getNumConst(c);
                 poly.addTerm(var, std::move(coeff));
             }
@@ -439,14 +447,14 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
         if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
             if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
                     return term.var != PTRef_Undef and not logic.isVar(term.var);
-                })) { continue; }
+                })) {
+                continue;
+            }
         }
 
         auto coeff = poly.removeVar(var);
         coeff.negate();
-        if (not coeff.isOne()) {
-            poly.divideBy(coeff);
-        }
+        if (not coeff.isOne()) { poly.divideBy(coeff); }
         PTRef val = polyToPTRef(logic, poly);
         assert(not out_substitutions.has(var));
         out_substitutions.insert(var, val);
@@ -455,16 +463,14 @@ lbool ArithLogic::arithmeticElimination(const vec<PTRef> & top_level_arith, Subs
     return l_Undef;
 }
 
-opensmt::pair<lbool,Logic::SubstMap> ArithLogic::retrieveSubstitutions(const vec<PtAsgn>& facts)
-{
+opensmt::pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const & facts) {
     auto resAndSubsts = Logic::retrieveSubstitutions(facts);
     if (resAndSubsts.first != l_Undef) return resAndSubsts;
     vec<PTRef> top_level_arith;
     for (PtAsgn fact : facts) {
         PTRef tr = fact.tr;
         lbool sgn = fact.sgn;
-        if (isNumEq(tr) && sgn == l_True)
-            top_level_arith.push(tr);
+        if (isNumEq(tr) && sgn == l_True) top_level_arith.push(tr);
     }
     lbool res = arithmeticElimination(top_level_arith, resAndSubsts.second);
     return {res, std::move(resAndSubsts.second)};
@@ -472,7 +478,7 @@ opensmt::pair<lbool,Logic::SubstMap> ArithLogic::retrieveSubstitutions(const vec
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
     assert(l.isTimes(tr));
-    auto [v,c] = l.splitTermToVarAndConst(tr);
+    auto [v, c] = l.splitTermToVarAndConst(tr);
     return v.x;
 }
 
@@ -482,21 +488,19 @@ bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
     return id_x < id_y;
 }
 
-void ArithLogic::termSort(vec<PTRef>& v) const
-{
+void ArithLogic::termSort(vec<PTRef> & v) const {
     sort(v, LessThan_deepPTRef(*this));
 }
 
-bool ArithLogic::isBuiltinFunction(const SymRef sr) const
-{
-    if (sym_store[sr].isInterpreted()) return true;
-    else return Logic::isBuiltinFunction(sr);
-}
-bool ArithLogic::isNumTerm(PTRef tr) const
-{
-    if (isNumVarLike(tr))
+bool ArithLogic::isBuiltinFunction(SymRef const sr) const {
+    if (sym_store[sr].isInterpreted())
         return true;
-    const Pterm& t = getPterm(tr);
+    else
+        return Logic::isBuiltinFunction(sr);
+}
+bool ArithLogic::isNumTerm(PTRef tr) const {
+    if (isNumVarLike(tr)) return true;
+    Pterm const & t = getPterm(tr);
     if (t.size() == 2 && isTimes(tr))
         return (isNumVarLike(t[0]) && isConstant(t[1])) || (isNumVarLike(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
@@ -505,12 +509,11 @@ bool ArithLogic::isNumTerm(PTRef tr) const
         return false;
 }
 
-PTRef ArithLogic::mkNeg(PTRef tr)
-{
+PTRef ArithLogic::mkNeg(PTRef tr) {
     assert(!isNeg(tr)); // MB: The invariant now is that there is no "Minus" node
     SymRef symref = getSymRef(tr);
     if (isConstant(symref)) {
-        const opensmt::Number& v = getNumConst(tr);
+        Number const & v = getNumConst(tr);
         return mkConst(getSortRef(tr), -v);
     }
     if (isPlus(symref)) {
@@ -521,7 +524,7 @@ PTRef ArithLogic::mkNeg(PTRef tr)
             assert(tr_arg != PTRef_Undef);
             args.push(tr_arg);
         }
-        for (PTRef & tr_arg: args) {
+        for (PTRef & tr_arg : args) {
             tr_arg = mkNeg(tr_arg);
         }
         PTRef tr_n = mkFun(symref, std::move(args));
@@ -537,38 +540,36 @@ PTRef ArithLogic::mkNeg(PTRef tr)
         return mkFun(getTimesForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
     }
     // MB: All cases should be covered
-    throw OsmtInternalException("Failed attempt to negate a term");
+    throw InternalException("Failed attempt to negate a term");
 }
 
-PTRef ArithLogic::mkConst(SRef sort, opensmt::Number const & c)
-{
-    std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer inside temporary object -> crash.
-    const char * val = str.c_str();
+PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
+    std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer
+                                   // inside temporary object -> crash.
+    char const * val = str.c_str();
     PTRef ptr = PTRef_Undef;
     ptr = mkVar(sort, val, true);
     // Store the value of the number as a real
     SymId id = sym_store[getPterm(ptr).symb()].getId();
-    for (auto i = numbers.size(); i <= id; i++) { numbers.emplace_back(); }
-    if (numbers[id] == nullptr) { numbers[id] = new opensmt::Number(val); }
+    for (auto i = numbers.size(); i <= id; i++) {
+        numbers.emplace_back();
+    }
+    if (numbers[id] == nullptr) { numbers[id] = new Number(val); }
     assert(c == *numbers[id]);
     markConstant(id);
     return ptr;
 }
 
-PTRef ArithLogic::mkMinus(vec<PTRef> && args)
-{
+PTRef ArithLogic::mkMinus(vec<PTRef> && args) {
     assert(args.size() > 0);
-    if (args.size() == 1) {
-        return mkNeg(args[0]);
-    }
+    if (args.size() == 1) { return mkNeg(args[0]); }
     // Minus is left associative according to SMT-LIB
     for (int i = 1; i < args.size(); ++i)
         args[i] = mkNeg(args[i]);
     return mkPlus(std::move(args));
 }
 
-PTRef ArithLogic::mkPlus(vec<PTRef> && args)
-{
+PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
     SRef returnSort = checkArithSortCompatible(args);
     SymRef plusSym = getPlusForSort(returnSort);
     vec<PTRef> flattened_args;
@@ -591,24 +592,20 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
     args.clear();
     SymRef s_new;
     simp.simplify(plusSym, flattened_args, s_new, args);
-    if (s_new != getPlusForSort(returnSort)) {
-        return mkFun(s_new, std::move(args));
-    }
-    if (args.size() == 1) {
-        return args[0];
-    }
+    if (s_new != getPlusForSort(returnSort)) { return mkFun(s_new, std::move(args)); }
+    if (args.size() == 1) { return args[0]; }
     assert(args.size() != 0);
     // This code takes polynomials (+ (* v c1) (* v c2)) and converts them to the form (* v c3) where c3 = c1+c2
-    Map<PTRef,uint32_t,PTRefHash> varIndices;
+    Map<PTRef, uint32_t, PTRefHash> varIndices;
     struct Entry {
         PTRef var;
-        std::variant<PTRef,opensmt::Number> coeff;
+        std::variant<PTRef, Number> coeff;
     };
     std::vector<Entry> simplified;
     simplified.reserve(args.size());
 
     for (PTRef arg : args) {
-        auto [v,c] = splitTermToVarAndConst(arg);
+        auto [v, c] = splitTermToVarAndConst(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (not varIndices.has(v)) {
@@ -620,13 +617,15 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args)
             if (std::holds_alternative<PTRef>(entry.coeff)) {
                 entry.coeff = this->getNumConst(std::get<PTRef>(entry.coeff));
             }
-            assert(std::holds_alternative<opensmt::Number>(entry.coeff));
-            std::get<opensmt::Number>(entry.coeff) += this->getNumConst(c);
+            assert(std::holds_alternative<Number>(entry.coeff));
+            std::get<Number>(entry.coeff) += this->getNumConst(c);
         }
     }
     flattened_args.clear();
-    for (auto const & [var,coeff] : simplified) {
-        PTRef coeffTerm = std::holds_alternative<PTRef>(coeff) ? std::get<PTRef>(coeff) : this->mkConst(this->getSortRef(var), std::get<opensmt::Number>(coeff));
+    for (auto const & [var, coeff] : simplified) {
+        PTRef coeffTerm = std::holds_alternative<PTRef>(coeff)
+                            ? std::get<PTRef>(coeff)
+                            : this->mkConst(this->getSortRef(var), std::get<Number>(coeff));
         if (isZero(coeffTerm)) { continue; }
         if (var == PTRef_Undef) {
             flattened_args.push(coeffTerm);
@@ -650,12 +649,12 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     SRef returnSort = checkArithSortCompatible(args);
     if (args.size() == 2) { // MB: Multiplication by -1 as negation is more efficient
         PTRef minusOne = getMinusOneForSort(returnSort);
-       if (minusOne == args[0]) {
-           return mkNeg(args[1]);
-       } else if (minusOne == args[1]) {
-           return mkNeg(args[0]);
-       }
-       // else continue the usual normalization
+        if (minusOne == args[0]) {
+            return mkNeg(args[1]);
+        } else if (minusOne == args[1]) {
+            return mkNeg(args[0]);
+        }
+        // else continue the usual normalization
     }
     vec<PTRef> flatten_args;
     // Flatten possible internal multiplications
@@ -693,18 +692,22 @@ SymRef ArithLogic::getLeqForSort(SRef sr) const {
 PTRef ArithLogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
     SRef argSort = checkArithSortCompatible({lhs, rhs});
     if (isConstant(lhs) && isConstant(rhs)) {
-        opensmt::Number const & v1 = this->getNumConst(lhs);
-        opensmt::Number const & v2 = this->getNumConst(rhs);
+        Number const & v1 = this->getNumConst(lhs);
+        Number const & v2 = this->getNumConst(rhs);
         return v1 <= v2 ? getTerm_true() : getTerm_false();
     }
     // Should be in the form that on one side there is a constant
     // and on the other there is a sum
-    PTRef sum_tmp = lhs == getZeroForSort(argSort) ? rhs : rhs == getZeroForSort(argSort) ? mkNeg(lhs) : mkPlus(rhs, mkNeg(lhs));
+    PTRef sum_tmp = lhs == getZeroForSort(argSort) ? rhs
+                  : rhs == getZeroForSort(argSort) ? mkNeg(lhs)
+                                                   : mkPlus(rhs, mkNeg(lhs));
     // "sum_tmp = rhs - lhs" so the inequality is "0 <= sum_tmp"
     if (isConstant(sum_tmp)) {
-        opensmt::Number const & v = this->getNumConst(sum_tmp);
+        Number const & v = this->getNumConst(sum_tmp);
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
-    } if (isNumVarLike(sum_tmp) || isTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
+    }
+    if (isNumVarLike(sum_tmp) ||
+        isTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
         sum_tmp = isTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
         return mkFun(getLeqForSort(argSort), {getZeroForSort(argSort), sum_tmp});
     } else if (isPlus(sum_tmp)) {
@@ -712,14 +715,12 @@ PTRef ArithLogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
         return sumToNormalizedInequality(sum_tmp);
     }
     assert(false);
-    throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
+    throw InternalException{"Unexpected situation in LALogic::mkNumLeq"};
 }
 
 PTRef ArithLogic::mkLeq(vec<PTRef> const & args) {
-    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLeq"); }
-    if (args.size() == 2) {
-        return mkBinaryLeq(args[0], args[1]);
-    }
+    if (args.size() < 2) { throw ApiException("Too few arguments passed to LALogic::mkNumLeq"); }
+    if (args.size() == 2) { return mkBinaryLeq(args[0], args[1]); }
     vec<PTRef> binaryInequalities;
     binaryInequalities.capacity(args.size() - 1);
     for (int i = 1; i < args.size(); ++i) {
@@ -729,10 +730,8 @@ PTRef ArithLogic::mkLeq(vec<PTRef> const & args) {
 }
 
 PTRef ArithLogic::mkGeq(vec<PTRef> const & args) {
-    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGeq"); }
-    if (args.size() == 2) {
-        return mkBinaryGeq(args[0], args[1]);
-    }
+    if (args.size() < 2) { throw ApiException("Too few arguments passed to LALogic::mkNumGeq"); }
+    if (args.size() == 2) { return mkBinaryGeq(args[0], args[1]); }
     vec<PTRef> binaryInequalities;
     binaryInequalities.capacity(args.size() - 1);
     for (int i = 1; i < args.size(); ++i) {
@@ -741,12 +740,9 @@ PTRef ArithLogic::mkGeq(vec<PTRef> const & args) {
     return mkAnd(std::move(binaryInequalities));
 }
 
-PTRef ArithLogic::mkLt(vec<PTRef> const & args)
-{
-    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumLt"); }
-    if (args.size() == 2) {
-        return mkBinaryLt(args[0], args[1]);
-    }
+PTRef ArithLogic::mkLt(vec<PTRef> const & args) {
+    if (args.size() < 2) { throw ApiException("Too few arguments passed to LALogic::mkNumLt"); }
+    if (args.size() == 2) { return mkBinaryLt(args[0], args[1]); }
     vec<PTRef> binaryInequalities;
     binaryInequalities.capacity(args.size() - 1);
     for (int i = 1; i < args.size(); ++i) {
@@ -755,12 +751,9 @@ PTRef ArithLogic::mkLt(vec<PTRef> const & args)
     return mkAnd(std::move(binaryInequalities));
 }
 
-PTRef ArithLogic::mkGt(vec<PTRef> const & args)
-{
-    if (args.size() < 2) { throw OsmtApiException("Too few arguments passed to LALogic::mkNumGt"); }
-    if (args.size() == 2) {
-        return mkBinaryGt(args[0], args[1]);
-    }
+PTRef ArithLogic::mkGt(vec<PTRef> const & args) {
+    if (args.size() < 2) { throw ApiException("Too few arguments passed to LALogic::mkNumGt"); }
+    if (args.size() == 2) { return mkBinaryGt(args[0], args[1]); }
     vec<PTRef> binaryInequalities;
     binaryInequalities.capacity(args.size() - 1);
     for (int i = 1; i < args.size(); ++i) {
@@ -770,47 +763,46 @@ PTRef ArithLogic::mkGt(vec<PTRef> const & args)
 }
 
 PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
-    if (getSortRef(rhs) != getSortRef(lhs)) { throw OsmtApiException("Equality over non-equal sorts"); }
+    if (getSortRef(rhs) != getSortRef(lhs)) { throw ApiException("Equality over non-equal sorts"); }
     if (hasUFs() or hasArrays()) { return Logic::mkBinaryEq(lhs, rhs); }
     SRef eqSort = getSortRef(lhs);
-    if (!isSortNum(eqSort)) {
-        return Logic::mkBinaryEq(lhs, rhs);
-    }
+    if (!isSortNum(eqSort)) { return Logic::mkBinaryEq(lhs, rhs); }
 
     if (isConstant(lhs) && isConstant(rhs)) {
-        opensmt::Number const & v1 = this->getNumConst(lhs);
-        opensmt::Number const & v2 = this->getNumConst(rhs);
+        Number const & v1 = this->getNumConst(lhs);
+        Number const & v2 = this->getNumConst(rhs);
         return v1 == v2 ? getTerm_true() : getTerm_false();
     }
 
     // diff = rhs - lhs
     PTRef diff = isZero(lhs) ? rhs : isZero(rhs) ? mkNeg(lhs) : mkPlus(rhs, mkNeg(lhs));
     if (isConstant(diff)) {
-        opensmt::Number const & v = this->getNumConst(diff);
+        Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
     } else if (isNumVarLike(diff) || isTimes(diff)) {
         auto [var, constant] = splitTermToVarAndConst(diff);
-        return Logic::mkBinaryEq(getZeroForSort(eqSort), var); // Avoid anything that calls Logic::mkEq as this would create a loop
+        return Logic::mkBinaryEq(getZeroForSort(eqSort),
+                                 var); // Avoid anything that calls Logic::mkEq as this would create a loop
     } else if (isPlus(diff)) {
         return sumToNormalizedEquality(diff);
     } else {
         assert(false);
-        throw OsmtInternalException{"Unexpected situation in LALogic::mkNumLeq"};
+        throw InternalException{"Unexpected situation in LALogic::mkNumLeq"};
     }
 }
 
 PTRef ArithLogic::mkMod(vec<PTRef> && args) {
-    if (args.size() != 2) { throw OsmtApiException("Modulo needs exactly two arguments"); }
+    if (args.size() != 2) { throw ApiException("Modulo needs exactly two arguments"); }
     checkSortInt(args);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
 
-    if (not isNumConst(divisor)) { throw OsmtApiException("Divisor must be constant in linear logic"); }
+    if (not isNumConst(divisor)) { throw ApiException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor) or isMinusOne(divisor)) { return getTerm_IntZero(); }
     if (isConstant(dividend)) {
-        auto const& dividendValue = getNumConst(dividend);
-        auto const& divisorValue = getNumConst(divisor);
+        auto const & dividendValue = getNumConst(dividend);
+        auto const & divisorValue = getNumConst(divisor);
         assert(dividendValue.isInteger() and divisorValue.isInteger());
         // evaluate immediately the operation on two constants
         auto realDiv = dividendValue / divisorValue;
@@ -833,8 +825,8 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     if (isMinusOne(divisor)) { return mkNeg(dividend); }
 
     if (isConstant(divisor) and isConstant(dividend)) {
-        auto const& dividendValue = getNumConst(dividend);
-        auto const& divisorValue = getNumConst(divisor);
+        auto const & dividendValue = getNumConst(dividend);
+        auto const & divisorValue = getNumConst(divisor);
         assert(dividendValue.isInteger() and divisorValue.isInteger());
         // evaluate immediately the operation on two constants
         auto realDiv = dividendValue / divisorValue;
@@ -844,15 +836,10 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     return mkFun(sym_Int_DIV, std::move(args));
 }
 
-PTRef ArithLogic::mkRealDiv(vec<PTRef> && args)
-{
+PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     checkSortReal(args);
-    if (args.size() != 2) {
-        throw OsmtApiException("Division operation requires exactly 2 arguments");
-    }
-    if (isZero(args[1])) {
-        throw ArithDivisionByZeroException();
-    }
+    if (args.size() != 2) { throw ApiException("Division operation requires exactly 2 arguments"); }
+    if (isZero(args[1])) { throw ArithDivisionByZeroException(); }
     if (not isConstant(args[1])) {
         throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
     }
@@ -862,51 +849,37 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args)
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
-        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); //mkConst(1/getRealConst(args_new[1]));
+        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
     PTRef tr = mkFun(s_new, std::move(args_new));
     return tr;
 }
 
-PTRef ArithLogic::insertTerm(SymRef sym, vec<PTRef>&& terms)
-{
-    if (isNeg(sym))
-        return mkNeg(terms[0]);
-    if (isMinus(sym))
-        return mkMinus(std::move(terms));
-    if (isPlus(sym))
-        return mkPlus(std::move(terms));
-    if (isTimes(sym))
-        return mkTimes(std::move(terms));
-    if (isRealDiv(sym))
-        return mkRealDiv(std::move(terms));
-    if (isLeq(sym))
-        return mkLeq(terms);
-    if (isLt(sym))
-        return mkLt(terms);
-    if (isGeq(sym))
-        return mkGeq(terms);
-    if (isGt(sym))
-        return mkGt(terms);
-    if (isMod(sym))
-        return mkMod(std::move(terms));
-    if (isIntDiv(sym))
-        return mkIntDiv(std::move(terms));
+PTRef ArithLogic::insertTerm(SymRef sym, vec<PTRef> && terms) {
+    if (isNeg(sym)) return mkNeg(terms[0]);
+    if (isMinus(sym)) return mkMinus(std::move(terms));
+    if (isPlus(sym)) return mkPlus(std::move(terms));
+    if (isTimes(sym)) return mkTimes(std::move(terms));
+    if (isRealDiv(sym)) return mkRealDiv(std::move(terms));
+    if (isLeq(sym)) return mkLeq(terms);
+    if (isLt(sym)) return mkLt(terms);
+    if (isGeq(sym)) return mkGeq(terms);
+    if (isGt(sym)) return mkGt(terms);
+    if (isMod(sym)) return mkMod(std::move(terms));
+    if (isIntDiv(sym)) return mkIntDiv(std::move(terms));
     return Logic::insertTerm(sym, std::move(terms));
 }
 
-PTRef ArithLogic::mkConst(SRef s, const char* name)
-{
+PTRef ArithLogic::mkConst(SRef s, char const * name) {
     assert(strlen(name) != 0);
     PTRef ptr = PTRef_Undef;
     if (s == sort_REAL or s == sort_INT) {
-        char* rat;
+        char * rat;
         if (s == sort_REAL)
-            opensmt::stringToRational(rat, name);
+            stringToRational(rat, name);
         else {
-            if (not opensmt::isIntString(name))
-                throw OsmtApiException("Not parseable as an integer");
+            if (not isIntString(name)) throw ApiException("Not parseable as an integer");
             rat = strdup(name);
         }
         ptr = mkVar(s, rat, true);
@@ -915,7 +888,7 @@ PTRef ArithLogic::mkConst(SRef s, const char* name)
         for (auto i = numbers.size(); i <= id; i++)
             numbers.emplace_back(nullptr);
         if (numbers[id] != nullptr) { delete numbers[id]; }
-        numbers[id] = new opensmt::Number(rat);
+        numbers[id] = new Number(rat);
         free(rat);
         markConstant(id);
     } else
@@ -929,12 +902,12 @@ PTRef ArithLogic::mkConst(SRef s, const char* name)
  * @return a PTRef of the correct sort representing the constant.
  */
 PTRef ArithLogic::mkConst(char const * name) {
-    bool isIntegralForm = opensmt::isIntString(name);
-    bool isRealForm = opensmt::isRealString(name);
+    bool isIntegralForm = isIntString(name);
+    bool isRealForm = isRealString(name);
 
     if (hasIntegers() and not hasReals()) {
         if (not isIntegralForm and isRealForm) {
-            throw OsmtApiException("Expected integral constant");
+            throw ApiException("Expected integral constant");
         } else if (isIntegralForm) {
             return mkConst(sort_INT, name);
         }
@@ -943,7 +916,7 @@ PTRef ArithLogic::mkConst(char const * name) {
             return mkConst(sort_REAL, name);
         } else {
             assert(not isRealForm);
-            throw OsmtApiException("Expected real constant");
+            throw ApiException("Expected real constant");
         }
     } else {
         assert(hasReals() and hasIntegers());
@@ -968,8 +941,7 @@ PTRef ArithLogic::mkConst(char const * name) {
 // corresponding simplifications.  Examples include 0 with
 // multiplication and summation, e.g.
 //
-void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, vec<PTRef> & args_new)
-{
+void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, vec<PTRef> & args_new) {
     vec<int> const_idx;
     for (int i = 0; i < args.size(); i++) {
         assert(!l.isNeg(args[i])); // MB: No minus nodes, the check can be simplified
@@ -981,8 +953,7 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
     if (const_idx.size() == 0) {
         s_new = s;
         args.copyTo(args_new);
-    }
-    else {
+    } else {
         if (const_idx.size() > 1) {
             vec<PTRef> const_terms;
             for (int i = 0; i < const_idx.size(); i++)
@@ -994,8 +965,11 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
             args_new_2.capacity((args.size() - const_terms.size()) + 1);
             int i, k;
             for (i = k = 0; k < const_terms.size(); i++) {
-                if (i != const_idx[k]) { args_new_2.push(args[i]); }
-                else { k++; }
+                if (i != const_idx[k]) {
+                    args_new_2.push(args[i]);
+                } else {
+                    k++;
+                }
             }
             // Copy also the rest
             for (; i < args.size(); i++) {
@@ -1006,11 +980,10 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
         } else {
             constSimplify(s, args, s_new, args_new);
         }
-
     }
-//    // A single argument for the operator, and the operator is identity
-//    // in that case
-    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimes(s_new) )) {
+    //    // A single argument for the operator, and the operator is identity
+    //    // in that case
+    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimes(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();
@@ -1019,12 +992,10 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
     }
 }
 
-void SimplifyConstSum::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const
-{
+void SimplifyConstSum::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const {
     assert(terms_new.size() == 0);
     for (auto tr : terms)
-        if (not l.isZero(tr))
-            terms_new.push(tr);
+        if (not l.isZero(tr)) terms_new.push(tr);
     if (terms_new.size() == 0) {
         // The term was sum of all zeroes
         terms_new.clear();
@@ -1034,8 +1005,8 @@ void SimplifyConstSum::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef 
     s_new = s;
 }
 
-void SimplifyConstTimes::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const
-{
+void SimplifyConstTimes::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new,
+                                       vec<PTRef> & terms_new) const {
     PTRef con, plus;
     con = plus = PTRef_Undef;
     for (auto tr : terms) {
@@ -1044,7 +1015,7 @@ void SimplifyConstTimes::constSimplify(SymRef s, vec<PTRef> const & terms, SymRe
             s_new = l.getPterm(l.getZeroForSort(l.getSortRef(s))).symb();
             return;
         }
-        if ( not l.isOne(tr)) {
+        if (not l.isOne(tr)) {
             if (l.isPlus(tr)) {
                 plus = tr;
             } else if (l.isConstant(tr)) {
@@ -1054,19 +1025,20 @@ void SimplifyConstTimes::constSimplify(SymRef s, vec<PTRef> const & terms, SymRe
             }
         }
     }
-    if (con == PTRef_Undef and plus == PTRef_Undef);
+    if (con == PTRef_Undef and plus == PTRef_Undef)
+        ;
     else if (con == PTRef_Undef and plus != PTRef_Undef)
         terms_new.push(plus);
     else if (con != PTRef_Undef and plus == PTRef_Undef)
         terms_new.push(con);
     else {
         assert(con != PTRef_Undef && plus != PTRef_Undef);
-        //distribute the constant over the sum
+        // distribute the constant over the sum
         vec<PTRef> sum_args;
         int termSize = l.getPterm(plus).size();
-        for (int i = 0; i < termSize; ++i)
-        {
-            // MB: we cannot use Pterm& here, because in the line after next new term might be allocated, which might
+        for (int i = 0; i < termSize; ++i) {
+            // MB: we cannot use Pterm& here, because in the line after next new term might be allocated, which
+            // might
             //     trigger reallocation of the table of terms
             PTRef arg = l.getPterm(plus)[i];
             sum_args.push(l.mkTimes(con, arg));
@@ -1082,22 +1054,20 @@ void SimplifyConstTimes::constSimplify(SymRef s, vec<PTRef> const & terms, SymRe
     s_new = s;
 }
 
-void SimplifyConstDiv::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const
-{
+void SimplifyConstDiv::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const {
     assert(terms_new.size() == 0);
     assert(terms.size() <= 2);
     if (terms.size() == 2 && l.isZero(terms[1])) {
         printf("Explicit div by zero\n");
         assert(false);
     }
-    if (terms.size() == 1 or l.isOne(terms[terms.size()-1])) {
+    if (terms.size() == 1 or l.isOne(terms[terms.size() - 1])) {
         terms_new.clear();
         s_new = l.getPterm(terms[0]).symb();
         for (int i = 0; i < l.getPterm(terms[0]).size(); i++)
             terms_new.push(l.getPterm(terms[0])[i]);
         return;
-    }
-    else if (l.isZero(terms[0])) {
+    } else if (l.isZero(terms[0])) {
         terms_new.clear();
         s_new = l.getPterm(terms[0]).symb();
         return;
@@ -1113,19 +1083,17 @@ PTRef SimplifyConst::simplifyConstOp(vec<PTRef> const & terms) {
     if (terms.size() == 1) {
         return terms[0];
     } else {
-        opensmt::Number s = l.getNumConst(terms[0]);
+        Number s = l.getNumConst(terms[0]);
         for (int i = 1; i < terms.size(); ++i) {
             assert(l.isConstant((terms[i])));
-            opensmt::Number const & val = l.getNumConst(terms[i]);
+            Number const & val = l.getNumConst(terms[i]);
             Op(s, val);
         }
         return l.mkConst(l.getSortRef(terms[0]), s);
     }
 }
 
-const char*
-ArithLogic::getDefaultValue(const PTRef tr) const
-{
+char const * ArithLogic::getDefaultValue(PTRef const tr) const {
     if (getSortRef(tr) == sort_INT)
         return tk_val_int_default.data();
     else if (getSortRef(tr) == sort_REAL)
@@ -1134,9 +1102,7 @@ ArithLogic::getDefaultValue(const PTRef tr) const
         return Logic::getDefaultValue(tr);
 }
 
-PTRef
-ArithLogic::getDefaultValuePTRef(const SRef sref) const
-{
+PTRef ArithLogic::getDefaultValuePTRef(SRef const sref) const {
     if (isSortNum(sref))
         return getZeroForSort(sref);
     else
@@ -1144,14 +1110,14 @@ ArithLogic::getDefaultValuePTRef(const SRef sref) const
 }
 
 PTRef ArithLogic::removeAuxVars(PTRef tr) {
-    // Note: Since ites are removed first and div/mod's then, it is important to first reintroduce div/mod's and then ites
+    // Note: Since ites are removed first and div/mod's then, it is important to first reintroduce div/mod's and
+    // then ites
     class AuxSymbolMatcherConfig : public DefaultRewriterConfig {
         ArithLogic & logic;
+
     public:
         explicit AuxSymbolMatcherConfig(ArithLogic & logic) : logic(logic) {}
-        PTRef rewrite(PTRef tr) override {
-            return opensmt::tryGetOriginalDivModTerm(logic, tr).value_or(tr);
-        }
+        PTRef rewrite(PTRef tr) override { return tryGetOriginalDivModTerm(logic, tr).value_or(tr); }
     };
     // Note: this has negligible impact on performance, no need to check if there are divs or mods
     AuxSymbolMatcherConfig config(*this);
@@ -1161,13 +1127,12 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
 
 // Handle the printing of real constants that are negative and the
 // rational constants
-std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
-{
+std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
     if (isNumConst(tr)) {
         bool is_neg = false;
-        char* tmp_str;
-        opensmt::stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
-        opensmt::Number v(tmp_str);
+        char * tmp_str;
+        stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
+        Number v(tmp_str);
         if (!isNonNegative(v)) {
             v.negate();
             is_neg = true;
@@ -1185,11 +1150,11 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
         }
         if (is_div) {
             unsigned j = 0;
-            char* nom = (char*) malloc(i+1);
+            char * nom = (char *)malloc(i + 1);
             for (; j < i; j++)
                 nom[j] = rat_str[j];
             nom[i] = '\0';
-            char* den = (char*) malloc(rat_size-i);
+            char * den = (char *)malloc(rat_size - i);
             i++;
             j = 0;
             for (; i < rat_size; i++)
@@ -1197,24 +1162,19 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
             den[j] = '\0';
             char * tmp;
             std::stringstream str;
-            int written = is_neg ? asprintf(&tmp, "(/ (- %s) %s)", nom, den)
-                                 : asprintf(&tmp, "(/ %s %s)", nom, den);
-            assert(written >= 0); (void)written;
+            int written = is_neg ? asprintf(&tmp, "(/ (- %s) %s)", nom, den) : asprintf(&tmp, "(/ %s %s)", nom, den);
+            assert(written >= 0);
+            (void)written;
             str << tmp;
-            if (ext) {
-                str << " <" << tr.x << ">";
-            }
+            if (ext) { str << " <" << tr.x << ">"; }
             free(nom);
             free(den);
             free(tmp);
             return str.str();
-        }
-        else if (is_neg) {
+        } else if (is_neg) {
             std::stringstream str;
             str << "(- " << rat_str << ')';
-            if (ext) {
-                str << " <" << tr.x << ">";
-            }
+            if (ext) { str << " <" << tr.x << ">"; }
             return str.str();
         } else {
             return rat_str;
@@ -1224,20 +1184,22 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const
 }
 
 /**
- * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the coefficients of non-constant terms are coprime integers
- * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as if
- * it was placed on the other side of an equality.
- * Note that the constant part can be a non-integer number after normalization.
+ * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the coefficients of non-constant terms are coprime
+ * integers Additionally, the normalized term is separated to constant and non-constant part, and the constant is
+ * modified as if it was placed on the other side of an equality. Note that the constant part can be a non-integer
+ * number after normalization.
  *
  * @param sum
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
-opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
+opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
-    vec<PTRef> vars; vars.capacity(varFactors.size());
-    std::vector<opensmt::Number> coeffs; coeffs.reserve(varFactors.size());
+    vec<PTRef> vars;
+    vars.capacity(varFactors.size());
+    std::vector<Number> coeffs;
+    coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
         auto [var, coeff] = splitTermToVarAndConst(factor);
         assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
@@ -1246,8 +1208,8 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef s
     }
     bool changed = false; // Keep track if any change to varFactors occurs
 
-    bool allIntegers = std::all_of(coeffs.begin(), coeffs.end(),
-                                   [](opensmt::Number const & coeff) { return coeff.isInteger(); });
+    bool allIntegers =
+        std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
         // this would probably not work when `Number` is not `FastRational`
@@ -1274,7 +1236,7 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef s
         constantValue *= lcmOfDenominators;
         changed = true;
     }
-    assert(std::all_of(coeffs.begin(), coeffs.end(), [](opensmt::Number const & coeff) { return coeff.isInteger(); }));
+    assert(std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); }));
     // Now make sure all coeffs are coprime
     auto coeffs_gcd = abs(coeffs[0]);
     for (std::size_t i = 1; i < coeffs.size() && coeffs_gcd != 1; ++i) {
@@ -1304,21 +1266,21 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef s
 
 /**
  * Normalizes a sum term a1x1 + a2xn + ... + anxn + c such that the leading coefficient is either 1 or -1.
- * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as if
- * it was placed on the other side of an equality.
+ * Additionally, the normalized term is separated to constant and non-constant part, and the constant is modified as
+ * if it was placed on the other side of an equality.
  *
  * @param sum
  * @return Constant part of the normalized sum as LHS and non-constant part of the normalized sum as RHS
  */
 
-opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
+opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
     auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
-    opensmt::Number normalizationCoeff = abs(getNumConst(coeff));
+    Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));
     if (normalizationCoeff != 1) {
@@ -1331,7 +1293,7 @@ opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef 
     return {std::move(constantValue), normalizedSum};
 }
 
-opensmt::pair<opensmt::Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
+opensmt::pair<Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
     SRef sr = getUniqueArgSort(sum);
     assert(isSortInt(sr) or isSortReal(sr));
     return isSortInt(sr) ? sumToNormalizedIntPair(sum) : sumToNormalizedRealPair(sum);
@@ -1359,7 +1321,7 @@ PTRef ArithLogic::sumToNormalizedEquality(PTRef sum) {
 PTRef ArithLogic::getConstantFromLeq(PTRef leq) {
     Pterm const & term = getPterm(leq);
     if (not isLeq(term.symb())) {
-        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+        throw ApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
     }
     return term[0];
 }
@@ -1367,7 +1329,7 @@ PTRef ArithLogic::getConstantFromLeq(PTRef leq) {
 PTRef ArithLogic::getTermFromLeq(PTRef leq) {
     Pterm const & term = getPterm(leq);
     if (not isLeq(term.symb())) {
-        throw OsmtApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
+        throw ApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
     }
     return term[1];
 }
@@ -1389,3 +1351,4 @@ bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) const {
     auto [var, constant] = splitTermToVarAndConst(leadingTerm);
     return isNegative(getNumConst(constant));
 }
+} // namespace opensmt

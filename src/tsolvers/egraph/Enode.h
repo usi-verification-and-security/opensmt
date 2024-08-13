@@ -27,11 +27,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef ENODE_H
 #define ENODE_H
 
-#include "PtStructs.h"
-#include "SymRef.h"
-#include "TypeUtils.h"
 #include "CgTypes.h"
+
+#include <common/TypeUtils.h>
 #include <minisat/mtl/Vec.h>
+#include <pterms/PtStructs.h>
+#include <symbols/SymRef.h>
+
+namespace opensmt {
 
 struct ERef {
     uint32_t x;
@@ -151,14 +154,14 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     enodeid_t n_enodes;
  public:
 
-    EnodeAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), n_enodes(0) {}
+    EnodeAllocator(uint32_t start_cap) : RegionAllocator(start_cap), n_enodes(0) {}
     EnodeAllocator() : n_enodes(0) {}
 
     /* The children refs and corresponding use-vector indices are stored at the end of the object */
     static int enodeWord32Size(std::size_t argCount) { return (sizeof(Enode) + 2 * argCount * sizeof(ERef)) / sizeof(int32_t); }
 
     void moveTo(EnodeAllocator& to){
-        RegionAllocator<uint32_t>::moveTo(to);
+        RegionAllocator::moveTo(to);
         to.n_enodes = n_enodes;
     }
 
@@ -166,7 +169,7 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
         static_assert(sizeof(SymRef) == sizeof(uint32_t), "Expected size of types does not match");
         static_assert(sizeof(ERef)   == sizeof(uint32_t), "Expected size of types does not match");
 
-        uint32_t v = RegionAllocator<uint32_t>::alloc(enodeWord32Size(children.size()));
+        uint32_t v = RegionAllocator::alloc(enodeWord32Size(children.size()));
         // MB: The data structures used in the satisfiability checking algorithm (UseVector) requires at the moment that
         // the values of ERef cannot exceed 2^30. The benchmarks that we are dealing with at the moment are far below this limit,
         // but here is a dynamic check just in case.
@@ -180,16 +183,16 @@ class EnodeAllocator : public RegionAllocator<uint32_t>
     ERef alloc(Enode&) = delete;
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Enode&       operator[](ERef r)         { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const Enode& operator[](ERef r) const   { return (Enode&)RegionAllocator<uint32_t>::operator[](r.x); }
-    Enode*       lea       (ERef r)         { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
-    const Enode* lea       (ERef r) const   { return (Enode*)RegionAllocator<uint32_t>::lea(r.x); }
-    ERef         ael       (const Enode* t) { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); return {r}; }
+    Enode&       operator[](ERef r)         { return (Enode&)RegionAllocator::operator[](r.x); }
+    const Enode& operator[](ERef r) const   { return (Enode&)RegionAllocator::operator[](r.x); }
+    Enode*       lea       (ERef r)         { return (Enode*)RegionAllocator::lea(r.x); }
+    const Enode* lea       (ERef r) const   { return (Enode*)RegionAllocator::lea(r.x); }
+    ERef         ael       (const Enode* t) { RegionAllocator::Ref r = RegionAllocator::ael((uint32_t*)t); return {r}; }
 
     void free(ERef eid)
     {
         Enode& e = operator[](eid);
-        RegionAllocator<uint32_t>::free(enodeWord32Size(e.getSize()));
+        RegionAllocator::free(enodeWord32Size(e.getSize()));
     }
 
 };
@@ -255,7 +258,7 @@ public:
     vec<ELRef> elists;
     std::vector<vec<ERef> > referenced_by;
     ELAllocator() : free_ctr(0) {}
-    ELAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), free_ctr(0) {}
+    ELAllocator(uint32_t start_cap) : RegionAllocator(start_cap), free_ctr(0) {}
 
     void addReference(ELRef ref, ERef referer) {
         int id = operator[] (ref).getId();
@@ -263,7 +266,7 @@ public:
     }
 
     void moveTo(ELAllocator& to) {
-        RegionAllocator<uint32_t>::moveTo(to);
+        RegionAllocator::moveTo(to);
         elists.copyTo(to.elists);
         to.referenced_by.clear();
         for (const auto & referencers : referenced_by) {
@@ -274,7 +277,7 @@ public:
     }
     ELRef alloc(ERef e, const Expl& r, ERef owner) {
         assert(sizeof(ERef) == sizeof(uint32_t));
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        uint32_t v = RegionAllocator::alloc(elistWord32Size());
         ELRef elid;
         elid.x = v;
         new (lea(elid)) Elist(e, r);
@@ -287,12 +290,12 @@ public:
         elists.push(elid);
         referenced_by.emplace_back();
         referenced_by.back().push(owner);
-        
+
         return elid;
     }
 
     ELRef alloc(const Elist& old) {
-        uint32_t v = RegionAllocator<uint32_t>::alloc(elistWord32Size());
+        uint32_t v = RegionAllocator::alloc(elistWord32Size());
         ELRef elid;
         elid.x = v;
         new (lea(elid)) Elist(old.e, old.reason);
@@ -301,16 +304,16 @@ public:
         return elid;
     }
 
-    Elist&       operator[](ELRef r)         { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
-    const Elist& operator[](ELRef r) const   { return (Elist&)RegionAllocator<uint32_t>::operator[](r.x); }
-    Elist*       lea       (ELRef r)         { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
-    const Elist* lea       (ELRef r) const   { return (Elist*)RegionAllocator<uint32_t>::lea(r.x); }
-    ELRef        ael       (const Elist* t)  { RegionAllocator<uint32_t>::Ref r = RegionAllocator<uint32_t>::ael((uint32_t*)t); ELRef rf; rf.x = r; return rf; }
+    Elist&       operator[](ELRef r)         { return (Elist&)RegionAllocator::operator[](r.x); }
+    const Elist& operator[](ELRef r) const   { return (Elist&)RegionAllocator::operator[](r.x); }
+    Elist*       lea       (ELRef r)         { return (Elist*)RegionAllocator::lea(r.x); }
+    const Elist* lea       (ELRef r) const   { return (Elist*)RegionAllocator::lea(r.x); }
+    ELRef        ael       (const Elist* t)  { RegionAllocator::Ref r = RegionAllocator::ael((uint32_t*)t); ELRef rf; rf.x = r; return rf; }
 
     void free(ELRef r)
     {
         free_ctr++;
-        RegionAllocator<uint32_t>::free(elistWord32Size());
+        RegionAllocator::free(elistWord32Size());
         assert(!operator[](r).isDirty());
         (operator[](r)).setDirty();
     }
@@ -351,5 +354,7 @@ public:
 #endif
     }
 };
+
+}
 
 #endif

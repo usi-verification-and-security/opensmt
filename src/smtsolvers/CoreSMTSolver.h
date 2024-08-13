@@ -46,33 +46,27 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef MINISATSMTSOLVER_H
 #define MINISATSMTSOLVER_H
 
-#include "THandler.h"
+#include <common/Timer.h>
+#include <common/TypeUtils.h>
+#include <minisat/core/SolverTypes.h>
+#include <minisat/mtl/Vec.h>
+#include <minisat/mtl/Heap.h>
+#include <minisat/mtl/Alg.h>
+#include <tsolvers/THandler.h>
 
 #include <cstdio>
 #include <iosfwd>
 #include <memory>
 #include <sstream>
-
 #include <vector>
 
-#include <minisat/mtl/Vec.h>
-#include <minisat/mtl/Heap.h>
-#include <minisat/mtl/Alg.h>
-
-#include <minisat/core/SolverTypes.h>
-
-#include "Timer.h"
+namespace opensmt {
 
 class ResolutionProof;
 class ModelBuilder;
 
 // Helper method to print Literal to a stream
 std::ostream& operator <<(std::ostream& out, Lit l); // MB: Feel free to find a better place for this method.
-
-
-template<class A, class B>
-struct Pair { A first; B second; };
-
 
 
 //=================================================================================================
@@ -215,8 +209,8 @@ public:
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, conflicts_last_update;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 #ifdef STATISTICS
-    opensmt::OSMTTimeVal search_timer;
-    opensmt::OSMTTimeVal branchTimer;
+    opensmt::TimeVal search_timer;
+    opensmt::TimeVal branchTimer;
 #endif
     double learnts_size;
     uint64_t all_learnts;
@@ -956,6 +950,8 @@ inline void CoreSMTSolver::printClause( vec< Lit > & c )
         printLit(c[i]);
         fprintf(stderr, " ");
     }
+}
+
 }
 
 #endif

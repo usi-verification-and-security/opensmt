@@ -22,7 +22,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Alloc_h
 
 #include "XAlloc.h"
+
 #include <minisat/mtl/Vec.h>
+
+namespace opensmt {
 
 //=================================================================================================
 // Simple Region-based memory allocator:
@@ -133,5 +136,7 @@ RegionAllocator<T>::alloc(int size)
 }
 
 //=================================================================================================
+
+}
 
 #endif

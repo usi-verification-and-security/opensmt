@@ -1,6 +1,9 @@
 #include "LABounds.h"
+
 #include <minisat/mtl/Map.h>
 #include <minisat/mtl/Sort.h>
+
+namespace opensmt {
 
 LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
     : type(type.t)
@@ -12,7 +15,7 @@ LABound::LABound(BoundT type, LVRef var, Delta && delta, int id)
 
 LABoundRef LABoundAllocator::alloc(BoundT type, LVRef var, Delta && delta)
 {
-    uint32_t v = RegionAllocator<uint32_t>::alloc(laboundWord32Size());
+    uint32_t v = RegionAllocator::alloc(laboundWord32Size());
     LABoundRef id = {v};
     new (lea(id)) LABound(type, var, std::move(delta), static_cast<int>(allocatedBounds.size()));
     allocatedBounds.push_back(id);
@@ -34,8 +37,8 @@ LABoundStore::printBound(LABoundRef br) const
     free(v_str_lvr);
     const Delta & d = ba[br].getValue();
 
-    opensmt::Real const & r = d.R();
-    opensmt::Real const & s = d.D();
+    Real const & r = d.R();
+    Real const & s = d.D();
     BoundT type = ba[br].getType();
     if ((type == bound_l) && (s == 0))
         written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
@@ -145,4 +148,6 @@ void LABoundStore::buildBounds()
         assert(getVarId(v) < bounds.size());
         refs.moveTo(bounds.at(getVarId(v)));
     }
+}
+
 }

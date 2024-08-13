@@ -24,15 +24,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *********************************************************************/
 
 
+#include "ResolutionProof.h"
 #include "CoreSMTSolver.h"
 
-#include "OsmtInternalException.h"
-#include "ResolutionProof.h"
+#include <common/InternalException.h>
 
 #include <unordered_map>
 
 
-  ResolutionProof::ResolutionProof(ClauseAllocator& cl)
+namespace opensmt {
+ResolutionProof::ResolutionProof(ClauseAllocator& cl)
   : begun     (false)
   , cl_al     (cl)
 { }
@@ -137,7 +138,7 @@ bool ResolutionProof::deleted(CRef cr)
 void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler & t) const
 {
   if ( clause_to_proof_der.find( CRef_Undef ) == clause_to_proof_der.end( ) )
-    throw OsmtInternalException("there is no proof of false");
+    throw InternalException("there is no proof of false");
 
   out << "(proof " << '\n';
 
@@ -288,4 +289,6 @@ std::ostream & operator<<(std::ostream & os, clause_type val) {
             assert(false);
     }
     return os;
+}
+
 }

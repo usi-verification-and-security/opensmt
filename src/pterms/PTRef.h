@@ -11,28 +11,29 @@
 #include <cstdint>
 #include <functional>
 
+namespace opensmt {
 struct PTRef {
     uint32_t x;
-    inline friend bool operator== (PTRef a1, PTRef a2) { return a1.x == a2.x; }
-    inline friend bool operator!= (PTRef a1, PTRef a2) { return a1.x != a2.x; }
-    inline friend bool operator> (PTRef a1, PTRef a2) { return a1.x > a2.x; }
-    inline friend bool operator< (PTRef a1, PTRef a2) { return a1.x < a2.x; }
-    static const PTRef Undef;
+    inline friend bool operator==(PTRef a1, PTRef a2) { return a1.x == a2.x; }
+    inline friend bool operator!=(PTRef a1, PTRef a2) { return a1.x != a2.x; }
+    inline friend bool operator>(PTRef a1, PTRef a2) { return a1.x > a2.x; }
+    inline friend bool operator<(PTRef a1, PTRef a2) { return a1.x < a2.x; }
+    static PTRef const Undef;
 };
 
 const struct PTRef PTRef_Undef = {INT32_MAX};
-inline constexpr PTRef PTRef::Undef = PTRef { INT32_MAX };
+inline constexpr PTRef PTRef::Undef = PTRef{INT32_MAX};
 
 struct PTRefHash {
-    uint32_t operator () (PTRef s) const {
-        return (uint32_t)s.x; }
+    uint32_t operator()(PTRef s) const { return (uint32_t)s.x; }
 };
 
 struct PTRefPairHash {
-    std::size_t operator () (std::pair<PTRef, PTRef> p) const {
+    std::size_t operator()(std::pair<PTRef, PTRef> p) const {
         std::hash<uint32_t> hasher;
         return (hasher(p.first.x) ^ hasher(p.second.x));
     }
 };
+} // namespace opensmt
 
-#endif //OPENSMT_PTREF_H
+#endif // OPENSMT_PTREF_H

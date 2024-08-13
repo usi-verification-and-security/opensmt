@@ -26,7 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 %define api.pure
 %define parse.error verbose
-%name-prefix "smt2new"
+// TK: Deprecated, but using '%define api.prefix' nor 'api.namespace' works, even with '%language "C++"' ...
+%name-prefix "osmt_yy"
 %locations
 %defines
 %parse-param { Smt2newContext* context }
@@ -39,15 +40,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <vector>
 #include <list>
 #include <string>
-#include <string.h>
+#include <cstring>
 
-#include "smt2newcontext.h"
+#include <api/smt2tokens.h>
+#include <parsers/smt2new/smt2newcontext.h>
+
+// TK: I could not arrive at a solution without preceding this before including the gen. header
+using namespace opensmt;
+
 #include "smt2newparser.hh"
-#include "smt2tokens.h"
 
-int smt2newlex(YYSTYPE* lvalp, YYLTYPE* llocp, void* scanner);
 
-void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
+int osmt_yylex(YYSTYPE* lvalp, YYLTYPE* llocp, void* scanner);
+
+void osmt_yyerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
 {
   if (context->interactive)
     printf("At interactive input: %s\n", s);
@@ -67,7 +73,7 @@ void smt2newerror( YYLTYPE* locp, Smt2newContext* context, const char * s )
   char  *                      str;
   ASTNode *                    snode;
   std::vector< ASTNode * > *   snode_list;
-  osmttokens::smt2token        tok;
+  tokens::smt2token            tok;
 }
 
 %destructor { free($$); } <str>
@@ -661,4 +667,3 @@ info_flag: KW_ERRORBEHAVIOR
 
 //=======================================================================================
 // Auxiliary Routines
-

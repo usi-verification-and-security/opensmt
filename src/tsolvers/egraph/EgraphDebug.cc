@@ -29,6 +29,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <sstream>
 
+namespace opensmt {
+
 class SimpSMTSolver;
 
 // Choose debugging level
@@ -175,4 +177,6 @@ std::string Egraph::toString(ERef er) const {
     if (er == ERef_Undef) { return "undef"; }
     const Enode & node = getEnode(er);
     return logic.printTerm(node.getTerm());
+}
+
 }
