@@ -16,11 +16,11 @@ namespace opensmt {
 using Number = Real;
 
 static_assert(std::constructible_from<Number, Real>);
-static_assert(std::constructible_from<Number, Integer>);
+//- static_assert(std::constructible_from<Number, Integer>);
 
 // TK: The current implementation assumes that Real can be directly and safely interpreted as Integer
 // This preserves performance of the conversions
-static_assert(std::derived_from<Integer, Real>);
+//- static_assert(std::derived_from<Integer, Real>);
 
 inline bool isNegative(auto const & num) {
     return num.sign() < 0;

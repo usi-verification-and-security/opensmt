@@ -106,8 +106,10 @@ namespace {
             uint32_t nextColIndex = 1;
             while (nextColIndex < activeColumns.size()) {
                 auto const & nextCol = A[activeColumns[nextColIndex]];
-                auto quotient = -fastint_fdiv_q(static_cast<FastInteger const &>(nextCol.getFirstCoeff()),
-                                                static_cast<FastInteger const &>(smallestValue));
+                //- auto quotient = -fastint_fdiv_q(static_cast<FastInteger const &>(nextCol.getFirstCoeff()),
+                //-                                 static_cast<FastInteger const &>(smallestValue));
+                auto quotient = Real(-fastint_fdiv_q(FastInteger(uint32_t(nextCol.getFirstCoeff().value())),
+                                                FastInteger(uint32_t(smallestValue.value()))));
                 assert(not quotient.isZero());
                 addColumnMultiple(A, activeColumns[0], quotient, activeColumns[nextColIndex], U);
                 if (not nextCol.isFirst(
@@ -133,8 +135,10 @@ namespace {
         for (uint32_t col = 0; col < pivotIndex; ++col) {
             auto const * otherVal = A[col].tryGetCoeffFor(rowIndex);
             if (not otherVal) { continue; }
-            auto quotient = -fastint_fdiv_q(static_cast<FastInteger const &>(*otherVal),
-                                            static_cast<FastInteger const &>(pivotVal));
+            //- auto quotient = -fastint_fdiv_q(static_cast<FastInteger const &>(*otherVal),
+            //-                                 static_cast<FastInteger const &>(pivotVal));
+            auto quotient = Real(-fastint_fdiv_q(FastInteger(uint32_t(otherVal->value())),
+                                                FastInteger(uint32_t(pivotVal.value()))));
             if (not quotient.isZero()) { addColumnMultiple(A, pivotIndex, quotient, ColIndex{col}, U); }
         }
     }

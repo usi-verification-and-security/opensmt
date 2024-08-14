@@ -355,6 +355,7 @@ bool Simplex::valueConsistent(LVRef v) const {
         sum += term.coeff * model->read(term.var);
     }
 
+    //- std::cerr << "<" << value << "> == <" << sum << ">" << std::endl;
     assert(value == sum);
     return value == sum;
 }

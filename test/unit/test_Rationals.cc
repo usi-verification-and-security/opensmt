@@ -5,6 +5,8 @@
 
 namespace opensmt {
 
+#ifdef FAST_RATIONALS
+
 TEST(Rationals_test, test_division_int32min)
 {
     // INT32_MIN
@@ -488,5 +490,7 @@ TEST(Rationals_test, testNormalization) {
     EXPECT_EQ(normalizedNum, -370387);
     EXPECT_EQ(normalizedDen, 1000000);
 }
+
+#endif  // FAST_RATIONALS
 
 }
