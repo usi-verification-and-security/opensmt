@@ -2,7 +2,7 @@ version: 2.1
 jobs:
     formatter:
         docker:
-            - image: usiverify/verify-env:current
+            - image: usiverify/verify-env:ubuntu
               auth:
                   username: mydockerhub-user
                   password: $DOCKERHUB_PASSWORD
@@ -11,7 +11,7 @@ jobs:
             - checkout
             - run:
                   name: run clang formatter
-                  command: cat .clang-files | xargs clang-format --Werror --dry-run
+                  command: ./scripts/check_clang-format.sh
 
     build-recent-gcc-debug:
         docker:
