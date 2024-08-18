@@ -8,7 +8,7 @@
 
 class IDLSolver : public STPSolver<SafeInt> {
 public:
-    IDLSolver(SMTConfig & c, ArithLogic & l) : STPSolver(c, l){};
+    IDLSolver(SMTConfig & c, ArithLogic & l) : STPSolver(c, l) {};
 };
 
 template<>
