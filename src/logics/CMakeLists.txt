@@ -20,6 +20,4 @@ target_sources(logics
 )
 
 install(FILES LogicFactory.h Theory.h Logic.h ArithLogic.h BVLogic.h FunctionTools.h
- DESTINATION ${INSTALL_HEADERS_DIR})
-
-
+ DESTINATION ${INSTALL_HEADERS_DIR}/logics)

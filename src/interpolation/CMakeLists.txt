@@ -1,2 +1,1 @@
-install(FILES InterpolationUtils.h DESTINATION ${INSTALL_HEADERS_DIR})
-
+install(FILES InterpolationUtils.h DESTINATION ${INSTALL_HEADERS_DIR}/interpolation)

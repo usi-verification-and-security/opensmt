@@ -13,5 +13,4 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/PGTransformationAlgorithms.cc"
 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/InterpolationContext.cc"
 )
 
-install(FILES InterpolationContext.h DESTINATION ${INSTALL_HEADERS_DIR})
-
+install(FILES InterpolationContext.h DESTINATION ${INSTALL_HEADERS_DIR}/proof)

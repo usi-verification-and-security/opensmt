@@ -74,8 +74,8 @@ if (BUILD_SHARED_LIBS)
     )
 
 
-    install(FILES 
-        "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake" 
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfigVersion.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/OpenSMTConfig.cmake"
         "${PROJECT_SOURCE_DIR}/cmake_modules/FindGMP.cmake"
         DESTINATION lib/cmake/opensmt
@@ -102,5 +102,5 @@ install(FILES
     PartitionManager.h
     Interpret.h
     DESTINATION
-    ${INSTALL_HEADERS_DIR}
+    ${INSTALL_HEADERS_DIR}/api
 )

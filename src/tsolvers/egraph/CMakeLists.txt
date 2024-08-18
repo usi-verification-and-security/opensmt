@@ -20,7 +20,7 @@ target_sources(tsolvers
     PRIVATE "${CMAKE_CURRENT_LIST_DIR}/InterpolatingEgraph.cc"
 )
 
-install(FILES ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h DESTINATION ${INSTALL_HEADERS_DIR})
-
-install(FILES ${CMAKE_CURRENT_LIST_DIR}/CgTypes.h DESTINATION ${INSTALL_HEADERS_DIR})
-
+install(FILES
+    ${CMAKE_CURRENT_LIST_DIR}/UFInterpolator.h
+    ${CMAKE_CURRENT_LIST_DIR}/CgTypes.h
+DESTINATION ${INSTALL_HEADERS_DIR}//tsolvers/egraph)

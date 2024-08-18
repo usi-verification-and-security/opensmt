@@ -25,5 +25,4 @@ include(arraysolver/CMakeLists.txt)
 
 install(FILES Deductions.h UFTHandler.h LATHandler.h IDLTHandler.h RDLTHandler.h TSolver.h THandler.h
 TSolverHandler.h TResult.h
-DESTINATION ${INSTALL_HEADERS_DIR})
-
+DESTINATION ${INSTALL_HEADERS_DIR}/tsolvers)

@@ -25,4 +25,4 @@ install(FILES
         Integer.h Number.h FastRational.h StringMap.h Timer.h inttypes.h
         TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h ApiException.h TypeUtils.h
         NumberUtils.h NatSet.h ScopedVector.h
-DESTINATION ${INSTALL_HEADERS_DIR})
+DESTINATION ${INSTALL_HEADERS_DIR}/common)

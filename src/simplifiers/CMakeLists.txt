@@ -7,5 +7,5 @@ PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/LA.cc"
 )
 
 install(FILES BoolRewriting.h
-    DESTINATION ${INSTALL_HEADERS_DIR}
+    DESTINATION ${INSTALL_HEADERS_DIR}/simplifiers
     )

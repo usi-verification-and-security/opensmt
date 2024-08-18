@@ -8,5 +8,5 @@ install(FILES
     Substitutor.h
     Rewriter.h
     Rewritings.h
-    DESTINATION ${INSTALL_HEADERS_DIR}
+    DESTINATION ${INSTALL_HEADERS_DIR}/rewriters
     )

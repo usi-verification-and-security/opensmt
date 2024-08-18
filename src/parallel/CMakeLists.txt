@@ -64,7 +64,7 @@ if (BUILD_STATIC_LIBS)
 	target_link_libraries(OpenSMT-splitter-static PUBLIC OpenSMT-static parallel)
 	install(TARGETS OpenSMT-splitter-static ARCHIVE DESTINATION lib)
 endif()
-install(FILES SplitterInterpret.h DESTINATION ${INSTALL_HEADERS_DIR})
+install(FILES SplitterInterpret.h DESTINATION ${INSTALL_HEADERS_DIR}/parallel)
 
 
 
