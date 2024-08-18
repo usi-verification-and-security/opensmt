@@ -2,25 +2,27 @@
 // Created by Antti on 04.08.20.
 //
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <ArithLogic.h>
-#include <IteToSwitch.h>
-#include <IteHandler.h>
-#include <TreeOps.h>
+#include <logics/Logic.h>
+#include <logics/ArithLogic.h>
+#include <itehandler/IteToSwitch.h>
+#include <itehandler/IteHandler.h>
+#include <common/TreeOps.h>
 
 #include <algorithm>
+
+namespace opensmt {
 
 class LogicIteTest: public ::testing::Test {
 public:
     Logic logic;
-    LogicIteTest() : logic{opensmt::Logic_t::QF_BOOL} {}
+    LogicIteTest() : logic{Logic_t::QF_BOOL} {}
 };
 
 class LRAIteTest: public ::testing::Test {
 public:
     ArithLogic logic;
     SRef lrasort;
-    LRAIteTest() : logic{opensmt::Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
+    LRAIteTest() : logic{Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
 };
 
 class IteManagerTest: public ::testing::Test {
@@ -33,7 +35,7 @@ public:
     ArithLogic logic;
     SRef lrasort;
 
-    IteManagerTest() : logic{opensmt::Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
+    IteManagerTest() : logic{Logic_t::QF_LRA}, lrasort(logic.getSort_real()) {}
 
     void printTopLevelSwitches(IteToSwitch &iteManager) {
         PTRef tr = logic.getTerm_true();
@@ -296,4 +298,6 @@ TEST_F(LogicIteTest, test_IteHandler_Inverse) {
         std::cout << logic.pp(root) << std::endl;
         std::cout << logic.pp(rootWithItes) << std::endl;
     }
+}
+
 }

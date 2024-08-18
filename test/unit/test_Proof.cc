@@ -3,7 +3,9 @@
 //
 
 #include <gtest/gtest.h>
-#include <PG.h>
+#include <proof/PG.h>
+
+namespace opensmt {
 
 TEST(ProofTest, test_mergeClauses_PivotPresent_NoDuplicates) {
     std::vector<Lit> left { mkLit(0, true), mkLit(1,false) };
@@ -93,7 +95,7 @@ TEST(ProofTest, test_mergeClauses_PivotAfterFirstEnd) {
 
 class ReductionTest : public ::testing::Test {
 protected:
-    ReductionTest(): logic{opensmt::Logic_t::QF_BOOL}, config{}, theory{config, logic}, partitionManager{logic}, termMapper{logic}, ca{}, proof{ca} {}
+    ReductionTest(): logic{Logic_t::QF_BOOL}, config{}, theory{config, logic}, partitionManager{logic}, termMapper{logic}, ca{}, proof{ca} {}
     virtual void SetUp() {
         a_term = logic.mkBoolVar("a");
         b_term = logic.mkBoolVar("b");
@@ -412,4 +414,6 @@ TEST_F(ReductionTest, test_proofTransformAndRestructure_IdenticalAntecedents) {
 //    pg.printProofAsDotty(std::cout);
     pg.emptyProofGraph();
     EXPECT_TRUE(true);
+}
+
 }

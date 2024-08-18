@@ -6,14 +6,16 @@
  */
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <TreeOps.h>
+#include <logics/ArithLogic.h>
+#include <common/TreeOps.h>
 
 #include <algorithm>
 
+namespace opensmt {
+
 class VisitorTest : public ::testing::Test {
 protected:
-    VisitorTest() : logic{opensmt::Logic_t::QF_LRA} {}
+    VisitorTest() : logic{Logic_t::QF_LRA} {}
 
     virtual void SetUp() {
         x = logic.mkRealVar("x");
@@ -110,4 +112,6 @@ TEST_F(VisitorTest, test_PtermNodeCounter) {
             ASSERT_TRUE(counter.limitReached());
         }
     }
+}
+
 }

@@ -5,16 +5,18 @@
  */
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <MainSolver.h>
-#include <SMTConfig.h>
+#include <logics/ArithLogic.h>
+#include <api/MainSolver.h>
+#include <options/SMTConfig.h>
 
 #include <memory>
+
+namespace opensmt {
 
 /// Pure propositional and uninterpreted functions
 class UFUnsatCoreTest : public ::testing::Test {
 protected:
-    UFUnsatCoreTest(): logic{opensmt::Logic_t::QF_UF} {}
+    UFUnsatCoreTest(): logic{Logic_t::QF_UF} {}
     void SetUp() override {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -106,7 +108,7 @@ TEST_F(UFUnsatCoreTest, UF_Simple) {
 /// Pure arrays
 class AXUnsatCoreTest : public ::testing::Test {
 protected:
-    AXUnsatCoreTest(): logic{opensmt::Logic_t::QF_AX} {}
+    AXUnsatCoreTest(): logic{Logic_t::QF_AX} {}
     void SetUp() override {
         indexSort = logic.declareUninterpretedSort("Index");
         elementSort = logic.declareUninterpretedSort("Element");
@@ -154,7 +156,7 @@ TEST_F(AXUnsatCoreTest, AX_Simple) {
 /// Linear integer arithmetic
 class LIAUnsatCoreTest : public ::testing::Test {
 protected:
-    LIAUnsatCoreTest(): logic{opensmt::Logic_t::QF_LIA} {}
+    LIAUnsatCoreTest(): logic{Logic_t::QF_LIA} {}
     void SetUp() override {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
@@ -209,7 +211,7 @@ TEST_F(LIAUnsatCoreTest, LIA_Simple) {
 /// Arrays + Linear integer arithmetic
 class ALIAUnsatCoreTest : public ::testing::Test {
 protected:
-    ALIAUnsatCoreTest(): logic{opensmt::Logic_t::QF_ALIA} {}
+    ALIAUnsatCoreTest(): logic{Logic_t::QF_ALIA} {}
     void SetUp() override {
         intIntArraySort = logic.getArraySort(logic.getSort_int(), logic.getSort_int());
         arr1 = logic.mkVar(intIntArraySort, "a1");
@@ -260,4 +262,6 @@ TEST_F(ALIAUnsatCoreTest, ALIA_Simple) {
     auto isInCore = [&](PTRef fla) -> bool { return std::find(core.begin(), core.end(), fla) != core.end(); };
     EXPECT_TRUE(isInCore(a1));
     EXPECT_TRUE(isInCore(a3));
+}
+
 }

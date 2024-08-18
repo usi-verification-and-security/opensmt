@@ -3,15 +3,17 @@
 //
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <StringConv.h>
+#include <logics/ArithLogic.h>
+#include <common/StringConv.h>
+
+namespace opensmt {
 
 class ArithLogicApiTest: public ::testing::Test {
 public:
     ArithLogicApiTest()
-        : lraLogic(opensmt::Logic_t::QF_LRA)
-        , liaLogic(opensmt::Logic_t::QF_LIA)
-        , liraLogic(opensmt::Logic_t::QF_LIRA)
+        : lraLogic(Logic_t::QF_LRA)
+        , liaLogic(Logic_t::QF_LIA)
+        , liraLogic(Logic_t::QF_LIRA)
     {}
     ArithLogic lraLogic;
     ArithLogic liaLogic;
@@ -27,19 +29,19 @@ TEST_F(ArithLogicApiTest, test_LRA) {
     PTRef c2 = lraLogic.mkRealVar("a");
     ASSERT_NO_THROW(lraLogic.mkPlus(c1, c2));
     ASSERT_THROW(lraLogic.mkTimes(c2, c2), LANonLinearException);
-    ASSERT_THROW(lraLogic.mkIntVar("x"), OsmtApiException);
-    ASSERT_THROW(lraLogic.mkIntConst(2), OsmtApiException);
+    ASSERT_THROW(lraLogic.mkIntVar("x"), ApiException);
+    ASSERT_THROW(lraLogic.mkIntConst(2), ApiException);
 }
 
 TEST_F(ArithLogicApiTest, test_LIA) {
     PTRef c1 = liaLogic.mkConst("213");
     ASSERT_TRUE(liaLogic.yieldsSortInt(c1));
-    ASSERT_THROW(liaLogic.mkConst("213.0"), OsmtApiException);
+    ASSERT_THROW(liaLogic.mkConst("213.0"), ApiException);
     PTRef c2 = liaLogic.mkIntVar("a");
     ASSERT_NO_THROW(liaLogic.mkPlus(c1, c2));
     ASSERT_THROW(liaLogic.mkTimes(c2, c2), LANonLinearException);
-    ASSERT_THROW(liaLogic.mkRealVar("a"), OsmtApiException);
-    ASSERT_THROW(liaLogic.mkRealConst(2), OsmtApiException);
+    ASSERT_THROW(liaLogic.mkRealVar("a"), ApiException);
+    ASSERT_THROW(liaLogic.mkRealConst(2), ApiException);
 }
 
 TEST_F(ArithLogicApiTest, test_Mixed) {
@@ -49,8 +51,10 @@ TEST_F(ArithLogicApiTest, test_Mixed) {
     ASSERT_TRUE(liraLogic.yieldsSortReal(r1));
     PTRef c2 = liraLogic.mkRealVar("a");
 
-    ASSERT_THROW(liraLogic.mkPlus(c1, c2), OsmtApiException);
-    ASSERT_THROW(liraLogic.mkEq(c1, c2), OsmtApiException);
+    ASSERT_THROW(liraLogic.mkPlus(c1, c2), ApiException);
+    ASSERT_THROW(liraLogic.mkEq(c1, c2), ApiException);
     PTRef d2 = liraLogic.mkIntVar("a");
     ASSERT_NO_THROW(liraLogic.mkPlus(c1, d2));
+}
+
 }

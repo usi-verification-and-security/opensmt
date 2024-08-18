@@ -6,10 +6,12 @@
 */
 
 #include <gtest/gtest.h>
-#include <lasolver/Simplex.h>
-#include <SMTConfig.h>
-#include <lasolver/LABounds.h>
-#include <lasolver/LAVar.h>
+#include <tsolvers/lasolver/Simplex.h>
+#include <options/SMTConfig.h>
+#include <tsolvers/lasolver/LABounds.h>
+#include <tsolvers/lasolver/LAVar.h>
+
+namespace opensmt {
 
 TEST(Simplex_test, test_ops_in_Simplex)
 {
@@ -159,4 +161,6 @@ TEST(Simplex_test, test_Assignment)
     EXPECT_LE(x_val, 1);
     EXPECT_GE(x_val, -5);
     EXPECT_EQ(x_val, -1 * y_val);
+}
+
 }

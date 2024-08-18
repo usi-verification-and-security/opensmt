@@ -3,11 +3,14 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <SMTConfig.h>
-#include <LAScore.h>
+#include <logics/Logic.h>
+#include <options/SMTConfig.h>
+#include <smtsolvers/LAScore.h>
+
 #include <cstdlib>
 #include <string>
+
+namespace opensmt {
 
 class BestLitBufTestClassic: public ::testing::Test {
 public:
@@ -92,5 +95,7 @@ TEST_F(BestLitBufTestDeep, test_UnitLookahead) {
     ASSERT_TRUE(buf.getLit(1) == l2 || buf.getLit(1) == l4);
     buf.insert(l6,v6);
     ASSERT_TRUE(buf.getLit(0) == l4 || buf.getLit(1) == l4);
+
+}
 
 }

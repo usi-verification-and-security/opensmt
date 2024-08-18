@@ -5,8 +5,10 @@
  */
 
 #include <gtest/gtest.h>
-#include "Egraph.h"
-#include "TreeOps.h"
+#include <tsolvers/egraph/Egraph.h>
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 TEST(UseVector_test, testAdd){
     UseVector uv;
@@ -64,7 +66,7 @@ public:
     Logic logic;
     Egraph egraph;
     SMTConfig c;
-    EgraphTest() : logic{opensmt::Logic_t::QF_UF}, egraph(c, logic) {}
+    EgraphTest() : logic{Logic_t::QF_UF}, egraph(c, logic) {}
 };
 
 TEST_F(EgraphTest, test_booleans) {
@@ -138,4 +140,6 @@ TEST_F(EgraphTest, test_IncrementalAddition) {
     egraph.pushBacktrackPoint();
     ASSERT_TRUE(egraph.assertLit({eq3, l_True}));
     ASSERT_EQ(egraph.check(true), TRes::SAT);
+}
+
 }

@@ -3,9 +3,9 @@
 //
 
 #include <gtest/gtest.h>
-#include <StringConv.h>
+#include <common/StringConv.h>
 
-using namespace opensmt;
+namespace opensmt {
 
 class NumberParserTest : public ::testing::Test {
 public:
@@ -53,4 +53,6 @@ TEST_F(NumberParserTest, test_IntCheck) {
         std::cout << " - " << s << std::endl;
         ASSERT_FALSE(isIntString(s.data()));
     }
+}
+
 }

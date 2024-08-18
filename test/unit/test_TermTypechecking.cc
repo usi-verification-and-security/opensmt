@@ -3,7 +3,9 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
+#include <logics/Logic.h>
+
+namespace opensmt {
 
 class TermTypecheckingTest: public ::testing::Test {
 public:
@@ -21,7 +23,7 @@ public:
     SymRef leftAssocFun;
     SymRef rightAssocFun;
     TermTypecheckingTest()
-        : logic{opensmt::Logic_t::QF_UF}
+        : logic{Logic_t::QF_UF}
         , usort(logic.declareUninterpretedSort("U"))
         , vsort(logic.declareUninterpretedSort("V"))
         , uvar(logic.mkVar(usort, "u"))
@@ -86,4 +88,6 @@ TEST_F(TermTypecheckingTest, test_AssociativeFun) {
     ASSERT_FALSE(logic.typeCheck(rightAssocFun, {}, msg));
     ASSERT_FALSE(logic.typeCheck(rightAssocFun, {vvar}, msg));
     ASSERT_FALSE(logic.typeCheck(rightAssocFun, {vvar, vvar, vvar, vvar}, msg));
+}
+
 }

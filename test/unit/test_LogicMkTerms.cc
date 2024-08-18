@@ -2,15 +2,16 @@
 // Created by Antti on 31.03.20.
 //
 #include <gtest/gtest.h>
-#include <Logic.h>
+#include <logics/Logic.h>
 
-#include <TreeOps.h>
+#include <common/TreeOps.h>
 
+namespace opensmt {
 
 class LogicMkTermsTest: public ::testing::Test {
 public:
     Logic logic;
-    LogicMkTermsTest(): logic{opensmt::Logic_t::QF_UF} {}
+    LogicMkTermsTest(): logic{Logic_t::QF_UF} {}
 };
 
 TEST_F(LogicMkTermsTest, test_Distinct){
@@ -228,4 +229,6 @@ TEST_F(LogicMkTermsTest, testTopLevelConjuncts_notConjunction) {
     auto conjuncts2 = topLevelConjuncts(logic, fla);
     ASSERT_EQ(conjuncts2.size(), 1);
     EXPECT_EQ(conjuncts2[0], fla);
+}
+
 }

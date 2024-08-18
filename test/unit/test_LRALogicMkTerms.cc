@@ -3,11 +3,13 @@
 //
 
 #include <gtest/gtest.h>
-#include "ArithLogic.h"
+#include <logics/ArithLogic.h>
+
+namespace opensmt {
 
 class LRALogicMkTermsTest : public ::testing::Test {
 protected:
-    LRALogicMkTermsTest(): logic{opensmt::Logic_t::QF_LRA} {}
+    LRALogicMkTermsTest(): logic{Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");
@@ -267,5 +269,7 @@ TEST_F(LRALogicMkTermsTest, test_EqualityNormalization_ToConstantExpression) {
 }
 
 TEST_F(LRALogicMkTermsTest, test_FailWithIntArgs) {
-    EXPECT_THROW(logic.mkIntConst(2), OsmtApiException);
+    EXPECT_THROW(logic.mkIntConst(2), ApiException);
+}
+
 }

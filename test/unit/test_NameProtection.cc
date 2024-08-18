@@ -6,11 +6,13 @@
  */
 
 #include <gtest/gtest.h>
-#include <lasolver/LASolver.h>
+#include <tsolvers/lasolver/LASolver.h>
+
+namespace opensmt {
 
 class NameProtectionTest : public ::testing::Test {
 public:
-    NameProtectionTest() : arithLogic(opensmt::Logic_t::QF_LIA), ufLogic(opensmt::Logic_t::QF_UF), ufliaLogic(opensmt::Logic_t::QF_UFLIA) {}
+    NameProtectionTest() : arithLogic(Logic_t::QF_LIA), ufLogic(Logic_t::QF_UF), ufliaLogic(Logic_t::QF_UFLIA) {}
     ArithLogic arithLogic;
     Logic ufLogic;
     ArithLogic ufliaLogic;
@@ -84,3 +86,4 @@ TEST_F(NameProtectionTest, test_AmbiguousVarPrinting) {
     ASSERT_TRUE(intEquality_s.find("(as ") == std::string::npos); // No disambiguation necessary
 }
 
+}

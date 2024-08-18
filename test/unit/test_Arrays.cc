@@ -6,13 +6,15 @@
 */
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <MainSolver.h>
+#include <logics/ArithLogic.h>
+#include <api/MainSolver.h>
+
+namespace opensmt {
 
 class ArraysTest: public ::testing::Test {
 public:
     ArraysTest()
-        : logic(opensmt::Logic_t::QF_ALIA), zero(logic.getTerm_IntZero()), one(logic.getTerm_IntOne())
+        : logic(Logic_t::QF_ALIA), zero(logic.getTerm_IntZero()), one(logic.getTerm_IntOne())
     {}
     ArithLogic logic;
     PTRef zero;
@@ -38,3 +40,4 @@ TEST_F(ArraysTest, test_ReadOverWrite) {
     ASSERT_EQ(res, s_False);
 }
 
+}

@@ -3,9 +3,12 @@
 //
 
 #include <gtest/gtest.h>
-#include <BoolRewriting.h>
-#include <Logic.h>
+#include <simplifiers/BoolRewriting.h>
+#include <logics/Logic.h>
+
 #include <algorithm>
+
+namespace opensmt {
 
 class Dominators_test : public ::testing::Test {
 public:
@@ -13,7 +16,7 @@ public:
     PTRef a;
     PTRef b;
     PTRef c;
-    Dominators_test() : logic{opensmt::Logic_t::QF_BOOL}, a(logic.mkBoolVar("a")), b(logic.mkBoolVar("b")), c(logic.mkBoolVar("c")) {}
+    Dominators_test() : logic{Logic_t::QF_BOOL}, a(logic.mkBoolVar("a")), b(logic.mkBoolVar("b")), c(logic.mkBoolVar("c")) {}
 };
 
 TEST_F(Dominators_test, test_PostOrderSimpleTree)
@@ -71,4 +74,6 @@ TEST_F(Dominators_test, test_SimpleDAG)
     ASSERT_EQ(idom.at(conj),root);
     ASSERT_EQ(idom.at(neg),root);
     ASSERT_EQ(idom.at(root),root);
+}
+
 }

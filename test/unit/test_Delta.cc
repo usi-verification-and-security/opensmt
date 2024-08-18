@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
-#include <lasolver/Delta.h>
+#include <tsolvers/lasolver/Delta.h>
+
+namespace opensmt {
+
 TEST(Delta_test, test_ops_in_Delta)
 {
     Delta plus_infty(Delta::UPPER);
@@ -16,3 +19,4 @@ TEST(Delta_test, test_ops_in_Delta)
     ASSERT_EQ(!(minus_infty >= plus_infty), true);
 }
 
+}

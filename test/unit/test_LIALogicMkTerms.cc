@@ -3,16 +3,18 @@
 //
 
 #include <gtest/gtest.h>
-#include "ArithLogic.h"
-#include "IteHandler.h"
-#include "Rewritings.h"
-#include "TreeOps.h"
+#include <logics/ArithLogic.h>
+#include <itehandler/IteHandler.h>
+#include <rewriters/Rewritings.h>
+#include <common/TreeOps.h>
 
 #include <algorithm>
 
+namespace opensmt {
+
 class LIALogicMkTermsTest: public ::testing::Test {
 protected:
-    LIALogicMkTermsTest() : logic(opensmt::Logic_t::QF_LIA) {}
+    LIALogicMkTermsTest() : logic(Logic_t::QF_LIA) {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
@@ -196,7 +198,7 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_EqualityToConstant) {
 TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
     auto hasAuxSymbols = [this](PTRef tr) {
         auto auxiliaryVarsInTerm = matchingSubTerms(logic, tr, [&](PTRef subTerm) {
-            return opensmt::tryGetOriginalDivModTerm(logic, subTerm).has_value(); });
+            return tryGetOriginalDivModTerm(logic, subTerm).has_value(); });
         return auxiliaryVarsInTerm.size() > 0;
     };
 
@@ -214,12 +216,14 @@ TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
     PTRef nested = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(ite, c));
 
     for (PTRef tr : {term, eq, nested}) {
-        PTRef termWithAux = opensmt::rewriteDivMod(logic, IteHandler(logic).rewrite(tr));
+        PTRef termWithAux = rewriteDivMod(logic, IteHandler(logic).rewrite(tr));
         ASSERT_TRUE(hasAuxSymbols(termWithAux));
 
         PTRef termWithoutAux = logic.removeAuxVars(termWithAux);
         std::cout << logic.pp(termWithoutAux) << std::endl;
         ASSERT_FALSE(hasAuxSymbols(termWithoutAux));
     }
+
+}
 
 }

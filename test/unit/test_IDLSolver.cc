@@ -3,13 +3,15 @@
 //
 
 #include <gtest/gtest.h>
-#include <SMTConfig.h>
-#include <ArithLogic.h>
-#include <IDLSolver.h>
+#include <options/SMTConfig.h>
+#include <logics/ArithLogic.h>
+#include <tsolvers/stpsolver/IDLSolver.h>
+
+namespace opensmt {
 
 class IDLSolverTest : public ::testing::Test {
 protected:
-    IDLSolverTest() : logic{opensmt::Logic_t::QF_IDL} {}
+    IDLSolverTest() : logic{Logic_t::QF_IDL} {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
@@ -149,4 +151,4 @@ TEST_F(SafeIntTest, test_sub_fail_over){
     ASSERT_ANY_THROW(a -= SafeInt(-43));
 }
 
-
+}

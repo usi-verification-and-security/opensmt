@@ -6,7 +6,9 @@
  */
 
 #include <gtest/gtest.h>
-#include <Opensmt.h>
+#include <api/Opensmt.h>
+
+namespace opensmt {
 
 class LIASubstitutionsRegression: public ::testing::Test {
 public:
@@ -22,7 +24,7 @@ protected:
     PTRef a,b,c,x,y,z;
     PTRef fa,fb,fc,fx,fy,fz;
 public:
-    UFLRASubstitutionsRegression() : logic(opensmt::Logic_t::QF_UFLRA) {
+    UFLRASubstitutionsRegression() : logic(Logic_t::QF_UFLRA) {
         f = logic.declareFun("f", logic.getSort_real(), {logic.getSort_real()});
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");
@@ -137,4 +139,6 @@ TEST_F(UFLRASubstitutionsRegression, test_NoProblematicSubstitutions) {
     EXPECT_FALSE(map.has(a));
     EXPECT_FALSE(map.has(b));
     EXPECT_FALSE(map.has(c));
+}
+
 }

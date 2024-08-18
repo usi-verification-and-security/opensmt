@@ -3,9 +3,11 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <SMTConfig.h>
-#include <Opensmt.h>
+#include <logics/Logic.h>
+#include <options/SMTConfig.h>
+#include <api/Opensmt.h>
+
+namespace opensmt {
 
 class TemplateTest : public ::testing::Test {
 protected:
@@ -17,7 +19,7 @@ protected:
     PTRef b2;
 public:
     TemplateTest()
-            : logic{opensmt::Logic_t::QF_UF}
+            : logic{Logic_t::QF_UF}
             , s(logic.declareUninterpretedSort("S"))
             , a1(logic.mkVar(s, "a1"))
             , a2(logic.mkVar(s, "a2"))
@@ -87,4 +89,6 @@ TEST_F(TemplateTest, test_template) {
     PTRef res = logic.instantiateFunctionTemplate(temp, {b1,b2});
     PTRef ref = logic.mkEq(b1, b2);
     ASSERT_EQ(res, ref);
+}
+
 }

@@ -7,14 +7,16 @@
 
 #include <gtest/gtest.h>
 
-#include "Logic.h"
-#include "MainSolver.h"
-#include "VerificationUtils.h"
-#include "FarkasInterpolator.h"
+#include <logics/Logic.h>
+#include <api/MainSolver.h>
+#include <common/VerificationUtils.h>
+#include <tsolvers/lasolver/FarkasInterpolator.h>
+
+namespace opensmt {
 
 class ResolutionProofInterpolationTest : public ::testing::Test {
 protected:
-    ResolutionProofInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
+    ResolutionProofInterpolationTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         const char* msg;
         config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -81,7 +83,7 @@ TEST_F(ResolutionProofInterpolationTest, test_McMillanPrimeInterpolant) {
 
 class ResolutionProofInterpolationTestWithReduction : public ::testing::Test {
 protected:
-    ResolutionProofInterpolationTestWithReduction(): logic{opensmt::Logic_t::QF_UF} {}
+    ResolutionProofInterpolationTestWithReduction(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         const char* msg;
         config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -132,7 +134,7 @@ TEST_F(ResolutionProofInterpolationTestWithReduction, test_InterpolationAfterRed
 /*************** TESTS FOR INTERPOLATION FOR INCREMENTAL SOLVING *****************/
 class ResolutionProofIncrementalInterpolationTest : public ::testing::Test {
 protected:
-    ResolutionProofIncrementalInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
+    ResolutionProofIncrementalInterpolationTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         const char* msg;
         config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
@@ -174,4 +176,6 @@ TEST_F(ResolutionProofIncrementalInterpolationTest, test_McMillanInterpolant) {
     PTRef itp = itps.last();
 //    std::cout << logic.pp(itp);
     ASSERT_TRUE(verifyInterpolant(A_part, B_part, itp));
+}
+
 }

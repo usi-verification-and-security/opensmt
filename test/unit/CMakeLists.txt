@@ -1,9 +1,9 @@
 include(GoogleTest)
 add_executable(LRATest)
-target_sources(LRATest 
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cpp"
-#    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cpp"
+target_sources(LRATest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cc"
+#    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Delta.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Polynomial.cc"
     )
 
 target_link_libraries(LRATest OpenSMT gtest gtest_main)
@@ -12,8 +12,8 @@ gtest_add_tests(TARGET LRATest)
 
 add_executable(RewritingTest)
 target_sources(RewritingTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_simplifyAssignment.cpp"
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Dominators.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SimplifyAssignment.cc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Dominators.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rewriting.cc"
     )
 
@@ -41,7 +41,7 @@ gtest_add_tests(TARGET EGraphTest)
 
 add_executable(LATest)
 target_sources(LATest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Lookahead.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Lookahead.cc"
     )
 
 target_link_libraries(LATest OpenSMT gtest gtest_main)
@@ -60,7 +60,7 @@ gtest_add_tests(TARGET SimplexTest)
 
 add_executable(LIACutTest)
 target_sources(LIACutTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIACutSolver.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIACutSolver.cc"
     )
 
 target_link_libraries(LIACutTest OpenSMT gtest gtest_main)
@@ -69,14 +69,14 @@ gtest_add_tests(TARGET LIACutTest)
 
 add_executable(STPSolverTest)
 target_sources(STPSolverTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_IDLSolver.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_IDLSolver.cc"
     )
 target_link_libraries(STPSolverTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET STPSolverTest)
 
 add_executable(SubstitutionsTest)
 target_sources(SubstitutionsTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cpp"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_SubstitutionBreaker.cc"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Substitutions.cc"
     )
 

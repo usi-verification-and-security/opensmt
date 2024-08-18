@@ -6,11 +6,13 @@
  */
 
 #include <gtest/gtest.h>
-#include <lasolver/LASolver.h>
+#include <tsolvers/lasolver/LASolver.h>
+
+namespace opensmt {
 
 class LASolverIncrementalityTest : public ::testing::Test {
 public:
-    LASolverIncrementalityTest() : logic(opensmt::Logic_t::QF_LRA), solver(c, logic) {}
+    LASolverIncrementalityTest() : logic(Logic_t::QF_LRA), solver(c, logic) {}
     SMTConfig c;
     ArithLogic logic;
     LASolver solver;
@@ -42,4 +44,6 @@ TEST_F(LASolverIncrementalityTest, test_Incrementality) {
     solver.assertLit({constr2, l_True});
     res = solver.check(true);
     ASSERT_EQ(res, TRes::UNSAT);
+}
+
 }

@@ -6,12 +6,14 @@
 
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <SSort.h>
+#include <logics/Logic.h>
+#include <sorts/SSort.h>
+
+namespace opensmt {
 
 class SortTest : public ::testing::Test {
 protected:
-    SortTest(): logic{opensmt::Logic_t::QF_UF} {}
+    SortTest(): logic{Logic_t::QF_UF} {}
     Logic logic;
 };
 
@@ -75,5 +77,7 @@ TEST_F(SortTest, test_parametricSort) {
 
     logic.declareFun("a", sortU_V, {});
     logic.declareFun("b", sortU_W, {});
+
+}
 
 }

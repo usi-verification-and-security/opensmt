@@ -3,8 +3,10 @@
 //
 
 #include <gtest/gtest.h>
-#include <BoolRewriting.h>
-#include <Logic.h>
+#include <simplifiers/BoolRewriting.h>
+#include <logics/Logic.h>
+
+namespace opensmt {
 
 class SimplifyUnderAssignment_test : public ::testing::Test {
 public:
@@ -12,7 +14,7 @@ public:
     PTRef a;
     PTRef b;
     PTRef c;
-    SimplifyUnderAssignment_test() : logic{opensmt::Logic_t::QF_BOOL}, a(logic.mkBoolVar("a")), b(logic.mkBoolVar("b")), c(logic.mkBoolVar("c")) {}
+    SimplifyUnderAssignment_test() : logic{Logic_t::QF_BOOL}, a(logic.mkBoolVar("a")), b(logic.mkBoolVar("b")), c(logic.mkBoolVar("c")) {}
 };
 
 TEST_F(SimplifyUnderAssignment_test, test_Simple_Conjunction)
@@ -172,4 +174,6 @@ TEST_F(SimplifyUnderAssignment_test, test_SimplifyByDominator_Aggressive)
     args.push(notb);
     args.push(c);
     ASSERT_TRUE(res == logic.mkAnd(args));
+}
+
 }

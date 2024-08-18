@@ -7,33 +7,33 @@
 
 #include <gtest/gtest.h>
 
-#include "ArithLogic.h"
-#include "BoolRewriting.h"
-#include "Logic.h"
-#include "ArithmeticEqualityRewriter.h"
-#include "MainSolver.h"
-#include "Rewritings.h"
+#include <logics/ArithLogic.h>
+#include <simplifiers/BoolRewriting.h>
+#include <logics/Logic.h>
+#include <rewriters/ArithmeticEqualityRewriter.h>
+#include <api/MainSolver.h>
+#include <rewriters/Rewritings.h>
 
 #include <algorithm>
 
-using namespace opensmt;
+namespace opensmt {
 
 TEST(Rewriting_test, test_RewriteClassicConjunction)
 {
-    Logic logic{opensmt::Logic_t::QF_UF};
+    Logic logic{Logic_t::QF_UF};
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
     PTRef d = logic.mkBoolVar("d");
     PTRef conj = logic.mkAnd(logic.mkAnd(a,b), logic.mkAnd(c,d));
-    PTRef res = ::rewriteMaxArityClassic(logic, conj);
+    PTRef res = rewriteMaxArityClassic(logic, conj);
     vec<PTRef> args {a,b,c,d};
     ASSERT_EQ(res, logic.mkAnd(args));
 }
 
 TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 {
-    Logic logic{opensmt::Logic_t::QF_UF};
+    Logic logic{Logic_t::QF_UF};
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -43,7 +43,7 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
     PTRef l1 = logic.mkAnd(b, l2);
     // l1 is (and b (or (and c d) (and a (and b (not a)))))
     // which is equivalent to (and b c d)
-    PTRef res = ::rewriteMaxArityClassic(logic, l1);
+    PTRef res = rewriteMaxArityClassic(logic, l1);
 //    std::cout << logic.printTerm(res) << std::endl;
     vec<PTRef> args {b,c,d};
     ASSERT_EQ(res, logic.mkAnd(args));
@@ -51,7 +51,7 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
 
 TEST(Rewriting_test, test_RewriteClassicUnderNegation)
 {
-    Logic logic{opensmt::Logic_t::QF_UF};
+    Logic logic{Logic_t::QF_UF};
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
     PTRef c = logic.mkBoolVar("c");
@@ -59,14 +59,14 @@ TEST(Rewriting_test, test_RewriteClassicUnderNegation)
     PTRef negative = logic.mkNot(positive);
     // (not (and a (and b c)))
     // is equivalent to (not (and a b c))
-    PTRef res = ::rewriteMaxArityClassic(logic, negative);
+    PTRef res = rewriteMaxArityClassic(logic, negative);
 //    std::cout << logic.printTerm(res) << std::endl;
     ASSERT_EQ(res, logic.mkNot(logic.mkAnd({a,b,c})));
 }
 
 TEST(Rewriting_test, test_RewriteEquality)
 {
-    ArithLogic logic{opensmt::Logic_t::QF_LRA};
+    ArithLogic logic{Logic_t::QF_LRA};
     PTRef x = logic.mkRealVar("x");
     PTRef y = logic.mkRealVar("y");
     PTRef eq = logic.mkEq(x,y);
@@ -77,7 +77,7 @@ TEST(Rewriting_test, test_RewriteEquality)
 }
 
 TEST(Rewriting_test, test_RewriteDivMod) {
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
+    ArithLogic logic{Logic_t::QF_LIA};
     PTRef x = logic.mkIntVar("x");
     PTRef two = logic.mkIntConst(2);
     PTRef div = logic.mkIntDiv(x,two);
@@ -97,7 +97,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
 
 class RewriteDistinctTest : public ::testing::Test {
 protected:
-    RewriteDistinctTest() : logic{opensmt::Logic_t::QF_UF} {}
+    RewriteDistinctTest() : logic{Logic_t::QF_UF} {}
 
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
@@ -142,5 +142,4 @@ TEST_F(RewriteDistinctTest, test_RewriteDistinct_Negated) {
     }
 }
 
-
-
+}

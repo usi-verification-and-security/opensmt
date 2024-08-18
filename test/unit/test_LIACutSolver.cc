@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
-#include <Real.h>
-#include <SMTConfig.h>
-#include <lasolver/Simplex.h>
+#include <common/Real.h>
+#include <options/SMTConfig.h>
+#include <tsolvers/lasolver/Simplex.h>
+
+namespace opensmt {
 
 using Polynomial = PolynomialT<LVRef>;
 
@@ -60,4 +62,6 @@ TEST(LIACutSolver_test, test_computeEqualityBasis)
 
     Simplex::Explanation explanation = s->checkSimplex();
     ASSERT_EQ(explanation.size(), 0); //this property has to be failed as the system is UNSAT then explanation size has to be >0
+}
+
 }

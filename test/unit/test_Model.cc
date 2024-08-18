@@ -3,18 +3,20 @@
 //
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <SMTConfig.h>
-#include <Model.h>
-#include <ModelBuilder.h>
-#include <Opensmt.h>
+#include <logics/ArithLogic.h>
+#include <options/SMTConfig.h>
+#include <models/Model.h>
+#include <models/ModelBuilder.h>
+#include <api/Opensmt.h>
 
 #include <memory>
-#include <Substitutor.h>
+#include <rewriters/Substitutor.h>
+
+namespace opensmt {
 
 class UFModelTest : public ::testing::Test {
 protected:
-    UFModelTest(): logic{opensmt::Logic_t::QF_UF} {}
+    UFModelTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
@@ -63,7 +65,7 @@ protected:
 
 class UFModelBuilderTest : public ::testing::Test {
 protected:
-    UFModelBuilderTest(): logic{opensmt::Logic_t::QF_UF} {}
+    UFModelBuilderTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         S = logic.declareUninterpretedSort("U");
         x = logic.mkVar(S, "x");
@@ -156,7 +158,7 @@ TEST_F(UFModelBuilderTest, test_functionModel) {
 
 class UFConstModelTest : public ::testing::Test {
 protected:
-    UFConstModelTest() : logic(opensmt::Logic_t::QF_UF), ms(logic, c, "uf-solver") {
+    UFConstModelTest() : logic(Logic_t::QF_UF), ms(logic, c, "uf-solver") {
         SRef U = logic.declareUninterpretedSort("U");
         fs = logic.declareFun("f", U, {U});
         x = logic.mkVar(U, "x");
@@ -197,7 +199,7 @@ TEST_F(UFConstModelTest, test_constModel) {
 
 class LAModelTest : public ::testing::Test {
 protected:
-    LAModelTest(): logic{opensmt::Logic_t::QF_LRA} {}
+    LAModelTest(): logic{Logic_t::QF_LRA} {}
     virtual void SetUp() {
         x = logic.mkRealVar("x");
         y = logic.mkRealVar("y");
@@ -249,7 +251,7 @@ TEST_F(LAModelTest, test_constants) {
     EXPECT_EQ(model->evaluate(fortytwo), fortytwo);
     PTRef one = logic.mkRealConst(1);
     EXPECT_EQ(model->evaluate(one), logic.getTerm_RealOne());
-    PTRef zero = logic.mkRealConst(opensmt::Number(0));
+    PTRef zero = logic.mkRealConst(Number(0));
     EXPECT_EQ(model->evaluate(zero), logic.getTerm_RealZero());
 }
 
@@ -397,4 +399,6 @@ TEST_F(ModelIntegrationTest, testIteWithSubstitution_SubtermsHaveValue) {
 //    std::cout << logic.printTerm(c) << " := " << logic.printTerm(model->evaluate(c)) << '\n';
     EXPECT_EQ(model->evaluate(fla), logic.getTerm_true());
     EXPECT_EQ(model->evaluate(c), logic.getTerm_false());
+}
+
 }

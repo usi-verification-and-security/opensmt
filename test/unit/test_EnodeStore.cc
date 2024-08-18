@@ -3,14 +3,16 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <EnodeStore.h>
-#include <TreeOps.h>
+#include <logics/Logic.h>
+#include <tsolvers/egraph/EnodeStore.h>
+#include <common/TreeOps.h>
+
+namespace opensmt {
 
 class EnodeStoreTest : public ::testing::Test {
 protected:
     Logic logic;
-    EnodeStoreTest() : logic(opensmt::Logic_t::QF_UF){}
+    EnodeStoreTest() : logic(Logic_t::QF_UF){}
 };
 
 TEST_F(EnodeStoreTest, testUP) {
@@ -99,4 +101,6 @@ TEST_F(EnodeStoreTest, testUFMixed) {
     ASSERT_TRUE(enodeStore.needsEnode(a));
     ASSERT_TRUE(enodeStore.needsEnode(mixed));
     ASSERT_TRUE(enodeStore.needsEnode(x));
+}
+
 }

@@ -3,16 +3,18 @@
 //
 
 #include <gtest/gtest.h>
-#include <ArithLogic.h>
-#include <VerificationUtils.h>
-#include <LIAInterpolator.h>
-#include <MainSolver.h>
+#include <logics/ArithLogic.h>
+#include <common/VerificationUtils.h>
+#include <tsolvers/lasolver/LIAInterpolator.h>
+#include <api/MainSolver.h>
+
+namespace opensmt {
 
 using ItpColorMap = LIAInterpolator::ItpColorMap;
 
 class LIAInterpolationTest : public ::testing::Test {
 protected:
-    LIAInterpolationTest(): logic{opensmt::Logic_t::QF_LIA} {}
+    LIAInterpolationTest(): logic{Logic_t::QF_LIA} {}
     virtual void SetUp() {
         x = logic.mkIntVar("x");
         y = logic.mkIntVar("y");
@@ -50,7 +52,7 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
     std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, dualFarkasItp));
-    PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(opensmt::Number(1,2));
+    PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(Number(1,2));
     std::cout << logic.pp(halfFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, halfFarkasItp));
 }
@@ -118,7 +120,7 @@ TEST_F(LIAInterpolationTest, test_Split_ALocal){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
@@ -152,7 +154,7 @@ TEST_F(LIAInterpolationTest, test_Split_BLocal){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
@@ -186,7 +188,7 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
@@ -201,4 +203,6 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     std::cout << logic.pp(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     interpolants.clear();
+}
+
 }

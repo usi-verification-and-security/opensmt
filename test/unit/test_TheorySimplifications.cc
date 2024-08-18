@@ -3,12 +3,14 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <Substitutor.h>
+#include <logics/Logic.h>
+#include <rewriters/Substitutor.h>
+
+namespace opensmt {
 
 class GetFactsTest : public ::testing::Test {
 protected:
-    GetFactsTest(): logic{opensmt::Logic_t::QF_UF} {}
+    GetFactsTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -70,7 +72,7 @@ TEST_F(GetFactsTest, test_MultipleFacts){
 
 class RetrieveSubstitutionTest : public ::testing::Test {
 protected:
-    RetrieveSubstitutionTest(): logic{opensmt::Logic_t::QF_UF} {}
+    RetrieveSubstitutionTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -134,7 +136,7 @@ TEST_F(RetrieveSubstitutionTest, test_NestedSubstitution) {
 //========================== TEST for applying sustituitions ===========================================================
 class ApplySubstitutionTest : public ::testing::Test {
 protected:
-    ApplySubstitutionTest(): logic{opensmt::Logic_t::QF_UF} {}
+    ApplySubstitutionTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -186,7 +188,7 @@ TEST_F(ApplySubstitutionTest, test_NestedSub) {
 
 //========================== TEST for transitive closure of substitutions ===========================================================
 TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
-    Logic logic{opensmt::Logic_t::QF_UF};
+    Logic logic{Logic_t::QF_UF};
     Logic::SubstMap substitutions;
     PTRef a = logic.mkBoolVar("a");
     PTRef b = logic.mkBoolVar("b");
@@ -200,3 +202,4 @@ TEST(SubstitutionTransitiveClosure, test_twoStepSubstitution) {
     ASSERT_EQ(substitutions[a], d);
 }
 
+}

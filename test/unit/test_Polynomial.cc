@@ -5,8 +5,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <lasolver/Polynomial.h>
-#include <lasolver/LAVar.h>
+#include <tsolvers/lasolver/Polynomial.h>
+#include <tsolvers/lasolver/LAVar.h>
+
+namespace opensmt {
 
 using Polynomial = PolynomialT<LVRef>;
 
@@ -85,4 +87,6 @@ TEST_F(PolyTest, test_Merge3){
     EXPECT_EQ(removed[0], x2);
     ASSERT_TRUE(poly1.contains(x1));
     ASSERT_TRUE(!poly1.contains(x2));
+}
+
 }

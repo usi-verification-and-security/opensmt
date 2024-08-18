@@ -3,10 +3,13 @@
 //
 
 #include <gtest/gtest.h>
-#include <EnodeStore.h>
-#include <Logic.h>
-#include <Explainer.h>
+#include <logics/Logic.h>
+#include <tsolvers/egraph/EnodeStore.h>
+#include <tsolvers/egraph/Explainer.h>
+
 #include <utility>
+
+namespace opensmt {
 
 class UFExplainTest : public ::testing::Test {
     using PTERef = PTRefERefPair;
@@ -23,7 +26,7 @@ protected:
     PTERef f_c2_c0;
     PTERef f_f_c2_c0_c0;
 
-    UFExplainTest(): logic{opensmt::Logic_t::QF_UF}, store(logic) {}
+    UFExplainTest(): logic{Logic_t::QF_UF}, store(logic) {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         c0 = makeAndStorePTRef(logic.mkVar(ufsort, "c0"));
@@ -52,7 +55,7 @@ TEST_F(UFExplainTest, test_UFExplain) {
     explainer.storeExplanation(f_f_c2_c0_c0.er, c0.er, {eq3, l_True});
     explainer.storeExplanation(c1.er, f_c1_c0.er, {eq7, l_True});
     explainer.storeExplanation(f_c1_c0.er, f_f_c2_c0_c0.er, PtAsgn_Undef);
-    ASSERT_THROW(explainer.explain(c1.er, f_c2_c0.er), OsmtInternalException);
+    ASSERT_THROW(explainer.explain(c1.er, f_c2_c0.er), InternalException);
     explainer.storeExplanation(f_c2_c0.er, f_c1_c0.er, PtAsgn_Undef);
     ASSERT_NO_THROW(explainer.explain(c1.er, f_c2_c0.er));
     ASSERT_NO_THROW(explainer.explain(c2.er, c0.er));
@@ -69,5 +72,7 @@ TEST_F(UFExplainTest, test_UFExplain) {
             std::cout << "  " << logic.pp(pta.tr) << std::endl;
         }
     }
+
+}
 
 }

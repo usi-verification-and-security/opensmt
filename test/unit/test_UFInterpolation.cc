@@ -3,13 +3,15 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <MainSolver.h>
-#include "VerificationUtils.h"
+#include <logics/Logic.h>
+#include <api/MainSolver.h>
+#include <common/VerificationUtils.h>
+
+namespace opensmt {
 
 class UFInterpolationTest : public ::testing::Test {
 protected:
-    UFInterpolationTest(): logic{opensmt::Logic_t::QF_UF} {}
+    UFInterpolationTest(): logic{Logic_t::QF_UF} {}
     virtual void SetUp() {
         ufsort = logic.declareUninterpretedSort("U");
         x = logic.mkVar(ufsort, "x");
@@ -66,11 +68,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivity){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(eq1, logic.mkAnd(eq2, neq3), interpolants[0]));
     interpolants.clear();
-    opensmt::setbit(mask, 1);
+    setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(eq1, eq2), neq3, interpolants[0]));
 }
@@ -92,11 +94,11 @@ TEST_F(UFInterpolationTest, test_SimpleTransitivityReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(neq3, logic.mkAnd(eq2, eq1), interpolants[0]));
     interpolants.clear();
-    opensmt::setbit(mask, 1);
+    setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(neq3, eq2), eq1, interpolants[0]));
 }
@@ -118,7 +120,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruence){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
@@ -140,7 +142,7 @@ TEST_F(UFInterpolationTest, test_SimpleCongruenceReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
@@ -163,7 +165,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraph){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -192,7 +194,7 @@ TEST_F(UFInterpolationTest, test_NotImmediatelyColorableCGraphReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -231,7 +233,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequired){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -271,7 +273,7 @@ TEST_F(UFInterpolationTest, test_JustificationRequiredReversed){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -298,7 +300,7 @@ TEST_F(UFInterpolationTest, test_SimpleUninterpretedPredicate){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(px, logic.mkAnd(eq, npy), interpolants[0]));
 }
@@ -321,7 +323,7 @@ TEST_F(UFInterpolationTest, test_ConstantsConflict){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
@@ -348,7 +350,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustification){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -380,7 +382,7 @@ TEST_F(UFInterpolationTest, test_TwoLevelJustificationDiseqInB){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 0);
+    setbit(mask, 0);
     itpCtx->getSingleInterpolant(interpolants, mask);
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
     // change the interpolation algorithm
@@ -441,7 +443,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     auto itpCtx = solver.getInterpolationContext();
     vec<PTRef> interpolants;
     ipartitions_t mask;
-    opensmt::setbit(mask, 1);
+    setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
 //    std::cout << logic.printTerm(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
@@ -495,4 +497,6 @@ TEST_F(UFInterpolationTest, test_DistinctInB){
 //    std::cout << "Interpolant: " << logic.pp(itp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(A, B, itp));
     ASSERT_EQ(itp, logic.mkNot(logic.mkEq(x1, x3)));
+}
+
 }

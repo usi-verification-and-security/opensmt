@@ -3,11 +3,13 @@
 //
 
 #include <gtest/gtest.h>
-#include <Logic.h>
+#include <logics/Logic.h>
+
+namespace opensmt {
 
 class SplitTest : public ::testing::Test {
 protected:
-    SplitTest() : logic{opensmt::Logic_t::QF_UF} {}
+    SplitTest() : logic{Logic_t::QF_UF} {}
     Logic logic;
 };
 
@@ -20,4 +22,6 @@ TEST_F(SplitTest, test_TermPrinting) {
     std::string reference = "(f a a)";
     std::cout << str << std::endl;
     ASSERT_EQ(str.compare(reference), 0);
+}
+
 }

@@ -2,14 +2,15 @@
 // Created by prova on 21.11.19.
 //
 #include <gtest/gtest.h>
-#include <Logic.h>
-#include <SubstLoopBreaker.h>
+#include <logics/Logic.h>
+#include <logics/SubstLoopBreaker.h>
 
+namespace opensmt {
 
 class SubstitutionBreaker : public ::testing::Test {
 public:
     Logic logic;
-    SubstitutionBreaker() : logic{opensmt::Logic_t::QF_UF} {}
+    SubstitutionBreaker() : logic{Logic_t::QF_UF} {}
 };
 
 TEST_F(SubstitutionBreaker, test_getVars) {
@@ -145,4 +146,6 @@ TEST_F(SubstitutionBreaker, test_getLoops3) {
     std::cerr << slb2.printGraphAndLoops(startNodes, {}) << std::endl;
     auto loops = slb2.findLoops(startNodes);
     ASSERT_EQ(loops.size(), 0);
+}
+
 }

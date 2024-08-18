@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include <Real.h>
+#include <common/Real.h>
 
 #include <vector>
 
-using Real = opensmt::Real;
+namespace opensmt {
 
 TEST(Rationals_test, test_division_int32min)
 {
@@ -35,7 +35,7 @@ TEST(Rationals_test, test_normalized)
 TEST(Rationals_test, test_hash_function)
 {
     std::vector<uint32_t> hashes;
-    opensmt::NumberHash hasher;
+    NumberHash hasher;
     for (int i = 0; i < 10; i++) {
         Real r((int)random());
         hashes.push_back(hasher(r));
@@ -502,4 +502,6 @@ TEST(Rationals_test, testNormalization) {
     auto [normalizedNum, normalizedDen] = maybeNumDenPair.value();
     EXPECT_EQ(normalizedNum, -370387);
     EXPECT_EQ(normalizedDen, 1000000);
+}
+
 }

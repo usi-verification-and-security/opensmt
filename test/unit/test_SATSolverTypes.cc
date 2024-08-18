@@ -6,7 +6,8 @@
 
 #include <gtest/gtest.h>
 #include <minisat/core/SolverTypes.h>
-#include <numeric>
+
+namespace opensmt {
 
 class SATSolverTypesTest : public ::testing::Test {
 protected:
@@ -24,4 +25,6 @@ TEST_F(SATSolverTypesTest, test_ClauseIterator) {
         ASSERT_EQ(l, v[i]);
         i++;
     }
+}
+
 }

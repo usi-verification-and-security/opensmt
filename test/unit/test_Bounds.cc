@@ -2,7 +2,9 @@
 // Created by Antti on 31.03.20.
 //
 #include <gtest/gtest.h>
-#include <LABounds.h>
+#include <tsolvers/lasolver/LABounds.h>
+
+namespace opensmt {
 
 class BoundTest: public ::testing::Test {
 public:
@@ -28,4 +30,6 @@ TEST_F(BoundTest, test_LABounds) {
         bs.buildBounds();
         bs.clear();
     }
+}
+
 }
