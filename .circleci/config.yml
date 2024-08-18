@@ -2,7 +2,7 @@ version: 2.1
 jobs:
     formatter:
         docker:
-            - image: usiverify/verify-env:ubuntu
+            - image: usiverify/verify-env:archlinux
               auth:
                   username: mydockerhub-user
                   password: $DOCKERHUB_PASSWORD
