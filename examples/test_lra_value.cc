@@ -1,6 +1,8 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+using namespace opensmt;
+
 Opensmt*
 pre()
 {
@@ -105,7 +107,7 @@ int main()
 	    ipartitions_t mask = 0;
 
         for(unsigned i = 0; i < part.size(); ++i)
-	    	opensmt::setbit(mask, part[i] + 1);
+	    	setbit(mask, part[i] + 1);
 
         std::vector<PTRef> itps;
         itp_context->getSingleInterpolant(itps, mask);

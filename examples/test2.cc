@@ -1,9 +1,11 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+using namespace opensmt;
+
 int main()
 {
-    Logic logic{opensmt::Logic_t::QF_UF}; // UF Logic
+    Logic logic{Logic_t::QF_UF}; // UF Logic
     SMTConfig c;
     MainSolver mainSolver(logic, c, "test solver");
 

@@ -5,6 +5,8 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+using namespace opensmt;
+
 void usingWrapper();
 void creatingComponentsDirectly();
 
@@ -50,7 +52,7 @@ void usingWrapper() {
 }
 
 void creatingComponentsDirectly() {
-    ArithLogic logic{opensmt::Logic_t::QF_LIA};
+    ArithLogic logic{Logic_t::QF_LIA};
     SMTConfig config;
     MainSolver mainSolver(logic, config, "LIA solver");
 
@@ -76,5 +78,3 @@ void creatingComponentsDirectly() {
     else
         printf("error\n");
 }
-
-

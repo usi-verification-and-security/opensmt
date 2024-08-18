@@ -1,6 +1,8 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+using namespace opensmt;
+
 Opensmt*
 pre()
 {
@@ -13,14 +15,14 @@ pre()
 
 int main()
 {
-    
+
     Opensmt* osmt = pre();
     SMTConfig& c = osmt->getConfig();
     MainSolver& mainSolver = osmt->getMainSolver();
     auto & logic = osmt->getLRALogic();
 
     // Let's build two assertions
- 
+
     // Create vars
     PTRef x1 = logic.mkRealVar("x1");
     PTRef x2 = logic.mkRealVar("x2");
@@ -72,7 +74,7 @@ int main()
     	// It can be converted to OpenSMT's representation via
 	    ipartitions_t mask = 0;
     	for(unsigned i = 0; i < part.size(); ++i)
-	    	opensmt::setbit(mask, part[i] + 1);
+	    	setbit(mask, part[i] + 1);
 
         std::vector<PTRef> itps;
         itp_context->getSingleInterpolant(itps, mask);

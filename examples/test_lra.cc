@@ -1,6 +1,8 @@
 #include <opensmt/opensmt2.h>
 #include <stdio.h>
 
+using namespace opensmt;
+
 Opensmt*
 pre()
 {

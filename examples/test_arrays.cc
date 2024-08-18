@@ -7,6 +7,8 @@
 
 #include <opensmt/opensmt2.h>
 
+using namespace opensmt;
+
 void usingWrapper();
 void creatingComponentsDirectly();
 
@@ -54,7 +56,7 @@ void usingWrapper() {
 }
 
 void creatingComponentsDirectly() {
-    ArithLogic logic{opensmt::Logic_t::QF_ALIA};
+    ArithLogic logic{Logic_t::QF_ALIA};
     SMTConfig config;
     MainSolver mainSolver(logic, config, "ALIA solver");
 
@@ -79,5 +81,3 @@ void creatingComponentsDirectly() {
     else
         printf("error\n");
 }
-
-
