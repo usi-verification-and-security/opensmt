@@ -107,6 +107,7 @@ private:
     static uint32_t setbit(uint32_t b) { return 1 << b; }
 public:
     Enode(Enode const &) = delete;
+    Enode& operator=(Enode const &) = delete;
 
     CgId  getCid() const { return cid; }
     ERef getRoot() const { return root; }

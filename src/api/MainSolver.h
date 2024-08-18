@@ -121,7 +121,9 @@ protected:
         bool unsat{false}; // If true then the stack of frames with this frame at top is UNSAT
 
         PushFrame(PushFrame const &) = delete;
+        PushFrame & operator=(PushFrame const &) = delete;
         PushFrame(PushFrame &&) = default;
+        PushFrame & operator=(PushFrame &&) = default;
         explicit PushFrame(uint32_t id) : id(id) {}
 
     private:

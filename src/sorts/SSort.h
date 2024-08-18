@@ -54,8 +54,6 @@ struct SortSymbol {
         : name(std::move(name_)),
           arity(arity),
           flags(flags) {};
-    SortSymbol(SortSymbol &&) = default;
-    SortSymbol(SortSymbol const &) = default;
 
     bool isInternal() const { return (flags & INTERNAL) != 0; };
 

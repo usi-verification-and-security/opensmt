@@ -38,7 +38,6 @@ namespace opensmt {
 class BTime {
 public:
     BTime() = default;
-    BTime(BTime const &) = default;
     BTime(const struct timeval & tv) : tv_sec(tv.tv_sec), tv_usec(tv.tv_usec) {}
     void operator-=(BTime const & subst) {
         tv_sec -= subst.tv_sec;
@@ -49,10 +48,6 @@ public:
         out.tv_sec = tv_sec - subst.tv_sec;
         out.tv_usec = tv_usec - subst.tv_usec;
         return out;
-    }
-    void operator=(BTime const & from) {
-        tv_sec = from.tv_sec;
-        tv_usec = from.tv_usec;
     }
     BTime & operator+=(BTime const & other) {
         tv_sec += other.tv_sec;
@@ -69,7 +64,6 @@ private:
 class TimeVal {
 public:
     TimeVal() = default;
-    TimeVal(TimeVal const &) = default;
     TimeVal(BTime const & usrtime, BTime const & systime) : usrtime(usrtime), systime(systime) {}
     TimeVal(const struct rusage & res_usage) : usrtime(res_usage.ru_utime), systime(res_usage.ru_stime) {}
 

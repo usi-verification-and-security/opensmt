@@ -48,7 +48,9 @@ public:
     public:
         Col() = default;
         Col(Col const &) = delete;
+        Col & operator=(Col const &) = delete;
         Col(Col &&) = default;
+        Col & operator=(Col &&) = default;
         void setPolynomial(ColumnPolynomial && _poly) {
             assert(this->poly.size() == 0);
             this->poly = std::move(_poly);
@@ -81,7 +83,9 @@ public:
     }
 
     SparseColMatrix(SparseColMatrix const &) = delete;
+    SparseColMatrix & operator=(SparseColMatrix const &) = delete;
     SparseColMatrix(SparseColMatrix &&) = default;
+    SparseColMatrix & operator=(SparseColMatrix &&) = default;
 
     Col & operator[](uint32_t index) { return cols[colPermutation[index]]; }
     Col const & operator[](uint32_t index) const { return cols[colPermutation[index]]; }
