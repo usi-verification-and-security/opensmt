@@ -623,6 +623,7 @@ PTRef Logic::mkVar(SRef s, char const * name, bool isInterpreted) {
         assert(symNameToRef(name).size() == 1);
         sr = symNameToRef(name)[0];
     }
+    std::cerr << "mkVar " << name << " " << sr.x << std::endl;
     PTRef ptr = mkFun(sr, {});
     assert(ptr != PTRef_Undef);
 
@@ -750,6 +751,7 @@ PTRef Logic::insertTerm(SymRef sym, vec<PTRef> && terms) {
     if (sym == getSym_false()) return getTerm_false();
     if (isVar(sym)) {
         assert(terms.size() == 0);
+        std::cerr << "insertTerm " << sym.x << std::endl;
         return mkFun(sym, std::move(terms));
     }
     if (hasArrays()) {
@@ -767,6 +769,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
 
     PTRef res = PTRef_Undef;
     if (terms.size() == 0) {
+        std::cerr << "?? " << sym.x << " : " << term_store.hasCtermKey(sym) << std::endl;
         if (term_store.hasCtermKey(sym))           // cterm_map.contains(sym))
             res = term_store.getFromCtermMap(sym); // cterm_map[sym];
         else {
@@ -810,6 +813,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
 #endif
         }
     }
+    std::cerr << printTerm_(res, true, true) << std::endl;
     return res;
 }
 

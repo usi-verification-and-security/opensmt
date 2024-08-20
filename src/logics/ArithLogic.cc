@@ -554,6 +554,13 @@ PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
     for (auto i = numbers.size(); i <= id; i++) {
         numbers.emplace_back();
     }
+    //- std::cerr << c << std::endl;
+    //- std::cerr << val << std::endl;
+    //- std::cerr << *numbers[id] << std::endl;
+    //- double i;
+    //- std::cerr << modf(c.value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << modf(numbers[id]->value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << std::endl;
     if (numbers[id] == nullptr) { numbers[id] = new Number(val); }
     assert(c == *numbers[id]);
     markConstant(id);
@@ -849,7 +856,9 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
+        std::cerr << printTerm_(mkRealConst(getNumConst(args_new[1]).inverse()), true, true) << std::endl;
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
+        std::cerr << printTerm_(mkTimes(args_new), true, true) << std::endl;
         return mkTimes(args_new);
     }
     PTRef tr = mkFun(s_new, std::move(args_new));
@@ -989,6 +998,9 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
         s_new = l.getPterm(ch_tr).symb();
         for (int i = 0; i < l.getPterm(ch_tr).size(); i++)
             args_new.push(l.getPterm(ch_tr)[i]);
+    }
+    for (int i=0; i<args_new.size(); ++i) {
+        std::cerr << "> " << l.printTerm_(args_new[i], true, true) << std::endl;
     }
 }
 
@@ -1177,7 +1189,10 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
             if (ext) { str << " <" << tr.x << ">"; }
             return str.str();
         } else {
-            return rat_str;
+            std::stringstream str;
+            str << rat_str;
+            if (ext) { str << " <" << tr.x << ">"; }
+            return str.str();
         }
     }
     return Logic::printTerm_(tr, ext, safe);
@@ -1213,9 +1228,11 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     if (not allIntegers) {
         // first ensure that all coeffs are integers
         // this would probably not work when `Number` is not `FastRational`
-        using Integer = FastRational; // TODO: change when we have FastInteger
+        //- using Integer = FastRational; // TODO: change when we have FastInteger
+        using Integer = Number; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
-        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+        //- auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](Number const & next) {
             if (next.isInteger()) {
                 // denominator is 1 => lcm of denominators stays the same
                 return;
