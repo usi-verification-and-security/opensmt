@@ -12,24 +12,12 @@
 #include <gmpxx.h>
 
 namespace opensmt {
-    typedef mpz_class Integer; //PS. related to BV logic
-
-    void static inline wordToBinary(const Integer x, char *&bin, const int width) {
+    void static inline wordToBinary(const auto x, char *&bin, const int width) {
         bin = (char *) malloc(width + 1);
 
         int p = 0;
-        Integer one = 1;
-        for (Integer i = (one << (width - 1)); i > 0; i >>= 1)
-            bin[p++] = ((x & i) == i) ? '1' : '0';
-        bin[p] = '\0';
-    }
-
-    void static inline wordToBinary(const unsigned x, char *&bin, const int width) {
-        bin = (char *) malloc(width + 1);
-
-        int p = 0;
-        Integer one = 1;
-        for (Integer i = (one << (width - 1)); i > 0; i >>= 1)
+        mpz_class one = 1;
+        for (mpz_class i = (one << (width - 1)); i > 0; i >>= 1)
             bin[p++] = ((x & i) == i) ? '1' : '0';
         bin[p] = '\0';
     }

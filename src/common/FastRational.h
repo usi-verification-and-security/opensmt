@@ -15,6 +15,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #include <stack>
 #include <string>
 #include <vector>
+#include <concepts>
 
 namespace opensmt {
 
@@ -73,6 +74,7 @@ inline ulword absVal(lword x) {
 
 class FastRational
 {
+protected:
     class mpqPool
     {
         std::stack<mpq_class> store; // uses deque as storage to avoid realloc
@@ -90,7 +92,7 @@ class FastRational
     inline static thread_local mpz_class temp;
     inline static mpz_ptr mpz() { return temp.get_mpz_t(); }
 
-
+private:
     // Bit masks for questioning state:
     static const unsigned char wordValidMask = 0x1;
     static const unsigned char mpqMemoryAllocatedMask = 0x2;
@@ -155,6 +157,7 @@ private:
             state = State::WORD_VALID;
         }
     }
+protected:
     void ensure_mpq_valid() const {
         if (!mpqPartValid()) {
             assert(wordPartValid());
@@ -202,10 +205,6 @@ private:
     friend inline void subtractionAssign   (FastRational &, const FastRational &);
     friend inline void multiplicationAssign(FastRational &, const FastRational &);
     friend inline void divisionAssign      (FastRational &, const FastRational &);
-    friend FastRational gcd                (FastRational const &, FastRational const &);
-    friend FastRational lcm                (FastRational const &, FastRational const &);
-    friend FastRational fastrat_fdiv_q     (FastRational const & n, FastRational const & d);
-    friend FastRational divexact           (FastRational const & n, FastRational const & d);
 
     static inline int compare(lword a, lword b) {
         if (a < b) return -1;
@@ -395,23 +394,8 @@ public:
         assert(wordPartValid() or not fitsWord());
         return wordPartValid() && num == 1 && den == 1;
     }
-
-
-    // Return *this % d.  The return value will have the sign of d
-    FastRational operator%(const FastRational& d) {
-        assert(isInteger() && d.isInteger());
-        if (wordPartValid() && d.wordPartValid()) {
-            uword w = absVal(num % d.num);  // Largest value is absVal(INT_MAX % INT_MIN) = INT_MAX
-            return (word)(d.num > 0 ? w : -w); // No overflow since 0 <= w <= INT_MAX
-        }
-        FastRational r = (*this) / d;
-        r = r.floor();
-        r = (*this) - r*d;
-        return r;
-    }
 };
 
-FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
 FastRational fastrat_round_to_int(const FastRational& n);
 
 struct FastRationalHash {
@@ -527,7 +511,10 @@ inline int FastRational::sign() const {
     }
 }
 
-template<typename integer> integer gcd(integer a, integer b) {
+static_assert(!std::integral<FastRational>);
+
+template<std::integral integer>
+integer gcd(integer a, integer b) {
     if (a==0) return b;
     if (b==0) return a;
     if (b > a) {
@@ -543,16 +530,6 @@ template<typename integer> integer gcd(integer a, integer b) {
     }
 }
 
-template<typename integer>
-FastRational lcm(integer a, integer b) {
-    if (a == 0) return 0;
-    if (b == 0) return 0;
-    if (b > a)
-        return FastRational(b / gcd(a, b)) * a;
-    else
-        return FastRational(a / gcd(a, b)) * b;
-}
-
 // Return 1 if |op1| > |op2|, -1 if |op1| < |op2|, and 0 if op1 = op2
 inline int cmpabs(FastRational op1, FastRational op2)
 {
@@ -562,8 +539,6 @@ inline int cmpabs(FastRational op1, FastRational op2)
         op2 = -op2;
     return op1.compare(op2);
 };
-template<ulword> ulword gcd(ulword a, ulword b);
-template<uword> uword gcd(uword a, uword b);
 #define CHECK_WORD(var, value)                  \
     do {                                        \
         lword tmp = value;                      \
