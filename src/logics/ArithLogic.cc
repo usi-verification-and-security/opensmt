@@ -1,8 +1,9 @@
 #include "ArithLogic.h"
 
 #include <common/ApiException.h>
-#include <common/FastRational.h>
+#include <common/Integer.h>
 #include <common/InternalException.h>
+#include <common/Number.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
 #include <pterms/PtStore.h>
@@ -877,6 +878,7 @@ PTRef ArithLogic::mkConst(SRef s, char const * name) {
     if (s == sort_REAL or s == sort_INT) {
         char * rat;
         if (s == sort_REAL)
+            // TK: Currently this must be consistent with Real::get_str, otherwise it will make duplicates in term_store
             stringToRational(rat, name);
         else {
             if (not isIntString(name)) throw ApiException("Not parseable as an integer");
@@ -1212,15 +1214,13 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
         std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
-        // this would probably not work when `Number` is not `FastRational`
-        using Integer = FastRational; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
-        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](Number const & next) {
             if (next.isInteger()) {
                 // denominator is 1 => lcm of denominators stays the same
                 return;
             }
-            Integer den = next.get_den();
+            Integer den = static_cast<FastInteger &&>(next.get_den());
             if (lcmOfDenominators == 1) {
                 lcmOfDenominators = std::move(den);
                 return;
@@ -1240,7 +1240,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     // Now make sure all coeffs are coprime
     auto coeffs_gcd = abs(coeffs[0]);
     for (std::size_t i = 1; i < coeffs.size() && coeffs_gcd != 1; ++i) {
-        coeffs_gcd = gcd(coeffs_gcd, abs(coeffs[i]));
+        coeffs_gcd = gcd(static_cast<FastInteger &>(coeffs_gcd), static_cast<FastInteger &&>(abs(coeffs[i])));
         assert(coeffs_gcd.isInteger());
     }
     if (coeffs_gcd != 1) {

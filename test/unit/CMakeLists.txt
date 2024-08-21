@@ -1,4 +1,5 @@
 include(GoogleTest)
+
 add_executable(LRATest)
 target_sources(LRATest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Rationals.cc"
@@ -9,6 +10,15 @@ target_sources(LRATest
 target_link_libraries(LRATest OpenSMT gtest gtest_main)
 
 gtest_add_tests(TARGET LRATest)
+
+add_executable(LIATest)
+target_sources(LIATest
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Integers.cc"
+)
+
+target_link_libraries(LIATest OpenSMT gtest gtest_main)
+
+gtest_add_tests(TARGET LIATest)
 
 add_executable(RewritingTest)
 target_sources(RewritingTest
