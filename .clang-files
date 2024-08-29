@@ -107,3 +107,7 @@
 ./src/tsolvers/stpsolver/STPModel.h
 ./src/tsolvers/stpsolver/STPSolver.h
 ./src/tsolvers/stpsolver/STPStore.h
+
+./src/unsatcores/UnsatCore.h
+./src/unsatcores/UnsatCoreBuilder.cc
+./src/unsatcores/UnsatCoreBuilder.h

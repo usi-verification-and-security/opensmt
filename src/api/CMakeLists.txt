@@ -14,6 +14,7 @@ $<TARGET_OBJECTS:models>
 $<TARGET_OBJECTS:itehandler>
 $<TARGET_OBJECTS:proof>
 $<TARGET_OBJECTS:rewriters>
+$<TARGET_OBJECTS:unsatcores>
 )
 
 add_library(api OBJECT "")

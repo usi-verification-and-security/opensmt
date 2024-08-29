@@ -16,6 +16,7 @@
 #include <models/Model.h>
 #include <proof/InterpolationContext.h>
 #include <smtsolvers/SimpSMTSolver.h>
+#include <unsatcores/UnsatCore.h>
 
 #include <memory>
 
@@ -96,7 +97,7 @@ public:
     // Returns model of the last query (must be in satisfiable state)
     std::unique_ptr<Model> getModel();
 
-    vec<PTRef> getUnsatCore() const;
+    std::unique_ptr<UnsatCore> getUnsatCore() const;
 
     // Prints proof of the last query (must be in unsatisfiable state)
     void printResolutionProofSMT2() const;

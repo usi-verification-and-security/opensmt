@@ -1902,29 +1902,4 @@ void CoreSMTSolver::fillBooleanVars(ModelBuilder &modelBuilder) {
     }
 }
 
-vec<CRef> CoreSMTSolver::getUnsatCoreClauses() const {
-    assert(resolutionProof);
-    vec<CRef> unsatCore;
-    auto const & derivations = resolutionProof->getProof();
-    std::vector<CRef> stack;
-    stack.push_back(CRef_Undef);
-    std::unordered_set<CRef> processed;
-    while (not stack.empty()) {
-        CRef current = stack.back();
-        stack.pop_back();
-        if (auto [_, inserted] = processed.insert(current); not inserted) { continue; }
-        auto it = derivations.find(current);
-        assert(it != derivations.end());
-        auto const & derivation = it->second;
-        if (derivation.type == clause_type::CLA_ORIG) {
-            unsatCore.push(current);
-            continue;
-        }
-        if (derivation.type == clause_type::CLA_LEARNT) {
-            for (CRef premise : derivation.chain_cla) { stack.push_back(premise); }
-        }
-    }
-    return unsatCore;
-}
-
 }

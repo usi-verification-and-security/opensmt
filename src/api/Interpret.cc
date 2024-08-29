@@ -1283,9 +1283,10 @@ void Interpret::getProof()
 }
 
 void Interpret::getUnsatCore() {
-    auto unsatCore = main_solver->getUnsatCore();
+    auto const unsatCore = main_solver->getUnsatCore();
+    auto const & unsatCoreTerms = unsatCore->getTerms();
     std::cout << "( ";
-    for (PTRef fla : unsatCore) {
+    for (PTRef fla : unsatCoreTerms) {
         if (termNames.has(fla)) {
             auto const & names = termNames.namesForTerm(fla);
             assert(not names.empty());

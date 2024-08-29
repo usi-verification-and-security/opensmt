@@ -21,6 +21,7 @@
 #include <tsolvers/IDLTHandler.h>
 #include <tsolvers/LATHandler.h>
 #include <tsolvers/RDLTHandler.h>
+#include <unsatcores/UnsatCoreBuilder.h>
 
 namespace opensmt {
 
@@ -223,18 +224,13 @@ void MainSolver::printResolutionProofSMT2() const {
     return smt_solver->printResolutionProofSMT2(std::cout);
 }
 
-vec<PTRef> MainSolver::getUnsatCore() const {
-    using Partitions = ipartitions_t;
+std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
     if (not config.produce_unsat_cores()) { throw ApiException("Producing unsat cores is not enabled"); }
     if (status != s_False) { throw ApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
 
-    vec<CRef> clauseRefs = smt_solver->getUnsatCoreClauses();
-    Partitions partitions;
-    for (CRef cref : clauseRefs) {
-        auto const & partition = pmanager.getClauseClassMask(cref);
-        orbit(partitions, partitions, partition);
-    }
-    return pmanager.getPartitions(partitions);
+    UnsatCoreBuilder unsatCoreBuilder{&config, &smt_solver->getResolutionProof(), &pmanager};
+
+    return unsatCoreBuilder.build();
 }
 
 lbool MainSolver::getTermValue(PTRef tr) const {
