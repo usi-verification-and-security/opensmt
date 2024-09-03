@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14)
 
 set(OPENSMT_VERSION_MAJOR 2)
 set(OPENSMT_VERSION_MINOR 7)
