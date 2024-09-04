@@ -1,4 +1,4 @@
-add_library(smtsolvers OBJECT "")
+add_library(smtsolvers OBJECT)
 
 list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/SimpSMTSolver.cc"

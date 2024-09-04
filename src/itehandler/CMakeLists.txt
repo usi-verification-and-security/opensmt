@@ -1,5 +1,10 @@
+add_library(itehandler OBJECT)
 
-
-add_library(itehandler OBJECT IteToSwitch.cc IteToSwitchMisc.cc IteHandler.cc)
-
-
+target_sources(itehandler
+PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteToSwitch.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteToSwitch.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteToSwitchMisc.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteHandler.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/IteHandler.cc"
+)

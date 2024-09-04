@@ -29,7 +29,7 @@ add_library(PTPLib::PTPLib ALIAS PTPLib)
 message(STATUS "PTPLib include: ${PTPLib_SOURCE_DIR}/include")
 
 #add parallel lib and link against PTPLib*******************************************************************************
-add_library(parallel OBJECT "")
+add_library(parallel OBJECT)
 target_link_libraries(parallel PUBLIC PTPLib::PTPLib)
 list(APPEND PRIVATE_SOURCES_TO_ADD
 		"${CMAKE_CURRENT_SOURCE_DIR}/ScatterSplitter.cc"

@@ -1,11 +1,11 @@
-add_library(common OBJECT "")
+add_library(common OBJECT)
 
 target_sources(common
-    PUBLIC
-        "${CMAKE_CURRENT_LIST_DIR}/FastRational.cc"
-        "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
-        "${CMAKE_CURRENT_LIST_DIR}/Real.h"
-    PRIVATE
+PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/FastRational.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/Real.h"
+PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/SystemQueries.h"
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"

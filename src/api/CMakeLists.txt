@@ -17,7 +17,7 @@ $<TARGET_OBJECTS:rewriters>
 $<TARGET_OBJECTS:unsatcores>
 )
 
-add_library(api OBJECT "")
+add_library(api OBJECT)
 
 set(PRIVATE_SOURCES_TO_ADD
     "${CMAKE_CURRENT_SOURCE_DIR}/MainSolver.cc"
