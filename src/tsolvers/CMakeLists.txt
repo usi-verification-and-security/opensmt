@@ -27,7 +27,7 @@ PRIVATE
 
 include(egraph/CMakeLists.txt)
 include(lasolver/CMakeLists.txt)
-include(bvsolver/CMakeLists.txt)
+#include(bvsolver/CMakeLists.txt)
 include(stpsolver/CMakeLists.txt)
 include(arraysolver/CMakeLists.txt)
 
