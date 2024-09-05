@@ -4,17 +4,16 @@
 
 #include "LogicFactory.h"
 #include "ArithLogic.h"
-#include "BVLogic.h"
 
 #include <common/ApiException.h>
 
 #include <array>
 
 namespace opensmt {
-std::array<std::string, 23> logicToName = {{"Undef",     "Empty",     "QF_UF",   "QF_CUF",    "QF_BV",     "QF_RDL",
-                                            "QF_IDL",    "QF_LRA",    "QF_LIA",  "QF_UFRDL",  "QF_UFIDL",  "QF_UFLRA",
-                                            "QF_UFLIA",  "QF_UFBV",   "QF_AX",   "QF_AXDIFF", "QF_ALRA",   "QF_ALIA",
-                                            "QF_AUFLRA", "QF_AUFLIA", "QF_BOOL", "QF_AUFBV",  "QF_AUFLIRA"}};
+std::array<std::string, 22> logicToName = {{"Undef",     "Empty",   "QF_UF",     "QF_BV",     "QF_RDL",   "QF_IDL",
+                                            "QF_LRA",    "QF_LIA",  "QF_UFRDL",  "QF_UFIDL",  "QF_UFLRA", "QF_UFLIA",
+                                            "QF_UFBV",   "QF_AX",   "QF_AXDIFF", "QF_ALRA",   "QF_ALIA",  "QF_AUFLRA",
+                                            "QF_AUFLIA", "QF_BOOL", "QF_AUFBV",  "QF_AUFLIRA"}};
 
 Logic_t getLogicFromString(std::string_view name) {
     if (name == "QF_UF") return Logic_t::QF_UF;
@@ -22,7 +21,6 @@ Logic_t getLogicFromString(std::string_view name) {
     if (name == "QF_RDL") return Logic_t::QF_RDL;
     if (name == "QF_LIA") return Logic_t::QF_LIA;
     if (name == "QF_IDL") return Logic_t::QF_IDL;
-    if (name == "QF_CUF") return Logic_t::QF_CUF;
     if (name == "QF_UFLRA") return Logic_t::QF_UFLRA;
     if (name == "QF_UFLIA") return Logic_t::QF_UFLIA;
     if (name == "QF_UFRDL") return Logic_t::QF_UFRDL;
@@ -63,10 +61,6 @@ Logic * LogicFactory::getInstance(Logic_t logicType) {
         case Logic_t::QF_BOOL:
         case Logic_t::QF_AX: {
             l = new Logic(logicType);
-            break;
-        }
-        case Logic_t::QF_CUF: {
-            l = new BVLogic(logicType);
             break;
         }
         default:

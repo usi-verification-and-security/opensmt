@@ -18,8 +18,6 @@ namespace {
                 return Logic_t::QF_BV;
             case qf_uf:
                 return Logic_t::QF_UF;
-            case qf_cuf:
-                return Logic_t::QF_CUF;
             case qf_idl:
                 return Logic_t::QF_IDL;
             case qf_rdl:

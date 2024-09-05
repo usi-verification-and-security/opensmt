@@ -594,7 +594,6 @@ namespace opensmt {
   //  proof_certify_inter           = 0;
     proof_random_seed	        = 0;
     sat_theory_polarity_suggestion = 1;
-    cuf_bitwidth                   = 32;
   }
 
   void

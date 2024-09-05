@@ -14,7 +14,6 @@ namespace opensmt {
 typedef enum
 {
     qf_uf         // Uninterpreted Functions
-  , qf_cuf        // Uninterpreted Functions for C
   , qf_bv         // BitVectors
   , qf_rdl        // Real difference logics
   , qf_idl        // Integer difference logics

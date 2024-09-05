@@ -919,8 +919,6 @@ namespace opensmt {
     int          proof_trans_strength;             // Light proof restructuring for stronger/weaker interpolants, for Pudlak/McMillan/McMillan' algorithms
     // UF-Solver related parameters
     int          uf_disable;                   // Disable the solver
-    // CUF-Solver related parameter
-    int          cuf_bitwidth;                  // Bit-width to use by the CUF solver
     // BV-Solver related parameters
     int          bv_disable;                   // Disable the solver
     // DL-Solver related parameters
