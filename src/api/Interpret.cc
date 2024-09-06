@@ -533,7 +533,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         if (strcmp(name_attr.getValue(), ":named") == 0) {
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
-            if (termNames.has(sym.getValue())) {
+            if (termNames.contains(sym.getValue())) {
                 notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
             }
@@ -625,10 +625,11 @@ bool Interpret::getAssignment() {
     }
     std::ostringstream ss;
     ss << '(';
-    termNames.forEachNamedTerm([&](auto const & name, PTRef term) {
+    for (auto const & name : termNames) {
+        PTRef term = termNames.termByName(name);
         lbool val = main_solver->getTermValue(term);
         ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown")) << ')' << " ";
-    });
+    }
     ss.seekp(-1, std::ios::cur);
     ss << ')';
     notify_formatted(false, ss.str().c_str());
@@ -1287,10 +1288,9 @@ void Interpret::getUnsatCore() {
     auto const & unsatCoreTerms = unsatCore->getTerms();
     std::cout << "( ";
     for (PTRef fla : unsatCoreTerms) {
-        if (termNames.has(fla)) {
-            auto const & names = termNames.namesForTerm(fla);
-            assert(not names.empty());
-            std::cout << names[0] << ' ';
+        if (termNames.contains(fla)) {
+            auto const & name = termNames.nameForTerm(fla);
+            std::cout << name << ' ';
         }
     }
     std::cout << ')' << std::endl;
@@ -1302,9 +1302,10 @@ void Interpret::getInterpolants(const ASTNode& n)
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
-    termNames.forEachNamedTerm([&](auto const & name, PTRef term) {
+    for (auto const & name : termNames) {
+        PTRef term = termNames.termByName(name);
         letRecords.addBinding(name, term);
-    });
+    }
     for (auto e : exps) {
         ASTNode& c = *e;
         PTRef tr = parseTerm(c, letRecords);
