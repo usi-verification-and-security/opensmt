@@ -22,24 +22,24 @@ make -j4
 make test
 make install
 if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
-    cd ../regression && ./run-test-notiming.sh ../build/opensmt;
-    cd ../regression_itp && ./run-tests.sh ../build/opensmt;
+    cd ../test/regression/base && ./run-test-notiming.sh ../../../build/opensmt
+    cd ../interpolation && ./run-tests.sh ../../../build/opensmt
     if [[ "${PARALLEL}" == "ON" ]]; then
-      cd ../regression_splitting && ./bin/run-tests.sh ../build/opensmt-splitter;
+      cd ../splitting && ./bin/run-tests.sh ../../../build/opensmt-splitter
     fi
-    cd ../regression_pipe && ./run-tests.sh ../build/opensmt;
-    cd ../regression_models
+    cd ../pipe && ./run-tests.sh ../../../build/opensmt
+    cd ../models
     if [[ x"${MODEL_VALIDATION}" == x"Dolmen" || -f ./data/ENV-MODERN ]]; then
-        ./bin/run-tests-dolmen.sh ../build/opensmt;
+        ./bin/run-tests-dolmen.sh ../../../build/opensmt
     elif [[ x"${MODEL_VALIDATION}" == x"pySMT" || -f ./data/ENV-SMTCOMP ]]; then
-        ./bin/run-tests-smtcomp.sh ../build/opensmt;
+        ./bin/run-tests-smtcomp.sh ../../../build/opensmt
     else
         echo "Error: the model regression environment is not set."
         exit 1
     fi
 fi
 
-cd ../examples && rm -rf build && mkdir -p build && cd build
+cd ../../../examples && rm -rf build && mkdir -p build && cd build
 cmake \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DCMAKE_CXX_FLAGS="${FLAGS}" \

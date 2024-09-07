@@ -186,7 +186,7 @@ When using OpenSMT as an executable, interpolation is off by default. It can be 
 
 When using OpenSMT as a library, the option needs to be set in `SMTConfig` **before** `Opensmt` object is created, see [this example](examples/test_lra_itp.cc).
 
-Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](regression_itp/itp_bug_small.smt2).
+Interpolation is supported for SMT-LIB logics `QF_UF`, `QF_LRA`, and `QF_LIA` in both single-query and incremental mode. An example of how SMT-LIB2 file can be extended to instruct OpenSMT to compute interpolants can be found [here](test/regression/interpolation/itp_bug_small.smt2).
 
 ## Contact
 If you have questions, bug reports, or feature requests, please refer to our [GitHub](https://github.com/usi-verification-and-security/opensmt/issues) issue tracker or send us an email to tomaqa@gmail.com, martin.blicha@gmail.com or antti.hyvarinen@gmail.com.

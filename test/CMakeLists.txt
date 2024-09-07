@@ -11,3 +11,6 @@ FetchContent_MakeAvailable(googletest)
 
 add_subdirectory(unit)
 
+if (PARALLEL)
+    add_subdirectory(parallel)
+endif()

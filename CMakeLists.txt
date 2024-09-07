@@ -126,9 +126,6 @@ if(PACKAGE_TESTS)
     endif()
     enable_testing()
     add_subdirectory(${PROJECT_SOURCE_DIR}/test)
-    if (PARALLEL)
-        add_subdirectory(${PROJECT_SOURCE_DIR}/parallel-test)
-    endif()
 endif()
 #########################################################################
 ################# BENCHMARKING ##########################################
