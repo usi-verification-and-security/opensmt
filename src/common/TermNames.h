@@ -14,14 +14,18 @@ using TermName = std::string;
 
 class TermNames {
 public:
+    TermNames(SMTConfig const & conf) : config{conf} {}
+
+    bool isGlobal() const { return config.declarations_are_global(); }
+
     bool contains(TermName const & name) const { return nameToTerm.contains(name); }
     bool contains(PTRef term) const { return termToNames.contains(term); }
 
-    void insert(TermName const & name, PTRef term, bool scoped = false) {
+    void insert(TermName const & name, PTRef term) {
         assert(not contains(name));
         nameToTerm.emplace(name, term);
         termToNames[term].push_back(name);
-        if (scoped) { scopedNames.push(name); }
+        names.push(name);
     }
 
     PTRef termByName(TermName const & name) const {
@@ -41,16 +45,26 @@ public:
         return vec.front();
     }
 
-    auto begin() const { return scopedNames.begin(); }
-    auto end() const { return scopedNames.end(); }
+    auto begin() const noexcept { return names.begin(); }
+    auto end() const noexcept { return names.end(); }
+
+    bool empty() const noexcept { return size() == 0; }
+    std::size_t size() const noexcept { return names.size(); }
 
 protected:
     friend class MainSolver;
 
-    void pushScope() { scopedNames.pushScope(); }
+    using NameToTermMap = std::unordered_map<TermName, PTRef>;
+    using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
+
+    void pushScope() {
+        if (isGlobal()) { return; }
+        names.pushScope();
+    }
 
     void popScope() {
-        scopedNames.popScope([this](TermName const & name) {
+        if (isGlobal()) { return; }
+        names.popScope([this](TermName const & name) {
             auto it = nameToTerm.find(name);
             if (it == nameToTerm.end()) { return; }
             PTRef term = it->second;
@@ -61,11 +75,9 @@ protected:
         });
     }
 
-private:
-    using NameToTermMap = std::unordered_map<TermName, PTRef>;
-    using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
+    SMTConfig const & config;
 
-    ScopedVector<TermName> scopedNames;
+    ScopedVector<TermName> names;
     NameToTermMap nameToTerm;
     TermToNamesMap termToNames;
 };

@@ -538,7 +538,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
                 notify_formatted(true, "name %s already exists", sym.getValue());
                 return PTRef_Undef;
             }
-            termNames.insert(sym.getValue(), tr, not config.declarations_are_global());
+            termNames.insert(sym.getValue(), tr);
         }
         return tr;
     }
