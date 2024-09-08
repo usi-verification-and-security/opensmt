@@ -33,7 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <logics/Logic.h>
 #include <api/MainSolver.h>
 #include <common/ScopedVector.h>
-#include <common/TermNames.h>
 
 #include <unordered_map>
 #include <string>
@@ -143,7 +142,6 @@ class Interpret {
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
     DefinedFunctions defined_functions;
-    TermNames termNames;
 
     void                        initializeLogic(Logic_t logicType);
     bool                        isInitialized() const { return logic != nullptr; }

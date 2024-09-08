@@ -13,6 +13,7 @@
 
 #include <cnfizers/Tseitin.h>
 #include <common/ScopedVector.h>
+#include <common/TermNames.h>
 #include <models/Model.h>
 #include <proof/InterpolationContext.h>
 #include <smtsolvers/SimpSMTSolver.h>
@@ -104,6 +105,9 @@ public:
 
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
+
+    TermNames & getTermNames() { return termNames; }
+    TermNames const & getTermNames() const { return termNames; }
 
     void stop() { smt_solver->stop = true; }
 
@@ -267,6 +271,7 @@ private:
     std::unique_ptr<TermMapper> term_mapper;
     std::unique_ptr<THandler> thandler;
     std::unique_ptr<SimpSMTSolver> smt_solver;
+    TermNames termNames;
     Logic & logic;
     PartitionManager pmanager;
     SMTConfig & config;

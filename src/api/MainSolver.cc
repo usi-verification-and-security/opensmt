@@ -74,28 +74,29 @@ void MainSolver::push() {
     frames.push();
     preprocessor.push();
     frameTerms.push(newFrameTerm(frames.last().getId()));
+    termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
 
 bool MainSolver::pop() {
-    if (frames.frameCount() > 1) {
-        if (trackPartitions()) {
-            auto const & partitionsToInvalidate = frames.last().formulas;
-            ipartitions_t mask = 0;
-            for (PTRef partition : partitionsToInvalidate) {
-                auto index = pmanager.getPartitionIndex(partition);
-                assert(index != -1);
-                setbit(mask, static_cast<unsigned int>(index));
-            }
-            pmanager.invalidatePartitions(mask);
+    if (frames.frameCount() <= 1) { return false; }
+
+    if (trackPartitions()) {
+        auto const & partitionsToInvalidate = frames.last().formulas;
+        ipartitions_t mask = 0;
+        for (PTRef partition : partitionsToInvalidate) {
+            auto index = pmanager.getPartitionIndex(partition);
+            assert(index != -1);
+            setbit(mask, static_cast<unsigned int>(index));
         }
-        frames.pop();
-        preprocessor.pop();
-        firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
-        if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
-        return true;
+        pmanager.invalidatePartitions(mask);
     }
-    return false;
+    frames.pop();
+    preprocessor.pop();
+    termNames.popScope();
+    firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
+    if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
+    return true;
 }
 
 void MainSolver::insertFormula(PTRef fla) {

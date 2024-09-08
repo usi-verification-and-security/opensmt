@@ -531,6 +531,7 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         if (tr == PTRef_Undef) return tr;
 
         if (strcmp(name_attr.getValue(), ":named") == 0) {
+            auto & termNames = main_solver->getTermNames();
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
             if (termNames.contains(sym.getValue())) {
@@ -582,7 +583,6 @@ void Interpret::push(int n) {
         } else {
             while (n--) {
                 defined_functions.pushScope();
-                termNames.pushScope();
                 main_solver->push();
             }
             notify_success();
@@ -600,7 +600,6 @@ void Interpret::pop(int n) {
                 success = main_solver->pop();
                 if (success) {
                     defined_functions.popScope();
-                    termNames.popScope();
                 }
             }
             if (success) {
@@ -624,6 +623,7 @@ bool Interpret::getAssignment() {
        return false;
     }
     std::ostringstream ss;
+    auto const & termNames = main_solver->getTermNames();
     ss << '(';
     for (auto const & name : termNames) {
         PTRef term = termNames.termByName(name);
@@ -1287,6 +1287,7 @@ void Interpret::getUnsatCore() {
     auto const unsatCore = main_solver->getUnsatCore();
     auto const & unsatCoreTerms = unsatCore->getTerms();
     std::cout << "( ";
+    auto const & termNames = main_solver->getTermNames();
     for (PTRef fla : unsatCoreTerms) {
         if (termNames.contains(fla)) {
             auto const & name = termNames.nameForTerm(fla);
@@ -1302,6 +1303,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
+    auto const & termNames = main_solver->getTermNames();
     for (auto const & name : termNames) {
         PTRef term = termNames.termByName(name);
         letRecords.addBinding(name, term);

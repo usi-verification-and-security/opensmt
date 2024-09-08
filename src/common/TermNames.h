@@ -24,20 +24,6 @@ public:
         if (scoped) { scopedNames.push(name); }
     }
 
-    void pushScope() { scopedNames.pushScope(); }
-
-    void popScope() {
-        scopedNames.popScope([&](TermName const & name) {
-            auto it = nameToTerm.find(name);
-            if (it == nameToTerm.end()) { return; }
-            PTRef term = it->second;
-            assert(termToNames.find(term) != termToNames.end());
-            auto & names = termToNames.at(term);
-            names.erase(std::find(names.begin(), names.end(), name));
-            nameToTerm.erase(it);
-        });
-    }
-
     PTRef termByName(TermName const & name) const {
         assert(contains(name));
         return nameToTerm.at(name);
@@ -57,6 +43,23 @@ public:
 
     auto begin() const { return scopedNames.begin(); }
     auto end() const { return scopedNames.end(); }
+
+protected:
+    friend class MainSolver;
+
+    void pushScope() { scopedNames.pushScope(); }
+
+    void popScope() {
+        scopedNames.popScope([this](TermName const & name) {
+            auto it = nameToTerm.find(name);
+            if (it == nameToTerm.end()) { return; }
+            PTRef term = it->second;
+            assert(termToNames.find(term) != termToNames.end());
+            auto & names = termToNames.at(term);
+            names.erase(std::find(names.begin(), names.end(), name));
+            nameToTerm.erase(it);
+        });
+    }
 
 private:
     using NameToTermMap = std::unordered_map<TermName, PTRef>;
