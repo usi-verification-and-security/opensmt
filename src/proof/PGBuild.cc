@@ -126,8 +126,6 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
     // NOTE: Must guarantee first antecedent -> positive occurrence pivot
     // second antecedent -> negative occurrence pivot
 
-    // Map to associate node to its antecedents
-    std::map< std::pair<int,int>, int > ants_map;
     //Start from empty clause
     {
         auto it = clause_to_proof_der.find(CRef_Undef);
@@ -171,7 +169,7 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
         if (isLeafClauseType(ctype)) {
             assert(chaincla.empty());
             // MB: Proof built from the root towards the leaves.
-            //     A leaf node is constructed when its first children is constructred. Here it must already exist.
+            //     A leaf node is constructed when its first children is constructed. Here it must already exist.
             auto it = clauseToIDMap.find(currClause);
             assert(it != clauseToIDMap.end());
             getNode(it->second)->setType(ctype);
@@ -239,7 +237,7 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
                 bool pos_piv = true;
                 bool found_piv = false;
                 // Make sure ant1 has the pivot positive (and ant2 negated)
-                Clause & clausei = proof.getClause(clause_i);
+                Clause const & clausei = proof.getClause(clause_i);
                 for (unsigned k = 0; k < clausei.size(); ++k) {
                     if (var(clausei[k]) == n->getPivot()) {
                         if (sign(clausei[k]) != 0) { pos_piv = false; }
