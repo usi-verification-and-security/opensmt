@@ -1285,14 +1285,13 @@ void Interpret::getProof()
 
 void Interpret::getUnsatCore() {
     auto const unsatCore = main_solver->getUnsatCore();
-    auto const & unsatCoreTerms = unsatCore->getTerms();
+    auto const & unsatCoreTerms = unsatCore->getNamedTerms();
     std::cout << "( ";
     auto const & termNames = main_solver->getTermNames();
     for (PTRef fla : unsatCoreTerms) {
-        if (termNames.contains(fla)) {
-            auto const & name = termNames.nameForTerm(fla);
-            std::cout << name << ' ';
-        }
+        assert(termNames.contains(fla));
+        auto const & name = termNames.nameForTerm(fla);
+        std::cout << name << ' ';
     }
     std::cout << ')' << std::endl;
 }

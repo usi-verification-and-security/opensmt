@@ -3,6 +3,7 @@
 
 #include <api/PartitionManager.h>
 #include <common/PartitionInfo.h>
+#include <common/TermNames.h>
 #include <interpolation/InterpolationUtils.h>
 #include <smtsolvers/ResolutionProof.h>
 
@@ -16,9 +17,10 @@ using Partitions = ipartitions_t;
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
     computeClauses();
     computeTerms();
+    computeNamedTerms();
 
     // Not using `make_unique` because only UnsatCoreBuilder is a friend of UnsatCore
-    return std::unique_ptr<UnsatCore>{new UnsatCore{std::move(terms)}};
+    return std::unique_ptr<UnsatCore>{new UnsatCore{std::move(terms), std::move(namedTerms)}};
 }
 
 void UnsatCoreBuilder::computeClauses() {
@@ -58,6 +60,17 @@ void UnsatCoreBuilder::computeTerms() {
     }
 
     terms = partitionManagerPtr->getPartitions(partitions);
+}
+
+void UnsatCoreBuilder::computeNamedTerms() {
+    assert(terms.size() > 0);
+    namedTerms.clear();
+
+    if (termNamesPtr->empty()) return;
+
+    for (PTRef term : terms) {
+        if (termNamesPtr->contains(term)) { namedTerms.push(term); }
+    }
 }
 
 } // namespace opensmt
