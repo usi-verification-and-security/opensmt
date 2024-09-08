@@ -51,8 +51,12 @@ public:
     bool empty() const noexcept { return size() == 0; }
     std::size_t size() const noexcept { return names.size(); }
 
+    inline auto terms() const;
+
 protected:
     friend class MainSolver;
+
+    class Terms;
 
     using NameToTermMap = std::unordered_map<TermName, PTRef>;
     using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
@@ -81,6 +85,48 @@ protected:
     NameToTermMap nameToTerm;
     TermToNamesMap termToNames;
 };
+
+class TermNames::Terms {
+public:
+    explicit Terms(TermNames const & termNames_) : termNames{termNames_} {}
+
+    auto begin() const noexcept { return TermIterator{termNames.termToNames.begin()}; }
+    auto end() const noexcept { return TermIterator{termNames.termToNames.end()}; }
+
+    bool empty() const noexcept { return termNames.termToNames.empty(); }
+    std::size_t size() const noexcept { return termNames.termToNames.size(); }
+
+protected:
+    class TermIterator {
+    public:
+        using OrigIterator = TermToNamesMap::const_iterator;
+
+        explicit TermIterator(OrigIterator it) : origIterator{it} {}
+
+        PTRef const & operator*() const { return origIterator->first; }
+
+        TermIterator & operator++() {
+            ++origIterator;
+            return *this;
+        }
+        TermIterator operator++(int) {
+            auto it = *this;
+            ++origIterator;
+            return it;
+        }
+
+        bool operator==(TermIterator const &) const noexcept = default;
+
+    protected:
+        OrigIterator origIterator;
+    };
+
+    TermNames const & termNames;
+};
+
+auto TermNames::terms() const {
+    return Terms(*this);
+}
 } // namespace opensmt
 
 #endif // OPENSMT_TERMNAMES_H
