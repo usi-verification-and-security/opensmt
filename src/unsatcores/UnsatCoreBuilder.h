@@ -20,7 +20,12 @@ class UnsatCoreBuilder {
 public:
     using Proof = ResolutionProof;
 
-    inline UnsatCoreBuilder(SMTConfig const *, Proof const *, PartitionManager const *, TermNames const *);
+    UnsatCoreBuilder(SMTConfig const & conf, Proof const & proof_, PartitionManager const & pmanager,
+                     TermNames const & names)
+        : config{conf},
+          proof{proof_},
+          partitionManager{pmanager},
+          termNames{names} {}
 
     std::unique_ptr<UnsatCore> build();
 
@@ -29,28 +34,16 @@ protected:
     void computeTerms();
     void computeNamedTerms();
 
-    SMTConfig const * configPtr;
-    Proof const * proofPtr;
-    PartitionManager const * partitionManagerPtr;
-    TermNames const * termNamesPtr;
+    SMTConfig const & config;
+    Proof const & proof;
+    PartitionManager const & partitionManager;
+    TermNames const & termNames;
 
 private:
     vec<CRef> clauses;
     vec<PTRef> terms;
     vec<PTRef> namedTerms;
 };
-
-UnsatCoreBuilder::UnsatCoreBuilder(SMTConfig const * conf, Proof const * proof, PartitionManager const * pmanager,
-                                   TermNames const * names)
-    : configPtr{conf},
-      proofPtr{proof},
-      partitionManagerPtr{pmanager},
-      termNamesPtr{names} {
-    assert(conf);
-    assert(proof);
-    assert(pmanager);
-    assert(names);
-}
 
 } // namespace opensmt
 

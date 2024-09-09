@@ -26,7 +26,7 @@ std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
 void UnsatCoreBuilder::computeClauses() {
     clauses.clear();
 
-    auto const & derivations = proofPtr->getProof();
+    auto const & derivations = proof.getProof();
     std::vector<CRef> stack;
     stack.push_back(CRef_Undef);
     std::unordered_set<CRef> processed;
@@ -55,21 +55,21 @@ void UnsatCoreBuilder::computeTerms() {
 
     Partitions partitions;
     for (CRef cref : clauses) {
-        auto const & partition = partitionManagerPtr->getClauseClassMask(cref);
+        auto const & partition = partitionManager.getClauseClassMask(cref);
         orbit(partitions, partitions, partition);
     }
 
-    terms = partitionManagerPtr->getPartitions(partitions);
+    terms = partitionManager.getPartitions(partitions);
 }
 
 void UnsatCoreBuilder::computeNamedTerms() {
     assert(terms.size() > 0);
     namedTerms.clear();
 
-    if (termNamesPtr->empty()) return;
+    if (termNames.empty()) return;
 
     for (PTRef term : terms) {
-        if (termNamesPtr->contains(term)) { namedTerms.push(term); }
+        if (termNames.contains(term)) { namedTerms.push(term); }
     }
 }
 
