@@ -231,7 +231,8 @@ std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
     if (not config.produce_unsat_cores()) { throw ApiException("Producing unsat cores is not enabled"); }
     if (status != s_False) { throw ApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
 
-    UnsatCoreBuilder unsatCoreBuilder{config, smt_solver->getResolutionProof(), pmanager, termNames};
+    auto & proof = smt_solver->getResolutionProof();
+    UnsatCoreBuilder unsatCoreBuilder{config, logic, proof, pmanager, termNames};
 
     return unsatCoreBuilder.build();
 }

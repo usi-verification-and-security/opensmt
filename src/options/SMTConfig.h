@@ -306,6 +306,8 @@ namespace opensmt {
     static const char* o_sat_split_randomize_lookahead_buf;
     static const char* o_produce_models;
     static const char* o_produce_unsat_cores;
+    // Produce the unsat cores as locally minimal (i.e. subset-minimal)
+    static const char* o_minimal_unsat_cores;
     static const char* o_sat_remove_symmetries;
     static const char* o_dryrun;
     static const char* o_do_substitutions;
@@ -514,6 +516,9 @@ namespace opensmt {
                 1; }
     bool produce_unsat_cores() const {
         return optionTable.has(o_produce_unsat_cores) && optionTable[o_produce_unsat_cores]->getValue().numval > 0;
+    }
+    bool minimal_unsat_cores() const {
+        return optionTable.has(o_minimal_unsat_cores) && optionTable[o_minimal_unsat_cores]->getValue().numval > 0;
     }
     int          produceStats() const
       { return optionTable.has(o_produce_stats) ?
