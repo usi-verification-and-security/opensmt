@@ -17,6 +17,9 @@ class ScopedVector {
     std::vector<unsigned> limits;
 
 public:
+    using iterator = typename decltype(elements)::iterator;
+    using const_iterator = typename decltype(elements)::const_iterator;
+
     void push(T const & element) { return elements.push_back(element); }
 
     void pushScope() { limits.push_back(elements.size()); }
@@ -26,6 +29,7 @@ public:
     template<typename TFun>
     void popScope(TFun callback);
 
+    [[nodiscard]] bool empty() const { return elements.empty(); }
     [[nodiscard]] std::size_t size() const { return elements.size(); }
 
     [[nodiscard]] T * data() { return elements.data(); }

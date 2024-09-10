@@ -5,6 +5,7 @@
 
 #include <pterms/PTRef.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -25,7 +26,7 @@ public:
         assert(not contains(name));
         nameToTerm.emplace(name, term);
         termToNames[term].push_back(name);
-        names.push(name);
+        scopedNamesAndTerms.push({name, term});
     }
 
     PTRef termByName(TermName const & name) const {
@@ -38,18 +39,42 @@ public:
         return termToNames.at(term);
     }
 
-    // Returns any name associated with the term
-    TermName const & nameForTerm(PTRef term) const {
-        auto & vec = namesForTerm(term);
+    // Returns any name from the vector
+    static TermName const & pickName(std::vector<TermName> const & vec) {
         assert(not vec.empty());
         return vec.front();
     }
 
-    auto begin() const noexcept { return names.begin(); }
-    auto end() const noexcept { return names.end(); }
+    // Returns any name associated with the term
+    TermName const & nameForTerm(PTRef term) const {
+        auto & vec = namesForTerm(term);
+        return pickName(vec);
+    }
 
-    bool empty() const noexcept { return size() == 0; }
-    std::size_t size() const noexcept { return names.size(); }
+    std::optional<PTRef> tryGetTermByName(TermName const & name) const {
+        if (auto it = nameToTerm.find(name); it != nameToTerm.end()) { return it->second; }
+
+        return std::nullopt;
+    }
+
+    // std::optional does not work with references so we must use pointers
+    std::vector<TermName> const * tryGetNamesForTerm(PTRef term) const {
+        if (auto it = termToNames.find(term); it != termToNames.end()) { return &it->second; }
+
+        return nullptr;
+    }
+
+    TermName const * tryGetNameForTerm(PTRef term) const {
+        if (auto vecPtr = tryGetNamesForTerm(term)) { return &pickName(*vecPtr); }
+
+        return nullptr;
+    }
+
+    auto begin() const noexcept { return scopedNamesAndTerms.begin(); }
+    auto end() const noexcept { return scopedNamesAndTerms.end(); }
+
+    bool empty() const noexcept { return scopedNamesAndTerms.empty(); }
+    std::size_t size() const noexcept { return scopedNamesAndTerms.size(); }
 
 protected:
     friend class MainSolver;
@@ -57,27 +82,32 @@ protected:
     using NameToTermMap = std::unordered_map<TermName, PTRef>;
     using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
 
+    // avoid undesired overload resolution with the public `namesForTerm`
+    std::vector<TermName> & _namesForTerm(PTRef term) const {
+        // this is a legal use-case of `const_cast`
+        return const_cast<std::vector<TermName> &>(namesForTerm(term));
+    }
+
     void pushScope() {
         if (isGlobal()) { return; }
-        names.pushScope();
+        scopedNamesAndTerms.pushScope();
     }
 
     void popScope() {
         if (isGlobal()) { return; }
-        names.popScope([this](TermName const & name) {
+        scopedNamesAndTerms.popScope([this](auto const & p) {
+            auto const & [name, term] = p;
             auto it = nameToTerm.find(name);
             if (it == nameToTerm.end()) { return; }
-            PTRef term = it->second;
-            assert(termToNames.find(term) != termToNames.end());
-            auto & names = termToNames.at(term);
-            names.erase(std::find(names.begin(), names.end(), name));
+            auto & names_ = _namesForTerm(term);
+            names_.erase(std::find(names_.begin(), names_.end(), name));
             nameToTerm.erase(it);
         });
     }
 
     SMTConfig const & config;
 
-    ScopedVector<TermName> names;
+    ScopedVector<pair<TermName, PTRef>> scopedNamesAndTerms;
     NameToTermMap nameToTerm;
     TermToNamesMap termToNames;
 };

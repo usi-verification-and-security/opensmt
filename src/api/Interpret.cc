@@ -625,8 +625,7 @@ bool Interpret::getAssignment() {
     std::ostringstream ss;
     auto const & termNames = main_solver->getTermNames();
     ss << '(';
-    for (auto const & name : termNames) {
-        PTRef term = termNames.termByName(name);
+    for (auto const & [name, term] : termNames) {
         lbool val = main_solver->getTermValue(term);
         ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown")) << ')' << " ";
     }
@@ -1303,8 +1302,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     LetRecords letRecords;
     letRecords.pushFrame();
     auto const & termNames = main_solver->getTermNames();
-    for (auto const & name : termNames) {
-        PTRef term = termNames.termByName(name);
+    for (auto const & [name, term] : termNames) {
         letRecords.addBinding(name, term);
     }
     for (auto e : exps) {
