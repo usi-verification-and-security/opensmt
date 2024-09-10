@@ -78,6 +78,8 @@ void UnsatCoreBuilder::computeNamedTerms() {
     namedTerms.clear();
     namedTermsIdxs.clear();
 
+    if (config.print_cores_full()) return;
+
     if (termNames.empty()) return;
 
     size_t const termsSize = terms.size();
@@ -121,34 +123,49 @@ void UnsatCoreBuilder::minimize() {
 }
 
 void UnsatCoreBuilder::minimizeInit() {
+    assert(terms.size() > 0);
     assert(terms.size() >= namedTerms.size());
     assert(size_t(namedTerms.size()) == namedTermsIdxs.size());
 }
 
 void UnsatCoreBuilder::minimizeAlgNaive() {
-    if (namedTerms.size() == 0) return;
+    // it must minimize everything if full cores are desired
+    bool const fullCore = config.print_cores_full();
+
+    if (fullCore) {
+        assert(namedTerms.size() == 0);
+        std::swap(terms, namedTerms);
+        assert(namedTerms.size() > 0);
+    } else if (namedTerms.size() == 0) {
+        return;
+    }
 
     SMTConfig smtSolverConfig = makeSmtSolverConfig();
     std::unique_ptr<SMTSolver> smtSolverPtr = newSmtSolver(smtSolverConfig);
 
-    auto const namedTermsIdxsEnd = namedTermsIdxs.end();
-    auto const isNamedTerm = [namedTermsIdxsEnd](size_t idx, auto namedTermsIdxsIt) {
-        if (namedTermsIdxsIt == namedTermsIdxsEnd) { return false; }
-        assert(idx <= *namedTermsIdxsIt);
-        return (idx == *namedTermsIdxsIt);
-    };
     decltype(terms) newTerms;
-    size_t const termsSize = terms.size();
-    for (auto [idx, namedTermsIdxsIt] = std::tuple{size_t{0}, namedTermsIdxs.begin()}; idx < termsSize; ++idx) {
-        if (isNamedTerm(idx, namedTermsIdxsIt)) {
-            ++namedTermsIdxsIt;
-            continue;
+    if (not fullCore) {
+        // full cores are *not* desired -> it is sufficient to minimize only `namedTerms`
+        auto const namedTermsIdxsEnd = namedTermsIdxs.end();
+        auto const isNamedTerm = [namedTermsIdxsEnd](size_t idx, auto namedTermsIdxsIt) {
+            if (namedTermsIdxsIt == namedTermsIdxsEnd) { return false; }
+            assert(idx <= *namedTermsIdxsIt);
+            return (idx == *namedTermsIdxsIt);
+        };
+
+        size_t const termsSize = terms.size();
+        for (auto [idx, namedTermsIdxsIt] = std::tuple{size_t{0}, namedTermsIdxs.begin()}; idx < termsSize; ++idx) {
+            if (isNamedTerm(idx, namedTermsIdxsIt)) {
+                ++namedTermsIdxsIt;
+                continue;
+            }
+            PTRef term = terms[idx];
+            smtSolverPtr->insertFormula(term);
+            newTerms.push(term);
         }
-        PTRef term = terms[idx];
-        smtSolverPtr->insertFormula(term);
-        newTerms.push(term);
     }
 
+    // if `fullCore` then we treat all terms as `namedTerms`
     decltype(namedTerms) newNamedTerms;
     size_t const namedTermsSize = namedTerms.size();
     for (size_t namedIdx = 0; namedIdx < namedTermsSize; ++namedIdx) {
@@ -174,9 +191,10 @@ void UnsatCoreBuilder::minimizeAlgNaive() {
         PTRef term = namedTerms[namedIdx];
         smtSolverPtr->insertFormula(term);
         newTerms.push(term);
-        newNamedTerms.push(term);
+        if (not fullCore) { newNamedTerms.push(term); }
     }
 
+    assert(not fullCore or newNamedTerms.size() == 0);
     terms = std::move(newTerms);
     namedTerms = std::move(newNamedTerms);
 }

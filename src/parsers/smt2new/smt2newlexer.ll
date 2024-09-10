@@ -118,6 +118,7 @@ using namespace opensmt::tokens;
 ":produce-proofs"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEPROOFS;           }
 ":produce-unsat-cores"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEUNSATCORES;       }
 ":minimal-unsat-cores"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_MINIMALUNSATCORES;       }
+":print-cores-full"          { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRINTCORESFULL;          }
 ":produce-models"            { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEMODELS;           }
 ":produce-assignments"       { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_PRODUCEASSIGNMENTS;      }
 ":regular-output-channel"    { yyget_lval(yyscanner)->str = strdup( yyget_text(yyscanner) ); return KW_REGULAROUTPUTCHANNEL;    }

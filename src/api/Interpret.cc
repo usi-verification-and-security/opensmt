@@ -1284,13 +1284,20 @@ void Interpret::getProof()
 
 void Interpret::getUnsatCore() {
     auto const unsatCore = main_solver->getUnsatCore();
-    auto const & unsatCoreTerms = unsatCore->getNamedTerms();
     std::cout << "( ";
     auto const & termNames = main_solver->getTermNames();
-    for (PTRef fla : unsatCoreTerms) {
-        assert(termNames.contains(fla));
-        auto const & name = termNames.nameForTerm(fla);
-        std::cout << name << ' ';
+    if (not config.print_cores_full()) {
+        // this is default
+        for (PTRef fla : unsatCore->getNamedTerms()) {
+            assert(termNames.contains(fla));
+            auto const & name = termNames.nameForTerm(fla);
+            std::cout << name << ' ';
+        }
+    } else {
+        // include all terms, not just ':named' terms
+        for (PTRef fla : unsatCore->getTerms()) {
+            std::cout << logic->printTerm(fla) << ' ';
+        }
     }
     std::cout << ')' << std::endl;
 }
