@@ -15,10 +15,17 @@ namespace opensmt {
 using Partitions = ipartitions_t;
 
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
+    buildBody();
+    return buildReturn();
+}
+
+void UnsatCoreBuilder::buildBody() {
     computeClauses();
     computeTerms();
     computeNamedTerms();
+}
 
+std::unique_ptr<UnsatCore> UnsatCoreBuilder::buildReturn() {
     // Not using `make_unique` because only UnsatCoreBuilder is a friend of UnsatCore
     return std::unique_ptr<UnsatCore>{new UnsatCore{std::move(terms), std::move(namedTerms)}};
 }
@@ -65,11 +72,16 @@ void UnsatCoreBuilder::computeTerms() {
 void UnsatCoreBuilder::computeNamedTerms() {
     assert(terms.size() > 0);
     namedTerms.clear();
+    namedTermsIdxs.clear();
 
     if (termNames.empty()) return;
 
-    for (PTRef term : terms) {
-        if (termNames.contains(term)) { namedTerms.push(term); }
+    size_t const termsSize = terms.size();
+    for (size_t idx = 0; idx < termsSize; ++idx) {
+        PTRef term = terms[idx];
+        if (not termNames.contains(term)) { continue; }
+        namedTerms.push(term);
+        namedTermsIdxs.push_back(idx);
     }
 }
 

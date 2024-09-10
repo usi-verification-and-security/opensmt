@@ -6,6 +6,8 @@ PUBLIC
 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCoreBuilder.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCoreBuilder.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MinUnsatCoreBuilder.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/MinUnsatCoreBuilder.cc"
 )
 
 install(FILES UnsatCore.h

@@ -7,6 +7,7 @@
 #include <options/SMTConfig.h>
 
 #include <memory>
+#include <vector>
 
 namespace opensmt {
 
@@ -30,6 +31,9 @@ public:
     std::unique_ptr<UnsatCore> build();
 
 protected:
+    void buildBody();
+    std::unique_ptr<UnsatCore> buildReturn();
+
     void computeClauses();
     void computeTerms();
     void computeNamedTerms();
@@ -39,10 +43,11 @@ protected:
     PartitionManager const & partitionManager;
     TermNames const & termNames;
 
-private:
-    vec<CRef> clauses;
-    vec<PTRef> terms;
-    vec<PTRef> namedTerms;
+    vec<CRef> clauses{};
+    vec<PTRef> terms{};
+    vec<PTRef> namedTerms{};
+
+    std::vector<size_t> namedTermsIdxs{};
 };
 
 } // namespace opensmt

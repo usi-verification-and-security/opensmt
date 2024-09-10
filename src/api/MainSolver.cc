@@ -21,7 +21,10 @@
 #include <tsolvers/IDLTHandler.h>
 #include <tsolvers/LATHandler.h>
 #include <tsolvers/RDLTHandler.h>
+#include <unsatcores/MinUnsatCoreBuilder.h>
 #include <unsatcores/UnsatCoreBuilder.h>
+
+#include <variant>
 
 namespace opensmt {
 
@@ -231,9 +234,15 @@ std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
     if (not config.produce_unsat_cores()) { throw ApiException("Producing unsat cores is not enabled"); }
     if (status != s_False) { throw ApiException("Unsat core cannot be extracted if solver is not in UNSAT state"); }
 
-    UnsatCoreBuilder unsatCoreBuilder{config, smt_solver->getResolutionProof(), pmanager, termNames};
+    auto & proof = smt_solver->getResolutionProof();
+    auto unsatCoreBuilder = [&]() -> std::variant<UnsatCoreBuilder, MinUnsatCoreBuilder> {
+        if (not config.minimal_unsat_cores()) { return UnsatCoreBuilder{config, proof, pmanager, termNames}; }
 
-    return unsatCoreBuilder.build();
+        auto auxSMTSolver = std::make_unique<MainSolver>(logic, config, "unsat core solver");
+        return MinUnsatCoreBuilder{config, proof, pmanager, termNames, std::move(auxSMTSolver)};
+    }();
+
+    return std::visit([](auto & builder) { return builder.build(); }, unsatCoreBuilder);
 }
 
 lbool MainSolver::getTermValue(PTRef tr) const {

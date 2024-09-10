@@ -109,6 +109,8 @@
 ./src/tsolvers/stpsolver/STPSolver.h
 ./src/tsolvers/stpsolver/STPStore.h
 
+./src/unsatcores/MinUnsatCoreBuilder.cc
+./src/unsatcores/MinUnsatCoreBuilder.h
 ./src/unsatcores/UnsatCore.h
 ./src/unsatcores/UnsatCoreBuilder.cc
 ./src/unsatcores/UnsatCoreBuilder.h
