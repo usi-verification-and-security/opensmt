@@ -214,8 +214,8 @@ public:
 	{
 		mpz_clear(visited_1);
 		mpz_clear(visited_2);
-		for(size_t i=0;i<getGraphSize();i++)
-			if(getNode(i)!=NULL) removeNode(i);
+		for (auto nodePtr : graph)
+                    delete nodePtr;
 	}
 
     void printProofAsDotty                  ( std::ostream &);
