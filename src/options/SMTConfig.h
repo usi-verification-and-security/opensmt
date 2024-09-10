@@ -308,6 +308,8 @@ namespace opensmt {
     static const char* o_produce_unsat_cores;
     // Produce the unsat cores as locally minimal (i.e. subset-minimal)
     static const char* o_minimal_unsat_cores;
+    // Make unsat cores agnostic to the smt2 attribute ':named'
+    static const char* o_print_cores_full;
     static const char* o_sat_remove_symmetries;
     static const char* o_dryrun;
     static const char* o_do_substitutions;
@@ -519,6 +521,9 @@ namespace opensmt {
     }
     bool minimal_unsat_cores() const {
         return optionTable.has(o_minimal_unsat_cores) && optionTable[o_minimal_unsat_cores]->getValue().numval > 0;
+    }
+    bool print_cores_full() const {
+        return optionTable.has(o_print_cores_full) && optionTable[o_print_cores_full]->getValue().numval > 0;
     }
     int          produceStats() const
       { return optionTable.has(o_produce_stats) ?
