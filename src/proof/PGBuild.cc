@@ -78,20 +78,18 @@ ProofNode * ProofGraph::createProofNodeFor(CRef clause, clause_type _ctype, Reso
 }
 
 void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
-    if (verbose()) { std::cerr << "# " << "Proof graph building begin" << '\n'; }
     if (verbose() > 0) {
+        std::cerr << "# " << "Proof graph building begin" << '\n';
         uint64_t mem_used = memUsed();
         reportf("# Memory used before building the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
     }
 
-    const double initTime=cpuTime();
     max_id_variable=0;
 
     av_cla_size=0; max_cla_size=0;
     num_edges=0;
     num_nodes=0;
     num_leaves=0;
-    building_time=0;
 
     A1=0;
     A1prime=0;
@@ -271,24 +269,11 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
 
     if (verbose() > 0) {
         unsigned num_non_null = 0;
-#ifdef PEDANTIC_DEBUG
-        unsigned cl_non_null = 0;
-#endif
         for (size_t i = 0; i < getGraphSize(); i++) {
             if (getNode(i)) {
                 num_non_null++;
-#ifdef PEDANTIC_DEBUG
-                if (getNode(i)->getPClause()) {
-                    cl_non_null++;
-                }
-#endif
             }
         }
-#ifdef PEDANTIC_DEBUG
-        cout << "Graph size: " << getGraphSize() << '\n';
-        cout << "Non null nodes: " << num_non_null << '\n';
-        cout << "Non null clauses: " << cl_non_null << '\n';
-#endif
         if (graph.size() > 1) {
             assert(num_non_null == (counters.num_leaf + counters.num_learnt + counters.num_derived + counters.num_theory + counters.num_assump));
         }
@@ -304,15 +289,12 @@ void ProofGraph::buildProofGraph(const ResolutionProof & proof) {
         reportf("; Number of edges: %d\n", num_edges);
         num_nodes = num_non_null;
 
-        //reportf( "# Number of variables - nominal: %d - actual: %d\n",  num_vars_limit, proof_variables.size() );
         reportf("; Number of distinct variables in the proof: %d\n", (int) proof_variables.size());
-    }
-    if (verbose() > 0) {
+
         uint64_t mem_used = memUsed();
         reportf("; Memory used after building the proof: %.3f MB\n", mem_used == 0 ? 0 : mem_used / 1048576.0);
+        std::cerr << "; Proof graph building end" << std::endl;
     }
-    if (verbose()) { std::cerr << "; Proof graph building end" << std::endl; }
-    building_time = cpuTime() - initTime;
 
     // Postprocessing of the proof
 

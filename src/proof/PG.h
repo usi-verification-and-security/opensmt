@@ -372,7 +372,6 @@ private:
     Logic &                     logic_;
     TermMapper const &          termMapper;
     std::vector<ProofNode *>    graph {};
-    double                         building_time;               // Time spent building graph
     clauseid_t                     root;                        // Proof root
     std::set<clauseid_t>		   leaves_ids;					// Proof leaves, for top-down visits
     std::set< Var >                proof_variables;             // Variables actually present in the proof

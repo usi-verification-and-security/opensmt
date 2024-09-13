@@ -115,7 +115,6 @@ void ProofGraph::transfProofForReduction( )
 		std::cerr << "# -------------------------" << '\n';
 		std::cerr << "# Transformation statistics" << '\n';
 		std::cerr << "# -------------------------" << '\n';
-		std::cerr << "# Graph building time........: " << building_time << " s" << '\n';
 		std::cerr << "# Transformation time........: " << time << " s" << '\n';
 		//std::cerr << "# Duplications...............: " << num_dup << '\n';
 		//std::cerr << "# Node additions due to A1...: " << num_node_add_A1 << '\n';
@@ -137,23 +136,16 @@ void ProofGraph::transfProofForReduction( )
 		std::cerr << "# ---------------------------" << '\n';
 	}
 
-	/*	if ( verbose() > 0 )
-	{
-		uint64_t mem_used = memUsed();
-		reportff( "# Memory used after reducing the proof: %.3f MB\n",  mem_used == 0 ? 0 : mem_used / 1048576.0 );
-	}*/
-
 	if( printProofDotty() == 1 )
 	{
-		//Print reduced proof
-		if( verbose() > 0 ) std::cerr << "# Outputting dotty proof reduced" << '\n';
-        std::ofstream dottyred( "proof_reduced.dot" );
-		printProofAsDotty( dottyred );
+            //Print reduced proof
+            if( verbose() > 0 ) std::cerr << "# Outputting dotty proof reduced" << '\n';
+            std::ofstream dottyred( "proof_reduced.dot" );
+            printProofAsDotty( dottyred );
 	}
 	// TODO return reduced proof in SMTLIB2 format
 	// Normalize antecedents order ( for interpolation )
 	normalizeAntecedentOrder();
-	// Empty proof
 	emptyProofGraph();
 }
 
