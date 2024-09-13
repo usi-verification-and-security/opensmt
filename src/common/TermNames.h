@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -76,6 +77,8 @@ public:
     bool empty() const noexcept { return scopedNamesAndTerms.empty(); }
     std::size_t size() const noexcept { return scopedNamesAndTerms.size(); }
 
+    // A const view to just the names
+    inline auto names() const;
     // A const view to just the terms
     inline auto terms() const;
 
@@ -86,7 +89,10 @@ protected:
     using NameToTermMap = std::unordered_map<TermName, PTRef>;
     using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
 
-    class TermsView;
+    template<bool namesView>
+    class NamesOrTermsView;
+    using NamesView = NamesOrTermsView<true>;
+    using TermsView = NamesOrTermsView<false>;
 
     // avoid undesired overload resolution with the public `namesForTerm`
     std::vector<TermName> & _namesForTerm(PTRef term) const {
@@ -118,17 +124,26 @@ protected:
     TermToNamesMap termToNames;
 };
 
-class TermNames::TermsView {
+template<bool namesView>
+class TermNames::NamesOrTermsView {
 public:
-    explicit TermsView(TermNames const & termNames_) : termNames{termNames_} {}
+    explicit NamesOrTermsView(TermNames const & termNames_) : termNames{termNames_} {}
 
     class Iterator {
     public:
         using PairIterator = ScopedNamesAndTerms::const_iterator;
 
+        using Value = std::conditional_t<namesView, TermName const &, PTRef>;
+
         explicit Iterator(PairIterator pit) : pairIterator{pit} {}
 
-        PTRef operator*() const { return pairIterator->second; }
+        Value operator*() const {
+            if constexpr (namesView) {
+                return pairIterator->first;
+            } else {
+                return pairIterator->second;
+            }
+        }
 
         Iterator & operator++() {
             ++pairIterator;
@@ -151,9 +166,14 @@ public:
 
     bool empty() const noexcept { return termNames.scopedNamesAndTerms.empty(); }
     std::size_t size() const noexcept { return termNames.scopedNamesAndTerms.size(); }
+
 protected:
     TermNames const & termNames;
 };
+
+auto TermNames::names() const {
+    return NamesView(*this);
+}
 
 auto TermNames::terms() const {
     return TermsView(*this);
