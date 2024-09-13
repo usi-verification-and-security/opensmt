@@ -81,6 +81,8 @@ public:
     bool empty() const noexcept { return scopedNames.empty(); }
     std::size_t size() const noexcept { return scopedNames.size(); }
 
+    // A const view to just the names
+    inline auto names() const;
     // A const view to just the terms
     auto const & terms() const { return _terms; }
 
@@ -117,6 +119,8 @@ protected:
         TermIterator termIterator;
     };
 
+    class NamesView;
+
     void pushScope() {
         if (isGlobal()) { return; }
         scopedNames.pushScope();
@@ -152,6 +156,24 @@ auto TermNames::begin() const noexcept {
 
 auto TermNames::end() const noexcept {
     return Iterator{scopedNames.end(), _terms.end()};
+}
+
+class TermNames::NamesView {
+public:
+    explicit NamesView(TermNames const & termNames_) : termNames{termNames_} {}
+
+    auto begin() const noexcept { return termNames.scopedNames.begin(); }
+    auto end() const noexcept { return termNames.scopedNames.end(); }
+
+    bool empty() const noexcept { return termNames.scopedNames.empty(); }
+    std::size_t size() const noexcept { return termNames.scopedNames.size(); }
+
+protected:
+    TermNames const & termNames;
+};
+
+auto TermNames::names() const {
+    return NamesView(*this);
 }
 } // namespace opensmt
 
