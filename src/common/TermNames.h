@@ -76,11 +76,17 @@ public:
     bool empty() const noexcept { return scopedNamesAndTerms.empty(); }
     std::size_t size() const noexcept { return scopedNamesAndTerms.size(); }
 
+    // A const view to just the terms
+    inline auto terms() const;
+
 protected:
     friend class MainSolver;
 
+    using ScopedNamesAndTerms = ScopedVector<pair<TermName, PTRef>>;
     using NameToTermMap = std::unordered_map<TermName, PTRef>;
     using TermToNamesMap = std::unordered_map<PTRef, std::vector<TermName>, PTRefHash>;
+
+    class TermsView;
 
     // avoid undesired overload resolution with the public `namesForTerm`
     std::vector<TermName> & _namesForTerm(PTRef term) const {
@@ -107,10 +113,51 @@ protected:
 
     SMTConfig const & config;
 
-    ScopedVector<pair<TermName, PTRef>> scopedNamesAndTerms;
+    ScopedNamesAndTerms scopedNamesAndTerms;
     NameToTermMap nameToTerm;
     TermToNamesMap termToNames;
 };
+
+class TermNames::TermsView {
+public:
+    explicit TermsView(TermNames const & termNames_) : termNames{termNames_} {}
+
+    class Iterator {
+    public:
+        using PairIterator = ScopedNamesAndTerms::const_iterator;
+
+        explicit Iterator(PairIterator pit) : pairIterator{pit} {}
+
+        PTRef operator*() const { return pairIterator->second; }
+
+        Iterator & operator++() {
+            ++pairIterator;
+            return *this;
+        }
+        Iterator operator++(int) {
+            auto it = *this;
+            operator++();
+            return it;
+        }
+
+        bool operator==(Iterator const &) const = default;
+
+    protected:
+        PairIterator pairIterator;
+    };
+
+    auto begin() const noexcept { return Iterator{termNames.scopedNamesAndTerms.begin()}; }
+    auto end() const noexcept { return Iterator{termNames.scopedNamesAndTerms.end()}; }
+
+    bool empty() const noexcept { return termNames.scopedNamesAndTerms.empty(); }
+    std::size_t size() const noexcept { return termNames.scopedNamesAndTerms.size(); }
+protected:
+    TermNames const & termNames;
+};
+
+auto TermNames::terms() const {
+    return TermsView(*this);
+}
 } // namespace opensmt
 
 #endif // OPENSMT_TERMNAMES_H
