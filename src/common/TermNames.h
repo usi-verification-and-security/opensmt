@@ -81,6 +81,9 @@ public:
     bool empty() const noexcept { return scopedNames.empty(); }
     std::size_t size() const noexcept { return scopedNames.size(); }
 
+    // A const view to just the terms
+    auto const & terms() const { return _terms; }
+
 protected:
     friend class MainSolver;
 
