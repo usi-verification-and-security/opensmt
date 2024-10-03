@@ -81,6 +81,7 @@ public:
     void push();
     bool pop();
     void insertFormula(PTRef fla);
+    std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
 
     void initialize();
 
