@@ -93,6 +93,7 @@ bool MainSolver::pop() {
         }
         pmanager.invalidatePartitions(mask);
     }
+    insertedFormulasCount -= frames.last().size();
     frames.pop();
     preprocessor.pop();
     termNames.popScope();
