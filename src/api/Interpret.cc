@@ -1287,14 +1287,14 @@ void Interpret::getUnsatCore() {
     std::cout << "( ";
     auto const & termNames = main_solver->getTermNames();
     if (not config.print_cores_full()) {
-        // this is default
+        // this is the default: we care only about ':named' terms and their names
         for (PTRef fla : unsatCore->getNamedTerms()) {
             assert(termNames.contains(fla));
             auto const & name = termNames.nameForTerm(fla);
             std::cout << name << ' ';
         }
     } else {
-        // include all terms, not just ':named' terms
+        // we explicitly asked to include all terms and to ignore ':named' terms at all
         for (PTRef fla : unsatCore->getTerms()) {
             std::cout << logic->printTerm(fla) << ' ';
         }

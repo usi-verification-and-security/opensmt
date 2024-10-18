@@ -129,10 +129,12 @@ void UnsatCoreBuilder::minimizeInit() {
 }
 
 void UnsatCoreBuilder::minimizeAlgNaive() {
-    // it must minimize everything if full cores are desired
     bool const fullCore = config.print_cores_full();
 
+    // this algorithm will minimize the contents of the `namedTerms` vector
+
     if (fullCore) {
+        // special case: we don't care about named terms, hence we must minimize everything
         assert(namedTerms.size() == 0);
         std::swap(terms, namedTerms);
         assert(namedTerms.size() > 0);
@@ -145,7 +147,7 @@ void UnsatCoreBuilder::minimizeAlgNaive() {
 
     decltype(terms) newTerms;
     if (not fullCore) {
-        // full cores are *not* desired -> it is sufficient to minimize only `namedTerms`
+        // the default: we focus on named terms -> we must distinguish between `namedTerms` and the others in `terms`
         auto const namedTermsIdxsEnd = namedTermsIdxs.end();
         auto const isNamedTerm = [namedTermsIdxsEnd](size_t idx, auto namedTermsIdxsIt) {
             if (namedTermsIdxsIt == namedTermsIdxsEnd) { return false; }
@@ -159,13 +161,15 @@ void UnsatCoreBuilder::minimizeAlgNaive() {
                 ++namedTermsIdxsIt;
                 continue;
             }
+            // the term that we do not care about -> can be hard-asserted
             PTRef term = terms[idx];
             smtSolverPtr->insertFormula(term);
             newTerms.push(term);
         }
     }
 
-    // if `fullCore` then we treat all terms as `namedTerms`
+    // minimize the contents of the `namedTerms` vector (given the already asserted hard constraints)
+
     decltype(namedTerms) newNamedTerms;
     size_t const namedTermsSize = namedTerms.size();
     for (size_t namedIdx = 0; namedIdx < namedTermsSize; ++namedIdx) {
