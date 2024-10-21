@@ -23,7 +23,6 @@
 #include <sstream>
 
 namespace opensmt {
-using namespace std;
 
 /***********************************************************
  * Class defining logic
@@ -797,7 +796,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
             res = term_store.getFromBoolMap(k); // bool_map[k];
 #ifdef SIMPLIFY_DEBUG
             char * ts = printTerm(res);
-            cerr << "duplicate: " << ts << endl;
+            cerr << "duplicate: " << ts << std::endl;
             ::free(ts);
 #endif
         } else {
@@ -805,7 +804,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
             term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
             char * ts = printTerm(res);
-            cerr << "new: " << ts << endl;
+            cerr << "new: " << ts << std::endl;
             ::free(ts);
 #endif
         }
@@ -897,7 +896,7 @@ pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & fa
         // Join equalities
         if (isEquality(tr) && sgn == l_True) {
 #ifdef SIMPLIFY_DEBUG
-            cerr << "Identified an equality: " << printTerm(tr) << endl;
+            cerr << "Identified an equality: " << printTerm(tr) << std::endl;
 #endif
             Pterm const & t = getPterm(tr);
             // n will be the reference
@@ -919,14 +918,14 @@ pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & fa
                     }
 #ifdef SIMPLIFY_DEBUG
                     if (substs.has(var)) {
-                        cerr << "Double substitution:" << endl;
-                        cerr << " " << printTerm(var) << "/" << printTerm(trm) << endl;
-                        cerr << " " << printTerm(var) << "/" << printTerm(substs[var].tr) << endl;
-                        if (substs[var].sgn == l_False) cerr << "  disabled" << endl;
+                        cerr << "Double substitution:" << std::endl;
+                        cerr << " " << printTerm(var) << "/" << printTerm(trm) << std::endl;
+                        cerr << " " << printTerm(var) << "/" << printTerm(substs[var].tr) << std::endl;
+                        if (substs[var].sgn == l_False) cerr << "  disabled" << std::endl;
                     } else {
                         char * tmp1 = printTerm(var);
                         char * tmp2 = printTerm(trm);
-                        cerr << "Substituting " << tmp1 << " with " << tmp2 << endl;
+                        cerr << "Substituting " << tmp1 << " with " << tmp2 << std::endl;
                         ::free(tmp1);
                         ::free(tmp2);
                     }
@@ -1033,12 +1032,12 @@ bool Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
     }
     return true;
 #ifdef SIMPLIFY_DEBUG
-    cerr << "True facts" << endl;
+    cerr << "True facts" << std::endl;
     vec<Map<PTRef, lbool, PTRefHash>::Pair> facts_dbg;
     facts.getKeysAndVals(facts_dbg);
     for (int i = 0; i < facts_dbg.size(); i++)
         cerr << (facts_dbg[i].data == l_True ? "" : "not ") << printTerm(facts_dbg[i].key) << " (" << facts_dbg[i].key.x
-             << ")" << endl;
+             << ")" << std::endl;
 #endif
 }
 
@@ -1164,9 +1163,9 @@ PTRef Logic::removeAuxVars(PTRef tr) {
     return rewriter.rewrite(tr);
 }
 
-void Logic::dumpChecksatToFile(ostream & dump_out) const {
-    dump_out << "(check-sat)" << endl;
-    dump_out << "(exit)" << endl;
+void Logic::dumpChecksatToFile(std::ostream & dump_out) const {
+    dump_out << "(check-sat)" << std::endl;
+    dump_out << "(exit)" << std::endl;
 }
 
 std::string Logic::dumpWithLets(PTRef formula) const {
@@ -1177,7 +1176,7 @@ std::string Logic::dumpWithLets(PTRef formula) const {
 
 void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
     uint32_t random_Idx = 0;
-    vector<PTRef> unprocessed_enodes;
+    std::vector<PTRef> unprocessed_enodes;
     std::map<PTRef, std::string> enode_to_def;
     unsigned num_lets = 0;
 
@@ -1220,7 +1219,7 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
                 dump_out << " " << enode_to_def[pref];
             } else {
                 dump_out << " " << printTerm(pref);
-                if (isAnd(e)) dump_out << endl;
+                if (isAnd(e)) dump_out << std::endl;
             }
         }
         if (term.size() > 0) dump_out << ")";
@@ -1240,7 +1239,7 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
         dump_out << ")";
 }
 
-void Logic::dumpHeaderToFile(ostream & dump_out) const {
+void Logic::dumpHeaderToFile(std::ostream & dump_out) const {
     dump_out << "(set-logic " << getName() << ")\n";
     for (SSymRef ssr : sort_store.getSortSyms()) {
         if (isBuiltinSortSym(ssr)) continue;
@@ -1270,7 +1269,7 @@ void Logic::dumpHeaderToFile(ostream & dump_out) const {
     }
 }
 
-void Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bool toassert) const {
+void Logic::dumpFormulaToFile(std::ostream & dump_out, PTRef formula, bool negate, bool toassert) const {
     if (toassert) dump_out << "(assert\n";
 
     if (negate) dump_out << "(not ";
@@ -1281,7 +1280,7 @@ void Logic::dumpFormulaToFile(ostream & dump_out, PTRef formula, bool negate, bo
     if (toassert) dump_out << ")\n";
 }
 
-void Logic::dumpFunction(ostream & dump_out, TemplateFunction const & tpl_fun) {
+void Logic::dumpFunction(std::ostream & dump_out, TemplateFunction const & tpl_fun) {
     std::string const & name = tpl_fun.getName();
     auto quoted_name = protectName(name, false);
 
@@ -1312,8 +1311,8 @@ PTRef Logic::instantiateFunctionTemplate(TemplateFunction const & tmplt, vec<PTR
 }
 
 void Logic::collectStats(PTRef root, int & n_of_conn, int & n_of_eq, int & n_of_uf, int & n_of_if) {
-    set<PTRef> seen_terms;
-    queue<PTRef> to_visit;
+    std::set<PTRef> seen_terms;
+    std::queue<PTRef> to_visit;
     n_of_conn = n_of_eq = n_of_uf = n_of_if = 0;
     to_visit.push(root);
     while (!to_visit.empty()) {
