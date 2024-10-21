@@ -1,7 +1,22 @@
-### 2.7.1 (unreleased)
+### 2.8.0 (unreleased)
+
+API changes:
+ - Enclosed the whole project into `opensmt` namespace.
+ - Using also directory names when including files.
+
+Bug fixes:
+ - Named terms: do not report error when re-introducing a named term with an already popped name.
+
+New features:
+ - Support ":minimal-unsat-cores" option - naive implementation of subset-minimal unsat cores.
+ - Support ":print-cores-full" option - make the unsat cores strictly agnostic to the ":named" terms.
 
 Build:
  - Switch to C++20.
+ - Bumped minimal CMake version to 3.14.
+
+Other:
+ - Refactored regression and unit tests.
 
 ### 2.7.0 (2024-05-29)
 
