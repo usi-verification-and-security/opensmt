@@ -467,7 +467,7 @@ PTRef Logic::mkXor(vec<PTRef> && args) {
     else if (args[0] == getTerm_false() || args[1] == getTerm_false())
         return (args[0] == getTerm_false() ? args[1] : args[0]);
 
-    sort(args, std::greater<PTRef>{});
+    termSort(args);
     tr = mkFun(getSym_xor(), std::move(args));
 
     if (tr == PTRef_Undef) {
