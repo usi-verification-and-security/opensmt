@@ -1,2 +1,5 @@
 unsat
-( (and b1 b2) (or (not b1) (not b2)) )
+(
+(and b1 b2)
+(or (not b1) (not b2))
+)
