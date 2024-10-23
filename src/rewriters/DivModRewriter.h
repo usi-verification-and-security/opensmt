@@ -39,10 +39,11 @@ public:
                 // collect the definitions to add
                 assert(logic.isConstant(divisor));
                 auto divisorVal = logic.getNumConst(divisor);
+                assert(divisorVal.isInteger());
                 // general case
                 auto upperBound = abs(divisorVal) - 1;
                 // dividend = divVar * divisor + modVar
-                // 0 <= modVar <= |dividend| - 1
+                // 0 <= modVar <= |divisor| - 1
                 definitions.push(logic.mkAnd(logic.mkEq(dividend, logic.mkPlus(logic.mkTimes(divisor, divVar), modVar)),
                                              logic.mkAnd(logic.mkLeq(logic.getTerm_IntZero(), modVar),
                                                          logic.mkLeq(modVar, logic.mkIntConst(upperBound)))));
