@@ -1,0 +1,61 @@
+name: Release Workflow
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release-builds-osx:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            suffix: arm-osx
+          - os: macos-13
+            suffix: x64-osx
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up build environment
+        run: |
+          brew install bison
+          brew install flex
+          echo "/opt/homebrew/opt/flex/bin:/opt/homebrew/opt/bison/bin" >> "$GITHUB_PATH"
+          echo "/usr/local/opt/flex/bin:/usr/local/opt/bison/bin" >> "$GITHUB_PATH"
+
+      - name: Build project
+        run: |
+          ./ci/build_for_release.sh
+          mv ./build/opensmt.tar.bz2 ./opensmt-${{ matrix.suffix }}.tar.bz2
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./opensmt-${{ matrix.suffix }}.tar.bz2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison cmake flex libgmp-dev
+
+      - name: Build project
+        run: |
+          ./ci/build_for_release.sh
+          mv ./build/opensmt.tar.bz2 ./opensmt-x64-linux.tar.bz2
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./opensmt-x64-linux.tar.bz2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
