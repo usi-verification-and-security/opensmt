@@ -149,7 +149,9 @@ jobs:
             - checkout
             - run:
                 name: Release static build gcc in Fedora
-                command: ./ci/build_maximally_static.sh
+                command: |
+                  ./ci/build_maximally_static.sh
+                  ! ldd ./build/opensmt
 
     build-macos:
         macos:
