@@ -81,12 +81,11 @@ void MainSolver::push() {
 }
 
 bool MainSolver::pop() {
-    if (frames.frameCount() <= 1) { return false; }
+    if (getAssertionLevel() == 0) { return false; }
 
     if (trackPartitions()) {
-        auto const & partitionsToInvalidate = frames.last().formulas;
         ipartitions_t mask = 0;
-        for (PTRef partition : partitionsToInvalidate) {
+        for (PTRef partition : getAssertionsAtCurrentLevel()) {
             auto index = pmanager.getPartitionIndex(partition);
             assert(index != -1);
             setbit(mask, static_cast<unsigned int>(index));
@@ -99,6 +98,11 @@ bool MainSolver::pop() {
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
+}
+
+std::size_t MainSolver::getAssertionLevel() const {
+    assert(frames.frameCount() >= 1);
+    return frames.frameCount() - 1;
 }
 
 void MainSolver::insertFormula(PTRef fla) {
@@ -183,7 +187,40 @@ sstat MainSolver::simplifyFormulas() {
     return status;
 }
 
-void MainSolver::printFramesAsQuery(std::ostream & s) const {
+vec<PTRef> MainSolver::getCurrentAssertions() const {
+    vec<PTRef> assertions;
+    size_t const cnt = frames.frameCount();
+    for (size_t i = 0; i < cnt; ++i) {
+        for (PTRef fla : frames[i].formulas) {
+            assertions.push(fla);
+        }
+    }
+    return assertions;
+}
+
+vec<PTRef> const & MainSolver::getAssertionsAtLevel(std::size_t level) const {
+    assert(level <= getAssertionLevel());
+    return frames[level].formulas;
+}
+
+void MainSolver::printCurrentAssertionsAsQuery() const {
+    char * base_name = config.dump_query_name();
+    if (base_name == NULL)
+        printCurrentAssertionsAsQuery(std::cout);
+    else {
+        char * s_file_name;
+        int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
+        (void)chars_written;
+        std::ofstream stream;
+        stream.open(s_file_name);
+        printCurrentAssertionsAsQuery(stream);
+        stream.close();
+        free(s_file_name);
+    }
+    free(base_name);
+}
+
+void MainSolver::printCurrentAssertionsAsQuery(std::ostream & s) const {
     logic.dumpHeaderToFile(s);
     for (std::size_t i = 0; i < frames.frameCount(); ++i) {
         if (i > 0) s << "(push 1)\n";
@@ -256,34 +293,6 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
                                                   pmanager);
 }
 
-PTRef MainSolver::currentRootInstance() const {
-    vec<PTRef> assertions;
-    for (auto i = 0u; i < frames.frameCount(); i++) {
-        auto const & frameAssertions = frames[i].formulas;
-        for (PTRef assertion : frameAssertions) {
-            assertions.push(assertion);
-        }
-    }
-    return logic.mkAnd(std::move(assertions));
-}
-
-void MainSolver::printFramesAsQuery() const {
-    char * base_name = config.dump_query_name();
-    if (base_name == NULL)
-        printFramesAsQuery(std::cout);
-    else {
-        char * s_file_name;
-        int chars_written = asprintf(&s_file_name, "%s-%d.smt2", base_name, check_called);
-        (void)chars_written;
-        std::ofstream stream;
-        stream.open(s_file_name);
-        printFramesAsQuery(stream);
-        stream.close();
-        free(s_file_name);
-    }
-    free(base_name);
-}
-
 sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
 
     struct ClauseCallBack : public Cnfizer::ClauseCallBack {
@@ -323,7 +332,7 @@ sstat MainSolver::check() {
     if (isLastFrameUnsat()) { return s_False; }
     sstat rval = simplifyFormulas();
 
-    if (config.dump_query()) printFramesAsQuery();
+    if (config.dump_query()) printCurrentAssertionsAsQuery();
 
     if (rval == s_Undef) {
         try {

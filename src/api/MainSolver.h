@@ -78,8 +78,14 @@ public:
     THandler & getTHandler() { return *thandler; }
     THandler const & getTHandler() const { return *thandler; }
 
+    // Increases/decreases the level of the assertion stack [1]
+    // [1]: The SMT-LIB Standard: Version 2.6, section 4.1.4
+    // https://smt-lib.org/language.shtml
     void push();
     bool pop();
+    // The current assertion level; the first assertion level is 0
+    std::size_t getAssertionLevel() const;
+
     void insertFormula(PTRef fla);
     std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
 
@@ -87,11 +93,27 @@ public:
 
     virtual sstat check(); // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
     sstat solve();
-    // Simplify frames (not yet simplified) until all are simplified or the instance is detected unsatisfiable.
+    // Simplify formulas until all are simplified or the instance is detected unsat
+    // Skip assertion levels that have already been simplified
     sstat simplifyFormulas();
 
-    void printFramesAsQuery() const;
     [[nodiscard]] sstat getStatus() const { return status; }
+
+    // Returns a copy of all assertions of the currently valid assertion levels of the the assertion stack
+    // I.e., *excluding* popped assertions
+    vec<PTRef> getCurrentAssertions() const;
+    // Returns just a view to the assertions
+    auto getCurrentAssertionsView() const { return getCurrentAssertionsViewImpl(); }
+
+    vec<PTRef> const & getAssertionsAtCurrentLevel() const { return getAssertionsAtLevel(getAssertionLevel()); }
+    vec<PTRef> const & getAssertionsAtLevel(std::size_t) const;
+
+    [[deprecated("Use printCurrentAssertionsAsQuery")]]
+    void printFramesAsQuery() const {
+        printCurrentAssertionsAsQuery();
+    }
+    void printCurrentAssertionsAsQuery() const;
+    void printCurrentAssertionsAsQuery(std::ostream &) const;
 
     // Values
     lbool getTermValue(PTRef tr) const;
@@ -225,9 +247,8 @@ protected:
     TermMapper & getTermMapper() const { return *term_mapper; }
     PartitionManager & getPartitionManager() { return pmanager; }
 
-    [[nodiscard]] PTRef currentRootInstance() const;
-
-    void printFramesAsQuery(std::ostream & s) const;
+    // TODO: inefficient
+    vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
 

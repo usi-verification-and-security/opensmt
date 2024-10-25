@@ -125,7 +125,8 @@ bool MainSplitter::verifyPartitions(vec<PTRef> const & partitions) const {
             ok = false;
         } else {
             // Removing the models of the partial partitions from the root instance must yield unsat
-            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(currentRootInstance()))) {
+            PTRef currentRootInstance = logic.mkAnd(getCurrentAssertions());
+            if (not verifier.impliesInternal(logic.mkAnd(partitionCoverageQuery), logic.mkNot(currentRootInstance))) {
                 error += "[Non-covering partial partitioning: partial partitions do not contain all models of original instance] ";
                 ok = false;
             }
