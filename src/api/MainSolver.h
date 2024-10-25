@@ -125,6 +125,7 @@ public:
 
     // Prints proof of the last query (must be in unsatisfiable state)
     void printResolutionProofSMT2() const;
+    void printResolutionProofSMT2(std::ostream &) const;
 
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();

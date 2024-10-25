@@ -257,11 +257,15 @@ std::unique_ptr<Model> MainSolver::getModel() {
 }
 
 void MainSolver::printResolutionProofSMT2() const {
+    printResolutionProofSMT2(std::cout);
+}
+
+void MainSolver::printResolutionProofSMT2(std::ostream & os) const {
     assert(smt_solver);
     if (!smt_solver->logsResolutionProof()) { throw ApiException("Proofs are not tracked"); }
     if (status != s_False) { throw ApiException("Proof cannot be created if solver is not in UNSAT state"); }
 
-    return smt_solver->printResolutionProofSMT2(std::cout);
+    return smt_solver->printResolutionProofSMT2(os);
 }
 
 std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
