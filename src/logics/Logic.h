@@ -251,6 +251,9 @@ public:
     bool isDisequality(PTRef tr) const;            // { return disequalities.has(term_store[tr].symb()); }
     bool isIte(SymRef tr) const;                   // { return ites.has(tr);          }
     bool isIte(PTRef tr) const;                    // { return ites.has(term_store[tr].symb()); }
+    virtual bool isNonlin(PTRef tr) const {
+        return false;
+    }
     bool isNonBoolIte(SymRef sr) const { return isIte(sr) and getSortRef(sr) != sort_BOOL; }
     bool isNonBoolIte(PTRef tr) const { return isNonBoolIte(getPterm(tr).symb()); }
 
