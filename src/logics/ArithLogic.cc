@@ -2,6 +2,7 @@
 
 #include <common/ApiException.h>
 #include <common/InternalException.h>
+#include <common/NonLinException.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
 #include <common/polynomials/Translations.h>
@@ -114,6 +115,8 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Real_MINUS(declareFun_NoScoping_LeftAssoc(tk_real_minus, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_TIMES_LIN(declareFunMultiplicationLinNonlin(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_TIMES_NONLIN(declareFunMultiplicationLinNonlin(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_EQ(sortToEquality[sort_REAL]),
       sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL})),
@@ -134,6 +137,8 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_TIMES_LIN(declareFunMultiplicationLinNonlin(tk_int_times, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_TIMES_NONLIN(declareFunMultiplicationLinNonlin(tk_int_times, sort_INT, {sort_INT, sort_INT})),
       sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT})),
       sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INT, {sort_INT, sort_INT})),
       sym_Int_EQ(sortToEquality[sort_INT]),
@@ -149,9 +154,14 @@ SymRef ArithLogic::getPlusForSort(SRef sort) const {
     return sort == getSort_int() ? get_sym_Int_PLUS() : get_sym_Real_PLUS();
 }
 
-SymRef ArithLogic::getTimesForSort(SRef sort) const {
+SymRef ArithLogic::getTimesLinForSort(SRef sort) const {
     assert(sort == getSort_int() or sort == getSort_real());
-    return sort == getSort_int() ? get_sym_Int_TIMES() : get_sym_Real_TIMES();
+    return sort == getSort_int() ? get_sym_Int_TIMES_LIN() : get_sym_Real_TIMES_LIN();
+}
+
+SymRef ArithLogic::getTimesNonlinForSort(SRef sort) const {
+    assert(sort == getSort_int() or sort == getSort_real());
+    return sort == getSort_int() ? get_sym_Int_TIMES_NONLIN() : get_sym_Real_TIMES_NONLIN();
 }
 
 SymRef ArithLogic::getMinusForSort(SRef sort) const {
@@ -175,11 +185,11 @@ PTRef ArithLogic::getMinusOneForSort(SRef sort) const {
 }
 
 bool ArithLogic::isLinearFactor(PTRef tr) const {
-    if (isNumConst(tr) || isNumVarLike(tr)) { return true; }
-    if (isTimes(tr)) {
+    if (isNumConst(tr) || isMonomial(tr)) { return true; }
+    if (isTimesLin(tr)) {
         Pterm const & term = getPterm(tr);
         return term.size() == 2 &&
-               ((isNumConst(term[0]) && (isNumVarLike(term[1]))) || (isNumConst(term[1]) && (isNumVarLike(term[0]))));
+               ((isNumConst(term[0]) && (isMonomial(term[1]))) || (isNumConst(term[1]) && (isMonomial(term[0]))));
     }
     return false;
 }
@@ -209,7 +219,6 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
             assert(constant == PTRef_Undef);
             constant = arg;
         } else {
-            assert(isLinearFactor(arg));
             varFactors.push(arg);
         }
     }
@@ -220,17 +229,17 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
-    assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
-    if (isTimes(term)) {
+pair<PTRef, PTRef> ArithLogic::splitPolyTerm(PTRef term) const {
+    assert(isTimes(term) || isMonomial(term) || isConstant(term));
+    if (isTimesLin(term)) {
         assert(getPterm(term).size() == 2);
         PTRef fac = getPterm(term)[0];
         PTRef var = getPterm(term)[1];
         if (not isConstant(fac)) { std::swap(fac, var); }
         assert(isConstant(fac));
-        assert(isNumVarLike(var));
+        assert(isMonomial(var));
         return {var, fac};
-    } else if (isNumVarLike(term)) {
+    } else if (isMonomial(term)) {
         assert(yieldsSortInt(term) or yieldsSortReal(term));
         PTRef var = term;
         PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
@@ -243,8 +252,8 @@ pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
 
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef ArithLogic::normalizeMul(PTRef mul) {
-    assert(isTimes(mul));
-    auto [v, c] = splitTermToVarAndConst(mul);
+    assert(isTimesLinOrNonlin(mul));
+    auto [v, c] = splitPolyTerm(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
     } else {
@@ -422,7 +431,27 @@ namespace {
 
 lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & out_substitutions) {
     ArithLogic & logic = *this;
-    std::vector<LAPoly> polynomials;
+    auto toPoly = [&logic](PTRef eq) {
+        assert(logic.isEquality(eq));
+        poly_t poly;
+        PTRef lhs = logic.getPterm(eq)[0];
+        PTRef rhs = logic.getPterm(eq)[1];
+        PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
+        if (logic.isLinearFactor(polyTerm)) {
+            auto [var, c] = logic.splitPolyTerm(polyTerm);
+            auto coeff = logic.getNumConst(c);
+            poly.addTerm(var, std::move(coeff));
+        } else {
+            assert(logic.isPlus(polyTerm) || logic.isTimesNonlin(polyTerm));
+            for (PTRef factor : logic.getPterm(polyTerm)) {
+                auto [var, c] = logic.splitPolyTerm(factor);
+                auto coeff = logic.getNumConst(c);
+                poly.addTerm(var, std::move(coeff));
+            }
+        }
+        return poly;
+    };
+    std::vector<poly_t> polynomials;
     polynomials.reserve(top_level_arith.size_());
     std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials),
                    [&](auto const & eq) { return ptrefToPoly(eq, logic); });
@@ -477,14 +506,14 @@ pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const
 }
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
-    assert(l.isTimes(tr));
-    auto [v, c] = l.splitTermToVarAndConst(tr);
+    assert(l.isTimesLinOrNonlin(tr));
+    auto [v, c] = l.splitPolyTerm(tr);
     return v.x;
 }
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
-    uint32_t id_x = l.isTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
-    uint32_t id_y = l.isTimes(y_) ? getVarIdFromProduct(y_) : y_.x;
+    uint32_t id_x = l.isTimesLinOrNonlin(x_) ? getVarIdFromProduct(x_) : x_.x;
+    uint32_t id_y = l.isTimesLinOrNonlin(y_) ? getVarIdFromProduct(y_) : y_.x;
     return id_x < id_y;
 }
 
@@ -499,10 +528,10 @@ bool ArithLogic::isBuiltinFunction(SymRef const sr) const {
         return Logic::isBuiltinFunction(sr);
 }
 bool ArithLogic::isNumTerm(PTRef tr) const {
-    if (isNumVarLike(tr)) return true;
+    if (isMonomial(tr)) return true;
     Pterm const & t = getPterm(tr);
-    if (t.size() == 2 && isTimes(tr))
-        return (isNumVarLike(t[0]) && isConstant(t[1])) || (isNumVarLike(t[1]) && isConstant(t[0]));
+    if (t.size() == 2 && isTimesLin(tr))
+        return (isMonomial(t[0]) && isConstant(t[1])) || (isMonomial(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
         return isNumVar(tr) || isConstant(tr);
     else
@@ -512,11 +541,11 @@ bool ArithLogic::isNumTerm(PTRef tr) const {
 PTRef ArithLogic::mkNeg(PTRef tr) {
     assert(!isNeg(tr)); // MB: The invariant now is that there is no "Minus" node
     SymRef symref = getSymRef(tr);
-    if (isConstant(symref)) {
+    if (isConstant(tr)) {
         Number const & v = getNumConst(tr);
         return mkConst(getSortRef(tr), -v);
     }
-    if (isPlus(symref)) {
+    if (isPlus(tr)) {
         vec<PTRef> args;
         args.capacity(getPterm(tr).size());
         // Note: Do this in two phases to avoid calling mkNeg that invalidates the Pterm reference
@@ -530,14 +559,14 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
         PTRef tr_n = mkFun(symref, std::move(args));
         return tr_n;
     }
-    if (isTimes(symref)) { // constant * var-like
+    if (isTimesLin(tr)) { // constant * monomial
         assert(getPterm(tr).size() == 2);
-        auto [var, constant] = splitTermToVarAndConst(tr);
+        auto [var, constant] = splitPolyTerm(tr);
         return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
     }
-    if (isNumVarLike(symref)) {
+    if (isMonomial(tr)) {
         auto sortRef = getSortRef(symref);
-        return mkFun(getTimesForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
+        return mkFun(getTimesLinForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
     }
     // MB: All cases should be covered
     throw InternalException("Failed attempt to negate a term");
@@ -606,7 +635,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
     simplified.reserve(args.size());
 
     for (PTRef arg : args) {
-        auto [v, c] = splitTermToVarAndConst(arg);
+        auto [v, c] = splitPolyTerm(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (not varIndices.has(v)) {
@@ -637,7 +666,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
             continue;
         }
         // default case, variable and constant (cannot be simplified)
-        PTRef term = mkFun(getTimesForSort(returnSort), {coeffTerm, var});
+        PTRef term = mkFun(getTimesLinForSort(returnSort), {coeffTerm, var});
         flattened_args.push(term);
     }
     if (flattened_args.size() == 0) return getZeroForSort(returnSort);
@@ -671,15 +700,28 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     SimplifyConstTimes simp(*this);
     args.clear();
     SymRef s_new;
-    simp.simplify(getTimesForSort(returnSort), flatten_args, s_new, args);
-    PTRef tr = mkFun(s_new, std::move(args));
-    // Either a real term or, if we constructed a multiplication of a
-    // constant and a sum, a real sum.
-    if (isNumTerm(tr) || isPlus(tr) || isUF(tr) || isIte(tr))
-        return tr;
-    else {
-        auto termStr = pp(tr);
-        throw LANonLinearException(termStr.c_str());
+    simp.simplify(getTimesLinForSort(returnSort), flatten_args, s_new, args);
+    if (!isTimesLinOrNonlin(s_new)) return mkFun(s_new, std::move(args));
+    PTRef coef = PTRef_Undef;
+    std::vector<PTRef> vars;
+    // Splitting Multiplication into constant and monomial subterms
+    for (int i = 0; i < args.size(); i++) {
+        if (isConstant(args[i])) {
+            assert(coef == PTRef_Undef);
+            coef = args[i];
+            continue;
+        }
+        vars.push_back(args[i]);
+    }
+    assert(!vars.empty());
+    if (vars.size() > 1) {
+        if (coef == PTRef_Undef) {
+            return mkFun(getTimesNonlinForSort(returnSort), vars);
+        } else {
+            return mkFun(s_new, {coef, mkFun(getTimesNonlinForSort(returnSort), vars)});
+        }
+    } else {
+        return mkFun(s_new, {coef, vars[0]});
     }
 }
 
@@ -707,9 +749,9 @@ PTRef ArithLogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
         Number const & v = this->getNumConst(sum_tmp);
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
     }
-    if (isNumVarLike(sum_tmp) ||
-        isTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
-        sum_tmp = isTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
+    if (isMonomial(sum_tmp) ||
+        isTimesLinOrNonlin(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
+        sum_tmp = isTimesLinOrNonlin(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
         return mkFun(getLeqForSort(argSort), {getZeroForSort(argSort), sum_tmp});
     } else if (isPlus(sum_tmp)) {
         // Normalize the sum
@@ -780,8 +822,8 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     if (isConstant(diff)) {
         Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
-    } else if (isNumVarLike(diff) || isTimes(diff)) {
-        auto [var, constant] = splitTermToVarAndConst(diff);
+    } else if (isMonomial(diff) || isTimesLin(diff)) {
+        auto [var, constant] = splitPolyTerm(diff);
         return Logic::mkBinaryEq(getZeroForSort(eqSort),
                                  var); // Avoid anything that calls Logic::mkEq as this would create a loop
     } else if (isPlus(diff)) {
@@ -797,11 +839,9 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
     checkSortInt(args);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
-
-    if (not isNumConst(divisor)) { throw ApiException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor) or isMinusOne(divisor)) { return getTerm_IntZero(); }
-    if (isConstant(dividend)) {
+    if (isConstant(dividend) && isConstant(divisor)) {
         auto const & dividendValue = getNumConst(dividend);
         auto const & divisorValue = getNumConst(divisor);
         assert(dividendValue.isInteger() and divisorValue.isInteger());
@@ -820,7 +860,6 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     assert(args.size() == 2);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
-    if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor)) { return dividend; }
     if (isMinusOne(divisor)) { return mkNeg(dividend); }
@@ -841,13 +880,12 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     checkSortReal(args);
     if (args.size() != 2) { throw ApiException("Division operation requires exactly 2 arguments"); }
     if (isZero(args[1])) { throw ArithDivisionByZeroException(); }
-    if (not isConstant(args[1])) {
-        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
-    }
+    if (not isConstant(args[1])) { throw NonLinException(pp(args[0]) + "/" + pp(args[1])); }
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
+    // TODO: Currently creation of nonlinear Real divison (with variable divisor) is not supported
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
@@ -984,7 +1022,7 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
     }
     //    // A single argument for the operator, and the operator is identity
     //    // in that case
-    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimes(s_new))) {
+    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimesLin(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();
@@ -1202,8 +1240,8 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     std::vector<Number> coeffs;
     coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
-        auto [var, coeff] = splitTermToVarAndConst(factor);
-        assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
+        auto [var, coeff] = splitPolyTerm(factor);
+        assert(ArithLogic::isMonomial(var) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
     }
@@ -1280,7 +1318,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
-    auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
+    auto [var, coeff] = splitPolyTerm(leadingFactor);
     Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));
@@ -1342,14 +1380,14 @@ std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) const {
 }
 
 bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) const {
-    if (isNumConst(poly) or isNumVarLike(poly)) { return false; }
-    if (isTimes(poly)) {
-        auto [var, constant] = splitTermToVarAndConst(poly);
+    if (isNumConst(poly) or isMonomial(poly)) { return false; }
+    if (isTimesLinOrNonlin(poly)) {
+        auto [var, constant] = splitPolyTerm(poly);
         return isNegative(getNumConst(constant));
     }
     assert(isPlus(poly));
     PTRef leadingTerm = getPterm(poly)[0];
-    auto [var, constant] = splitTermToVarAndConst(leadingTerm);
+    auto [var, constant] = splitPolyTerm(leadingTerm);
     return isNegative(getNumConst(constant));
 }
 } // namespace opensmt

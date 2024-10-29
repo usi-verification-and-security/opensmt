@@ -1,0 +1,7 @@
+(set-logic QF_LIA)
+(declare-fun x () Int)
+(define-fun uninterp_mul ((a Int) (b Int)) Int (* a b))
+(assert (= (uninterp_mul 2 x) (+ x x)))
+(check-sat)
+(get-model)
+(exit)

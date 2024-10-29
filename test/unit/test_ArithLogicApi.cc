@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 #include <logics/ArithLogic.h>
-#include <common/StringConv.h>
 
 namespace opensmt {
 
@@ -28,7 +27,7 @@ TEST_F(ArithLogicApiTest, test_LRA) {
     ASSERT_TRUE(lraLogic.yieldsSortReal(r1));
     PTRef c2 = lraLogic.mkRealVar("a");
     ASSERT_NO_THROW(lraLogic.mkPlus(c1, c2));
-    ASSERT_THROW(lraLogic.mkTimes(c2, c2), LANonLinearException);
+    ASSERT_NO_THROW(lraLogic.mkTimes(c2, c2));
     ASSERT_THROW(lraLogic.mkIntVar("x"), ApiException);
     ASSERT_THROW(lraLogic.mkIntConst(2), ApiException);
 }
@@ -39,7 +38,7 @@ TEST_F(ArithLogicApiTest, test_LIA) {
     ASSERT_THROW(liaLogic.mkConst("213.0"), ApiException);
     PTRef c2 = liaLogic.mkIntVar("a");
     ASSERT_NO_THROW(liaLogic.mkPlus(c1, c2));
-    ASSERT_THROW(liaLogic.mkTimes(c2, c2), LANonLinearException);
+    ASSERT_NO_THROW(liaLogic.mkTimes(c2, c2));
     ASSERT_THROW(liaLogic.mkRealVar("a"), ApiException);
     ASSERT_THROW(liaLogic.mkRealConst(2), ApiException);
 }

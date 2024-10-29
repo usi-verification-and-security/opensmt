@@ -173,9 +173,9 @@ TEST_F(LRALogicMkTermsTest, test_SumToZero)
     ASSERT_EQ(sum, logic.getTerm_RealZero());
 }
 
-TEST_F(LRALogicMkTermsTest, test_NonLinearException)
+TEST_F(LRALogicMkTermsTest, test_NoNonLinearException)
 {
-    EXPECT_THROW(logic.mkTimes(x,y), LANonLinearException);
+    EXPECT_NO_THROW(logic.mkTimes(x,y));
     PTRef two = logic.mkConst("2");
     EXPECT_NO_THROW(logic.mkTimes(x,two));
 }

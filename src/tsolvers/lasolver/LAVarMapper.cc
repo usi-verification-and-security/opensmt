@@ -55,7 +55,7 @@ bool LAVarMapper::isNegated(PTRef tr) const {
     if (logic.isNumVar(tr)) return false;                       // Case (1a)
     if (logic.isTimes(tr)) {
         // Cases (2)
-        auto [v, c] = logic.splitTermToVarAndConst(tr);
+        auto [v,c] = logic.splitPolyTerm(tr);
         return isNegated(c);
     }
     if (logic.isIte(tr)) {
