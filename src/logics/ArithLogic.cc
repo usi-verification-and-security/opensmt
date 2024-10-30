@@ -188,19 +188,6 @@ bool ArithLogic::isLinearFactor(PTRef tr) const {
     return false;
 }
 
-bool ArithLogic::isNonlinearFactor(PTRef tr) const {
-    if (isNumConst(tr) || isNumVarLike(tr)) { return false; }
-    if (isTimes(tr)) {
-        Pterm const & term = getPterm(tr);
-        return (!isNumConst(term[0]) && !isNumConst(term[1]));
-    }
-    if (isRealDiv(tr) || isIntDiv(tr)) {
-        Pterm const & term = getPterm(tr);
-        return (!isNumConst(term[1]));
-    }
-    return false;
-}
-
 bool ArithLogic::isLinearTerm(PTRef tr) const {
     if (isLinearFactor(tr)) { return true; }
     if (isPlus(tr)) {
@@ -209,6 +196,18 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
     }
     return false;
 }
+
+bool ArithLogic::isNonlin(PTRef tr) const {
+    if (isTimes(tr)) {
+        Pterm const & term = getPterm(tr);
+        return (!isConstant(term[0]) && !isConstant(term[1]));
+    }
+    if (isRealDiv(tr) || isIntDiv(tr)) {
+        Pterm const & term = getPterm(tr);
+        return (!isConstant(term[1]));
+    }
+    return false;
+};
 
 Number const & ArithLogic::getNumConst(PTRef tr) const {
     SymId id = sym_store[getPterm(tr).symb()].getId();
@@ -226,7 +225,7 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
             assert(constant == PTRef_Undef);
             constant = arg;
         } else {
-            assert(isLinearFactor(arg) || isNonlinearFactor(arg));
+            //            assert(isLinearFactor(arg) || isNonlinearFactor(arg));
             varFactors.push(arg);
         }
     }
@@ -237,37 +236,29 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-
 pair<PTRef, PTRef> ArithLogic::splitTerm(PTRef term) const {
-    assert(isTimes(term) || isRealDiv(term) || isIntDiv(term));
-    assert(getPterm(term).size() == 2);
-    PTRef var1 = getPterm(term)[0];
-    PTRef var2 = getPterm(term)[1];
-//    if (isNumVarLike(var2)) { std::swap(var1, var2); }
-//    assert(isNumVarLike(var1));
-    return {var1, var2};
+    PTRef fac = getPterm(term)[0];
+    PTRef var = getPterm(term)[1];
+    return {var, fac};
 }
 
-
 pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
-    assert(isTimes(term) || isNumVarLike(term) || isConstant(term) || isIntDiv(term) || isRealDiv(term));
-    if(isIntDiv(term) || isRealDiv(term)) {
-        assert(getPterm(term).size() == 2);
-        PTRef fac = getPterm(term)[1];
-        PTRef var = getPterm(term)[0];
-        assert(isConstant(fac));
-        assert(isNumVarLike(var));
-        return {var, fac};
-    }
+    assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
     if (isTimes(term)) {
         assert(getPterm(term).size() == 2);
         PTRef fac = getPterm(term)[0];
         PTRef var = getPterm(term)[1];
-        if (not isConstant(fac)) { std::swap(fac, var); }
+        if (not isConstant(fac)) {
+            std::swap(fac, var);
+            if (not isConstant(fac)) {
+                PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+                return {term, fac};
+            }
+        }
         assert(isConstant(fac));
-        assert(isNumVarLike(var));
+        assert(isNumVarLike(var) || isTimes(var));
         return {var, fac};
-    } else if (isNumVarLike(term) ) {
+    } else if (isNumVarLike(term)) {
         assert(yieldsSortInt(term) or yieldsSortReal(term));
         PTRef var = term;
         PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
@@ -514,11 +505,7 @@ pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
     assert(l.isTimes(tr));
-    auto [v1, v2] = l.splitTerm(tr);
-//    if (l.isNumVarLike(v1) && l.isNumVarLike(v2)) {
-//        auto termStr = l.pp(tr);
-//        throw LANonLinearException(termStr.c_str());
-//    }
+    auto [v1, v2] = l.splitTermToVarAndConst(tr);
     if (l.isNumVarLike(v1)) return v1.x;
     return v2.x;
 }
@@ -550,7 +537,6 @@ bool ArithLogic::isNumTerm(PTRef tr) const {
         return false;
 }
 
-
 PTRef ArithLogic::mkNeg(PTRef tr) {
     assert(!isNeg(tr)); // MB: The invariant now is that there is no "Minus" node
     SymRef symref = getSymRef(tr);
@@ -572,20 +558,11 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
         PTRef tr_n = mkFun(symref, std::move(args));
         return tr_n;
     }
-    if (isTimes(symref) || isRealDiv(symref) || isIntDiv(symref)) { // constant * var-like
+    if (isTimes(symref)) { // constant * var-like
         assert(getPterm(tr).size() == 2);
         // TODO: KB: NEG of TIMES
-
-        auto [var1, var2] = splitTerm(tr);
-        if(isTimes(tr) && !isConstant(var2)){
-            std::swap(var1, var2);
-        }
-//        if (isConstant(var2))
-        return var2 == getMinusOneForSort(getSortRef(symref)) ? var1 : mkFun(symref, {var1, mkNeg(var2)});
-//        else
-//            return mkFun(symref, {var1, getMinusOneForSort(getSortRef(symref))});
-//        auto [var, constant] = splitTermToVarAndConst(tr);
-//        return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
+        auto [var, constant] = splitTermToVarAndConst(tr);
+        return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
     }
     if (isNumVarLike(symref)) {
         auto sortRef = getSortRef(symref);
@@ -656,17 +633,6 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
     std::vector<Entry> simplified;
     simplified.reserve(args.size());
     for (PTRef arg : args) {
-        SRef sr = getUniqueArgSort(arg);
-        if(isTimes(arg) || isIntDiv(arg) || isRealDiv(arg)){
-            auto [v1, v2] = splitTerm(arg);
-            if ((isTimes(arg) && !isConstant(v1) && !isConstant(v2)) ||
-                ((isIntDiv(arg) || isRealDiv(arg)) && !isConstant(v2))) {
-                simplified.push_back({.var = arg, .coeff = 1});
-                continue;
-            }
-        }
-
-
         auto [v, c] = splitTermToVarAndConst(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
@@ -736,12 +702,12 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     PTRef tr = mkFun(s_new, std::move(args));
     // Either a real term or, if we constructed a multiplication of a
     // constant and a sum, a real sum.
-//    if (isNumTerm(tr) || isPlus(tr) || isUF(tr) || isIte(tr))
+    //    if (isNumTerm(tr) || isPlus(tr) || isUF(tr) || isIte(tr))
     return tr;
-//    else {
-//        auto termStr = pp(tr);
-//        throw LANonLinearException(termStr.c_str());
-//    }
+    //    else {
+    //        auto termStr = pp(tr);
+    //        throw LANonLinearException(termStr.c_str());
+    //    }
 }
 
 SymRef ArithLogic::getLeqForSort(SRef sr) const {
@@ -881,7 +847,7 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     assert(args.size() == 2);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
-//    if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
+    //    if (not isConstant(divisor)) { throw LANonLinearException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor)) { return dividend; }
     if (isMinusOne(divisor)) { return mkNeg(dividend); }
@@ -902,18 +868,18 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     checkSortReal(args);
     if (args.size() != 2) { throw ApiException("Division operation requires exactly 2 arguments"); }
     if (isZero(args[1])) { throw ArithDivisionByZeroException(); }
-//    if (not isConstant(args[1])) {
-//        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
-//    }
+    //    if (not isConstant(args[1])) {
+    //        throw LANonLinearException("Only division by constant is permitted in linear arithmetic!");
+    //    }
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
-//    if (isRealDiv(s_new)) {
-//        assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
-//        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
-//        return mkTimes(args_new);
-//    }
+    //    if (isRealDiv(s_new)) {
+    //        assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
+    //        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
+    //        return mkTimes(args_new);
+    //    }
     if (isRealDiv(s_new) && (isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1])) {
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
@@ -1267,16 +1233,8 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     std::vector<Number> coeffs;
     coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
-        if(isTimes(factor) || isRealDiv(factor) || isIntDiv(factor)){
-            auto [t1, t2] = splitTerm(factor);
-            if((isTimes(factor) && !isConstant(t1) && !isConstant(t2)) ||
-                ((isIntDiv(factor) || isRealDiv(factor)) && !isConstant(t2))){
-                auto termStr = pp(factor);
-                throw LANonLinearException(termStr.c_str());
-            }
-        }
         auto [var, coeff] = splitTermToVarAndConst(factor);
-        assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
+        assert((ArithLogic::isNumVarLike(var) || ArithLogic::isTimes(var)) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
     }
@@ -1352,15 +1310,6 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
 
     PTRef leadingFactor = varFactors[0];
-
-    if(isTimes(leadingFactor) || isRealDiv(leadingFactor) || isIntDiv(leadingFactor)){
-        auto [t1, t2] = splitTerm(leadingFactor);
-        if((isTimes(leadingFactor) && !isConstant(t1) && !isConstant(t2)) ||
-            ((isIntDiv(leadingFactor) || isRealDiv(leadingFactor)) && !isConstant(t2))){
-            auto termStr = pp(leadingFactor);
-            throw LANonLinearException(termStr.c_str());
-        }
-    }
     // normalize the sum according to the leading factor
     auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
     Number normalizationCoeff = abs(getNumConst(coeff));

@@ -223,8 +223,7 @@ public:
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
     bool isNumVarLike(SymRef sr) const {
-        return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr)  and not isRealDiv(sr)
-           and not isIntDiv(sr);
+        return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr);
     }
     bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
@@ -246,7 +245,7 @@ public:
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
-    bool isNonlin(PTRef tr) const override { return isNonlinearFactor(tr); };
+    bool isNonlin(PTRef tr) const override;
 
     PTRef getTerm_IntZero() const { return term_Int_ZERO; }
     PTRef getTerm_RealZero() const { return term_Real_ZERO; }
@@ -463,7 +462,6 @@ protected:
     SymRef sym_Int_ITE;
     SymRef sym_Int_DISTINCT;
     pair<PTRef, PTRef> splitTerm(PTRef term) const;
-    bool isNonlinearFactor(PTRef tr) const;
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=

@@ -8,6 +8,8 @@
 #include <itehandler/IteHandler.h>
 #include <common/TreeOps.h>
 
+#include "api/MainSolver.h"
+#include "options/SMTConfig.h"
 #include <algorithm>
 
 namespace opensmt {
@@ -129,19 +131,25 @@ TEST_F(IteManagerTest, test_IteTimesConst) {
 
 TEST_F(IteManagerTest, test_IteTimesVar) {
 
+    SMTConfig config;
+    MainSolver solver(logic, config, "test");
     PTRef x = logic.mkVar(lrasort, "x");
     PTRef y = logic.mkVar(lrasort, "y");
     PTRef cond = logic.mkEq(x, y);
     PTRef c1 = logic.mkConst("1");
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
+    PTRef times = logic.mkTimes(ite, x);
+    PTRef eq = logic.mkEq(times,c2);
 
-    EXPECT_THROW(logic.mkTimes(ite, x), LANonLinearException);
+    EXPECT_THROW(solver.insertFormula(eq), ApiException);
 
 }
 
 TEST_F(IteManagerTest, test_IteTimesIte) {
 
+    SMTConfig config;
+    MainSolver solver(logic, config, "test");
     PTRef x = logic.mkVar(lrasort, "x");
     PTRef y = logic.mkVar(lrasort, "y");
     PTRef z = logic.mkVar(lrasort, "z");
@@ -152,8 +160,10 @@ TEST_F(IteManagerTest, test_IteTimesIte) {
 
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, c2, c1);
+    PTRef times = logic.mkTimes(ite1, ite2);
+    PTRef eq = logic.mkEq(times, c2);
 
-    EXPECT_THROW(logic.mkTimes(ite1, ite2), LANonLinearException);
+    EXPECT_THROW(solver.insertFormula(eq), ApiException);
 }
 
 TEST_F(IteManagerTest, test_IteChain) {
