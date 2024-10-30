@@ -22,7 +22,7 @@ m4/ltversion.m4
 m4/lt~obsolete.m4
 opensmt
 src/bin/.dirstamp
-test/regression/base/log-*
+test/regression/*/log-*
 src/PySMT/opensmt.py
 .ycm_extra_conf.py
 .ycm_extra_conf.pyc

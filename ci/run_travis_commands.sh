@@ -23,6 +23,7 @@ make test
 make install
 if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
     cd ../test/regression/base && ./run-test-notiming.sh ../../../build/opensmt
+    cd ../unsatcores && ./run-test-notiming.sh ../../../build/opensmt
     cd ../interpolation && ./run-tests.sh ../../../build/opensmt
     if [[ "${PARALLEL}" == "ON" ]]; then
       cd ../splitting && ./bin/run-tests.sh ../../../build/opensmt-splitter
