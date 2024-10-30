@@ -147,7 +147,7 @@ sstat MainSolver::simplifyFormulas() {
                 continue;
             }
             theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            std::cout <<  "FLA Formulas: ";
+            std::cout << "FLA Formulas: ";
             for (PTRef fla : frameFormulas) {
                 std::cout << "Before:" << logic.pp(fla) << "\n";
                 if (fla == logic.getTerm_true()) { continue; }

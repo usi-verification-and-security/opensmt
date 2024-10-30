@@ -2,6 +2,8 @@
 // Created by Martin Blicha on 02.11.18.
 //
 
+#include "api/MainSolver.h"
+#include "options/SMTConfig.h"
 #include <gtest/gtest.h>
 #include <logics/ArithLogic.h>
 
@@ -175,9 +177,12 @@ TEST_F(LRALogicMkTermsTest, test_SumToZero)
 
 TEST_F(LRALogicMkTermsTest, test_NonLinearException)
 {
-    EXPECT_THROW(logic.mkTimes(x,y), LANonLinearException);
+    PTRef mul = logic.mkTimes(x,y);
+    SMTConfig config;
+    MainSolver solver(logic, config, "test");
     PTRef two = logic.mkConst("2");
-    EXPECT_NO_THROW(logic.mkTimes(x,two));
+    EXPECT_THROW(solver.insertFormula(logic.mkEq(mul,two)), ApiException);
+    EXPECT_NO_THROW(solver.insertFormula(logic.mkEq(logic.mkTimes(x,two), two)));
 }
 
 TEST_F(LRALogicMkTermsTest, test_ConstantSimplification)

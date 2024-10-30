@@ -37,6 +37,9 @@ public:
             PTRef rewritten = logic.isIntDiv(symRef) ? divVar : modVar;
             if (not inCache) {
                 // collect the definitions to add
+                if (!logic.isConstant(divisor)) {
+                    throw ApiException("Nonlinear expression in the SMT:" + logic.pp(term));
+                }
                 assert(logic.isConstant(divisor));
                 auto divisorVal = logic.getNumConst(divisor);
                 assert(divisorVal.isInteger());
