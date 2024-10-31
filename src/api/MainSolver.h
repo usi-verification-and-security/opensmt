@@ -108,7 +108,8 @@ public:
     vec<PTRef> const & getAssertionsAtCurrentLevel() const { return getAssertionsAtLevel(getAssertionLevel()); }
     vec<PTRef> const & getAssertionsAtLevel(std::size_t) const;
 
-    [[deprecated("Use printCurrentAssertionsAsQuery")]] void printFramesAsQuery() const {
+    [[deprecated("Use printCurrentAssertionsAsQuery")]]
+    void printFramesAsQuery() const {
         printCurrentAssertionsAsQuery();
     }
     void printCurrentAssertionsAsQuery() const;

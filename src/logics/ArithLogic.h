@@ -8,16 +8,6 @@
 #include <numeric>
 
 namespace opensmt {
-class LANonLinearException : public std::runtime_error {
-public:
-    LANonLinearException(char const * reason_) : runtime_error(reason_) {
-        msg = "Term " + std::string(reason_) + " is non-linear";
-    }
-    virtual char const * what() const noexcept override { return msg.c_str(); }
-
-private:
-    std::string msg;
-};
 
 class ArithDivisionByZeroException : public std::runtime_error {
 public:
@@ -461,7 +451,6 @@ protected:
     SymRef sym_Int_GT;
     SymRef sym_Int_ITE;
     SymRef sym_Int_DISTINCT;
-    pair<PTRef, PTRef> splitTerm(PTRef term) const;
 };
 
 // Determine for two multiplicative terms (* k1 v1) and (* k2 v2), v1 !=
