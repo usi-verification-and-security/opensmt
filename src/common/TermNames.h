@@ -2,9 +2,12 @@
 #define OPENSMT_TERMNAMES_H
 
 #include "ScopedVector.h"
+#include "TypeUtils.h"
 
+#include <options/SMTConfig.h>
 #include <pterms/PTRef.h>
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <type_traits>

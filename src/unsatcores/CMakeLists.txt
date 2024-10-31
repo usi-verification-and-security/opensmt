@@ -4,6 +4,7 @@ target_sources(unsatcores
 PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCore.h"
 PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCore.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCoreBuilder.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/UnsatCoreBuilder.cc"
 )

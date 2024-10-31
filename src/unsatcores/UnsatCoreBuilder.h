@@ -13,59 +13,70 @@ namespace opensmt {
 
 class UnsatCore;
 
+class MainSolver;
+
 class Logic;
 class ResolutionProof;
 class PartitionManager;
-class TermNames;
 
-class MainSolver;
-
-class UnsatCoreBuilder {
+class UnsatCoreBuilderBase {
 public:
     using Proof = ResolutionProof;
 
-    UnsatCoreBuilder(SMTConfig const & conf, Logic & logic_, Proof const & proof_, PartitionManager const & pmanager,
-                     TermNames const & names)
-        : config{conf},
-          logic{logic_},
-          proof{proof_},
-          partitionManager{pmanager},
-          termNames{names} {}
+    UnsatCoreBuilderBase(MainSolver const &);
+
+protected:
+    MainSolver const & solver;
+    SMTConfig const & config;
+    Logic & logic;
+    Proof const & proof;
+    PartitionManager const & partitionManager;
+};
+
+class UnsatCoreBuilder : public UnsatCoreBuilderBase {
+public:
+    UnsatCoreBuilder(MainSolver const & solver_) : UnsatCoreBuilderBase(solver_) {}
 
     std::unique_ptr<UnsatCore> build();
 
 protected:
-    using SMTSolver = MainSolver;
+    class Minimize;
 
     void buildBody();
     std::unique_ptr<UnsatCore> buildReturn();
 
     void computeClauses();
-    void computeTerms();
-    void computeNamedTerms();
+    void mapClausesToTerms();
 
-    SMTConfig makeSmtSolverConfig() const;
-    std::unique_ptr<SMTSolver> newSmtSolver(SMTConfig &) const;
+    void partitionNamedTerms();
 
     void minimize();
 
-    void minimizeInit();
-    void minimizeAlg() { minimizeAlgNaive(); }
-    void minimizeFinish() {}
-
-    void minimizeAlgNaive();
-
-    SMTConfig const & config;
-    Logic & logic;
-    Proof const & proof;
-    PartitionManager const & partitionManager;
-    TermNames const & termNames;
-
     vec<CRef> clauses{};
-    vec<PTRef> terms{};
+    vec<PTRef> allTerms{};
     vec<PTRef> namedTerms{};
+    vec<PTRef> hiddenTerms{};
+};
 
-    std::vector<size_t> namedTermsIdxs{};
+class UnsatCoreBuilder::Minimize {
+public:
+    using InternalSMTSolver = MainSolver;
+
+    Minimize(UnsatCoreBuilder &, vec<PTRef> targetTerms, vec<PTRef> const & backgroundTerms_ = {});
+    ~Minimize();
+
+    vec<PTRef> perform() &&;
+
+protected:
+    SMTConfig makeSmtSolverConfig() const;
+    std::unique_ptr<InternalSMTSolver> newSmtSolver(SMTConfig &) const;
+
+    vec<PTRef> performNaive(InternalSMTSolver &);
+
+    UnsatCoreBuilder & builder;
+
+    vec<PTRef> targetTerms;
+    vec<PTRef> const & backgroundTerms;
 };
 
 } // namespace opensmt

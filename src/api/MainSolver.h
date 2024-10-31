@@ -138,6 +138,8 @@ public:
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
 protected:
+    friend class UnsatCoreBuilderBase;
+
     using FrameId = uint32_t;
 
     struct PushFrame {

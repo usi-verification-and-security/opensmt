@@ -16,6 +16,13 @@ namespace opensmt {
 
 using Partitions = ipartitions_t;
 
+UnsatCoreBuilderBase::UnsatCoreBuilderBase(MainSolver const & solver_)
+    : solver{solver_},
+      config{solver_.config},
+      logic{solver_.logic},
+      proof{solver_.smt_solver->getResolutionProof()},
+      partitionManager{solver_.pmanager} {}
+
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
     buildBody();
     return buildReturn();
@@ -23,15 +30,20 @@ std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
 
 void UnsatCoreBuilder::buildBody() {
     computeClauses();
-    computeTerms();
-    computeNamedTerms();
+    mapClausesToTerms();
+
+    if (not config.print_cores_full()) { partitionNamedTerms(); }
 
     if (config.minimal_unsat_cores()) { minimize(); }
 }
 
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::buildReturn() {
-    // Not using `make_unique` because only UnsatCoreBuilder is a friend of UnsatCore
-    return std::unique_ptr<UnsatCore>{new UnsatCore{std::move(terms), std::move(namedTerms)}};
+    // Not using `make_unique` because only UnsatCoreBuilder is a friend of *UnsatCore
+
+    if (config.print_cores_full()) { return std::unique_ptr<UnsatCore>{new FullUnsatCore{logic, std::move(allTerms)}}; }
+
+    return std::unique_ptr<UnsatCore>{
+        new NamedUnsatCore{solver.getTermNames(), std::move(namedTerms), std::move(hiddenTerms)}};
 }
 
 void UnsatCoreBuilder::computeClauses() {
@@ -60,9 +72,9 @@ void UnsatCoreBuilder::computeClauses() {
     }
 }
 
-void UnsatCoreBuilder::computeTerms() {
+void UnsatCoreBuilder::mapClausesToTerms() {
     assert(clauses.size() > 0);
-    assert(terms.size() == 0);
+    assert(allTerms.size() == 0);
 
     Partitions partitions;
     for (CRef cref : clauses) {
@@ -70,30 +82,53 @@ void UnsatCoreBuilder::computeTerms() {
         orbit(partitions, partitions, partition);
     }
 
-    terms = partitionManager.getPartitions(partitions);
+    allTerms = partitionManager.getPartitions(partitions);
 }
 
-void UnsatCoreBuilder::computeNamedTerms() {
-    assert(terms.size() > 0);
+void UnsatCoreBuilder::partitionNamedTerms() {
+    assert(allTerms.size() > 0);
     namedTerms.clear();
-    namedTermsIdxs.clear();
+    hiddenTerms.clear();
 
-    if (config.print_cores_full()) return;
-
-    if (termNames.empty()) return;
-
-    size_t const termsSize = terms.size();
-    for (size_t idx = 0; idx < termsSize; ++idx) {
-        PTRef term = terms[idx];
-        if (not termNames.contains(term)) { continue; }
-        namedTerms.push(term);
-        namedTermsIdxs.push_back(idx);
+    auto const & termNames = solver.getTermNames();
+    if (termNames.empty()) {
+        hiddenTerms = std::move(allTerms);
+        return;
     }
+
+    for (PTRef term : allTerms) {
+        if (termNames.contains(term)) {
+            namedTerms.push(term);
+        } else {
+            hiddenTerms.push(term);
+        }
+    }
+
+    allTerms.clear();
 }
 
-SMTConfig UnsatCoreBuilder::makeSmtSolverConfig() const {
-    assert(config.minimal_unsat_cores());
+void UnsatCoreBuilder::minimize() {
+    if (config.print_cores_full()) {
+        allTerms = Minimize{*this, std::move(allTerms)}.perform();
+        return;
+    }
 
+    namedTerms = Minimize{*this, std::move(namedTerms), hiddenTerms}.perform();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+UnsatCoreBuilder::Minimize::Minimize(UnsatCoreBuilder & builder_, vec<PTRef> targetTerms_,
+                                     vec<PTRef> const & backgroundTerms_)
+    : builder{builder_},
+      targetTerms{std::move(targetTerms_)},
+      backgroundTerms{backgroundTerms_} {
+    assert(builder.config.minimal_unsat_cores());
+}
+
+UnsatCoreBuilder::Minimize::~Minimize() {}
+
+SMTConfig UnsatCoreBuilder::Minimize::makeSmtSolverConfig() const {
     SMTConfig newConfig;
     assert(newConfig.isIncremental());
     assert(newConfig.verbosity() == 0);
@@ -110,97 +145,56 @@ SMTConfig UnsatCoreBuilder::makeSmtSolverConfig() const {
     return newConfig;
 }
 
-std::unique_ptr<UnsatCoreBuilder::SMTSolver> UnsatCoreBuilder::newSmtSolver(SMTConfig & newConfig) const {
-    assert(config.minimal_unsat_cores());
-
-    return std::make_unique<SMTSolver>(logic, newConfig, "unsat core solver");
+std::unique_ptr<UnsatCoreBuilder::Minimize::InternalSMTSolver>
+UnsatCoreBuilder::Minimize::newSmtSolver(SMTConfig & newConfig) const {
+    return std::make_unique<InternalSMTSolver>(builder.logic, newConfig, "min unsat core solver");
 }
 
-void UnsatCoreBuilder::minimize() {
-    minimizeInit();
-    minimizeAlg();
-    minimizeFinish();
-}
-
-void UnsatCoreBuilder::minimizeInit() {
-    assert(terms.size() > 0);
-    assert(terms.size() >= namedTerms.size());
-    assert(size_t(namedTerms.size()) == namedTermsIdxs.size());
-}
-
-void UnsatCoreBuilder::minimizeAlgNaive() {
-    bool const fullCore = config.print_cores_full();
-
-    // this algorithm will minimize the contents of the `namedTerms` vector
-
-    if (fullCore) {
-        // special case: we don't care about named terms, hence we must minimize everything
-        assert(namedTerms.size() == 0);
-        std::swap(terms, namedTerms);
-        assert(namedTerms.size() > 0);
-    } else if (namedTerms.size() == 0) {
-        return;
-    }
+vec<PTRef> UnsatCoreBuilder::Minimize::perform() && {
+    if (targetTerms.size() == 0) { return std::move(targetTerms); }
 
     SMTConfig smtSolverConfig = makeSmtSolverConfig();
-    std::unique_ptr<SMTSolver> smtSolverPtr = newSmtSolver(smtSolverConfig);
+    std::unique_ptr<InternalSMTSolver> smtSolverPtr = newSmtSolver(smtSolverConfig);
 
-    decltype(terms) newTerms;
-    if (not fullCore) {
-        // the default: we focus on named terms -> we must distinguish between `namedTerms` and the others in `terms`
-        auto const namedTermsIdxsEnd = namedTermsIdxs.end();
-        auto const isNamedTerm = [namedTermsIdxsEnd](size_t idx, auto namedTermsIdxsIt) {
-            if (namedTermsIdxsIt == namedTermsIdxsEnd) { return false; }
-            assert(idx <= *namedTermsIdxsIt);
-            return (idx == *namedTermsIdxsIt);
-        };
+    return performNaive(*smtSolverPtr);
+}
 
-        size_t const termsSize = terms.size();
-        for (auto [idx, namedTermsIdxsIt] = std::tuple{size_t{0}, namedTermsIdxs.begin()}; idx < termsSize; ++idx) {
-            if (isNamedTerm(idx, namedTermsIdxsIt)) {
-                ++namedTermsIdxsIt;
-                continue;
-            }
-            // the term that we do not care about -> can be hard-asserted
-            PTRef term = terms[idx];
-            smtSolverPtr->insertFormula(term);
-            newTerms.push(term);
-        }
+vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolver) {
+    for (PTRef term : backgroundTerms) {
+        // the term that we do not care about eliminating -> can be hard-asserted
+        smtSolver.insertFormula(term);
     }
 
-    // minimize the contents of the `namedTerms` vector (given the already asserted hard constraints)
+    // minimize the contents of `targetTerms` (given the already hard-asserted constraints)
 
-    decltype(namedTerms) newNamedTerms;
-    size_t const namedTermsSize = namedTerms.size();
-    for (size_t namedIdx = 0; namedIdx < namedTermsSize; ++namedIdx) {
-        smtSolverPtr->push();
+    decltype(targetTerms) newTargetTerms;
+    size_t const targetTermsSize = targetTerms.size();
+    for (size_t idx = 0; idx < targetTermsSize; ++idx) {
+        smtSolver.push();
 
-        // try to ignore namedTerms[namedIdx]
+        // try to ignore targetTerms[idx]
 
-        for (size_t keptNamedIdx = namedIdx + 1; keptNamedIdx < namedTermsSize; ++keptNamedIdx) {
-            PTRef term = namedTerms[keptNamedIdx];
-            smtSolverPtr->insertFormula(term);
+        for (size_t keptIdx = idx + 1; keptIdx < targetTermsSize; ++keptIdx) {
+            PTRef term = targetTerms[keptIdx];
+            smtSolver.insertFormula(term);
         }
 
-        sstat const res = smtSolverPtr->check();
+        sstat const res = smtSolver.check();
         assert(res == s_True || res == s_False);
         bool const isRedundant = (res == s_False);
 
-        smtSolverPtr->pop();
+        smtSolver.pop();
 
         if (isRedundant) continue;
 
-        // namedTerms[namedIdx] is not redundant - include it
+        // targetTerms[idx] is not redundant - include it
 
-        PTRef term = namedTerms[namedIdx];
-        smtSolverPtr->insertFormula(term);
-        newTerms.push(term);
-        if (not fullCore) { newNamedTerms.push(term); }
+        PTRef term = targetTerms[idx];
+        smtSolver.insertFormula(term); // can already be hard-asserted
+        newTargetTerms.push(term);
     }
 
-    assert(not fullCore or newNamedTerms.size() == 0);
-    terms = std::move(newTerms);
-    namedTerms = std::move(newNamedTerms);
+    return newTargetTerms;
 }
 
 } // namespace opensmt
