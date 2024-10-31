@@ -239,7 +239,6 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
-                // TODO: insertFormula
             case t_definefun: {
                 if (isInitialized()) {
                     defineFun(n);
@@ -425,13 +424,6 @@ PTRef Interpret::resolveTerm(const char* s, vec<PTRef>&& args, SRef sortRef, Sym
     }
     return logic->resolveTerm(s, std::move(args), sortRef, symbolMatcher);
 }
-
-//bool Interpret::checkNonlin(const PTRef formula) {
-//   if(isTimes(formula)){
-//
-//   }
-//
-//}
 
 PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
     ASTType t = term.getType();

@@ -147,9 +147,7 @@ sstat MainSolver::simplifyFormulas() {
                 continue;
             }
             theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            std::cout << "FLA Formulas: ";
             for (PTRef fla : frameFormulas) {
-                std::cout << "Before:" << logic.pp(fla) << "\n";
                 if (fla == logic.getTerm_true()) { continue; }
                 assert(pmanager.getPartitionIndex(fla) != -1);
                 // Optimize the dag for cnfization
@@ -160,7 +158,6 @@ sstat MainSolver::simplifyFormulas() {
                 }
                 assert(pmanager.getPartitionIndex(fla) != -1);
                 pmanager.propagatePartitionMask(fla);
-                std::cout << "After:" << logic.pp(fla) << "\n";
                 status = giveToSolver(fla, frames[i].getId());
                 if (status == s_False) { break; }
             }
