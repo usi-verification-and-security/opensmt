@@ -178,6 +178,29 @@ jobs:
                     OSMT_INSTALL: ~/osmt-install
                     PARALLEL: ON
 
+    test:
+      docker:
+        - image: usiverify/verify-env:current
+          auth:
+            username: mydockerhub-user
+            password: $DOCKERHUB_PASSWORD
+          environment:
+            CMAKE_BUILD_TYPE: Release
+            PARALLEL: ON
+            FLAGS: -Wall -Wextra -Werror
+            OSMT_INSTALL: ~/osmt-install
+      steps:
+        - checkout
+        - run:
+            name: Setup clang
+            command: sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
+        - run:
+            name: Release build llvm
+            command: ./ci/run_travis_commands.sh
+        - run:
+            name: Quick Regression Tests
+            command: ./scripts/run_tests.sh
+
 workflows:
   build-test:
       jobs:
@@ -205,5 +228,8 @@ workflows:
           filters:
             <<: *filters-build-test
         - build-macos:
+          filters:
+            <<: *filters-build-test
+        - test:
           filters:
             <<: *filters-build-test
