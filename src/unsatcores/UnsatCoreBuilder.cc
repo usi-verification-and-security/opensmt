@@ -86,6 +86,8 @@ void UnsatCoreBuilder::mapClausesToTerms() {
 }
 
 void UnsatCoreBuilder::partitionNamedTerms() {
+    assert(not config.print_cores_full());
+
     assert(allTerms.size() > 0);
     namedTerms.clear();
     hiddenTerms.clear();
@@ -96,10 +98,12 @@ void UnsatCoreBuilder::partitionNamedTerms() {
         return;
     }
 
+    bool const minCore = config.minimal_unsat_cores();
     for (PTRef term : allTerms) {
         if (termNames.contains(term)) {
             namedTerms.push(term);
-        } else {
+        } else if (not minCore) {
+            // See the comment in `minimize` for why we exclude hidden terms
             hiddenTerms.push(term);
         }
     }
@@ -108,9 +112,23 @@ void UnsatCoreBuilder::partitionNamedTerms() {
 }
 
 void UnsatCoreBuilder::minimize() {
+    assert(config.minimal_unsat_cores());
+
     if (config.print_cores_full()) {
         allTerms = Minimize{*this, std::move(allTerms)}.perform();
         return;
+    }
+
+    // We need to minimize `namedTerms`, but this may not be possible with the current hidden terms:
+    // some of them were already removed based on the proof and may prevent removal of some named terms
+    // Hence, include all hidden terms from the assertion stack
+    // TODO: make more efficient
+    auto const & termNames = solver.getTermNames();
+    assert(hiddenTerms.size() == 0);
+    for (PTRef term : solver.getCurrentAssertionsView()) {
+        if (termNames.contains(term)) { continue; }
+        hiddenTerms.push(term);
+        // (we do not care about `allTerms` any more since the call to `partitionNamedTerms`)
     }
 
     namedTerms = Minimize{*this, std::move(namedTerms), hiddenTerms}.perform();
