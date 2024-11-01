@@ -100,9 +100,9 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, Real const 
         tmp_storage.resize(this->poly.size() + other.poly.size(), Term(VarType::Undef, 0));
     }
     std::size_t storageIndex = 0;
-    auto myIt = std::make_move_iterator(poly.begin());
+    auto myIt = poly.begin();
     auto otherIt = other.poly.cbegin();
-    auto myEnd = std::make_move_iterator(poly.end());
+    auto myEnd = poly.end();
     auto otherEnd = other.poly.cend();
     TermCmp cmp;
     Real tmp;
@@ -122,7 +122,7 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, Real const 
             break;
         }
         if (cmp(*myIt, *otherIt)) {
-            tmp_storage[storageIndex] = *myIt;
+            tmp_storage[storageIndex] = std::move(*myIt);
             ++storageIndex;
             ++myIt;
         }
@@ -141,7 +141,7 @@ void PolynomialT<VarType>::merge(PolynomialT<VarType> const & other, Real const 
                 informRemoved(myIt->var);
             }
             else {
-                tmp_storage[storageIndex] = *myIt;
+                tmp_storage[storageIndex] = std::move(*myIt);
                 ++storageIndex;
             }
             ++myIt;
