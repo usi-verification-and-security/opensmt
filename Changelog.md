@@ -3,9 +3,11 @@
 API changes:
  - Enclosed the whole project into `opensmt` namespace.
  - Using also directory names when including files.
+ - Adapted parts of the API of `MainSolver` to the SMT-LIB 2.6 terminology that uses "assertion stack".
 
 Bug fixes:
  - Named terms: do not report error when re-introducing a named term with an already popped name.
+ - Do not reverse the arguments of XOR terms.
 
 New features:
  - Support ":minimal-unsat-cores" option - naive implementation of subset-minimal unsat cores.
