@@ -1,4 +1,6 @@
-### 2.8.0 (unreleased)
+### 2.8.1 (unreleased)
+
+### 2.8.0 (2024-11-01)
 
 API changes:
  - Enclosed the whole project into `opensmt` namespace.
