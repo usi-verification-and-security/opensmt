@@ -1,0 +1,7 @@
+sat
+(
+  (define-fun x () Real
+    0)
+  (define-fun y () Real
+    15)
+)
