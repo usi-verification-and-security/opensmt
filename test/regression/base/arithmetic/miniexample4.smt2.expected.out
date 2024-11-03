@@ -1,0 +1,9 @@
+(error "Nonlinear operations in the formula: (/ y x)")
+
+sat
+(
+  (define-fun x () Real
+    0)
+  (define-fun y () Real
+    0)
+)
