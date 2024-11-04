@@ -30,6 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cstdio>
 #include <csignal>
+#include <getopt.h>
 #include <iostream>
 #include <unistd.h>
 
@@ -47,6 +48,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 namespace opensmt {
+
+inline bool pipeExecution = false;
+
+SMTConfig parseCMDLineArgs(int argc, char * argv[ ]);
 
 void        catcher            ( int );
 
@@ -78,47 +83,13 @@ int main( int argc, char * argv[] )
 
   // Accepts file from stdin if nothing specified
     FILE * fin = NULL;
-    int opt;
 
-    SMTConfig c;
-    bool pipe = false;
-    while ((opt = getopt(argc, argv, "hdpir:v")) != -1) {
-        switch (opt) {
-
-            case 'h':
-                //    context.getConfig( ).printHelp( );
-                break;
-            case 'd':
-                const char* msg;
-                c.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
-                break;
-            case 'r':
-                if (!c.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
-                    fprintf(stderr, "Error setting random seed: %s\n", msg);
-                else
-                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
-                break;
-            case 'i':
-                c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
-                break;
-            case 'v':
-                c.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
-                break;
-            case 'p':
-                pipe = true;
-                break;
-            default: /* '?' */
-                fprintf(stderr, "Usage:\n\t%s [-d] [-h] [-r seed] filename [...]\n",
-                        argv[0]);
-                return 0;
-        }
-    }
-
+    SMTConfig c = parseCMDLineArgs(argc,argv);
     Interpret interpreter(c);
 
     if (argc - optind == 0) {
         c.setInstanceName("stdin");
-        if (pipe) {
+        if (pipeExecution) {
             interpreter.interpPipe();
         }
         else {
@@ -236,6 +207,83 @@ void catcher( int sig )
         exit(1);
       break;
   }
+}
+
+void printVersion() { std::cerr << OPENSMT_GIT_DESCRIPTION << "\n"; }
+
+
+void printHelp()
+{
+    const char help_string[]
+        = "Usage: opensmt [OPTION] <filename>\n"
+          "where OPTION can be\n"
+          "  --help [-h]                     prints this help message and exits\n"
+          "  --version                       prints opensmt version and exits\n"
+          "  --dry-run [-d]                  executes dry run\n"
+          "  --random-seed [-r] <seed>       sets random seed to specific number\n"
+          "  --produce-interpolants [-i]     enables interpolant computation\n"
+          "  --verbose [-v]                  verbose run of the solver\n"
+          "  --pipe [-p]                     for execution within a pipe\n";
+    std::cerr << help_string;
+}
+
+SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
+{
+    SMTConfig res;
+    int selectedLongOpt = 0;
+    constexpr int versionLongOpt = 1;
+
+    struct option long_options[] =
+        {
+            {"help", no_argument, nullptr, 'h'},
+            {"version", no_argument, &selectedLongOpt, versionLongOpt},
+            {"verbose", no_argument, nullptr, 'v'},
+            {"dry-run", no_argument, nullptr, 'd'},
+            {"produce-interpolants", no_argument, nullptr, 'i'},
+            {"pipe", no_argument, nullptr, 'p'},
+            {"random-seed", required_argument, nullptr, 'r'},
+            {0, 0, 0, 0}
+        };
+
+    while (true) {
+        int option_index = 0;
+        int c = getopt_long(argc, argv, "r:hdivp", long_options, &option_index);
+        if (c == -1) { break; }
+
+        switch (c) {
+            case 0:
+                assert(*long_options[option_index].flag == versionLongOpt);
+                printVersion();
+                exit(0);
+            case 'h':
+                printHelp();
+                exit(0);
+            case 'd':
+                const char* msg;
+                res.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                break;
+            case 'r':
+                if (!res.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
+                    fprintf(stderr, "Error setting random seed: %s\n", msg);
+                else
+                    fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                break;
+            case 'i':
+                res.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                break;
+            case 'v':
+                res.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
+                break;
+            case 'p':
+                pipeExecution = true;
+                break;
+            default: /* '?' */
+                printHelp();
+                exit(1);
+        }
+    }
+
+    return res;
 }
 
 } // namespace opensmt

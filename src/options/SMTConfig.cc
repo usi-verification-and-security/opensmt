@@ -598,41 +598,4 @@ namespace opensmt {
     sat_theory_polarity_suggestion = 1;
   }
 
-  void
-  SMTConfig::parseCMDLine( int argc
-                        , char * argv[ ] )
-  {
-    for ( int i = 1 ; i < argc - 1 ; i ++ )
-    {
-      const char * buf = argv[ i ];
-      // Parsing of configuration options
-  //    if ( sscanf( buf, "--config=%s", config_name ) == 1 )
-  //    {
-  //      parseConfig( config_name );
-  //      break;
-  //    }
-      if ( strcmp( buf, "--help" ) == 0
-          || strcmp( buf, "-h" ) == 0 )
-      {
-        printHelp( );
-        exit( 1 );
-      }
-      else
-      {
-        printHelp( );
-        std::cerr << "unrecognized option" << buf << std::endl;
-        exit(1);
-      }
-    }
-  }
-
-  void SMTConfig::printHelp( )
-  {
-    const char help_string[]
-      = "Usage: ./opensmt [OPTION] filename\n"
-        "where OPTION can be\n"
-        "  --help [-h]              print this help\n"
-        "  --config=<filename>      use configuration file <filename>\n";
-    std::cerr << help_string;
-  }
 }
