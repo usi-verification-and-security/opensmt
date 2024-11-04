@@ -387,11 +387,6 @@ namespace opensmt {
     // For standard executable
     //
   public:
-      SMTConfig(int argc, char* argv[]) : rocset(false), docset(false) {
-          initializeConfig( );
-          // Parse command-line options
-          parseCMDLine( argc, argv );
-      }
       //
       // For API
       //
@@ -428,8 +423,6 @@ namespace opensmt {
     void initializeConfig ( );
 
     void parseConfig      ( char * );
-    void parseCMDLine     ( int argc, char * argv[ ] );
-    void printHelp        ( );
     void printConfig      ( std::ostream & out );
 
     inline std::ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }

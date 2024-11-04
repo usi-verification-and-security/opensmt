@@ -4,6 +4,13 @@ set(OPENSMT_VERSION_MAJOR 2)
 set(OPENSMT_VERSION_MINOR 8)
 set(OPENSMT_VERSION_PATCH 1)
 set(OPENSMT_VERSION ${OPENSMT_VERSION_MAJOR}.${OPENSMT_VERSION_MINOR}.${OPENSMT_VERSION_PATCH})
+execute_process(
+    COMMAND git describe --tags --dirty
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    OUTPUT_VARIABLE OPENSMT_GIT_DESCRIPTION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
 project(opensmt VERSION ${OPENSMT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -66,7 +73,6 @@ find_package(GMP REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${GMP_INCLUDE_DIR}
@@ -118,6 +124,12 @@ if (MATRIX_DEBUG)
 endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
+
+
+target_compile_definitions(OpenSMT-bin PRIVATE
+        OPENSMT_GIT_DESCRIPTION="${OPENSMT_GIT_DESCRIPTION}"
+)
+
 
 ################# TESTING #############################################
 if(PACKAGE_TESTS)
