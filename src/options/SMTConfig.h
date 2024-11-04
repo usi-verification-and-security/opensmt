@@ -430,6 +430,7 @@ namespace opensmt {
     void parseConfig      ( char * );
     void parseCMDLine     ( int argc, char * argv[ ] );
     void printHelp        ( );
+    void printVersion     ( );
     void printConfig      ( std::ostream & out );
 
     inline std::ostream & getStatsOut     ( ) { assert( optionTable.has(o_produce_stats) );  return stats_out; }

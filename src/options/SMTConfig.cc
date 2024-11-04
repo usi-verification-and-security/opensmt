@@ -611,17 +611,20 @@ namespace opensmt {
   //      parseConfig( config_name );
   //      break;
   //    }
+      if ( strcmp( buf, "--version" ) == 0
+          || strcmp( buf, "-v" ) == 0 )
+      {
+          printVersion( );
+      }
       if ( strcmp( buf, "--help" ) == 0
           || strcmp( buf, "-h" ) == 0 )
       {
         printHelp( );
-        exit( 1 );
       }
       else
       {
-        printHelp( );
         std::cerr << "unrecognized option" << buf << std::endl;
-        exit(1);
+        printHelp( );
       }
     }
   }
@@ -634,5 +637,14 @@ namespace opensmt {
         "  --help [-h]              print this help\n"
         "  --config=<filename>      use configuration file <filename>\n";
     std::cerr << help_string;
+    exit( 1 );
+  }
+
+  void SMTConfig::printVersion( )
+  {
+      char version_string[]
+          = "2.8.0\n";
+      std::cerr << version_string;
+      exit( 1 );
   }
 }
