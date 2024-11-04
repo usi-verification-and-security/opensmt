@@ -196,11 +196,11 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
 bool ArithLogic::isNonlin(PTRef tr) const {
     if (isTimes(tr)) {
         Pterm const & term = getPterm(tr);
-        return (!isConstant(term[0]) && !isConstant(term[1]));
+        return (not isConstant(term[0]) && not isConstant(term[1]));
     }
-    if (isRealDiv(tr) || isIntDiv(tr)) {
+    if (isRealDiv(tr) || isIntDiv(tr) || isMod(getPterm(tr).symb())) {
         Pterm const & term = getPterm(tr);
-        return (!isConstant(term[1]));
+        return (not isConstant(term[1]));
     }
     return false;
 };
@@ -688,8 +688,6 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     SymRef s_new;
     simp.simplify(getTimesForSort(returnSort), flatten_args, s_new, args);
     PTRef tr = mkFun(s_new, std::move(args));
-    // Either a real term or, if we constructed a multiplication of a
-    // constant and a sum, a real sum.
     return tr;
 }
 
@@ -807,11 +805,9 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
     checkSortInt(args);
     PTRef dividend = args[0];
     PTRef divisor = args[1];
-
-    if (not isNumConst(divisor)) { throw ApiException("Divisor must be constant in linear logic"); }
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor) or isMinusOne(divisor)) { return getTerm_IntZero(); }
-    if (isConstant(dividend)) {
+    if (isConstant(dividend) && isConstant(divisor)) {
         auto const & dividendValue = getNumConst(dividend);
         auto const & divisorValue = getNumConst(divisor);
         assert(dividendValue.isInteger() and divisorValue.isInteger());
