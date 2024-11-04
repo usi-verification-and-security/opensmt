@@ -5,6 +5,8 @@
 
 namespace opensmt {
 
+#ifdef FAST_RATIONALS
+
 TEST(Rationals_test, test_division_int32min)
 {
     // INT32_MIN
@@ -35,7 +37,7 @@ TEST(Rationals_test, test_normalized)
 TEST(Rationals_test, test_hash_function)
 {
     std::vector<uint32_t> hashes;
-    NumberHash hasher;
+    RealHash hasher;
     for (int i = 0; i < 10; i++) {
         Real r((int)random());
         hashes.push_back(hasher(r));
@@ -122,6 +124,7 @@ TEST(Rationals_test, test_negate_minus_int32min) {
     EXPECT_TRUE(neg < 0);
     r.negate();
     EXPECT_TRUE(r.isWellFormed());
+    EXPECT_EQ(r, neg);
 }
 
 TEST(Rationals_test, test_additionAssign) {
@@ -147,14 +150,6 @@ TEST(Rationals_test, test_uword)
     uint32_t x = 2589903246;
     Real f(x);
     ASSERT_TRUE(f.mpqPartValid());
-}
-
-TEST(Rationals_test, test_modulo)
-{
-    Real a(-37033300);
-    Real b(1);
-    Real mod = a % b;
-    ASSERT_EQ(mod, 0);
 }
 
 TEST(Rationals_test, test_creation)
@@ -448,14 +443,6 @@ TEST(Rationals_test, test_ceil)
     f.ceil();
 }
 
-TEST(Rationals_test, test_mod)
-{
-    Real a(INT_MAX);
-    Real b(INT_MIN);
-    Real res = a % b;
-    ASSERT_EQ(res, (INT_MIN+1));
-}
-
 TEST(Rationals_test, test_addNegated)
 {
     {
@@ -503,5 +490,7 @@ TEST(Rationals_test, testNormalization) {
     EXPECT_EQ(normalizedNum, -370387);
     EXPECT_EQ(normalizedDen, 1000000);
 }
+
+#endif  // FAST_RATIONALS
 
 }

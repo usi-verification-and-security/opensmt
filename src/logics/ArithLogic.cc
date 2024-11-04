@@ -1,8 +1,9 @@
 #include "ArithLogic.h"
 
 #include <common/ApiException.h>
-#include <common/FastRational.h>
+#include <common/Integer.h>
 #include <common/InternalException.h>
+#include <common/Number.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
 #include <pterms/PtStore.h>
@@ -554,6 +555,13 @@ PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
     for (auto i = numbers.size(); i <= id; i++) {
         numbers.emplace_back();
     }
+    //- std::cerr << c << std::endl;
+    //- std::cerr << val << std::endl;
+    //- std::cerr << *numbers[id] << std::endl;
+    //- double i;
+    //- std::cerr << modf(c.value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << modf(numbers[id]->value(), &i) << " + " << long(i) << std::endl;
+    //- std::cerr << std::endl;
     if (numbers[id] == nullptr) { numbers[id] = new Number(val); }
     assert(c == *numbers[id]);
     markConstant(id);
@@ -849,7 +857,9 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
+        //- std::cerr << printTerm_(mkRealConst(getNumConst(args_new[1]).inverse()), true, true) << std::endl;
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
+        //- std::cerr << printTerm_(mkTimes(args_new), true, true) << std::endl;
         return mkTimes(args_new);
     }
     PTRef tr = mkFun(s_new, std::move(args_new));
@@ -877,6 +887,7 @@ PTRef ArithLogic::mkConst(SRef s, char const * name) {
     if (s == sort_REAL or s == sort_INT) {
         char * rat;
         if (s == sort_REAL)
+            // TK: Currently this must be consistent with Real::get_str, otherwise it will make duplicates in term_store
             stringToRational(rat, name);
         else {
             if (not isIntString(name)) throw ApiException("Not parseable as an integer");
@@ -990,6 +1001,9 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
         for (int i = 0; i < l.getPterm(ch_tr).size(); i++)
             args_new.push(l.getPterm(ch_tr)[i]);
     }
+    //- for (int i=0; i<args_new.size(); ++i) {
+    //-     std::cerr << "> " << l.printTerm_(args_new[i], true, true) << std::endl;
+    //- }
 }
 
 void SimplifyConstSum::constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const {
@@ -1177,7 +1191,10 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
             if (ext) { str << " <" << tr.x << ">"; }
             return str.str();
         } else {
-            return rat_str;
+            std::stringstream str;
+            str << rat_str;
+            if (ext) { str << " <" << tr.x << ">"; }
+            return str.str();
         }
     }
     return Logic::printTerm_(tr, ext, safe);
@@ -1212,15 +1229,14 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
         std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
-        // this would probably not work when `Number` is not `FastRational`
-        using Integer = FastRational; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
-        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](Number const & next) {
             if (next.isInteger()) {
                 // denominator is 1 => lcm of denominators stays the same
                 return;
             }
-            Integer den = next.get_den();
+            //- Integer den = static_cast<FastInteger &&>(next.get_den());
+            Integer den = uint32_t(next.value());
             if (lcmOfDenominators == 1) {
                 lcmOfDenominators = std::move(den);
                 return;
@@ -1229,18 +1245,21 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
         };
         std::for_each(coeffs.begin(), coeffs.end(), accumulateLCMofDenominators);
         for (auto & coeff : coeffs) {
-            coeff *= lcmOfDenominators;
+            //- coeff *= lcmOfDenominators;
+            coeff *= Number(lcmOfDenominators);
             assert(coeff.isInteger());
         }
         // DONT forget to update also the constant factor
-        constantValue *= lcmOfDenominators;
+        //- constantValue *= lcmOfDenominators;
+        constantValue *= Number(lcmOfDenominators);
         changed = true;
     }
     assert(std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); }));
     // Now make sure all coeffs are coprime
     auto coeffs_gcd = abs(coeffs[0]);
     for (std::size_t i = 1; i < coeffs.size() && coeffs_gcd != 1; ++i) {
-        coeffs_gcd = gcd(coeffs_gcd, abs(coeffs[i]));
+        //- coeffs_gcd = gcd(static_cast<FastInteger &>(coeffs_gcd), static_cast<FastInteger &&>(abs(coeffs[i])));
+        coeffs_gcd = gcd(uint32_t(coeffs_gcd.value()), uint32_t(abs(coeffs[i]).value()));
         assert(coeffs_gcd.isInteger());
     }
     if (coeffs_gcd != 1) {

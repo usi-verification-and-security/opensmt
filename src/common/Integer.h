@@ -5,10 +5,10 @@
 #ifndef OPENSMT_INTEGER_H
 #define OPENSMT_INTEGER_H
 
-#include "Number.h"
+#include "FastInteger.h"
 
 namespace opensmt {
-    typedef Number Integer2;
+using Integer = FastInteger;
 }
 
-#endif //OPENSMT_INTEGER_H
+#endif // OPENSMT_INTEGER_H

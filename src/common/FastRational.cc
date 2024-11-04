@@ -6,6 +6,7 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
  */
 
 #include "FastRational.h"
+#include "FastInteger.h"
 
 #include <sstream>
 #include <algorithm>
@@ -112,88 +113,9 @@ std::string FastRational::get_str() const
     return os.str();
 }
 
-FastRational gcd(FastRational const & a, FastRational const & b)
-{
-    assert(a.isInteger() and b.isInteger());
-    if (a.wordPartValid() && b.wordPartValid()) {
-        return FastRational(gcd(a.num, b.num));
-    }
-    else {
-        a.ensure_mpq_valid();
-        b.ensure_mpq_valid();
-        mpz_gcd(FastRational::mpz(), mpq_numref(a.mpq), mpq_numref(b.mpq));
-        return FastRational(FastRational::mpz());
-    }
-}
-
-FastRational lcm(FastRational const & a, FastRational const & b)
-{
-    assert(a.isInteger() and b.isInteger());
-    if (a.wordPartValid() && b.wordPartValid()) {
-        return lcm(a.num, b.num);
-    }
-    else {
-        a.ensure_mpq_valid();
-        b.ensure_mpq_valid();
-        mpz_lcm(FastRational::mpz(), mpq_numref(a.mpq), mpq_numref(b.mpq));
-        return FastRational(FastRational::mpz());
-    }
-}
-
 FastRational fastrat_round_to_int(const FastRational& n) {
     FastRational res = n + FastRational(1, 2);
-    return fastrat_fdiv_q(res.get_num(), res.get_den());
-}
-
-// The quotient of n and d using the fast rationals.
-// Divide n by d, forming a quotient q.
-// Rounds q down towards -infinity, and q will satisfy n = q*d + r for some 0 <= abs(r) <= abs(d)
-FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d) {
-    assert(n.isInteger() && d.isInteger());
-    if (n.wordPartValid() && d.wordPartValid()) {
-        word num = n.num;
-        word den = d.num;
-        word quo;
-        if (num == INT_MIN) // The abs is guaranteed to overflow.  Otherwise this is always fine
-            goto overflow;
-        // After this -INT_MIN+1 <= numerator <= INT_MAX, and therefore the result always fits into a word.
-        quo = num / den;
-        if (num % den != 0 && ((num < 0 && den >=0) || (den < 0 && num >= 0))) // The result should be negative
-            quo--; // INT_MAX-1 >= quo >= -INT_MIN
-
-        return quo;
-    }
-overflow:
-    n.ensure_mpq_valid();
-    d.ensure_mpq_valid();
-    mpz_fdiv_q(FastRational::mpz(), mpq_numref(n.mpq), mpq_numref(d.mpq));
-    return FastRational(FastRational::mpz());
-}
-
-//void mpz_divexact (mpz_ptr, mpz_srcptr, mpz_srcptr);
-FastRational divexact(FastRational const & n, FastRational const & d) {
-    assert(d != 0);
-    assert(n.isInteger() && d.isInteger());
-    if (n.wordPartValid() && d.wordPartValid()) {
-        word num = n.num;
-        word den = d.num;
-        word quo;
-        if (den != 0){
-            quo = num / den;
-            return quo;
-        }
-        else {
-            // Division by zero
-            assert(false);
-            return FastRational(0);
-        }
-    } else {
-        assert(n.mpqPartValid() || d.mpqPartValid());
-        n.ensure_mpq_valid();
-        d.ensure_mpq_valid();
-        mpz_divexact(FastRational::mpz(), mpq_numref(n.mpq), mpq_numref(d.mpq));
-        return FastRational(FastRational::mpz());
-    }
+    return fastint_fdiv_q(static_cast<FastInteger&&>(res.get_num()), static_cast<FastInteger&&>(res.get_den()));
 }
 
 // Given as input the sequence Reals, return the smallest number m such that for each r in Reals, r*m is an integer
@@ -234,7 +156,7 @@ FastRational get_multiplicand(const std::vector<FastRational>& reals)
         else {
             // We filter in place the integers in dens.  The last two are guaranteed to be ;
             int k = 0;
-            FastRational m = lcm(dens[dens.size()-1], dens[dens.size()-2]);
+            FastRational m = lcm(static_cast<FastInteger&>(dens[dens.size()-1]), static_cast<FastInteger&>(dens[dens.size()-2]));
             mult *= m;
             for (size_t j = 0; j < dens.size()-2; j++) {
                 FastRational n = (m/dens[j]).get_den();

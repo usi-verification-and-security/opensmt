@@ -14,6 +14,9 @@
 ./src/common/ApiException.h
 ./src/common/FlaPartitionMap.cc
 ./src/common/FlaPartitionMap.h
+./src/common/Float.cc
+./src/common/Float.h
+./src/common/Integer.h
 ./src/common/InternalException.h
 ./src/common/Number.h
 ./src/common/PartitionInfo.cc
