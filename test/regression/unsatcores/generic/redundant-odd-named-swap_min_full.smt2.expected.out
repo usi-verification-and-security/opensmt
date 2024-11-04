@@ -1,0 +1,5 @@
+unsat
+(
+(and b1 b2)
+(xor b1 b2)
+)
