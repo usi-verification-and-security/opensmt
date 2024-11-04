@@ -84,6 +84,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     PTRef mod = logic.mkMod(x,two);
     PTRef fla = logic.mkAnd(logic.mkEq(div, two), logic.mkEq(mod, logic.getTerm_IntZero()));
     PTRef rewritten = rewriteDivMod(logic, fla);
+//    std::cout << logic.printTerm(rewritten) << std::endl;
     SMTConfig config;
     MainSolver solver(logic, config, "test");
     solver.insertFormula(rewritten);
