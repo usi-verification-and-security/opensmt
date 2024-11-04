@@ -92,18 +92,19 @@ void UnsatCoreBuilder::partitionNamedTerms() {
     namedTerms.clear();
     hiddenTerms.clear();
 
+    bool const minCore = config.minimal_unsat_cores();
+    // See the comment in `minimize` for why we exclude hidden terms here
+
     auto const & termNames = solver.getTermNames();
     if (termNames.empty()) {
-        hiddenTerms = std::move(allTerms);
+        if (not minCore) { hiddenTerms = std::move(allTerms); }
         return;
     }
 
-    bool const minCore = config.minimal_unsat_cores();
     for (PTRef term : allTerms) {
         if (termNames.contains(term)) {
             namedTerms.push(term);
         } else if (not minCore) {
-            // See the comment in `minimize` for why we exclude hidden terms
             hiddenTerms.push(term);
         }
     }
