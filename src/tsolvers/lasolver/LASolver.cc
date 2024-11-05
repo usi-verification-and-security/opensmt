@@ -91,9 +91,8 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimes(sum));
-    assert(!logic.isTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1]))) ||
-                                   (logic.isNumVar(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0])))));
+    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimes(sum) || logic.isMod(logic.getPterm(sum).symb()) ||
+           logic.isRealDiv(sum) || logic.isIntDiv(sum));
     (void) cons; (void)sum;
 }
 
@@ -288,6 +287,10 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 //
 // Returns internalized reference for the term
 LVRef LASolver::registerArithmeticTerm(PTRef expr) {
+    if (logic.isNonlin(expr)) {
+        auto termStr = logic.pp(expr);
+        throw LANonLinearException(termStr.c_str());
+    }
     LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);

@@ -235,7 +235,7 @@ public:
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
-    bool isNonlin(PTRef tr) const override;
+    bool isNonlin(PTRef tr) const;
 
     PTRef getTerm_IntZero() const { return term_Int_ZERO; }
     PTRef getTerm_RealZero() const { return term_Real_ZERO; }

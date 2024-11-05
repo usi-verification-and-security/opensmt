@@ -1,3 +1,0 @@
-(error "Nonlinear operations in the formula: (mod x y)")
-
-sat

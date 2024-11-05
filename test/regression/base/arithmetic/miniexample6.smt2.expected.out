@@ -1,3 +1,0 @@
-(error "Nonlinear operations in the formula: (* x y)")
-
-sat
