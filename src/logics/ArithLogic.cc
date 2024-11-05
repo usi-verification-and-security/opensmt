@@ -194,13 +194,25 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
 }
 
 bool ArithLogic::isNonlin(PTRef tr) const {
+    if (isPlus(tr)) {
+        Pterm const & term = getPterm(tr);
+        for (auto subterm : term) {
+            if (isNonlin(subterm)) return true;
+        }
+    }
     if (isTimes(tr)) {
         Pterm const & term = getPterm(tr);
-        return (not isConstant(term[0]) && not isConstant(term[1]));
+        if (not isConstant(term[0]) && not isConstant(term[1])) return true;
+        for (auto subterm : term) {
+            if (isNonlin(subterm)) return true;
+        }
     }
     if (isRealDiv(tr) || isIntDiv(tr) || isMod(getPterm(tr).symb())) {
         Pterm const & term = getPterm(tr);
-        return (not isConstant(term[1]));
+        if (not isConstant(term[1])) return true;
+        for (auto subterm : term) {
+            if (isNonlin(subterm)) return true;
+        }
     }
     return false;
 };
@@ -418,13 +430,12 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
         PTRef lhs = logic.getPterm(eq)[0];
         PTRef rhs = logic.getPterm(eq)[1];
         PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
-        assert(logic.isLinearTerm(polyTerm));
         if (logic.isLinearFactor(polyTerm)) {
             auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
-            assert(logic.isPlus(polyTerm));
+            assert(logic.isPlus(polyTerm) || logic.isTimes(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
                 auto [var, c] = logic.splitTermToVarAndConst(factor);
                 auto coeff = logic.getNumConst(c);

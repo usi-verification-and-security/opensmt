@@ -24,6 +24,17 @@
 #include <unordered_set>
 
 namespace opensmt {
+class LANonLinearException : public std::runtime_error {
+public:
+    LANonLinearException(char const * reason_) : runtime_error(reason_) {
+        msg = "Term " + std::string(reason_) + " is non-linear";
+    }
+    virtual char const * what() const noexcept override { return msg.c_str(); }
+
+private:
+    std::string msg;
+};
+
 class LAVarStore;
 class Delta;
 class PartitionManager;

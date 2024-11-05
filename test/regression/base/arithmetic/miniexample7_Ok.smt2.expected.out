@@ -1,3 +1,0 @@
-(error "Nonlinear operations in the formula: (div 10 y)")
-
-sat

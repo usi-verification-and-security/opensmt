@@ -2,9 +2,6 @@
 // Created by Antti on 16.09.21.
 //
 
-#include "api/MainSolver.h"
-#include "options/SMTConfig.h"
-#include <common/StringConv.h>
 #include <gtest/gtest.h>
 #include <logics/ArithLogic.h>
 
@@ -23,31 +20,25 @@ public:
 };
 
 TEST_F(ArithLogicApiTest, test_LRA) {
-    SMTConfig config;
-    MainSolver solver(lraLogic, config, "test");
     PTRef c1 = lraLogic.mkConst("213");
     PTRef r1 = lraLogic.mkConst("213.0");
     ASSERT_EQ(c1, r1);
     ASSERT_TRUE(lraLogic.yieldsSortReal(c1));
     ASSERT_TRUE(lraLogic.yieldsSortReal(r1));
     PTRef c2 = lraLogic.mkRealVar("a");
-    PTRef eq = lraLogic.mkEq(lraLogic.mkTimes(c2, c2), lraLogic.mkRealVar("a"));
     ASSERT_NO_THROW(lraLogic.mkPlus(c1, c2));
-    ASSERT_THROW(solver.insertFormula(eq), ApiException);
+    ASSERT_NO_THROW(lraLogic.mkTimes(c2, c2));
     ASSERT_THROW(lraLogic.mkIntVar("x"), ApiException);
     ASSERT_THROW(lraLogic.mkIntConst(2), ApiException);
 }
 
 TEST_F(ArithLogicApiTest, test_LIA) {
     PTRef c1 = liaLogic.mkConst("213");
-    SMTConfig config;
-    MainSolver solver(liaLogic, config, "test");
     ASSERT_TRUE(liaLogic.yieldsSortInt(c1));
     ASSERT_THROW(liaLogic.mkConst("213.0"), ApiException);
     PTRef c2 = liaLogic.mkIntVar("a");
-    PTRef eq = liaLogic.mkEq(liaLogic.mkTimes(c2, c2), liaLogic.mkIntVar("a"));
     ASSERT_NO_THROW(liaLogic.mkPlus(c1, c2));
-    ASSERT_THROW(solver.insertFormula(eq), ApiException);
+    ASSERT_NO_THROW(liaLogic.mkTimes(c2, c2));
     ASSERT_THROW(liaLogic.mkRealVar("a"), ApiException);
     ASSERT_THROW(liaLogic.mkRealConst(2), ApiException);
 }

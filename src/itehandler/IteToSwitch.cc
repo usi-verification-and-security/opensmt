@@ -233,12 +233,6 @@ ite::Dag IteToSwitch::constructIteDag(PTRef root, Logic const & logic) {
 
         } else { // not Ite
             for (PTRef child : t) {
-                if (logic.hasIntegers() || logic.hasReals()) {
-                    if (logic.isNonlin(child)) {
-                        auto termStr = logic.pp(child);
-                        throw ApiException("Nonlinear operations in the formula: " + termStr);
-                    }
-                }
                 if (logic.isIte(child) and !dag.isTopLevelIte(child)) {
                     // Term child is an ite which appears as a child of a non-ite.
                     // We store this term for an expansion into a switch.
