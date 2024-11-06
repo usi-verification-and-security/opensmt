@@ -13,8 +13,10 @@
 
 ./src/common/numbers/Integer.h
 ./src/common/numbers/Number.h
+./src/common/numbers/NumberCRTP.h
 ./src/common/numbers/Real.h
 ./src/common/ApiException.h
+./src/common/CRTP.h
 ./src/common/FlaPartitionMap.cc
 ./src/common/FlaPartitionMap.h
 ./src/common/InternalException.h

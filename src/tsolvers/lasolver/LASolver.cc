@@ -956,7 +956,7 @@ TRes LASolver::cutFromProof() {
 vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
-            NumberHash hasher;
+            Number::Hash hasher;
             return (hasher(d.R()) ^ hasher(d.D()));
         }
     };

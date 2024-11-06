@@ -11,6 +11,7 @@ PRIVATE
 install(FILES
         ${CMAKE_CURRENT_LIST_DIR}/Integer.h
         ${CMAKE_CURRENT_LIST_DIR}/Number.h
+        ${CMAKE_CURRENT_LIST_DIR}/NumberCRTP.h
         ${CMAKE_CURRENT_LIST_DIR}/FastRational.h
         ${CMAKE_CURRENT_LIST_DIR}/Real.h
         ${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h
