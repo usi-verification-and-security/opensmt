@@ -5,5 +5,4 @@
 (assert (= x x))
 (assert (= (uninterp_mul y x) 30))
 (check-sat)
-(get-model)
 (exit)

@@ -4,5 +4,4 @@
 (define-fun uninterp_div ((a Real) (b Real)) Real (/ a b))
 (assert (= (uninterp_div y x) 20))
 (check-sat)
-(get-model)
 (exit)

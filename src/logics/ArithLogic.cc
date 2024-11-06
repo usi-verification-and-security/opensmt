@@ -202,9 +202,11 @@ bool ArithLogic::isNonlin(PTRef tr) const {
     }
     if (isTimes(tr)) {
         Pterm const & term = getPterm(tr);
+        int vars = 0;
         if (not isConstant(term[0]) && not isConstant(term[1])) return true;
         for (auto subterm : term) {
-            if (isNonlin(subterm)) return true;
+            if (not isConstant(subterm)) vars++;
+            if (isNonlin(subterm) || vars > 1) return true;
         }
     }
     if (isRealDiv(tr) || isIntDiv(tr) || isMod(getPterm(tr).symb())) {

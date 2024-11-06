@@ -340,7 +340,12 @@ sstat MainSolver::check() {
     if (rval == s_Undef) {
         try {
             rval = solve();
-        } catch (std::overflow_error const & error) { rval = s_Error; }
+        } catch (std::overflow_error const & error) {
+            rval = s_Error;
+        } catch (opensmt::LANonLinearException const & error) {
+            printf("%s\n", error.what());
+            rval = s_Undef;
+        }
         if (rval == s_False) {
             assert(not smt_solver->isOK());
             rememberUnsatFrame(smt_solver->getConflictFrame());

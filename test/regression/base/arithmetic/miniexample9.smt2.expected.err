@@ -1,3 +1,0 @@
-terminate called after throwing an instance of 'opensmt::LANonLinearException'
-  what():  Term (mod 5 x) is non-linear
-Aborted
