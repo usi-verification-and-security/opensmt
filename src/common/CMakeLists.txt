@@ -2,15 +2,10 @@ add_library(common OBJECT)
 
 target_sources(common
 PUBLIC
-    "${CMAKE_CURRENT_LIST_DIR}/FastRational.cc"
     "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/Real.h"
     "${CMAKE_CURRENT_LIST_DIR}/TermNames.h"
 PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/SystemQueries.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Number.h"
-    "${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h"
     "${CMAKE_CURRENT_LIST_DIR}/inttypes.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringMap.h"
     "${CMAKE_CURRENT_LIST_DIR}/StringConv.h"
@@ -22,8 +17,10 @@ PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/ReportUtils.h"
 )
 
+include(numbers/CMakeLists.txt)
+
 install(FILES
-        Integer.h Number.h FastRational.h StringMap.h Timer.h inttypes.h
-        TreeOps.h Real.h FlaPartitionMap.h PartitionInfo.h ApiException.h TypeUtils.h
-        NumberUtils.h NatSet.h ScopedVector.h TermNames.h
+        StringMap.h Timer.h inttypes.h
+        TreeOps.h FlaPartitionMap.h PartitionInfo.h ApiException.h TypeUtils.h
+        NatSet.h ScopedVector.h TermNames.h
 DESTINATION ${INSTALL_HEADERS_DIR}/common)

@@ -10,6 +10,7 @@
 #include "LRAModel.h"
 #include "Tableau.h"
 
+#include <common/numbers/Real.h>
 #include <options/SMTConfig.h>
 
 namespace opensmt {

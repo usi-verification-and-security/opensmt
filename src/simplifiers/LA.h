@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <pterms/PtStructs.h>
 #include <logics/ArithLogic.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 #include <map>
 

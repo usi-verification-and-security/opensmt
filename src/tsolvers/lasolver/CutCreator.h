@@ -12,8 +12,8 @@
 #include "Polynomial.h"
 #include "SparseMatrix.h"
 
-#include <common/Real.h>
 #include <common/TypeUtils.h>
+#include <common/numbers/Real.h>
 #include <pterms/PTRef.h>
 
 namespace opensmt {

@@ -16,6 +16,7 @@
 #include "Tableau.h"
 
 #include <common/Timer.h>
+#include <common/numbers/Real.h>
 #include <logics/ArithLogic.h>
 #include <tsolvers/TSolver.h>
 

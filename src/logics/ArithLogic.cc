@@ -1,7 +1,6 @@
 #include "ArithLogic.h"
 
 #include <common/ApiException.h>
-#include <common/FastRational.h>
 #include <common/InternalException.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>

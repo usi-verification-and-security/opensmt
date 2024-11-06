@@ -5,7 +5,7 @@
 #ifndef OPENSMT_FARKASINTERPOLATOR_H
 #define OPENSMT_FARKASINTERPOLATOR_H
 
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 #include <pterms/PtStructs.h>
 #include <smtsolvers/TheoryInterpolator.h>
 

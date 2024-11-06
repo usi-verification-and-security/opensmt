@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 #include <options/SMTConfig.h>
 #include <tsolvers/lasolver/Simplex.h>
 

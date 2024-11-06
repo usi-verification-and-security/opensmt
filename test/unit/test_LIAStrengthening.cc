@@ -2,7 +2,7 @@
 // Created by prova on 30.09.20.
 //
 #include <gtest/gtest.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 #include <logics/ArithLogic.h>
 
 namespace opensmt {

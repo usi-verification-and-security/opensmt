@@ -10,7 +10,7 @@
 #include "LAVar.h"
 #include "Polynomial.h"
 
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 #include <algorithm>
 #include <functional>

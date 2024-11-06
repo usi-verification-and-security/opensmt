@@ -7,12 +7,12 @@
 
 #include "LASolver.h"
 #include "FarkasInterpolator.h"
-#include <simplifiers/LA.h>
 #include "LIAInterpolator.h"
 #include "CutCreator.h"
 
-#include <models/ModelBuilder.h>
 #include <common/Random.h>
+#include <models/ModelBuilder.h>
+#include <simplifiers/LA.h>
 
 #include <unordered_set>
 
