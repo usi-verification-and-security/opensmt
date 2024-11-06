@@ -16,7 +16,7 @@
 
 #include <common/ApiException.h>
 #include <common/InternalException.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 #include <logics/ArithLogic.h>
 #include <simplifiers/LA.h>
 

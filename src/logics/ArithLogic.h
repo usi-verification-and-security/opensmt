@@ -3,7 +3,7 @@
 
 #include "Logic.h"
 
-#include <common/Number.h>
+#include <common/numbers/Number.h>
 
 #include <numeric>
 

@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <models/ModelBuilder.h>
 #include <api/MainSolver.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 namespace opensmt {
 

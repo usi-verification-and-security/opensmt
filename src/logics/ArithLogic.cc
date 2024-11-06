@@ -1,10 +1,11 @@
 #include "ArithLogic.h"
 
 #include <common/ApiException.h>
-#include <common/FastRational.h>
 #include <common/InternalException.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
+#include <common/numbers/FastRational.h>
+#include <common/numbers/Number.h>
 #include <pterms/PtStore.h>
 #include <rewriters/Rewriter.h>
 #include <rewriters/Rewritings.h>

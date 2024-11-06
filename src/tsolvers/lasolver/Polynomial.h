@@ -8,7 +8,7 @@
 #ifndef OPENSMT_POLYNOMIAL_H
 #define OPENSMT_POLYNOMIAL_H
 
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 #include <vector>
 #include <unordered_map>

@@ -1,7 +1,7 @@
 #ifndef OPENSMT_CONVERTER_H
 #define OPENSMT_CONVERTER_H
 
-#include <common/Number.h>
+#include <common/numbers/Number.h>
 
 #include <concepts>
 #include <cstddef>

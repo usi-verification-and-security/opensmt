@@ -1,7 +1,7 @@
 #ifndef OPENSMT_STPSTORE_H
 #define OPENSMT_STPSTORE_H
 
-#include <common/Number.h>
+#include <common/numbers/Number.h>
 #include <pterms/PtStructs.h>
 
 #include <cstdint>
