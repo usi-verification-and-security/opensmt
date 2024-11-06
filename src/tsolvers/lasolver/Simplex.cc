@@ -5,6 +5,7 @@
 #include "Simplex.h"
 
 #include <common/InternalException.h>
+#include <common/numbers/Number.h>
 
 #include <algorithm>
 #include <limits>

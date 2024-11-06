@@ -8,7 +8,7 @@
 #ifndef OPENSMT_STRINGCONV_H
 #define OPENSMT_STRINGCONV_H
 
-#include "NumberUtils.h"
+#include "numbers/NumberUtils.h"
 
 namespace opensmt {
 

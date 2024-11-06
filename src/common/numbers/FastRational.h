@@ -7,6 +7,8 @@ Copyright (c) 2008, 2009 Centre national de la recherche scientifique (CNRS)
 #ifndef FAST_RATIONALS_H
 #define FAST_RATIONALS_H
 
+#include "NumberCRTP.h"
+
 #include <gmpxx.h>
 #include <cassert>
 #include <climits>
@@ -71,7 +73,7 @@ inline ulword absVal(lword x) {
                  : +((ulword)(x));
 }
 
-class FastRational
+class FastRational : public NumberCRTP<FastRational>
 {
     class mpqPool
     {
@@ -268,7 +270,7 @@ public:
     bool operator!=( const FastRational & b ) const { return !(*this == b); }
     inline unsigned size() const;
 
-    uint32_t getHashValue() const {
+    std::size_t hash() const {
         if  (wordPartValid()) {
             return 37*(uint32_t)num + 13*(uint32_t)den;
         }
@@ -414,17 +416,6 @@ public:
 FastRational fastrat_fdiv_q(FastRational const & n, FastRational const & d);
 FastRational fastrat_round_to_int(const FastRational& n);
 
-struct FastRationalHash {
-    uint32_t operator() (const FastRational& s) const {
-        return (uint32_t)s.getHashValue();
-    }
-};
-
-inline std::ostream & operator<<(std::ostream & out, const FastRational & r)
-{
-    r.print(out);
-    return out;
-}
 inline FastRational::FastRational(const FastRational& x) {
     if (x.wordPartValid()) {
         num = x.num;
@@ -1045,14 +1036,6 @@ inline FastRational FastRational::inverse() const {
     dest.try_fit_word();
     assert(dest.isWellFormed());
     return dest;
-}
-
-inline FastRational abs(FastRational const & x) {
-    if (x.sign() >= 0) {
-        return x;
-    } else {
-        return -x;
-    }
 }
 
 FastRational get_multiplicand(const std::vector<FastRational>& reals);

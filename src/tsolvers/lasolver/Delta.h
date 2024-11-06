@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef DELTA_H
 #define DELTA_H
 
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 #include <iosfwd>
 

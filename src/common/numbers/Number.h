@@ -16,7 +16,6 @@
 namespace opensmt {
 #ifdef FAST_RATIONALS
 using Number = FastRational;
-using NumberHash = FastRationalHash;
 #else
 using Number = mpq_class;
 #endif

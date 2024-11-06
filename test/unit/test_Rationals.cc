@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <common/Real.h>
+#include <common/numbers/Real.h>
 
 #include <vector>
 
@@ -35,7 +35,7 @@ TEST(Rationals_test, test_normalized)
 TEST(Rationals_test, test_hash_function)
 {
     std::vector<uint32_t> hashes;
-    NumberHash hasher;
+    Real::Hash hasher;
     for (int i = 0; i < 10; i++) {
         Real r((int)random());
         hashes.push_back(hasher(r));

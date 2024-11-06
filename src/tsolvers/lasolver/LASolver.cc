@@ -7,12 +7,13 @@
 
 #include "LASolver.h"
 #include "FarkasInterpolator.h"
-#include <simplifiers/LA.h>
 #include "LIAInterpolator.h"
 #include "CutCreator.h"
 
-#include <models/ModelBuilder.h>
+#include <common/numbers/Real.h>
 #include <common/Random.h>
+#include <models/ModelBuilder.h>
+#include <simplifiers/LA.h>
 
 #include <unordered_set>
 
@@ -955,7 +956,7 @@ TRes LASolver::cutFromProof() {
 vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
-            NumberHash hasher;
+            Number::Hash hasher;
             return (hasher(d.R()) ^ hasher(d.D()));
         }
     };

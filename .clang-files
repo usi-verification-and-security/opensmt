@@ -11,15 +11,18 @@
 ./src/cnfizers/Tseitin.cc
 ./src/cnfizers/Tseitin.h
 
+./src/common/numbers/Integer.h
+./src/common/numbers/Number.h
+./src/common/numbers/NumberCRTP.h
+./src/common/numbers/Real.h
 ./src/common/ApiException.h
+./src/common/CRTP.h
 ./src/common/FlaPartitionMap.cc
 ./src/common/FlaPartitionMap.h
 ./src/common/InternalException.h
-./src/common/Number.h
 ./src/common/PartitionInfo.cc
 ./src/common/PartitionInfo.h
 ./src/common/Random.h
-./src/common/Real.h
 ./src/common/ScopedVector.h
 ./src/common/StringMap.h
 ./src/common/TermNames.h

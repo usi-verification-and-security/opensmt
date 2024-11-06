@@ -10,7 +10,9 @@ Module: New Logic for BitVector
 
 #include "Logic.h"
 
-#include <common/NumberUtils.h>
+#include <common/numbers/NumberUtils.h>
+
+#include <gmpxx.h>
 
 namespace opensmt {
 
