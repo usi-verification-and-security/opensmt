@@ -8,16 +8,15 @@
 #ifndef PROOFGRAPH_H
 #define PROOFGRAPH_H
 
+#include <common/IColor.h>
 #include <smtsolvers/ResolutionProof.h>
 #include <pterms/PTRef.h>
 #include <logics/Theory.h>
 #include <tsolvers/THandler.h>
 #include <common/InternalException.h>
 
-#include <memory>
-#include <map>
-#include <new>
 #include <functional>
+#include <set>
 
 namespace opensmt {
 

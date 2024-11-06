@@ -2,6 +2,7 @@
 #define THEORY_INTERPOLATOR_H
 
 #include <api/PartitionManager.h>
+#include <common/IColor.h>
 #include <common/InternalException.h>
 #include <pterms/PtStore.h>
 

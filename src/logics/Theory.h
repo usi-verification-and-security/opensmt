@@ -28,7 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "Logic.h"
 
-#include <api/PartitionManager.h>
 #include <tsolvers/UFTHandler.h>
 
 #include <memory>

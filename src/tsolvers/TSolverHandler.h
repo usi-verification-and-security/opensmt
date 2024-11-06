@@ -32,6 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Deductions.h"
 
 #include <api/PartitionManager.h>
+#include <common/IColor.h>
 #include <cnfizers/TermMapper.h>
 
 namespace opensmt {

@@ -46,13 +46,23 @@ ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
     return allowed;
 }
 
-PTRef PartitionManager::getPartition(ipartitions_t const & mask, PartitionManager::part p) {
-    auto isLocalToP = [p](ipartitions_t const & p_mask, ipartitions_t const & mask) {
-        return p == part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask);
-    };
-    auto hasNoPartition = [](ipartitions_t const & p_mask, ipartitions_t const & mask) {
+namespace {
+    bool isAlocal(ipartitions_t const & p, ipartitions_t const & mask) {
+        return (p & mask) != 0;
+    }
+    bool isBlocal(ipartitions_t const & p, ipartitions_t const & mask) {
+        return (p & ~mask) != 0;
+    }
+    bool isLocalTo(PartitionManager::part p, ipartitions_t const & p_mask, ipartitions_t const & mask) {
+        return p == PartitionManager::part::A ? isAlocal(p_mask, mask) : isBlocal(p_mask, mask);
+    }
+
+    bool hasNoPartition(ipartitions_t const & p_mask, ipartitions_t const & mask) {
         return !isAlocal(p_mask, mask) and !isBlocal(p_mask, mask);
-    };
+    }
+} // namespace
+
+PTRef PartitionManager::getPartition(ipartitions_t const & mask, PartitionManager::part p) {
     auto parts = getPartitions();
     vec<PTRef> args;
     for (auto part : parts) {
@@ -60,7 +70,7 @@ PTRef PartitionManager::getPartition(ipartitions_t const & mask, PartitionManage
         if (partitionIndex < 0) { throw InternalException("Internal error in partition bookkeeping"); }
         ipartitions_t p_mask = 0;
         setbit(p_mask, static_cast<unsigned>(partitionIndex));
-        if (isLocalToP(p_mask, mask)) {
+        if (isLocalTo(p, p_mask, mask)) {
             args.push(part);
         } else if (hasNoPartition(p_mask, mask)) {
             throw InternalException("Assertion is neither A or B");

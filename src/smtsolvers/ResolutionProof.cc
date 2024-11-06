@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <common/InternalException.h>
 
+#include <set>
 #include <unordered_map>
 
 

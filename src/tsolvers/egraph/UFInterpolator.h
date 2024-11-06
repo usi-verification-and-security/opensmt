@@ -44,7 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <smtsolvers/TheoryInterpolator.h>
 #include <api/PartitionManager.h>
 
-#include <unordered_map>
+#include <set>
 
 namespace opensmt {
 

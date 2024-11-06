@@ -1,13 +1,16 @@
-//
-// Created by Martin Blicha on 2019-08-14.
-//
+/*
+ *  Copyright (c) 2019-2024, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #ifndef OPENSMT_PARTITIONINFO_H
 #define OPENSMT_PARTITIONINFO_H
 
 #include "FlaPartitionMap.h"
+#include "Partitions.h"
 
-#include <interpolation/InterpolationUtils.h>
 #include <minisat/core/SolverTypes.h>
 #include <pterms/PTRef.h>
 #include <symbols/SymRef.h>

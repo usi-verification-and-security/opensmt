@@ -17,9 +17,11 @@
 ./src/common/ApiException.h
 ./src/common/FlaPartitionMap.cc
 ./src/common/FlaPartitionMap.h
+./src/common/IColor.h
 ./src/common/InternalException.h
 ./src/common/PartitionInfo.cc
 ./src/common/PartitionInfo.h
+./src/common/Partitions.h
 ./src/common/Random.h
 ./src/common/ScopedVector.h
 ./src/common/StringMap.h
@@ -29,8 +31,6 @@
 ./src/common/TypeUtils.h
 ./src/common/VerificationUtils.cc
 ./src/common/VerificationUtils.h
-
-./src/interpolation/InterpolationUtils.h
 
 ./src/itehandler/IteHandler.cc
 ./src/itehandler/IteHandler.h

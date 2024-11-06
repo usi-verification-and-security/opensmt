@@ -3,9 +3,8 @@
 
 #include <api/MainSolver.h>
 #include <api/PartitionManager.h>
-#include <common/PartitionInfo.h>
+#include <common/Partitions.h>
 #include <common/TermNames.h>
-#include <interpolation/InterpolationUtils.h>
 #include <logics/Logic.h>
 #include <smtsolvers/ResolutionProof.h>
 

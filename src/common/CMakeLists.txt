@@ -3,6 +3,8 @@ add_library(common OBJECT)
 target_sources(common
 PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/FlaPartitionMap.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/IColor.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Partitions.h"
     "${CMAKE_CURRENT_LIST_DIR}/TermNames.h"
 PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/SystemQueries.h"
@@ -20,7 +22,7 @@ PRIVATE
 include(numbers/CMakeLists.txt)
 
 install(FILES
-        StringMap.h Timer.h inttypes.h
-        TreeOps.h FlaPartitionMap.h PartitionInfo.h ApiException.h TypeUtils.h
+        StringMap.h Timer.h inttypes.h IColor.h
+        TreeOps.h FlaPartitionMap.h PartitionInfo.h Partitions.h ApiException.h TypeUtils.h
         NatSet.h ScopedVector.h TermNames.h
 DESTINATION ${INSTALL_HEADERS_DIR}/common)
