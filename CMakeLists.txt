@@ -8,10 +8,8 @@ project(opensmt VERSION ${OPENSMT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_SOURCE_DIR "${PROJECT_SOURCE_DIR}/src")
-
 get_filename_component(CMAKE_MODULE_PATH
-"${CMAKE_SOURCE_DIR}/../cmake_modules/" ABSOLUTE)
+    "${CMAKE_CURRENT_LIST_DIR}/cmake_modules/" ABSOLUTE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -24,8 +22,6 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
   endif()
 endif()
-
-set(INSTALL_HEADERS_DIR include/opensmt)
 
 option(PARTITION_PRETTYPRINT "Term pretty printing shows partitions" OFF)
 option(ITP_DEBUG "Debug interpolation" OFF)
@@ -60,18 +56,6 @@ if (MAXIMALLY_STATIC_BINARY)
     set(PACKAGE_TESTS OFF)
     set(PACKAGE_BENCHMARKS OFF)
 endif(MAXIMALLY_STATIC_BINARY)
-
-find_package(GMP REQUIRED)
-
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
-
-
-include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${GMP_INCLUDE_DIR}
-)
-
 
 if (BUILD_EXECUTABLES AND NOT BUILD_STATIC_LIBS)
   message(FATAL_ERROR "Cannot build executables without also building static libraries")
@@ -117,7 +101,18 @@ if (MATRIX_DEBUG)
     add_definitions(-DENABLE_MATRIX_TRACE)
 endif()
 
-add_subdirectory(${CMAKE_SOURCE_DIR})
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+find_package(GMP REQUIRED)
+
+include_directories(
+    ${GMP_INCLUDE_DIR}
+    ${PROJECT_SOURCE_DIR}/src
+)
+
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 ################# TESTING #############################################
 if(PACKAGE_TESTS)
@@ -135,4 +130,3 @@ if (PACKAGE_BENCHMARKS)
 endif()
 
 #########################################################################
-install(FILES ${CMAKE_SOURCE_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})

@@ -1,3 +1,6 @@
+set(INSTALL_HEADERS_DIR include/opensmt)
+install(FILES ${CMAKE_CURRENT_LIST_DIR}/opensmt2.h DESTINATION ${INSTALL_HEADERS_DIR})
+
 add_subdirectory(proof)
 add_subdirectory(common)
 add_subdirectory(cnfizers)
