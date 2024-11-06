@@ -176,6 +176,8 @@ TEST_F(LRALogicMkTermsTest, test_SumToZero)
 TEST_F(LRALogicMkTermsTest, test_NoNonLinearException)
 {
     EXPECT_NO_THROW(logic.mkTimes(x,y));
+    PTRef two = logic.mkConst("2");
+    EXPECT_NO_THROW(logic.mkTimes(x,two));
 }
 
 TEST_F(LRALogicMkTermsTest, test_ConstantSimplification)

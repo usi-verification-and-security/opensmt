@@ -1,3 +1,0 @@
-terminate called after throwing an instance of 'opensmt::LANonLinearException'
-  what():  Term (+ (div 10 y) (* -1 x)) is non-linear
-Aborted
