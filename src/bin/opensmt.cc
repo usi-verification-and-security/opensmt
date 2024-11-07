@@ -82,13 +82,11 @@ int main( int argc, char * argv[] )
 
     SMTConfig c;
     bool pipe = false;
+    c.parseCMDLine(argc, argv);
     while ((opt = getopt(argc, argv, "hdpir:v")) != -1) {
         switch (opt) {
-            case 'v':
-                c.printVersion( );
-                break;
             case 'h':
-                    c.printHelp( );
+                c.printHelp( );
                 break;
             case 'd':
                 const char* msg;
@@ -103,7 +101,7 @@ int main( int argc, char * argv[] )
             case 'i':
                 c.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
                 break;
-            case 'b':
+            case 'v':
                 c.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
                 break;
             case 'p':

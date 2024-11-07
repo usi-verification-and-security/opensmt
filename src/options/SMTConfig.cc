@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "SMTConfig.h"
 
+#include <util/opensmt_version.h>
 #include <common/InternalException.h>
 
 #include <sstream>
@@ -602,7 +603,7 @@ namespace opensmt {
   SMTConfig::parseCMDLine( int argc
                         , char * argv[ ] )
   {
-    for ( int i = 1 ; i < argc - 1 ; i ++ )
+    for ( int i = 1 ; i < argc ; i ++ )
     {
       const char * buf = argv[ i ];
       // Parsing of configuration options
@@ -619,11 +620,6 @@ namespace opensmt {
       if ( strcmp( buf, "--help" ) == 0
           || strcmp( buf, "-h" ) == 0 )
       {
-        printHelp( );
-      }
-      else
-      {
-        std::cerr << "unrecognized option" << buf << std::endl;
         printHelp( );
       }
     }
@@ -643,7 +639,7 @@ namespace opensmt {
   void SMTConfig::printVersion( )
   {
       char version_string[]
-          = "2.8.0\n";
+          = OPENSMT_FULL_VERSION " - " GIT_COMMIT "\n";
       std::cerr << version_string;
       exit( 1 );
   }
