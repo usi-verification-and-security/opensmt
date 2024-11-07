@@ -290,6 +290,14 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
     if (logic.isNonlin(expr)) {
         auto termStr = logic.pp(expr);
         throw LANonLinearException(termStr.c_str());
+    } else if(logic.isTimes(expr)  || logic.isPlus(expr)) {
+        Pterm const & subterms = logic.getPterm(expr);
+        for(auto subterm: subterms) {
+            if (logic.isNonlin(subterm)) {
+                auto termStr = logic.pp(subterm);
+                throw LANonLinearException(termStr.c_str());
+            }
+        }
     }
     LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){

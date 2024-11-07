@@ -194,27 +194,13 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
 }
 
 bool ArithLogic::isNonlin(PTRef tr) const {
-    if (isPlus(tr)) {
-        Pterm const & term = getPterm(tr);
-        for (auto subterm : term) {
-            if (isNonlin(subterm)) return true;
-        }
-    }
     if (isTimes(tr)) {
         Pterm const & term = getPterm(tr);
-        int vars = 0;
-        if (not isConstant(term[0]) && not isConstant(term[1])) return true;
-        for (auto subterm : term) {
-            if (not isConstant(subterm)) vars++;
-            if (isNonlin(subterm) || vars > 1) return true;
-        }
+        if (term.size() > 2 || (not isConstant(term[0]) && not isConstant(term[1]))) return true;
     }
     if (isRealDiv(tr) || isIntDiv(tr) || isMod(getPterm(tr).symb())) {
         Pterm const & term = getPterm(tr);
         if (not isConstant(term[1])) return true;
-        for (auto subterm : term) {
-            if (isNonlin(subterm)) return true;
-        }
     }
     return false;
 };
@@ -247,10 +233,10 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
 
 pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
-    if (isTimes(term)) {
-        assert(getPterm(term).size() == 2);
+    if (isTimes(term) && getPterm(term).size() == 2) {
         PTRef fac = getPterm(term)[0];
         PTRef var = getPterm(term)[1];
+        if (not isConstant(fac)) { std::swap(fac, var); }
         if (not isConstant(fac)) {
             std::swap(fac, var);
             if (not isConstant(fac)) {
@@ -261,7 +247,7 @@ pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
         assert(isConstant(fac));
         assert(isNumVarLike(var) || isTimes(var));
         return {var, fac};
-    } else if (isNumVarLike(term)) {
+    } else if (isNumVarLike(term) || isTimes(term)) {
         assert(yieldsSortInt(term) or yieldsSortReal(term));
         PTRef var = term;
         PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
@@ -560,7 +546,6 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
         return tr_n;
     }
     if (isTimes(symref)) { // constant * var-like
-        assert(getPterm(tr).size() == 2);
         auto [var, constant] = splitTermToVarAndConst(tr);
         return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
     }
