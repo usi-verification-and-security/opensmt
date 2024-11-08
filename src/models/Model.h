@@ -1,16 +1,20 @@
-//
-// Created by Martin Blicha on 12.06.20.
-//
+/*
+ * Copyright (c) 2020-2024, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
+
+#ifndef OPENSMT_MODEL_H
+#define OPENSMT_MODEL_H
 
 #include <logics/Logic.h>
 #include <pterms/PTRef.h>
 
-#include <algorithm>
 #include <cassert>
+#include <memory>
+#include <span>
 #include <unordered_map>
-
-#ifndef OPENSMT_MODEL_H
-#define OPENSMT_MODEL_H
 
 namespace opensmt {
 class Model {
@@ -25,6 +29,9 @@ public:
     static std::string getFormalArgBaseNameForSymbol(
         Logic const & logic, SymRef sr,
         std::string const & formalArgDefaultPrefix); // Return a string that is not equal to the argument
+
+    [[nodiscard]] std::unique_ptr<Model> extend(std::span<std::pair<PTRef, PTRef>> extension) const;
+    [[nodiscard]] std::unique_ptr<Model> extend(PTRef var, PTRef val) const;
 
 private:
     bool isCorrect(SymbolDefinition const & defs) const;

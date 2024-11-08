@@ -1,11 +1,13 @@
-//
-// Created by Martin Blicha on 12.06.20.
-//
+/*
+ * Copyright (c) 2020-2024, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include "Model.h"
 
-#include <rewriters/Substitutor.h>
-
+#include <algorithm>
 #include <sstream>
 
 namespace opensmt {
@@ -112,4 +114,25 @@ TemplateFunction Model::getDefinition(SymRef sr) const {
                                 logic.getDefaultValuePTRef(logic.getSym(sr).rsort()));
     }
 }
+
+std::unique_ptr<Model> Model::extend(PTRef var, PTRef val) const {
+    std::array tmp{std::make_pair(var, val)};
+    return extend(std::span<std::pair<PTRef, PTRef>>(tmp));
+}
+
+std::unique_ptr<Model> Model::extend(std::span<std::pair<PTRef, PTRef>> extension) const {
+    auto const & base = *this;
+    auto & logic = base.logic;
+    assert(std::ranges::all_of(extension, [&](auto const & varVal) {
+        return logic.isVar(varVal.first) and not base.hasVarVal(varVal.first);
+    }));
+    auto extendedEvaluation = base.varEval;
+    for (auto varVal : extension) {
+        extendedEvaluation.insert(varVal);
+    }
+    auto definitions = base.symDef;
+
+    return std::make_unique<Model>(logic, std::move(extendedEvaluation), std::move(definitions));
+}
+
 } // namespace opensmt

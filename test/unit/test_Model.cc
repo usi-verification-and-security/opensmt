@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 14.06.20.
-//
+/*
+ * Copyright (c) 2020-2024, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include <gtest/gtest.h>
 #include <logics/ArithLogic.h>
@@ -227,7 +230,7 @@ protected:
                 std::make_pair(a, logic.getTerm_true()),
                 std::make_pair(b, logic.getTerm_false())
         };
-        return std::unique_ptr<Model>(new Model(logic, eval));
+        return std::make_unique<Model>(logic, eval);
     }
 };
 
@@ -301,7 +304,18 @@ TEST_F(LAModelTest, test_distinctOperator) {
 
     PTRef distinct = logic.mkDistinct({logic.getTerm_RealZero(), logic.getTerm_RealMinusOne(), x});
     EXPECT_EQ(model->evaluate(distinct), tval);
+}
 
+TEST_F(LAModelTest, test_extendModel) {
+    auto model = getModel();
+    PTRef fresh = logic.mkRealVar("fresh");
+    PTRef five = logic.mkRealConst(5);
+    auto extended = model->extend(fresh, five);
+    EXPECT_EQ(extended->evaluate(x), model->evaluate(x));
+    EXPECT_EQ(extended->evaluate(y), model->evaluate(y));
+    EXPECT_EQ(extended->evaluate(z), model->evaluate(z));
+    EXPECT_NE(model->evaluate(fresh), five);
+    EXPECT_EQ(extended->evaluate(fresh), five);
 }
 
 
