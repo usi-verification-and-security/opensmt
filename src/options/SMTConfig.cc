@@ -639,7 +639,7 @@ namespace opensmt {
   void SMTConfig::printVersion( )
   {
       char version_string[]
-          = OPENSMT_FULL_VERSION " - " GIT_COMMIT "\n";
+          = OPENSMT_GIT_DESCRIPTION "\n";
       std::cerr << version_string;
       exit( 1 );
   }

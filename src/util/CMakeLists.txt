@@ -1,7 +1,6 @@
 add_library(util OBJECT)
 
-set(OPENSMT_FULL_VERSION "\"${OPENSMT_VERSION}\"")
-set(GITHUB_FULL_COMMIT "\"${GIT_COMMIT}\"")
+set(OPENSMT_GIT_DESCRIPTION "\"${OPENSMT_GIT_DESCRIPTION}\"")
 configure_file(opensmt_version.h.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/opensmt_version.h)
 
 target_sources(util
