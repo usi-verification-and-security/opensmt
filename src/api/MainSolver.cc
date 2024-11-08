@@ -343,7 +343,7 @@ sstat MainSolver::check() {
         } catch (std::overflow_error const & error) {
             rval = s_Error;
         } catch (opensmt::LANonLinearException const & error) {
-            printf("%s\n", error.what());
+            reasonUnknown = error.what();
             rval = s_Undef;
         }
         if (rval == s_False) {
