@@ -336,8 +336,8 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
-    pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
-    pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
+    pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum);
+    pair<PTRef, PTRef> splitPolyTerm(PTRef term);
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
@@ -345,7 +345,7 @@ public:
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
     pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
-    void termSort(vec<PTRef> & v) const override;
+    void termSort(vec<PTRef> & v) override;
 
     PTRef removeAuxVars(PTRef) override;
 
@@ -376,7 +376,7 @@ protected:
     pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
-    bool hasNegativeLeadingVariable(PTRef poly) const;
+    bool hasNegativeLeadingVariable(PTRef poly);
 
     std::vector<Number *> numbers;
 
@@ -464,13 +464,13 @@ protected:
 //   (* ite1 ite2) => consider min(ite1.ptref, ite2.ptref)
 class LessThan_deepPTRef {
 public:
-    LessThan_deepPTRef(ArithLogic const & l) : l(l) {}
+    LessThan_deepPTRef(ArithLogic & l) : l(l) {}
 
-    bool operator()(PTRef x_, PTRef y_) const;
+    bool operator()(PTRef x_, PTRef y_);
 
 private:
-    ArithLogic const & l;
-    uint32_t getVarIdFromProduct(PTRef term) const;
+    ArithLogic & l;
+    uint32_t getVarIdFromProduct(PTRef term);
 };
 
 } // namespace opensmt

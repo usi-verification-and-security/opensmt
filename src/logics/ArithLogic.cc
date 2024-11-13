@@ -211,7 +211,7 @@ Number const & ArithLogic::getNumConst(PTRef tr) const {
     return *numbers[id];
 }
 
-pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
+pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) {
     assert(isPlus(sum));
     vec<PTRef> varFactors;
     PTRef constant = PTRef_Undef;
@@ -231,23 +231,31 @@ pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     return {std::move(constantValue), std::move(varFactors)};
 }
 
-pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
+pair<PTRef, PTRef> ArithLogic::splitPolyTerm(PTRef term) {
     assert(isTimes(term) || isNumVarLike(term) || isConstant(term));
-    if (isTimes(term) && getPterm(term).size() == 2) {
-        PTRef fac = getPterm(term)[0];
-        PTRef var = getPterm(term)[1];
-        if (not isConstant(fac)) { std::swap(fac, var); }
-        if (not isConstant(fac)) {
-            std::swap(fac, var);
-            if (not isConstant(fac)) {
-                PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
-                return {term, fac};
+    if (isTimes(term)) {
+        PTRef fac = PTRef_Undef;
+        std::vector<PTRef> vars;
+        for (auto subterm : getPterm(term)) {
+            if (isConstant(subterm)) {
+                assert(fac == PTRef_Undef);
+                fac = subterm;
+                continue;
             }
+            vars.push_back(subterm);
         }
+        assert(vars.size() > 0);
+
+        if (fac == PTRef_Undef) {
+            PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
+            return {term, fac};
+        }
+        auto returnSort = getSortRef(term);
+        PTRef var = vars.size() == 1 ? vars[0] : mkFun(getTimesForSort(returnSort), std::move(vars));
         assert(isConstant(fac));
         assert(isNumVarLike(var) || isTimes(var));
         return {var, fac};
-    } else if (isNumVarLike(term) || isTimes(term)) {
+    } else if (isNumVarLike(term)) {
         assert(yieldsSortInt(term) or yieldsSortReal(term));
         PTRef var = term;
         PTRef fac = yieldsSortInt(term) ? getTerm_IntOne() : getTerm_RealOne();
@@ -261,7 +269,7 @@ pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef ArithLogic::normalizeMul(PTRef mul) {
     assert(isTimes(mul));
-    auto [v, c] = splitTermToVarAndConst(mul);
+    auto [v, c] = splitPolyTerm(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
     } else {
@@ -419,13 +427,13 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
         PTRef rhs = logic.getPterm(eq)[1];
         PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
         if (logic.isLinearFactor(polyTerm)) {
-            auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
+            auto [var, c] = logic.splitPolyTerm(polyTerm);
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
             assert(logic.isPlus(polyTerm) || logic.isTimes(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
-                auto [var, c] = logic.splitTermToVarAndConst(factor);
+                auto [var, c] = logic.splitPolyTerm(factor);
                 auto coeff = logic.getNumConst(c);
                 poly.addTerm(var, std::move(coeff));
             }
@@ -491,19 +499,19 @@ pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const
     return {res, std::move(resAndSubsts.second)};
 }
 
-uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
+uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) {
     assert(l.isTimes(tr));
-    auto [v, c] = l.splitTermToVarAndConst(tr);
+    auto [v, c] = l.splitPolyTerm(tr);
     return v.x;
 }
 
-bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
+bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) {
     uint32_t id_x = l.isTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
     uint32_t id_y = l.isTimes(y_) ? getVarIdFromProduct(y_) : y_.x;
     return id_x < id_y;
 }
 
-void ArithLogic::termSort(vec<PTRef> & v) const {
+void ArithLogic::termSort(vec<PTRef> & v) {
     sort(v, LessThan_deepPTRef(*this));
 }
 
@@ -546,7 +554,7 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
         return tr_n;
     }
     if (isTimes(symref)) { // constant * var-like
-        auto [var, constant] = splitTermToVarAndConst(tr);
+        auto [var, constant] = splitPolyTerm(tr);
         return constant == getMinusOneForSort(getSortRef(symref)) ? var : mkFun(symref, {var, mkNeg(constant)});
     }
     if (isNumVarLike(symref)) {
@@ -619,7 +627,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
     simplified.reserve(args.size());
 
     for (PTRef arg : args) {
-        auto [v, c] = splitTermToVarAndConst(arg);
+        auto [v, c] = splitPolyTerm(arg);
         assert(c != PTRef_Undef);
         assert(isConstant(c));
         if (not varIndices.has(v)) {
@@ -787,7 +795,7 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
         Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
     } else if (isNumVarLike(diff) || isTimes(diff)) {
-        auto [var, constant] = splitTermToVarAndConst(diff);
+        auto [var, constant] = splitPolyTerm(diff);
         return Logic::mkBinaryEq(getZeroForSort(eqSort),
                                  var); // Avoid anything that calls Logic::mkEq as this would create a loop
     } else if (isPlus(diff)) {
@@ -1201,7 +1209,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     std::vector<Number> coeffs;
     coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
-        auto [var, coeff] = splitTermToVarAndConst(factor);
+        auto [var, coeff] = splitPolyTerm(factor);
         assert((ArithLogic::isNumVarLike(var) || ArithLogic::isTimes(var)) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
@@ -1279,7 +1287,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
-    auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
+    auto [var, coeff] = splitPolyTerm(leadingFactor);
     Number normalizationCoeff = abs(getNumConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));
@@ -1340,15 +1348,15 @@ std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) {
     return std::make_pair(term[0], term[1]);
 }
 
-bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) const {
+bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) {
     if (isNumConst(poly) or isNumVarLike(poly)) { return false; }
     if (isTimes(poly)) {
-        auto [var, constant] = splitTermToVarAndConst(poly);
+        auto [var, constant] = splitPolyTerm(poly);
         return isNegative(getNumConst(constant));
     }
     assert(isPlus(poly));
     PTRef leadingTerm = getPterm(poly)[0];
-    auto [var, constant] = splitTermToVarAndConst(leadingTerm);
+    auto [var, constant] = splitPolyTerm(leadingTerm);
     return isNegative(getNumConst(constant));
 }
 } // namespace opensmt

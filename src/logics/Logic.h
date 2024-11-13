@@ -352,7 +352,7 @@ public:
     std::string pp(PTRef tr) const; // A pretty printer
 
     std::string printSym(SymRef sr) const;
-    virtual void termSort(vec<PTRef> & v) const; // { sort(v, LessThan_PTRef()); }
+    virtual void termSort(vec<PTRef> & v); // { sort(v, LessThan_PTRef()); }
 
     void purify(PTRef r, PTRef & p,
                 lbool & sgn) const; //{p = r; sgn = l_True; while (isNot(p)) { sgn = sgn^1; p = getPterm(p)[0]; }}

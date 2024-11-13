@@ -261,7 +261,7 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
     auto poly = std::make_unique<Tableau::Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
+        auto [v,c] = logic.splitPolyTerm(logic.getPterm(term)[i]);
         LVRef var = getLAVar_single(v);
         Real coeff = getNum(c);
         if (negated) {
@@ -309,7 +309,7 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
 
     if (logic.isNumVar(expr) || logic.isTimes(expr)) {
         // Case (1), (2a), and (2b)
-        auto [v,c] = logic.splitTermToVarAndConst(expr);
+        auto [v,c] = logic.splitPolyTerm(expr);
         assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
         x = getLAVar_single(v);
         simplex.newNonbasicVar(x);
@@ -858,7 +858,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         PTRef poly = defConstraint.lhs;
         fillTerms(poly, terms);
         for (PTRef arg : terms) {
-            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto [var, constant] = logic.splitPolyTerm(arg);
             assert(var != PTRef_Undef);
             if (varIndices.find(var) == varIndices.end()) {
                 varIndices.insert({var, columns++});
@@ -877,7 +877,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         PTRef poly = constraints[row].lhs;
         fillTerms(poly, terms);
         for (PTRef arg : terms) {
-            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto [var, constant] = logic.splitPolyTerm(arg);
             auto col = varIndices[var];
             columnPolynomials[col].addTerm(IndexType{row}, logic.getNumConst(constant));
         }
