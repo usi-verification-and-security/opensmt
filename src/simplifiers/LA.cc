@@ -57,7 +57,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
         } else if (logic.isTimes(t)) {
             // If it is times, then one side must be constant, other
             // is enqueued with a new constant
-            auto [var, constant] = logic.splitTermToVarAndConst(t);
+            auto [var, constant] = logic.splitPolyTerm(t);
             Real new_c = logic.getNumConst(constant);
             new_c *= c;
             curr_term.emplace_back(var);

@@ -1545,7 +1545,7 @@ SRef Logic::getArraySort(SRef domain, SRef codomain) {
     return getSort(sym_ArraySort, {domain, codomain});
 }
 
-void Logic::termSort(vec<PTRef> & v) const {
+void Logic::termSort(vec<PTRef> & v) {
     sort(v, std::less<PTRef>{});
 }
 
