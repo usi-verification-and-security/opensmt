@@ -95,6 +95,8 @@ public:
 
     SymRef get_sym_Int_TIMES() const { return sym_Int_TIMES; }
     SymRef get_sym_Real_TIMES() const { return sym_Real_TIMES; }
+    SymRef get_sym_Int_TIMES_NONLIN() const { return sym_Int_TIMES_NONLIN; }
+    SymRef get_sym_Real_TIMES_NONLIN() const { return sym_Real_TIMES_NONLIN; }
     SymRef get_sym_Int_DIV() const { return sym_Int_DIV; }
     SymRef get_sym_Int_MOD() const { return sym_Int_MOD; }
     SymRef get_sym_Real_DIV() const { return sym_Real_DIV; }
@@ -160,12 +162,20 @@ public:
     bool isIntNeg(SymRef sr) const { return sr == sym_Int_NEG; }
     bool isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
 
-    bool isTimes(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
+    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
+    bool isTimesLin(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
+    bool isTimesNonlin(SymRef sr) const { return isIntTimesNonlin(sr) or isRealTimesNonlin(sr); }
     bool isTimes(PTRef tr) const { return isTimes(getPterm(tr).symb()); }
+    bool isTimesLin(PTRef tr) const { return isTimesLin(getPterm(tr).symb()); }
+    bool isTimesNonlin(PTRef tr) const { return isTimesNonlin(getPterm(tr).symb()); }
     bool isIntTimes(PTRef tr) const { return isIntTimes(getPterm(tr).symb()); }
+    bool isIntTimesNonlin(PTRef tr) const { return isIntTimesNonlin(getPterm(tr).symb()); }
     bool isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+    bool isRealTimesNonlin(PTRef tr) const { return isRealTimesNonlin(getPterm(tr).symb()); }
     bool isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
+    bool isIntTimesNonlin(SymRef sr) const { return sr == sym_Int_TIMES_NONLIN; }
     bool isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
+    bool isRealTimesNonlin(SymRef sr) const { return sr == sym_Real_TIMES_NONLIN; }
 
     bool isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
     bool isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
@@ -259,6 +269,7 @@ public:
 
     SymRef getPlusForSort(SRef sort) const;
     SymRef getTimesForSort(SRef sort) const;
+    SymRef getTimesNonlinForSort(SRef sort) const;
     SymRef getMinusForSort(SRef sort) const;
 
     PTRef getZeroForSort(SRef sort) const;
@@ -336,8 +347,8 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
-    pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum);
-    pair<PTRef, PTRef> splitPolyTerm(PTRef term);
+    pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
+    pair<PTRef, PTRef> splitPolyTerm(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
@@ -345,7 +356,7 @@ public:
     lbool arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & substitutions);
 
     pair<lbool, SubstMap> retrieveSubstitutions(vec<PtAsgn> const & facts) override;
-    void termSort(vec<PTRef> & v) override;
+    void termSort(vec<PTRef> & v) const override;
 
     PTRef removeAuxVars(PTRef) override;
 
@@ -376,7 +387,7 @@ protected:
     pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
-    bool hasNegativeLeadingVariable(PTRef poly);
+    bool hasNegativeLeadingVariable(PTRef poly) const;
 
     std::vector<Number *> numbers;
 
@@ -396,6 +407,8 @@ protected:
     static std::string const tk_int_plus;
     static std::string const tk_real_times;
     static std::string const tk_int_times;
+    static std::string const tk_real_times_nonlin;
+    static std::string const tk_int_times_nonlin;
     static std::string const tk_real_div;
     static std::string const tk_int_div;
     static std::string const tk_int_mod;
@@ -422,6 +435,7 @@ protected:
     SymRef sym_Real_MINUS;
     SymRef sym_Real_PLUS;
     SymRef sym_Real_TIMES;
+    SymRef sym_Real_TIMES_NONLIN;
     SymRef sym_Real_DIV;
     SymRef sym_Real_EQ;
     SymRef sym_Real_LEQ;
@@ -442,6 +456,7 @@ protected:
     SymRef sym_Int_MINUS;
     SymRef sym_Int_PLUS;
     SymRef sym_Int_TIMES;
+    SymRef sym_Int_TIMES_NONLIN;
     SymRef sym_Int_DIV;
     SymRef sym_Int_MOD;
     SymRef sym_Int_EQ;
@@ -464,13 +479,13 @@ protected:
 //   (* ite1 ite2) => consider min(ite1.ptref, ite2.ptref)
 class LessThan_deepPTRef {
 public:
-    LessThan_deepPTRef(ArithLogic & l) : l(l) {}
+    LessThan_deepPTRef(ArithLogic const & l) : l(l) {}
 
-    bool operator()(PTRef x_, PTRef y_);
+    bool operator()(PTRef x_, PTRef y_) const;
 
 private:
-    ArithLogic & l;
-    uint32_t getVarIdFromProduct(PTRef term);
+    ArithLogic const & l;
+    uint32_t getVarIdFromProduct(PTRef term) const;
 };
 
 } // namespace opensmt
