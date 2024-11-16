@@ -543,6 +543,7 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
 }
 
 PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
+    assert(sort == sort_REAL or c.isInteger());
     std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer
                                    // inside temporary object -> crash.
     char const * val = str.c_str();
