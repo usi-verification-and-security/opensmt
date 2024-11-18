@@ -50,7 +50,9 @@ SymRef SymStore::newSymb(char const * fname, SRef rsort, vec<SRef> const & args,
             if (symbol.rsort() == rsort and symbol.nargs() == args.size_() and
                 symbol.commutes() == symConfig.commutes and symbol.noScoping() == symConfig.noScoping and
                 symbol.isInterpreted() == symConfig.isInterpreted) {
-                if (std::equal(symbol.begin(), symbol.end(), args.begin())) { return symref; }
+                if (std::equal(symbol.begin(), symbol.end(), args.begin()) && (strcmp(fname, "*") != 0)) {
+                    return symref;
+                }
             }
         }
     }
