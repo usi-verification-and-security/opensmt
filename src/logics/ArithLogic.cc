@@ -75,7 +75,6 @@ std::string const ArithLogic::tk_int_neg = "-";
 std::string const ArithLogic::tk_int_minus = "-";
 std::string const ArithLogic::tk_int_plus = "+";
 std::string const ArithLogic::tk_int_times = "*";
-std::string const ArithLogic::tk_int_times_nonlin = "mul";
 std::string const ArithLogic::tk_int_div = "div";
 std::string const ArithLogic::tk_int_mod = "mod";
 std::string const ArithLogic::tk_int_lt = "<";
@@ -91,7 +90,6 @@ std::string const ArithLogic::tk_real_neg = "-";
 std::string const ArithLogic::tk_real_minus = "-";
 std::string const ArithLogic::tk_real_plus = "+";
 std::string const ArithLogic::tk_real_times = "*";
-std::string const ArithLogic::tk_real_times_nonlin = "mul";
 std::string const ArithLogic::tk_real_div = "/";
 std::string const ArithLogic::tk_real_lt = "<";
 std::string const ArithLogic::tk_real_leq = "<=";
@@ -117,7 +115,7 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_TIMES_NONLIN(
-          declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times_nonlin, sort_REAL, {sort_REAL, sort_REAL})),
+          declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_EQ(sortToEquality[sort_REAL]),
       sym_Real_LEQ(declareFun_NoScoping_Chainable(tk_real_leq, sort_BOOL, {sort_REAL, sort_REAL})),
@@ -138,8 +136,7 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT})),
-      sym_Int_TIMES_NONLIN(
-          declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times_nonlin, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_TIMES_NONLIN(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT})),
       sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT})),
       sym_Int_MOD(declareFun_NoScoping(tk_int_mod, sort_INT, {sort_INT, sort_INT})),
       sym_Int_EQ(sortToEquality[sort_INT]),

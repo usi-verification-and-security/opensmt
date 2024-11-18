@@ -407,8 +407,6 @@ protected:
     static std::string const tk_int_plus;
     static std::string const tk_real_times;
     static std::string const tk_int_times;
-    static std::string const tk_real_times_nonlin;
-    static std::string const tk_int_times_nonlin;
     static std::string const tk_real_div;
     static std::string const tk_int_div;
     static std::string const tk_int_mod;
