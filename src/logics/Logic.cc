@@ -728,11 +728,11 @@ PTRef Logic::mkSelect(vec<PTRef> && args) {
 }
 
 SymRef Logic::declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args,
-                         SymbolConfig const & symbolConfig) {
+                         SymbolConfig const & symbolConfig, bool duplicate) {
     assert(rsort != SRef_Undef);
     assert(std::find(args.begin(), args.end(), SRef_Undef) == args.end());
 
-    SymRef sr = sym_store.newSymb(fname.c_str(), rsort, args, symbolConfig);
+    SymRef sr = sym_store.newSymb(fname.c_str(), rsort, args, symbolConfig, duplicate);
     return sr;
 }
 

@@ -40,7 +40,8 @@ public:
     SymStore(SymStore &&) = default;
     SymStore & operator=(SymStore &&) = default;
     // Constructs a new symbol.
-    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig);
+    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
+                   bool ignoreDuplicates = false);
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args) {
         return newSymb(fname, rsort, args, SymConf::Default);
     }
