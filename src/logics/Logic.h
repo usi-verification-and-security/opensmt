@@ -164,7 +164,8 @@ public:
     virtual PTRef mkConst(char const *);
     virtual PTRef mkConst(SRef, char const *);
 
-    SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig);
+    SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig,
+                      bool duplicate = false);
     SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args) {
         return declareFun(fname, rsort, args, SymConf::Default);
     }
@@ -183,8 +184,9 @@ public:
     SymRef declareFun_NoScoping_Pairwise(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::NoScopingPairwise);
     }
-    SymRef declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) {
-        return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
+    SymRef declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args,
+                                                      bool duplicate = false) {
+        return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc, duplicate);
     }
     SymRef declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::CommutativeNoScopingChainable);

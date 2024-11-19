@@ -39,20 +39,19 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
+SymRef SymStore::newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
+                         bool duplicate) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto * symrefs = getRefOrNull(fname);
 
-    if (symrefs) {
+    if (symrefs && !duplicate) {
         vec<SymRef> const & trs = *symrefs;
         for (SymRef symref : trs) {
             auto const & symbol = ta[symref];
             if (symbol.rsort() == rsort and symbol.nargs() == args.size_() and
                 symbol.commutes() == symConfig.commutes and symbol.noScoping() == symConfig.noScoping and
                 symbol.isInterpreted() == symConfig.isInterpreted) {
-                if (std::equal(symbol.begin(), symbol.end(), args.begin()) && (strcmp(fname, "*") != 0)) {
-                    return symref;
-                }
+                if (std::equal(symbol.begin(), symbol.end(), args.begin())) { return symref; }
             }
         }
     }
