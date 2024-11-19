@@ -185,8 +185,8 @@ public:
         return declareFun(s, rsort, args, SymConf::NoScopingPairwise);
     }
     SymRef declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args,
-                                                      bool duplicate = false) {
-        return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc, duplicate);
+                                                      bool subSymb = false) {
+        return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc, subSymb);
     }
     SymRef declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::CommutativeNoScopingChainable);
