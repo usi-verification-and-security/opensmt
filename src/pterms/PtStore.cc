@@ -29,7 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <common/InternalException.h>
 
 #include <algorithm>
-#include <cstring>
+#include <sstream>
 
 namespace opensmt {
 int const PtStore::ptstore_vec_idx = 1;
@@ -153,10 +153,8 @@ SymRef PtStore::lookupSymbol(char const * s, vec<PTRef> const & args, SymbolMatc
         } else {
             return candidates[0];
         }
-    } else if (strcmp(s, "*") == 0) {
-        assert(candidates.size() == 2);
-        return candidates[0];
     }
+
     assert(candidates.size() > 1);
     if (sort == SRef_Undef) { throw ApiException("Ambiguous symbol: `" + std::string(s) + "'"); }
 
