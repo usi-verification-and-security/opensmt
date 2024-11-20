@@ -91,7 +91,7 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimes(sum) || logic.isMod(logic.getPterm(sum).symb()) ||
+    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimesDefined(sum) || logic.isMod(logic.getPterm(sum).symb()) ||
            logic.isRealDiv(sum) || logic.isIntDiv(sum));
     (void) cons; (void)sum;
 }
@@ -290,7 +290,7 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
     if (logic.isNonlin(expr)) {
         auto termStr = logic.pp(expr);
         throw LANonLinearException(termStr.c_str());
-    } else if(logic.isTimes(expr)  || logic.isPlus(expr)) {
+    } else if(logic.isTimesLin(expr)  || logic.isPlus(expr)) {
         Pterm const & subterms = logic.getPterm(expr);
         for(auto subterm: subterms) {
             if (logic.isNonlin(subterm)) {
@@ -307,7 +307,7 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
         }
     }
 
-    if (logic.isNumVar(expr) || logic.isTimes(expr)) {
+    if (logic.isNumVar(expr) || logic.isTimesLin(expr)) {
         // Case (1), (2a), and (2b)
         auto [v,c] = logic.splitPolyTerm(expr);
         assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
