@@ -95,6 +95,8 @@ public:
 
     SymRef get_sym_Int_TIMES() const { return sym_Int_TIMES; }
     SymRef get_sym_Real_TIMES() const { return sym_Real_TIMES; }
+    SymRef get_sym_Int_TIMES_LIN() const { return sym_Int_TIMES_LIN; }
+    SymRef get_sym_Real_TIMES_LIN() const { return sym_Real_TIMES_LIN; }
     SymRef get_sym_Int_TIMES_NONLIN() const { return sym_Int_TIMES_NONLIN; }
     SymRef get_sym_Real_TIMES_NONLIN() const { return sym_Real_TIMES_NONLIN; }
     SymRef get_sym_Int_DIV() const { return sym_Int_DIV; }
@@ -162,20 +164,25 @@ public:
     bool isIntNeg(SymRef sr) const { return sr == sym_Int_NEG; }
     bool isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
 
-    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
-    bool isTimesLin(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
+    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr) or isTimesUnknown(sr); };
+    bool isTimesDefined(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
+    bool isTimesLin(SymRef sr) const { return isIntTimesLin(sr) or isRealTimesLin(sr); }
+    bool isTimesUnknown(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
     bool isTimesNonlin(SymRef sr) const { return isIntTimesNonlin(sr) or isRealTimesNonlin(sr); }
     bool isTimes(PTRef tr) const { return isTimes(getPterm(tr).symb()); }
+    bool isTimesDefined(PTRef tr) const { return isTimesDefined(getPterm(tr).symb()); };
     bool isTimesLin(PTRef tr) const { return isTimesLin(getPterm(tr).symb()); }
     bool isTimesNonlin(PTRef tr) const { return isTimesNonlin(getPterm(tr).symb()); }
-    bool isIntTimes(PTRef tr) const { return isIntTimes(getPterm(tr).symb()); }
+    bool isIntTimesLin(PTRef tr) const { return isIntTimesLin(getPterm(tr).symb()); }
     bool isIntTimesNonlin(PTRef tr) const { return isIntTimesNonlin(getPterm(tr).symb()); }
-    bool isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+    bool isRealTimesLin(PTRef tr) const { return isRealTimesLin(getPterm(tr).symb()); }
     bool isRealTimesNonlin(PTRef tr) const { return isRealTimesNonlin(getPterm(tr).symb()); }
-    bool isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
+    bool isIntTimesLin(SymRef sr) const { return sr == sym_Int_TIMES_LIN; }
     bool isIntTimesNonlin(SymRef sr) const { return sr == sym_Int_TIMES_NONLIN; }
-    bool isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
+    bool isRealTimesLin(SymRef sr) const { return sr == sym_Real_TIMES_LIN; }
     bool isRealTimesNonlin(SymRef sr) const { return sr == sym_Real_TIMES_NONLIN; }
+    bool isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
+    bool isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
 
     bool isRealDiv(PTRef tr) const { return isRealDiv(getPterm(tr).symb()); }
     bool isRealDiv(SymRef sr) const { return sr == sym_Real_DIV; }
@@ -268,7 +275,7 @@ public:
     }
 
     SymRef getPlusForSort(SRef sort) const;
-    SymRef getTimesForSort(SRef sort) const;
+    SymRef getTimesLinForSort(SRef sort) const;
     SymRef getTimesNonlinForSort(SRef sort) const;
     SymRef getMinusForSort(SRef sort) const;
 
@@ -433,6 +440,7 @@ protected:
     SymRef sym_Real_MINUS;
     SymRef sym_Real_PLUS;
     SymRef sym_Real_TIMES;
+    SymRef sym_Real_TIMES_LIN;
     SymRef sym_Real_TIMES_NONLIN;
     SymRef sym_Real_DIV;
     SymRef sym_Real_EQ;
@@ -454,6 +462,7 @@ protected:
     SymRef sym_Int_MINUS;
     SymRef sym_Int_PLUS;
     SymRef sym_Int_TIMES;
+    SymRef sym_Int_TIMES_LIN;
     SymRef sym_Int_TIMES_NONLIN;
     SymRef sym_Int_DIV;
     SymRef sym_Int_MOD;

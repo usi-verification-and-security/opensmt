@@ -114,6 +114,8 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Real_MINUS(declareFun_NoScoping_LeftAssoc(tk_real_minus, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_plus, sort_REAL, {sort_REAL, sort_REAL})),
       sym_Real_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL})),
+      sym_Real_TIMES_LIN(
+          declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL}, true)),
       sym_Real_TIMES_NONLIN(
           declareFun_Commutative_NoScoping_LeftAssoc(tk_real_times, sort_REAL, {sort_REAL, sort_REAL}, true)),
       sym_Real_DIV(declareFun_NoScoping_LeftAssoc(tk_real_div, sort_REAL, {sort_REAL, sort_REAL})),
@@ -136,6 +138,7 @@ ArithLogic::ArithLogic(Logic_t type)
       sym_Int_MINUS(declareFun_NoScoping_LeftAssoc(tk_int_minus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_PLUS(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_plus, sort_INT, {sort_INT, sort_INT})),
       sym_Int_TIMES(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT})),
+      sym_Int_TIMES_LIN(declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT}, true)),
       sym_Int_TIMES_NONLIN(
           declareFun_Commutative_NoScoping_LeftAssoc(tk_int_times, sort_INT, {sort_INT, sort_INT}, true)),
       sym_Int_DIV(declareFun_NoScoping_LeftAssoc(tk_int_div, sort_INT, {sort_INT, sort_INT})),
@@ -153,9 +156,9 @@ SymRef ArithLogic::getPlusForSort(SRef sort) const {
     return sort == getSort_int() ? get_sym_Int_PLUS() : get_sym_Real_PLUS();
 }
 
-SymRef ArithLogic::getTimesForSort(SRef sort) const {
+SymRef ArithLogic::getTimesLinForSort(SRef sort) const {
     assert(sort == getSort_int() or sort == getSort_real());
-    return sort == getSort_int() ? get_sym_Int_TIMES() : get_sym_Real_TIMES();
+    return sort == getSort_int() ? get_sym_Int_TIMES_LIN() : get_sym_Real_TIMES_LIN();
 }
 
 SymRef ArithLogic::getTimesNonlinForSort(SRef sort) const {
@@ -185,7 +188,7 @@ PTRef ArithLogic::getMinusOneForSort(SRef sort) const {
 
 bool ArithLogic::isLinearFactor(PTRef tr) const {
     if (isNumConst(tr) || isNumVarLike(tr)) { return true; }
-    if (isTimes(tr)) {
+    if (isTimesLin(tr)) {
         Pterm const & term = getPterm(tr);
         return term.size() == 2 &&
                ((isNumConst(term[0]) && (isNumVarLike(term[1]))) || (isNumConst(term[1]) && (isNumVarLike(term[0]))));
@@ -203,10 +206,7 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
 }
 
 bool ArithLogic::isNonlin(PTRef tr) const {
-    if (isTimes(tr)) {
-        Pterm const & term = getPterm(tr);
-        if (term.size() > 2 || (not isConstant(term[0]) && not isConstant(term[1]))) return true;
-    }
+    if (isTimesNonlin(tr)) { return true; }
     if (isRealDiv(tr) || isIntDiv(tr) || isMod(getPterm(tr).symb())) {
         Pterm const & term = getPterm(tr);
         if (not isConstant(term[1])) return true;
@@ -266,7 +266,7 @@ pair<PTRef, PTRef> ArithLogic::splitPolyTerm(PTRef term) const {
 
 // Normalize a product of the form (* a v) to either v or (* -1 v)
 PTRef ArithLogic::normalizeMul(PTRef mul) {
-    assert(isTimes(mul));
+    assert(isTimesDefined(mul));
     auto [v, c] = splitPolyTerm(mul);
     if (getNumConst(c) < 0) {
         return mkNeg(v);
@@ -429,7 +429,7 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
-            assert(logic.isPlus(polyTerm) || logic.isTimes(polyTerm));
+            assert(logic.isPlus(polyTerm) || logic.isTimesDefined(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
                 auto [var, c] = logic.splitPolyTerm(factor);
                 auto coeff = logic.getNumConst(c);
@@ -498,14 +498,14 @@ pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const
 }
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
-    assert(l.isTimes(tr));
+    assert(l.isTimesDefined(tr));
     auto [v, c] = l.splitPolyTerm(tr);
     return v.x;
 }
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
-    uint32_t id_x = l.isTimes(x_) ? getVarIdFromProduct(x_) : x_.x;
-    uint32_t id_y = l.isTimes(y_) ? getVarIdFromProduct(y_) : y_.x;
+    uint32_t id_x = l.isTimesDefined(x_) ? getVarIdFromProduct(x_) : x_.x;
+    uint32_t id_y = l.isTimesDefined(y_) ? getVarIdFromProduct(y_) : y_.x;
     return id_x < id_y;
 }
 
@@ -522,7 +522,7 @@ bool ArithLogic::isBuiltinFunction(SymRef const sr) const {
 bool ArithLogic::isNumTerm(PTRef tr) const {
     if (isNumVarLike(tr)) return true;
     Pterm const & t = getPterm(tr);
-    if (t.size() == 2 && isTimes(tr))
+    if (t.size() == 2 && isTimesLin(tr))
         return (isNumVarLike(t[0]) && isConstant(t[1])) || (isNumVarLike(t[1]) && isConstant(t[0]));
     else if (t.size() == 0)
         return isNumVar(tr) || isConstant(tr);
@@ -558,11 +558,11 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
     }
     if (isTimesNonlin(symref)) {
         SRef returnSort = getSortRef(tr);
-        return mkFun(getTimesForSort(returnSort), {tr, getMinusOneForSort(returnSort)});
+        return mkFun(getTimesLinForSort(returnSort), {tr, getMinusOneForSort(returnSort)});
     }
     if (isNumVarLike(symref)) {
         auto sortRef = getSortRef(symref);
-        return mkFun(getTimesForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
+        return mkFun(getTimesLinForSort(sortRef), {tr, getMinusOneForSort(sortRef)});
     }
     // MB: All cases should be covered
     throw InternalException("Failed attempt to negate a term");
@@ -661,7 +661,7 @@ PTRef ArithLogic::mkPlus(vec<PTRef> && args) {
             continue;
         }
         // default case, variable and constant (cannot be simplified)
-        PTRef term = mkFun(getTimesForSort(returnSort), {coeffTerm, var});
+        PTRef term = mkFun(getTimesLinForSort(returnSort), {coeffTerm, var});
         flattened_args.push(term);
     }
     if (flattened_args.size() == 0) return getZeroForSort(returnSort);
@@ -695,7 +695,7 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     SimplifyConstTimes simp(*this);
     args.clear();
     SymRef s_new;
-    simp.simplify(getTimesForSort(returnSort), flatten_args, s_new, args);
+    simp.simplify(getTimesLinForSort(returnSort), flatten_args, s_new, args);
     if (!isTimes(s_new)) return mkFun(s_new, std::move(args));
     PTRef coef = PTRef_Undef;
     std::vector<PTRef> vars;
@@ -748,8 +748,8 @@ PTRef ArithLogic::mkBinaryLeq(PTRef lhs, PTRef rhs) {
         return v.sign() < 0 ? getTerm_false() : getTerm_true();
     }
     if (isNumVarLike(sum_tmp) ||
-        isTimes(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
-        sum_tmp = isTimes(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
+        isTimesDefined(sum_tmp)) { // "sum_tmp = c * v", just scale to "v" or "-v" without changing the sign
+        sum_tmp = isTimesDefined(sum_tmp) ? normalizeMul(sum_tmp) : sum_tmp;
         return mkFun(getLeqForSort(argSort), {getZeroForSort(argSort), sum_tmp});
     } else if (isPlus(sum_tmp)) {
         // Normalize the sum
@@ -820,7 +820,7 @@ PTRef ArithLogic::mkBinaryEq(PTRef lhs, PTRef rhs) {
     if (isConstant(diff)) {
         Number const & v = this->getNumConst(diff);
         return v.isZero() ? getTerm_true() : getTerm_false();
-    } else if (isNumVarLike(diff) || isTimes(diff)) {
+    } else if (isNumVarLike(diff) || isTimesDefined(diff)) {
         auto [var, constant] = splitPolyTerm(diff);
         return Logic::mkBinaryEq(getZeroForSort(eqSort),
                                  var); // Avoid anything that calls Logic::mkEq as this would create a loop
@@ -1017,7 +1017,7 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
     }
     //    // A single argument for the operator, and the operator is identity
     //    // in that case
-    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimes(s_new))) {
+    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimesDefined(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();
@@ -1236,7 +1236,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
         auto [var, coeff] = splitPolyTerm(factor);
-        assert((ArithLogic::isNumVarLike(var) || ArithLogic::isTimes(var)) and isNumConst(coeff));
+        assert((ArithLogic::isNumVarLike(var) || ArithLogic::isTimesDefined(var)) and isNumConst(coeff));
         vars.push(var);
         coeffs.push_back(getNumConst(coeff));
     }
@@ -1376,7 +1376,7 @@ std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) {
 
 bool ArithLogic::hasNegativeLeadingVariable(PTRef poly) const {
     if (isNumConst(poly) or isNumVarLike(poly)) { return false; }
-    if (isTimes(poly)) {
+    if (isTimesDefined(poly)) {
         auto [var, constant] = splitPolyTerm(poly);
         return isNegative(getNumConst(constant));
     }
