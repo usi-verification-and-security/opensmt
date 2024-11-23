@@ -776,7 +776,7 @@ PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const 
     auto itpAlgorithm = config.getLRAInterpolationAlgorithm();
     if (itpAlgorithm == itp_lra_alg_strong) { return interpolator.getFarkasInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_weak) { return interpolator.getDualFarkasInterpolant(); }
-    else if (itpAlgorithm == itp_lra_alg_factor) { return interpolator.getFlexibleInterpolant(Real(config.getLRAStrengthFactor())); }
+    else if (itpAlgorithm == itp_lra_alg_factor) { assert(not logic.hasIntegers()); return interpolator.getFlexibleInterpolant(Real(config.getLRAStrengthFactor())); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_strong) { return interpolator.getDecomposedInterpolant(); }
     else if (itpAlgorithm == itp_lra_alg_decomposing_weak) { return interpolator.getDualDecomposedInterpolant(); }
     else {
