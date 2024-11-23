@@ -654,8 +654,8 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(Real strengthFactor) {
     auto sidesA = extractSides(itpA);
     auto sidesB = extractSides(itpB);
     assert(sidesA.first == logic.mkNeg(sidesB.first));
-    Real c1 = logic.getNumConst(sidesA.second);
-    Real c2 = logic.getNumConst(sidesB.second);
+    Real c1 = logic.getRealConst(sidesA.second);
+    Real c2 = logic.getRealConst(sidesB.second);
     Real lowerBound = c1;
     Real upperBound = -c2;
     Real strengthDiff = upperBound - lowerBound;

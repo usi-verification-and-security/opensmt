@@ -5,10 +5,20 @@
 #ifndef OPENSMT_REAL_H
 #define OPENSMT_REAL_H
 
-#include "Number.h"
+#define FAST_RATIONALS
+
+#ifdef FAST_RATIONALS
+#include "FastRational.h"
+#else
+#include <gmpxx.h>
+#endif
 
 namespace opensmt {
-typedef Number Real;
-}
+#ifdef FAST_RATIONALS
+using Real = FastRational;
+#else
+using Real = mpq_class;
+#endif
+} // namespace opensmt
 
 #endif // OPENSMT_REAL_H

@@ -50,8 +50,8 @@ char * Delta::printValue() const {
     char * out;
     int written = -1;
     written = asprintf(&out, "(%s | %s)",
-                       r.get_str().c_str(),
-                       d.get_str().c_str());
+                       r.toString().c_str(),
+                       d.toString().c_str());
     assert(written >= 0);
     (void) written;
     return out;

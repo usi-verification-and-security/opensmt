@@ -47,7 +47,7 @@ typename STPSolver<T>::ParsedPTRef STPSolver<T>::parseRef(PTRef ref) const {
 
         assert(logic.isTimes(mul));
         Pterm &mulPt = logic.getPterm(mul);
-        assert(logic.isNumConst(mulPt[0]) && logic.getNumConst(mulPt[0]) == -1);
+        assert(logic.isNumConst(mulPt[0]) && isNegative(logic.getNumConst(mulPt[0])) && abs(logic.getNumConst(mulPt[0])).isOne());
         y = mulPt[1];
         assert(logic.isNumVar(y));
     }

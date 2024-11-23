@@ -38,13 +38,13 @@ LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
     LABoundRef br_neg;
 
     if (sum_term_is_negated) {
-        Real constr_neg = -logic.getNumConst(const_tr);
+        auto constr_neg = -logic.getNumConst(const_tr).makeReal();
         bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr_neg, false));
         br_pos = bi.ub;
         br_neg = bi.lb;
     }
     else {
-        const Real& constr = logic.getNumConst(const_tr);
+        auto constr = logic.getNumConst(const_tr).makeReal();
         bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr, true));
         br_pos = bi.lb;
         br_neg = bi.ub;
@@ -219,10 +219,6 @@ void LASolver::setBound(PTRef leq_tr)
     addBound(leq_tr);
 }
 
-Number LASolver::getNum(PTRef r) {
-    return logic.getNumConst(r);
-}
-
 void LASolver::notifyVar(LVRef v) {
     assert(logic.isNumVar(getVarPTRef(v)));
     if (logic.yieldsSortInt(getVarPTRef(v))) {
@@ -264,7 +260,7 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
         auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
         LVRef var = getLAVar_single(v);
-        Real coeff = getNum(c);
+        Real coeff = logic.getNumConst(c).makeReal();
         if (negated) {
             coeff.negate();
         }
@@ -315,7 +311,7 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
             notifyVar(term.var);
             simplex.nonbasicVar(term.var);
             // MB: Notify must be called before the query isIntVar!
-            isInt &= isIntVar(term.var) && term.coeff.isInteger();
+            isInt &= isIntVar(term.var) && term.coeff.isIntegerValue();
         }
         simplex.newRow(x, std::move(poly));
         if (isInt) {
@@ -769,7 +765,7 @@ TRes LASolver::check(bool complete) {
 bool LASolver::isModelInteger(LVRef v) const
 {
     Delta val = simplex.getValuation(v);
-    return !( val.hasDelta() || !val.R().isInteger() );
+    return !( val.hasDelta() || !val.R().isIntegerValue() );
 }
 
 PTRef LASolver::interpolateUsingEngine(FarkasInterpolator & interpolator) const {
@@ -857,7 +853,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
 
     uint32_t rows = constraints.size();
     SparseColMatrix matrixA(RowCount{rows}, ColumnCount{columns});
-    std::vector<Number> rhs(rows);
+    std::vector<Real> rhs(rows);
     std::vector<SparseColMatrix::ColumnPolynomial> columnPolynomials(columns);
 
     // Second pass to build the actual matrix
@@ -868,7 +864,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         for (PTRef arg : terms) {
             auto [var, constant] = logic.splitTermToVarAndConst(arg);
             auto col = varIndices[var];
-            columnPolynomials[col].addTerm(IndexType{row}, logic.getNumConst(constant));
+            columnPolynomials[col].addTerm(IndexType{row}, logic.getRealConst(constant));
         }
     }
     for (uint32_t i = 0; i < columnPolynomials.size(); ++i) {
@@ -924,7 +920,7 @@ TRes LASolver::cutFromProof() {
         auto const & val = isOnLower ? simplex.Lb(var) : simplex.Ub(var);
         assert(not val.hasDelta());
         auto const & rhs = val.R();
-        assert(rhs.isInteger());
+        assert(rhs.isIntegerValue());
         if (isOnLower and isOnUpper) {
             constraints.insert(constraints.begin(), DefiningConstraint{term, rhs});
         } else {
@@ -955,7 +951,7 @@ TRes LASolver::cutFromProof() {
 vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordered_set<PTRef, PTRefHash> const & knownEqualities) {
     struct DeltaHash {
         std::size_t operator()(Delta const & d) const {
-            NumberHash hasher;
+            Real::Hash hasher;
             return (hasher(d.R()) ^ hasher(d.D()));
         }
     };
@@ -964,7 +960,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
     std::unordered_map<Delta, vec<PTRef>, DeltaHash> eqClasses;
     for (PTRef var : vars) {
         if (logic.isNumConst(var)) {
-            eqClasses[logic.getNumConst(var)].push(var);
+            eqClasses[logic.getRealConst(var)].push(var);
         } else {
             assert(logic.isNumVar(var));
             if (not laVarMapper.hasVar(var)) { // LASolver does not have any constraints on this LA var
@@ -1006,7 +1002,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
                 if (isNonPositive(diff.R()) and isNegative(diff.D())) { continue; }
                 auto ratio = diff.R() / diff.D();
                 assert(isNegative(ratio));
-                if (ratio < Number(-1)) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
+                if (ratio < Real{-1}) { continue; } // MB: ratio is -delta; hence -1 <= ratio < 0
 
                 // They could be equal for the right value of delta, add equalities for cross-product
                 vec<PTRef> const & varsOfFirstVal = eqClasses.at(val);

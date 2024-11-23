@@ -139,9 +139,9 @@ TEST_F(LRALogicMkTermsTest, test_mkNumNeg)
     PTRef minus = logic.mkNeg(one);
     ASSERT_TRUE(logic.isConstant(minus));
     ASSERT_TRUE(logic.isNumConst(minus));
-    ASSERT_LT(logic.getNumConst(minus), 0);
+    ASSERT_LT(logic.getRealConst(minus), 0);
     ASSERT_EQ(logic.mkNeg(minus), one);
-    ASSERT_EQ(logic.getNumConst(minus), -1);
+    ASSERT_EQ(logic.getRealConst(minus), -1);
 }
 
 TEST_F(LRALogicMkTermsTest, test_Inequality_Var_WithCoeff)
@@ -182,7 +182,8 @@ TEST_F(LRALogicMkTermsTest, test_NonLinearException)
 
 TEST_F(LRALogicMkTermsTest, test_ConstantSimplification)
 {
-    PTRef two = logic.mkConst("2");
+    //- PTRef two = logic.mkConst(logic.getSort_real(), "2");
+    PTRef two = logic.mkRealConst(2);
     EXPECT_EQ(logic.mkConst("1/2"), logic.mkRealDiv(logic.getTerm_RealOne(), two));
     EXPECT_EQ(two, logic.mkRealDiv(logic.mkConst("4"), two));
 

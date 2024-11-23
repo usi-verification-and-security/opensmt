@@ -15,8 +15,8 @@ public:
 
 template<>
 SafeInt Converter<SafeInt>::getValue(Number const & val) {
-    assert(val.isInteger());
-    return SafeInt(static_cast<ptrdiff_t>(val.get_d()));
+    assert(castInteger(val).tryGetValue());
+    return SafeInt(static_cast<ptrdiff_t>(*castInteger(val).tryGetValue()));
 }
 
 template<>

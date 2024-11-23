@@ -41,13 +41,13 @@ LABoundStore::printBound(LABoundRef br) const
     Real const & s = d.D();
     BoundT type = ba[br].getType();
     if ((type == bound_l) && (s == 0))
-        written = asprintf(&str_out, "%s <= %s", r.get_str().c_str(), v_str);
+        written = asprintf(&str_out, "%s <= %s", r.toString().c_str(), v_str);
     if ((type == bound_l) && (s != 0))
-        written = asprintf(&str_out, "%s < %s", r.get_str().c_str(), v_str);
+        written = asprintf(&str_out, "%s < %s", r.toString().c_str(), v_str);
     if ((type == bound_u) && (s == 0))
-        written = asprintf(&str_out, "%s <= %s", v_str, r.get_str().c_str());
+        written = asprintf(&str_out, "%s <= %s", v_str, r.toString().c_str());
     if ((type == bound_u) && (s != 0))
-        written = asprintf(&str_out, "%s < %s", v_str, r.get_str().c_str());
+        written = asprintf(&str_out, "%s < %s", v_str, r.toString().c_str());
 
     assert(written >= 0); (void)written;
     free(v_str);
