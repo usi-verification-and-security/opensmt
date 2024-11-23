@@ -351,6 +351,45 @@ namespace {
         return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
     }
 
+    PTRef polyToPTRefSubstitution(ArithLogic & logic, PTRef var, poly_t & poly) {
+        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
+            if (std::ranges::any_of(poly, [&logic](auto const & term) {
+                    return term.var != PTRef_Undef and not logic.isVar(term.var);
+                })) {
+                return PTRef_Undef;
+            }
+        }
+
+        bool const hasInts = logic.hasIntegers();
+
+        {
+            poly_t polyCp;
+            poly_t & polyRef = [&]() -> auto & {
+                if (not hasInts) { return poly; }
+                polyCp = poly;
+                return polyCp;
+            }();
+            // non-const operations on poly!
+            auto coeff = polyRef.removeVar(var);
+            coeff.negate();
+            if (not coeff.isOne()) {
+                polyRef.divideBy(coeff);
+                assert(hasInts or not logic.yieldsSortInt(var));
+                if (hasInts and logic.yieldsSortInt(var)) {
+                    if (not std::ranges::all_of(polyRef, [](auto const & term) { return term.coeff.isInteger(); })) {
+                        return PTRef_Undef;
+                    }
+                }
+            }
+
+            if (hasInts) { poly = std::move(polyCp); }
+        }
+
+        PTRef val = polyToPTRef(logic, poly);
+        assert(val != PTRef_Undef);
+        return val;
+    }
+
     Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
         // MB: We enforce order to ensure that later-created terms are processed first.
         //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
@@ -369,20 +408,11 @@ namespace {
         for (auto const & [var, polyIndices] : varToPolyIndices) {
             if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
             auto index = polyIndices[0];
-            if (processedIndices.find(index) != processedIndices.end()) { continue; }
+            if (processedIndices.contains(index)) { continue; }
             auto & poly = zeroPolynomials[index];
-            if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
-                if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
-                        return term.var != PTRef_Undef and not logic.isVar(term.var);
-                    })) {
-                    continue;
-                }
-            }
-            auto coeff = poly.removeVar(var);
-            coeff.negate();
-            if (not coeff.isOne()) { poly.divideBy(coeff); }
-            PTRef val = polyToPTRef(logic, poly);
-            substitutions.insert(var, val);
+            PTRef sub = polyToPTRefSubstitution(logic, var, poly);
+            if (sub == PTRef_Undef) { continue; }
+            substitutions.insert(var, sub);
             processedIndices.insert(index);
         }
         // Remove processed polynomials
@@ -443,20 +473,12 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
             // Already have a substitution for this variable; skip this equality, let the main loop deal with this
             continue;
         }
-        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
-            if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
-                    return term.var != PTRef_Undef and not logic.isVar(term.var);
-                })) {
-                continue;
-            }
-        }
 
-        auto coeff = poly.removeVar(var);
-        coeff.negate();
-        if (not coeff.isOne()) { poly.divideBy(coeff); }
-        PTRef val = polyToPTRef(logic, poly);
+        PTRef sub = polyToPTRefSubstitution(logic, var, poly);
+        if (sub == PTRef_Undef) { continue; }
+
         assert(not out_substitutions.has(var));
-        out_substitutions.insert(var, val);
+        out_substitutions.insert(var, sub);
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
