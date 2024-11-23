@@ -22,6 +22,9 @@ struct LAExplanations {
 class LIAInterpolator : public FarkasInterpolator {
 public:
     LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations);
+
+    // not implemented for integers
+    PTRef getFlexibleInterpolant(Real strengthFactor) = delete;
 };
 } // namespace opensmt
 
