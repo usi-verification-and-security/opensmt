@@ -101,8 +101,6 @@ private:
 
     std::unique_ptr<Tableau::Polynomial> expressionToLVarPoly(PTRef term);
 
-    Number getNum(PTRef);
-
     bool isIntVar(LVRef v) { return int_vars_map.has(v); }
     void markVarAsInt(LVRef);
 

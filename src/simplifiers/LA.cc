@@ -58,7 +58,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             // If it is times, then one side must be constant, other
             // is enqueued with a new constant
             auto [var, constant] = logic.splitTermToVarAndConst(t);
-            Real new_c = logic.getNumConst(constant);
+            Real new_c = logic.getRealConst(constant);
             new_c *= c;
             curr_term.emplace_back(var);
             curr_const.emplace_back(std::move(new_c));
@@ -66,7 +66,7 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             // Otherwise it is a variable, Ite, UF or constant
             assert(logic.isNumVarLike(t) || logic.isConstant(t) || logic.isUF(t));
             if (logic.isConstant(t)) {
-                const Real tval = logic.getNumConst(t);
+                const Real tval = logic.getRealConst(t);
                 polynome[PTRef_Undef] += tval * c;
             } else {
                 auto it = polynome.find(t);

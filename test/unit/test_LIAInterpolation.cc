@@ -52,9 +52,10 @@ TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
     PTRef dualFarkasItp = interpolator.getDualFarkasInterpolant();
     std::cout << logic.pp(dualFarkasItp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(leq1, leq2, dualFarkasItp));
-    PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(Number(1,2));
-    std::cout << logic.pp(halfFarkasItp) << std::endl;
-    EXPECT_TRUE(verifyInterpolant(leq1, leq2, halfFarkasItp));
+    // not implemented for integers
+    // PTRef halfFarkasItp = interpolator.getFlexibleInterpolant(Number(1,2));
+    // std::cout << logic.pp(halfFarkasItp) << std::endl;
+    // EXPECT_TRUE(verifyInterpolant(leq1, leq2, halfFarkasItp));
 }
 
 TEST_F(LIAInterpolationTest, test_DecompositionInLIA){

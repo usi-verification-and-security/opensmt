@@ -12,12 +12,14 @@
 ./src/cnfizers/Tseitin.h
 
 ./src/common/numbers/Integer.h
+./src/common/numbers/Number.cc
 ./src/common/numbers/Number.h
 ./src/common/numbers/Real.h
 ./src/common/ApiException.h
 ./src/common/FlaPartitionMap.cc
 ./src/common/FlaPartitionMap.h
 ./src/common/IColor.h
+./src/common/FunUtils.h
 ./src/common/InternalException.h
 ./src/common/PartitionInfo.cc
 ./src/common/PartitionInfo.h

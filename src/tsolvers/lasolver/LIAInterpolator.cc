@@ -31,7 +31,7 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
             liaExplanations.explanations.push(PtAsgn(positiveInequality, l_True));
         } else {
             // 'not (c <= term)' => 'c > term' => 'term < c' => 'term <= c-1' => -(c-1) <= -term
-            auto newBoundValue = (logic.getNumConst(boundVal) - 1);
+            auto newBoundValue = (logic.getIntConst(boundVal) - 1);
             newBoundValue.negate();
             PTRef nInequality = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
             assert(logic.getTermFromLeq(nInequality) == logic.mkNeg(boundedTerm));

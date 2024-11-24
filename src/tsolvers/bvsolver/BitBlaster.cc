@@ -2121,7 +2121,7 @@ void BitBlaster::computeModel( )
                 value = value + coeff * bit;
             coeff = Real( 2 ) * coeff;
         }
-        model[e] = logic.mkBVNumVar(value.get_str().c_str());
+        model[e] = logic.mkBVNumVar(value.toString().c_str());
     }
     has_model = true;
 }

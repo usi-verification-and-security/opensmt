@@ -2,6 +2,7 @@
 
 #include <common/ApiException.h>
 #include <common/InternalException.h>
+#include <common/numbers/Number.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
 #include <pterms/PtStore.h>
@@ -28,7 +29,6 @@ namespace {
     protected:
         ArithLogic & l;
         virtual void Op(Number & s, Number const & v) const = 0;
-        virtual Number getIdOp() const = 0;
         virtual void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new,
                                    vec<PTRef> & terms_new) const = 0;
 
@@ -40,7 +40,6 @@ namespace {
 
     class SimplifyConstSum : public SimplifyConst {
         void Op(Number & s, Number const & v) const { s += v; }
-        Number getIdOp() const { return 0; }
         void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
     public:
@@ -49,7 +48,6 @@ namespace {
 
     class SimplifyConstTimes : public SimplifyConst {
         void Op(Number & s, Number const & v) const { s *= v; }
-        Number getIdOp() const { return 1; }
         void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
     public:
@@ -58,10 +56,9 @@ namespace {
 
     class SimplifyConstDiv : public SimplifyConst {
         void Op(Number & s, Number const & v) const {
-            if (v == 0) { printf("explicit div by zero\n"); }
+            if (v.isZero()) { printf("explicit div by zero\n"); }
             s /= v;
         }
-        Number getIdOp() const { return 1; }
         void constSimplify(SymRef s, vec<PTRef> const & terms, SymRef & s_new, vec<PTRef> & terms_new) const;
 
     public:
@@ -199,6 +196,14 @@ Number const & ArithLogic::getNumConst(PTRef tr) const {
     return *numbers[id];
 }
 
+Integer const & ArithLogic::getIntConst(PTRef tr) const {
+    return castInteger(getNumConst(tr));
+}
+
+Real const & ArithLogic::getRealConst(PTRef tr) const {
+    return castReal(getNumConst(tr));
+}
+
 pair<Number, vec<PTRef>> ArithLogic::getConstantAndFactors(PTRef sum) const {
     assert(isPlus(sum));
     vec<PTRef> varFactors;
@@ -245,7 +250,7 @@ pair<PTRef, PTRef> ArithLogic::splitTermToVarAndConst(PTRef term) const {
 PTRef ArithLogic::normalizeMul(PTRef mul) {
     assert(isTimes(mul));
     auto [v, c] = splitTermToVarAndConst(mul);
-    if (getNumConst(c) < 0) {
+    if (isNegative(getNumConst(c))) {
         return mkNeg(v);
     } else {
         return v;
@@ -319,7 +324,7 @@ namespace {
                     auto val = substitutions[var];
                     if (not logic.isZero(val)) {
                         poly_t constantPoly;
-                        constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val));
+                        constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val).makeReal());
                         poly.merge(constantPoly, 1);
                     }
                     changed = true;
@@ -351,6 +356,45 @@ namespace {
         return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
     }
 
+    PTRef polyToPTRefSubstitution(ArithLogic & logic, PTRef var, poly_t & poly) {
+        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
+            if (std::ranges::any_of(poly, [&logic](auto const & term) {
+                    return term.var != PTRef_Undef and not logic.isVar(term.var);
+                })) {
+                return PTRef_Undef;
+            }
+        }
+
+        bool const hasInts = logic.hasIntegers();
+
+        {
+            poly_t polyCp;
+            poly_t & polyRef = [&]() -> auto & {
+                if (not hasInts) { return poly; }
+                polyCp = poly;
+                return polyCp;
+            }();
+            // non-const operations on poly!
+            auto coeff = polyRef.removeVar(var);
+            coeff.negate();
+            if (not coeff.isOne()) {
+                polyRef.divideBy(coeff);
+                assert(hasInts or not logic.yieldsSortInt(var));
+                if (hasInts and logic.yieldsSortInt(var)) {
+                    if (not std::ranges::all_of(polyRef, [](auto const & term) { return term.coeff.isIntegerValue(); })) {
+                        return PTRef_Undef;
+                    }
+                }
+            }
+
+            if (hasInts) { poly = std::move(polyCp); }
+        }
+
+        PTRef val = polyToPTRef(logic, poly);
+        assert(val != PTRef_Undef);
+        return val;
+    }
+
     Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
         // MB: We enforce order to ensure that later-created terms are processed first.
         //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
@@ -369,20 +413,11 @@ namespace {
         for (auto const & [var, polyIndices] : varToPolyIndices) {
             if (polyIndices.size() != 1 or var == PTRef_Undef) { continue; }
             auto index = polyIndices[0];
-            if (processedIndices.find(index) != processedIndices.end()) { continue; }
+            if (processedIndices.contains(index)) { continue; }
             auto & poly = zeroPolynomials[index];
-            if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
-                if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
-                        return term.var != PTRef_Undef and not logic.isVar(term.var);
-                    })) {
-                    continue;
-                }
-            }
-            auto coeff = poly.removeVar(var);
-            coeff.negate();
-            if (not coeff.isOne()) { poly.divideBy(coeff); }
-            PTRef val = polyToPTRef(logic, poly);
-            substitutions.insert(var, val);
+            PTRef sub = polyToPTRefSubstitution(logic, var, poly);
+            if (sub == PTRef_Undef) { continue; }
+            substitutions.insert(var, sub);
             processedIndices.insert(index);
         }
         // Remove processed polynomials
@@ -404,13 +439,13 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
         assert(logic.isLinearTerm(polyTerm));
         if (logic.isLinearFactor(polyTerm)) {
             auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
-            auto coeff = logic.getNumConst(c);
+            auto coeff = logic.getNumConst(c).makeReal();
             poly.addTerm(var, std::move(coeff));
         } else {
             assert(logic.isPlus(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
                 auto [var, c] = logic.splitTermToVarAndConst(factor);
-                auto coeff = logic.getNumConst(c);
+                auto coeff = logic.getNumConst(c).makeReal();
                 poly.addTerm(var, std::move(coeff));
             }
         }
@@ -443,20 +478,12 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
             // Already have a substitution for this variable; skip this equality, let the main loop deal with this
             continue;
         }
-        if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
-            if (std::any_of(poly.begin(), poly.end(), [&logic](auto const & term) {
-                    return term.var != PTRef_Undef and not logic.isVar(term.var);
-                })) {
-                continue;
-            }
-        }
 
-        auto coeff = poly.removeVar(var);
-        coeff.negate();
-        if (not coeff.isOne()) { poly.divideBy(coeff); }
-        PTRef val = polyToPTRef(logic, poly);
+        PTRef sub = polyToPTRefSubstitution(logic, var, poly);
+        if (sub == PTRef_Undef) { continue; }
+
         assert(not out_substitutions.has(var));
-        out_substitutions.insert(var, val);
+        out_substitutions.insert(var, sub);
     }
     // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
     return l_Undef;
@@ -543,7 +570,8 @@ PTRef ArithLogic::mkNeg(PTRef tr) {
 }
 
 PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
-    std::string str = c.get_str(); // MB: I cannot store c.get_str().c_str() directly, since that is a pointer
+    assert(c.isInteger() or sort == sort_REAL or c.isIntegerValue());
+    std::string str = c.toString(); // MB: I cannot store c.toString().c_str() directly, since that is a pointer
                                    // inside temporary object -> crash.
     char const * val = str.c_str();
     PTRef ptr = PTRef_Undef;
@@ -553,8 +581,12 @@ PTRef ArithLogic::mkConst(SRef sort, Number const & c) {
     for (auto i = numbers.size(); i <= id; i++) {
         numbers.emplace_back();
     }
-    if (numbers[id] == nullptr) { numbers[id] = new Number(val); }
-    assert(c == *numbers[id]);
+    if (numbers[id] == nullptr) {
+        assert(sort == sort_REAL or sort == sort_INT);
+        if (sort == sort_REAL) { numbers[id] = new Number{Real{val}}; }
+        else { numbers[id] = new Number{Integer{val}}; }
+    }
+    assert(castFlexible(c) == castFlexible(*numbers[id]));
     markConstant(id);
     return ptr;
 }
@@ -800,12 +832,11 @@ PTRef ArithLogic::mkMod(vec<PTRef> && args) {
     if (isZero(divisor)) { throw ArithDivisionByZeroException(); }
     if (isOne(divisor) or isMinusOne(divisor)) { return getTerm_IntZero(); }
     if (isConstant(dividend)) {
-        auto const & dividendValue = getNumConst(dividend);
-        auto const & divisorValue = getNumConst(divisor);
-        assert(dividendValue.isInteger() and divisorValue.isInteger());
+        auto const & dividendValue = getIntConst(dividend);
+        auto const & divisorValue = getIntConst(divisor);
         // evaluate immediately the operation on two constants
         auto realDiv = dividendValue / divisorValue;
-        auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
+        auto intDiv = static_cast<FastInteger &&>(isPositive(divisorValue) ? realDiv.floor() : realDiv.ceil());
         auto intMod = dividendValue - intDiv * divisorValue;
         assert(intMod.sign() >= 0 and intMod < abs(divisorValue));
         return mkIntConst(intMod);
@@ -824,12 +855,11 @@ PTRef ArithLogic::mkIntDiv(vec<PTRef> && args) {
     if (isMinusOne(divisor)) { return mkNeg(dividend); }
 
     if (isConstant(divisor) and isConstant(dividend)) {
-        auto const & dividendValue = getNumConst(dividend);
-        auto const & divisorValue = getNumConst(divisor);
-        assert(dividendValue.isInteger() and divisorValue.isInteger());
+        auto const & dividendValue = getIntConst(dividend);
+        auto const & divisorValue = getIntConst(divisor);
         // evaluate immediately the operation on two constants
         auto realDiv = dividendValue / divisorValue;
-        auto intDiv = divisorValue.sign() > 0 ? realDiv.floor() : realDiv.ceil();
+        auto intDiv = static_cast<FastInteger &&>(isPositive(divisorValue) ? realDiv.floor() : realDiv.ceil());
         return mkIntConst(intDiv);
     }
     return mkFun(sym_Int_DIV, std::move(args));
@@ -848,7 +878,7 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
     if (isRealDiv(s_new)) {
         assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
-        args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
+        args_new[1] = mkRealConst(getRealConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
     PTRef tr = mkFun(s_new, std::move(args_new));
@@ -875,20 +905,24 @@ PTRef ArithLogic::mkConst(SRef s, char const * name) {
     PTRef ptr = PTRef_Undef;
     if (s == sort_REAL or s == sort_INT) {
         char * rat;
-        if (s == sort_REAL)
+        Number * numPtr;
+        if (s == sort_REAL) {
+            // TK: Currently this must be consistent with Real::toString, otherwise it will make duplicates in term_store
             stringToRational(rat, name);
-        else {
+            numPtr = new Number{Real{rat}};
+        } else {
             if (not isIntString(name)) throw ApiException("Not parseable as an integer");
             rat = strdup(name);
+            numPtr = new Number{Integer{rat}};
         }
         ptr = mkVar(s, rat, true);
+        free(rat);
         // Store the value of the number as a real
         SymId id = sym_store[getPterm(ptr).symb()].getId();
         for (auto i = numbers.size(); i <= id; i++)
             numbers.emplace_back(nullptr);
         if (numbers[id] != nullptr) { delete numbers[id]; }
-        numbers[id] = new Number(rat);
-        free(rat);
+        numbers[id] = numPtr;
         markConstant(id);
     } else
         ptr = Logic::mkConst(s, name);
@@ -1131,12 +1165,12 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
         bool is_neg = false;
         char * tmp_str;
         stringToRational(tmp_str, sym_store.getName(getPterm(tr).symb()));
-        Number v(tmp_str);
+        Real v{tmp_str};
         if (!isNonNegative(v)) {
             v.negate();
             is_neg = true;
         }
-        std::string rat_str = v.get_str();
+        std::string rat_str = v.toString();
         free(tmp_str);
         bool is_div = false;
         unsigned i = 0;
@@ -1194,32 +1228,31 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
 pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
+    auto & constantValueInt = castInteger(constantValue);
 
     vec<PTRef> vars;
     vars.capacity(varFactors.size());
-    std::vector<Number> coeffs;
+    std::vector<Real> coeffs;
     coeffs.reserve(varFactors.size());
     for (PTRef factor : varFactors) {
         auto [var, coeff] = splitTermToVarAndConst(factor);
         assert(ArithLogic::isNumVarLike(var) and isNumConst(coeff));
         vars.push(var);
-        coeffs.push_back(getNumConst(coeff));
+        coeffs.push_back(getIntConst(coeff));
     }
     bool changed = false; // Keep track if any change to varFactors occurs
 
     bool allIntegers =
-        std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); });
+        std::all_of(coeffs.begin(), coeffs.end(), [](Real const & coeff) { return coeff.isIntegerValue(); });
     if (not allIntegers) {
         // first ensure that all coeffs are integers
-        // this would probably not work when `Number` is not `FastRational`
-        using Integer = FastRational; // TODO: change when we have FastInteger
         auto lcmOfDenominators = Integer(1);
-        auto accumulateLCMofDenominators = [&lcmOfDenominators](FastRational const & next) {
-            if (next.isInteger()) {
+        auto accumulateLCMofDenominators = [&lcmOfDenominators](Real const & next) {
+            if (next.isIntegerValue()) {
                 // denominator is 1 => lcm of denominators stays the same
                 return;
             }
-            Integer den = next.get_den();
+            Integer den = static_cast<FastInteger &&>(next.get_den());
             if (lcmOfDenominators == 1) {
                 lcmOfDenominators = std::move(den);
                 return;
@@ -1229,26 +1262,27 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
         std::for_each(coeffs.begin(), coeffs.end(), accumulateLCMofDenominators);
         for (auto & coeff : coeffs) {
             coeff *= lcmOfDenominators;
-            assert(coeff.isInteger());
+            assert(coeff.isIntegerValue());
         }
         // DONT forget to update also the constant factor
-        constantValue *= lcmOfDenominators;
+        constantValueInt *= lcmOfDenominators;
         changed = true;
     }
-    assert(std::all_of(coeffs.begin(), coeffs.end(), [](Number const & coeff) { return coeff.isInteger(); }));
+    assert(std::all_of(coeffs.begin(), coeffs.end(), [](Real const & coeff) { return coeff.isIntegerValue(); }));
     // Now make sure all coeffs are coprime
-    auto coeffs_gcd = abs(coeffs[0]);
+    Integer coeffs_gcd = static_cast<FastInteger &&>(abs(coeffs[0]));
     for (std::size_t i = 1; i < coeffs.size() && coeffs_gcd != 1; ++i) {
-        coeffs_gcd = gcd(coeffs_gcd, abs(coeffs[i]));
-        assert(coeffs_gcd.isInteger());
+        coeffs_gcd = gcd(coeffs_gcd, static_cast<FastInteger &&>(abs(coeffs[i])));
     }
-    if (coeffs_gcd != 1) {
+    // The value MAY BE real - it is handled afterwards
+    Real constantValueReal = static_cast<FastRational &&>(constantValueInt);
+    if (not coeffs_gcd.isOne()) {
         for (auto & coeff : coeffs) {
             coeff /= coeffs_gcd;
-            assert(coeff.isInteger());
+            assert(coeff.isIntegerValue());
         }
         // DONT forget to update also the constant factor
-        constantValue /= coeffs_gcd;
+        constantValueReal /= std::move(coeffs_gcd);
         changed = true;
     }
     // update the factors
@@ -1259,8 +1293,8 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
     }
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Int_PLUS(), std::move(varFactors));
     // 0 <= normalizedSum + constantValue
-    constantValue.negate();
-    return {std::move(constantValue), normalizedSum};
+    constantValueReal.negate();
+    return {std::move(constantValueReal), normalizedSum};
 }
 
 /**
@@ -1275,20 +1309,21 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedIntPair(PTRef sum) {
 pair<Number, PTRef> ArithLogic::sumToNormalizedRealPair(PTRef sum) {
 
     auto [constantValue, varFactors] = getConstantAndFactors(sum);
+    auto & constantValueReal = castReal(constantValue);
 
     PTRef leadingFactor = varFactors[0];
     // normalize the sum according to the leading factor
     auto [var, coeff] = splitTermToVarAndConst(leadingFactor);
-    Number normalizationCoeff = abs(getNumConst(coeff));
+    Real normalizationCoeff = abs(getRealConst(coeff));
     // varFactors come from a normalized sum, no need to call normalization code again
     PTRef normalizedSum = varFactors.size() == 1 ? varFactors[0] : mkFun(get_sym_Real_PLUS(), std::move(varFactors));
-    if (normalizationCoeff != 1) {
+    if (not normalizationCoeff.isOne()) {
         // normalize the whole sum
         normalizedSum = mkTimes(normalizedSum, mkRealConst(normalizationCoeff.inverse()));
         // DON'T forget to update also the constant factor!
-        constantValue /= normalizationCoeff;
+        constantValueReal /= normalizationCoeff;
     }
-    constantValue.negate(); // moving the constant to the LHS of the inequality
+    constantValueReal.negate(); // moving the constant to the LHS of the inequality
     return {std::move(constantValue), normalizedSum};
 }
 
@@ -1300,6 +1335,7 @@ pair<Number, PTRef> ArithLogic::sumToNormalizedPair(PTRef sum) {
 
 PTRef ArithLogic::sumToNormalizedInequality(PTRef sum) {
     auto [lhsVal, rhs] = sumToNormalizedPair(sum);
+    assert(lhsVal.isReal());
     SRef sort = getSortRef(rhs);
     if (isSortInt(sort)) { lhsVal = lhsVal.ceil(); }
     return mkFun(getLeqForSort(sort), {mkConst(sort, lhsVal), rhs});
@@ -1307,8 +1343,9 @@ PTRef ArithLogic::sumToNormalizedInequality(PTRef sum) {
 
 PTRef ArithLogic::sumToNormalizedEquality(PTRef sum) {
     auto [lhsVal, rhs] = sumToNormalizedPair(sum);
+    assert(lhsVal.isReal());
     SRef sort = getSortRef(sum);
-    if (isSortInt(sort) and not lhsVal.isInteger()) { return getTerm_false(); }
+    if (isSortInt(sort) and not lhsVal.isIntegerValue()) { return getTerm_false(); }
     // Ensure that in equality we always have positive leading variable
     if (hasNegativeLeadingVariable(rhs)) {
         rhs = mkNeg(rhs);

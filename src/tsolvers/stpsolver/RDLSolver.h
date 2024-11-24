@@ -15,12 +15,12 @@ public:
 
 template<>
 Delta Converter<Delta>::getValue(Number const & val) {
-    return Delta(val, 0);
+    return Delta(castReal(val), 0);
 }
 
 template<>
 Delta Converter<Delta>::getValue(ptrdiff_t val) {
-    return Delta(Number(val, 1), 0);
+    return Delta(Real{static_cast<word>(val), 1}, 0);
 }
 
 template<>
@@ -41,7 +41,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
     // Now we need to compute the proper values as Rationals, not as \delta-Rationals
     // Compute the right value for delta:
     Delta delta;
-    Number deltaVal;
+    Real deltaVal;
     bool deltaSet = false;
     // I need to iterate over all edges and find the minimum from deltas making the edges true
     auto const & edges = this->model->getGraph().addedEdges;
@@ -60,7 +60,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         }
     }
     if (not deltaSet || delta > 1) {
-        deltaVal = Number(1);
+        deltaVal = Real{1};
     } else {
         deltaVal = delta.R() / 2;
     }
@@ -70,7 +70,7 @@ void STPSolver<Delta>::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
         if (var == PTRef_Undef) { continue; }
         assert(logic.isVar(var));
         Delta const & varDeltaValue = entry.second;
-        Number varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
+        Real varValue = varDeltaValue.R() + varDeltaValue.D() * deltaVal;
         PTRef val = logic.mkRealConst(varValue);
         modelBuilder.addVarValue(var, val);
     }

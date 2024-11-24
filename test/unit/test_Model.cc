@@ -254,7 +254,7 @@ TEST_F(LAModelTest, test_constants) {
     EXPECT_EQ(model->evaluate(fortytwo), fortytwo);
     PTRef one = logic.mkRealConst(1);
     EXPECT_EQ(model->evaluate(one), logic.getTerm_RealOne());
-    PTRef zero = logic.mkRealConst(Number(0));
+    PTRef zero = logic.mkRealConst(Real(0));
     EXPECT_EQ(model->evaluate(zero), logic.getTerm_RealZero());
 }
 

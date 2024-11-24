@@ -28,7 +28,7 @@ CutCreator::Cut CutCreator::makeCut(SparseLinearSystem && system, ColumnMapping 
     for (uint32_t rowIndex = 0; rowIndex < dim; ++rowIndex) {
         auto const & row = matrixU[rowIndex];
         auto product = row.product(varValues);
-        if (not product.isInteger()) { return {row.toVector(), product}; }
+        if (not product.isIntegerValue()) { return {row.toVector(), product}; }
     }
     return {};
 }

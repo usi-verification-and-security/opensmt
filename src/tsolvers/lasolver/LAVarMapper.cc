@@ -53,7 +53,7 @@ bool   LAVarMapper::hasVar(PTId i) const {
 
 bool LAVarMapper::isNegated(PTRef tr) const {
     if (logic.isNumConst(tr))
-        return logic.getNumConst(tr) < 0; // Case (0a) and (0b)
+        return isNegative(logic.getNumConst(tr)); // Case (0a) and (0b)
     if (logic.isNumVar(tr))
         return false; // Case (1a)
     if (logic.isTimes(tr)) {
