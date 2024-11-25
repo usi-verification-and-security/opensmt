@@ -40,10 +40,14 @@ public:
     SymStore(SymStore &&) = default;
     SymStore & operator=(SymStore &&) = default;
     // Constructs a new symbol.
+
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
                    bool subSymb = false);
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args) {
         return newSymb(fname, rsort, args, SymConf::Default);
+    }
+    SymRef newUnparsableSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
+        return newSymb(fname, rsort, args, symConfig, true);
     }
     bool contains(char const * fname) const { return symbolTable.has(fname); }
     vec<SymRef> const & nameToRef(char const * s) const { return symbolTable[s]; }
