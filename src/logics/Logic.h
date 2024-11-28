@@ -186,10 +186,6 @@ public:
     SymRef declareFun_Commutative_NoScoping_LeftAssoc(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
     }
-    SymRef declareFun_Multiplication_Duplicate(std::string const & s, SRef rsort, vec<SRef> const & args) {
-        SymRef sr = sym_store.newUnparsableSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
-        return sr;
-    }
     SymRef declareFun_Commutative_NoScoping_Chainable(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::CommutativeNoScopingChainable);
     }

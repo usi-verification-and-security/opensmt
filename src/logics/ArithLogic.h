@@ -164,13 +164,12 @@ public:
     bool isIntNeg(SymRef sr) const { return sr == sym_Int_NEG; }
     bool isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
 
-    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr) or isTimesUnknown(sr); };
-    bool isTimesDefined(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
+    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr) or isIntTimes(sr) or isRealTimes(sr); };
+    bool isTimesLinOrNonlin(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
     bool isTimesLin(SymRef sr) const { return isIntTimesLin(sr) or isRealTimesLin(sr); }
-    bool isTimesUnknown(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
     bool isTimesNonlin(SymRef sr) const { return isIntTimesNonlin(sr) or isRealTimesNonlin(sr); }
     bool isTimes(PTRef tr) const { return isTimes(getPterm(tr).symb()); }
-    bool isTimesDefined(PTRef tr) const { return isTimesDefined(getPterm(tr).symb()); };
+    bool isTimesLinOrNonlin(PTRef tr) const { return isTimesLinOrNonlin(getPterm(tr).symb()); };
     bool isTimesLin(PTRef tr) const { return isTimesLin(getPterm(tr).symb()); }
     bool isTimesNonlin(PTRef tr) const { return isTimesNonlin(getPterm(tr).symb()); }
     bool isIntTimesLin(PTRef tr) const { return isIntTimesLin(getPterm(tr).symb()); }
@@ -229,10 +228,10 @@ public:
 
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef sr) const {
-        return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr);
+    bool isMonomial(PTRef tr) const {
+        SymRef sr = getPterm(tr).symb();
+        return yieldsSortNum(sr) and not isPlus(sr) and not isTimesLin(sr) and not isNumConst(sr);
     }
-    bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
     bool isZero(PTRef tr) const { return isZero(getSymRef(tr)); }
@@ -252,7 +251,6 @@ public:
 
     // Real terms are of form c, a, or (* c a) where c is a constant and a is a variable or Ite.
     bool isNumTerm(PTRef tr) const;
-    bool isNonlin(PTRef tr) const;
 
     PTRef getTerm_IntZero() const { return term_Int_ZERO; }
     PTRef getTerm_RealZero() const { return term_Real_ZERO; }
@@ -355,6 +353,7 @@ public:
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
     pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
+    // Given a term `t` is splits the term into monomial and its coefficient
     pair<PTRef, PTRef> splitPolyTerm(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
@@ -389,6 +388,10 @@ protected:
     PTRef mkBinaryGeq(PTRef lhs, PTRef rhs) { return mkBinaryLeq(rhs, lhs); }
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
+    SymRef declareFun_Multiplication_LinNonlin(std::string const & s, SRef rsort, vec<SRef> const & args) {
+        SymRef sr = sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
+        return sr;
+    }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
     pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);

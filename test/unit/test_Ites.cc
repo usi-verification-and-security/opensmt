@@ -136,7 +136,7 @@ TEST_F(IteManagerTest, test_IteTimesVar) {
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
 
-    EXPECT_NO_THROW(logic.mkTimes(ite,x));
+    EXPECT_NO_THROW(logic.mkTimes(ite, x));
 
 }
 

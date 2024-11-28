@@ -2,7 +2,6 @@
 (declare-fun x () Int)
 (declare-fun y () Int)
 (define-fun uninterp_mul ((a Int) (b Int)) Int (+ (* a b) 10))
-(assert (= x x))
 (assert (= (uninterp_mul y 5) 30))
 (check-sat)
 (get-model)
