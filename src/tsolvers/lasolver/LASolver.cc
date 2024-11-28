@@ -11,6 +11,7 @@
 #include "CutCreator.h"
 
 #include <common/Random.h>
+#include <common/NonLinException.h>
 #include <models/ModelBuilder.h>
 #include <simplifiers/LA.h>
 
@@ -91,8 +92,7 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimesDefined(sum) || logic.isMod(logic.getPterm(sum).symb()) ||
-           logic.isRealDiv(sum) || logic.isIntDiv(sum));
+    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimesLinOrNonlin(sum) || logic.isRealDiv(sum));
     (void) cons; (void)sum;
 }
 
@@ -243,7 +243,7 @@ LVRef LASolver::getVarForLeq(PTRef ref) const {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-
+    if (logic.isTimesNonlin(expr_in) || logic.isRealDiv(expr_in)) throw NonLinException(logic.pp(expr_in));
     assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
@@ -287,18 +287,6 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
 //
 // Returns internalized reference for the term
 LVRef LASolver::registerArithmeticTerm(PTRef expr) {
-    if (logic.isNonlin(expr)) {
-        auto termStr = logic.pp(expr);
-        throw LANonLinearException(termStr.c_str());
-    } else if(logic.isTimesLin(expr)  || logic.isPlus(expr)) {
-        Pterm const & subterms = logic.getPterm(expr);
-        for(auto subterm: subterms) {
-            if (logic.isNonlin(subterm)) {
-                auto termStr = logic.pp(subterm);
-                throw LANonLinearException(termStr.c_str());
-            }
-        }
-    }
     LVRef x = LVRef::Undef;
     if (laVarMapper.hasVar(expr)){
         x = getVarForTerm(expr);
@@ -310,8 +298,8 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
     if (logic.isNumVar(expr) || logic.isTimesLin(expr)) {
         // Case (1), (2a), and (2b)
         auto [v,c] = logic.splitPolyTerm(expr);
-        assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
         x = getLAVar_single(v);
+        assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
         simplex.newNonbasicVar(x);
         notifyVar(x);
     }

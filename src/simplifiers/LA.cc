@@ -63,8 +63,8 @@ void LAExpression::initialize(PTRef e, bool do_canonize) {
             curr_term.emplace_back(var);
             curr_const.emplace_back(std::move(new_c));
         } else {
-            // Otherwise it is a variable, Ite, UF or constant
-            assert(logic.isNumVarLike(t) || logic.isConstant(t) || logic.isUF(t));
+            // Otherwise it is a monomial or constant
+            assert(logic.isMonomial(t) || logic.isConstant(t));
             if (logic.isConstant(t)) {
                 const Real tval = logic.getNumConst(t);
                 polynome[PTRef_Undef] += tval * c;

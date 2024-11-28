@@ -41,12 +41,13 @@ public:
     SymStore & operator=(SymStore &&) = default;
     // Constructs a new symbol.
 
-    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
-                   bool subSymb = false);
+    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
+        return newSymb(fname, rsort, args, symConfig, false);
+    };
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args) {
-        return newSymb(fname, rsort, args, SymConf::Default);
+        return newSymb(fname, rsort, args, SymConf::Default, false);
     }
-    SymRef newUnparsableSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
+    SymRef newInternalSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
         return newSymb(fname, rsort, args, symConfig, true);
     }
     bool contains(char const * fname) const { return symbolTable.has(fname); }
@@ -78,6 +79,9 @@ private:
     vec<SymRef> symbols;
     SymbolAllocator ta{1024};
     vec<char *> idToName;
+
+    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
+                   bool subSymb);
 };
 } // namespace opensmt
 
