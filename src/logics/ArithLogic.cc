@@ -2,6 +2,7 @@
 
 #include <common/ApiException.h>
 #include <common/InternalException.h>
+#include <common/NonLinException.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
 #include <pterms/PtStore.h>
@@ -680,8 +681,7 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     if (!isTimes(s_new)) return mkFun(s_new, std::move(args));
     PTRef coef = PTRef_Undef;
     std::vector<PTRef> vars;
-    //    return mkFun(s_new, std::move(args));
-    // Splitting Multiplication into constant and variable subterms
+    // Splitting Multiplication into constant and monomial subterms
     for (int i = 0; i < args.size(); i++) {
         if (isConstant(args[i])) {
             assert(coef == PTRef_Undef);
@@ -863,7 +863,9 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
-    if (isRealDiv(s_new) && (isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1])) {
+    // TODO: Currently creation of nonlinear Real divison is not supported
+    if (isRealDiv(s_new) && (isNumTerm(args_new[0]) || isPlus(args_new[0]))) {
+        if (!isConstant(args_new[1])) throw NonLinException(pp(args[0]) + "/" + pp(args[1]));
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }

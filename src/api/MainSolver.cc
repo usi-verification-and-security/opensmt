@@ -337,7 +337,7 @@ sstat MainSolver::check() {
     sstat rval;
     try {
         rval = simplifyFormulas();
-    } catch (opensmt::NonLinException const & error) {
+    } catch (NonLinException const & error) {
         reasonUnknown = error.what();
         return s_Undef;
     }
@@ -347,7 +347,7 @@ sstat MainSolver::check() {
     if (rval == s_Undef) {
         try {
             rval = solve();
-        } catch (std::overflow_error const & error) { rval = s_Error; } catch (opensmt::NonLinException const & error) {
+        } catch (std::overflow_error const & error) { rval = s_Error; } catch (NonLinException const & error) {
             reasonUnknown = error.what();
             return s_Undef;
         }
