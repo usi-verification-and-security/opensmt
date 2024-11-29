@@ -92,7 +92,7 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimesLinOrNonlin(sum) || logic.isRealDiv(sum));
+    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimesLinOrNonlin(sum));
     (void) cons; (void)sum;
 }
 
@@ -243,7 +243,7 @@ LVRef LASolver::getVarForLeq(PTRef ref) const {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-    if (logic.isTimesNonlin(expr_in) || logic.isRealDiv(expr_in)) throw NonLinException(logic.pp(expr_in));
+    if (logic.isTimesNonlin(expr_in)) throw NonLinException(logic.pp(expr_in));
     assert(logic.isLinearTerm(expr_in));
     PTId id = logic.getPterm(expr_in).getId();
 
