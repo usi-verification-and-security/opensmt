@@ -415,7 +415,7 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
             auto coeff = logic.getNumConst(c);
             poly.addTerm(var, std::move(coeff));
         } else {
-            assert(logic.isPlus(polyTerm) || logic.isTimesLinOrNonlin(polyTerm));
+            assert(logic.isPlus(polyTerm) || logic.isTimesNonlin(polyTerm));
             for (PTRef factor : logic.getPterm(polyTerm)) {
                 auto [var, c] = logic.splitPolyTerm(factor);
                 auto coeff = logic.getNumConst(c);
@@ -678,7 +678,7 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
     args.clear();
     SymRef s_new;
     simp.simplify(getTimesLinForSort(returnSort), flatten_args, s_new, args);
-    if (!isTimes(s_new)) return mkFun(s_new, std::move(args));
+    if (!isTimesLinOrNonlin(s_new)) return mkFun(s_new, std::move(args));
     PTRef coef = PTRef_Undef;
     std::vector<PTRef> vars;
     // Splitting Multiplication into constant and monomial subterms
@@ -691,17 +691,15 @@ PTRef ArithLogic::mkTimes(vec<PTRef> && args) {
         vars.push_back(args[i]);
     }
     assert(!vars.empty());
-    PTRef tr;
     if (vars.size() > 1) {
         if (coef == PTRef_Undef) {
-            tr = mkFun(getTimesNonlinForSort(returnSort), vars);
+            return mkFun(getTimesNonlinForSort(returnSort), vars);
         } else {
-            tr = mkFun(s_new, {coef, mkFun(getTimesNonlinForSort(returnSort), vars)});
+            return mkFun(s_new, {coef, mkFun(getTimesNonlinForSort(returnSort), vars)});
         }
     } else {
-        tr = mkFun(s_new, {coef, vars[0]});
+        return mkFun(s_new, {coef, vars[0]});
     }
-    return tr;
 }
 
 SymRef ArithLogic::getLeqForSort(SRef sr) const {
@@ -859,13 +857,14 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
     checkSortReal(args);
     if (args.size() != 2) { throw ApiException("Division operation requires exactly 2 arguments"); }
     if (isZero(args[1])) { throw ArithDivisionByZeroException(); }
+    if (not isConstant(args[1])) { throw NonLinException(pp(args[0]) + "/" + pp(args[1])); }
     SimplifyConstDiv simp(*this);
     vec<PTRef> args_new;
     SymRef s_new;
     simp.simplify(get_sym_Real_DIV(), args, s_new, args_new);
-    // TODO: Currently creation of nonlinear Real divison is not supported
-    if (isRealDiv(s_new) && (isNumTerm(args_new[0]) || isPlus(args_new[0]))) {
-        if (!isConstant(args_new[1])) throw NonLinException(pp(args[0]) + "/" + pp(args[1]));
+    // TODO: Currently creation of nonlinear Real divison (with variable divisor) is not supported
+    if (isRealDiv(s_new)) {
+        assert((isNumTerm(args_new[0]) || isPlus(args_new[0])) && isConstant(args_new[1]));
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
@@ -1000,7 +999,7 @@ void SimplifyConst::simplify(SymRef s, vec<PTRef> const & args, SymRef & s_new, 
     }
     //    // A single argument for the operator, and the operator is identity
     //    // in that case
-    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimesLinOrNonlin(s_new))) {
+    if (args_new.size() == 1 && (l.isPlus(s_new) || l.isTimesLin(s_new))) {
         PTRef ch_tr = args_new[0];
         args_new.clear();
         s_new = l.getPterm(ch_tr).symb();

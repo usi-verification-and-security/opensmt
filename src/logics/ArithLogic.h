@@ -389,8 +389,7 @@ protected:
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
     SymRef declareFun_Multiplication_LinNonlin(std::string const & s, SRef rsort, vec<SRef> const & args) {
-        SymRef sr = sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
-        return sr;
+        return sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
     }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
     pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
