@@ -89,6 +89,17 @@ public:
     void insertFormula(PTRef fla);
     std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
 
+    // Append to the list of variables preferred for decisions
+    // Binds to the preceding declaration of the var which determines whether a pop removes it from the current context
+    // Currently only Booleans are supported
+    void addPreferredVariable(PTRef var);
+    void resetPreferredVariables();
+
+    // Prefer a concrete value of the decisions of the variable
+    // This does *not* prefer the variable over other variables!
+    void setPreferredBoolValue(PTRef var, lbool val = l_Undef);
+    void resetPreferredValues();
+
     void initialize();
 
     virtual sstat check(); // A wrapper for solve which simplifies the loaded formulas and initializes the solvers

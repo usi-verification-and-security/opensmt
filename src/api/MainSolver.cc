@@ -128,6 +128,12 @@ void MainSolver::insertFormula(PTRef fla) {
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount() - 1);
 }
 
+void MainSolver::addPreferredVariable(PTRef var) {}
+void MainSolver::resetPreferredVariables() {}
+
+void MainSolver::setPreferredBoolValue(PTRef var, lbool val) {}
+void MainSolver::resetPreferredValues() {}
+
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
