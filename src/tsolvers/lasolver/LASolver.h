@@ -88,12 +88,11 @@ private:
     // Possible internal states of the solver
     typedef enum { INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR } LASolverStatus;
 
-    void setBound(PTRef leq);
     bool assertBound(LABoundRef boundRef);
 
     PTRef getVarPTRef(LVRef v) const { return laVarMapper.getVarPTRef(v); }
 
-    LABoundStore::BoundInfo addBound(PTRef leq_tr);
+    void addBound(PTRef leq_tr);
     void updateBound(PTRef leq_tr);
     LVRef registerArithmeticTerm(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.
                                               // Returns the LAVar for the term.

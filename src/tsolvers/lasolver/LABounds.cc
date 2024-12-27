@@ -84,7 +84,6 @@ bool LABoundStore::isUnbounded(LVRef v) const { return getBounds(v).size() == 0;
 
 void LABoundStore::clear() {
     this->ba.clear();
-    this->in_bounds.clear();
     this->bounds.clear();
 }
 
@@ -94,21 +93,33 @@ void LABoundStore::ensureReadyFor(LVRef v) {
     }
 }
 
-void LABoundStore::updateBound(BoundInfo bi) {
-    auto & varBounds = getBounds(bi.v);
-    for (LABoundRef bound : {bi.ub, bi.lb}) {
-        unsigned idx = varBounds.size();
-        varBounds.push(bound);
+LABoundStore::BoundInfo LABoundStore::allocBoundPair(LVRef v, BoundValuePair boundPair) {
+    ensureReadyFor(v);
+    LABoundRef ub = ba.alloc(bound_u, v, std::move(boundPair.upper));
+    LABoundRef lb = ba.alloc(bound_l, v, std::move(boundPair.lower));
+    auto & varBounds = bounds.at(getVarId(v));
+    varBounds.push(ub);
+    varBounds.push(lb);
+    return BoundInfo{v, ub, lb};
+}
+
+LABoundStore::BoundInfo LABoundStore::allocBoundPairAndSort(LVRef v, BoundValuePair boundPair) {
+    auto res = allocBoundPair(v, std::move(boundPair));
+
+    // Get the two newly allocated bounds in the right position
+    auto & varBounds = getBounds(v);
+    assert(varBounds.size_() >= 2);
+    unsigned indexToSort = varBounds.size_() - 2;
+    for (unsigned index : {indexToSort, indexToSort + 1}) {
+        [[maybe_unused]] const LABoundRef bound = varBounds[index];
         bound_lessthan lessthan(ba);
-        for (; idx > 0; --idx) {
-            if (lessthan(varBounds[idx - 1], varBounds[idx])) {
-                break;
-            }
-            std::swap(varBounds[idx - 1], varBounds[idx]);
-            ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
+        while (index > 0 and not lessthan(varBounds[index - 1], varBounds[index])) {
+            std::swap(varBounds[index - 1], varBounds[index]);
+            ba[varBounds[index]].setIdx(LABound::BLIdx{index});
+            --index;
         }
-        assert(varBounds[idx] == bound);
-        ba[varBounds[idx]].setIdx(LABound::BLIdx{idx});
+        assert(varBounds[index] == bound);
+        ba[varBounds[index]].setIdx(LABound::BLIdx{index});
     }
     // Post-condition; indices must correspond to the place in the bound list
     assert([&](){
@@ -117,37 +128,18 @@ void LABoundStore::updateBound(BoundInfo bi) {
         }
         return true;
     }());
+    return res;
 }
 
 void LABoundStore::buildBounds()
 {
-    VecMap<LVRef, BoundInfo, LVRefHash> bounds_map;
-
-    for (int i = 0; i < in_bounds.size(); i++) {
-        LVRef v = in_bounds[i].v;
-        if (!bounds_map.has(v)) {
-            bounds_map.insert(v, vec<BoundInfo>());
-        }
-        bounds_map[v].push(in_bounds[i]);
-    }
-    vec<LVRef> keys;
-    bounds_map.getKeys(keys);
-    for (LVRef v : keys) {
-        vec<LABoundRef> refs;
-        vec<BoundInfo> const & boundInfos = bounds_map[v];
-        for (BoundInfo const & info : boundInfos) {
-            refs.push(info.ub);
-            refs.push(info.lb);
-        }
-
-        sort<LABoundRef,bound_lessthan>(refs, refs.size(), bound_lessthan(ba));
-        for (unsigned j = 0; j < refs.size_(); ++j) {
-            ba[refs[j]].setIdx(LABound::BLIdx{j});
-        }
-
+    for (LVRef v : lvstore) {
         assert(getVarId(v) < bounds.size());
-        refs.moveTo(bounds.at(getVarId(v)));
+        auto & varBounds = getBounds(v);
+        sort<LABoundRef,bound_lessthan>(varBounds, varBounds.size(), bound_lessthan(ba));
+        for (unsigned j = 0; j < varBounds.size_(); ++j) {
+            ba[varBounds[j]].setIdx(LABound::BLIdx{j});
+        }
     }
 }
-
 }

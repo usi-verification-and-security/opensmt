@@ -1,6 +1,6 @@
 /*
  *  Copyright (c) 2019-2022, Antti Hyvarinen <antti.hyvarinen@gmail.com>
- *  Copyright (c) 2019-2022, Martin Blicha <martin.blicha@gmail.com>
+ *  Copyright (c) 2019-2025, Martin Blicha <martin.blicha@gmail.com>
  *
  *  SPDX-License-Identifier: MIT
  */
@@ -25,45 +25,31 @@ PtAsgn LASolver::getAsgnByBound(LABoundRef br) const {
     return LABoundRefToLeqAsgn[boundStore[br].getId()];
 }
 
-LABoundStore::BoundInfo LASolver::addBound(PTRef leq_tr) {
-    auto [const_tr, sum_tr] = logic.leqToConstantAndTerm(leq_tr);
-    assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
+void LASolver::addBound(PTRef leq_tr) {
+    LABoundRefPair boundRefs = [this, leq_tr]() -> LABoundRefPair {
+        auto [const_tr, sum_tr] = logic.leqToConstantAndTerm(leq_tr);
+        assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
+        LVRef const v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
+        bool const isNegated = laVarMapper.isNegated(sum_tr);
+        auto values = isNegated ? getBoundsValue(v, -logic.getNumConst(const_tr), false)
+            : getBoundsValue(v, logic.getNumConst(const_tr), true);
+        auto const bi = status == INIT ? boundStore.allocBoundPair(v, std::move(values)) : boundStore.allocBoundPairAndSort(v, std::move(values));
+        return isNegated ? LABoundRefPair{bi.ub, bi.lb} : LABoundRefPair{bi.lb, bi.ub};
+    }();
 
-    bool sum_term_is_negated = laVarMapper.isNegated(sum_tr);
-
-    LVRef v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
-
-    LABoundStore::BoundInfo bi;
-    LABoundRef br_pos;
-    LABoundRef br_neg;
-
-    if (sum_term_is_negated) {
-        Real constr_neg = -logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr_neg, false));
-        br_pos = bi.ub;
-        br_neg = bi.lb;
-    }
-    else {
-        const Real& constr = logic.getNumConst(const_tr);
-        bi = boundStore.allocBoundPair(v, this->getBoundsValue(v, constr, true));
-        br_pos = bi.lb;
-        br_neg = bi.ub;
-    }
-    int br_pos_idx = boundStore[br_pos].getId();
-    int br_neg_idx = boundStore[br_neg].getId();
-
-    int tid = Idx(logic.getPterm(leq_tr).getId());
+    int const tid = Idx(logic.getPterm(leq_tr).getId());
     if (LeqToLABoundRefPair.size() <= tid) {
         LeqToLABoundRefPair.growTo(tid + 1);
     }
-    LeqToLABoundRefPair[tid] = LABoundRefPair{br_pos, br_neg};
+    LeqToLABoundRefPair[tid] = boundRefs;
 
+    int const br_pos_idx = boundStore[boundRefs.pos].getId();
+    int const br_neg_idx = boundStore[boundRefs.neg].getId();
     if (LABoundRefToLeqAsgn.size() <= std::max(br_pos_idx, br_neg_idx)) {
         LABoundRefToLeqAsgn.growTo(std::max(br_pos_idx, br_neg_idx) + 1);
     }
     LABoundRefToLeqAsgn[br_pos_idx] = PtAsgn(leq_tr, l_True);
     LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
-    return bi;
 }
 
 void LASolver::updateBound(PTRef tr)
@@ -75,9 +61,7 @@ void LASolver::updateBound(PTRef tr)
         !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
         return;
     }
-
-    LABoundStore::BoundInfo bi = addBound(tr);
-    boundStore.updateBound(bi);
+    addBound(tr);
 }
 
 bool LASolver::isValid(PTRef tr)
@@ -176,48 +160,6 @@ bool LASolver::check_simplex(bool complete) {
     return getStatus();
 }
 
-//
-// The model system
-//
-/*
-bool LASolver::isModelOutOfBounds(LVRef v) const {
-    return simplex.isModelOutOfBounds(v);
-}
-
-bool LASolver::isModelOutOfUpperBound(LVRef v) const
-{
-    return simplex.isModelOutOfBounds(v);
-}
-
-bool LASolver::isModelOutOfLowerBound(LVRef v) const
-{
-    return ( model.read(v) < model.Lb(v) );
-}
-
-
-const Delta LASolver::overBound(LVRef v) const
-{
-    assert( isModelOutOfBounds(v) );
-    if (isModelOutOfUpperBound(v))
-    {
-        return ( Delta(model.read(v) - model.Ub(v)) );
-    }
-    else if ( isModelOutOfLowerBound(v) )
-    {
-        return ( Delta(model.Lb(v) - model.read(v)) );
-    }
-    assert (false);
-    printf("Problem in overBound, LRASolver.C:%d\n", __LINE__);
-    exit(1);
-}
-*/
-
-void LASolver::setBound(PTRef leq_tr)
-{
-//    printf("Setting bound for %s\n", logic.printTerm(leq_tr));
-
-    addBound(leq_tr);
-}
 
 Number LASolver::getNum(PTRef r) {
     return logic.getNumConst(r);
@@ -560,9 +502,9 @@ void LASolver::initSolver()
             registerArithmeticTerm(term);
 
             // Assumes that the LRA variable has been already declared
-            setBound(leq_tr);
+            addBound(leq_tr);
         }
-        boundStore.buildBounds(); // Bounds are needed for gaussian elimination
+        boundStore.buildBounds();
 
         simplex.initModel();
 
