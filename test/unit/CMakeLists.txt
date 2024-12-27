@@ -58,15 +58,6 @@ target_link_libraries(SimplexTest OpenSMT gtest gtest_main)
 
 gtest_add_tests(TARGET SimplexTest)
 
-add_executable(LIACutTest)
-target_sources(LIACutTest
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_LIACutSolver.cc"
-    )
-
-target_link_libraries(LIACutTest OpenSMT gtest gtest_main)
-
-gtest_add_tests(TARGET LIACutTest)
-
 add_executable(STPSolverTest)
 target_sources(STPSolverTest
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_IDLSolver.cc"
