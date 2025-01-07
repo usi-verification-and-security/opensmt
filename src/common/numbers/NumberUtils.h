@@ -8,6 +8,8 @@
 #ifndef OPENSMT_NUMBERUTILS_H
 #define OPENSMT_NUMBERUTILS_H
 
+#include <cassert>
+
 #include <gmp.h>
 #include <gmpxx.h>
 

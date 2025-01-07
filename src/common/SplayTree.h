@@ -35,6 +35,8 @@ stored and the comparison function C
 #ifndef SPLAY_TREE_H
 #define SPLAY_TREE_H
 
+#include <cassert>
+
 template <class T, class C >
 class SplayTree
 {

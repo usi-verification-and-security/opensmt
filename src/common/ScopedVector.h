@@ -8,6 +8,7 @@
 #ifndef OPENSMT_SCOPEDVECTOR_H
 #define OPENSMT_SCOPEDVECTOR_H
 
+#include <cassert>
 #include <vector>
 
 namespace opensmt {

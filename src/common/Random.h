@@ -8,6 +8,8 @@
 #ifndef OPENSMT_RANDOM_H
 #define OPENSMT_RANDOM_H
 
+#include <cassert>
+
 namespace opensmt {
 // Returns a random float 0 <= x < 1. Seed must never be 0.
 static inline double drand(double & seed) {
