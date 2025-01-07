@@ -87,6 +87,7 @@ public:
     std::size_t getAssertionLevel() const;
 
     void insertFormula(PTRef fla);
+    void insertNamedFormula(PTRef fla, std::string const & name);
     std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
 
     void initialize();
@@ -130,7 +131,10 @@ public:
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
-    TermNames & getTermNames() { return termNames; }
+    [[deprecated("Use insertNamedFormula instead")]]
+    TermNames & getTermNames() {
+        return termNames;
+    }
     TermNames const & getTermNames() const { return termNames; }
 
     void stop() { smt_solver->stop = true; }
