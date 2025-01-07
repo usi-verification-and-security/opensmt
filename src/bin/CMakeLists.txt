@@ -10,6 +10,10 @@ if (ENABLE_LINE_EDITING)
     target_link_libraries(OpenSMT-bin PUBLIC LibEdit::LibEdit)
 endif()
 
+target_compile_definitions(OpenSMT-bin PRIVATE
+    OPENSMT_GIT_DESCRIPTION="${OPENSMT_GIT_DESCRIPTION}"
+)
+
 target_link_libraries(OpenSMT-bin PUBLIC OpenSMT-static)
 
 

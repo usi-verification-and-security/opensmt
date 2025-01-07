@@ -125,12 +125,6 @@ endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR})
 
-
-target_compile_definitions(OpenSMT-bin PRIVATE
-        OPENSMT_GIT_DESCRIPTION="${OPENSMT_GIT_DESCRIPTION}"
-)
-
-
 ################# TESTING #############################################
 if(PACKAGE_TESTS)
     if (NOT BUILD_SHARED_LIBS)
