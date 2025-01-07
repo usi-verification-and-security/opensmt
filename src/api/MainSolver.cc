@@ -128,6 +128,11 @@ void MainSolver::insertFormula(PTRef fla) {
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount() - 1);
 }
 
+void MainSolver::insertNamedFormula(PTRef fla, std::string const & name) {
+    insertFormula(fla);
+    termNames.insert(name, fla);
+}
+
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
