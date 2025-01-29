@@ -41,6 +41,12 @@ private:
     T * _beg;
     uint32_t _size;
 };
+
+// This is useful e.g. for std::visit(..., std::variant)
+template<typename... Ts>
+struct Overload : Ts... {
+    using Ts::operator()...;
+};
 } // namespace opensmt
 
 #endif // OPENSMT_TYPEUTILS_H

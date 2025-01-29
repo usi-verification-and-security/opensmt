@@ -1,7 +1,9 @@
 target_sources(common
 PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/FastInteger.cc"
     "${CMAKE_CURRENT_LIST_DIR}/FastRational.cc"
     "${CMAKE_CURRENT_LIST_DIR}/Integer.h"
+    "${CMAKE_CURRENT_LIST_DIR}/Number.cc"
     "${CMAKE_CURRENT_LIST_DIR}/Number.h"
     "${CMAKE_CURRENT_LIST_DIR}/Real.h"
 PRIVATE
@@ -11,6 +13,7 @@ PRIVATE
 install(FILES
         ${CMAKE_CURRENT_LIST_DIR}/Integer.h
         ${CMAKE_CURRENT_LIST_DIR}/Number.h
+        ${CMAKE_CURRENT_LIST_DIR}/FastInteger.h
         ${CMAKE_CURRENT_LIST_DIR}/FastRational.h
         ${CMAKE_CURRENT_LIST_DIR}/Real.h
         ${CMAKE_CURRENT_LIST_DIR}/NumberUtils.h

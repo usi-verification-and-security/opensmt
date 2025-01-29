@@ -50,10 +50,14 @@ public:
         if (not hasIntegers()) { throw ApiException("Create Int constant in non-integral logic"); }
         return mkConst(getSort_int(), c);
     }
+    // To allow in-place construction from Integer-specific arguments
+    PTRef mkIntConst(Integer c) { return mkIntConst(Number{std::move(c)}); }
     PTRef mkRealConst(Number const & c) {
         if (not hasReals()) { throw ApiException("Create Real constant in non-real logic"); }
         return mkConst(getSort_real(), c);
     }
+    // To allow in-place construction from Real-specific arguments
+    PTRef mkRealConst(Real c) { return mkRealConst(Number{std::move(c)}); }
     PTRef mkIntVar(char const * name) {
         if (not hasIntegers()) { throw ApiException("Create Int var in non-integral logic"); }
         return mkVar(sort_INT, name, false);
@@ -95,6 +99,8 @@ public:
     bool yieldsSortNum(PTRef tr) const { return yieldsSortInt(tr) or yieldsSortReal(tr); }
 
     Number const & getNumConst(PTRef tr) const;
+    Integer const & getIntConst(PTRef tr) const;
+    Real const & getRealConst(PTRef tr) const;
 
     bool isUFEquality(PTRef tr) const override { return !isNumEq(tr) && Logic::isUFEquality(tr); }
     bool isAtom(PTRef tr) const override {

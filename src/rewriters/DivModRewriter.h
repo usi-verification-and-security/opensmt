@@ -38,8 +38,7 @@ public:
             if (not inCache) {
                 // collect the definitions to add
                 assert(logic.isConstant(divisor));
-                auto divisorVal = logic.getNumConst(divisor);
-                assert(divisorVal.isInteger());
+                auto divisorVal = logic.getIntConst(divisor);
                 // general case
                 auto upperBound = abs(divisorVal) - 1;
                 // dividend = divVar * divisor + modVar

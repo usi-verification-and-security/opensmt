@@ -61,6 +61,27 @@ TEST_F(LIASubstitutionsRegression, test_LIAsubstitution) {
     ASSERT_EQ(res, s_False);
 }
 
+TEST_F(LIASubstitutionsRegression, test_LIANosubstitution) {
+    auto const osmt = getLIAOsmt();
+    auto & mainSolver = osmt->getMainSolver();
+    auto & lialogic = osmt->getLIALogic();
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef three = lialogic.mkIntConst(3);
+    PTRef four = lialogic.mkIntConst(4);
+    PTRef eq = lialogic.mkEq(lialogic.mkTimes(three, x), lialogic.mkTimes(four, y));
+    PTRef a = lialogic.mkBoolVar("a");
+    PTRef conj = lialogic.mkAnd(
+            lialogic.mkImpl(a, lialogic.mkEq(x, lialogic.getTerm_IntOne())),
+            lialogic.mkImpl(lialogic.mkNot(a), lialogic.mkEq(x, lialogic.getTerm_IntOne()))
+            );
+    PTRef fla = lialogic.mkAnd(conj, eq);
+    // 3x = 4y  AND (a => x=1) AND (~a => x=1)
+    mainSolver.insertFormula(fla);
+    auto res = mainSolver.check();
+    ASSERT_EQ(res, s_False);
+}
+
 TEST_F(LIASubstitutionsRegression, test_InconsistentSubstitutions) {
     auto const osmt = getLIAOsmt();
     auto & lialogic = osmt->getLIALogic();
