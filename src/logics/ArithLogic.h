@@ -253,16 +253,16 @@ public:
     PTRef getTerm_IntMinusOne() const { return term_Int_MINUSONE; }
     PTRef getTerm_RealMinusOne() const { return term_Real_MINUSONE; }
 
-    void checkSortInt(PTRef tr) {
+    void checkSortInt(PTRef tr) const {
         if (getSortRef(tr) != getSort_int()) throw ApiException("Expected integral sort");
     }
-    void checkSortReal(PTRef tr) {
+    void checkSortReal(PTRef tr) const {
         if (getSortRef(tr) != getSort_real()) throw ApiException("Expected real sort");
     }
-    void checkSortInt(vec<PTRef> const & args) {
+    void checkSortInt(vec<PTRef> const & args) const {
         if (args.size() > 0) checkSortInt(args[0]);
     }
-    void checkSortReal(vec<PTRef> const & args) {
+    void checkSortReal(vec<PTRef> const & args) const {
         if (args.size() > 0) checkSortReal(args[0]);
     }
 
@@ -363,12 +363,12 @@ public:
     // Helper methods
 
     // Given an inequality 'c <= t', return the constant c; checked version
-    PTRef getConstantFromLeq(PTRef);
+    PTRef getConstantFromLeq(PTRef) const;
     // Given an inequality 'c <= t', return the term t; checked version
-    PTRef getTermFromLeq(PTRef);
+    PTRef getTermFromLeq(PTRef) const;
     // Given an inequality 'c <= t', return the pair <c,t> for a constant c and term t; unchecked version, for
     // internal use
-    std::pair<PTRef, PTRef> leqToConstantAndTerm(PTRef);
+    std::pair<PTRef, PTRef> leqToConstantAndTerm(PTRef) const;
 
     // MB: In pure LA, there are never nested boolean terms
     vec<PTRef> getNestedBoolRoots(PTRef) const override { return vec<PTRef>(); }

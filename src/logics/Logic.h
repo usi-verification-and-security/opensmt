@@ -209,7 +209,7 @@ public:
     void instantiateFunctions(SRef);
     void instantiateArrayFunctions(SRef);
 
-    bool hasSortSymbol(SortSymbol const &);
+    bool hasSortSymbol(SortSymbol const &) const;
     bool peekSortSymbol(SortSymbol const &, SSymRef &) const;
     SSymRef declareSortSymbol(SortSymbol symbol);
     SRef getSort(SSymRef, vec<SRef> && args);
@@ -331,7 +331,7 @@ public:
 
     void substitutionsTransitiveClosure(SubstMap & substs);
 
-    bool contains(PTRef x, PTRef y); // term x contains an occurrence of y
+    bool contains(PTRef x, PTRef y) const; // term x contains an occurrence of y
 
     PTRef learnEqTransitivity(PTRef); // Learn limited transitivity information
 

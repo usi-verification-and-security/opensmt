@@ -266,7 +266,7 @@ vec<PTRef> Logic::getNestedBoolRoots(PTRef root) const {
     return nestedBoolRoots;
 }
 
-bool Logic::hasSortSymbol(SortSymbol const & symbol) {
+bool Logic::hasSortSymbol(SortSymbol const & symbol) const {
     SSymRef unused;
     return sort_store.peek(symbol, unused);
 }
@@ -1044,7 +1044,7 @@ bool Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
 //
 // Does term contain var?  (works even if var is a term...)
 //
-bool Logic::contains(PTRef term, PTRef var) {
+bool Logic::contains(PTRef term, PTRef var) const {
     Map<PTRef, bool, PTRefHash> proc;
     vec<PTRef> queue;
     queue.push(term);
@@ -1057,7 +1057,7 @@ bool Logic::contains(PTRef term, PTRef var) {
             continue;
         }
         bool unprocessed_children = false;
-        Pterm & t = getPterm(tr);
+        Pterm const & t = getPterm(tr);
         for (int i = 0; i < t.size(); i++)
             if (!proc.has(t[i])) {
                 queue.push(t[i]);

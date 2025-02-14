@@ -1331,7 +1331,7 @@ PTRef ArithLogic::sumToNormalizedEquality(PTRef sum) {
     return Logic::mkBinaryEq(mkConst(getSortRef(sum), lhsVal), rhs);
 }
 
-PTRef ArithLogic::getConstantFromLeq(PTRef leq) {
+PTRef ArithLogic::getConstantFromLeq(PTRef leq) const {
     Pterm const & term = getPterm(leq);
     if (not isLeq(term.symb())) {
         throw ApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
@@ -1339,7 +1339,7 @@ PTRef ArithLogic::getConstantFromLeq(PTRef leq) {
     return term[0];
 }
 
-PTRef ArithLogic::getTermFromLeq(PTRef leq) {
+PTRef ArithLogic::getTermFromLeq(PTRef leq) const {
     Pterm const & term = getPterm(leq);
     if (not isLeq(term.symb())) {
         throw ApiException("LALogic::getConstantFromLeq called on a term that is not less-or-equal inequality");
@@ -1347,7 +1347,7 @@ PTRef ArithLogic::getTermFromLeq(PTRef leq) {
     return term[1];
 }
 
-std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) {
+std::pair<PTRef, PTRef> ArithLogic::leqToConstantAndTerm(PTRef leq) const {
     Pterm const & term = getPterm(leq);
     assert(isLeq(term.symb()));
     return std::make_pair(term[0], term[1]);
