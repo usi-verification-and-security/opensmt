@@ -360,30 +360,21 @@ namespace {
             }
         }
 
-        bool const hasInts = logic.hasIntegers();
+        Real coeff = poly.getCoeff(var);
+        bool const wasOne = coeff.isOne();
+        coeff.negate();
 
-        {
-            poly_t polyCp;
-            poly_t & polyRef = [&]() -> auto & {
-                if (not hasInts) { return poly; }
-                polyCp = poly;
-                return polyCp;
-            }();
-            // non-const operations on poly!
-            auto coeff = polyRef.removeVar(var);
-            coeff.negate();
-            if (not coeff.isOne()) {
-                polyRef.divideBy(coeff);
-                assert(hasInts or not logic.yieldsSortInt(var));
-                if (hasInts and logic.yieldsSortInt(var)) {
-                    if (not std::ranges::all_of(polyRef, [](auto const & term) { return term.coeff.isInteger(); })) {
-                        return PTRef_Undef;
-                    }
-                }
-            }
+        // properties of the variable coefficient after we moved it to the rhs
+        bool const isOne = coeff.isOne();
+        bool const isMinusOne = wasOne;
 
-            if (hasInts) { poly = std::move(polyCp); }
+        if (not isOne and not isMinusOne and logic.yieldsSortInt(var)) {
+            // integer term -> coeffs are coprime -> cannot divide
+            return PTRef_Undef;
         }
+
+        poly.removeVar(var);
+        if (not isOne) { poly.divideBy(coeff); }
 
         PTRef val = polyToPTRef(logic, poly);
         assert(val != PTRef_Undef);
