@@ -228,6 +228,7 @@ public:
 
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
+    // isMonomial property is related to PTRef only
     bool isMonomial(PTRef tr) const {
         SymRef sr = getPterm(tr).symb();
         return yieldsSortNum(sr) and not isPlus(sr) and not isTimesLin(sr) and not isNumConst(sr);
@@ -388,13 +389,14 @@ protected:
     PTRef mkBinaryGeq(PTRef lhs, PTRef rhs) { return mkBinaryLeq(rhs, lhs); }
     PTRef mkBinaryLt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryGeq(lhs, rhs)); }
     PTRef mkBinaryGt(PTRef lhs, PTRef rhs) { return mkNot(mkBinaryLeq(lhs, rhs)); }
-    SymRef declareFun_Multiplication_LinNonlin(std::string const & s, SRef rsort, vec<SRef> const & args) {
-        return sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
-    }
     PTRef mkBinaryEq(PTRef lhs, PTRef rhs) override;
     pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
+
+    SymRef declareFunMultiplicationLinNonlin(std::string const & s, SRef rsort, vec<SRef> const & args) {
+        return sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
+    }
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
 

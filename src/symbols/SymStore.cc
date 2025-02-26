@@ -39,12 +39,12 @@ SymStore::~SymStore() {
         free(idToName[i]);
 }
 
-SymRef SymStore::newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
-                         bool subSymb) {
+SymRef SymStore::newSymbImpl(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
+                             bool isInternal) {
     // Check if there already is a term called fname with same number of arguments of the same sort
     auto * symrefs = getRefOrNull(fname);
 
-    if (symrefs && !subSymb) {
+    if (symrefs && !isInternal) {
         vec<SymRef> const & trs = *symrefs;
         for (SymRef symref : trs) {
             auto const & symbol = ta[symref];
@@ -68,7 +68,7 @@ SymRef SymStore::newSymb(char const * fname, SRef rsort, vec<SRef> const & args,
         vec<SymRef> trs;
         trs.push(tr);
         symbolTable.insert(tmp_name, trs);
-    } else if (!subSymb) {
+    } else if (!isInternal) {
         symbolTable[tmp_name].push(tr); // Map the name to term reference (why not id?), used in parsing
     }
     return tr;

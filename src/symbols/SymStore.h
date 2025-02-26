@@ -42,13 +42,13 @@ public:
     // Constructs a new symbol.
 
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
-        return newSymb(fname, rsort, args, symConfig, false);
+        return newSymbImpl(fname, rsort, args, symConfig, false);
     };
     SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args) {
-        return newSymb(fname, rsort, args, SymConf::Default, false);
+        return newSymbImpl(fname, rsort, args, SymConf::Default, false);
     }
     SymRef newInternalSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig) {
-        return newSymb(fname, rsort, args, symConfig, true);
+        return newSymbImpl(fname, rsort, args, symConfig, true);
     }
     bool contains(char const * fname) const { return symbolTable.has(fname); }
     vec<SymRef> const & nameToRef(char const * s) const { return symbolTable[s]; }
@@ -80,8 +80,8 @@ private:
     SymbolAllocator ta{1024};
     vec<char *> idToName;
 
-    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
-                   bool subSymb);
+    SymRef newSymbImpl(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig,
+                       bool isInternal);
 };
 } // namespace opensmt
 
