@@ -38,6 +38,8 @@ void LASolver::addBound(PTRef leq_tr) {
     }();
 
     int const tid = Idx(logic.getPterm(leq_tr).getId());
+    // Must be a new inequality
+    assert(tid >= LeqToLABoundRefPair.size() or (LeqToLABoundRefPair[tid] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}));
     if (LeqToLABoundRefPair.size() <= tid) {
         LeqToLABoundRefPair.growTo(tid + 1);
     }
@@ -50,18 +52,6 @@ void LASolver::addBound(PTRef leq_tr) {
     }
     LABoundRefToLeqAsgn[br_pos_idx] = PtAsgn(leq_tr, l_True);
     LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
-}
-
-void LASolver::updateBound(PTRef tr)
-{
-    // If the bound already exists, do nothing.
-    int id = Idx(logic.getPterm(tr).getId());
-
-    if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
-        return;
-    }
-    addBound(tr);
 }
 
 bool LASolver::isValid(PTRef tr)
@@ -278,12 +268,10 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     if (status != INIT)
     {
-        // Treat the PTRef as it is pushed on-the-fly
-        //    status = INCREMENT;
-        assert( status == SAT );
+        assert(status == SAT);
         PTRef term = logic.getPterm(leq_tr)[1];
         registerArithmeticTerm(term);
-        updateBound(leq_tr);
+        addBound(leq_tr);
     }
     // DEBUG check
     isProperLeq(leq_tr);
