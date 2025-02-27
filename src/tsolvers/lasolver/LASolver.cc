@@ -75,7 +75,7 @@ void LASolver::updateBound(PTRef tr)
 
     if ((LeqToLABoundRefPair.size() > id) &&
         !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
-        return;
+        throw std::logic_error("Should never happen because of TSolver::informed_PTRefs");
     }
     addBound(tr, false);
 }
