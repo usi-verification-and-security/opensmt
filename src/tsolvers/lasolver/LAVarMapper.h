@@ -28,22 +28,13 @@ class ArithLogic;
  * instead of forcing to isolate the term from the constant and normalize it.
  */
 class LAVarMapper {
-private:
-    /** Mapping of linear Pterms to LVRefs */
-    vec<LVRef>      ptermToLavar;
-
-    /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
-    vec<PTRef>      laVarToPTRef;
-
-    ArithLogic&        logic;
 public:
     LAVarMapper(ArithLogic &logic) : logic(logic) {}
 
     void   registerNewMapping(LVRef lv, PTRef e_orig);
 
-    LVRef  getVarByPTId(PTId i) const;
+    LVRef  getVar(PTRef tr) const;
 
-    bool   hasVar(PTId i) const;
     bool   hasVar(PTRef tr) const;
 
     inline PTRef getVarPTRef(LVRef ref) const { return laVarToPTRef[ref.x]; }
@@ -51,6 +42,18 @@ public:
     void   clear();
 
     bool   isNegated(PTRef tr) const;
+
+private:
+    bool   hasVar(PTId i) const;
+
+    /** Mapping of linear Pterms to LVRefs */
+    vec<LVRef>      ptermToLavar;
+
+    /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
+    vec<PTRef>      laVarToPTRef;
+
+    ArithLogic&        logic;
+
 };
 
 }
