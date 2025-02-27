@@ -93,7 +93,6 @@ private:
     PTRef getVarPTRef(LVRef v) const { return laVarMapper.getVarPTRef(v); }
 
     void addBound(PTRef leq_tr);
-    void updateBound(PTRef leq_tr);
     LVRef registerArithmeticTerm(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.
                                               // Returns the LAVar for the term.
     void storeExplanation(Simplex::Explanation && explanationBounds);
