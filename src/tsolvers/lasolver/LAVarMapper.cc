@@ -31,7 +31,6 @@ void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
 
     PTId id_pos = logic.getPterm(e_orig).getId();
     PTId id_neg = logic.getPterm(logic.mkNeg(e_orig)).getId();
-    assert(!hasVar(id_pos));
     int max_id = std::max(Idx(id_pos), Idx(id_neg));
 
     if (max_id >= ptermToLavar.size()) {
@@ -43,11 +42,11 @@ void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     ptermToLavar[Idx(id_neg)] = lv;
 }
 
-LVRef  LAVarMapper::getVarByPTId(PTId i) const { return ptermToLavar[Idx(i)]; }
+LVRef LAVarMapper::getVar(PTRef tr) const { return ptermToLavar[Idx(logic.getPterm(tr).getId())]; }
 
 bool LAVarMapper::hasVar(PTRef tr) const { return hasVar(logic.getPterm(tr).getId()); }
 
-bool   LAVarMapper::hasVar(PTId i) const {
+bool LAVarMapper::hasVar(PTId i) const {
     return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef::Undef;
 }
 
