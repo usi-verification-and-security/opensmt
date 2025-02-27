@@ -68,18 +68,6 @@ void LASolver::addBound(PTRef leq_tr, bool isInitializationPhase) {
     LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
 }
 
-void LASolver::updateBound(PTRef tr)
-{
-    // If the bound already exists, do nothing.
-    int id = Idx(logic.getPterm(tr).getId());
-
-    if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
-        throw std::logic_error("Should never happen because of TSolver::informed_PTRefs");
-    }
-    addBound(tr, false);
-}
-
 bool LASolver::isValid(PTRef tr)
 {
     return logic.isLeq(tr); // MB: LA solver expects only inequalities in LEQ form!
@@ -294,12 +282,10 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     if (status != INIT)
     {
-        // Treat the PTRef as it is pushed on-the-fly
-        //    status = INCREMENT;
-        assert( status == SAT );
+        assert(status == SAT);
         PTRef term = logic.getPterm(leq_tr)[1];
         registerArithmeticTerm(term);
-        updateBound(leq_tr);
+        addBound(leq_tr, false);
     }
     // DEBUG check
     isProperLeq(leq_tr);
