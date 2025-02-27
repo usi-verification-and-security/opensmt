@@ -136,12 +136,11 @@ TEST_F(IteManagerTest, test_IteTimesVar) {
     PTRef c2 = logic.mkConst("2");
     PTRef ite = logic.mkIte(cond, c1, c2);
 
-    EXPECT_THROW(logic.mkTimes(ite, x), LANonLinearException);
+    EXPECT_NO_THROW(logic.mkTimes(ite, x));
 
 }
 
 TEST_F(IteManagerTest, test_IteTimesIte) {
-
     PTRef x = logic.mkVar(lrasort, "x");
     PTRef y = logic.mkVar(lrasort, "y");
     PTRef z = logic.mkVar(lrasort, "z");
@@ -153,7 +152,7 @@ TEST_F(IteManagerTest, test_IteTimesIte) {
     PTRef cond2 = logic.mkEq(x, z);
     PTRef ite2 = logic.mkIte(cond2, c2, c1);
 
-    EXPECT_THROW(logic.mkTimes(ite1, ite2), LANonLinearException);
+    EXPECT_NO_THROW(logic.mkTimes(ite1, ite2));
 }
 
 TEST_F(IteManagerTest, test_IteChain) {
