@@ -73,6 +73,9 @@ all: release debug parallel-release parallel-debug
 
 .PHONY: release debug
 .PHONY: _dir-release _dir-debug _build-release _build-debug
+## Run `cmake` unconditionally of the existence of the build dirs
+## > always run all `execute_process` in CMakeLists.txt, e.g. to update `OPENSMT_GIT_DESCRIPTION`
+.PHONY: $(RELEASE_BUILD_DIR) $(DEBUG_BUILD_DIR)
 
 release: _dir-release _build-release
 
@@ -98,6 +101,7 @@ $(DEBUG_BUILD_DIR):
 
 .PHONY: parallel parallel-release parallel-debug
 .PHONY: _dir-parallel-release _dir-parallel-debug _build-parallel-release _build-parallel-debug
+.PHONY: $(PARALLEL_RELEASE_BUILD_DIR) $(PARALLEL_DEBUG_BUILD_DIR)
 
 parallel: parallel-release
 
