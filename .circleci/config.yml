@@ -32,7 +32,7 @@ jobs:
                 name: Debug build gcc
                 command: |
                     eval $(opam env)
-                    ./ci/run_travis_commands.sh
+                    ./ci/run_ci_commands.sh
 
     build-recent-gcc-release:
         docker:
@@ -49,7 +49,7 @@ jobs:
             - checkout
             - run:
                 name: Release build gcc
-                command: ./ci/run_travis_commands.sh
+                command: ./ci/run_ci_commands.sh
 
     build-recent-clang-debug:
         docker:
@@ -73,7 +73,7 @@ jobs:
                 name: Debug build llvm
                 command: |
                     eval $(opam env)
-                    ./ci/run_travis_commands.sh
+                    ./ci/run_ci_commands.sh
 
     build-recent-clang-release:
         docker:
@@ -93,7 +93,7 @@ jobs:
                 command: sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 60
             - run:
                 name: Release build llvm
-                command: ./ci/run_travis_commands.sh
+                command: ./ci/run_ci_commands.sh
 
     build-fedora-debug:
         docker:
@@ -115,7 +115,7 @@ jobs:
                 name: Debug build gcc in Fedora
                 command: |
                     eval $(opam env)
-                    ./ci/run_travis_commands.sh
+                    ./ci/run_ci_commands.sh
 
     build-fedora-release:
         docker:
@@ -132,7 +132,7 @@ jobs:
             - checkout
             - run:
                 name: Release build gcc in Fedora
-                command: ./ci/run_travis_commands.sh
+                command: ./ci/run_ci_commands.sh
 
     build-fedora-release-static:
         docker:
@@ -171,7 +171,7 @@ jobs:
                 command: echo 'export PATH=/opt/homebrew/opt/flex/bin:/opt/homebrew/opt/bison/bin:$PATH' >> $BASH_ENV
             - run:
                 name: Release build OS X
-                command: ./ci/run_travis_commands.sh
+                command: ./ci/run_ci_commands.sh
                 environment:
                     CMAKE_BUILD_TYPE: Release
                     FLAGS: -Wall -Wextra -Werror
