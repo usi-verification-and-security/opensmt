@@ -173,8 +173,8 @@ class Interpret {
     void                        getInterpolants(const ASTNode& n);
     void                        interp (ASTNode& n);
 
-    void                        notify_formatted(bool error, const char* s, ...);
-    void                        notify_success();
+    void                        notify_formatted(bool error, const char* s, ...) const;
+    void                        notify_success() const;
     void                        comment_formatted(const char* s, ...) const;
 
     bool                        addLetFrame(ASTNode const & bindingsNode, LetRecords& letRecords);
@@ -199,15 +199,16 @@ class Interpret {
     void    execute(const ASTNode* n);
     bool    gotExit() const { return f_exit; }
 
-    bool    getAssignment  ();
+    bool    getAssignment  () const;
 
-    void    reportError(char const * msg) { notify_formatted(true, msg); }
+    void    reportError(char const * msg) const { notify_formatted(true, msg); }
 
     PTRef getParsedFormula();
     vec<PTRef>& getAssertions() { return assertions; }
     bool is_top_level_assertion(PTRef ref);
     int get_assertion_index(PTRef ref);
-    MainSolver&     getMainSolver() { return *main_solver; }
+    MainSolver&        getMainSolver() { return *main_solver; }
+    MainSolver const & getMainSolver() const { return *main_solver; }
 };
 
 }

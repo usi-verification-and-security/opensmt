@@ -613,20 +613,21 @@ void Interpret::pop(int n) {
     }
 }
 
-bool Interpret::getAssignment() {
+bool Interpret::getAssignment() const {
     if (not isInitialized()) {
        notify_formatted(true, "Illegal command before set-logic");
        return false;
     }
-    if (main_solver->getStatus() != s_True) {
+    auto const & solver = getMainSolver();
+    if (solver.getStatus() != s_True) {
        notify_formatted(true, "Last solver call not satisfiable");
        return false;
     }
     std::ostringstream ss;
-    auto const & termNames = main_solver->getTermNames();
+    auto const & termNames = solver.getTermNames();
     ss << '(';
     for (auto const & [name, term] : termNames) {
-        lbool val = main_solver->getTermValue(term);
+        lbool val = solver.getTermValue(term);
         ss << '(' << name << ' ' << (val == l_True ? "true" : (val == l_False ? "false" : "unknown")) << ')' << " ";
     }
     ss.seekp(-1, std::ios::cur);
@@ -1042,7 +1043,7 @@ void Interpret::comment_formatted(const char* fmt_str, ...) const {
 }
 
 
-void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
+void Interpret::notify_formatted(bool error, const char* fmt_str, ...) const {
     va_list ap;
     int d;
     char c1, *t;
@@ -1077,7 +1078,7 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) {
     std::cout << std::endl;
 }
 
-void Interpret::notify_success() {
+void Interpret::notify_success() const {
     if (config.printSuccess()) {
         std::cout << "success" << std::endl;
     }
@@ -1293,7 +1294,8 @@ void Interpret::getInterpolants(const ASTNode& n)
     vec<PTRef> grouping; // Consists of PTRefs that we want to group
     LetRecords letRecords;
     letRecords.pushFrame();
-    auto const & termNames = main_solver->getTermNames();
+    // as_const is just workaround to avoid the deprecated non-const call of getTermNames
+    auto const & termNames = std::as_const(*this).getMainSolver().getTermNames();
     for (auto const & [name, term] : termNames) {
         letRecords.addBinding(name, term);
     }
