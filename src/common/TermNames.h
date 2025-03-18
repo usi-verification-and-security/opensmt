@@ -26,11 +26,20 @@ public:
     bool contains(TermName const & name) const { return nameToTerm.contains(name); }
     bool contains(PTRef term) const { return termToNames.contains(term); }
 
+    [[deprecated("Use tryInsert")]]
     void insert(TermName const & name, PTRef term) {
         assert(not contains(name));
-        nameToTerm.emplace(name, term);
+        [[maybe_unused]] bool const success = tryInsert(name, term);
+        assert(success);
+    }
+
+    bool tryInsert(TermName const & name, PTRef term) {
+        auto const [_, inserted] = nameToTerm.try_emplace(name, term);
+        if (not inserted) { return false; }
+
         termToNames[term].push_back(name);
         scopedNamesAndTerms.push({name, term});
+        return true;
     }
 
     PTRef termByName(TermName const & name) const {

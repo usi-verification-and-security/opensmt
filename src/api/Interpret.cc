@@ -531,14 +531,14 @@ PTRef Interpret::parseTerm(const ASTNode& term, LetRecords& letRecords) {
         if (tr == PTRef_Undef) return tr;
 
         if (strcmp(name_attr.getValue(), ":named") == 0) {
-            auto & termNames = main_solver->getTermNames();
             ASTNode& sym = **(name_attr.children->begin());
             assert(sym.getType() == SYM_T or sym.getType() == QSYM_T);
-            if (termNames.contains(sym.getValue())) {
-                notify_formatted(true, "name %s already exists", sym.getValue());
+            char const * str = sym.getValue();
+            bool const success = main_solver->tryAddTermNameFor(tr, str);
+            if (not success) {
+                notify_formatted(true, "name %s already exists", str);
                 return PTRef_Undef;
             }
-            termNames.insert(sym.getValue(), tr);
         }
         return tr;
     }

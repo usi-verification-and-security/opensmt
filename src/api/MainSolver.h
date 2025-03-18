@@ -87,7 +87,16 @@ public:
     std::size_t getAssertionLevel() const;
 
     void insertFormula(PTRef fla);
+    // Alias for `insertFormula`, reserved for future use
+    void addAssertion(PTRef fla) { return insertFormula(fla); }
     std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
+    // Alias for `getInsertedFormulasCount`, reserved for future use
+    std::size_t getAssertionsCount() const { return getInsertedFormulasCount(); }
+
+    // Uses tryAddTermName and inserts the formula only on success
+    bool tryAddNamedAssertion(PTRef, std::string const & name);
+    // Try add a unique name for a term already included in the assertions
+    bool tryAddTermNameFor(PTRef, std::string const & name);
 
     void initialize();
 
@@ -130,7 +139,10 @@ public:
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
-    TermNames & getTermNames() { return termNames; }
+    [[deprecated("Use tryAddNamedAssertion or tryAddTermName")]]
+    TermNames & getTermNames() {
+        return termNames;
+    }
     TermNames const & getTermNames() const { return termNames; }
 
     void stop() { smt_solver->stop = true; }

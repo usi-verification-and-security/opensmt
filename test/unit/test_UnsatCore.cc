@@ -123,13 +123,9 @@ using MinFullUFUnsatCoreTest = UFUnsatCoreTestTp<MinFullUnsatCoreTestBase>;
 
 TEST_F(UFUnsatCoreTest, Bool_Simple) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a2", b2);
-    termNames.insert("a3", nb1);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -141,13 +137,9 @@ TEST_F(UFUnsatCoreTest, Bool_Simple) {
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a2", b2);
-    termNames.insert("a3", nb1);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -159,12 +151,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple) {
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed1) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a2", b2);
-    termNames.insert("a3", nb1);
+    solver.addAssertion(b1);
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -176,12 +165,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed1) {
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed2) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a3", nb1);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.addAssertion(b2);
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -193,12 +179,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed2) {
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed3) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a2", b2);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.addAssertion(nb1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -210,9 +193,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed3) {
 
 TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
+    solver.addAssertion(b1);
+    solver.addAssertion(b2);
+    solver.addAssertion(nb1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -224,9 +207,9 @@ TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple) {
 
 TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
+    solver.addAssertion(b1);
+    solver.addAssertion(b2);
+    solver.addAssertion(nb1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -238,12 +221,9 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple) {
 
 TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed1) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a2", b2);
-    termNames.insert("a3", nb1);
+    solver.addAssertion(b1);
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -255,12 +235,9 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed1) {
 
 TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed2) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a3", nb1);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.addAssertion(b2);
+    solver.tryAddNamedAssertion(nb1, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -272,12 +249,9 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed2) {
 
 TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed3) {
     MainSolver solver = makeSolver();
-    solver.insertFormula(b1);
-    solver.insertFormula(b2);
-    solver.insertFormula(nb1);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", b1);
-    termNames.insert("a2", b2);
+    solver.tryAddNamedAssertion(b1, "a1");
+    solver.tryAddNamedAssertion(b2, "a2");
+    solver.addAssertion(nb1);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -300,13 +274,9 @@ TEST_F(UFUnsatCoreTest, Bool_ReuseProofChain) {
     PTRef c4 = logic.mkOr(nb1, nb3);
     PTRef a1 = logic.mkAnd(c1,c2);
     PTRef a2 = logic.mkAnd(c3,c4);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(b4);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", b4);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(b4, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -330,13 +300,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_ReuseProofChain) {
     PTRef c4 = logic.mkOr(nb1, nb3);
     PTRef a1 = logic.mkAnd(c1,c2);
     PTRef a2 = logic.mkAnd(c3,c4);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(b4);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", b4);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(b4, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -360,9 +326,9 @@ TEST_F(FullUFUnsatCoreTest, Full_Bool_ReuseProofChain) {
     PTRef c4 = logic.mkOr(nb1, nb3);
     PTRef a1 = logic.mkAnd(c1,c2);
     PTRef a2 = logic.mkAnd(c3,c4);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(b4);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(b4);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -381,13 +347,9 @@ TEST_F(UFUnsatCoreTest, UF_Simple) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -406,13 +368,9 @@ TEST_F(MinUFUnsatCoreTest, Min_UF_Simple) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -431,12 +389,9 @@ TEST_F(MinUFUnsatCoreTest, Min_UF_Simple_Unnamed1) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.addAssertion(a1);
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -455,12 +410,9 @@ TEST_F(MinUFUnsatCoreTest, Min_UF_Simple_Unnamed2) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.addAssertion(a2);
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -479,12 +431,9 @@ TEST_F(MinUFUnsatCoreTest, Min_UF_Simple_Unnamed3) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.addAssertion(a3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -503,9 +452,9 @@ TEST_F(FullUFUnsatCoreTest, Full_UF_Simple) {
     PTRef a1 = logic.mkEq(x,y);
     PTRef a2 = logic.mkEq(logic.mkUninterpFun(g,{x,y}), logic.mkUninterpFun(g,{y,x}));
     PTRef a3 = logic.mkNot(logic.mkEq(logic.mkUninterpFun(f,{x}), logic.mkUninterpFun(f,{y})));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(a3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -521,13 +470,9 @@ TEST_F(UFUnsatCoreTest, Bool_Simple_Overlap) {
     PTRef a1 = b1;
     PTRef a2 = logic.mkAnd(b1, b2);
     PTRef a3 = logic.mkOr(logic.mkNot(b1), logic.mkNot(b2));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -543,13 +488,9 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Overlap) {
     PTRef a1 = b1;
     PTRef a2 = logic.mkAnd(b1, b2);
     PTRef a3 = logic.mkOr(logic.mkNot(b1), logic.mkNot(b2));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -565,9 +506,9 @@ TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple_Overlap) {
     PTRef a1 = b1;
     PTRef a2 = logic.mkAnd(b1, b2);
     PTRef a3 = logic.mkOr(logic.mkNot(b1), logic.mkNot(b2));
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(a3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -614,13 +555,9 @@ TEST_F(AXUnsatCoreTest, AX_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(i,j));
     PTRef a2 = logic.mkNot(logic.mkEq(logic.mkSelect({a,j}), logic.mkSelect({logic.mkStore({a,i,e}),j})));
     PTRef a3 = logic.mkEq(logic.mkSelect({a,k}), e);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -639,13 +576,9 @@ TEST_F(AXUnsatCoreTest, Min_AX_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(i,j));
     PTRef a2 = logic.mkNot(logic.mkEq(logic.mkSelect({a,j}), logic.mkSelect({logic.mkStore({a,i,e}),j})));
     PTRef a3 = logic.mkEq(logic.mkSelect({a,k}), e);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -664,9 +597,9 @@ TEST_F(FullAXUnsatCoreTest, Full_AX_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(i,j));
     PTRef a2 = logic.mkNot(logic.mkEq(logic.mkSelect({a,j}), logic.mkSelect({logic.mkStore({a,i,e}),j})));
     PTRef a3 = logic.mkEq(logic.mkSelect({a,k}), e);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(a3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -719,15 +652,10 @@ TEST_F(LIAUnsatCoreTest, LIA_Simple) {
     PTRef a2 = logic.mkGeq(y,z);
     PTRef a3 = logic.mkLt(logic.mkPlus(vec<PTRef>{x,y,z}), logic.getTerm_IntZero());
     PTRef a4 = logic.mkLt(x,z);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    solver.insertFormula(a4);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
-    termNames.insert("a4", a4);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
+    solver.tryAddNamedAssertion(a4, "a4");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -749,15 +677,10 @@ TEST_F(LIAUnsatCoreTest, Min_LIA_Simple) {
     PTRef a2 = logic.mkGeq(y,z);
     PTRef a3 = logic.mkLt(logic.mkPlus(vec<PTRef>{x,y,z}), logic.getTerm_IntZero());
     PTRef a4 = logic.mkLt(x,z);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    solver.insertFormula(a4);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
-    termNames.insert("a4", a4);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
+    solver.tryAddNamedAssertion(a4, "a4");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -779,10 +702,10 @@ TEST_F(FullLIAUnsatCoreTest, Full_LIA_Simple) {
     PTRef a2 = logic.mkGeq(y,z);
     PTRef a3 = logic.mkLt(logic.mkPlus(vec<PTRef>{x,y,z}), logic.getTerm_IntZero());
     PTRef a4 = logic.mkLt(x,z);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    solver.insertFormula(a4);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(a3);
+    solver.addAssertion(a4);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -838,13 +761,9 @@ TEST_F(ALIAUnsatCoreTest, ALIA_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(logic.mkSelect({arr1, x}), logic.mkSelect({arr1,y})));
     PTRef a2 = logic.mkEq(logic.mkSelect({arr1,x}), logic.getTerm_IntZero());
     PTRef a3 = logic.mkEq(x,y);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -863,13 +782,9 @@ TEST_F(ALIAUnsatCoreTest, Min_ALIA_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(logic.mkSelect({arr1, x}), logic.mkSelect({arr1,y})));
     PTRef a2 = logic.mkEq(logic.mkSelect({arr1,x}), logic.getTerm_IntZero());
     PTRef a3 = logic.mkEq(x,y);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
-    auto & termNames = solver.getTermNames();
-    termNames.insert("a1", a1);
-    termNames.insert("a2", a2);
-    termNames.insert("a3", a3);
+    solver.tryAddNamedAssertion(a1, "a1");
+    solver.tryAddNamedAssertion(a2, "a2");
+    solver.tryAddNamedAssertion(a3, "a3");
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();
@@ -888,9 +803,9 @@ TEST_F(FullALIAUnsatCoreTest, Full_ALIA_Simple) {
     PTRef a1 = logic.mkNot(logic.mkEq(logic.mkSelect({arr1, x}), logic.mkSelect({arr1,y})));
     PTRef a2 = logic.mkEq(logic.mkSelect({arr1,x}), logic.getTerm_IntZero());
     PTRef a3 = logic.mkEq(x,y);
-    solver.insertFormula(a1);
-    solver.insertFormula(a2);
-    solver.insertFormula(a3);
+    solver.addAssertion(a1);
+    solver.addAssertion(a2);
+    solver.addAssertion(a3);
     auto res = solver.check();
     ASSERT_EQ(res, s_False);
     auto core = solver.getUnsatCore();

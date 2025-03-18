@@ -128,6 +128,18 @@ void MainSolver::insertFormula(PTRef fla) {
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount() - 1);
 }
 
+bool MainSolver::tryAddNamedAssertion(PTRef fla, std::string const & name) {
+    bool const success = tryAddTermNameFor(fla, name);
+    if (not success) { return false; }
+
+    addAssertion(fla);
+    return true;
+}
+
+bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
+    return termNames.tryInsert(name, fla);
+}
+
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
