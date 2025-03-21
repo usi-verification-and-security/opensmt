@@ -29,7 +29,7 @@ void LASolver::addBound(PTRef leq_tr) {
     LABoundRefPair boundRefs = [this, leq_tr]() -> LABoundRefPair {
         auto [const_tr, sum_tr] = logic.leqToConstantAndTerm(leq_tr);
         assert(logic.isNumConst(const_tr) && logic.isLinearTerm(sum_tr));
-        LVRef const v = laVarMapper.getVarByPTId(logic.getPterm(sum_tr).getId());
+        LVRef const v = getVarForTerm(sum_tr);
         bool const isNegated = laVarMapper.isNegated(sum_tr);
         auto values = isNegated ? getBoundsValue(v, -logic.getNumConst(const_tr), false)
             : getBoundsValue(v, logic.getNumConst(const_tr), true);
@@ -38,6 +38,8 @@ void LASolver::addBound(PTRef leq_tr) {
     }();
 
     int const tid = Idx(logic.getPterm(leq_tr).getId());
+    // Must be a new inequality
+    assert(tid >= LeqToLABoundRefPair.size() or (LeqToLABoundRefPair[tid] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef}));
     if (LeqToLABoundRefPair.size() <= tid) {
         LeqToLABoundRefPair.growTo(tid + 1);
     }
@@ -50,18 +52,6 @@ void LASolver::addBound(PTRef leq_tr) {
     }
     LABoundRefToLeqAsgn[br_pos_idx] = PtAsgn(leq_tr, l_True);
     LABoundRefToLeqAsgn[br_neg_idx] = PtAsgn(leq_tr, l_False);
-}
-
-void LASolver::updateBound(PTRef tr)
-{
-    // If the bound already exists, do nothing.
-    int id = Idx(logic.getPterm(tr).getId());
-
-    if ((LeqToLABoundRefPair.size() > id) &&
-        !(LeqToLABoundRefPair[id] == LABoundRefPair{LABoundRef_Undef, LABoundRef_Undef})) {
-        return;
-    }
-    addBound(tr);
 }
 
 bool LASolver::isValid(PTRef tr)
@@ -182,15 +172,12 @@ void LASolver::markVarAsInt(LVRef v) {
 LVRef LASolver::getVarForLeq(PTRef ref) const {
     assert(logic.isLeq(ref));
     auto [constant, term] = logic.leqToConstantAndTerm(ref);
-    return laVarMapper.getVarByPTId(logic.getPterm(term).getId());
+    return getVarForTerm(term);
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-
     assert(logic.isLinearTerm(expr_in));
-    PTId id = logic.getPterm(expr_in).getId();
-
-    if (laVarMapper.hasVar(id)) {
+    if (laVarMapper.hasVar(expr_in)) {
         return getVarForTerm(expr_in);
     }
 
@@ -281,12 +268,10 @@ void LASolver::declareAtom(PTRef leq_tr)
 
     if (status != INIT)
     {
-        // Treat the PTRef as it is pushed on-the-fly
-        //    status = INCREMENT;
-        assert( status == SAT );
+        assert(status == SAT);
         PTRef term = logic.getPterm(leq_tr)[1];
         registerArithmeticTerm(term);
-        updateBound(leq_tr);
+        addBound(leq_tr);
     }
     // DEBUG check
     isProperLeq(leq_tr);
@@ -877,7 +862,7 @@ TRes LASolver::cutFromProof() {
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
-        LVRef lvar = this->laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+        LVRef lvar = this->getVarForTerm(var);
         Delta val = this->simplex.getValuation(lvar);
         assert(not val.hasDelta());
         return val.R();
@@ -912,7 +897,7 @@ vec<PTRef> LASolver::collectEqualitiesFor(vec<PTRef> const & vars, std::unordere
             if (not laVarMapper.hasVar(var)) { // LASolver does not have any constraints on this LA var
                 continue;
             }
-            LVRef v = laVarMapper.getVarByPTId(logic.getPterm(var).getId());
+            LVRef v = getVarForTerm(var);
             auto value = simplex.getValuation(v);
             eqClasses[value].push(var);
         }

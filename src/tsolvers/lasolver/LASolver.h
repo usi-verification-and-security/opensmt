@@ -93,7 +93,6 @@ private:
     PTRef getVarPTRef(LVRef v) const { return laVarMapper.getVarPTRef(v); }
 
     void addBound(PTRef leq_tr);
-    void updateBound(PTRef leq_tr);
     LVRef registerArithmeticTerm(PTRef expr); // Ensures this term and all variables in it has corresponding LVAR.
                                               // Returns the LAVar for the term.
     void storeExplanation(Simplex::Explanation && explanationBounds);
@@ -118,7 +117,7 @@ private:
 
     LVRef getLAVar_single(PTRef term); // Initialize a new LA var if needed, otherwise return the old var
     LVRef getVarForLeq(PTRef ref) const;
-    LVRef getVarForTerm(PTRef ref) const { return laVarMapper.getVarByPTId(logic.getPterm(ref).getId()); }
+    LVRef getVarForTerm(PTRef ref) const { return laVarMapper.getVar(ref); }
     void notifyVar(LVRef); // Notify the solver of the existence of the var. This is so that LIA can add it to
                            // integer vars list.
 
