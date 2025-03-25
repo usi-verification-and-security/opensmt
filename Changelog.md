@@ -1,4 +1,20 @@
-### 2.8.1 (unreleased)
+### 2.9.0 (2025-03-26)
+
+API changes:
+ - Refactored number-related source files into a separate directory.
+ - Divided `InterpolationUtils` into multiple headers.
+ - `MainSolver`: deprecated non-const getTermNames, replaced by `tryAddNamedAssertion`/`tryAddTermNameFor`.
+ - Made some functions as const in `Logic` and `ArithLogic`.
+
+Documentation:
+ - Reintroduced help message.
+
+New features:
+ - Implemented simple extensions of a `Model`.
+ - Support printing the version including commits.
+
+Other:
+ - Refactored and simplified handling of bounds in `LASolver`.
 
 ### 2.8.0 (2024-11-01)
 
