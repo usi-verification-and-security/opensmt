@@ -90,6 +90,8 @@
 ./src/tsolvers/lasolver/FarkasInterpolator.cc
 ./src/tsolvers/lasolver/FarkasInterpolator.h
 ./src/tsolvers/lasolver/LASolver.h
+./src/tsolvers/lasolver/LAVarMapper.cc
+./src/tsolvers/lasolver/LAVarMapper.h
 ./src/tsolvers/lasolver/LIAInterpolator.cc
 ./src/tsolvers/lasolver/LIAInterpolator.h
 ./src/tsolvers/lasolver/Simplex.cc

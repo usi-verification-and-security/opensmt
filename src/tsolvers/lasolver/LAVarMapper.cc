@@ -24,40 +24,38 @@ namespace opensmt {
 void LAVarMapper::registerNewMapping(LVRef lv, PTRef e_orig) {
     assert(!hasVar(e_orig));
     assert(!isNegated(e_orig));
-    if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) {
-        laVarToPTRef.growTo(lv.x+1, PTRef_Undef);
-    }
+    if (lv.x >= static_cast<unsigned int>(laVarToPTRef.size())) { laVarToPTRef.growTo(lv.x + 1, PTRef_Undef); }
     laVarToPTRef[lv.x] = e_orig;
 
     PTId id_pos = logic.getPterm(e_orig).getId();
     PTId id_neg = logic.getPterm(logic.mkNeg(e_orig)).getId();
     int max_id = std::max(Idx(id_pos), Idx(id_neg));
 
-    if (max_id >= ptermToLavar.size()) {
-        ptermToLavar.growTo(max_id + 1, LVRef::Undef);
-    }
+    if (max_id >= ptermToLavar.size()) { ptermToLavar.growTo(max_id + 1, LVRef::Undef); }
 
     assert(ptermToLavar[Idx(id_pos)] == ptermToLavar[Idx(id_neg)]);
     ptermToLavar[Idx(id_pos)] = lv;
     ptermToLavar[Idx(id_neg)] = lv;
 }
 
-LVRef LAVarMapper::getVar(PTRef tr) const { return ptermToLavar[Idx(logic.getPterm(tr).getId())]; }
+LVRef LAVarMapper::getVar(PTRef tr) const {
+    return ptermToLavar[Idx(logic.getPterm(tr).getId())];
+}
 
-bool LAVarMapper::hasVar(PTRef tr) const { return hasVar(logic.getPterm(tr).getId()); }
+bool LAVarMapper::hasVar(PTRef tr) const {
+    return hasVar(logic.getPterm(tr).getId());
+}
 
 bool LAVarMapper::hasVar(PTId i) const {
     return static_cast<unsigned int>(ptermToLavar.size()) > Idx(i) && ptermToLavar[Idx(i)] != LVRef::Undef;
 }
 
 bool LAVarMapper::isNegated(PTRef tr) const {
-    if (logic.isNumConst(tr))
-        return logic.getNumConst(tr) < 0; // Case (0a) and (0b)
-    if (logic.isNumVar(tr))
-        return false; // Case (1a)
+    if (logic.isNumConst(tr)) return logic.getNumConst(tr) < 0; // Case (0a) and (0b)
+    if (logic.isNumVar(tr)) return false;                       // Case (1a)
     if (logic.isTimes(tr)) {
         // Cases (2)
-        auto [v,c] = logic.splitTermToVarAndConst(tr);
+        auto [v, c] = logic.splitTermToVarAndConst(tr);
         return isNegated(c);
     }
     if (logic.isIte(tr)) {
@@ -73,4 +71,4 @@ void LAVarMapper::clear() {
     this->ptermToLavar.clear();
 }
 
-}
+} // namespace opensmt

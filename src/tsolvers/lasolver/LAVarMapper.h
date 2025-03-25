@@ -10,8 +10,8 @@
 
 #include "LARefs.h"
 
-#include <pterms/Pterm.h>
 #include <minisat/mtl/Vec.h>
+#include <pterms/Pterm.h>
 
 namespace opensmt {
 
@@ -29,33 +29,32 @@ class ArithLogic;
  */
 class LAVarMapper {
 public:
-    LAVarMapper(ArithLogic &logic) : logic(logic) {}
+    LAVarMapper(ArithLogic & logic) : logic(logic) {}
 
-    void   registerNewMapping(LVRef lv, PTRef e_orig);
+    void registerNewMapping(LVRef lv, PTRef e_orig);
 
-    LVRef  getVar(PTRef tr) const;
+    LVRef getVar(PTRef tr) const;
 
-    bool   hasVar(PTRef tr) const;
+    bool hasVar(PTRef tr) const;
 
     inline PTRef getVarPTRef(LVRef ref) const { return laVarToPTRef[ref.x]; }
 
-    void   clear();
+    void clear();
 
-    bool   isNegated(PTRef tr) const;
+    bool isNegated(PTRef tr) const;
 
 private:
-    bool   hasVar(PTId i) const;
+    bool hasVar(PTId i) const;
 
     /** Mapping of linear Pterms to LVRefs */
-    vec<LVRef>      ptermToLavar;
+    vec<LVRef> ptermToLavar;
 
     /** The inverse of ptermToLavar, mapping LVRefs to PTRefs */
-    vec<PTRef>      laVarToPTRef;
+    vec<PTRef> laVarToPTRef;
 
-    ArithLogic&        logic;
-
+    ArithLogic & logic;
 };
 
-}
+} // namespace opensmt
 
-#endif //OPENSMT_LAVARMAPPER_H
+#endif // OPENSMT_LAVARMAPPER_H
