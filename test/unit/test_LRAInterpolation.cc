@@ -1,11 +1,15 @@
-//
-// Created by Martin Blicha on 19.09.20.
-//
+/*
+ * Copyright (c) 2020-2025, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 #include <gtest/gtest.h>
+
+#include <common/VerificationUtils.h>
 #include <logics/ArithLogic.h>
 #include <tsolvers/lasolver/FarkasInterpolator.h>
-#include <common/VerificationUtils.h>
 
 namespace opensmt {
 
@@ -271,6 +275,28 @@ TEST_F(LRAInterpolationTest, test_Decomposition_Strict){
     PTRef dualDecomposedFarkasItp = interpolator.getDualDecomposedInterpolant();
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.mkAnd({leq4, leq5, leq6}), dualDecomposedFarkasItp));
 //    std::cout << logic.pp(dualDecomposedFarkasItp) << std::endl;
+}
+
+TEST_F(LRAInterpolationTest, test_SumOfAIsZeroGreaterThanZero){
+    /*
+     * A:   x1 >= 0
+     *      x2 > 0
+     *      x1 + x2 <= 0
+     * B:
+     *      true
+     */
+    PTRef zero = logic.getTerm_RealZero();
+    PTRef leq1 = logic.mkGeq(x1, zero);
+    PTRef leq2 = logic.mkGt(x2, zero);
+    PTRef leq3 = logic.mkLeq(logic.mkPlus(x1,x2), zero);
+
+    vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(logic.mkNot(leq2), l_False), PtAsgn(leq3, l_True)};
+    ASSERT_TRUE(std::all_of(conflict.begin(), conflict.end(), [this](PtAsgn p) { return not logic.isNot(p.tr); }));
+    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_A}};
+    FarkasInterpolator interpolator(logic, std::move(conflict), {1,1,1}, labels);
+    PTRef farkasItp = interpolator.getFarkasInterpolant();
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd({leq1, leq2, leq3}), logic.getTerm_true(), farkasItp));
+    EXPECT_EQ(farkasItp, logic.getTerm_false());
 }
 
 }

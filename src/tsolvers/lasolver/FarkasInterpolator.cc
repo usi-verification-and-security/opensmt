@@ -1,6 +1,9 @@
-//
-// Created by Martin Blicha on 22.05.18.
-//
+/*
+ *  Copyright (c) 2018-2025, Martin Blicha <martin.blicha@gmail.com>
+ *
+ *  SPDX-License-Identifier: MIT
+ *
+ */
 
 // #ifndef NDEBUG
 // #define TRACE
@@ -14,11 +17,12 @@
 
 #include "FarkasInterpolator.h"
 
+#include "Polynomial.h"
+
 #include <common/ApiException.h>
 #include <common/InternalException.h>
 #include <common/numbers/Real.h>
 #include <logics/ArithLogic.h>
-#include <simplifiers/LA.h>
 
 #include <functional>
 #include <unordered_map>
@@ -28,6 +32,57 @@ using matrix_t = std::vector<std::vector<Real>>;
 
 // initializing static member
 DecomposedStatistics FarkasInterpolator::stats{};
+using LAPoly = PolynomialT<PTRef>;
+
+/// Given an inequality @p leq of the form "c <= t", returns a polynomial p such that p := t - c/
+/// That is, it represents the inequality 0 <= p that is equivalent to @p leq.
+LAPoly toPoly(PTRef leq, ArithLogic & logic) {
+    assert(logic.isLeq(leq));
+    LAPoly poly;
+    PTRef const lhs = logic.getPterm(leq)[0];
+    PTRef const rhs = logic.getPterm(leq)[1];
+    PTRef const polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
+    assert(logic.isLinearTerm(polyTerm));
+    if (logic.isLinearFactor(polyTerm)) {
+        auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
+        poly.addTerm(var, logic.getNumConst(c));
+    } else {
+        assert(logic.isPlus(polyTerm));
+        for (PTRef const factor : logic.getPterm(polyTerm)) {
+            auto [var, c] = logic.splitTermToVarAndConst(factor);
+            poly.addTerm(var, logic.getNumConst(c));
+        }
+    }
+    return poly;
+}
+
+enum class Strictness { NONSTRICT, STRICT };
+
+/// Given a polynomial @p poly, returns an inequality equivalent to "0 <= poly" (or <= 0, depending on @p strictness)
+PTRef toInequality(LAPoly poly, ArithLogic & logic, SRef const type, Strictness const strictness) {
+    if (poly.size() == 0) { return strictness == Strictness::NONSTRICT ? logic.getTerm_true() : logic.getTerm_false(); }
+    if (type == logic.getSort_int()) {
+        // Ensure the polynomial does not have any fractional coefficients
+        Real multiplyBy = 1;
+        for (auto const & [var, coeff] : poly) {
+            if (var == PTRef_Undef) { continue; }
+            if (coeff.isInteger()) { continue; }
+            multiplyBy = lcm(multiplyBy, coeff.get_den());
+        }
+        if (not multiplyBy.isOne()) { poly.divideBy(multiplyBy.inverse()); }
+    }
+    vec<PTRef> args;
+    for (auto const & [var, coeff] : poly) {
+        if (var == PTRef_Undef) {
+            args.push(logic.mkConst(type, coeff));
+        } else {
+            args.push(coeff.isOne() ? var : logic.mkTimes(logic.mkConst(type, coeff), var));
+        }
+    }
+    PTRef sum = logic.mkPlus(std::move(args));
+    PTRef zero = logic.getZeroForSort(type);
+    return strictness == Strictness::NONSTRICT ? logic.mkGeq(sum, zero) : logic.mkGt(sum, zero);
+}
 
 namespace {
     // TODO: when is explanation negated?
@@ -36,11 +91,11 @@ namespace {
             : explanation(ineq.tr),
               negated(ineq.sgn == l_False),
               expl_coeff(std::move(coeff)),
-              expr(logic, ineq.tr, false) {}
+              poly(toPoly(ineq.tr, logic)) {}
         PTRef explanation;
         bool negated;
         Real expl_coeff;
-        LAExpression expr;
+        LAPoly poly;
     };
 
     struct LinearTerm {
@@ -54,14 +109,9 @@ namespace {
 
     std::vector<LinearTerm> getLocalTerms(ItpHelper const & helper, std::function<bool(PTRef)> isLocal) {
         std::vector<LinearTerm> res;
-        for (auto factor : helper.expr) {
-            auto var_ref = factor.first;
-            if (var_ref != PTRef_Undef) {
-                if (isLocal(var_ref)) {
-                    auto coeff = factor.second;
-                    if (helper.negated) { coeff.negate(); }
-                    res.emplace_back(var_ref, coeff);
-                }
+        for (auto const & [var, coeff] : helper.poly) {
+            if (var != PTRef_Undef) {
+                if (isLocal(var)) { res.emplace_back(var, helper.negated ? -coeff : coeff); }
             }
         }
         return res;
@@ -312,10 +362,10 @@ namespace {
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, std::vector<Real> const & coeffs, ArithLogic & logic) {
         assert(ineqs.size() == coeffs.size());
         assert(ineqs.size() > 0);
-        LAExpression init{logic};
+        LAPoly poly;
         auto it_ineq = ineqs.begin();
         auto it_coeff = coeffs.begin();
-        bool delta_flag = false;
+        Strictness strictness = Strictness::NONSTRICT;
         SRef itpSort = logic.getSortRef(logic.getPterm(ineqs[0].explanation)[0]);
         for (; it_ineq != ineqs.end(); ++it_ineq, ++it_coeff) {
             auto const & coeff = *it_coeff;
@@ -327,20 +377,14 @@ namespace {
             trace(std::cout << "LAExpr as stored: ");
             trace(ineq.expr.print(std::cout); std::cout << std::endl);
             if (ineq.negated) {
-                delta_flag = true;
-                init.addExprWithCoeff(ineq.expr, -(coeff));
+                strictness = Strictness::STRICT;
+                poly.merge(ineq.poly, -coeff);
             } else {
-                init.addExprWithCoeff(ineq.expr, coeff);
+                poly.merge(ineq.poly, coeff);
             }
             trace(init.print(std::cout));
         }
-        // here we have to compensate for the fact that we used LAexpression to compute the coefficients, so
-        // everything is multiplied by -1 therefore we need to create the inequality with the terms on LHS, because
-        // they are treated like LHS when LAExpressions are created
-        PTRef rhs = logic.getZeroForSort(itpSort);
-        PTRef lhs = init.toPTRef(itpSort);
-        //        std::cout << "LHS: " << logic.printTerm(lhs) << '\n';
-        return delta_flag ? logic.mkLt(lhs, rhs) : logic.mkLeq(lhs, rhs);
+        return toInequality(std::move(poly), logic, itpSort, strictness);
     }
 
     PTRef sumInequalities(std::vector<ItpHelper> const & ineqs, ArithLogic & logic) {
@@ -579,8 +623,9 @@ PTRef FarkasInterpolator::getDualFarkasInterpolant() {
 }
 
 PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system) {
-    LAExpression interpolant(logic);
-    bool delta_flag = false;
+    if (system.empty()) { return logic.getTerm_true(); }
+    LAPoly interpolant;
+    Strictness strictness = Strictness::NONSTRICT;
     SRef sumSort = SRef_Undef;
     for (auto const & entry : system) {
         auto literal = entry.first;
@@ -589,24 +634,14 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const
         assert(sumSort != SRef_Undef);
         lbool sign = literal.sgn;
         if (sign == l_False) {
-            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), entry.second);
-            delta_flag = true;
+            interpolant.merge(toPoly(atom, logic), -entry.second);
+            strictness = Strictness::STRICT;
         } else {
-            interpolant.addExprWithCoeff(LAExpression(logic, atom, false), -entry.second);
+            interpolant.merge(toPoly(atom, logic), entry.second);
         }
     }
-    PTRef itp = PTRef_Undef;
-    if (interpolant.isTrue() && !delta_flag) {
-        itp = logic.getTerm_true();
-    } else if (interpolant.isFalse() || (interpolant.isTrue() && delta_flag)) {
-        itp = logic.getTerm_false();
-    } else {
-        assert(sumSort != SRef_Undef);
-        PTRef itpRef = interpolant.toPTRef(sumSort);
-        SRef itpSort = logic.getSortRef(itpRef);
-        vec<PTRef> args{logic.getZeroForSort(itpSort), itpRef};
-        itp = delta_flag ? logic.mkLt(args) : logic.mkLeq(args);
-    }
+    assert(sumSort != SRef_Undef);
+    PTRef const itp = toInequality(std::move(interpolant), logic, sumSort, strictness);
     return itp;
 }
 
