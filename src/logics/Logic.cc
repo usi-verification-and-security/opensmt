@@ -285,7 +285,7 @@ SRef Logic::getSort(SSymRef symbolRef, vec<SRef> && args) {
     auto [sr, created] = sort_store.getOrCreateSort(symbolRef, std::move(args));
     if (created) {
         instantiateFunctions(sr);
-        if (not isInternalSort(sr)) {
+        if (not isBuiltinSort(sr)) {
             newUninterpretedSortHandler(sr);
         } else if (isArraySort(sr)) {
             instantiateArrayFunctions(sr);
@@ -299,12 +299,6 @@ void Logic::newUninterpretedSortHandler(SRef sref) {
     ss << Logic::s_abstract_value_prefix << 'd' << sort_store.numSorts();
     defaultValueForSort.insert(sref, mkConst(sref, ss.str().c_str()));
     ufsorts.insert(sref, true);
-}
-
-bool Logic::isInternalSort(SRef sref) const {
-    Sort const & sort = sort_store[sref];
-    SSymRef sortSymbol = sort.getSymRef();
-    return sort_store[sortSymbol].isInternal();
 }
 
 SRef Logic::declareUninterpretedSort(std::string const & name) {
@@ -1438,11 +1432,13 @@ bool Logic::isIte(PTRef tr) const {
 bool Logic::isBooleanOperator(PTRef tr) const {
     return isBooleanOperator(term_store[tr].symb());
 }
-bool Logic::isBuiltinSort(SRef const sr) const {
-    return sr == sort_BOOL;
+bool Logic::isBuiltinSort(SRef sr) const {
+    Sort const & sort = sort_store[sr];
+    SSymRef sortSymbol = sort.getSymRef();
+    return isBuiltinSortSym(sortSymbol);
 }
-bool Logic::isBuiltinSortSym(SSymRef const ssr) const {
-    return ssr == sort_store.getSortSym(sort_BOOL);
+bool Logic::isBuiltinSortSym(SSymRef ssr) const {
+    return sort_store[ssr].isInternal();
 }
 bool Logic::isBuiltinConstant(SymRef const sr) const {
     return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE);

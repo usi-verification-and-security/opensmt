@@ -63,13 +63,6 @@ public:
         return mkVar(sort_REAL, name, false);
     }
 
-    bool isBuiltinSort(SRef sr) const override {
-        return sr == getSort_int() || sr == getSort_real() || Logic::isBuiltinSort(sr);
-    }
-    bool isBuiltinSortSym(SSymRef ssr) const override {
-        return ssr == sort_store.getSortSym(getSort_int()) || ssr == sort_store.getSortSym(getSort_real()) ||
-               Logic::isBuiltinSortSym(ssr);
-    }
     bool isBuiltinConstant(SymRef sr) const override {
         return (isIntConst(sr) || isRealConst(sr) || Logic::isBuiltinConstant(sr));
     }

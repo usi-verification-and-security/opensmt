@@ -96,8 +96,6 @@ class BVLogic: public Logic
     PTRef         mkBVConst   (const int c) { char* num; wordToBinary(c, num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the int c to binary
     PTRef         mkBVConst   (const char* c) { char* num; wordToBinary(Integer(c), num, getBitWidth()); PTRef tr = Logic::mkConst(sort_BVNUM, num); free(num); return tr; } // Convert the string c to binary
     virtual PTRef         mkBVNumVar  (const char* name) { return mkVar(sort_BVNUM, name); }
-    virtual bool          isBuiltinSortSym(SSymRef ssr) const override { return (ssr == sort_store.getSortSym(sort_BVNUM)); }
-    virtual bool          isBuiltinSort(SRef sr) const override { return (sr == sort_BVNUM); }
     virtual bool          isBuiltinConstant(SymRef sr) const override { return isBVNUMConst(sr); }
 
 //    virtual void conjoinExtras(PTRef root, PTRef& root_out) { root_out = root; }

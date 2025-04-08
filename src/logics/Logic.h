@@ -262,9 +262,9 @@ public:
     // terms should be declared to the theory solver
     bool isTheoryTerm(PTRef tr) const;
     bool isBooleanOperator(SymRef tr) const;
-    bool isBooleanOperator(PTRef tr) const;          // { return isBooleanOperator(term_store[tr].symb()); }
-    virtual bool isBuiltinSort(SRef const sr) const; // { return sr == sort_BOOL; }
-    virtual bool isBuiltinSortSym(SSymRef const ssr) const;
+    bool isBooleanOperator(PTRef tr) const;
+    bool isBuiltinSort(SRef const) const;
+    bool isBuiltinSortSym(SSymRef const) const;
     virtual bool
     isBuiltinConstant(SymRef const sr) const;     // { return isConstant(sr) && (sr == sym_TRUE || sr == sym_FALSE); }
     bool isBuiltinConstant(PTRef const tr) const; // { return isBuiltinConstant(getPterm(tr).symb()); }
@@ -406,7 +406,6 @@ protected:
     void markConstant(SymId sid);
 
     virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
-    bool isInternalSort(SRef) const;
     void newUninterpretedSortHandler(SRef);
 
     static char const * e_argnum_mismatch;
