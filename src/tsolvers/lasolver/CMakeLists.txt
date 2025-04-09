@@ -6,7 +6,6 @@ PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/LABounds.cc"
     "${CMAKE_CURRENT_LIST_DIR}/Delta.cc"
     "${CMAKE_CURRENT_LIST_DIR}/LAVar.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/Polynomial.h"
     "${CMAKE_CURRENT_LIST_DIR}/Tableau.h"
     "${CMAKE_CURRENT_LIST_DIR}/LAVarMapper.h"
     "${CMAKE_CURRENT_LIST_DIR}/LARefs.h"

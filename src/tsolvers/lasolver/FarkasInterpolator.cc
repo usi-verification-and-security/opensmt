@@ -17,11 +17,10 @@
 
 #include "FarkasInterpolator.h"
 
-#include "Polynomial.h"
-
 #include <common/ApiException.h>
 #include <common/InternalException.h>
 #include <common/numbers/Real.h>
+#include <common/polynomials/Translations.h>
 #include <logics/ArithLogic.h>
 
 #include <functional>
@@ -32,55 +31,14 @@ using matrix_t = std::vector<std::vector<Real>>;
 
 // initializing static member
 DecomposedStatistics FarkasInterpolator::stats{};
-using LAPoly = PolynomialT<PTRef>;
-
-/// Given an inequality @p leq of the form "c <= t", returns a polynomial p such that p := t - c/
-/// That is, it represents the inequality 0 <= p that is equivalent to @p leq.
-LAPoly toPoly(PTRef leq, ArithLogic & logic) {
-    assert(logic.isLeq(leq));
-    LAPoly poly;
-    PTRef const lhs = logic.getPterm(leq)[0];
-    PTRef const rhs = logic.getPterm(leq)[1];
-    PTRef const polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
-    assert(logic.isLinearTerm(polyTerm));
-    if (logic.isLinearFactor(polyTerm)) {
-        auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
-        poly.addTerm(var, logic.getNumConst(c));
-    } else {
-        assert(logic.isPlus(polyTerm));
-        for (PTRef const factor : logic.getPterm(polyTerm)) {
-            auto [var, c] = logic.splitTermToVarAndConst(factor);
-            poly.addTerm(var, logic.getNumConst(c));
-        }
-    }
-    return poly;
-}
 
 enum class Strictness { NONSTRICT, STRICT };
 
 /// Given a polynomial @p poly, returns an inequality equivalent to "0 <= poly" (or <= 0, depending on @p strictness)
 PTRef toInequality(LAPoly poly, ArithLogic & logic, SRef const type, Strictness const strictness) {
     if (poly.size() == 0) { return strictness == Strictness::NONSTRICT ? logic.getTerm_true() : logic.getTerm_false(); }
-    if (type == logic.getSort_int()) {
-        // Ensure the polynomial does not have any fractional coefficients
-        Real multiplyBy = 1;
-        for (auto const & [var, coeff] : poly) {
-            if (var == PTRef_Undef) { continue; }
-            if (coeff.isInteger()) { continue; }
-            multiplyBy = lcm(multiplyBy, coeff.get_den());
-        }
-        if (not multiplyBy.isOne()) { poly.divideBy(multiplyBy.inverse()); }
-    }
-    vec<PTRef> args;
-    for (auto const & [var, coeff] : poly) {
-        if (var == PTRef_Undef) {
-            args.push(logic.mkConst(type, coeff));
-        } else {
-            args.push(coeff.isOne() ? var : logic.mkTimes(logic.mkConst(type, coeff), var));
-        }
-    }
-    PTRef sum = logic.mkPlus(std::move(args));
-    PTRef zero = logic.getZeroForSort(type);
+    PTRef const sum = polyToPTRef(poly, logic, type);
+    PTRef const zero = logic.getZeroForSort(type);
     return strictness == Strictness::NONSTRICT ? logic.mkGeq(sum, zero) : logic.mkGt(sum, zero);
 }
 
@@ -91,7 +49,7 @@ namespace {
             : explanation(ineq.tr),
               negated(ineq.sgn == l_False),
               expl_coeff(std::move(coeff)),
-              poly(toPoly(ineq.tr, logic)) {}
+              poly(ptrefToPoly(ineq.tr, logic)) {}
         PTRef explanation;
         bool negated;
         Real expl_coeff;
@@ -634,10 +592,10 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const
         assert(sumSort != SRef_Undef);
         lbool sign = literal.sgn;
         if (sign == l_False) {
-            interpolant.merge(toPoly(atom, logic), -entry.second);
+            interpolant.merge(ptrefToPoly(atom, logic), -entry.second);
             strictness = Strictness::STRICT;
         } else {
-            interpolant.merge(toPoly(atom, logic), entry.second);
+            interpolant.merge(ptrefToPoly(atom, logic), entry.second);
         }
     }
     assert(sumSort != SRef_Undef);

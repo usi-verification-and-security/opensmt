@@ -9,7 +9,6 @@
 #ifndef OPENSMT_CUTCREATOR_H
 #define OPENSMT_CUTCREATOR_H
 
-#include "Polynomial.h"
 #include "SparseMatrix.h"
 
 #include <common/TypeUtils.h>

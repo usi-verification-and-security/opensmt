@@ -9,9 +9,8 @@
 #ifndef OPENSMT_SPARSEMATRIX_H
 #define OPENSMT_SPARSEMATRIX_H
 
-#include "Polynomial.h"
-
 #include <common/inttypes.h>
+#include <common/polynomials/Polynomial.h>
 
 #include <cassert>
 #include <numeric>
