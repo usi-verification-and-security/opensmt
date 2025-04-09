@@ -42,7 +42,8 @@ public:
     const Real & getCoeff(VarType var) const;
     Real removeVar(VarType var);
     void negate();
-    void divideBy(const Real& r);
+    void divideBy(Real const & r);
+    void multiplyBy(Real const & r);
 
     template <typename ADD = mergeFunctionInformerType, typename REM = mergeFunctionInformerType>
     void merge(
@@ -211,11 +212,19 @@ void PolynomialT<VarType>::negate() {
 }
 
 template<typename VarType>
-void PolynomialT<VarType>::divideBy(const Real &r) {
+void PolynomialT<VarType>::divideBy(Real const & r) {
     for(auto & term : poly) {
         term.coeff /= r;
     }
 }
+
+template<typename VarType>
+void PolynomialT<VarType>::multiplyBy(Real const & r) {
+    for(auto & term : poly) {
+        term.coeff *= r;
+    }
+}
+
 template<typename VarType>
 void PolynomialT<VarType>::print() const {
     for (auto & term : poly) {

@@ -37,7 +37,7 @@ PTRef polyToPTRef(LAPoly & poly, ArithLogic & logic, SRef const type) {
             if (coeff.isInteger()) { continue; }
             multiplyBy = lcm(multiplyBy, coeff.get_den());
         }
-        if (not multiplyBy.isOne()) { poly.divideBy(multiplyBy.inverse()); }
+        if (not multiplyBy.isOne()) { poly.multiplyBy(multiplyBy); }
     }
     vec<PTRef> args;
     args.capacity(static_cast<int>(poly.size()));
