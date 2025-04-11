@@ -8,9 +8,9 @@
 #define OPENSMT_TABLEAU_H
 
 #include "LAVar.h"
-#include "Polynomial.h"
 
 #include <common/numbers/Real.h>
+#include <common/polynomials/Polynomial.h>
 
 #include <algorithm>
 #include <functional>

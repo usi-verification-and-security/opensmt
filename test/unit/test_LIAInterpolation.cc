@@ -206,4 +206,24 @@ TEST_F(LIAInterpolationTest, test_Split_ABShared) {
     interpolants.clear();
 }
 
+TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFractionalCoefficientsInExplanation){
+    /*
+     * A:   x <= 10
+     *      3x - y >= 0
+     *
+     * B    y >= 50
+     */
+    PTRef leq1 = logic.mkLeq(x, logic.mkIntConst(10));
+    PTRef leq2 = logic.mkGeq(logic.mkMinus(logic.mkTimes(logic.mkIntConst(3), x), y), logic.mkIntConst(0));
+    PTRef leq3 = logic.mkGeq(y, logic.mkIntConst(50));
+
+
+    vec<PtAsgn> conflict {PtAsgn(leq1, l_True), PtAsgn(leq2, l_True), PtAsgn(leq3, l_True)};
+    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_A}, {conflict[2].tr, icolor_t::I_B}};
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1, FastRational{1,3}, 1}, labels));
+    PTRef farkasItp = interpolator.getFarkasInterpolant();
+    std::cout << logic.pp(farkasItp) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), leq3, farkasItp));
+}
+
 }

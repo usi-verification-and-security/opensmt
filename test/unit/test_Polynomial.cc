@@ -5,7 +5,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <tsolvers/lasolver/Polynomial.h>
+#include <common/polynomials/Polynomial.h>
 #include <tsolvers/lasolver/LAVar.h>
 
 namespace opensmt {

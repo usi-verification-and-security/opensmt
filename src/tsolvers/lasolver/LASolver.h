@@ -11,7 +11,6 @@
 #include "FarkasInterpolator.h"
 #include "LAVarMapper.h"
 #include "LRAModel.h"
-#include "Polynomial.h"
 #include "Simplex.h"
 #include "Tableau.h"
 

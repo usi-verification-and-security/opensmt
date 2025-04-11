@@ -17,6 +17,7 @@ PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/PartitionInfo.cc"
     "${CMAKE_CURRENT_LIST_DIR}/VerificationUtils.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ReportUtils.h"
+    "${CMAKE_CURRENT_LIST_DIR}/polynomials/Translations.cc"
 )
 
 include(numbers/CMakeLists.txt)

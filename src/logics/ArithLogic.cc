@@ -4,11 +4,11 @@
 #include <common/InternalException.h>
 #include <common/StringConv.h>
 #include <common/TreeOps.h>
+#include <common/polynomials/Translations.h>
 #include <pterms/PtStore.h>
 #include <rewriters/Rewriter.h>
 #include <rewriters/Rewritings.h>
 #include <sorts/SStore.h>
-#include <tsolvers/lasolver/Polynomial.h>
 
 #include <map>
 #include <memory>
@@ -253,9 +253,7 @@ PTRef ArithLogic::normalizeMul(PTRef mul) {
 }
 
 namespace {
-    using poly_t = PolynomialT<PTRef>;
-
-    void eraseIndices(std::vector<poly_t> & elements, std::vector<std::size_t> const & indices) {
+    void eraseIndices(std::vector<LAPoly> & elements, std::vector<std::size_t> const & indices) {
         assert(std::is_sorted(indices.begin(), indices.end()));
         for (auto rit = indices.rbegin(); rit != indices.rend(); ++rit) {
             elements[*rit] = std::move(elements.back());
@@ -263,7 +261,7 @@ namespace {
         }
     }
 
-    Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+    Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<LAPoly> & zeroPolynomials) {
         Logic::SubstMap substitutions;
 
         while (true) {
@@ -318,7 +316,7 @@ namespace {
                     auto coeff = poly.removeVar(var);
                     auto val = substitutions[var];
                     if (not logic.isZero(val)) {
-                        poly_t constantPoly;
+                        LAPoly constantPoly;
                         constantPoly.addTerm(PTRef_Undef, coeff * logic.getNumConst(val));
                         poly.merge(constantPoly, 1);
                     }
@@ -332,26 +330,7 @@ namespace {
         return substitutions;
     }
 
-    PTRef polyToPTRef(ArithLogic & logic, poly_t const & poly) {
-        vec<PTRef> args;
-        args.capacity(poly.size());
-        assert(poly.size() > 0);
-        assert(poly.begin()->var != PTRef_Undef);
-        SRef sortRef = logic.getSortRef(poly.begin()->var);
-        for (auto const & term : poly) {
-            assert(not term.coeff.isZero());
-            if (term.var == PTRef_Undef) {
-                args.push(logic.mkConst(sortRef, term.coeff));
-            } else if (term.coeff.isOne()) {
-                args.push(term.var);
-            } else {
-                args.push(logic.mkTimes(term.var, logic.mkConst(logic.getSortRef(term.var), term.coeff)));
-            }
-        }
-        return logic.mkPlus(std::move(args)); // TODO: Can we use non-simplifying versions of mkPlus/mkTimes?
-    }
-
-    PTRef polyToPTRefSubstitution(ArithLogic & logic, PTRef var, poly_t & poly) {
+    PTRef polyToPTRefSubstitution(ArithLogic & logic, PTRef const var, LAPoly & poly) {
         if ((logic.hasUFs() or logic.hasArrays()) and logic.isVar(var)) {
             if (std::ranges::any_of(poly, [&logic](auto const & term) {
                     return term.var != PTRef_Undef and not logic.isVar(term.var);
@@ -376,12 +355,12 @@ namespace {
         poly.removeVar(var);
         if (not isOne) { poly.divideBy(coeff); }
 
-        PTRef val = polyToPTRef(logic, poly);
+        PTRef const val = polyToPTRef(poly, logic, logic.getSortRef(var));
         assert(val != PTRef_Undef);
         return val;
     }
 
-    Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<poly_t> & zeroPolynomials) {
+    Logic::SubstMap collectSingleEqualitySubstitutions(ArithLogic & logic, std::vector<LAPoly> & zeroPolynomials) {
         // MB: We enforce order to ensure that later-created terms are processed first.
         //     This ensures that from an equality "f(x) = x" we get a substitution "f(x) -> x" and not the other way
         //     around, which would cause infinite cycle in transitive closure
@@ -416,30 +395,10 @@ namespace {
 
 lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & out_substitutions) {
     ArithLogic & logic = *this;
-    auto toPoly = [&logic](PTRef eq) {
-        assert(logic.isEquality(eq));
-        poly_t poly;
-        PTRef lhs = logic.getPterm(eq)[0];
-        PTRef rhs = logic.getPterm(eq)[1];
-        PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
-        assert(logic.isLinearTerm(polyTerm));
-        if (logic.isLinearFactor(polyTerm)) {
-            auto [var, c] = logic.splitTermToVarAndConst(polyTerm);
-            auto coeff = logic.getNumConst(c);
-            poly.addTerm(var, std::move(coeff));
-        } else {
-            assert(logic.isPlus(polyTerm));
-            for (PTRef factor : logic.getPterm(polyTerm)) {
-                auto [var, c] = logic.splitTermToVarAndConst(factor);
-                auto coeff = logic.getNumConst(c);
-                poly.addTerm(var, std::move(coeff));
-            }
-        }
-        return poly;
-    };
-    std::vector<poly_t> polynomials;
+    std::vector<LAPoly> polynomials;
     polynomials.reserve(top_level_arith.size_());
-    std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials), toPoly);
+    std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials),
+                   [&](auto const & eq) { return ptrefToPoly(eq, logic); });
 
     auto constSubstitutions = collectConstantSubstitutions(logic, polynomials);
     for (PTRef key : constSubstitutions.getKeys()) {
