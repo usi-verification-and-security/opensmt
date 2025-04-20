@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
 
 namespace opensmt {
 
@@ -88,16 +89,18 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
         auto & splitClause = splitClauses[index];
         unsigned satisfied = 0;
         unsigned unknown = 0;
+        std::optional<int> notFalsifiedIndex = std::nullopt;
         // MB: ensure the SAT solver knows about the variables and that they are active
-        int impliedIndex = -1;
         for (int i = 0; i < splitClause.size(); ++i) {
             Lit l = splitClause[i];
             addVar_(var(l));
-            if (value(l) == l_True) { ++satisfied; }
-            else if (value(l) != l_False) { ++unknown; impliedIndex = i; }
+            if (value(l) == l_True) { ++satisfied; notFalsifiedIndex = i; }
+            else if (value(l) != l_False) { ++unknown; notFalsifiedIndex = i; }
         }
         assert(satisfied != 0 or unknown != 0); // The clause cannot be falsified
         if (satisfied == 0 and unknown == 1) { // propagate
+            assert(notFalsifiedIndex.has_value());
+            assert(value(splitClause[notFalsifiedIndex.value()]) == l_Undef);
             // Find the lowest level where all the falsified literals are still falsified
             int backtrackLevel = 0;
             for (Lit l : splitClause) {
@@ -113,25 +116,25 @@ TPropRes CoreSMTSolver::handleNewSplitClauses(SplitClauses & splitClauses) {
             if (!this->logsResolutionProof()) {
                 if (decisionLevel() == 0) {
                     // MB: do not allocate, we can directly enqueue the implied literal
-                    uncheckedEnqueue(splitClause[impliedIndex], CRef_Undef);
+                    uncheckedEnqueue(splitClause[notFalsifiedIndex.value()], CRef_Undef);
                     res = TPropRes::Propagate;
                     continue;
                 }
             }
             // MB: we are going to propagate, make sure the implied literal is the first one
-            Lit implied = splitClause[impliedIndex];
-            std::swap(splitClause[0],splitClause[impliedIndex]);
-            CRef cr = processNewClause(splitClause);
+            std::swap(splitClause[0],splitClause[notFalsifiedIndex.value()]);
+            Lit const implied = splitClause[0];
+            CRef const cr = processNewClause(splitClause);
             propData.push_back(PropagationData{.lit = implied, .reason = cr});
             if (decisionLevel() == 0 and logsResolutionProof()) {
-                CRef unitClause = logUnitClauseDerivationAtLevelZero(cr);
+                CRef const unitClause = logUnitClauseDerivationAtLevelZero(cr);
                 propData.back().reason = unitClause;
             }
             res = TPropRes::Propagate;
         } else {
             // MB: ensure that the first literal is not falsified
-            if (value(splitClause[0]) == l_False and impliedIndex != -1) {
-                std::swap(splitClause[0],splitClause[impliedIndex]);
+            if (value(splitClause[0]) == l_False and notFalsifiedIndex.has_value()) {
+                std::swap(splitClause[0],splitClause[notFalsifiedIndex.value()]);
             }
 
             processNewClause(splitClause);
