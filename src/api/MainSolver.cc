@@ -538,6 +538,7 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
         root = new_root;
         if (!cont) break;
     }
+    logic.substitutionsTransitiveClosure(allsubsts);
     result.result = root;
     result.usedSubstitution = std::move(allsubsts);
     return result;
