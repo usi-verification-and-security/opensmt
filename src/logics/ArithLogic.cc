@@ -261,7 +261,29 @@ namespace {
         }
     }
 
-    Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<LAPoly> & zeroPolynomials) {
+    class SubstitutionsOrConflict {
+    public:
+        static SubstitutionsOrConflict conflict() { return SubstitutionsOrConflict(); }
+        SubstitutionsOrConflict(Logic::SubstMap && subst) : maybeSubstitutions{std::move(subst)} {}
+
+        [[nodiscard]] bool isConflict() const { return not maybeSubstitutions.has_value(); }
+
+        [[nodiscard]] Logic::SubstMap const & getSubstitutions() const {
+            assert(not isConflict());
+            return maybeSubstitutions.value();
+        }
+
+    private:
+        SubstitutionsOrConflict() : maybeSubstitutions{std::nullopt} {}
+
+        std::optional<Logic::SubstMap> maybeSubstitutions;
+    };
+
+    /// Given a system of arithmetic polynomials @p zeroPolynomials, collects substitutions of the form `v -> c`
+    /// where v is a variable and c is a constant. Applies the discovered substitutions to simplify the polynomials
+    /// in the process.
+    /// Returns early if a conflict has been detected.
+    SubstitutionsOrConflict collectConstantSubstitutions(ArithLogic & logic, std::vector<LAPoly> & zeroPolynomials) {
         Logic::SubstMap substitutions;
 
         while (true) {
@@ -282,7 +304,8 @@ namespace {
                 if (poly.size() == 1) {
                     auto const & term = *poly.begin();
                     if (term.var == PTRef_Undef) { // FALSE equality
-                        continue;
+                        assert(not term.coeff.isZero());
+                        return SubstitutionsOrConflict::conflict();
                     }
                     // poly is "x = 0"
                     PTRef var = term.var;
@@ -299,7 +322,11 @@ namespace {
                     auto const & [var, coeff] = *poly.begin();
                     if (not substitutions.has(var)) {
                         auto val = -((poly.begin() + 1)->coeff) / coeff;
-                        substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
+                        auto sortRef = logic.getSortRef(var);
+                        if (sortRef == logic.getSort_int() and not val.isInteger()) {
+                            return SubstitutionsOrConflict::conflict();
+                        }
+                        substitutions.insert(var, logic.mkConst(sortRef, val));
                         new_keys.push(var);
                     }
                     processedIndices.push_back(i);
@@ -400,8 +427,10 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
     std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials),
                    [&](auto const & eq) { return ptrefToPoly(eq, logic); });
 
-    auto constSubstitutions = collectConstantSubstitutions(logic, polynomials);
-    for (PTRef key : constSubstitutions.getKeys()) {
+    auto substitutionsOrConflict = collectConstantSubstitutions(logic, polynomials);
+    if (substitutionsOrConflict.isConflict()) { return l_False; }
+    for (SubstMap const & constSubstitutions = substitutionsOrConflict.getSubstitutions();
+         PTRef key : constSubstitutions.getKeys()) {
         assert(not out_substitutions.has(key));
         out_substitutions.insert(key, constSubstitutions[key]);
     }
@@ -430,7 +459,7 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
         assert(not out_substitutions.has(var));
         out_substitutions.insert(var, sub);
     }
-    // To simplify this method, we do not try to detect a conflict here, so result is always l_Undef
+    // We could try to check the substitutions for a conflict here, but we leave that up to the caller.
     return l_Undef;
 }
 

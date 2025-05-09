@@ -143,6 +143,19 @@ TEST_F(LIASubstitutionsRegression, test_TwoVarsEqual) {
     ASSERT_TRUE((key == x and value == y) or (key == y and value == x));
 }
 
+TEST_F(LIASubstitutionsRegression, test_Divisibility) {
+    auto const osmt = getLIAOsmt();
+    auto & lialogic = osmt->getLIALogic();
+    // 3x + y = 0 and y = -1
+    PTRef x = lialogic.mkIntVar("x");
+    PTRef y = lialogic.mkIntVar("y");
+    PTRef eq1 = lialogic.mkEq(lialogic.mkTimes(lialogic.mkIntConst(3), x), y);
+    PTRef eq2 = lialogic.mkEq(y, lialogic.getTerm_IntMinusOne());
+    Logic::SubstMap substMap;
+    lbool res = lialogic.arithmeticElimination({eq1, eq2}, substMap);
+    ASSERT_EQ(res, l_False);
+}
+
 TEST_F(UFLRASubstitutionsRegression, test_NoProblematicSubstitutions) {
     vec<PTRef> equalities;
     equalities.push(logic.mkEq(x,fx));
