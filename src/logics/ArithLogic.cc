@@ -261,7 +261,12 @@ namespace {
         }
     }
 
-    Logic::SubstMap collectConstantSubstitutions(ArithLogic & logic, std::vector<LAPoly> & zeroPolynomials) {
+    /// Given a system of arithmetic polynomials @p zeroPolynomials, collects substitutions of the form `v -> c`
+    /// where v is a variable and c is a constant. Applies the discovered substitutions to simplify the polynomials
+    /// in the process.
+    /// Returns early if a conflict has been detected.
+    pair<lbool, Logic::SubstMap> collectConstantSubstitutions(ArithLogic & logic,
+                                                              std::vector<LAPoly> & zeroPolynomials) {
         Logic::SubstMap substitutions;
 
         while (true) {
@@ -282,7 +287,8 @@ namespace {
                 if (poly.size() == 1) {
                     auto const & term = *poly.begin();
                     if (term.var == PTRef_Undef) { // FALSE equality
-                        continue;
+                        assert(not term.coeff.isZero());
+                        return {l_False, std::move(substitutions)};
                     }
                     // poly is "x = 0"
                     PTRef var = term.var;
@@ -299,7 +305,11 @@ namespace {
                     auto const & [var, coeff] = *poly.begin();
                     if (not substitutions.has(var)) {
                         auto val = -((poly.begin() + 1)->coeff) / coeff;
-                        substitutions.insert(var, logic.mkConst(logic.getSortRef(var), val));
+                        auto sortRef = logic.getSortRef(var);
+                        if (sortRef == logic.getSort_int() and not val.isInteger()) {
+                            return {l_False, std::move(substitutions)};
+                        }
+                        substitutions.insert(var, logic.mkConst(sortRef, val));
                         new_keys.push(var);
                     }
                     processedIndices.push_back(i);
@@ -327,7 +337,7 @@ namespace {
             eraseIndices(zeroPolynomials, processedIndices);
             if (not changed) { break; }
         }
-        return substitutions;
+        return {l_Undef, std::move(substitutions)};
     }
 
     PTRef polyToPTRefSubstitution(ArithLogic & logic, PTRef const var, LAPoly & poly) {
@@ -400,11 +410,12 @@ lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, Subs
     std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials),
                    [&](auto const & eq) { return ptrefToPoly(eq, logic); });
 
-    auto constSubstitutions = collectConstantSubstitutions(logic, polynomials);
+    auto [knownValue, constSubstitutions] = collectConstantSubstitutions(logic, polynomials);
     for (PTRef key : constSubstitutions.getKeys()) {
         assert(not out_substitutions.has(key));
         out_substitutions.insert(key, constSubstitutions[key]);
     }
+    if (knownValue == l_False) { return l_False; }
 
     auto singleEqSubstitutions = collectSingleEqualitySubstitutions(logic, polynomials);
     for (PTRef key : singleEqSubstitutions.getKeys()) {
