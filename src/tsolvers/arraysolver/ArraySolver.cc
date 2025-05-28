@@ -594,6 +594,7 @@ ArraySolver::ExplanationCollection ArraySolver::explainWeakEquivalencePath(ERef 
 
 void ArraySolver::clear() {
     lemmas.clear();
+    splitondemand.clear();
     selectsInfo.clear();
     nodes.clear();
     rootsMap.clear();
