@@ -1,3 +1,13 @@
+### 2.9.1 (2025-06-06)
+
+Bug fixes:
+ - Fixed assertion violation for LIA.
+ - Fixed handling of split clauses.
+
+Other:
+ - Optimized and sanitized LA substitutions.
+ - Unified functions for `polyToPTRef` and back.
+
 ### 2.9.0 (2025-03-26)
 
 API changes:
