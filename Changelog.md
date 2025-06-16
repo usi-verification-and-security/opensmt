@@ -1,4 +1,7 @@
-### 2.9.2 (unreleased)
+### 2.9.2 (2025-06-16)
+
+New features:
+ - Supporting unsat-core options in the command line executable.
 
 ### 2.9.1 (2025-06-06)
 
