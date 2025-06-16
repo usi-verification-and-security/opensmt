@@ -3,10 +3,10 @@
 [![Gitter](https://badges.gitter.im/usi-verification-and-security/opensmt.svg)](https://gitter.im/usi-verification-and-security/opensmt?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # OpenSMT2
-Copyright 2024 Tomáš Kolárik <tomaqa@gmail.com>  
-Copyright 2023 Martin Blicha <martin.blicha@gmail.com>  
-Copyright 2019 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
-Copyright 2009 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
+Copyright 2024 - 2025 Tomáš Kolárik <tomaqa@gmail.com>  
+Copyright 2018 - 2024 Martin Blicha <martin.blicha@gmail.com>  
+Copyright 2012 - 2022 Antti Hyvarinen <antti.hyvarinen@gmail.com>  
+Copyright 2008 - 2012 Roberto Bruttomesso <roberto.bruttomesso@gmail.com>
 
 Project page: http://verify.inf.usi.ch/opensmt
 
@@ -117,7 +117,7 @@ In such a case, the command above may be neccesary to run with `sudo`.
 The default build to be installed is Release. To install the Debug build instead, use `make install-debug`.
 To install the parallel variants, use the corresponding `*-parallel*` rules.
 
-The option `INSTALL_DIR` may used with all `make [release|debug]` and `make install[-release|-debug]`.
+The option `INSTALL_DIR` may be used with all `make [release|debug]` and `make install[-release|-debug]`.
 In the case of the build rules, the `<install_dir>` is configured within the build directory and is used each time `make install[-release|-debug]` is used without the additional option `INSTALL_DIR`.
 In the case of the install rules, the `<install_dir>` overrides the previously configured one.
 The above works the same way with the corresponding `*parallel*` rules.
