@@ -25,8 +25,6 @@
 
 namespace opensmt {
 
-bool stop;
-
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     : theory(createTheory(logic, conf)),
       term_mapper(new TermMapper(logic)),

@@ -44,7 +44,7 @@ lbool LookaheadSMTSolver::solve_() {
             model[i] = value(i);
         }
     } else {
-        assert(not okContinue() || res == LALoopRes::unsat || this->stop);
+        assert(not okContinue() || res == LALoopRes::unsat);
     }
     switch (res) {
         case LALoopRes::unknown_final:

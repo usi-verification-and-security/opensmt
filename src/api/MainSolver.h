@@ -24,6 +24,11 @@
 namespace opensmt {
 class Logic;
 
+// Notify all solvers in the application to stop
+void notifyGlobalStop();
+// Check if a global stop flag for all solvers has been triggered
+bool globallyStopped();
+
 class sstat {
 public:
     explicit sstat(int v) : value(v) {}
@@ -145,7 +150,8 @@ public:
     }
     TermNames const & getTermNames() const { return termNames; }
 
-    void stop() { smt_solver->stop = true; }
+    // Notify this particular solver to stop the computation
+    void notifyStop() { smt_solver->notifyStop(); }
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
