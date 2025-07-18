@@ -133,6 +133,8 @@ bool ScatterSplitter::excludeAssumptions(vec<Lit> && neg_constrs) {
 
 bool ScatterSplitter::okContinue() const {
 
+    // ignores SimpSMTSolver::okContinue and hence ignores stopped() and globallyStopped()
+
     if (splitContext.solverLimit() and splitContext.solverLimit() == search_counter and not config.sat_split_mode()) {
         return false;
     } else if (getChannel().shouldStop()) {

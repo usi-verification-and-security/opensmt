@@ -145,7 +145,9 @@ public:
     }
     TermNames const & getTermNames() const { return termNames; }
 
-    void stop() { smt_solver->stop = true; }
+    // Notify this particular solver to stop the computation
+    // For stopping at the global scope, refer to GlobalStop.h
+    void notifyStop() { smt_solver->notifyStop(); }
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 

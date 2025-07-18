@@ -1,3 +1,5 @@
+./src/api/GlobalStop.cc
+./src/api/GlobalStop.h
 ./src/api/MainSolver.cc
 ./src/api/MainSolver.h
 ./src/api/Opensmt.cc

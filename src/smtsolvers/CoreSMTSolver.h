@@ -82,8 +82,8 @@ protected:
     bool      verbosity;
     enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
     int search_counter;
+    bool stopFlag{false};
 public:
-    bool stop = false;
 
     // Constructor/Destructor:
     //
@@ -92,9 +92,13 @@ public:
     void     initialize       ();
     void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
+    void notifyStop() { stopFlag = true; }
+
     // Problem specification:
     //
 protected:
+    bool stopped() const { return stopFlag; }
+
     void  addVar_    (Var v); // Ensure that var v exists in the solver
     virtual Var newVar(bool dvar); // Add a new variable with parameters specifying variable mode.
 public:
@@ -150,8 +154,6 @@ public:
     void    setConfBudget(int64_t x);
     void    setPropBudget(int64_t x);
     void    budgetOff();
-    void    interrupt();          // Trigger a (potentially asynchronous) interruption of the solver.
-    void    clearInterrupt();     // Clear interrupt indicator flag.
 
     // Memory management:
     //
@@ -350,7 +352,6 @@ protected:
     //
     int64_t             conflict_budget;    // -1 means no budget.
     int64_t             propagation_budget; // -1 means no budget.
-    bool                asynch_interrupt;
 
     // Main internal methods:
     //
@@ -706,13 +707,10 @@ inline void     CoreSMTSolver::setDecisionVar(Var v, bool b)
 }
 inline void     CoreSMTSolver::setConfBudget(int64_t x)                   { conflict_budget    = conflicts    + x; }
 inline void     CoreSMTSolver::setPropBudget(int64_t x)                   { propagation_budget = propagations + x; }
-inline void     CoreSMTSolver::interrupt()                                { asynch_interrupt = true; }
-inline void     CoreSMTSolver::clearInterrupt()                           { asynch_interrupt = false; }
 inline void     CoreSMTSolver::budgetOff()                                { conflict_budget = propagation_budget = -1; }
 inline bool     CoreSMTSolver::withinBudget() const
 {
-    return !asynch_interrupt &&
-           (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
+    return (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
            (propagation_budget < 0 || propagations < (uint64_t)propagation_budget);
 }
 

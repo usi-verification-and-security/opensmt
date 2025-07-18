@@ -46,6 +46,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "CoreSMTSolver.h"
 
+#include <api/GlobalStop.h>
 #include <common/InternalException.h>
 #include <common/Random.h>
 #include <common/ReportUtils.h>
@@ -60,8 +61,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace opensmt {
 
-extern bool stop;
-
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -69,7 +68,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     : config           (c)
     , theory_handler   (t)
     , verbosity        (c.verbosity())
-    , stop             (false)
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
     , clause_decay     (c.sat_clause_decay())
@@ -115,7 +113,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
 #endif
     , conflict_budget       (-1)
     , propagation_budget    (-1)
-    , asynch_interrupt      (false)
     , learnt_t_lemmata      (0)
     , perm_learnt_t_lemmata (0)
     , luby_i                (0)
@@ -1346,7 +1343,7 @@ void CoreSMTSolver::popBacktrackPoint()
 
 bool CoreSMTSolver::okContinue() const
 {
-    return not opensmt::stop;
+    return not stopped() and not globallyStopped();
 }
 
 void CoreSMTSolver::learntSizeAdjust() {
@@ -1430,6 +1427,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
         search_counter++;
         CRef confl = propagate();
         runPeriodic();
+        if (not okContinue()) { break; }
         if (confl != CRef_Undef) {
             if (conflicts > conflictsUntilFlip) {
                 flipState = not flipState;
@@ -1705,9 +1703,11 @@ lbool CoreSMTSolver::solve_()
 
     // Search:
 
-    if (config.dryrun())
-        stop = true;
-    while (status == l_Undef && okContinue() && !this->stop) {
+    if (config.dryrun()) {
+        notifyStop();
+    }
+
+    while (status == l_Undef && okContinue()) {
         // Print some information. At every restart for
         // standard mode or any 2^n intervarls for luby
         // restarts
@@ -1737,7 +1737,7 @@ lbool CoreSMTSolver::solve_()
             model[i] = value(i);
         }
     } else {
-        assert(not okContinue() || status == l_False || this->stop);
+        assert(not okContinue() || status == l_False);
     }
 
     // We terminate

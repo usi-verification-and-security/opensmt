@@ -424,7 +424,7 @@ bool SimpSMTSolver::backwardSubsumptionCheck(bool verbose)
     {
 
         // Empty subsumption queue and return immediately on user-interrupt:
-        if (asynch_interrupt)
+        if (not okContinue())
         {
             subsumption_queue.clear();
             bwdsub_assigns = trail.size();
@@ -709,7 +709,7 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
         }
 
         // Empty elim_heap and return immediately on user-interrupt:
-        if (asynch_interrupt)
+        if (not okContinue())
         {
             assert(bwdsub_assigns == trail.size());
             assert(subsumption_queue.size() == 0);
@@ -723,7 +723,7 @@ bool SimpSMTSolver::eliminate(bool turn_off_elim)
         {
             Var elim = elim_heap.removeMin();
 
-            if (asynch_interrupt) break;
+            if (not okContinue()) break;
 
             if (isEliminated(elim) || value(elim) != l_Undef) continue;
 
