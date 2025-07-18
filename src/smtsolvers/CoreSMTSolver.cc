@@ -69,7 +69,6 @@ CoreSMTSolver::CoreSMTSolver(SMTConfig & c, THandler& t )
     : config           (c)
     , theory_handler   (t)
     , verbosity        (c.verbosity())
-    , init             (false)
     , stop             (false)
     // Parameters: (formerly in 'SearchParams')
     , var_decay        (c.sat_var_decay())
@@ -147,8 +146,6 @@ CoreSMTSolver::initialize()
     if (config.produce_proof() && !resolutionProof) {
         resolutionProof = std::make_unique<ResolutionProof>(this->ca);
     }
-
-    init = true;
 }
 
 CoreSMTSolver::~CoreSMTSolver()

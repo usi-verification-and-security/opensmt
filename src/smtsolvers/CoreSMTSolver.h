@@ -80,7 +80,6 @@ protected:
     SMTConfig & config;         // Stores Config
     THandler  & theory_handler; // Handles theory
     bool      verbosity;
-    bool      init;
     enum class ConsistencyAction { BacktrackToZero, ReturnUndef, SkipToSearchBegin, NoOp };
     int search_counter;
 public:
