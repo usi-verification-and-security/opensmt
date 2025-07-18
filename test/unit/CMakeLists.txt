@@ -243,3 +243,11 @@ target_sources(ArraysTest
 
 target_link_libraries(ArraysTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET ArraysTest)
+
+add_executable(StopTest)
+target_sources(StopTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Stop.cc"
+        )
+
+target_link_libraries(StopTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET StopTest)
