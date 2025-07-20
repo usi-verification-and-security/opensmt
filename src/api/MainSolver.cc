@@ -23,7 +23,34 @@
 #include <tsolvers/RDLTHandler.h>
 #include <unsatcores/UnsatCoreBuilder.h>
 
+#include <condition_variable>
+#include <thread>
+
 namespace opensmt {
+
+class MainSolver::TimeLimitImpl {
+public:
+    TimeLimitImpl(MainSolver & s) : solver(s) {}
+    ~TimeLimitImpl();
+
+    void setLimit(std::chrono::milliseconds);
+
+protected:
+    bool isRunning() const noexcept;
+
+    void requestEnd();
+    void waitToEnd();
+
+private:
+    MainSolver & solver;
+
+    std::jthread thread{};
+
+    // See https://en.cppreference.com/w/cpp/thread/condition_variable.html
+    std::mutex mtx{};
+    std::condition_variable condVar{};
+    bool endReq{false};
+};
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     : theory(createTheory(logic, conf)),
@@ -56,7 +83,11 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
     initialize();
 }
 
+MainSolver::~MainSolver() = default;
+
 void MainSolver::initialize() {
+    timeLimitImplPtr = std::make_unique<TimeLimitImpl>(*this);
+
     frames.push();
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
@@ -67,6 +98,11 @@ void MainSolver::initialize() {
 
     smt_solver->addOriginalSMTClause({~term_mapper->getOrCreateLit(logic.getTerm_false())}, iorefs);
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
+
+    if (auto option = config.getOption(SMTConfig::o_time_limit); not option.isEmpty()) {
+        assert(option.getValue().type == O_NUM);
+        setTimeLimit(std::chrono::milliseconds{option.getValue().numval});
+    }
 }
 
 void MainSolver::push() {
@@ -417,6 +453,14 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     }
 }
 
+void MainSolver::setTimeLimit(std::chrono::milliseconds limit) {
+    if (limit <= std::chrono::milliseconds::zero()) {
+        throw std::invalid_argument{"MainSolver::setTimeLimit: The value must be positive."};
+    }
+
+    timeLimitImplPtr->setLimit(limit);
+}
+
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
     Logic_t logicType = logic.getLogic();
     Theory * theory = nullptr;
@@ -583,5 +627,50 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
 
 span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
+}
+
+MainSolver::TimeLimitImpl::~TimeLimitImpl() {
+    if (not isRunning()) { return; }
+
+    requestEnd();
+    // no need to wait in destructor (thanks to std::jthread)
+}
+
+void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
+    // Override already running thread
+    if (isRunning()) {
+        requestEnd();
+        waitToEnd();
+    }
+
+    thread = std::jthread([this, limit] {
+        std::unique_lock lock(mtx);
+        // Abort if a further future end request has already been sent
+        if (endReq) { return; }
+        // Releases the lock and suspends the thread, waiting on a notification or timeout
+        // Notification must be sent *after* the wait, otherwise could be missed - hence checking `endReq` above
+        if (condVar.wait_for(lock, limit) == std::cv_status::timeout) { solver.notifyStop(); }
+    });
+}
+
+bool MainSolver::TimeLimitImpl::isRunning() const noexcept {
+    return thread.joinable();
+}
+
+void MainSolver::TimeLimitImpl::requestEnd() {
+    assert(isRunning());
+    {
+        std::lock_guard lock(mtx);
+        endReq = true;
+    }
+    condVar.notify_all();
+    assert(isRunning());
+}
+
+void MainSolver::TimeLimitImpl::waitToEnd() {
+    assert(isRunning());
+    thread.join();
+    endReq = false;
+    assert(not isRunning());
 }
 } // namespace opensmt
