@@ -19,6 +19,7 @@
 #include <smtsolvers/SimpSMTSolver.h>
 #include <unsatcores/UnsatCore.h>
 
+#include <chrono>
 #include <memory>
 #include <unordered_map>
 
@@ -64,7 +65,7 @@ public:
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
                std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name);
 
-    virtual ~MainSolver() = default;
+    virtual ~MainSolver();
     MainSolver(MainSolver const &) = delete;
     MainSolver & operator=(MainSolver const &) = delete;
     MainSolver(MainSolver &&) = default;
@@ -157,6 +158,16 @@ public:
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
     void notifyStop() { smt_solver->notifyStop(); }
+
+    // Set wall-clock time limit for the solver in miliseconds
+    // When it expires, the solving is terminated gracefully and unknown is returned
+    // Overrides previously set and still running limit
+    void setTimeLimit(std::chrono::milliseconds limit) { setTimeLimit(limit, {}); }
+    struct TimeLimitConf {
+        // override by default, otherwise do not set the limit
+        bool override = true;
+    };
+    void setTimeLimit(std::chrono::milliseconds, TimeLimitConf const &);
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
@@ -353,6 +364,9 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
     unsigned int insertedFormulasCount = 0;
+
+    class TimeLimitImpl;
+    std::unique_ptr<TimeLimitImpl> timeLimitImplPtr;
 };
 
 bool MainSolver::trackPartitions() const {
