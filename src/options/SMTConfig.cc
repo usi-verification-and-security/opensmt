@@ -414,6 +414,12 @@ namespace opensmt {
               strcmp(val, spts_search_counter) != 0)
           { msg = s_err_unknown_units; return false; }
       }
+
+      if (strcmp(name, o_time_limit) == 0) {
+        if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
+        if (value.getValue().numval <= 0) { msg = s_err_not_positive; return false; }
+      }
+
       if (optionTable.has(name))
           optionTable.remove(name);
       insertOption(name, new SMTOption(value));
@@ -528,6 +534,7 @@ namespace opensmt {
   const char* SMTConfig::o_sat_picky_w = ":picky_w";
   const char* SMTConfig::o_global_declarations = ":global-declarations";
   const char* SMTConfig::o_sat_split_mode     = ":split-mode";
+  const char* SMTConfig::o_time_limit = ":time-limit";
 
   char* SMTConfig::server_host=NULL;
   uint16_t SMTConfig::server_port = 0;
@@ -538,6 +545,7 @@ namespace opensmt {
   const char* SMTConfig::s_err_not_str = "expected string";
   const char* SMTConfig::s_err_not_bool = "expected Boolean";
   const char* SMTConfig::s_err_not_num = "expected number";
+  const char* SMTConfig::s_err_not_positive = "expected positive value";
   const char* SMTConfig::s_err_seed_zero = "seed cannot be 0";
   const char* SMTConfig::s_err_unknown_split = "unknown split type";
   const char* SMTConfig::s_err_unknown_units = "unknown split units";
