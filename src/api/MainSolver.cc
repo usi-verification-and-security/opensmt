@@ -23,7 +23,33 @@
 #include <tsolvers/RDLTHandler.h>
 #include <unsatcores/UnsatCoreBuilder.h>
 
+#include <condition_variable>
+#include <thread>
+
 namespace opensmt {
+
+class MainSolver::ThreadImpl {
+public:
+    ThreadImpl(MainSolver & s) : solver(s) {}
+    ~ThreadImpl();
+
+    void setTimeLimit(std::chrono::milliseconds);
+
+protected:
+    bool anyRunning() const noexcept;
+
+    void requestEnd();
+    void waitToEnd();
+
+private:
+    MainSolver & solver;
+
+    std::jthread timeLimitThread{};
+
+    std::mutex mtx{};
+    std::condition_variable condVar{};
+    bool endReq{false};
+};
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     : theory(createTheory(logic, conf)),
@@ -56,7 +82,11 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
     initialize();
 }
 
+MainSolver::~MainSolver() = default;
+
 void MainSolver::initialize() {
+    threadImplPtr = std::make_unique<ThreadImpl>(*this);
+
     frames.push();
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
@@ -67,6 +97,11 @@ void MainSolver::initialize() {
 
     smt_solver->addOriginalSMTClause({~term_mapper->getOrCreateLit(logic.getTerm_false())}, iorefs);
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
+
+    if (auto option = config.getOption(SMTConfig::o_time_limit); not option.isEmpty()) {
+        assert(option.getValue().type == O_NUM);
+        setTimeLimit(std::chrono::milliseconds{option.getValue().numval});
+    }
 }
 
 void MainSolver::push() {
@@ -417,6 +452,14 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     }
 }
 
+void MainSolver::setTimeLimit(std::chrono::milliseconds limit) {
+    if (limit <= std::chrono::milliseconds::zero()) {
+        throw std::invalid_argument{"MainSolver::setTimeLimit: The value must be positive."};
+    }
+
+    threadImplPtr->setTimeLimit(limit);
+}
+
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
     Logic_t logicType = logic.getLogic();
     Theory * theory = nullptr;
@@ -583,5 +626,43 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
 
 span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
+}
+
+MainSolver::ThreadImpl::~ThreadImpl() {
+    if (not anyRunning()) { return; }
+
+    requestEnd();
+    // no need to wait in destructor
+}
+
+void MainSolver::ThreadImpl::setTimeLimit(std::chrono::milliseconds limit) {
+    if (anyRunning()) {
+        requestEnd();
+        waitToEnd();
+    }
+
+    timeLimitThread = std::jthread([this, limit] {
+        std::unique_lock lock(mtx);
+        // To ensure that we do not wait later than when the notification was sent
+        if (endReq) { return; }
+        if (condVar.wait_for(lock, limit) == std::cv_status::timeout) { solver.notifyStop(); }
+    });
+}
+
+bool MainSolver::ThreadImpl::anyRunning() const noexcept {
+    return timeLimitThread.joinable();
+}
+
+void MainSolver::ThreadImpl::requestEnd() {
+    {
+        std::lock_guard lock(mtx);
+        endReq = true;
+    }
+    condVar.notify_all();
+}
+
+void MainSolver::ThreadImpl::waitToEnd() {
+    timeLimitThread.join();
+    endReq = false;
 }
 } // namespace opensmt
