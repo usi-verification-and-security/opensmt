@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <getopt.h>
 #include <iostream>
 #include <unistd.h>
+#include <string>
 
 #define opensmt_error_() 		  { std::cerr << "# Error (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << std::endl; assert(false); ::exit( 1 ); }
 #define opensmt_error( S )        { std::cerr << "; Error: " << S << " (triggered at " <<  __FILE__ << ", " << __LINE__ << ")" << std::endl; ::exit( 1 ); }
@@ -49,7 +50,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace opensmt {
 
-inline bool pipeExecution = false;
+using namespace std::string_literals;
+
+namespace {
+    bool pipeExecution = false;
+}
 
 // Replace this with std::to_underlying once we move to C++23
 template<typename Enum>
@@ -72,7 +77,7 @@ void interpretInteractive(Interpret & interpret);
 }
 
 int main( int argc, char * argv[] )
-{
+try {
     using namespace opensmt;
 
     signal( SIGTERM, catcher );
@@ -130,6 +135,10 @@ int main( int argc, char * argv[] )
     int const exit_status = interpreter.okStatus() ? 0 : 1;
 
     return exit_status;
+}
+catch (std::exception const & e) {
+    std::cerr << "Terminated with exception:\n" << e.what() << std::endl;
+    return 1;
 }
 
 namespace opensmt {
@@ -237,6 +246,7 @@ void printHelp()
           "  --minimal-unsat-cores           produced unsat cores must be irreducible\n"
           "  --print-cores-full              produced unsat cores are agnostic to the smt2 attribute ':named'\n"
           "  --produce-interpolants [-i]     enables interpolant computation\n"
+          "  --time-limit [-t] <ms>          sets wall-clock time limit in milliseconds\n"
           "  --pipe [-p]                     for execution within a pipe\n";
     std::cerr << help_string;
 }
@@ -269,14 +279,16 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
             {"minimal-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::minUcore)},
             {"print-cores-full", no_argument, &selectedLongOpt, to_underlying(LongOpt::fullUcore)},
             {"produce-interpolants", no_argument, nullptr, 'i'},
+            {"time-limit", required_argument, nullptr, 't'},
             {"pipe", no_argument, nullptr, 'p'},
             {0, 0, 0, 0}
         };
 
     const char* msg;
-    while (true) {
+    bool ok = true;
+    while (ok) {
         int option_index = 0;
-        int c = getopt_long(argc, argv, "r:hdivp", long_options, &option_index);
+        int c = getopt_long(argc, argv, "r:hdivpt:", long_options, &option_index);
         if (c == -1) { break; }
 
         switch (c) {
@@ -323,6 +335,17 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
             case 'i':
                 res.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
                 break;
+            case 't': {
+                int64_t timeLimit;
+                try {
+                    timeLimit = std::stoll(optarg);
+                } catch (std::logic_error const & e) {
+                    throw std::invalid_argument{"Invalid argument of time-limit: "s + e.what()};
+                }
+
+                ok &= res.setOption(SMTConfig::o_time_limit, SMTOption(timeLimit), msg);
+                break;
+            }
             case 'p':
                 pipeExecution = true;
                 break;
@@ -330,6 +353,10 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                 printHelp();
                 exit(1);
         }
+    }
+
+    if (not ok) {
+        throw std::invalid_argument{"Invalid command-line argument: "s + msg};
     }
 
     return res;
