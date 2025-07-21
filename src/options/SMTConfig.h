@@ -146,6 +146,8 @@ namespace opensmt {
       SMTOption(ASTNode const & n);
       SMTOption() {}
       SMTOption(int i)   : value(i) {}
+      //+ Should also support long representation
+      SMTOption(long i)  : SMTOption(static_cast<int>(i)) {}
       SMTOption(double i): value(i) {}
       SMTOption(const char* s) : value(s) {}
       inline bool isEmpty() const { return value.type == O_EMPTY; }
