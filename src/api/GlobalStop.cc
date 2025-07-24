@@ -15,6 +15,10 @@ void notifyGlobalStop() {
     globalStopFlag = true;
 }
 
+void resetGlobalStop() {
+    globalStopFlag = false;
+}
+
 bool globallyStopped() {
     return globalStopFlag;
 }

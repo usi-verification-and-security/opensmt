@@ -12,21 +12,51 @@
 #include <logics/ArithLogic.h>
 
 #include <array>
-#include <chrono>
 #include <future>
 #include <thread>
-
-using namespace std::chrono_literals;
+#include <condition_variable>
+#include <mutex>
 
 namespace opensmt {
 
-constexpr auto const sleep_amount = 10ms;
+std::mutex mutex;
+std::condition_variable condVar;
+size_t ackReadyCnt{0};
+bool reqContinueFlag{false};
+
+class TestMainSolver : public MainSolver {
+public:
+    using MainSolver::MainSolver;
+
+protected:
+    sstat solve_(vec<FrameId> const & enabledFrames) override {
+        std::unique_lock lock(mutex);
+        ++ackReadyCnt;
+        lock.unlock();
+        condVar.notify_all();
+        lock.lock();
+        condVar.wait(lock, []{ return reqContinueFlag; });
+        lock.unlock();
+
+        return MainSolver::solve_(enabledFrames);
+    }
+};
 
 class StopTest : public ::testing::Test {
+public:
+
+    ~StopTest() {
+        resetGlobalStop();
+
+        ackReadyCnt = 0;
+        reqContinueFlag = false;
+    }
 protected:
     static constexpr size_t nSolvers = 2;
 
     void init() {
+        assert(not globallyStopped());
+
         for (size_t i = 0; i < nSolvers; ++i) {
             auto & logic = logics[i];
             auto & solver = solvers[i];
@@ -54,24 +84,37 @@ protected:
         }
     }
 
-    void notifyAll() {
+    void waitReadyAll() {
+        std::unique_lock lock(mutex);
+        condVar.wait(lock, []{ return ackReadyCnt == nSolvers; });
+    }
+
+    void reqContinue() {
+        {
+            std::lock_guard lock(mutex);
+            reqContinueFlag = true;
+        }
+        condVar.notify_all();
+    }
+
+    void notifyStopAll() {
         for (size_t i = 0; i < nSolvers; ++i) {
             solvers[i].notifyStop();
         }
     }
 
-    std::array<sstat, nSolvers> waitAll() {
+    std::array<sstat, nSolvers> joinAll() {
         std::array<sstat, nSolvers> results;
         for (size_t i = 0; i < nSolvers; ++i) {
-            results[i] = wait(i);
+            results[i] = join(i);
         }
         return results;
     }
 
     SMTConfig config{};
     std::array<ArithLogic, nSolvers> logics{Logic_t::QF_LRA, Logic_t::QF_LRA};
-    std::array<MainSolver, nSolvers> solvers{MainSolver{logics[0], config, "solver 1"},
-                                             MainSolver{logics[1], config, "solver 2"}};
+    std::array<TestMainSolver, nSolvers> solvers{TestMainSolver{logics[0], config, "solver 1"},
+                                                 TestMainSolver{logics[1], config, "solver 2"}};
 
     std::array<std::thread, nSolvers> threads;
     std::array<std::future<sstat>, nSolvers> futures;
@@ -85,12 +128,11 @@ private:
 
     void solveOnBackground(size_t idx) {
         runOnBackground(idx, [this, idx] {
-            std::this_thread::sleep_for(sleep_amount);
             return solvers[idx].check();
         });
     }
 
-    sstat wait(size_t idx) {
+    sstat join(size_t idx) {
         threads[idx].join();
         return futures[idx].get();
     }
@@ -100,7 +142,9 @@ TEST_F(StopTest, test_NoStop) {
     init();
 
     solveAllOnBackground();
-    auto results = waitAll();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_False, s_False}));
 }
@@ -110,7 +154,9 @@ TEST_F(StopTest, test_LocalPreStop) {
 
     solvers.front().notifyStop();
     solveAllOnBackground();
-    auto results = waitAll();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
 }
@@ -120,7 +166,9 @@ TEST_F(StopTest, test_GlobalPreStop) {
 
     notifyGlobalStop();
     solveAllOnBackground();
-    auto results = waitAll();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
 }
@@ -128,9 +176,11 @@ TEST_F(StopTest, test_GlobalPreStop) {
 TEST_F(StopTest, test_AllLocalPreStop) {
     init();
 
-    notifyAll();
+    notifyStopAll();
     solveAllOnBackground();
-    auto results = waitAll();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
 }
@@ -141,9 +191,10 @@ TEST_F(StopTest, test_LocalPostStop) {
     init();
 
     solveAllOnBackground();
-    std::this_thread::sleep_for(sleep_amount / 10);
+    waitReadyAll();
     solvers.front().notifyStop();
-    auto results = waitAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
 }
@@ -152,9 +203,10 @@ TEST_F(StopTest, test_GlobalPostStop) {
     init();
 
     solveAllOnBackground();
-    std::this_thread::sleep_for(sleep_amount / 10);
+    waitReadyAll();
     notifyGlobalStop();
-    auto results = waitAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
 }
@@ -163,45 +215,10 @@ TEST_F(StopTest, test_AllLocalPostStop) {
     init();
 
     solveAllOnBackground();
-    std::this_thread::sleep_for(sleep_amount / 10);
-    notifyAll();
-    auto results = waitAll();
-
-    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
-}
-
-TEST_F(StopTest, test_LocalTimeout) {
-    init();
-
-    solveAllOnBackground();
-    if (futures.front().wait_for(sleep_amount / 2) != std::future_status::timeout) { ASSERT_TRUE(false); }
-
-    solvers.front().notifyStop();
-    auto results = waitAll();
-
-    ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
-}
-
-TEST_F(StopTest, test_GlobalTimeout) {
-    init();
-
-    solveAllOnBackground();
-    if (futures.front().wait_for(sleep_amount / 2) != std::future_status::timeout) { ASSERT_TRUE(false); }
-
-    notifyGlobalStop();
-    auto results = waitAll();
-
-    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
-}
-
-TEST_F(StopTest, test_AllLocalTimeout) {
-    init();
-
-    solveAllOnBackground();
-    if (futures.front().wait_for(sleep_amount / 2) != std::future_status::timeout) { ASSERT_TRUE(false); }
-
-    notifyAll();
-    auto results = waitAll();
+    waitReadyAll();
+    notifyStopAll();
+    reqContinue();
+    auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
 }
