@@ -44,7 +44,8 @@ protected:
 private:
     MainSolver & solver;
 
-    std::jthread thread{};
+    // not using std::jthread since MacOS does not support it
+    std::thread thread{};
 
     std::mutex mtx{};
     std::condition_variable condVar{};
@@ -632,7 +633,7 @@ MainSolver::TimeLimitImpl::~TimeLimitImpl() {
     if (not isRunning()) { return; }
 
     requestEnd();
-    // no need to wait in destructor
+    waitToEnd();
 }
 
 void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
@@ -641,12 +642,12 @@ void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
         waitToEnd();
     }
 
-    thread = std::jthread([this, limit] {
+    thread = decltype(thread){[this, limit] {
         std::unique_lock lock(mtx);
         // To ensure that we do not wait later than when the notification was sent
         if (endReq) { return; }
         if (condVar.wait_for(lock, limit) == std::cv_status::timeout) { solver.notifyStop(); }
-    });
+    }};
 }
 
 bool MainSolver::TimeLimitImpl::isRunning() const noexcept {
