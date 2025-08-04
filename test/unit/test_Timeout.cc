@@ -163,9 +163,8 @@ private:
             solver.setTimeLimit(limit_ms);
         } else {
             auto & config = configs[solverIdx];
-            //+ SMTOption is not defined for long long
             [[maybe_unused]]
-            bool rval = config.setOption(SMTConfig::o_time_limit, SMTOption(long(limit_ms.count())), auxMsg);
+            bool rval = config.setOption(SMTConfig::o_time_limit, SMTOption{limit_ms.count()}, auxMsg);
             assert(rval);
         }
     }

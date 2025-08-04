@@ -324,13 +324,13 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                 printHelp();
                 exit(0);
             case 'v':
-                res.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_verbosity, SMTOption{true}, msg);
                 break;
             case 'd':
-                res.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_dryrun, SMTOption{true}, msg);
                 break;
             case 'r':
-                if (!res.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
+                if (!res.setOption(SMTConfig::o_random_seed, SMTOption{atoi(optarg)}, msg))
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
@@ -339,7 +339,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                 res.setOption(SMTConfig::o_produce_models, SMTOption(true), msg);
                 break;
             case 'i':
-                res.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_produce_inter, SMTOption{true}, msg);
                 break;
             case 't': {
                 int64_t timeLimit;
@@ -349,8 +349,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     throw std::invalid_argument{"Invalid argument of time-limit: "s + e.what()};
                 }
 
-                //+ SMTOption is not defined for long long
-                ok &= res.setOption(SMTConfig::o_time_limit, SMTOption(long(timeLimit)), msg);
+                ok &= res.setOption(SMTConfig::o_time_limit, SMTOption{timeLimit}, msg);
                 break;
             }
             case 'p':
