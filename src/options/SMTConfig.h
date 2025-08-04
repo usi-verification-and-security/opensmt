@@ -148,6 +148,7 @@ namespace opensmt {
       SMTOption(int i)   : value(i) {}
       //+ Should also support long representation
       SMTOption(long i)  : SMTOption(static_cast<int>(i)) {}
+      SMTOption(long long i)  : SMTOption(static_cast<long>(i)) {}
       SMTOption(double i): value(i) {}
       SMTOption(const char* s) : value(s) {}
       inline bool isEmpty() const { return value.type == O_EMPTY; }
@@ -960,7 +961,7 @@ namespace opensmt {
 
       void setSimplifyInterpolant(int val) {
           const char* msg;
-          setOption(o_simplify_inter, SMTOption(val), msg);
+          setOption(o_simplify_inter, SMTOption{val}, msg);
       }
 
       int getSimplifyInterpolant() const {
