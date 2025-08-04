@@ -155,6 +155,9 @@ SMTConfig UnsatCoreBuilder::Minimize::makeSmtSolverConfig() const {
     assert(not newConfig.produce_unsat_cores());
     assert(not newConfig.produce_proof());
     assert(not newConfig.produce_inter());
+
+    char const * msg = "ok";
+    newConfig.setOption(SMTConfig::o_produce_models, SMTOption{false}, msg);
     assert(not newConfig.produce_models());
 
     return newConfig;
