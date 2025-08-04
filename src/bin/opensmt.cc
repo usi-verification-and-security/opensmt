@@ -276,10 +276,10 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                         printVersion();
                         exit(0);
                     case minUcoreLongOpt:
-                        res.setOption(SMTConfig::o_minimal_unsat_cores, SMTOption(true), msg);
+                        res.setOption(SMTConfig::o_minimal_unsat_cores, SMTOption{true}, msg);
                         break;
                     case fullUcoreLongOpt:
-                        res.setOption(SMTConfig::o_print_cores_full, SMTOption(true), msg);
+                        res.setOption(SMTConfig::o_print_cores_full, SMTOption{true}, msg);
                         break;
                 }
                 break;
@@ -287,19 +287,19 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                 printHelp();
                 exit(0);
             case 'v':
-                res.setOption(SMTConfig::o_verbosity, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_verbosity, SMTOption{true}, msg);
                 break;
             case 'd':
-                res.setOption(SMTConfig::o_dryrun, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_dryrun, SMTOption{true}, msg);
                 break;
             case 'r':
-                if (!res.setOption(SMTConfig::o_random_seed, SMTOption(atoi(optarg)), msg))
+                if (!res.setOption(SMTConfig::o_random_seed, SMTOption{atoi(optarg)}, msg))
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
                 break;
             case 'i':
-                res.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+                res.setOption(SMTConfig::o_produce_inter, SMTOption{true}, msg);
                 break;
             case 't': {
                 int64_t timeLimit;
@@ -309,7 +309,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     throw std::invalid_argument{"Invalid argument of time-limit: "s + e.what()};
                 }
 
-                ok &= res.setOption(SMTConfig::o_time_limit, SMTOption(timeLimit), msg);
+                ok &= res.setOption(SMTConfig::o_time_limit, SMTOption{timeLimit}, msg);
                 break;
             }
             case 'p':
