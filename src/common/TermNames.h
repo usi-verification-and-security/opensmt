@@ -1,6 +1,7 @@
 #ifndef OPENSMT_TERMNAMES_H
 #define OPENSMT_TERMNAMES_H
 
+#include "InternalToUserTermMap.h"
 #include "ScopedVector.h"
 #include "TypeUtils.h"
 
@@ -19,12 +20,15 @@ using TermName = std::string;
 
 class TermNames {
 public:
-    TermNames(SMTConfig const & conf) : config{conf} {}
+    TermNames(SMTConfig const & conf, InternalToUserTermMap const & map) : config{conf}, internalToUserTermMap{map} {}
 
     bool isGlobal() const { return config.declarations_are_global(); }
 
     bool contains(TermName const & name) const { return nameToTerm.contains(name); }
-    bool contains(PTRef term) const { return termToNames.contains(term); }
+    bool contains(PTRef term) const {
+        term = internalToUserTermMap.getUserTerm(term);
+        return termToNames.contains(term);
+    }
 
     [[deprecated("Use tryInsert")]]
     void insert(TermName const & name, PTRef term) {
@@ -49,6 +53,8 @@ public:
 
     std::vector<TermName> const & namesForTerm(PTRef term) const {
         assert(contains(term));
+        term = internalToUserTermMap.getUserTerm(term);
+        assert(contains(term));
         return termToNames.at(term);
     }
 
@@ -72,6 +78,7 @@ public:
 
     // std::optional does not work with references so we must use pointers
     std::vector<TermName> const * tryGetNamesForTerm(PTRef term) const {
+        term = internalToUserTermMap.getUserTerm(term);
         if (auto it = termToNames.find(term); it != termToNames.end()) { return &it->second; }
 
         return nullptr;
@@ -121,15 +128,25 @@ protected:
         if (isGlobal()) { return; }
         scopedNamesAndTerms.popScope([this](auto const & p) {
             auto const & [name, term] = p;
-            auto it = nameToTerm.find(name);
-            if (it == nameToTerm.end()) { return; }
-            auto & names_ = _namesForTerm(term);
-            names_.erase(std::find(names_.begin(), names_.end(), name));
-            nameToTerm.erase(it);
+            assert(not contains(term) or nameToTerm.find(name)->second.x == term.x);
+            eraseTermName(name);
         });
     }
 
+    bool eraseTermName(TermName const & name) {
+        auto termIt = nameToTerm.find(name);
+        if (termIt == nameToTerm.end()) { return false; }
+
+        auto const & term = termIt->second;
+        auto & names_ = _namesForTerm(term);
+        names_.erase(std::find(names_.begin(), names_.end(), name));
+        nameToTerm.erase(termIt);
+        return true;
+    }
+
     SMTConfig const & config;
+
+    InternalToUserTermMap const & internalToUserTermMap;
 
     ScopedNamesAndTerms scopedNamesAndTerms;
     NameToTermMap nameToTerm;
