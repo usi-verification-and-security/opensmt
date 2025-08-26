@@ -1,0 +1,6 @@
+(set-option :produce-unsat-cores true)
+(set-logic QF_UF)
+(declare-const A Bool)
+(assert (! (ite A (not A) A) :named n))
+(check-sat)
+(get-unsat-core)
