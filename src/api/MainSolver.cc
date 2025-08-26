@@ -9,6 +9,7 @@
 #include "MainSolver.h"
 
 #include <common/ApiException.h>
+#include <common/InternalToUserTermMap.h>
 #include <itehandler/IteHandler.h>
 #include <logics/ArrayTheory.h>
 #include <logics/LATheory.h>
@@ -30,7 +31,7 @@ MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
       term_mapper(new TermMapper(logic)),
       thandler(new THandler(getTheory(), *term_mapper)),
       smt_solver(createInnerSolver(conf, *thandler)),
-      termNames(conf),
+      termNames(conf, internalToUserTermMap),
       logic(thandler->getLogic()),
       pmanager(logic),
       config(conf),
@@ -46,7 +47,7 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
       term_mapper(std::move(tm)),
       thandler(std::move(thd)),
       smt_solver(std::move(ss)),
-      termNames(conf),
+      termNames(conf, internalToUserTermMap),
       logic(thandler->getLogic()),
       pmanager(logic),
       config(conf),
@@ -108,7 +109,11 @@ void MainSolver::insertFormula(PTRef fla) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
     }
     // TODO: Move this to preprocessing of the formulas
-    fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
+    {
+        PTRef newFla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
+        internalToUserTermMap.maybeAddMapping(newFla, fla);
+        fla = newFla;
+    }
 
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
