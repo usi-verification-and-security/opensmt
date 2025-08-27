@@ -21,6 +21,7 @@
 ./src/common/FlaPartitionMap.h
 ./src/common/IColor.h
 ./src/common/InternalException.h
+./src/common/InternalToUserTermMap.h
 ./src/common/PartitionInfo.cc
 ./src/common/PartitionInfo.h
 ./src/common/Partitions.h

@@ -23,6 +23,7 @@
 
 namespace opensmt {
 class Logic;
+class InternalToUserTermMap;
 
 class sstat {
 public:
@@ -139,7 +140,7 @@ public:
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
-    [[deprecated("Use tryAddNamedAssertion or tryAddTermName")]]
+    [[deprecated("Use tryAddNamedAssertion or tryAddTermNameFor")]]
     TermNames & getTermNames() {
         return termNames;
     }
@@ -310,6 +311,7 @@ private:
     std::unique_ptr<TermMapper> term_mapper;
     std::unique_ptr<THandler> thandler;
     std::unique_ptr<SimpSMTSolver> smt_solver;
+    InternalToUserTermMap internalToUserTermMap;
     TermNames termNames;
     Logic & logic;
     PartitionManager pmanager;
