@@ -20,6 +20,10 @@ bool isInCore(PTRef fla, vec<PTRef> const & coreTerms) {
     return std::find(coreTerms.begin(), coreTerms.end(), fla) != coreTerms.end();
 }
 
+bool isNameInCore(TermName const & name, std::vector<std::string> const & coreNames) {
+    return std::find(coreNames.begin(), coreNames.end(), name) != coreNames.end();
+}
+
 template <typename LogicT>
 class UnsatCoreTestBase {
 protected:
@@ -132,7 +136,14 @@ TEST_F(UFUnsatCoreTest, Bool_Simple) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 2);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+    EXPECT_TRUE(isNameInCore("a3", coreNames));
 }
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple) {
@@ -146,7 +157,14 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 2);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+    EXPECT_TRUE(isNameInCore("a3", coreNames));
 }
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed1) {
@@ -160,7 +178,14 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed1) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 1);
     EXPECT_FALSE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_FALSE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+    EXPECT_TRUE(isNameInCore("a3", coreNames));
 }
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed2) {
@@ -174,7 +199,14 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed2) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 2);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+    EXPECT_TRUE(isNameInCore("a3", coreNames));
 }
 
 TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed3) {
@@ -188,7 +220,14 @@ TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_Unnamed3) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 1);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_FALSE(isInCore(nb1, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+    EXPECT_FALSE(isNameInCore("a3", coreNames));
 }
 
 TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple) {
@@ -202,6 +241,7 @@ TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
 }
 
@@ -216,6 +256,7 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
 }
 
@@ -230,6 +271,7 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed1) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
 }
 
@@ -244,6 +286,7 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed2) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
 }
 
@@ -258,6 +301,7 @@ TEST_F(MinFullUFUnsatCoreTest, Min_Full_Bool_Simple_Unnamed3) {
     auto & coreTerms = core->getTerms();
     ASSERT_EQ(coreTerms.size(), 2);
     EXPECT_TRUE(isInCore(b1, coreTerms));
+    EXPECT_FALSE(isInCore(b2, coreTerms));
     EXPECT_TRUE(isInCore(nb1, coreTerms));
 }
 
