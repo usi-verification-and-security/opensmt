@@ -37,6 +37,22 @@ void NamedUnsatCore::printTerm(std::ostream & os, PTRef term) const {
     os << termNames.nameForTerm(term);
 }
 
+std::vector<std::string> NamedUnsatCore::makeTermNamesTp(vec<PTRef> const & terms) const {
+    std::vector<std::string> names;
+    for (PTRef term : terms) {
+        names.push_back(termNames.nameForTerm(term));
+    }
+    return names;
+}
+
+std::vector<std::string> NamedUnsatCore::makeTermNames() const {
+    return makeTermNamesTp(getTerms());
+}
+
+std::vector<std::string> NamedUnsatCore::makeHiddenTermNames() const {
+    return makeTermNamesTp(getHiddenTerms());
+}
+
 void FullUnsatCore::printTerm(std::ostream & os, PTRef term) const {
     os << logic.printTerm(term);
 }
