@@ -383,6 +383,245 @@ TEST_F(FullUFUnsatCoreTest, Full_Bool_ReuseProofChain) {
     EXPECT_FALSE(isInCore(b4, coreTerms));
 }
 
+TEST_F(UFUnsatCoreTest, Bool_Trivial_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef ite = logic.mkIte(b1, nb1, b1);
+    solver.tryAddNamedAssertion(ite, "a");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_TRUE(isNameInCore("a", coreNames));
+}
+
+TEST_F(UFUnsatCoreTest, Bool_Trivial_ITE_Unnamed) {
+    MainSolver solver = makeSolver();
+    PTRef ite = logic.mkIte(b1, nb1, b1);
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 0);
+    EXPECT_FALSE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 0);
+    EXPECT_FALSE(isNameInCore("a", coreNames));
+}
+
+TEST_F(MinUFUnsatCoreTest, Min_Bool_Trivial_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef ite = logic.mkIte(b1, nb1, b1);
+    solver.tryAddNamedAssertion(ite, "a");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_TRUE(isNameInCore("a", coreNames));
+}
+
+TEST_F(MinUFUnsatCoreTest, Min_Bool_Trivial_ITE_Unnamed) {
+    MainSolver solver = makeSolver();
+    PTRef ite = logic.mkIte(b1, nb1, b1);
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 0);
+    EXPECT_FALSE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 0);
+    EXPECT_FALSE(isNameInCore("a", coreNames));
+}
+
+TEST_F(FullUFUnsatCoreTest, Full_Bool_Trivial_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef ite = logic.mkIte(b1, nb1, b1);
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+}
+
+TEST_F(UFUnsatCoreTest, Bool_Simple_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.tryAddNamedAssertion(eq, "a1");
+    solver.tryAddNamedAssertion(ite, "a2");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 2);
+    EXPECT_TRUE(isInCore(eq, coreTerms));
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 2);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_TRUE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(UFUnsatCoreTest, Bool_Simple_ITE_Unnamed1) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.addAssertion(eq);
+    solver.tryAddNamedAssertion(ite, "a2");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_FALSE(isInCore(eq, coreTerms));
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_FALSE(isNameInCore("a1", coreNames));
+    EXPECT_TRUE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(UFUnsatCoreTest, Bool_Simple_ITE_Unnamed2) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.tryAddNamedAssertion(eq, "a1");
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_TRUE(isInCore(eq, coreTerms));
+    EXPECT_FALSE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.tryAddNamedAssertion(eq, "a1");
+    solver.tryAddNamedAssertion(ite, "a2");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 2);
+    EXPECT_TRUE(isInCore(eq, coreTerms));
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 2);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_TRUE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_ITE_Unnamed1) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.addAssertion(eq);
+    solver.tryAddNamedAssertion(ite, "a2");
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_FALSE(isInCore(eq, coreTerms));
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_FALSE(isNameInCore("a1", coreNames));
+    EXPECT_TRUE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(MinUFUnsatCoreTest, Min_Bool_Simple_ITE_Unnamed2) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.tryAddNamedAssertion(eq, "a1");
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 1);
+    EXPECT_TRUE(isInCore(eq, coreTerms));
+    EXPECT_FALSE(isInCore(ite, coreTerms));
+    auto const & namedCore = static_cast<NamedUnsatCore &>(*core);
+    auto coreNames = namedCore.makeTermNames();
+    ASSERT_EQ(coreNames.size(), 1);
+    EXPECT_TRUE(isNameInCore("a1", coreNames));
+    EXPECT_FALSE(isNameInCore("a2", coreNames));
+}
+
+TEST_F(FullUFUnsatCoreTest, Full_Bool_Simple_ITE) {
+    MainSolver solver = makeSolver();
+    PTRef eq = logic.mkEq(b1, b2);
+    PTRef impl1 = logic.mkImpl(b1, b2);
+    PTRef impl2 = logic.mkImpl(b2, b1);
+    PTRef nimpl1 = logic.mkNot(impl1);
+    PTRef nimpl2 = logic.mkNot(impl2);
+    PTRef ite = logic.mkIte(b3, nimpl1, nimpl2);
+    solver.addAssertion(eq);
+    solver.addAssertion(ite);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto core = solver.getUnsatCore();
+    auto & coreTerms = core->getTerms();
+    ASSERT_EQ(coreTerms.size(), 2);
+    EXPECT_TRUE(isInCore(eq, coreTerms));
+    EXPECT_TRUE(isInCore(ite, coreTerms));
+}
+
 TEST_F(UFUnsatCoreTest, UF_Simple) {
     // a1 := x = y
     // a2 := g(x,y) = g(y,x)
