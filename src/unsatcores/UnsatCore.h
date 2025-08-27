@@ -36,6 +36,9 @@ public:
 
     vec<PTRef> const & getHiddenTerms() const { return hiddenTerms; }
 
+    std::vector<std::string> makeTermNames() const;
+    std::vector<std::string> makeHiddenTermNames() const;
+
 protected:
     friend class UnsatCoreBuilder;
 
@@ -47,6 +50,9 @@ protected:
 
     vec<PTRef> namedTerms;
     vec<PTRef> hiddenTerms;
+
+private:
+    std::vector<std::string> makeTermNamesImpl(vec<PTRef> const &) const;
 };
 
 class FullUnsatCore : public UnsatCore {
