@@ -12,6 +12,7 @@
 #include "PartitionManager.h"
 
 #include <cnfizers/Tseitin.h>
+#include <common/InternalToUserTermMap.h>
 #include <common/ScopedVector.h>
 #include <common/TermNames.h>
 #include <models/Model.h>
@@ -23,7 +24,6 @@
 
 namespace opensmt {
 class Logic;
-class InternalToUserTermMap;
 
 class sstat {
 public:
@@ -195,6 +195,7 @@ protected:
         }
         PushFrame & operator[](std::size_t i) {
             assert(i < frames.size());
+            // !! mapping?
             return frames[i];
         }
 

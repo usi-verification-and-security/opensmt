@@ -9,7 +9,6 @@
 #include "MainSolver.h"
 
 #include <common/ApiException.h>
-#include <common/InternalToUserTermMap.h>
 #include <itehandler/IteHandler.h>
 #include <logics/ArrayTheory.h>
 #include <logics/LATheory.h>
@@ -31,7 +30,7 @@ MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
       term_mapper(new TermMapper(logic)),
       thandler(new THandler(getTheory(), *term_mapper)),
       smt_solver(createInnerSolver(conf, *thandler)),
-      termNames(conf, internalToUserTermMap),
+      termNames(conf),
       logic(thandler->getLogic()),
       pmanager(logic),
       config(conf),
@@ -47,7 +46,7 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
       term_mapper(std::move(tm)),
       thandler(std::move(thd)),
       smt_solver(std::move(ss)),
-      termNames(conf, internalToUserTermMap),
+      termNames(conf),
       logic(thandler->getLogic()),
       pmanager(logic),
       config(conf),
@@ -207,6 +206,7 @@ vec<PTRef> MainSolver::getCurrentAssertions() const {
     size_t const cnt = frames.frameCount();
     for (size_t i = 0; i < cnt; ++i) {
         for (PTRef fla : frames[i].formulas) {
+            fla = internalToUserTermMap.getUserTerm(fla);
             assertions.push(fla);
         }
     }
@@ -215,6 +215,7 @@ vec<PTRef> MainSolver::getCurrentAssertions() const {
 
 vec<PTRef> const & MainSolver::getAssertionsAtLevel(std::size_t level) const {
     assert(level <= getAssertionLevel());
+    //!! fla = internalToUserTermMap.getUserTerm(fla);
     return frames[level].formulas;
 }
 
@@ -240,6 +241,7 @@ void MainSolver::printCurrentAssertionsAsQuery(std::ostream & s) const {
     for (std::size_t i = 0; i < frames.frameCount(); ++i) {
         if (i > 0) s << "(push 1)\n";
         for (PTRef assertion : frames[i].formulas) {
+            assertion = internalToUserTermMap.getUserTerm(assertion);
             logic.dumpFormulaToFile(s, assertion);
         }
     }

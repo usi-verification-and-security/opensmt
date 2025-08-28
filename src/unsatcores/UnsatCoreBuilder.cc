@@ -3,6 +3,7 @@
 
 #include <api/MainSolver.h>
 #include <api/PartitionManager.h>
+#include <common/InternalToUserTermMap.h>
 #include <common/Partitions.h>
 #include <common/TermNames.h>
 #include <logics/Logic.h>
@@ -20,7 +21,8 @@ UnsatCoreBuilderBase::UnsatCoreBuilderBase(MainSolver const & solver_)
       config{solver_.config},
       logic{solver_.logic},
       proof{solver_.smt_solver->getResolutionProof()},
-      partitionManager{solver_.pmanager} {}
+      partitionManager{solver_.pmanager},
+      internalToUserTermMap{solver_.internalToUserTermMap} {}
 
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
     buildBody();
@@ -82,6 +84,10 @@ void UnsatCoreBuilder::mapClausesToTerms() {
     }
 
     allTerms = partitionManager.getPartitions(partitions);
+
+    for (PTRef & term : allTerms) {
+        term = internalToUserTermMap.getUserTerm(term);
+    }
 }
 
 void UnsatCoreBuilder::partitionNamedTerms() {
