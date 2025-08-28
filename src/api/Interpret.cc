@@ -279,15 +279,14 @@ void Interpret::interp(ASTNode& n) {
                 break;
             }
             case t_getunsatcore: {
-                if (config.produce_unsat_cores()) {
-                    if (isInitialized()) {
-                        getUnsatCore();
-                    } else {
-                        notify_formatted(true, "Illegal command before set-logic: get-unsat-core");
-                    }
-                } else {
+                if (not config.produce_unsat_cores()) {
                     notify_formatted(true,
                                      "Option to produce proofs has not been set, skipping this command ...");
+                } else if (not isInitialized()) {
+                    notify_formatted(true, "Illegal command before set-logic: get-unsat-core");
+                // ignore the command with :get-unsat-cores option - it has already been trigerred after check-sat
+                } else if (not config.getting_unsat_cores()) {
+                    getUnsatCore();
                 }
                 break;
             }
@@ -328,7 +327,8 @@ void Interpret::interp(ASTNode& n) {
                     notify_formatted(true, "Illegal command before set-logic: get-model");
                 } else if (main_solver->getStatus() != s_True) {
                     notify_formatted(true, "Command get-model called, but solver is not in SAT state");
-                } else {
+                // ignore the command with :get-models option - it has already been trigerred after check-sat
+                } else if (not config.getting_models()) {
                     getModel();
                 }
                 break;
@@ -568,6 +568,17 @@ sstat Interpret::checkSat() {
         }
         else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
             notify_formatted(false, "(error \"check status which says unsat\")");
+        }
+    }
+
+    if (res == s_True) {
+        if (config.getting_models()) {
+            getModel();
+        }
+    }
+    else if (res == s_False) {
+        if (config.getting_unsat_cores()) {
+            getUnsatCore();
         }
     }
 

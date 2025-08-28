@@ -305,7 +305,9 @@ namespace opensmt {
     static const char* o_sat_split_randomize_lookahead;
     static const char* o_sat_split_randomize_lookahead_buf;
     static const char* o_produce_models;
+    static const char* o_get_models;
     static const char* o_produce_unsat_cores;
+    static const char* o_get_unsat_cores;
     // Produce the unsat cores as locally minimal (i.e. subset-minimal)
     static const char* o_minimal_unsat_cores;
     // Make unsat cores agnostic to the smt2 attribute ':named'
@@ -507,11 +509,21 @@ namespace opensmt {
       { return optionTable.has(o_incremental) ?
           optionTable[o_incremental]->getValue().numval == 1: true; }
     int produce_models() const {
+        // get_models => produce_models
+        if (getting_models()) { return true; }
         return optionTable.has(o_produce_models) ?
                 optionTable[o_produce_models]->getValue().numval :
                 1; }
+    bool getting_models() const {
+        return optionTable.has(o_get_models) && optionTable[o_get_models]->getValue().numval > 0;
+    }
     bool produce_unsat_cores() const {
+        // get_unsat_cores => produce_unsat_cores
+        if (getting_unsat_cores()) { return true; }
         return optionTable.has(o_produce_unsat_cores) && optionTable[o_produce_unsat_cores]->getValue().numval > 0;
+    }
+    bool getting_unsat_cores() const {
+        return optionTable.has(o_get_unsat_cores) && optionTable[o_get_unsat_cores]->getValue().numval > 0;
     }
     bool minimal_unsat_cores() const {
         return optionTable.has(o_minimal_unsat_cores) && optionTable[o_minimal_unsat_cores]->getValue().numval > 0;

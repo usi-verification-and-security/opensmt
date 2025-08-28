@@ -229,7 +229,9 @@ void printHelp()
           "  --dry-run [-d]                  executes dry run\n"
           "  --random-seed [-r] <seed>       sets random seed to specific number\n"
           "  --produce-models [-m]           enable producing models\n"
+          "  --get-models                    get-model after each check-sat gracefully\n"
           "  --produce-unsat-cores           enable producing unsat cores\n"
+          "  --get-unsat-cores               get-unsat-core after each check-sat gracefully\n"
           "  --minimal-unsat-cores           produced unsat cores must be irreducible\n"
           "  --print-cores-full              produced unsat cores are agnostic to the smt2 attribute ':named'\n"
           "  --produce-interpolants [-i]     enables interpolant computation\n"
@@ -241,7 +243,9 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
 {
     enum class LongOpt {
         version,
+        getModel,
         produceUcore,
+        getUcore,
         minUcore,
         fullUcore,
     };
@@ -257,7 +261,9 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
             {"dry-run", no_argument, nullptr, 'd'},
             {"random-seed", required_argument, nullptr, 'r'},
             {"produce-models", no_argument, nullptr, 'm'},
+            {"get-models", no_argument, &selectedLongOpt, to_underlying(LongOpt::getModel)},
             {"produce-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::produceUcore)},
+            {"get-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::getUcore)},
             {"minimal-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::minUcore)},
             {"print-cores-full", no_argument, &selectedLongOpt, to_underlying(LongOpt::fullUcore)},
             {"produce-interpolants", no_argument, nullptr, 'i'},
@@ -277,8 +283,14 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     case LongOpt::version:
                         printVersion();
                         exit(0);
+                    case LongOpt::getModel:
+                        res.setOption(SMTConfig::o_get_models, SMTOption(true), msg);
+                        break;
                     case LongOpt::produceUcore:
                         res.setOption(SMTConfig::o_produce_unsat_cores, SMTOption(true), msg);
+                        break;
+                    case LongOpt::getUcore:
+                        res.setOption(SMTConfig::o_get_unsat_cores, SMTOption(true), msg);
                         break;
                     case LongOpt::minUcore:
                         res.setOption(SMTConfig::o_minimal_unsat_cores, SMTOption(true), msg);

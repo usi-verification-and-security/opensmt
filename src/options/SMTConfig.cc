@@ -446,7 +446,9 @@ namespace opensmt {
   }
 
   const char* SMTConfig::o_produce_models = ":produce-models";
+  const char* SMTConfig::o_get_models = ":get-models";
   const char* SMTConfig::o_produce_unsat_cores = ":produce-unsat-cores";
+  const char* SMTConfig::o_get_unsat_cores = ":get-unsat-cores";
   const char* SMTConfig::o_minimal_unsat_cores = ":minimal-unsat-cores";
   const char* SMTConfig::o_print_cores_full = ":print-cores-full";
   const char* SMTConfig::o_verbosity      = ":verbosity";
