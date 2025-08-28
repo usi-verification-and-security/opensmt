@@ -51,6 +51,12 @@ namespace opensmt {
 
 inline bool pipeExecution = false;
 
+// Replace this with std::to_underlying once we move to C++23
+template<typename Enum>
+constexpr std::underlying_type_t<Enum> to_underlying(Enum e) noexcept {
+    return static_cast<std::underlying_type_t<Enum>>(e);
+}
+
 SMTConfig parseCMDLineArgs(int argc, char * argv[ ]);
 
 void        catcher            ( int );
@@ -222,6 +228,8 @@ void printHelp()
           "  --verbose [-v]                  verbose run of the solver\n"
           "  --dry-run [-d]                  executes dry run\n"
           "  --random-seed [-r] <seed>       sets random seed to specific number\n"
+          "  --produce-models [-m]           enable producing models\n"
+          "  --produce-unsat-cores           enable producing unsat cores\n"
           "  --minimal-unsat-cores           produced unsat cores must be irreducible\n"
           "  --print-cores-full              produced unsat cores are agnostic to the smt2 attribute ':named'\n"
           "  --produce-interpolants [-i]     enables interpolant computation\n"
@@ -231,21 +239,27 @@ void printHelp()
 
 SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
 {
+    enum class LongOpt {
+        version,
+        produceUcore,
+        minUcore,
+        fullUcore,
+    };
+
     SMTConfig res;
-    int selectedLongOpt = 0;
-    constexpr int versionLongOpt = 1;
-    constexpr int minUcoreLongOpt = 2;
-    constexpr int fullUcoreLongOpt = 3;
+    int selectedLongOpt;
 
     struct option long_options[] =
         {
             {"help", no_argument, nullptr, 'h'},
-            {"version", no_argument, &selectedLongOpt, versionLongOpt},
+            {"version", no_argument, &selectedLongOpt, to_underlying(LongOpt::version)},
             {"verbose", no_argument, nullptr, 'v'},
             {"dry-run", no_argument, nullptr, 'd'},
             {"random-seed", required_argument, nullptr, 'r'},
-            {"minimal-unsat-cores", no_argument, &selectedLongOpt, minUcoreLongOpt},
-            {"print-cores-full", no_argument, &selectedLongOpt, fullUcoreLongOpt},
+            {"produce-models", no_argument, nullptr, 'm'},
+            {"produce-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::produceUcore)},
+            {"minimal-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::minUcore)},
+            {"print-cores-full", no_argument, &selectedLongOpt, to_underlying(LongOpt::fullUcore)},
             {"produce-interpolants", no_argument, nullptr, 'i'},
             {"pipe", no_argument, nullptr, 'p'},
             {0, 0, 0, 0}
@@ -259,14 +273,17 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
 
         switch (c) {
             case 0:
-                switch (*long_options[option_index].flag) {
-                    case versionLongOpt:
+                switch (LongOpt{*long_options[option_index].flag}) {
+                    case LongOpt::version:
                         printVersion();
                         exit(0);
-                    case minUcoreLongOpt:
+                    case LongOpt::produceUcore:
+                        res.setOption(SMTConfig::o_produce_unsat_cores, SMTOption(true), msg);
+                        break;
+                    case LongOpt::minUcore:
                         res.setOption(SMTConfig::o_minimal_unsat_cores, SMTOption(true), msg);
                         break;
-                    case fullUcoreLongOpt:
+                    case LongOpt::fullUcore:
                         res.setOption(SMTConfig::o_print_cores_full, SMTOption(true), msg);
                         break;
                 }
@@ -285,6 +302,9 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     fprintf(stderr, "Error setting random seed: %s\n", msg);
                 else
                     fprintf(stderr, "; Using random seed %d\n", atoi(optarg));
+                break;
+            case 'm':
+                res.setOption(SMTConfig::o_produce_models, SMTOption(true), msg);
                 break;
             case 'i':
                 res.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
