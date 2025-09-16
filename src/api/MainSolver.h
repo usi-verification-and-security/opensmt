@@ -19,6 +19,7 @@
 #include <smtsolvers/SimpSMTSolver.h>
 #include <unsatcores/UnsatCore.h>
 
+#include <chrono>
 #include <memory>
 
 namespace opensmt {
@@ -63,7 +64,7 @@ public:
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
                std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name);
 
-    virtual ~MainSolver() = default;
+    virtual ~MainSolver();
     MainSolver(MainSolver const &) = delete;
     MainSolver & operator=(MainSolver const &) = delete;
     MainSolver(MainSolver &&) = default;
@@ -148,6 +149,9 @@ public:
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
     void notifyStop() { smt_solver->notifyStop(); }
+
+    // Set wall-clock time limit for the solver in miliseconds
+    void setTimeLimit(std::chrono::milliseconds);
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
@@ -324,6 +328,9 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
     unsigned int insertedFormulasCount = 0;
+
+    class TimeLimitImpl;
+    std::unique_ptr<TimeLimitImpl> timeLimitImplPtr;
 };
 
 bool MainSolver::trackPartitions() const {
