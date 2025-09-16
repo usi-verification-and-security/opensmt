@@ -108,7 +108,11 @@ void MainSolver::insertFormula(PTRef fla) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
     }
     // TODO: Move this to preprocessing of the formulas
-    fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
+    {
+        PTRef newFla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
+        internalToUserTermMap.maybeAddMapping(newFla, fla);
+        fla = newFla;
+    }
 
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
@@ -202,6 +206,7 @@ vec<PTRef> MainSolver::getCurrentAssertions() const {
     size_t const cnt = frames.frameCount();
     for (size_t i = 0; i < cnt; ++i) {
         for (PTRef fla : frames[i].formulas) {
+            fla = internalToUserTermMap.getUserTerm(fla);
             assertions.push(fla);
         }
     }
@@ -210,6 +215,7 @@ vec<PTRef> MainSolver::getCurrentAssertions() const {
 
 vec<PTRef> const & MainSolver::getAssertionsAtLevel(std::size_t level) const {
     assert(level <= getAssertionLevel());
+    //!! fla = internalToUserTermMap.getUserTerm(fla);
     return frames[level].formulas;
 }
 
@@ -235,6 +241,7 @@ void MainSolver::printCurrentAssertionsAsQuery(std::ostream & s) const {
     for (std::size_t i = 0; i < frames.frameCount(); ++i) {
         if (i > 0) s << "(push 1)\n";
         for (PTRef assertion : frames[i].formulas) {
+            assertion = internalToUserTermMap.getUserTerm(assertion);
             logic.dumpFormulaToFile(s, assertion);
         }
     }

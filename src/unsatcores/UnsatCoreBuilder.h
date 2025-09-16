@@ -18,6 +18,7 @@ class MainSolver;
 class Logic;
 class ResolutionProof;
 class PartitionManager;
+class InternalToUserTermMap;
 
 class UnsatCoreBuilderBase {
 public:
@@ -31,6 +32,7 @@ protected:
     Logic & logic;
     Proof const & proof;
     PartitionManager const & partitionManager;
+    InternalToUserTermMap const & internalToUserTermMap;
 };
 
 class UnsatCoreBuilder : public UnsatCoreBuilderBase {
