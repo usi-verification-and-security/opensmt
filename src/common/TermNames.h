@@ -121,12 +121,20 @@ protected:
         if (isGlobal()) { return; }
         scopedNamesAndTerms.popScope([this](auto const & p) {
             auto const & [name, term] = p;
-            auto it = nameToTerm.find(name);
-            if (it == nameToTerm.end()) { return; }
-            auto & names_ = _namesForTerm(term);
-            names_.erase(std::find(names_.begin(), names_.end(), name));
-            nameToTerm.erase(it);
+            assert(not contains(term) or nameToTerm.find(name)->second.x == term.x);
+            eraseTermName(name);
         });
+    }
+
+    bool eraseTermName(TermName const & name) {
+        auto termIt = nameToTerm.find(name);
+        if (termIt == nameToTerm.end()) { return false; }
+
+        auto const & term = termIt->second;
+        auto & names_ = _namesForTerm(term);
+        names_.erase(std::find(names_.begin(), names_.end(), name));
+        nameToTerm.erase(termIt);
+        return true;
     }
 
     SMTConfig const & config;
