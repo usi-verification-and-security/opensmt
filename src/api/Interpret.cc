@@ -110,12 +110,9 @@ void Interpret::setOption(ASTNode& n) {
     if (rval == false) {
         notify_formatted(true, "set-option failed for %s: %s", name, msg);
     } else if (main_solver) {
+        [[maybe_unused]]
         const SMTOption& stored_value = config.getOption(name);
         assert(not stored_value.isEmpty());
-
-        if (strcmp(name, SMTConfig::o_time_limit) == 0) {
-            main_solver->setTimeLimit(std::chrono::milliseconds{stored_value.getValue().numval});
-        }
     }
     free(name);
 }

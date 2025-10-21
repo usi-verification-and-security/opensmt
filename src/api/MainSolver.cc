@@ -34,6 +34,7 @@ public:
     ~TimeLimitImpl();
 
     void setLimit(std::chrono::milliseconds);
+    void setLimitIfNotRunning(std::chrono::milliseconds);
 
 protected:
     bool isRunning() const noexcept;
@@ -99,11 +100,6 @@ void MainSolver::initialize() {
 
     smt_solver->addOriginalSMTClause({~term_mapper->getOrCreateLit(logic.getTerm_false())}, iorefs);
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
-
-    if (auto option = config.getOption(SMTConfig::o_time_limit); not option.isEmpty()) {
-        assert(option.getValue().type == O_NUM);
-        setTimeLimit(std::chrono::milliseconds{option.getValue().numval});
-    }
 }
 
 void MainSolver::push() {
@@ -380,6 +376,13 @@ sstat MainSolver::check() {
         StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) { return s_False; }
+
+    //+ for incremental solving, it needs to remember if it already timed-out
+    if (auto option = config.getOption(SMTConfig::o_time_limit); not option.isEmpty()) {
+        assert(option.getValue().type == O_NUM);
+        timeLimitImplPtr->setLimitIfNotRunning(std::chrono::milliseconds{option.getValue().numval});
+    }
+
     sstat rval = simplifyFormulas();
 
     if (config.dump_query()) printCurrentAssertionsAsQuery();
@@ -638,6 +641,8 @@ MainSolver::TimeLimitImpl::~TimeLimitImpl() {
 }
 
 void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
+    assert(limit > std::chrono::milliseconds::zero());
+
     // Override already running thread
     if (isRunning()) {
         requestEnd();
@@ -652,6 +657,11 @@ void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
         // Notification must be sent *after* the wait, otherwise could be missed - hence checking `endReq` above
         if (condVar.wait_for(lock, limit) == std::cv_status::timeout) { solver.notifyStop(); }
     }};
+}
+
+void MainSolver::TimeLimitImpl::setLimitIfNotRunning(std::chrono::milliseconds limit) {
+    if (isRunning()) { return; }
+    setLimit(limit);
 }
 
 bool MainSolver::TimeLimitImpl::isRunning() const noexcept {
