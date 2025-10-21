@@ -267,3 +267,11 @@ target_sources(DecisionPreferenceTest
 
 target_link_libraries(DecisionPreferenceTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET DecisionPreferenceTest)
+
+add_executable(TimeoutTest)
+target_sources(TimeoutTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Timeout.cc"
+        )
+
+target_link_libraries(TimeoutTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TimeoutTest)
