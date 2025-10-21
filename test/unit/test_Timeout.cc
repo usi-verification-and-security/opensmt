@@ -13,11 +13,11 @@
 #include <logics/ArithLogic.h>
 
 #include <array>
-#include <future>
-#include <thread>
-#include <condition_variable>
-#include <mutex>
 #include <chrono>
+#include <condition_variable>
+#include <future>
+#include <mutex>
+#include <thread>
 
 // Pre-timeout checks if setting the time limit prior to solving works as expected
 // Post-timeout checks if setting the time limit during solving works as expected
@@ -54,7 +54,7 @@ protected:
         lock.unlock();
         condVar.notify_all();
         lock.lock();
-        condVar.wait(lock, []{ return reqContinueFlag; });
+        condVar.wait(lock, [] { return reqContinueFlag; });
         lock.unlock();
 
         std::this_thread::sleep_for(computation_time_ms);
@@ -65,13 +65,15 @@ protected:
 
 class TimeoutTest : public ::testing::Test {
 public:
-
     ~TimeoutTest() {
         ackReadyCnt = 0;
         reqContinueFlag = false;
     }
+
 protected:
     static constexpr size_t nSolvers = 2;
+
+    char const * auxMsg = "ok";
 
     void init() {
         for (size_t i = 0; i < nSolvers; ++i) {
@@ -103,7 +105,7 @@ protected:
 
     void waitReadyAll() {
         std::unique_lock lock(mutex);
-        condVar.wait(lock, []{ return ackReadyCnt == nSolvers; });
+        condVar.wait(lock, [] { return ackReadyCnt == nSolvers; });
     }
 
     void reqContinue() {
@@ -114,23 +116,23 @@ protected:
         condVar.notify_all();
     }
 
-    void setSmallTimeLimit(TestMainSolver & solver) {
-        solver.setTimeLimit(small_limit_ms);
+    void setSmallTimeLimit(std::size_t solverIdx, bool useConfig = false) {
+        setTimeLimit(solverIdx, small_limit_ms, useConfig);
     }
 
-    void setLargeTimeLimit(TestMainSolver & solver) {
-        solver.setTimeLimit(large_limit_ms);
+    void setLargeTimeLimit(std::size_t solverIdx, bool useConfig = false) {
+        setTimeLimit(solverIdx, large_limit_ms, useConfig);
     }
 
-    void setSmallTimeLimitAll() {
+    void setSmallTimeLimitAll(bool useConfig = false) {
         for (size_t i = 0; i < nSolvers; ++i) {
-            setSmallTimeLimit(solvers[i]);
+            setSmallTimeLimit(i, useConfig);
         }
     }
 
-    void setLargeTimeLimitAll() {
+    void setLargeTimeLimitAll(bool useConfig = false) {
         for (size_t i = 0; i < nSolvers; ++i) {
-            setLargeTimeLimit(solvers[i]);
+            setLargeTimeLimit(i, useConfig);
         }
     }
 
@@ -142,15 +144,26 @@ protected:
         return results;
     }
 
-    SMTConfig config{};
+    std::array<SMTConfig, nSolvers> configs{SMTConfig{}, SMTConfig{}};
     std::array<ArithLogic, nSolvers> logics{Logic_t::QF_LRA, Logic_t::QF_LRA};
-    std::array<TestMainSolver, nSolvers> solvers{TestMainSolver{logics[0], config, "solver 1"},
-                                                 TestMainSolver{logics[1], config, "solver 2"}};
+    std::array<TestMainSolver, nSolvers> solvers{TestMainSolver{logics[0], configs[0], "solver 1"},
+                                                 TestMainSolver{logics[1], configs[1], "solver 2"}};
 
     std::array<std::thread, nSolvers> threads;
     std::array<std::future<sstat>, nSolvers> futures;
 
 private:
+    void setTimeLimit(std::size_t solverIdx, std::chrono::milliseconds limit_ms, bool useConfig = false) {
+        TestMainSolver & solver = solvers[solverIdx];
+        if (not useConfig) {
+            solver.setTimeLimit(limit_ms);
+        } else {
+            [[maybe_unused]]
+            bool rval = configs[solverIdx].setOption(SMTConfig::o_time_limit, SMTOption(limit_ms.count()), auxMsg);
+            assert(rval);
+        }
+    }
+
     void runOnBackground(size_t idx, auto f) {
         std::packaged_task task{std::move(f)};
         futures[idx] = task.get_future();
@@ -158,9 +171,7 @@ private:
     }
 
     void solveOnBackground(size_t idx) {
-        runOnBackground(idx, [this, idx] {
-            return solvers[idx].check();
-        });
+        runOnBackground(idx, [this, idx] { return solvers[idx].check(); });
     }
 
     sstat join(size_t idx) {
@@ -183,7 +194,7 @@ TEST_F(TimeoutTest, test_NoTimeout) {
 TEST_F(TimeoutTest, test_PreLargeTimeout) {
     init();
 
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -195,7 +206,7 @@ TEST_F(TimeoutTest, test_PreLargeTimeout) {
 TEST_F(TimeoutTest, test_PreSmallTimeout) {
     init();
 
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -233,7 +244,7 @@ TEST_F(TimeoutTest, test_AllPreLargeThenOnePreLargeTimeout) {
 
     // also tests overriding already existing time limit thread
     setLargeTimeLimitAll();
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -247,7 +258,7 @@ TEST_F(TimeoutTest, test_AllPreLargeThenOnePreSmallTimeout) {
 
     // also tests overriding already existing time limit thread
     setLargeTimeLimitAll();
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -261,7 +272,7 @@ TEST_F(TimeoutTest, test_AllPreSmallThenOnePreLargeTimeout) {
 
     // also tests overriding already existing time limit thread
     setSmallTimeLimitAll();
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -275,7 +286,7 @@ TEST_F(TimeoutTest, test_AllPreSmallThenOnePreSmallTimeout) {
 
     // also tests overriding already existing time limit thread
     setSmallTimeLimitAll();
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     reqContinue();
@@ -291,7 +302,7 @@ TEST_F(TimeoutTest, test_PostLargeTimeout) {
 
     solveAllOnBackground();
     waitReadyAll();
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -303,7 +314,7 @@ TEST_F(TimeoutTest, test_PostSmallTimeout) {
 
     solveAllOnBackground();
     waitReadyAll();
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -341,7 +352,7 @@ TEST_F(TimeoutTest, test_AllPostLargeThenOnePostLargeTimeout) {
     waitReadyAll();
     // also tests overriding already existing time limit thread
     setLargeTimeLimitAll();
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -355,7 +366,7 @@ TEST_F(TimeoutTest, test_AllPostLargeThenOnePostSmallTimeout) {
     waitReadyAll();
     // also tests overriding already existing time limit thread
     setLargeTimeLimitAll();
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -369,7 +380,7 @@ TEST_F(TimeoutTest, test_AllPostSmallThenOnePostLargeTimeout) {
     waitReadyAll();
     // also tests overriding already existing time limit thread
     setSmallTimeLimitAll();
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -383,7 +394,7 @@ TEST_F(TimeoutTest, test_AllPostSmallThenOnePostSmallTimeout) {
     waitReadyAll();
     // also tests overriding already existing time limit thread
     setSmallTimeLimitAll();
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -399,7 +410,7 @@ TEST_F(TimeoutTest, test_AllPreLargeThenOnePostLargeTimeout) {
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -413,7 +424,7 @@ TEST_F(TimeoutTest, test_AllPreLargeThenOnePostSmallTimeout) {
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -428,7 +439,7 @@ TEST_F(TimeoutTest, test_AllPreSmallThenOnePostLargeTimeout) {
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -443,7 +454,7 @@ TEST_F(TimeoutTest, test_AllPreSmallThenOnePostSmallTimeout) {
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     reqContinue();
     auto results = joinAll();
 
@@ -453,7 +464,7 @@ TEST_F(TimeoutTest, test_AllPreSmallThenOnePostSmallTimeout) {
 TEST_F(TimeoutTest, test_PreLargeThenAllPostLargeTimeout) {
     init();
 
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
@@ -468,7 +479,7 @@ TEST_F(TimeoutTest, test_PreLargeThenAllPostLargeTimeout) {
 TEST_F(TimeoutTest, test_PreSmallThenAllPostLargeTimeout) {
     init();
 
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
@@ -483,7 +494,7 @@ TEST_F(TimeoutTest, test_PreSmallThenAllPostLargeTimeout) {
 TEST_F(TimeoutTest, test_PreLargeThenAllPostSmallTimeout) {
     init();
 
-    setLargeTimeLimit(solvers.front());
+    setLargeTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
@@ -497,7 +508,7 @@ TEST_F(TimeoutTest, test_PreLargeThenAllPostSmallTimeout) {
 TEST_F(TimeoutTest, test_PreSmallThenAllPostSmallTimeout) {
     init();
 
-    setSmallTimeLimit(solvers.front());
+    setSmallTimeLimit(0);
     solveAllOnBackground();
     waitReadyAll();
     // also tests overriding already existing time limit thread
@@ -506,6 +517,336 @@ TEST_F(TimeoutTest, test_PreSmallThenAllPostSmallTimeout) {
     auto results = joinAll();
 
     ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
+}
+
+// Now everything again but this time using SMTConfig
+
+TEST_F(TimeoutTest, test_PreLargeTimeoutConfig) {
+    init();
+
+    setLargeTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_PreSmallTimeoutConfig) {
+    init();
+
+    setSmallTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPreLargeTimeoutConfig) {
+    init();
+
+    setLargeTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPreSmallTimeoutConfig) {
+    init();
+
+    setSmallTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
+}
+
+TEST_F(TimeoutTest, test_AllPreLargeThenOnePreLargeTimeoutConfig) {
+    init();
+
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    setLargeTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPreLargeThenOnePreSmallTimeoutConfig) {
+    init();
+
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    setSmallTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPreSmallThenOnePreLargeTimeoutConfig) {
+    init();
+
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    setLargeTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_Undef}));
+}
+
+TEST_F(TimeoutTest, test_AllPreSmallThenOnePreSmallTimeoutConfig) {
+    init();
+
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    setSmallTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
+}
+
+// Post-timeouts do not take effect when using SMTConfig
+
+TEST_F(TimeoutTest, test_PostLargeTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    setLargeTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_PostSmallTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    setSmallTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostLargeTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    setLargeTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostSmallTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    setSmallTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostLargeThenOnePostLargeTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    setLargeTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostLargeThenOnePostSmallTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    setSmallTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostSmallThenOnePostLargeTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    setLargeTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPostSmallThenOnePostSmallTimeoutConfig) {
+    init();
+
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    setSmallTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+// Combinations of pre- and post-timeouts
+
+TEST_F(TimeoutTest, test_AllPreLargeThenOnePostLargeTimeoutConfig) {
+    init();
+
+    setLargeTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_AllPreLargeThenOnePostSmallTimeoutConfig) {
+    init();
+
+    setLargeTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+#ifdef FAST_MACHINE
+TEST_F(TimeoutTest, test_AllPreSmallThenOnePostLargeTimeoutConfig) {
+    init();
+
+    setSmallTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
+}
+#endif
+
+TEST_F(TimeoutTest, test_AllPreSmallThenOnePostSmallTimeoutConfig) {
+    init();
+
+    setSmallTimeLimitAll(true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimit(0, true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_Undef}));
+}
+
+TEST_F(TimeoutTest, test_PreLargeThenAllPostLargeTimeoutConfig) {
+    init();
+
+    setLargeTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+#ifdef FAST_MACHINE
+TEST_F(TimeoutTest, test_PreSmallThenAllPostLargeTimeoutConfig) {
+    init();
+
+    setSmallTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setLargeTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
+}
+#endif
+
+TEST_F(TimeoutTest, test_PreLargeThenAllPostSmallTimeoutConfig) {
+    init();
+
+    setLargeTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_False, s_False}));
+}
+
+TEST_F(TimeoutTest, test_PreSmallThenAllPostSmallTimeoutConfig) {
+    init();
+
+    setSmallTimeLimit(0, true);
+    solveAllOnBackground();
+    waitReadyAll();
+    // also tests overriding already existing time limit thread
+    setSmallTimeLimitAll(true);
+    reqContinue();
+    auto results = joinAll();
+
+    ASSERT_EQ(results, std::to_array({s_Undef, s_False}));
 }
 
 } // namespace opensmt
