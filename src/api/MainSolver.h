@@ -149,6 +149,8 @@ public:
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
     void notifyStop() { smt_solver->notifyStop(); }
+    // Reset the stop flag
+    void resetStop() { smt_solver->resetStop(); }
 
     // Set wall-clock time limit for the solver in miliseconds
     void setTimeLimit(std::chrono::milliseconds);

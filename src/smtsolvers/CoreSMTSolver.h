@@ -93,6 +93,7 @@ public:
     void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
     void notifyStop() { stopFlag = true; }
+    void resetStop() { stopFlag = false; }
 
     // Problem specification:
     //

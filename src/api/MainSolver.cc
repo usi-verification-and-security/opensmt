@@ -397,6 +397,8 @@ sstat MainSolver::check() {
         }
     }
 
+    // resetStop();
+
     return rval;
 }
 
