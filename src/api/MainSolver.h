@@ -338,6 +338,7 @@ private:
 
     class TimeLimitImpl;
     std::unique_ptr<TimeLimitImpl> timeLimitImplPtr;
+    std::unique_ptr<TimeLimitImpl> timeLimitPerQueryImplPtr;
 };
 
 bool MainSolver::trackPartitions() const {

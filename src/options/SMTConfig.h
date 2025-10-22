@@ -330,6 +330,8 @@ namespace opensmt {
     // Wall-clock time limit for the solver in miliseconds
     // MainSolver implicitly sets the limit *only* when initializing!
     static const char* o_time_limit;
+    // Wall-clock time limit per each check call in miliseconds
+    static const char* o_time_limit_per_query;
   private:
 
     static const char* s_err_not_str;

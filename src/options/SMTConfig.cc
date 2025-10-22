@@ -415,7 +415,7 @@ namespace opensmt {
           { msg = s_err_unknown_units; return false; }
       }
 
-      if (strcmp(name, o_time_limit) == 0) {
+      if (strcmp(name, o_time_limit) == 0 || strcmp(name, o_time_limit_per_query) == 0) {
         if (value.getValue().type != O_NUM) { msg = s_err_not_num; return false; }
         if (value.getValue().numval <= 0) { msg = s_err_not_positive; return false; }
       }
@@ -535,6 +535,7 @@ namespace opensmt {
   const char* SMTConfig::o_global_declarations = ":global-declarations";
   const char* SMTConfig::o_sat_split_mode     = ":split-mode";
   const char* SMTConfig::o_time_limit = ":time-limit";
+  const char* SMTConfig::o_time_limit_per_query = ":time-limit-per-query";
 
   char* SMTConfig::server_host=NULL;
   uint16_t SMTConfig::server_port = 0;

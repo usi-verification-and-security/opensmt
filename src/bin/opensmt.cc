@@ -52,6 +52,9 @@ namespace opensmt {
 
 using namespace std::string_literals;
 
+template <typename...>
+constexpr bool falseTp = false;
+
 namespace {
     bool pipeExecution = false;
 }
@@ -246,9 +249,25 @@ void printHelp()
           "  --minimal-unsat-cores           produced unsat cores must be irreducible\n"
           "  --print-cores-full              produced unsat cores are agnostic to the smt2 attribute ':named'\n"
           "  --produce-interpolants [-i]     enables interpolant computation\n"
-          "  --time-limit [-t] <ms>          sets wall-clock time limit in milliseconds\n"
+          "  --time-limit [-t] <ms>          sets wall-clock time limit in milliseconds since first query\n"
+          "  --time-limit-per-query <ms>     sets wall-clock time limit in milliseconds per each query\n"
           "  --pipe [-p]                     for execution within a pipe\n";
     std::cerr << help_string;
+}
+
+template <typename IntT>
+IntT parseInt(std::string const & msg) try {
+    if constexpr (std::is_same_v<IntT, int>) {
+        return std::stoi(optarg);
+    } else if constexpr (std::is_same_v<IntT, long>) {
+        return std::stol(optarg);
+    } else if constexpr (std::is_same_v<IntT, long long>) {
+        return std::stoll(optarg);
+    } else {
+        static_assert(falseTp<IntT>);
+    }
+} catch (std::logic_error const & e) {
+    throw std::invalid_argument{msg + e.what()};
 }
 
 SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
@@ -260,6 +279,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
         getUcore,
         minUcore,
         fullUcore,
+        timeLimitPerQuery,
     };
 
     SMTConfig res;
@@ -280,6 +300,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
             {"print-cores-full", no_argument, &selectedLongOpt, to_underlying(LongOpt::fullUcore)},
             {"produce-interpolants", no_argument, nullptr, 'i'},
             {"time-limit", required_argument, nullptr, 't'},
+            {"time-limit-per-query", required_argument, &selectedLongOpt, to_underlying(LongOpt::timeLimitPerQuery)},
             {"pipe", no_argument, nullptr, 'p'},
             {0, 0, 0, 0}
         };
@@ -312,6 +333,10 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     case LongOpt::fullUcore:
                         res.setOption(SMTConfig::o_print_cores_full, SMTOption(true), msg);
                         break;
+                    case LongOpt::timeLimitPerQuery:
+                        auto timeLimit = parseInt<int64_t>("Invalid argument of time-limit-per-query: ");
+                        ok &= res.setOption(SMTConfig::o_time_limit_per_query, SMTOption{timeLimit}, msg);
+                        break;
                 }
                 break;
             case 'h':
@@ -336,13 +361,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                 res.setOption(SMTConfig::o_produce_inter, SMTOption{true}, msg);
                 break;
             case 't': {
-                int64_t timeLimit;
-                try {
-                    timeLimit = std::stoll(optarg);
-                } catch (std::logic_error const & e) {
-                    throw std::invalid_argument{"Invalid argument of time-limit: "s + e.what()};
-                }
-
+                auto timeLimit = parseInt<int64_t>("Invalid argument of time-limit: ");
                 ok &= res.setOption(SMTConfig::o_time_limit, SMTOption{timeLimit}, msg);
                 break;
             }
