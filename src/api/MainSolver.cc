@@ -113,8 +113,6 @@ void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
     }
-    // TODO: Move this to preprocessing of the formulas
-    fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
 
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
@@ -199,6 +197,7 @@ PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, Preproces
 
     // Include even already preprocessed formulas which can still benefit from the new ones
     PTRef fla = logic.mkAnd(flas);
+    preprocessedAssertionsCount += flas.size();
     return preprocessFormula(fla, context);
 }
 
@@ -217,6 +216,8 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, P
         PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
         processedFormulas.push(processed);
     }
+
+    preprocessedAssertionsCount += processedFormulas.size();
 
     assert(std::size_t(processedFormulas.size()) == formulasCountToProcess);
     if (std::all_of(processedFormulas.begin(), processedFormulas.end(),
@@ -244,6 +245,9 @@ PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & cont
 PTRef MainSolver::preprocessFormulaBeforeGlobalPhase(PTRef fla, PreprocessingContext const & context) {
     bool const perPartition = context.perPartition;
     PTRef processed = fla;
+
+    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
+    processed = IteHandler(logic, partitionNumber).rewrite(processed);
 
     if (not perPartition) {
         if (context.frameCount > 0) { processed = applyLearntSubstitutions(processed); }
@@ -580,6 +584,7 @@ PTRef MainSolver::applyLearntSubstitutions(PTRef fla) {
 }
 
 PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const & context) {
+    assert(not trackPartitions());
     if (not config.do_substitutions()) { return fla; }
     auto res = computeSubstitutions(fla);
     vec<PTRef> args;
