@@ -264,7 +264,6 @@ protected:
     Theory & getTheory() { return *theory; }
     Theory const & getTheory() const { return *theory; }
     TermMapper & getTermMapper() const { return *term_mapper; }
-    PartitionManager & getPartitionManager() { return pmanager; }
 
     // TODO: inefficient
     vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
@@ -336,6 +335,7 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotPreprocessedFrame = 0;
     std::size_t insertedAssertionsCount = 0;
+    std::size_t preprocessedAssertionsCount = 0;
     std::vector<std::size_t> preprocessedAssertionsCountPerFrame;
 };
 
