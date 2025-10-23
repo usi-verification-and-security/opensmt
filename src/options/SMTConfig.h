@@ -508,12 +508,11 @@ namespace opensmt {
     int           isIncremental() const
       { return optionTable.has(o_incremental) ?
           optionTable[o_incremental]->getValue().numval == 1: true; }
-    int produce_models() const {
+    bool produce_models() const {
         // get_models => produce_models
         if (getting_models()) { return true; }
-        return optionTable.has(o_produce_models) ?
-                optionTable[o_produce_models]->getValue().numval :
-                1; }
+        return optionTable.has(o_produce_models) && optionTable[o_produce_models]->getValue().numval > 0;
+    }
     bool getting_models() const {
         return optionTable.has(o_get_models) && optionTable[o_get_models]->getValue().numval > 0;
     }
