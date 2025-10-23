@@ -21,18 +21,18 @@ cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 make -j4
 make test
 make install
-if [[ ${CMAKE_BUILD_TYPE} == Debug ]]; then
-    cd ../test/regression/base && ./run-test-notiming.sh ../../../build/opensmt
-    cd ../unsatcores && ./run-test-notiming.sh ../../../build/opensmt
-    cd ../interpolation && ./run-tests.sh ../../../build/opensmt
-    if [[ "${PARALLEL}" == "ON" ]]; then
-      cd ../splitting && ./bin/run-tests.sh ../../../build/opensmt-splitter
-    fi
-    cd ../pipe && ./run-tests.sh ../../../build/opensmt
+cd ../test/regression/base && ./run-test-notiming.sh ../../../build/opensmt
+cd ../unsatcores && ./run-test-notiming.sh ../../../build/opensmt
+cd ../interpolation && ./run-tests.sh ../../../build/opensmt
+if [[ "${PARALLEL}" == "ON" ]]; then
+    cd ../splitting && ./bin/run-tests.sh ../../../build/opensmt-splitter
+fi
+cd ../pipe && ./run-tests.sh ../../../build/opensmt
+if [[ -n ${MODEL_VALIDATION} ]]; then
     cd ../models
-    if [[ x"${MODEL_VALIDATION}" == x"Dolmen" || -f ./data/ENV-MODERN ]]; then
+    if [[ ${MODEL_VALIDATION} == Dolmen || -f ./data/ENV-MODERN ]]; then
         ./bin/run-tests-dolmen.sh ../../../build/opensmt
-    elif [[ x"${MODEL_VALIDATION}" == x"pySMT" || -f ./data/ENV-SMTCOMP ]]; then
+    elif [[ ${MODEL_VALIDATION} == pySMT || -f ./data/ENV-SMTCOMP ]]; then
         ./bin/run-tests-smtcomp.sh ../../../build/opensmt
     else
         echo "Error: the model regression environment is not set."
