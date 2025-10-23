@@ -9,7 +9,7 @@ Assuming you've installed OpenSMT headers and libraries under a
 directory `<DIR>`, the examples can be compiled by running
 
     $ cd examples && mkdir build && cd build
-    $ cmake -DOPENSMT_DIR=<DIR> ..
+    $ cmake -DOpenSMT_DIR=<DIR> ..
     $ make
 
 ### Notes

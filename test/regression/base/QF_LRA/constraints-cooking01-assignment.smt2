@@ -1,3 +1,4 @@
+(set-option :produce-models true)
 (set-logic QF_LRA)
 (set-info :source |
 TLP-GP automated DTP to SMT-LIB encoding for planning

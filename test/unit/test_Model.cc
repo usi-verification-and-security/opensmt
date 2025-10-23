@@ -34,7 +34,6 @@ protected:
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("b");
     }
-    SMTConfig config;
     Logic logic;
 
     SRef S;
@@ -83,7 +82,6 @@ protected:
         a = logic.mkBoolVar("a");
         b = logic.mkBoolVar("b");
     }
-    SMTConfig config;
     Logic logic;
 
     SRef S;
@@ -162,6 +160,7 @@ TEST_F(UFModelBuilderTest, test_functionModel) {
 class UFConstModelTest : public ::testing::Test {
 protected:
     UFConstModelTest() : logic(Logic_t::QF_UF), ms(logic, c, "uf-solver") {
+        c.setProduceModels();
         SRef U = logic.declareUninterpretedSort("U");
         fs = logic.declareFun("f", U, {U});
         x = logic.mkVar(U, "x");
@@ -212,7 +211,6 @@ protected:
         tval = logic.getTerm_true();
         fval = logic.getTerm_false();
     }
-    SMTConfig config;
     ArithLogic logic;
     PTRef x;
     PTRef y;
@@ -323,11 +321,18 @@ class ModelIntegrationTest : public ::testing::Test {
 protected:
     ModelIntegrationTest() {}
     std::unique_ptr<Opensmt> getLRAOsmt() {
-        return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_lra, "test"));
+        return getOsmt(opensmt_logic::qf_lra);
     }
 
     std::unique_ptr<Opensmt> getUFOsmt() {
-        return std::unique_ptr<Opensmt>(new Opensmt(opensmt_logic::qf_uf, "test"));
+        return getOsmt(opensmt_logic::qf_uf);
+    }
+private:
+    std::unique_ptr<Opensmt> getOsmt(opensmt_logic logic) {
+        auto ptr = std::unique_ptr<Opensmt>(new Opensmt(logic, "test"));
+        SMTConfig & c = ptr->getConfig();
+        c.setProduceModels();
+        return ptr;
     }
 
 };

@@ -7,6 +7,7 @@ int main()
 {
     Logic logic{Logic_t::QF_UF}; // UF Logic
     SMTConfig c;
+    c.setProduceModels();
     MainSolver mainSolver(logic, c, "test solver");
 
     PTRef v1 = logic.mkBoolVar("a");

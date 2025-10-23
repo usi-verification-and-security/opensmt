@@ -1,4 +1,4 @@
-(set-option :produce-model 1)
+(set-option :produce-models true)
 (set-logic QF_UF)
 (declare-fun b () Bool)
 (declare-fun c () Bool)
