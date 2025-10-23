@@ -1,6 +1,4 @@
 (error "Unknown symbol `?v_52 Bool'")
-
 (error "assertion returns an unknown sort")
-
 sat
 (error "check status which says unsat")

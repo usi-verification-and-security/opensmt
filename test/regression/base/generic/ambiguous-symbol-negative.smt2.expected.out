@@ -1,4 +1,2 @@
 (error "Ambiguous symbol: `a'")
-
 (error "assertion returns an unknown sort")
-

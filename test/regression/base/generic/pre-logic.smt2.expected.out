@@ -15,21 +15,18 @@ Longer story
 3
 /dev/null
 (error "No value for attr :foo-option")
-
 0
 3.14159
 3736059631
 85
 ( foo string 10 4075 1.23 2 ( ( ) bar ( :keyword ) ) )
 (error "No value for attr :non-existing-option")
-
 success
 success
 success
 success
 success
 (error "no value for info :foo")
-
 :error-behavior commit-adultery
 :name OpenSMT
 :authors Muumi-peikko

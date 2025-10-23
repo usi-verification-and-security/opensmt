@@ -4,15 +4,10 @@ unsat
 sat
 sat
 (error "sort S2 already declared")
-
 sat
 (error "sort S2 already declared")
-
 (error "sort S3 already declared")
-
 (error "sort S4 already declared")
-
 (error "sort S2 already declared")
-
 sat
 sat

@@ -1,6 +1,3 @@
 (error "unknown logic AB_CD")
-
 (error "illegal command before set-logic: declare-sort")
-
 (error "Illegal command before set-logic: declare-fun")
-
