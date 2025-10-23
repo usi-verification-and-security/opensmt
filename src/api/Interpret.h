@@ -138,6 +138,7 @@ class Interpret {
     std::unique_ptr<MainSolver> main_solver;
 
     bool            f_exit;
+    mutable bool    _okStatus{true};
 
     vec<PTRef>      assertions;
     vec<SymRef>     user_declarations;
@@ -198,6 +199,7 @@ class Interpret {
 
     void    execute(const ASTNode* n);
     bool    gotExit() const { return f_exit; }
+    bool    okStatus() const { return _okStatus; }
 
     bool    getAssignment  () const;
 

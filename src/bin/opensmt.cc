@@ -127,7 +127,9 @@ int main( int argc, char * argv[] )
         fclose( fin );
     }
 
-    return 0;
+    int const exit_status = interpreter.okStatus() ? 0 : 1;
+
+    return exit_status;
 }
 
 namespace opensmt {

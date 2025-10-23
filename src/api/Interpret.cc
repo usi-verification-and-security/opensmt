@@ -563,11 +563,11 @@ sstat Interpret::checkSat() {
     if (!status.isEmpty()) {
         std::string statusString = status.toString();
         if ((statusString.compare("sat") == 0) && (res == s_False)) {
-            notify_formatted(false, "(error \"check status which says sat\")");
+            notify_formatted(true, "check status which says sat");
 
         }
         else if ((statusString.compare("unsat") == 0) && (res == s_True)) {
-            notify_formatted(false, "(error \"check status which says unsat\")");
+            notify_formatted(true, "check status which says unsat");
         }
     }
 
@@ -1058,8 +1058,11 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) const {
     va_list ap;
     int d;
     char c1, *t;
-    if (error)
+    if (error) {
         std::cout << "(error \"";
+        _okStatus = false;
+        // also set `f_exit = true` if configured to stop on first error
+    }
 
     va_start(ap, fmt_str);
     while (true) {
@@ -1085,7 +1088,7 @@ void Interpret::notify_formatted(bool error, const char* fmt_str, ...) const {
     }
     va_end(ap);
     if (error)
-        std::cout << "\")" << '\n';
+        std::cout << "\")";
     std::cout << std::endl;
 }
 
