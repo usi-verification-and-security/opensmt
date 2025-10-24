@@ -679,6 +679,12 @@ PTRef Logic::mkBoolVar(char const * name) {
     return mkFun(sr, {});
 }
 
+PTRef Logic::mkInternalBoolVar(char const * name) {
+    SymRef sr = declareInternalFun(name, sort_BOOL, {});
+    assert(sr != SymRef_Undef);
+    return mkFun(sr, {});
+}
+
 void Logic::instantiateFunctions(SRef sr) {
     // Equality
     SymRef tr = declareFun_Commutative_NoScoping_Chainable(tk_equals, sort_BOOL, {sr, sr});
@@ -732,8 +738,15 @@ SymRef Logic::declareFun(std::string const & fname, SRef rsort, vec<SRef> const 
     assert(rsort != SRef_Undef);
     assert(std::find(args.begin(), args.end(), SRef_Undef) == args.end());
 
-    SymRef sr = sym_store.newSymb(fname.c_str(), rsort, args, symbolConfig);
-    return sr;
+    return sym_store.newSymb(fname.c_str(), rsort, args, symbolConfig);
+}
+
+SymRef Logic::declareInternalFun(std::string const & fname, SRef rsort, vec<SRef> const & args,
+                         SymbolConfig const & symbolConfig) {
+    assert(rsort != SRef_Undef);
+    assert(std::find(args.begin(), args.end(), SRef_Undef) == args.end());
+
+    return sym_store.newInternalSymb(fname.c_str(), rsort, args, symbolConfig);
 }
 
 PTRef Logic::insertTerm(SymRef sym, vec<PTRef> && terms) {

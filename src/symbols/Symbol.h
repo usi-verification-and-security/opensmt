@@ -39,6 +39,7 @@ typedef uint32_t SymId; // Used as an array index
 enum class SymbolProperty : char { None, LeftAssoc, RightAssoc, Chainable, Pairwise };
 
 struct SymbolConfig {
+    //- bool isInternal;
     bool isInterpreted;
     bool commutes;
     bool noScoping;

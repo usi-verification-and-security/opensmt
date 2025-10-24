@@ -258,7 +258,7 @@ protected:
     PTRef newFrameTerm(FrameId frameId) {
         assert(frameId != 0);
         auto name = std::string(Logic::s_framev_prefix) + std::to_string(frameId);
-        PTRef frameTerm = logic.mkBoolVar(name.c_str());
+        PTRef frameTerm = logic.mkInternalBoolVar(name.c_str());
         Lit l = term_mapper->getOrCreateLit(frameTerm);
         term_mapper->setFrozen(var(l));
         smt_solver->addAssumptionVar(var(l));

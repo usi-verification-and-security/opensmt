@@ -224,7 +224,7 @@ void ScatterSplitter::exposeUnitClauses(std::vector<PTPLib::net::Lemma> & learne
 
         std::string str = logic.dumpWithLets(pt);
         assert([&](std::string_view clause_str) {
-            if (clause_str.find(".frame") != std::string::npos) {
+            if (clause_str.find(Logic::s_framev_prefix) != std::string::npos) {
                 throw PTPLib::common::Exception(__FILE__, __LINE__,"assert: frame caught in trail");
             }
             return true;
@@ -317,7 +317,7 @@ void ScatterSplitter::exposeLongerClauses(std::vector<PTPLib::net::Lemma> & lear
         std::string str = logic.dumpWithLets(theory_handler.getLogic().mkOr(clause));
         learnedLemmas.emplace_back(PTPLib::net::Lemma(str, level));
         assert([&](std::string_view clause_str) {
-            if (clause_str.find(".frame") != std::string::npos) {
+            if (clause_str.find(Logic::s_framev_prefix) != std::string::npos) {
                 throw PTPLib::common::Exception(__FILE__, __LINE__,";assert: frame caught in actual clauses");
             }
             return true;
