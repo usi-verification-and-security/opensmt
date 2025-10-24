@@ -14,9 +14,9 @@ namespace opensmt {
 bool VerificationUtils::verifyInterpolantInternal(PTRef Apartition, PTRef Bpartition, PTRef itp) {
     SMTConfig validationConfig;
     MainSolver validationSolver(logic, validationConfig, "validator");
-    //    std::cout << "A part:   " << logic.printTerm(Apartition) << '\n';
-    //    std::cout << "B part:   " << logic.printTerm(Bpartition) << '\n';
-    //    std::cout << "Interpol: " << logic.printTerm(itp) << std::endl;
+    //    std::cout << "A part:   " << logic.termToSMT2String(Apartition) << '\n';
+    //    std::cout << "B part:   " << logic.termToSMT2String(Bpartition) << '\n';
+    //    std::cout << "Interpol: " << logic.termToSMT2String(itp) << std::endl;
     validationSolver.push();
     validationSolver.insertFormula(logic.mkNot(logic.mkImpl(Apartition, itp)));
     auto res = validationSolver.check();

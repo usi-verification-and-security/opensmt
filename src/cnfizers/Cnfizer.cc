@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define TRACE(x) std::cerr << x << std::endl;
 #define TRACE_FLA_VEC(v)                                                                                               \
     for (unsigned i = 0; i < v.size_(); ++i)                                                                           \
-        std::cerr << i << ": " << logic.printTerm(v[i]) << '\n';                                                       \
+        std::cerr << i << ": " << logic.termToSMT2String(v[i]) << '\n';                                                \
     std::cerr << std::endl;
 #else
 #define TRACE(x)
@@ -48,7 +48,7 @@ Cnfizer::Cnfizer(Logic & logic, TermMapper & tmap) : logic(logic), tmap(tmap) {}
 void Cnfizer::cnfize(PTRef formula, FrameId frame_id) {
     currentFrameId = frame_id;
     assert(formula != PTRef_Undef and logic.getSortRef(formula) == logic.getSort_bool());
-    TRACE("cnfizerAndGiveToSolver: " << logic.printTerm(formula))
+    TRACE("cnfizerAndGiveToSolver: " << logic.termToSMT2String(formula))
 
     vec<PTRef> top_level_formulae = topLevelConjuncts(logic, formula);
     assert(top_level_formulae.size() != 0);
@@ -60,7 +60,7 @@ void Cnfizer::cnfize(PTRef formula, FrameId frame_id) {
         assert(
             not logic.isAnd(topLevelConjunct)); // Conjunction should have been split when retrieving top-level formulae
         if (alreadyProcessed.contains(topLevelConjunct, frame_id)) { continue; }
-        TRACE("Adding clause " << logic.printTerm(f))
+        TRACE("Adding clause " << logic.termToSMT2String(f))
         // Give it to the solver if already in CNF
         if (isClause(topLevelConjunct)) {
             TRACE(" => Already a clause")
@@ -98,7 +98,7 @@ void Cnfizer::deMorganize(PTRef formula) {
     retrieveConjuncts(term[0], conjuncts);
     for (PTRef tr : conjuncts) {
         clause.push(~this->getOrCreateLiteralFor(tr));
-        TRACE("(not " << logic.printTerm(tr) << ")")
+        TRACE("(not " << logic.termToSMT2String(tr) << ")")
     }
     addClause(std::move(clause));
 }

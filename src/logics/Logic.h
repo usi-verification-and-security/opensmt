@@ -61,7 +61,7 @@ public:
 
     SRef getSortRef(PTRef tr) const;
     SRef getSortRef(SymRef sr) const;
-    std::string printSort(SRef s) const;
+    std::string sortToString(SRef s) const;
     std::size_t getSortSize(SRef s) const;
     SRef declareUninterpretedSort(std::string const &);
 
@@ -346,12 +346,14 @@ public:
     std::string disambiguateName(std::string const & protectedName, SRef retSort, bool isNullary,
                                  bool isInterpreted) const;
     std::string protectName(SymRef sr) const { return protectName(getSymName(sr), getSym(sr).isInterpreted()); };
-    virtual std::string printTerm_(PTRef tr, bool withRefs) const;
-    std::string printTerm(PTRef tr) const { return printTerm_(tr, false); }
-    std::string printTerm(PTRef tr, bool withRefs) const { return printTerm_(tr, withRefs); }
+    // Converts the term into a string in SMT-LIB2 format
+    std::string termToSMT2String(PTRef tr) const { return termToSMT2StringImpl(tr, false); }
+#ifndef NDEBUG
+    std::string termToSMT2String(PTRef tr, bool withRefs) const { return termToSMT2StringImpl(tr, withRefs); }
+#endif
     std::string pp(PTRef tr) const; // A pretty printer
 
-    std::string printSym(SymRef sr) const;
+    std::string symToString(SymRef sr) const;
     virtual void termSort(vec<PTRef> & v) const; // { sort(v, LessThan_PTRef()); }
 
     void purify(PTRef r, PTRef & p,
@@ -407,6 +409,8 @@ protected:
 
     virtual PTRef mkBinaryEq(PTRef lhs, PTRef rhs);
     void newUninterpretedSortHandler(SRef);
+
+    virtual std::string termToSMT2StringImpl(PTRef tr, bool withRefs) const;
 
     static char const * e_argnum_mismatch;
     static char const * e_bad_constant;

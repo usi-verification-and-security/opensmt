@@ -105,7 +105,7 @@ std::size_t MainSolver::getAssertionLevel() const {
 
 void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
-        throw ApiException("Top-level assertion sort must be Bool, got " + logic.printSort(logic.getSortRef(fla)));
+        throw ApiException("Top-level assertion sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
     }
     // TODO: Move this to preprocessing of the formulas
     fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);

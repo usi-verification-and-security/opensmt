@@ -790,7 +790,7 @@ void CoreSMTSolver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 #ifdef REPORT_DL1_THLITS
     if (out_learnt.size() == 1)
     {
-        char* ulit = theory_handler.getLogic().printTerm(theory_handler.varToTerm(var(out_learnt[0])));
+        char* ulit = theory_handler.getLogic().termToSMT2String(theory_handler.varToTerm(var(out_learnt[0])));
         cerr << "; Found a unit literal " << (sign(out_learnt[0]) ? "not " : "") << ulit << endl;
         free(ulit);
     }

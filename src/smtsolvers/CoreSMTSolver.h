@@ -830,7 +830,7 @@ inline void CoreSMTSolver::printClause(const C& c)
         args.push(tr);
     }
     PTRef tr = logic.mkOr(std::move(args));
-    auto clause = logic.printTerm(tr);
+    auto clause = logic.termToSMT2String(tr);
     fprintf(stderr, "; %s", clause.c_str());
 }
 
@@ -860,7 +860,7 @@ inline std::string CoreSMTSolver::printCnfClauses()
 	this->populateClauses(cnf_clauses, clauses);
 
 	Logic& logic = theory_handler.getLogic();
-	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
+	return logic.termToSMT2String(logic.mkAnd(std::move(cnf_clauses)));
 }
 
 inline std::string CoreSMTSolver::printCnfLearnts()
@@ -870,7 +870,7 @@ inline std::string CoreSMTSolver::printCnfLearnts()
 	//this->populateClauses(cnf_clauses, trail);
 
 	Logic& logic = theory_handler.getLogic();
-	return logic.printTerm(logic.mkAnd(std::move(cnf_clauses)));
+	return logic.termToSMT2String(logic.mkAnd(std::move(cnf_clauses)));
 }
 
 

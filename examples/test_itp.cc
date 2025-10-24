@@ -70,7 +70,7 @@ int main()
 
         std::vector<PTRef> itps;
         itp_context->getSingleInterpolant(itps, mask);
-        std::cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << std::endl;
+        std::cerr << ";Interpolant:\n;" << logic.termToSMT2String(itps[0]) << std::endl;
     }
     else if (r == s_Undef)
         printf("unknown\n");

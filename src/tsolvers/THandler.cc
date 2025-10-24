@@ -191,7 +191,7 @@ Lit THandler::getDeduction() {
         //assert(e.sgn != l_Undef);
 #ifdef PEDANTIC_DEBUG
         if (!tmap.hasLit(e.tr))
-            cerr << "Missing (optimized) deduced literal ignored: " << getLogic().printTerm(e.tr) << '\n';
+            cerr << "Missing (optimized) deduced literal ignored: " << getLogic().termToSMT2String(e.tr) << '\n';
 #endif
         if (!tmap.hasLit(e.tr)) continue;
         break;
@@ -267,7 +267,7 @@ char* THandler::printAsrtClause(vec<Lit>& r) {
     for (int i = 0; i < r.size(); i++) {
         Var v = var(r[i]);
         bool sgn = sign(r[i]);
-        os << (sgn ? "not " : "") << getLogic().printTerm(tmap.varToPTRef(v)) << " ";
+        os << (sgn ? "not " : "") << getLogic().termToSMT2String(tmap.varToPTRef(v)) << " ";
     }
     return strdup(os.str().c_str());
 }
@@ -300,7 +300,7 @@ std::string THandler::printAssertion(Lit assertion) {
     PTRef pt_r = tmap.varToPTRef(v);
     if (sign(assertion))
         os << "!";
-    os << getLogic().term_store.printTerm(pt_r, true) << "[var " << v << "] " << '\n';
+    os << getLogic().term_store.termToSMT2String(pt_r, true) << "[var " << v << "] " << '\n';
     return os.str();
 }
 
@@ -316,7 +316,7 @@ std::string THandler::printAssertion(Lit assertion) {
 //        if ( val == l_False )
 //            os << "!";
 //
-//        os << getLogic().term_store.printTerm(explanation[i].tr);
+//        os << getLogic().term_store.termToSMT2String(explanation[i].tr);
 //        os << "[var " << v << "]";
 //    }
 //    os << '\n';
@@ -339,7 +339,7 @@ PTRef   THandler::varToTerm          ( Var v ) const { return tmap.varToPTRef(v)
 Pterm&  THandler::varToPterm         ( Var v)        { return getLogic().getPterm(tmap.varToPTRef(v)); } // Return the term corresponding to a variable
 Lit     THandler::PTRefToLit         ( PTRef tr)     { return tmap.getLit(tr); }
 
-std::string THandler::getVarName(Var v) const { return getLogic().printTerm(tmap.varToPTRef(v)); }
+std::string THandler::getVarName(Var v) const { return getLogic().termToSMT2String(tmap.varToPTRef(v)); }
 
 Var     THandler::ptrefToVar         ( PTRef r ) { return tmap.getVar(r); }
 

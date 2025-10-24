@@ -329,9 +329,9 @@ namespace {
             auto const & coeff = *it_coeff;
             if (coeff.isZero()) { continue; } // when some basis is found, some coordinates could be zero; ignore those
             auto const & ineq = *it_ineq;
-            trace(std::cout << "Original explanation: " << logic.printTerm(ineq.explanation)
+            trace(std::cout << "Original explanation: " << logic.termToSMT2String(ineq.explanation)
                             << "; negated: " << ineq.negated << '\n');
-            trace(std::cout << "LAExpr as PTrEf: " << logic.printTerm(ineq.expr.toPTRef()) << '\n');
+            trace(std::cout << "LAExpr as PTrEf: " << logic.termToSMT2String(ineq.expr.toPTRef()) << '\n');
             trace(std::cout << "LAExpr as stored: ");
             trace(ineq.expr.print(std::cout); std::cout << std::endl);
             if (ineq.negated) {
@@ -426,7 +426,7 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     for (int i = 0; i < explanations.size(); ++i) {
         assert(explanation_coeffs[i] > 0);
         candidates.emplace_back(explanations[i], explanation_coeffs[i]);
-        trace(std::cout << "Explanation " << logic.printTerm(explanations[i].tr) << " with coeff "
+        trace(std::cout << "Explanation " << logic.termToSMT2String(explanations[i].tr) << " with coeff "
                         << explanation_coeffs[i] << " is negated: " << (explanations[i].sgn == l_False) << '\n');
         bool isA = this->isInPartitionOfColor(icolor_t::I_A, explanations[i].tr);
         bool isB = this->isInPartitionOfColor(icolor_t::I_B, explanations[i].tr);

@@ -1128,7 +1128,7 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
 
 // Handle the printing of real constants that are negative and the
 // rational constants
-std::string ArithLogic::printTerm_(PTRef tr, bool withRefs) const {
+std::string ArithLogic::termToSMT2StringImpl(PTRef tr, bool withRefs) const {
     if (isNumConst(tr)) {
         bool is_neg = false;
         char * tmp_str;
@@ -1181,7 +1181,7 @@ std::string ArithLogic::printTerm_(PTRef tr, bool withRefs) const {
             return rat_str;
         }
     }
-    return Logic::printTerm_(tr, withRefs);
+    return Logic::termToSMT2StringImpl(tr, withRefs);
 }
 
 /**

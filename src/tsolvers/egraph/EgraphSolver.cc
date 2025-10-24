@@ -525,10 +525,10 @@ bool Egraph::assertNEq ( PTRef x, PTRef y, const Expl &r ) {
 #ifdef GC_DEBUG
     checkRefConsistency();
     assert(r.sgn != l_Undef);
-    cerr << "Asserting distinction of " << logic.printTerm(x)
-         << " and " << logic.printTerm(y)
+    cerr << "Asserting distinction of " << logic.termToSMT2String(x)
+         << " and " << logic.termToSMT2String(y)
          << " enforced by " << (r.sgn == l_True ? "" : "not ")
-         << logic.printTerm(r.tr) << endl;
+         << logic.termToSMT2String(r.tr) << endl;
 #endif
     checkFaGarbage();
 #ifdef GC_DEBUG
@@ -1200,11 +1200,11 @@ void Egraph::relocAll(ELAllocator& to) {
                  << "  link: " << forbid_allocator[er].link.x << endl
                  << "  ERef: " << forbid_allocator[er].e.x
                  << "  Reason: " <<
-                    logic.printTerm(forbid_allocator[er].reason.tr)
+                    logic.termToSMT2String(forbid_allocator[er].reason.tr)
                  << endl;
             if (enode_store[forbid_allocator[er].e].isTerm()) {
                 cerr << "  Term: "
-                     << logic.printTerm(enode_store[forbid_allocator[er].e].getTerm()) << endl;
+                     << logic.termToSMT2String(enode_store[forbid_allocator[er].e].getTerm()) << endl;
             }
 #endif
             forbid_allocator.reloc(er, to);

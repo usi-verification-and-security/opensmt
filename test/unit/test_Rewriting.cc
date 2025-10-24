@@ -44,7 +44,7 @@ TEST(Rewriting_test, test_RewriteClassicWithSimplification)
     // l1 is (and b (or (and c d) (and a (and b (not a)))))
     // which is equivalent to (and b c d)
     PTRef res = rewriteMaxArityClassic(logic, l1);
-//    std::cout << logic.printTerm(res) << std::endl;
+//    std::cout << logic.termToSMT2String(res) << std::endl;
     vec<PTRef> args {b,c,d};
     ASSERT_EQ(res, logic.mkAnd(args));
 }
@@ -60,7 +60,7 @@ TEST(Rewriting_test, test_RewriteClassicUnderNegation)
     // (not (and a (and b c)))
     // is equivalent to (not (and a b c))
     PTRef res = rewriteMaxArityClassic(logic, negative);
-//    std::cout << logic.printTerm(res) << std::endl;
+//    std::cout << logic.termToSMT2String(res) << std::endl;
     ASSERT_EQ(res, logic.mkNot(logic.mkAnd({a,b,c})));
 }
 
@@ -84,7 +84,7 @@ TEST(Rewriting_test, test_RewriteDivMod) {
     PTRef mod = logic.mkMod(x,two);
     PTRef fla = logic.mkAnd(logic.mkEq(div, two), logic.mkEq(mod, logic.getTerm_IntZero()));
     PTRef rewritten = rewriteDivMod(logic, fla);
-//    std::cout << logic.printTerm(rewritten) << std::endl;
+//    std::cout << logic.termToSMT2String(rewritten) << std::endl;
     SMTConfig config;
     MainSolver solver(logic, config, "test");
     solver.insertFormula(rewritten);

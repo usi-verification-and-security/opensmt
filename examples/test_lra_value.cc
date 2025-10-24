@@ -71,20 +71,20 @@ int main()
         printf("sat\n");
         auto m = mainSolver.getModel();
         PTRef v1 = m->evaluate(x1);
-        auto name = logic.printTerm(x1);
-        auto value = logic.printTerm(v1);
+        auto name = logic.termToSMT2String(x1);
+        auto value = logic.termToSMT2String(v1);
         std::cout << name << ": " << value << '\n';
         PTRef v2 = m->evaluate(x2);
-        name = logic.printTerm(x2);
-        value = logic.printTerm(v2);
+        name = logic.termToSMT2String(x2);
+        value = logic.termToSMT2String(v2);
         std::cout << name << ": " << value << '\n';
         PTRef v3 = m->evaluate(x3);
-        name = logic.printTerm(x3);
-        value = logic.printTerm(v3);
+        name = logic.termToSMT2String(x3);
+        value = logic.termToSMT2String(v3);
         std::cout << name << ": " << value << '\n';
         PTRef v4 = m->evaluate(x4);
-        name = logic.printTerm(x4);
-        value = logic.printTerm(v4);
+        name = logic.termToSMT2String(x4);
+        value = logic.termToSMT2String(v4);
         std::cout << name << ": " << value << '\n';
     }
     else if (r == s_False)
@@ -111,7 +111,7 @@ int main()
 
         std::vector<PTRef> itps;
         itp_context->getSingleInterpolant(itps, mask);
-        std::cerr << ";Interpolant:\n;" << logic.printTerm(itps[0]) << std::endl;
+        std::cerr << ";Interpolant:\n;" << logic.termToSMT2String(itps[0]) << std::endl;
     }
     else if (r == s_Undef)
         printf("unknown\n");

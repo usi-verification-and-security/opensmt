@@ -64,12 +64,12 @@ public:
     std::string getSortSymName(SSymRef ssr) const { return ssa[ssr].name; }
     std::string getSortSymName(SRef sr) const { return getSortSymName(getSortSym(sr)); }
     unsigned int getSortSymSize(SSymRef ssr) const { return ssa[ssr].arity; }
-    std::string printSort(SRef sr) const {
+    std::string sortToString(SRef sr) const {
         std::string name = getSortSymName(sr);
         if (sa[sr].getSize() > 0) {
             name = "(" + name + " ";
             for (unsigned i = 0; i < sa[sr].getSize(); i++) {
-                name += printSort(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
+                name += sortToString(sa[sr][i]) + (i == sa[sr].getSize() - 1 ? "" : " ");
             }
             name += ")";
         }

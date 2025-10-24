@@ -54,7 +54,7 @@ std::vector<std::string> NamedUnsatCore::makeHiddenTermNames() const {
 }
 
 void FullUnsatCore::printTerm(std::ostream & os, PTRef term) const {
-    os << logic.printTerm(term);
+    os << logic.termToSMT2String(term);
 }
 
 } // namespace opensmt

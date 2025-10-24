@@ -118,7 +118,7 @@ std::string Logic::disambiguateName(std::string const & protectedName, SRef sort
                                         : std::string_view(protectedName);
 
     if (not isKnownToUser(name) or isAmbiguousUninterpretedNullarySymbolName(name)) {
-        return "(as " + std::string(protectedName) + " " + printSort(sortRef) + ')';
+        return "(as " + std::string(protectedName) + " " + sortToString(sortRef) + ')';
     } else {
         return protectedName;
     }
@@ -137,7 +137,7 @@ std::string Logic::protectName(std::string const & name, bool isInterpreted) con
 
 // Return a string corresponding to the SMT lib representation of the symbol, with disambiguation and name
 // protection
-std::string Logic::printSym(SymRef sr) const {
+std::string Logic::symToString(SymRef sr) const {
     Symbol const & symbol = getSym(sr);
     bool isInterpreted = symbol.isInterpreted();
     std::string protectedName = protectName(getSymName(sr), isInterpreted);
@@ -147,7 +147,7 @@ std::string Logic::printSym(SymRef sr) const {
 std::string Logic::pp(PTRef tr) const {
     Pterm const & t = getPterm(tr);
     SymRef sr = t.symb();
-    std::string name_escaped = printSym(sr);
+    std::string name_escaped = symToString(sr);
 
     if (t.size() == 0) { return name_escaped; }
 
@@ -167,12 +167,12 @@ std::string Logic::pp(PTRef tr) const {
     return ss.str();
 }
 
-std::string Logic::printTerm_(PTRef tr, bool withRefs) const {
+std::string Logic::termToSMT2StringImpl(PTRef tr, bool withRefs) const {
     std::stringstream ss;
 
     Pterm const & t = getPterm(tr);
     SymRef sr = t.symb();
-    std::string name_escaped = printSym(sr);
+    std::string name_escaped = symToString(sr);
 
     if (t.size() == 0) {
         ss << name_escaped;
@@ -182,7 +182,7 @@ std::string Logic::printTerm_(PTRef tr, bool withRefs) const {
         assert(t.size() > 0);
         ss << "(" << name_escaped;
         for (auto arg : t) {
-            ss << " " << printTerm_(arg, withRefs);
+            ss << " " << termToSMT2StringImpl(arg, withRefs);
         }
         ss << ")";
         if (withRefs) { ss << " <" + std::to_string(tr.x) + ">"; }
@@ -313,10 +313,10 @@ PTRef Logic::resolveTerm(char const * s, vec<PTRef> && args, SRef sortRef, Symbo
         std::string argSortsString;
         for (int i = 0; i < args.size(); i++) {
             PTRef tr = args[i];
-            argSortsString += printSort(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
+            argSortsString += sortToString(getSortRef(tr)) + (i == args.size() - 1 ? "" : " ");
         }
         throw ApiException("Unknown symbol `" + std::string(s) + ' ' + argSortsString +
-                           (sortRef != SRef_Undef ? "/ " + printSort(sortRef) : "") + "'");
+                           (sortRef != SRef_Undef ? "/ " + sortToString(sortRef) : "") + "'");
     }
     assert(sref != SymRef_Undef);
     PTRef rval = insertTerm(sref, std::move(args));
@@ -661,7 +661,7 @@ void Logic::markConstant(SymId id) {
 PTRef Logic::mkUninterpFun(SymRef f, vec<PTRef> && args) {
     if (f == SymRef_Undef) { return PTRef_Undef; }
     if (isInterpreted(f)) {
-        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + printSym(f);
+        std::string msg = "Error in Logic: mkUninterpFun called with interpreted symbol " + symToString(f);
         throw ApiException(msg);
     }
     PTRef tr = mkFun(f, std::move(args));
@@ -790,7 +790,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
         if (term_store.hasBoolKey(k)) {         // bool_map.contains(k)) {
             res = term_store.getFromBoolMap(k); // bool_map[k];
 #ifdef SIMPLIFY_DEBUG
-            char * ts = printTerm(res);
+            char * ts = termToSMT2String(res);
             cerr << "duplicate: " << ts << std::endl;
             ::free(ts);
 #endif
@@ -798,7 +798,7 @@ PTRef Logic::mkFun(SymRef sym, vec<PTRef> && terms) {
             res = term_store.newTerm(sym, k.args);
             term_store.addToBoolMap(std::move(k), res);
 #ifdef SIMPLIFY_DEBUG
-            char * ts = printTerm(res);
+            char * ts = termToSMT2String(res);
             cerr << "new: " << ts << std::endl;
             ::free(ts);
 #endif
@@ -891,7 +891,7 @@ pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & fa
         // Join equalities
         if (isEquality(tr) && sgn == l_True) {
 #ifdef SIMPLIFY_DEBUG
-            cerr << "Identified an equality: " << printTerm(tr) << std::endl;
+            cerr << "Identified an equality: " << termToSMT2String(tr) << std::endl;
 #endif
             Pterm const & t = getPterm(tr);
             // n will be the reference
@@ -914,12 +914,12 @@ pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & fa
 #ifdef SIMPLIFY_DEBUG
                     if (substs.has(var)) {
                         cerr << "Double substitution:" << std::endl;
-                        cerr << " " << printTerm(var) << "/" << printTerm(trm) << std::endl;
-                        cerr << " " << printTerm(var) << "/" << printTerm(substs[var].tr) << std::endl;
+                        cerr << " " << termToSMT2String(var) << "/" << termToSMT2String(trm) << std::endl;
+                        cerr << " " << termToSMT2String(var) << "/" << termToSMT2String(substs[var].tr) << std::endl;
                         if (substs[var].sgn == l_False) cerr << "  disabled" << std::endl;
                     } else {
-                        char * tmp1 = printTerm(var);
-                        char * tmp2 = printTerm(trm);
+                        char * tmp1 = termToSMT2String(var);
+                        char * tmp2 = termToSMT2String(trm);
                         cerr << "Substituting " << tmp1 << " with " << tmp2 << std::endl;
                         ::free(tmp1);
                         ::free(tmp2);
@@ -1031,8 +1031,8 @@ bool Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
     vec<Map<PTRef, lbool, PTRefHash>::Pair> facts_dbg;
     facts.getKeysAndVals(facts_dbg);
     for (int i = 0; i < facts_dbg.size(); i++)
-        cerr << (facts_dbg[i].data == l_True ? "" : "not ") << printTerm(facts_dbg[i].key) << " (" << facts_dbg[i].key.x
-             << ")" << std::endl;
+        cerr << (facts_dbg[i].data == l_True ? "" : "not ") << termToSMT2String(facts_dbg[i].key) << " ("
+             << facts_dbg[i].key.x << ")" << std::endl;
 #endif
 }
 
@@ -1208,12 +1208,12 @@ void Logic::dumpWithLets(std::ostream & dump_out, PTRef formula) const {
         dump_out << "((" << definition << " ";
 
         if (term.size() > 0) dump_out << "(";
-        dump_out << printSym(term.symb());
+        dump_out << symToString(term.symb());
         for (PTRef pref : term) {
             if (isBooleanOperator(pref) || isEquality(pref)) {
                 dump_out << " " << enode_to_def[pref];
             } else {
-                dump_out << " " << printTerm(pref);
+                dump_out << " " << termToSMT2String(pref);
                 if (isAnd(e)) dump_out << std::endl;
             }
         }
@@ -1253,14 +1253,14 @@ void Logic::dumpHeaderToFile(std::ostream & dump_out) const {
         else if (isBuiltinFunction(s))
             continue;
         else { dump_out << "(declare-fun "; }
-        auto sym = printSym(s);
+        auto sym = symToString(s);
         dump_out << sym << " ";
         Symbol const & symb = sym_store[s];
         dump_out << "(";
         for (SRef sr : symb) {
-            dump_out << printSort(sr) << " ";
+            dump_out << sortToString(sr) << " ";
         }
-        dump_out << ") " << printSort(symb.rsort()) << ")\n";
+        dump_out << ") " << sortToString(symb.rsort()) << ")\n";
     }
 }
 
@@ -1282,9 +1282,9 @@ void Logic::dumpFunction(std::ostream & dump_out, TemplateFunction const & tpl_f
     dump_out << "(define-fun " << quoted_name << " ( ";
     vec<PTRef> const & args = tpl_fun.getArgs();
     for (PTRef arg : args) {
-        dump_out << '(' << printTerm(arg) << ' ' << printSort(getSortRef(arg)) << ") ";
+        dump_out << '(' << termToSMT2String(arg) << ' ' << sortToString(getSortRef(arg)) << ") ";
     }
-    dump_out << ") " << printSort(tpl_fun.getRetSort());
+    dump_out << ") " << sortToString(tpl_fun.getRetSort());
     dumpFormulaToFile(dump_out, tpl_fun.getBody(), false, false);
     dump_out << ")\n";
 }
@@ -1347,8 +1347,8 @@ SRef Logic::getSortRef(SymRef const sr) const {
     return getSym(sr).rsort();
 }
 
-std::string Logic::printSort(SRef s) const {
-    return sort_store.printSort(s);
+std::string Logic::sortToString(SRef s) const {
+    return sort_store.sortToString(s);
 }
 
 SRef Logic::getUniqueArgSort(SymRef sr) const {
@@ -1562,23 +1562,23 @@ bool Logic::typeCheck(SymRef sym, vec<PTRef> const & args, std::string & why) co
         Symbol const & symbol = sym_store[sym];
         if (symbol.chainable() or symbol.pairwise()) {
             for (int i = 0; i < args.size(); i++) {
-                symStr += " " + printSort(symbol[0]);
+                symStr += " " + sortToString(symbol[0]);
             }
         } else if (symbol.left_assoc()) {
-            symStr += " " + printSort(symbol[0]);
+            symStr += " " + sortToString(symbol[0]);
             for (int i = 1; i < args.size(); i++) {
-                symStr += " " + printSort(symbol[1]);
+                symStr += " " + sortToString(symbol[1]);
             }
         } else if (symbol.right_assoc()) {
             for (int i = 0; i < args.size() - 1; i++) {
-                symStr += " " + printSort(symbol[0]);
+                symStr += " " + sortToString(symbol[0]);
             }
-            symStr += " " + printSort(symbol[1]);
+            symStr += " " + sortToString(symbol[1]);
         }
 
         std::string argSorts;
         for (PTRef tr : args) {
-            argSorts += printSort(getSortRef(tr)) + " ";
+            argSorts += sortToString(getSortRef(tr)) + " ";
         }
         return "Symbol " + symStr + " instantiated with arguments of sort " + argSorts;
     };

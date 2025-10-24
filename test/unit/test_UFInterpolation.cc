@@ -445,7 +445,7 @@ TEST_F(UFInterpolationTest, test_LocalColorInformationInsufficient){
     ipartitions_t mask;
     setbit(mask, 1);
     itpCtx->getSingleInterpolant(interpolants, mask);
-//    std::cout << logic.printTerm(interpolants[0]) << std::endl;
+//    std::cout << logic.termToSMT2String(interpolants[0]) << std::endl;
     EXPECT_TRUE(verifyInterpolant(A, B, interpolants[0]));
 }
 

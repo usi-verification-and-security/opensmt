@@ -545,7 +545,7 @@ bool LASolver::setStatus( LASolverStatus s )
 void LASolver::getSimpleDeductions(LABoundRef br)
 {
 //    printf("Deducing from bound %s\n", boundStore.printBound(br));
-//    printf("The full bound list for %s:\n%s\n", logic.printTerm(lva[v].getPTRef()), boundStore.printBounds(v));
+//    printf("The full bound list for %s:\n%s\n", logic.termToSMT2String(lva[v].getPTRef()), boundStore.printBounds(v));
 
     auto const & bound = boundStore[br];
     LVRef v = bound.getLVRef();

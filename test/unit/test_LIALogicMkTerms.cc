@@ -165,8 +165,8 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization) {
     PTRef two = logic.mkIntConst(2);
     PTRef eq1 = logic.mkEq(x, y);
     PTRef eq2 = logic.mkEq(logic.mkTimes(x, two), logic.mkTimes(y, two));
-//    std::cout << logic.printTerm(eq1) << std::endl;
-//    std::cout << logic.printTerm(eq2) << std::endl;
+//    std::cout << logic.termToSMT2String(eq1) << std::endl;
+//    std::cout << logic.termToSMT2String(eq2) << std::endl;
     EXPECT_EQ(eq1, eq2);
 }
 

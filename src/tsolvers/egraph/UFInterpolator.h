@@ -103,7 +103,7 @@ public:
     CNode* getConflictEnd()   const { assert(conf2 != PTRef_Undef); return cnodes_store.at(conf2); }
 
     inline void setConf(PTRef c1, PTRef c2) {
-//      cout << "SetConf: " << logic.printTerm(c1) << " = " << logic.printTerm(c2) << endl;
+//      cout << "SetConf: " << logic.termToSMT2String(c1) << " = " << logic.termToSMT2String(c2) << endl;
         assert(conf1 == PTRef_Undef);
         assert(conf2 == PTRef_Undef);
         assert(c1 != PTRef_Undef);

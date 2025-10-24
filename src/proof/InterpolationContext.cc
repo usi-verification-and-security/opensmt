@@ -584,7 +584,7 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
         std::cerr << "; Number of interpreted functions: " << nif << '\n';
     }
 
-    if (verbose() > 1) { std::cout << "; Interpolant:\n" << logic.printTerm(rootInterpolant) << '\n'; }
+    if (verbose() > 1) { std::cout << "; Interpolant:\n" << logic.termToSMT2String(rootInterpolant) << '\n'; }
     return rootInterpolant;
 }
 
@@ -895,9 +895,9 @@ bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, std::v
                 VerificationUtils(logic).impliesInternal(logic.mkAnd(previous_itp, movedPartitions), next_itp);
             if (not propertySatisfied) {
                 std::cerr << "; Path interpolation does not hold for:\n"
-                          << "First interpolant: " << logic.printTerm(previous_itp) << '\n'
-                          << "Moved partitions: " << logic.printTerm(movedPartitions) << '\n'
-                          << "Second interpolant: " << logic.printTerm(next_itp) << '\n';
+                          << "First interpolant: " << logic.termToSMT2String(previous_itp) << '\n'
+                          << "Moved partitions: " << logic.termToSMT2String(movedPartitions) << '\n'
+                          << "Second interpolant: " << logic.termToSMT2String(next_itp) << '\n';
             }
         }
     }
@@ -940,19 +940,21 @@ PTRef InterpolationContext::simplifyInterpolant(PTRef itp) const {
         itp = simplifyUnderAssignment_Aggressive(itp, logic);
     } else {
         if (simplificationLevel > 0) {
-            if (verbose() > 1) { std::cout << "Itp before rewriting max arity: \n" << logic.printTerm(itp) << "\n\n"; }
+            if (verbose() > 1) {
+                std::cout << "Itp before rewriting max arity: \n" << logic.termToSMT2String(itp) << "\n\n";
+            }
             itp = rewriteMaxArityClassic(logic, itp);
         }
         if (simplificationLevel == 2) {
             if (verbose() > 1) {
-                std::cout << "Itp before aggressive simplifying: \n" << logic.printTerm(itp) << "\n\n";
+                std::cout << "Itp before aggressive simplifying: \n" << logic.termToSMT2String(itp) << "\n\n";
             }
             itp = simplifyUnderAssignment(logic, itp);
         }
 
         if (simplificationLevel == 3) {
             if (verbose() > 1) {
-                std::cout << "Itp before aggressive simplifying: \n" << logic.printTerm(itp) << "\n\n";
+                std::cout << "Itp before aggressive simplifying: \n" << logic.termToSMT2String(itp) << "\n\n";
             }
             itp = simplifyUnderAssignment_Aggressive(itp, logic);
         }

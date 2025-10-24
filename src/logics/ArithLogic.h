@@ -351,8 +351,6 @@ public:
 
     PTRef removeAuxVars(PTRef) override;
 
-    std::string printTerm_(PTRef tr, bool withRefs) const override;
-
     // Helper methods
 
     // Given an inequality 'c <= t', return the constant c; checked version
@@ -377,6 +375,8 @@ protected:
     pair<Number, PTRef> sumToNormalizedPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedIntPair(PTRef sum);
     pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
+
+    std::string termToSMT2StringImpl(PTRef tr, bool withRefs) const override;
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
 

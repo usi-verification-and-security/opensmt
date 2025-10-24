@@ -18,7 +18,7 @@ TEST_F(SplitTest, test_TermPrinting) {
     SymRef sr = logic.declareFun("f", U, {U, U});
     PTRef a = logic.mkVar(U, "a");
     PTRef f_a = logic.mkUninterpFun(sr, {a, a});
-    std::string str = logic.printTerm(f_a);
+    std::string str = logic.termToSMT2String(f_a);
     std::string reference = "(f a a)";
     std::cout << str << std::endl;
     ASSERT_EQ(str.compare(reference), 0);

@@ -48,14 +48,14 @@ std::string Egraph::printEqClass(PTRef tr) const {
     std::stringstream out;
     const ERef er = enode_store.getERef(tr);
     ERef c_er = er;
-    out << "In the same eq class with " << logic.printTerm(tr) << " are:\n[ ";
+    out << "In the same eq class with " << logic.termToSMT2String(tr) << " are:\n[ ";
 
     while (true) {
         Enode const & en = getEnode(c_er);
         ERef next_er = en.getEqNext();
         if (next_er == er) break;
         Enode const & en_o = getEnode(next_er);
-        out << logic.printTerm(en_o.getTerm()) << ' ';
+        out << logic.termToSMT2String(en_o.getTerm()) << ' ';
     }
     out << "]";
     return out.str();
@@ -86,7 +86,7 @@ std::string Egraph::printDistinctions(PTRef x) const
     }
 
     std::stringstream out;
-    out << "In different eq class with " << logic.printTerm(x) << " are:\n[ ";
+    out << "In different eq class with " << logic.termToSMT2String(x) << " are:\n[ ";
 
     const ERef er = enode_store[enode_store.getERef(x)].getRoot();
 
@@ -101,7 +101,7 @@ std::string Egraph::printDistinctions(PTRef x) const
         const Elist& el = forbid_allocator[c_elr];
         ELRef next_elr = el.link;
         const Elist& el_o = forbid_allocator[next_elr];
-        out << logic.printTerm(enode_store[el_o.e].getTerm()) << ' ';
+        out << logic.termToSMT2String(enode_store[el_o.e].getTerm()) << ' ';
         if (next_elr == elr) break;
         c_elr = next_elr;
     }
@@ -125,23 +125,23 @@ const std::string Egraph::printDistinctionList( ELRef x, ELAllocator& ela, bool 
               << "| ELRef: " << x.x << '\n'
               << "| id: " << ela[x].getId() << '\n'
               << "| dirty: " << ela[x].isDirty() << '\n'
-              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << '\n';
+              << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.termToSMT2String(ela[x].reason.pta.tr) << '\n';
 
             if (ela[x].reloced())
                 os << "| reloced to: " << ela[x].rel_e.x << '\n';
             else {
                 os << "| different from enode " << ela[x].e.x << '\n';
-                os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << '\n';
+                os << "|   term " << logic.termToSMT2String(enode_store[ela[x].e].getTerm()) << '\n';
             }
             os << "| link: " << ela[x].link.x << '\n';
         } else {
             os << "+-----------------------------------------------------------+" << '\n'
                << "| Forbid list node                                          |" << '\n'
                << "+-----------------------------------------------------------+" << '\n'
-               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.printTerm(ela[x].reason.pta.tr) << '\n';
+               << "| reason: " << (ela[x].reason.pta.sgn == l_True ? "" : "not " ) << logic.termToSMT2String(ela[x].reason.pta.tr) << '\n';
 
             os << "| different from enode " << ela[x].e.x << '\n';
-            os << "|   term " << logic.printTerm(enode_store[ela[x].e].getTerm()) << '\n';
+            os << "|   term " << logic.termToSMT2String(enode_store[ela[x].e].getTerm()) << '\n';
         }
         os << "+-----------------------------------------------------------+" << '\n';
 
@@ -176,7 +176,7 @@ void Egraph::checkRefConsistency() {
 std::string Egraph::toString(ERef er) const {
     if (er == ERef_Undef) { return "undef"; }
     const Enode & node = getEnode(er);
-    return logic.printTerm(node.getTerm());
+    return logic.termToSMT2String(node.getTerm());
 }
 
 }

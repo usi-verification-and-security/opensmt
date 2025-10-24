@@ -725,7 +725,7 @@ void Interpret::getValue(std::vector<ASTNode*> const & terms)
         PTRef tr = parseTerm(term, tmp);
         if (tr != PTRef_Undef) {
             values.push_back({termNode, model->evaluate(tr)});
-            auto pt_str = logic.printTerm(tr);
+            auto pt_str = logic.termToSMT2String(tr);
             comment_formatted("Found the term %s", pt_str.c_str());
         } else
             comment_formatted("Error parsing the term %s", (**(term.children->begin())).getValue());
@@ -735,7 +735,7 @@ void Interpret::getValue(std::vector<ASTNode*> const & terms)
         for (auto const & valPair : values) {
             std::cout << '(';
             printAstTermNode(*valPair.first);
-            auto value = logic.printTerm(valPair.second);
+            auto value = logic.termToSMT2String(valPair.second);
             std::cout << " " << value << ')';
         }
         std::cout << ')' << std::endl;
@@ -859,8 +859,8 @@ std::string Interpret::printDefinitionSmtlib(PTRef tr, PTRef val) {
     std::stringstream ss;
     auto s = logic->protectName(logic->getSymRef(tr));
     SRef sortRef = logic->getSym(tr).rsort();
-    ss << "  (define-fun " << s << " () " << logic->printSort(sortRef) << '\n';
-    ss << "    " << logic->printTerm(val) << ")\n";
+    ss << "  (define-fun " << s << " () " << logic->sortToString(sortRef) << '\n';
+    ss << "    " << logic->termToSMT2String(val) << ")\n";
     return ss.str();
 }
 
@@ -869,11 +869,11 @@ std::string Interpret::printDefinitionSmtlib(TemplateFunction const & templateFu
     ss << "  (define-fun " << templateFun.getName() << " (";
     vec<PTRef> const & args = templateFun.getArgs();
     for (int i = 0; i < args.size(); i++) {
-        auto sortString = logic->printSort(logic->getSortRef(args[i]));
+        auto sortString = logic->sortToString(logic->getSortRef(args[i]));
         ss << "(" << logic->protectName(logic->getSymRef(args[i])) << " " << sortString << ")" << (i == args.size()-1 ? "" : " ");
     }
-    ss << ")" << " " << logic->printSort(templateFun.getRetSort()) << "\n";
-    ss << "    " << logic->printTerm(templateFun.getBody()) << ")\n";
+    ss << ")" << " " << logic->sortToString(templateFun.getRetSort()) << "\n";
+    ss << "    " << logic->termToSMT2String(templateFun.getBody()) << ")\n";
     return ss.str();
 }
 
@@ -994,7 +994,7 @@ bool Interpret::defineFun(const ASTNode& n)
         return false;
     }
     else if (logic->getSortRef(tr) != ret_sort) {
-        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->printSort(logic->getSortRef(tr)).c_str(), logic->printSort(ret_sort).c_str());
+        notify_formatted(true, "define-fun term and return sort do not match: %s and %s\n", logic->sortToString(logic->getSortRef(tr)).c_str(), logic->sortToString(ret_sort).c_str());
         return false;
     }
 
@@ -1372,7 +1372,7 @@ void Interpret::getInterpolants(const ASTNode& n)
     }
 
     for (int j = 0; j < itps.size(); j++) {
-        auto itp = logic->pp(itps[j]);
+        auto itp = logic->termToSMT2String(itps[j]);
         notify_formatted(false, "%s%s%s",
                          (j == 0 ? "(" : " "), itp.c_str(), (j == itps.size() - 1 ? ")" : ""));
     }
