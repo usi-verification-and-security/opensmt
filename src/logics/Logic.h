@@ -164,10 +164,8 @@ public:
     virtual PTRef mkConst(char const *);
     virtual PTRef mkConst(SRef, char const *);
 
-    SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig);
-    SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args) {
-        return declareFun(fname, rsort, args, SymConf::Default);
-    }
+    SymRef declareFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig = SymConf::Default);
+    SymRef declareInternalFun(std::string const & fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symbolConfig = SymConf::Default);
     SymRef declareFun_NoScoping(std::string const & s, SRef rsort, vec<SRef> const & args) {
         return declareFun(s, rsort, args, SymConf::NoScoping);
     }
@@ -215,6 +213,7 @@ public:
     SRef getSort(SSymRef, vec<SRef> && args);
 
     PTRef mkBoolVar(char const * name);
+    PTRef mkInternalBoolVar(char const * name);
 
     void dumpHeaderToFile(std::ostream & dump_out) const;
     void dumpFormulaToFile(std::ostream & dump_out, PTRef formula, bool negate = false, bool toassert = true) const;
