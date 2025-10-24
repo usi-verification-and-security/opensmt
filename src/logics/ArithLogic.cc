@@ -1128,7 +1128,7 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
 
 // Handle the printing of real constants that are negative and the
 // rational constants
-std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
+std::string ArithLogic::printTerm_(PTRef tr, bool withRefs) const {
     if (isNumConst(tr)) {
         bool is_neg = false;
         char * tmp_str;
@@ -1167,7 +1167,7 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
             assert(written >= 0);
             (void)written;
             str << tmp;
-            if (ext) { str << " <" << tr.x << ">"; }
+            if (withRefs) { str << " <" << tr.x << ">"; }
             free(nom);
             free(den);
             free(tmp);
@@ -1175,13 +1175,13 @@ std::string ArithLogic::printTerm_(PTRef tr, bool ext, bool safe) const {
         } else if (is_neg) {
             std::stringstream str;
             str << "(- " << rat_str << ')';
-            if (ext) { str << " <" << tr.x << ">"; }
+            if (withRefs) { str << " <" << tr.x << ">"; }
             return str.str();
         } else {
             return rat_str;
         }
     }
-    return Logic::printTerm_(tr, ext, safe);
+    return Logic::printTerm_(tr, withRefs);
 }
 
 /**

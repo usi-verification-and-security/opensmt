@@ -346,9 +346,9 @@ public:
     std::string disambiguateName(std::string const & protectedName, SRef retSort, bool isNullary,
                                  bool isInterpreted) const;
     std::string protectName(SymRef sr) const { return protectName(getSymName(sr), getSym(sr).isInterpreted()); };
-    virtual std::string printTerm_(PTRef tr, bool l, bool s) const;
-    std::string printTerm(PTRef tr) const { return printTerm_(tr, false, false); }
-    std::string printTerm(PTRef tr, bool l, bool s) const { return printTerm_(tr, l, s); }
+    virtual std::string printTerm_(PTRef tr, bool withRefs) const;
+    std::string printTerm(PTRef tr) const { return printTerm_(tr, false); }
+    std::string printTerm(PTRef tr, bool withRefs) const { return printTerm_(tr, withRefs); }
     std::string pp(PTRef tr) const; // A pretty printer
 
     std::string printSym(SymRef sr) const;

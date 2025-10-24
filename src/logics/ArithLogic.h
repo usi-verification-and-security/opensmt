@@ -351,7 +351,7 @@ public:
 
     PTRef removeAuxVars(PTRef) override;
 
-    std::string printTerm_(PTRef tr, bool ext, bool s) const override;
+    std::string printTerm_(PTRef tr, bool withRefs) const override;
 
     // Helper methods
 

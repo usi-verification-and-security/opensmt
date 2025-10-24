@@ -167,7 +167,7 @@ std::string Logic::pp(PTRef tr) const {
     return ss.str();
 }
 
-std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
+std::string Logic::printTerm_(PTRef tr, bool withRefs) const {
     std::stringstream ss;
 
     Pterm const & t = getPterm(tr);
@@ -175,16 +175,17 @@ std::string Logic::printTerm_(PTRef tr, bool ext, bool safe) const {
     std::string name_escaped = printSym(sr);
 
     if (t.size() == 0) {
-        std::string ext_string = ext ? " <" + std::to_string(tr.x) + ">" : "";
-        ss << name_escaped << (ext ? ext_string : "");
+        ss << name_escaped;
+        if (withRefs) { ss << " <" + std::to_string(tr.x) + ">"; }
         return ss.str();
     } else {
         assert(t.size() > 0);
         ss << "(" << name_escaped;
         for (auto arg : t) {
-            ss << " " << printTerm_(arg, ext, safe);
+            ss << " " << printTerm_(arg, withRefs);
         }
-        ss << ")" << (ext ? " <" + std::to_string(tr.x) + ">" : "");
+        ss << ")";
+        if (withRefs) { ss << " <" + std::to_string(tr.x) + ">"; }
     }
     return ss.str();
 }
