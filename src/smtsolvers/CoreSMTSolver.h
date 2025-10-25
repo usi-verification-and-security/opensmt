@@ -358,12 +358,15 @@ protected:
     virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
     inline bool isValidBranchVar(Var x) const { return x != var_Undef and value(x) == l_Undef and decision[x]; }
+    virtual Var pickUserBranchVar() { return var_Undef; }
     virtual bool randomBranchingCond();
     virtual Var pickRandomBranchVar();
     virtual Var pickActivityBranchVar();
     virtual Var pickBranchVar();
+    virtual lbool pickUserBranchSignFor(Var) { return l_Undef; }
     virtual bool pickBranchSignFor(Var);
     virtual Lit mkBranchLitFrom(Var);
+    virtual Lit pickUserBranchLit() { return lit_Undef; }
     virtual Lit pickBranchLit();                                                       // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.

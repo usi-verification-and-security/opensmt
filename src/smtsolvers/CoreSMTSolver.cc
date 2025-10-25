@@ -522,6 +522,8 @@ Var CoreSMTSolver::pickActivityBranchVar() {
 }
 
 Var CoreSMTSolver::pickBranchVar() {
+    if (Var next = pickUserBranchVar(); next != var_Undef) { return next; }
+
     // Pick a variable either randomly or based on activity
     if (Var next = pickRandomBranchVar(); isValidBranchVar(next)) { return next; }
 
@@ -531,6 +533,8 @@ Var CoreSMTSolver::pickBranchVar() {
 
 bool CoreSMTSolver::pickBranchSignFor(Var next) {
     assert(isValidBranchVar(next));
+
+    if (lbool sign = pickUserBranchSignFor(next); sign != l_Undef) { return sign != l_True; }
 
     bool const use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
     if (use_theory_suggested_polarity && theory_handler.isDeclared(next)) {
@@ -550,6 +554,11 @@ Lit CoreSMTSolver::mkBranchLitFrom(Var next) {
 }
 
 Lit CoreSMTSolver::pickBranchLit() {
+    if (Lit l = pickUserBranchLit(); l != lit_Undef) {
+        assert(isValidBranchVar(var(l)));
+        return l;
+    }
+
     Var next = pickBranchVar();
     // All variables are assigned
     if (next == var_Undef) { return lit_Undef; }
