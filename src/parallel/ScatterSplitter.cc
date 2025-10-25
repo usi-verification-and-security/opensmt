@@ -17,13 +17,13 @@ ScatterSplitter::ScatterSplitter(SMTConfig & c, THandler & t, PTPLib::net::Chann
 , nodeCounter           (t.getLogic(), PTPLib::common::STATS.MAX_SIZE)
 {}
 
-bool ScatterSplitter::branchLitRandom() {
+bool ScatterSplitter::randomBranchingCond() {
     return ((not splitContext.isInSplittingCycle() and drand(random_seed) < random_var_freq) or
             (splitContext.isInSplittingCycle() and splitContext.preferRandom()))
            and not order_heap.empty();
 }
 
-Var ScatterSplitter::doActivityDecision() {
+Var ScatterSplitter::pickActivityBranchVar() {
     vec<int> discarded;
     Var next = var_Undef;
     while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
