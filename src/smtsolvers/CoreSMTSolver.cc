@@ -507,13 +507,14 @@ Var CoreSMTSolver::pickRandomBranchVar() {
     if (not randomBranchingCond()) { return var_Undef; }
 
     Var next = order_heap[irand(random_seed,order_heap.size())];
-    if (value(next) == l_Undef && decision[next]) { rnd_decisions++; }
+    assert(next != var_Undef);
+    if (isValidBranchVar(next)) { rnd_decisions++; }
     return next;
 }
 
 Var CoreSMTSolver::pickActivityBranchVar() {
     Var next = var_Undef;
-    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+    while (not isValidBranchVar(next)) {
         if (order_heap.empty()) { return var_Undef; }
         next = order_heap.removeMin();
     }
@@ -522,19 +523,14 @@ Var CoreSMTSolver::pickActivityBranchVar() {
 
 Var CoreSMTSolver::pickBranchVar() {
     // Pick a variable either randomly or based on activity
-    Var next = pickRandomBranchVar();
-    // Activity based decision
-    if (next == var_Undef || value(next) != l_Undef || !decision[next]) {
-        next = pickActivityBranchVar();
-    }
+    if (Var next = pickRandomBranchVar(); isValidBranchVar(next)) { return next; }
 
-    return next;
+    // Activity based decision
+    return pickActivityBranchVar();
 }
 
 bool CoreSMTSolver::pickBranchSignFor(Var next) {
-    assert(next != var_Undef);
-    assert(value(next) == l_Undef);
-    assert(decision[next]);
+    assert(isValidBranchVar(next));
 
     bool const use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
     if (use_theory_suggested_polarity && theory_handler.isDeclared(next)) {
@@ -548,10 +544,7 @@ bool CoreSMTSolver::pickBranchSignFor(Var next) {
 }
 
 Lit CoreSMTSolver::mkBranchLitFrom(Var next) {
-    assert(next != var_Undef);
-    assert(value(next) == l_Undef);
-    assert(decision[next]);
-
+    assert(isValidBranchVar(next));
     bool const sign = pickBranchSignFor(next);
     return mkLit(next, sign);
 }
@@ -1209,7 +1202,7 @@ void CoreSMTSolver::rebuildOrderHeap()
 {
     vec<Var> vs;
     for (Var v = 0; v < nVars(); v++)
-        if (decision[v] && value(v) == l_Undef)
+        if (isValidBranchVar(v))
             vs.push(v);
     order_heap.build(vs);
 }
