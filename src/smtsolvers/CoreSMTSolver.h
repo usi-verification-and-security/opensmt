@@ -357,11 +357,13 @@ protected:
     //
     virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
-    Var doRandomDecision();
-    Lit choosePolarity(Var next);
-    virtual Var doActivityDecision();
-    virtual bool branchLitRandom();
-    virtual Lit  pickBranchLit ();                                                     // Return the next decision variable.
+    virtual bool randomBranchingCond();
+    virtual Var pickRandomBranchVar();
+    virtual Var pickActivityBranchVar();
+    virtual Var pickBranchVar();
+    virtual bool pickBranchSignFor(Var);
+    virtual Lit mkBranchLitFrom(Var);
+    virtual Lit pickBranchLit();                                                       // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.

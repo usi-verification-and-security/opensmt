@@ -499,68 +499,72 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     }
 }
 
-Var CoreSMTSolver::doRandomDecision() {
-    Var next = var_Undef;
-    if (branchLitRandom()) {
-        next = order_heap[irand(random_seed,order_heap.size())];
-        if (value(next) == l_Undef && decision[next])
-            rnd_decisions++;
-    }
-    return next;
-}
-
-bool CoreSMTSolver::branchLitRandom() {
+bool CoreSMTSolver::randomBranchingCond() {
     return drand(random_seed) < random_var_freq && !order_heap.empty();
 }
 
-Var CoreSMTSolver::doActivityDecision() {
+Var CoreSMTSolver::pickRandomBranchVar() {
+    if (not randomBranchingCond()) { return var_Undef; }
+
+    Var next = order_heap[irand(random_seed,order_heap.size())];
+    if (value(next) == l_Undef && decision[next]) { rnd_decisions++; }
+    return next;
+}
+
+Var CoreSMTSolver::pickActivityBranchVar() {
     Var next = var_Undef;
     while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        } else {
-            next = order_heap.removeMin();
-        }
+        if (order_heap.empty()) { return var_Undef; }
+        next = order_heap.removeMin();
     }
     return next;
 }
 
-Lit CoreSMTSolver::choosePolarity(Var next) {
+Var CoreSMTSolver::pickBranchVar() {
+    // Pick a variable either randomly or based on activity
+    Var next = pickRandomBranchVar();
+    // Activity based decision
+    if (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+        next = pickActivityBranchVar();
+    }
+
+    return next;
+}
+
+bool CoreSMTSolver::pickBranchSignFor(Var next) {
     assert(next != var_Undef);
-    bool sign = false;
-    bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
-    if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isDeclared(next)) {
+    assert(value(next) == l_Undef);
+    assert(decision[next]);
+
+    bool const use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
+    if (use_theory_suggested_polarity && theory_handler.isDeclared(next)) {
         lbool suggestion = theory_handler.getSolverHandler().getPolaritySuggestion(theory_handler.varToTerm(next));
         if (suggestion != l_Undef) {
-            sign = (suggestion != l_True);
-            return mkLit(next, sign);
+            return suggestion != l_True;
         }
     }
-    sign = (savedPolarity[next] == flipState);
+
+    return savedPolarity[next] == flipState;
+}
+
+Lit CoreSMTSolver::mkBranchLitFrom(Var next) {
+    assert(next != var_Undef);
+    assert(value(next) == l_Undef);
+    assert(decision[next]);
+
+    bool const sign = pickBranchSignFor(next);
     return mkLit(next, sign);
+}
+
+Lit CoreSMTSolver::pickBranchLit() {
+    Var next = pickBranchVar();
+    // All variables are assigned
+    if (next == var_Undef) { return lit_Undef; }
+    return mkBranchLitFrom(next);
 }
 
 //=================================================================================================
 // Major methods:
-
-Lit CoreSMTSolver::pickBranchLit()
-{
-    Var next = var_Undef;
-
-   // Pick a variable either randomly or based on activity
-    next = doRandomDecision();
-    // Activity based decision
-    if (next == var_Undef || value(next) != l_Undef || !decision[next])
-        next = doActivityDecision();
-
-    if (next == var_Undef) // All variables are assigned
-        return lit_Undef;
-
-    // Return the literal with the chosen polarity
-    return choosePolarity(next);
-
-}
 
 /*_________________________________________________________________________________________________
   |
