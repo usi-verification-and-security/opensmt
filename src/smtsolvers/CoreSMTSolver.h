@@ -357,6 +357,7 @@ protected:
     //
     virtual lbool solve_      ();                                                      // Main solve method (assumptions given in 'assumptions').
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
+    inline bool isValidBranchVar(Var x) const { return x != var_Undef and value(x) == l_Undef and decision[x]; }
     virtual bool randomBranchingCond();
     virtual Var pickRandomBranchVar();
     virtual Var pickActivityBranchVar();

@@ -26,7 +26,7 @@ bool ScatterSplitter::randomBranchingCond() {
 Var ScatterSplitter::pickActivityBranchVar() {
     vec<int> discarded;
     Var next = var_Undef;
-    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+    while (not isValidBranchVar(next)) {
         if (order_heap.empty()) {
             if (discarded.size() > 0) {
                 assert(splitContext.isInSplittingCycle());
