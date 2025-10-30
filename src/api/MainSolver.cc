@@ -73,6 +73,7 @@ void MainSolver::push() {
     bool alreadyUnsat = isLastFrameUnsat();
     frames.push();
     preprocessor.push();
+    decisionPreferences.pushScope();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
@@ -92,7 +93,15 @@ bool MainSolver::pop() {
     }
     frames.pop();
     preprocessor.pop();
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
+    if (decisionPreferences.size() == smt_solver->userBranchLitsSize()) {
+        decisionPreferences.popScope([this](PTRef /*pref*/) { smt_solver->popUserBranchLit(); });
+    } else {
+        decisionPreferences.popScope();
+    }
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
     termNames.popScope();
+    // goes back to frames.frameCount()-1 only if a formula is added via insertFormula
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
@@ -138,6 +147,22 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
     return termNames.tryInsert(name, fla);
 }
 
+void MainSolver::addDecisionPreference(PTRef fla) {
+    if (logic.getSortRef(fla) != logic.getSort_bool()) {
+        throw ApiException("Decision preference sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
+    }
+
+    if (logic.isConstant(fla)) { return; }
+
+    decisionPreferences.push(fla);
+}
+
+void MainSolver::resetDecisionPreferences() {
+    decisionPreferences.clear();
+
+    smt_solver->clearUserBranchLits();
+}
+
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount(); ++i) {
@@ -158,6 +183,10 @@ sstat MainSolver::simplifyFormulas() {
             }
         }
         if (status == s_False) { break; }
+
+        for (PTRef pref : decisionPreferences.scope(i)) {
+            giveDecisionPreferenceToSMTSolver(pref);
+        }
     }
 
     if (status == s_False) {
@@ -318,6 +347,26 @@ PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
+void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(logic.getSortRef(pref) == logic.getSort_bool());
+    assert(not logic.isConstant(pref));
+
+    Lit l;
+    if (logic.isBoolVarLiteral(pref)) {
+        l = term_mapper->getOrCreateLit(pref);
+        Var v = var(l);
+        smt_solver->addVar(v);
+    } else {
+        // Ignores substitutions ..
+        assert(term_mapper->hasLit(pref));
+        l = term_mapper->getLit(pref);
+    }
+    assert(term_mapper->getLit(pref) == l);
+    assert(term_mapper->getVar(pref) == var(l));
+
+    decisionPreferenceToLitMap.emplace(pref, l);
+}
+
 std::unique_ptr<Model> MainSolver::getModel() {
     if (!config.produce_models()) { throw ApiException("Producing models is not enabled"); }
     if (status != s_True) { throw ApiException("Model cannot be created if solver is not in SAT state"); }
@@ -429,6 +478,12 @@ sstat MainSolver::check() {
 
 sstat MainSolver::solve() {
     if (!smt_solver->isOK()) { return s_False; }
+
+    smt_solver->clearUserBranchLits();
+    for (PTRef pref : decisionPreferences) {
+        //++ probably just use vector
+        smt_solver->pushUserBranchLit(decisionPreferenceToLitMap[pref]);
+    }
 
     // FIXME: Find a better way to deal with Bools in UF
     for (PTRef tr : logic.propFormulasAppearingInUF) {
