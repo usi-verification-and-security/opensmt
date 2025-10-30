@@ -307,7 +307,10 @@ protected:
 
     PTRef rewriteMaxArity(PTRef root);
 
-    void giveDecisionPreferenceToSMTSolver(PTRef);
+    void giveDecisionPreferenceToSMTSolver(PTRef, FrameId);
+    Lit giveExistingDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveBoolVarDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveAnyDecisionPreferenceToSMTSolver(PTRef, FrameId);
 
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
@@ -324,6 +327,10 @@ protected:
     ScopedVector<PTRef> decisionPreferences;
 
     sstat status = s_Undef; // The status of the last solver call
+
+    std::size_t existingDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t boolVarDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t otherDecisionPreferencesGivenToSMTSolverCount{};
 
 private:
     std::unique_ptr<Theory> theory;
