@@ -185,7 +185,7 @@ sstat MainSolver::simplifyFormulas() {
         if (status == s_False) { break; }
 
         for (PTRef pref : decisionPreferences.scope(i)) {
-            giveDecisionPreferenceToSMTSolver(pref);
+            giveDecisionPreferenceToSMTSolver(pref, frameId);
         }
     }
 
@@ -347,24 +347,56 @@ PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
-void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref) {
+void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId) {
     assert(logic.getSortRef(pref) == logic.getSort_bool());
     assert(not logic.isConstant(pref));
 
-    Lit l;
-    if (logic.isBoolVarLiteral(pref)) {
-        l = term_mapper->getOrCreateLit(pref);
-        Var v = var(l);
-        smt_solver->addVar(v);
-    } else {
-        // Ignores substitutions ..
-        assert(term_mapper->hasLit(pref));
-        l = term_mapper->getLit(pref);
-    }
+    // Ignores substitutions ..
+    Lit l = [&] {
+        if (term_mapper->hasLit(pref)) { return giveExistingDecisionPreferenceToSMTSolver(pref); }
+        if (logic.isBoolVarLiteral(pref)) { return giveBoolVarDecisionPreferenceToSMTSolver(pref); }
+        return giveAnyDecisionPreferenceToSMTSolver(pref, frameId);
+    }();
+
+    decisionPreferenceToLitMap.emplace(pref, l);
+}
+
+Lit MainSolver::giveExistingDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(term_mapper->hasLit(pref));
+
+    ++existingDecisionPreferencesGivenToSMTSolverCount;
+    return term_mapper->getLit(pref);
+}
+
+Lit MainSolver::giveBoolVarDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(logic.isBoolVarLiteral(pref));
+
+    Lit l = term_mapper->getOrCreateLit(pref);
+    Var v = var(l);
+    smt_solver->addVar(v);
     assert(term_mapper->getLit(pref) == l);
     assert(term_mapper->getVar(pref) == var(l));
 
-    decisionPreferenceToLitMap.emplace(pref, l);
+    ++boolVarDecisionPreferencesGivenToSMTSolverCount;
+    return l;
+}
+
+Lit MainSolver::giveAnyDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId) {
+    assert(not term_mapper->hasLit(pref));
+    assert(not logic.isBoolVarLiteral(pref));
+
+    auto name = std::string{".pref"} + std::to_string(pref.x);
+    PTRef decisionVarTerm = logic.mkBoolVar(name.c_str());
+    Lit l = term_mapper->getOrCreateLit(decisionVarTerm);
+    PTRef condTerm = logic.mkImpl(decisionVarTerm, pref);
+    [[maybe_unused]]
+    sstat status = giveToSolver(condTerm, frameId);
+    assert(status == s_Undef);
+    assert(term_mapper->getLit(decisionVarTerm) == l);
+    assert(term_mapper->getVar(decisionVarTerm) == var(l));
+
+    ++otherDecisionPreferencesGivenToSMTSolverCount;
+    return l;
 }
 
 std::unique_ptr<Model> MainSolver::getModel() {
@@ -419,7 +451,6 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
 }
 
 sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
-
     struct ClauseCallBack : public Cnfizer::ClauseCallBack {
         std::vector<vec<Lit>> clauses;
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
