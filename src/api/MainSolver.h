@@ -98,6 +98,12 @@ public:
     // Try add a unique name for a term already included in the assertions
     bool tryAddTermNameFor(PTRef, std::string const & name);
 
+    // Instructs the solver to assign the formula to true when it arrives at a decision point
+    // The preference is appended to the list of preferences, favoring the earlier entries first
+    // It complies with the assertion stack
+    void addDecisionPreference(PTRef fla);
+    void resetDecisionPreferences();
+
     void initialize();
 
     virtual sstat check(); // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
@@ -301,6 +307,8 @@ protected:
 
     PTRef rewriteMaxArity(PTRef root);
 
+    void giveDecisionPreferenceToSMTSolver(PTRef);
+
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
     sstat giveToSolver(PTRef root, FrameId push_id);
@@ -312,6 +320,8 @@ protected:
     SubstitutionResult computeSubstitutions(PTRef fla);
 
     AssertionStack frames;
+
+    ScopedVector<PTRef> decisionPreferences;
 
     sstat status = s_Undef; // The status of the last solver call
 

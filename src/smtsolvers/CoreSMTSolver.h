@@ -170,6 +170,12 @@ public:
     inline bool isOK               ( ) const { return ok; } // FALSE means solver is in a conflicting state
     inline int  getConflictFrame   ( ) const { assert(not isOK()); return conflict_frame; }
 
+    bool areUserBranchLitsEmpty() const { return userBranchLits.empty(); }
+    std::size_t userBranchLitsSize() const { return userBranchLits.size(); }
+    void pushUserBranchLit(Lit l) { userBranchLits.push_back(l); }
+    void popUserBranchLit() { userBranchLits.pop_back(); }
+    void clearUserBranchLits() { userBranchLits.clear(); }
+
     template<class C>
     void     printSMTClause   (std::ostream &, const C& );
     void     printSMTClause   (std::ostream &, vec< Lit > &, bool = false );
@@ -366,7 +372,7 @@ protected:
     virtual lbool pickUserBranchSignFor(Var) { return l_Undef; }
     virtual bool pickBranchSignFor(Var);
     virtual Lit mkBranchLitFrom(Var);
-    virtual Lit pickUserBranchLit() { return lit_Undef; }
+    virtual Lit pickUserBranchLit();
     virtual Lit pickBranchLit();                                                       // Return the next decision variable.
     virtual void newDecisionLevel ();                                                  // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
@@ -483,6 +489,8 @@ protected:
     bool               cuvti;                      // For cancelUntilVarTemp
     vec<Lit>           lit_to_restore;             // For cancelUntilVarTemp
     vec<lbool>         val_to_restore;             // For cancelUntilVarTemp
+
+    std::vector<Lit> userBranchLits;
 
     //
     // ResolutionProof production
