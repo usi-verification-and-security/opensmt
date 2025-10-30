@@ -553,6 +553,18 @@ Lit CoreSMTSolver::mkBranchLitFrom(Var next) {
     return mkLit(next, sign);
 }
 
+Lit CoreSMTSolver::pickUserBranchLit() {
+    // TODO: remember the last position that can be reused until a backtrack or reset
+    for (Lit l : userBranchLits) {
+        assert(l != lit_Undef);
+        Var const x = var(l);
+        assert(x != var_Undef);
+        if (isValidBranchVar(x)) { return l; }
+    }
+
+    return lit_Undef;
+}
+
 Lit CoreSMTSolver::pickBranchLit() {
     if (Lit l = pickUserBranchLit(); l != lit_Undef) {
         assert(isValidBranchVar(var(l)));
@@ -1621,46 +1633,45 @@ void CoreSMTSolver::declareVarsToTheories()
 {
     // First empty the solver
     theory_handler.clear();
-    for (int i = 0; i < var_seen.size(); i++)
+    for (int i = 0; i < var_seen.size(); i++) {
         var_seen[i] = false;
+    }
 
-    for (int i = 0; i < trail.size(); i++)
-    {
+    for (int i = 0; i < trail.size(); i++) {
         Var v = var(trail[i]);
-        if (!var_seen[v]) {
-            var_seen[v] = true;
-            const Logic & logic = theory_handler.getLogic();
-            const PTRef term = theory_handler.varToTerm(v);
-            if (logic.isTheoryTerm(term)) {
-                theory_handler.declareAtom(term);
-            }
+        if (var_seen[v]) { continue; }
+        var_seen[v] = true;
+        const Logic & logic = theory_handler.getLogic();
+        const PTRef term = theory_handler.varToTerm(v);
+        if (logic.isTheoryTerm(term)) {
+            theory_handler.declareAtom(term);
         }
     }
+
     const Logic & logic = theory_handler.getLogic();
     top_level_lits = trail.size();
     for (int i = 0; i < clauses.size(); i++) {
         Clause & c = ca[clauses[i]];
         for (unsigned j = 0; j < c.size(); j++) {
             Var v = var(c[j]);
-            if (!var_seen[v]) {
-                var_seen[v] = true;
-                assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
-                const PTRef term = theory_handler.varToTerm(v);
-                if (logic.isTheoryTerm(term)) {
-                    theory_handler.declareAtom(term);
-                }
+            if (var_seen[v]) { continue; }
+            var_seen[v] = true;
+            assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
+            const PTRef term = theory_handler.varToTerm(v);
+            if (logic.isTheoryTerm(term)) {
+                theory_handler.declareAtom(term);
             }
         }
     }
+
     for (Var v = 0; v < var_seen.size(); v++) {
-        if (not var_seen[v]) {
-            PTRef atom = theory_handler.varToTerm(v);
-            bool appearsInUf = logic.appearsInUF(atom);
-            if (appearsInUf) {
-                theory_handler.declareAtom(atom);
-            } else {
-                setDecisionVar(v, false);
-            }
+        if (var_seen[v]) { continue; }
+        PTRef atom = theory_handler.varToTerm(v);
+        bool appearsInUf = logic.appearsInUF(atom);
+        if (appearsInUf) {
+            theory_handler.declareAtom(atom);
+        } else {
+            setDecisionVar(v, false);
         }
     }
 }
