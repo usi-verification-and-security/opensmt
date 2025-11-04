@@ -89,6 +89,7 @@ MainSolver::~MainSolver() = default;
 
 void MainSolver::initialize() {
     timeLimitImplPtr = std::make_unique<TimeLimitImpl>(*this);
+    timeLimitPerQueryImplPtr = std::make_unique<TimeLimitImpl>(*this);
 
     frames.push();
     frameTerms.push(logic.getTerm_true());
@@ -381,6 +382,12 @@ sstat MainSolver::check() {
         StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) { return s_False; }
+
+    if (auto option = config.getOption(SMTConfig::o_time_limit_per_query); not option.isEmpty()) {
+        assert(option.getValue().type == O_NUM);
+        timeLimitPerQueryImplPtr->setLimit(std::chrono::milliseconds{option.getValue().numval});
+    }
+
     sstat rval = simplifyFormulas();
 
     if (config.dump_query()) printCurrentAssertionsAsQuery();
