@@ -146,6 +146,9 @@ namespace opensmt {
       SMTOption(ASTNode const & n);
       SMTOption() {}
       SMTOption(int i)   : value(i) {}
+      //+ Should also support long representation
+      SMTOption(long i)  : SMTOption(static_cast<int>(i)) {}
+      SMTOption(long long i)  : SMTOption(static_cast<long>(i)) {}
       SMTOption(double i): value(i) {}
       SMTOption(const char* s) : value(s) {}
       inline bool isEmpty() const { return value.type == O_EMPTY; }
@@ -323,11 +326,16 @@ namespace opensmt {
     static const char* o_global_declarations;
 
     static const char* o_sat_split_mode;
+
+    // Wall-clock time limit for the solver in miliseconds
+    // MainSolver implicitly sets the limit *only* when initializing!
+    static const char* o_time_limit;
   private:
 
     static const char* s_err_not_str;
     static const char* s_err_not_bool;
     static const char* s_err_not_num;
+    static const char* s_err_not_positive;
     static const char* s_err_seed_zero;
     static const char* s_err_unknown_split;
     static const char* s_err_unknown_units;
@@ -953,7 +961,7 @@ namespace opensmt {
 
       void setSimplifyInterpolant(int val) {
           const char* msg;
-          setOption(o_simplify_inter, SMTOption(val), msg);
+          setOption(o_simplify_inter, SMTOption{val}, msg);
       }
 
       int getSimplifyInterpolant() const {
