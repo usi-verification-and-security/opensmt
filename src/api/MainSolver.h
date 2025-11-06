@@ -104,7 +104,9 @@ public:
     sstat solve();
     // Simplify formulas until all are simplified or the instance is detected unsat
     // Skip assertion levels that have already been simplified
-    sstat simplifyFormulas();
+    sstat simplifyFormulas() { return preprocessAssertions(); }
+    // Alias for `simplifyFormulas`, reserved for future use
+    sstat preprocessAssertions();
 
     [[nodiscard]] sstat getStatus() const { return status; }
 
@@ -288,6 +290,15 @@ protected:
     }
 
     inline bool trackPartitions() const;
+
+    // Usually applied to frame formulas
+    virtual PTRef preprocessFormulasConjoined(vec<PTRef> const &, PreprocessingContext const &);
+    virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const &, PreprocessingContext const &);
+
+    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
+    virtual PTRef preprocessFormulaBeforeGlobalPhase(PTRef, PreprocessingContext const &);
+    virtual void preprocessFormulaGlobalPhase(PreprocessingContext const &);
+    virtual PTRef preprocessFormulaAfterGlobalPhase(PTRef, PreprocessingContext const &);
 
     PTRef rewriteMaxArity(PTRef root);
 

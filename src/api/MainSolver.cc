@@ -138,63 +138,124 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
     return termNames.tryInsert(name, fla);
 }
 
-sstat MainSolver::simplifyFormulas() {
+sstat MainSolver::preprocessAssertions() {
     status = s_Undef;
-    for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
+    for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount(); ++i) {
+        auto & frame = frames[i];
+        FrameId const frameId = frame.getId();
         PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
         preprocessor.prepareForProcessingFrame(i);
         firstNotSimplifiedFrame = i + 1;
-        if (context.perPartition) {
-            vec<PTRef> frameFormulas;
-            for (PTRef fla : frames[i].formulas) {
-                PTRef processed = theory->preprocessAfterSubstitutions(fla, context);
-                pmanager.transferPartitionMembership(fla, processed);
-                frameFormulas.push(processed);
-                preprocessor.addPreprocessedFormula(processed);
-            }
-            if (frameFormulas.size() == 0 or std::all_of(frameFormulas.begin(), frameFormulas.end(),
-                                                         [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
-                continue;
-            }
-            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            for (PTRef fla : frameFormulas) {
-                if (fla == logic.getTerm_true()) { continue; }
-                assert(pmanager.getPartitionIndex(fla) != -1);
-                // Optimize the dag for cnfization
-                if (logic.isBooleanOperator(fla)) {
-                    PTRef old = fla;
-                    fla = rewriteMaxArity(fla);
-                    pmanager.transferPartitionMembership(old, fla);
-                }
-                assert(pmanager.getPartitionIndex(fla) != -1);
-                pmanager.propagatePartitionMask(fla);
-                status = giveToSolver(fla, frames[i].getId());
+
+        if (not context.perPartition) {
+            PTRef frameFormula = preprocessFormulasConjoined(frame.formulas, context);
+            status = giveToSolver(frameFormula, frameId);
+        } else {
+            vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+            for (PTRef fla : processedFormulas) {
+                status = giveToSolver(fla, frameId);
                 if (status == s_False) { break; }
             }
-        } else {
-            PTRef frameFormula = logic.mkAnd(frames[i].formulas);
-            if (context.frameCount > 0) { frameFormula = applyLearntSubstitutions(frameFormula); }
-            frameFormula = theory->preprocessBeforeSubstitutions(frameFormula, context);
-            frameFormula = substitutionPass(frameFormula, context);
-            frameFormula = theory->preprocessAfterSubstitutions(frameFormula, context);
-
-            if (logic.isFalse(frameFormula)) {
-                giveToSolver(logic.getTerm_false(), frames[i].getId());
-                status = s_False;
-                break;
-            }
-            preprocessor.addPreprocessedFormula(frameFormula);
-            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            // Optimize the dag for cnfization
-            if (logic.isBooleanOperator(frameFormula)) { frameFormula = rewriteMaxArity(frameFormula); }
-            status = giveToSolver(frameFormula, frames[i].getId());
         }
+        if (status == s_False) { break; }
     }
+
     if (status == s_False) {
         assert(firstNotSimplifiedFrame > 0);
         rememberUnsatFrame(firstNotSimplifiedFrame - 1);
     }
+
     return status;
+}
+
+PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, PreprocessingContext const & context) {
+    assert(not context.perPartition);
+
+    if (flas.size() == 0) { return logic.getTerm_true(); }
+
+    PTRef fla = logic.mkAnd(flas);
+    return preprocessFormula(fla, context);
+}
+
+vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, PreprocessingContext const & context) {
+    assert(context.perPartition);
+
+    if (flas.size() == 0) { return {}; }
+
+    vec<PTRef> processedFormulas;
+    for (PTRef fla : flas) {
+        PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
+        processedFormulas.push(processed);
+    }
+
+    assert(processedFormulas.size() == flas.size());
+    if (std::all_of(processedFormulas.begin(), processedFormulas.end(),
+                    [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
+        return {};
+    }
+
+    preprocessFormulaGlobalPhase(context);
+
+    for (PTRef & fla : processedFormulas) {
+        if (fla == logic.getTerm_true()) { continue; }
+        fla = preprocessFormulaAfterGlobalPhase(fla, context);
+    }
+
+    return processedFormulas;
+}
+
+PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
+    PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
+    preprocessFormulaGlobalPhase(context);
+    processed = preprocessFormulaAfterGlobalPhase(processed, context);
+    return processed;
+}
+
+PTRef MainSolver::preprocessFormulaBeforeGlobalPhase(PTRef fla, PreprocessingContext const & context) {
+    bool const perPartition = context.perPartition;
+    PTRef processed = fla;
+
+    if (not perPartition) {
+        if (context.frameCount > 0) { processed = applyLearntSubstitutions(processed); }
+        processed = theory->preprocessBeforeSubstitutions(processed, context);
+        processed = substitutionPass(processed, context);
+    }
+
+    processed = theory->preprocessAfterSubstitutions(processed, context);
+
+    if (perPartition) {
+        pmanager.transferPartitionMembership(fla, processed);
+    } else if (logic.isFalse(processed)) {
+        return logic.getTerm_false();
+    }
+
+    preprocessor.addPreprocessedFormula(processed);
+
+    return processed;
+}
+
+void MainSolver::preprocessFormulaGlobalPhase(PreprocessingContext const &) {
+    theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
+}
+
+PTRef MainSolver::preprocessFormulaAfterGlobalPhase(PTRef fla, PreprocessingContext const & context) {
+    bool const perPartition = context.perPartition;
+    PTRef processed = fla;
+
+    assert(not perPartition or pmanager.getPartitionIndex(processed) != -1);
+
+    // Optimize the dag for cnfization
+    if (logic.isBooleanOperator(processed)) {
+        processed = rewriteMaxArity(processed);
+        if (perPartition) { pmanager.transferPartitionMembership(fla, processed); }
+    }
+
+    if (perPartition) {
+        assert(pmanager.getPartitionIndex(processed) != -1);
+        pmanager.propagatePartitionMask(processed);
+    }
+
+    return processed;
 }
 
 vec<PTRef> MainSolver::getCurrentAssertions() const {
@@ -316,11 +377,15 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
         std::vector<vec<Lit>> clauses;
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
+
+    if (root == logic.getTerm_true()) { return s_Undef; }
+
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
     bool const keepPartitionsSeparate = trackPartitions();
-    Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
+    [[maybe_unused]] Lit frameLit;
+    if (push_id != 0) { frameLit = term_mapper->getOrCreateLit(frameTerms[push_id]); }
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
         if (push_id != 0) { clause.push(frameLit); }
@@ -347,7 +412,7 @@ sstat MainSolver::check() {
         StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) { return s_False; }
-    sstat rval = simplifyFormulas();
+    sstat rval = preprocessAssertions();
 
     if (config.dump_query()) printCurrentAssertionsAsQuery();
 
