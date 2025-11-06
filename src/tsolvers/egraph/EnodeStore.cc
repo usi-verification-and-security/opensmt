@@ -140,7 +140,7 @@ vec<PTRefERefPair> EnodeStore::constructTerm(PTRef tr) {
 
     if (logic.hasSortBool(tr)) {
         // Add the negated term
-        assert(logic.isBooleanOperator(tr) || logic.isBoolAtom(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
+        assert(logic.isBooleanOperator(tr) || logic.isBoolVar(tr) || logic.isTrue(tr) || logic.isFalse(tr) || logic.isEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr));
         assert(not logic.isNot(tr));
         PTRef tr_neg = logic.mkNot(tr);
         if (needsEnode(tr_neg)) {

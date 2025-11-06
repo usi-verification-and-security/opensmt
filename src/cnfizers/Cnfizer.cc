@@ -211,8 +211,7 @@ void Cnfizer::Cache::insert(PTRef term, FrameId frame) {
     cache.insert({term, frame});
 }
 
-// TODO: Fix isAtom!!! (everything that is not a boolean connective should be considered as atom
 bool Cnfizer::isLiteral(PTRef ptr) const {
-    return (logic.isNot(ptr) and logic.isAtom(logic.getPterm(ptr)[0])) or logic.isAtom(ptr);
+    return logic.isLiteral(ptr);
 }
 } // namespace opensmt

@@ -880,6 +880,14 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
+bool Logic::isLiteral(PTRef tr) const {
+    if (isAtom(tr)) { return true; }
+    if (not isNot(tr)) { return false; }
+    auto & term = getPterm(tr);
+    assert(term.size() == 1);
+    return isAtom(term[0]);
+}
+
 //
 // The substitutions for the term riddance from osmt1
 //
@@ -928,7 +936,7 @@ pair<lbool, Logic::SubstMap> Logic::retrieveSubstitutions(vec<PtAsgn> const & fa
                     if (!substs.has(var)) { substs.insert(var, PtAsgn(trm, l_True)); }
                 }
             }
-        } else if (isBoolAtom(tr)) {
+        } else if (isBoolVar(tr)) {
             PTRef term = sgn == l_True ? getTerm_true() : getTerm_false();
             if (substs.has(tr)) {
                 if (substs[tr].tr == getTerm_true() || substs[tr].tr == getTerm_false()) {
@@ -1021,7 +1029,7 @@ bool Logic::getNewFacts(PTRef root, MapWithKeys<PTRef, lbool, PTRefHash> & facts
                 PTRef c;
                 lbool c_sign;
                 purify(pta.tr, c, c_sign);
-                if (isBoolAtom(c)) { facts.insert(c, c_sign ^ (pta.sgn == l_False)); }
+                if (isBoolVar(c)) { facts.insert(c, c_sign ^ (pta.sgn == l_False)); }
             }
         }
     }
@@ -1464,7 +1472,7 @@ bool Logic::isVar(PTRef tr) const {
     return isVar(getPterm(tr).symb());
 }
 
-bool Logic::isBoolAtom(PTRef tr) const {
+bool Logic::isBoolVar(PTRef tr) const {
     return hasSortBool(tr) && isVar(tr);
 }
 

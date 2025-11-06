@@ -280,10 +280,12 @@ public:
 
     bool isVar(SymRef sr) const; //{ return sym_store[sr].nargs() == 0 && !isConstant(sr); }
     bool isVar(PTRef tr) const;  // { return isVar(getPterm(tr).symb()); }
+    bool isBoolVar(PTRef tr) const;
     bool isVarOrIte(SymRef sr) const { return isVar(sr) or isIte(sr); }
     bool isVarOrIte(PTRef tr) const { return isVarOrIte(getPterm(tr).symb()); }
     virtual bool isAtom(PTRef tr) const;
-    bool isBoolAtom(PTRef tr) const; // { return hasSortBool(tr) && isVar(tr); }
+    // An atom or its negation
+    bool isLiteral(PTRef tr) const;
     // Check if term is an uninterpreted predicate.
     bool isInterpreted(SymRef sr) const { return sym_store.isInterpreted(sr); }
     virtual bool isUP(PTRef) const;
