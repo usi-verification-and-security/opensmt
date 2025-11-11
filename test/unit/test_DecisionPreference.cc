@@ -14,13 +14,15 @@ class TestMainSolver : public MainSolver {
 public:
     using MainSolver::MainSolver;
 
-    friend class DecisionPreferenceTest;
+    template <typename>
+    friend class DecisionPreferenceTestTp;
 };
 
-class DecisionPreferenceTest : public ::testing::Test {
+template <typename LogicT = Logic>
+class DecisionPreferenceTestTp : public ::testing::Test {
 public:
     void init(Logic_t logic_t = Logic_t::QF_BOOL) {
-        logic = std::make_unique<Logic>(logic_t);
+        logic = std::make_unique<LogicT>(logic_t);
         config = std::make_unique<SMTConfig>();
         config->setProduceModels();
         mainSolver = std::make_unique<TestMainSolver>(*logic, *config, "test");
@@ -81,7 +83,7 @@ protected:
         return PTRef_Undef;
     }
 
-    std::unique_ptr<Logic> logic;
+    std::unique_ptr<LogicT> logic;
     std::unique_ptr<SMTConfig> config;
     std::unique_ptr<TestMainSolver> mainSolver;
 
@@ -106,6 +108,8 @@ protected:
     std::size_t mutable boolVarTotalCount;
     std::size_t mutable otherTotalCount;
 };
+
+using DecisionPreferenceTest = DecisionPreferenceTestTp<>;
 
 TEST_F(DecisionPreferenceTest, test_Unconstrained__DecisionPreferenceA) {
     init();
@@ -4621,6 +4625,369 @@ TEST_F(DecisionPreferenceTest, test_OrNotANotB__DecisionPreferenceNotANotB) {
     mainSolver->addAssertion(not_b);
     checkBool(s_True, l_False, l_False);
     checkPreferenceIncCount(0, 0, 0);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+constexpr int int_Undef = -1;
+
+class IntDecisionPreferenceTest : public DecisionPreferenceTestTp<ArithLogic> {
+public:
+    void init(Logic_t logic_t = Logic_t::QF_LIA) {
+        DecisionPreferenceTestTp::init(logic_t);
+
+        x = logic->mkIntVar("x");
+        y = logic->mkIntVar("y");
+
+        eq0_x = logic->mkEq(x, logic->mkIntConst(0));
+        eq0_y = logic->mkEq(y, logic->mkIntConst(0));
+        eq1_x = logic->mkEq(x, logic->mkIntConst(1));
+        eq1_y = logic->mkEq(y, logic->mkIntConst(1));
+        eq2_x = logic->mkEq(x, logic->mkIntConst(2));
+        eq2_y = logic->mkEq(y, logic->mkIntConst(2));
+    }
+
+    void checkInt(sstat expRes, int expValX = int_Undef, int expValY = int_Undef) {
+        auto res = mainSolver->check();
+        EXPECT_EQ(res, expRes);
+        if (expRes != s_True) { return; }
+
+        auto model = mainSolver->getModel();
+        PTRef val_x = model->evaluate(x);
+        PTRef val_y = model->evaluate(y);
+        assert(val_x != PTRef_Undef);
+        assert(val_y != PTRef_Undef);
+        PTRef exp_val_x = intValToPTRef(expValX);
+        PTRef exp_val_y = intValToPTRef(expValY);
+        if (exp_val_x != PTRef_Undef) { EXPECT_EQ(val_x, exp_val_x); }
+        if (exp_val_y != PTRef_Undef) { EXPECT_EQ(val_y, exp_val_y); }
+    }
+
+protected:
+    PTRef intValToPTRef(int val) const {
+        if (val == 0) { return logic->getTerm_IntZero(); }
+        if (val == 1) { return logic->getTerm_IntOne(); }
+        if (val > 1) { return logic->mkIntConst(val); }
+        assert(val < 0);
+        static_assert(int_Undef < 0);
+        // return logic->getDefaultValuePTRef(logic->getSort_int());
+        return PTRef_Undef;
+    }
+
+    PTRef x;
+    PTRef y;
+
+    PTRef eq0_x;
+    PTRef eq0_y;
+    PTRef eq1_x;
+    PTRef eq1_y;
+    PTRef eq2_x;
+    PTRef eq2_y;
+};
+
+// Atomic preferences
+
+TEST_F(IntDecisionPreferenceTest, test_OrXOrY__DecisionPreferenceXY) {
+    init();
+    mainSolver->addAssertion(logic->mkOr({eq0_x, eq1_x, eq2_x}));
+    mainSolver->addAssertion(logic->mkOr({eq0_y, eq1_y, eq2_y}));
+
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq0_x);
+    mainSolver->addDecisionPreference(eq1_x);
+    mainSolver->addDecisionPreference(eq2_x);
+
+    checkInt(s_True, 0);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 0, 0);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 0, 1);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq2_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    checkInt(s_True, 0, 2);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq0_y);
+    checkInt(s_True, 0, 0);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq1_y);
+    checkInt(s_True, 0, 1);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq2_y);
+    checkInt(s_True, 0, 2);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq1_x);
+    mainSolver->addDecisionPreference(eq0_x);
+    mainSolver->addDecisionPreference(eq2_x);
+
+    checkInt(s_True, 1);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 1, 0);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 1, 1);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq2_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    checkInt(s_True, 1, 2);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq0_y);
+    checkInt(s_True, 1, 0);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq1_y);
+    checkInt(s_True, 1, 1);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq2_y);
+    checkInt(s_True, 1, 2);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq2_x);
+    mainSolver->addDecisionPreference(eq1_x);
+    mainSolver->addDecisionPreference(eq0_x);
+
+    checkInt(s_True, 2);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 2, 0);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    mainSolver->addDecisionPreference(eq2_y);
+    checkInt(s_True, 2, 1);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(eq2_y);
+    mainSolver->addDecisionPreference(eq1_y);
+    mainSolver->addDecisionPreference(eq0_y);
+    checkInt(s_True, 2, 2);
+    checkPreferenceIncCount(0, 0, 3);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq0_y);
+    checkInt(s_True, 2, 0);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq1_y);
+    checkInt(s_True, 2, 1);
+    checkPreferenceIncCount(0, 0, 0);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addAssertion(eq2_y);
+    checkInt(s_True, 2, 2);
+    checkPreferenceIncCount(0, 0, 0);
+}
+
+// More complex, asserted preferences
+
+TEST_F(IntDecisionPreferenceTest, test_OrAndXY__DecisionPreferenceXY) {
+    init();
+    mainSolver->addAssertion(logic->mkOr({
+        logic->mkAnd(eq0_x, eq0_y), logic->mkAnd(eq0_x, eq1_y), logic->mkAnd(eq0_x, eq2_y),
+        logic->mkAnd(eq1_x, eq0_y), logic->mkAnd(eq1_x, eq1_y), logic->mkAnd(eq1_x, eq2_y),
+        logic->mkAnd(eq2_x, eq0_y), logic->mkAnd(eq2_x, eq1_y), logic->mkAnd(eq2_x, eq2_y),
+    }));
+
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 0, 0);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 0, 1);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 0, 2);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 1, 0);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 1, 1);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 1, 2);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 2, 0);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+
+    checkInt(s_True, 2, 1);
+    checkPreferenceIncCount(0, 0, 9);
+
+    mainSolver->pop();
+    mainSolver->push();
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq2_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq1_x, eq0_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq2_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq1_y));
+    mainSolver->addDecisionPreference(logic->mkAnd(eq0_x, eq0_y));
+
+    checkInt(s_True, 2, 2);
+    checkPreferenceIncCount(0, 0, 9);
 }
 
 } // namespace opensmt
