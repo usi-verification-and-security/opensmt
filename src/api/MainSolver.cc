@@ -185,7 +185,7 @@ sstat MainSolver::simplifyFormulas() {
         if (status == s_False) { break; }
 
         for (PTRef pref : decisionPreferences.scope(i)) {
-            giveDecisionPreferenceToSMTSolver(pref, frameId);
+            giveDecisionPreferenceToSMTSolver(pref, frameId, context);
         }
     }
 
@@ -347,7 +347,7 @@ PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
-void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId) {
+void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId, PreprocessingContext const & pcontext) {
     assert(logic.getSortRef(pref) == logic.getSort_bool());
     assert(not logic.isConstant(pref));
 
@@ -355,7 +355,7 @@ void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId) 
     Lit l = [&] {
         if (term_mapper->hasLit(pref)) { return giveExistingDecisionPreferenceToSMTSolver(pref); }
         if (logic.isBoolVarLiteral(pref)) { return giveBoolVarDecisionPreferenceToSMTSolver(pref); }
-        return giveAnyDecisionPreferenceToSMTSolver(pref, frameId);
+        return giveAnyDecisionPreferenceToSMTSolver(pref, frameId, pcontext);
     }();
 
     decisionPreferenceToLitMap.emplace(pref, l);
@@ -381,17 +381,27 @@ Lit MainSolver::giveBoolVarDecisionPreferenceToSMTSolver(PTRef pref) {
     return l;
 }
 
-Lit MainSolver::giveAnyDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId) {
+Lit MainSolver::giveAnyDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId,
+                                                     PreprocessingContext const & pcontext) {
     assert(not term_mapper->hasLit(pref));
     assert(not logic.isBoolVarLiteral(pref));
+
+    // Cannot preprocess pref unconditionally - may result in a conflict
 
     auto name = std::string{".pref"} + std::to_string(pref.x);
     PTRef decisionVarTerm = logic.mkBoolVar(name.c_str());
     Lit l = term_mapper->getOrCreateLit(decisionVarTerm);
     PTRef condTerm = logic.mkImpl(decisionVarTerm, pref);
+
+    assert(not pcontext.perPartition);
+    PTRef processed = preprocessFormula(condTerm, pcontext);
+    assert(not logic.isConstant(processed));
+    assert(not logic.isBoolVarLiteral(processed));
+
     [[maybe_unused]]
-    sstat status = giveToSolver(condTerm, frameId);
+    sstat status = giveToSolver(processed, frameId);
     assert(status == s_Undef);
+
     assert(term_mapper->getLit(decisionVarTerm) == l);
     assert(term_mapper->getVar(decisionVarTerm) == var(l));
 
