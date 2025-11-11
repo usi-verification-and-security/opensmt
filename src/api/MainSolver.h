@@ -308,10 +308,10 @@ protected:
 
     PTRef rewriteMaxArity(PTRef root);
 
-    void giveDecisionPreferenceToSMTSolver(PTRef, FrameId);
+    void giveDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
     Lit giveExistingDecisionPreferenceToSMTSolver(PTRef);
     Lit giveBoolVarDecisionPreferenceToSMTSolver(PTRef);
-    Lit giveAnyDecisionPreferenceToSMTSolver(PTRef, FrameId);
+    Lit giveAnyDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
 
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
