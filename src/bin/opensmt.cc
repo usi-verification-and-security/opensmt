@@ -230,6 +230,7 @@ void printHelp()
           "  --verbose [-v]                  verbose run of the solver\n"
           "  --dry-run [-d]                  executes dry run\n"
           "  --random-seed [-r] <seed>       sets random seed to specific number\n"
+          "  --produce-assignments           enable producing assignments\n"
           "  --produce-models [-m]           enable producing models\n"
           "  --get-models                    get-model after each check-sat gracefully\n"
           "  --produce-unsat-cores           enable producing unsat cores\n"
@@ -245,6 +246,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
 {
     enum class LongOpt {
         version,
+        produceAssignments,
         getModel,
         produceUcore,
         getUcore,
@@ -262,6 +264,7 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
             {"verbose", no_argument, nullptr, 'v'},
             {"dry-run", no_argument, nullptr, 'd'},
             {"random-seed", required_argument, nullptr, 'r'},
+            {"produce-assignments", no_argument, &selectedLongOpt, to_underlying(LongOpt::produceAssignments)},
             {"produce-models", no_argument, nullptr, 'm'},
             {"get-models", no_argument, &selectedLongOpt, to_underlying(LongOpt::getModel)},
             {"produce-unsat-cores", no_argument, &selectedLongOpt, to_underlying(LongOpt::produceUcore)},
@@ -285,6 +288,9 @@ SMTConfig parseCMDLineArgs( int argc, char * argv[ ] )
                     case LongOpt::version:
                         printVersion();
                         exit(0);
+                    case LongOpt::produceAssignments:
+                        res.setOption(SMTConfig::o_produce_assignments, SMTOption(true), msg);
+                        break;
                     case LongOpt::getModel:
                         res.setOption(SMTConfig::o_get_models, SMTOption(true), msg);
                         break;

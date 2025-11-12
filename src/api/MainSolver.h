@@ -328,7 +328,9 @@ private:
 
 bool MainSolver::trackPartitions() const {
     assert(smt_solver);
-    return smt_solver->logsResolutionProof();
+    if (config.produce_assignments()) { return true; }
+    if (smt_solver->logsResolutionProof()) { return true; }
+    return false;
 }
 } // namespace opensmt
 

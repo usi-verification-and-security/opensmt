@@ -288,6 +288,10 @@ std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
 }
 
 lbool MainSolver::getTermValue(PTRef tr) const {
+    // TODO: implement also getAssignment (move from Interpret) where it would not check these for every particular term
+    if (not config.produce_assignments()) { throw ApiException("Producing assignments is not enabled"); }
+    if (status != s_True) { throw ApiException("Assignment cannot be created if solver is not in SAT state"); }
+
     if (logic.getSortRef(tr) != logic.getSort_bool()) { return l_Undef; }
     if (not term_mapper->hasLit(tr)) { return l_Undef; }
 

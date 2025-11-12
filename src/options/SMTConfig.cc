@@ -445,6 +445,7 @@ namespace opensmt {
           return info_Empty;
   }
 
+  const char* SMTConfig::o_produce_assignments = ":produce-assignments";
   const char* SMTConfig::o_produce_models = ":produce-models";
   const char* SMTConfig::o_get_models = ":get-models";
   const char* SMTConfig::o_produce_unsat_cores = ":produce-unsat-cores";

@@ -304,6 +304,7 @@ namespace opensmt {
     static const char* o_sat_split_test_cube_and_conquer;
     static const char* o_sat_split_randomize_lookahead;
     static const char* o_sat_split_randomize_lookahead_buf;
+    static const char* o_produce_assignments;
     static const char* o_produce_models;
     static const char* o_get_models;
     static const char* o_produce_unsat_cores;
@@ -431,6 +432,7 @@ namespace opensmt {
     inline std::ostream & getRegularOut   ( ) { return rocset ? out : std::cout; }
     inline std::ostream & getDiagnosticOut( ) { return docset ? err : std::cerr; }
     inline int  getRandomSeed   ( ) const { return optionTable.has(o_random_seed) ? optionTable[o_random_seed]->getValue().numval : 91648253; }
+    inline void setProduceAssignments( ) { insertOption(o_produce_assignments, new SMTOption(1)); }
     inline void setProduceModels( ) { insertOption(o_produce_models, new SMTOption(1)); }
     inline bool setRandomSeed(int seed) { insertOption(o_random_seed, new SMTOption(seed)); return true; }
 
@@ -508,6 +510,9 @@ namespace opensmt {
     int           isIncremental() const
       { return optionTable.has(o_incremental) ?
           optionTable[o_incremental]->getValue().numval == 1: true; }
+    bool produce_assignments() const {
+        return optionTable.has(o_produce_assignments) && optionTable[o_produce_assignments]->getValue().numval > 0;
+    }
     bool produce_models() const {
         // get_models => produce_models
         if (getting_models()) { return true; }
