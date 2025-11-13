@@ -15,8 +15,6 @@ private:
     std::vector<vec<CRef>> thLitToClauses;
     vec<Var> ghostTrail;
     vec<int> ghostTrailLim;
-    Var pickBranchVar();
-    Var pickRandomBranchVar();
     Lit pickBranchPolarity(Var v);
     bool isGhost(Lit l);
 protected:
