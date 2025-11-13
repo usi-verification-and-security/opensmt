@@ -289,6 +289,11 @@ std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
 
 lbool MainSolver::getTermValue(PTRef tr) const {
     if (logic.getSortRef(tr) != logic.getSort_bool()) { return l_Undef; }
+
+    assert(trackPartitions());
+    if (PTRef new_tr = pmanager.getInternalPartitionFor(tr); new_tr != PTRef_Undef) {
+        tr = new_tr;
+    }
     if (not term_mapper->hasLit(tr)) { return l_Undef; }
 
     Lit l = term_mapper->getLit(tr);
