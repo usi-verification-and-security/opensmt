@@ -28,7 +28,10 @@ public:
     ipartitions_t const & getClausePartitions(CRef) const;
     void addClausePartition(CRef c, ipartitions_t const & p);
 
-    inline std::vector<PTRef> getTopLevelFormulas() const { return flaPartitionMap.get_top_level_flas(); }
+    inline std::vector<PTRef> getTopLevelFormulas() const { return flaPartitionMap.getTopLevelFlas(); }
+    inline std::vector<PTRef> getInternalFormulas() const { return flaPartitionMap.getInternalFlas(); }
+    inline PTRef getTopLevelFormula(unsigned int idx) const { return flaPartitionMap.getTopLevelFla(idx); }
+    inline PTRef getInternalFormula(unsigned int idx) const { return flaPartitionMap.getInternalFla(idx); }
     inline unsigned int getNoOfPartitions() const { return flaPartitionMap.getNoOfPartitions(); }
     inline void transferPartitionMembership(PTRef o, PTRef n) {
         return flaPartitionMap.transferPartitionMembership(o, n);
