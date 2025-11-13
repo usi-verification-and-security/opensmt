@@ -117,6 +117,7 @@ void MainSolver::insertFormula(PTRef fla) {
         //     easily
         unsigned int partition_index = insertedFormulasCount++;
         pmanager.assignTopLevelPartitionIndex(partition_index, fla);
+        std::cerr << logic.termToSMT2String(fla) << " [" << fla.x << "] : " << pmanager.getPartitionIndex(fla) << std::endl;
         assert(pmanager.getPartitionIndex(fla) != -1);
     } else {
         ++insertedFormulasCount;
@@ -148,7 +149,10 @@ sstat MainSolver::simplifyFormulas() {
             vec<PTRef> frameFormulas;
             for (PTRef fla : frames[i].formulas) {
                 PTRef processed = theory->preprocessAfterSubstitutions(fla, context);
+                std::cerr << logic.termToSMT2String(fla) << " [" << fla.x << "] -> " << logic.termToSMT2String(processed) << " [" << processed.x << "]" << std::endl;
                 pmanager.transferPartitionMembership(fla, processed);
+                std::cerr << logic.termToSMT2String(fla) << " [" << fla.x << "] : " << pmanager.getPartitionIndex(fla) << std::endl;
+                std::cerr << logic.termToSMT2String(processed) << " [" << processed.x << "] : " << pmanager.getPartitionIndex(processed) << std::endl;
                 frameFormulas.push(processed);
                 preprocessor.addPreprocessedFormula(processed);
             }
@@ -158,6 +162,7 @@ sstat MainSolver::simplifyFormulas() {
             }
             theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
             for (PTRef fla : frameFormulas) {
+                std::cerr << ">> " << logic.termToSMT2String(fla) << " [" << fla.x << "] : " << pmanager.getPartitionIndex(fla) << std::endl;
                 if (fla == logic.getTerm_true()) { continue; }
                 assert(pmanager.getPartitionIndex(fla) != -1);
                 // Optimize the dag for cnfization
@@ -168,6 +173,7 @@ sstat MainSolver::simplifyFormulas() {
                 }
                 assert(pmanager.getPartitionIndex(fla) != -1);
                 pmanager.propagatePartitionMask(fla);
+                std::cerr << ">>> " << logic.termToSMT2String(fla) << " [" << fla.x << "] : " << pmanager.getPartitionIndex(fla) << std::endl;
                 status = giveToSolver(fla, frames[i].getId());
                 if (status == s_False) { break; }
             }
@@ -289,6 +295,15 @@ std::unique_ptr<UnsatCore> MainSolver::getUnsatCore() const {
 
 lbool MainSolver::getTermValue(PTRef tr) const {
     if (logic.getSortRef(tr) != logic.getSort_bool()) { return l_Undef; }
+
+    assert(trackPartitions());
+    std::cerr << logic.termToSMT2String(tr) << " [" << tr.x << "]" << std::endl;
+    assert(pmanager.getPartitionIndex(tr) != -1);
+    if (PTRef new_tr = pmanager.getInternalPartitionFor(tr); new_tr != PTRef_Undef) {
+        tr = new_tr;
+        std::cerr << "-> " << logic.termToSMT2String(tr) << " [" << tr.x << "]" << std::endl;
+    }
+    assert(term_mapper->hasLit(tr));
     if (not term_mapper->hasLit(tr)) { return l_Undef; }
 
     Lit l = term_mapper->getLit(tr);
@@ -313,11 +328,26 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
     ClauseCallBack callBack;
+    std::cerr << "adding " << logic.termToSMT2String(root) << " [" << root.x << "] : " << pmanager.getPartitionIndex(root) << std::endl;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
     bool const keepPartitionsSeparate = trackPartitions();
     Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
-    int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
+    int partitionIndex;
+    if (keepPartitionsSeparate) {
+        partitionIndex = pmanager.getPartitionIndex(root);
+        PTRef topLevelFla = pmanager.getPartitionForInternal(root);
+        assert(topLevelFla != PTRef_Undef);
+        if (termNames.contains(topLevelFla) and not term_mapper->hasLit(root)) {
+            PTRef varTerm = logic.mkBoolVar(".eq" + std::to_string(root.x));
+            PTRef eq = logic.mkEq(varTerm, root);
+            Lit l = term_mapper->getOrCreateLit(root);
+            smt_solver->addVar(var(l));
+            term_mapper->setFrozen(var(l));
+        }
+    } else {
+        partitionIndex = -1;
+    }
     for (auto & clause : callBack.clauses) {
         if (push_id != 0) { clause.push(frameLit); }
         pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
