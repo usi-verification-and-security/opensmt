@@ -139,7 +139,7 @@ public:
     // Returns interpolation context for the last query (must be in UNSAT state)
     std::unique_ptr<InterpolationContext> getInterpolationContext();
 
-    [[deprecated("Use tryAddNamedAssertion or tryAddTermName")]]
+    [[deprecated("Use tryAddNamedAssertion or tryAddTermNameFor")]]
     TermNames & getTermNames() {
         return termNames;
     }
@@ -262,7 +262,6 @@ protected:
     Theory & getTheory() { return *theory; }
     Theory const & getTheory() const { return *theory; }
     TermMapper & getTermMapper() const { return *term_mapper; }
-    PartitionManager & getPartitionManager() { return pmanager; }
 
     // TODO: inefficient
     vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
@@ -323,11 +322,16 @@ private:
 
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
-    unsigned int insertedFormulasCount = 0;
+    std::size_t simplifiedFormulasCount = 0;
+    std::size_t insertedFormulasCount = 0;
 };
 
 bool MainSolver::trackPartitions() const {
     assert(smt_solver);
+
+    // Even if computed independently of resolution proofs, we must track partitions
+    if (config.produce_unsat_cores() or config.produce_inter()) { return true; }
+
     return smt_solver->logsResolutionProof();
 }
 } // namespace opensmt

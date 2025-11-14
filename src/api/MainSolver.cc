@@ -107,8 +107,6 @@ void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
     }
-    // TODO: Move this to preprocessing of the formulas
-    fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
 
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
@@ -147,7 +145,10 @@ sstat MainSolver::simplifyFormulas() {
         if (context.perPartition) {
             vec<PTRef> frameFormulas;
             for (PTRef fla : frames[i].formulas) {
-                PTRef processed = theory->preprocessAfterSubstitutions(fla, context);
+                auto const partitionIndex = pmanager.getPartitionIndex(fla);
+                simplifiedFormulasCount++;
+                PTRef processed = IteHandler(logic, partitionIndex).rewrite(fla);
+                processed = theory->preprocessAfterSubstitutions(processed, context);
                 pmanager.transferPartitionMembership(fla, processed);
                 frameFormulas.push(processed);
                 preprocessor.addPreprocessedFormula(processed);
@@ -172,7 +173,13 @@ sstat MainSolver::simplifyFormulas() {
                 if (status == s_False) { break; }
             }
         } else {
-            PTRef frameFormula = logic.mkAnd(frames[i].formulas);
+            vec<PTRef> frameFormulas;
+            for (PTRef fla : frames[i].formulas) {
+                fla = IteHandler(logic, simplifiedFormulasCount++).rewrite(fla);
+                frameFormulas.push(fla);
+            }
+
+            PTRef frameFormula = logic.mkAnd(std::move(frameFormulas));
             if (context.frameCount > 0) { frameFormula = applyLearntSubstitutions(frameFormula); }
             frameFormula = theory->preprocessBeforeSubstitutions(frameFormula, context);
             frameFormula = substitutionPass(frameFormula, context);
@@ -481,6 +488,7 @@ PTRef MainSolver::applyLearntSubstitutions(PTRef fla) {
 }
 
 PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const & context) {
+    assert(not trackPartitions());
     if (not config.do_substitutions()) { return fla; }
     auto res = computeSubstitutions(fla);
     vec<PTRef> args;
