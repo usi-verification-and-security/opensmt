@@ -93,7 +93,7 @@ bool MainSolver::pop() {
     frames.pop();
     preprocessor.pop();
     termNames.popScope();
-    firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
+    firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
 }
@@ -115,15 +115,15 @@ void MainSolver::insertFormula(PTRef fla) {
         // formulas,
         //     thus we need the old value of count. TODO: Find a good interface for this so it cannot be broken this
         //     easily
-        unsigned int partition_index = insertedFormulasCount++;
+        unsigned int partition_index = insertedAssertionsCount++;
         pmanager.assignTopLevelPartitionIndex(partition_index, fla);
         assert(pmanager.getPartitionIndex(fla) != -1);
     } else {
-        ++insertedFormulasCount;
+        ++insertedAssertionsCount;
     }
 
     frames.add(fla);
-    firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount() - 1);
+    firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount() - 1);
 }
 
 bool MainSolver::tryAddNamedAssertion(PTRef fla, std::string const & name) {
@@ -140,12 +140,12 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
 
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
-    for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount(); ++i) {
+    for (std::size_t i = firstNotPreprocessedFrame; i < frames.frameCount(); ++i) {
         auto & frame = frames[i];
         FrameId const frameId = frame.getId();
         PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
         preprocessor.prepareForProcessingFrame(i);
-        firstNotSimplifiedFrame = i + 1;
+        firstNotPreprocessedFrame = i + 1;
 
         if (not context.perPartition) {
             PTRef frameFormula = preprocessFormulasDefault(frame.formulas, context);
@@ -161,8 +161,8 @@ sstat MainSolver::simplifyFormulas() {
     }
 
     if (status == s_False) {
-        assert(firstNotSimplifiedFrame > 0);
-        rememberUnsatFrame(firstNotSimplifiedFrame - 1);
+        assert(firstNotPreprocessedFrame > 0);
+        rememberUnsatFrame(firstNotPreprocessedFrame - 1);
     }
 
     return status;
