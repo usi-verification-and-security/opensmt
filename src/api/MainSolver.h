@@ -334,6 +334,7 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotPreprocessedFrame = 0;
     std::size_t insertedAssertionsCount = 0;
+    std::vector<std::size_t> preprocessedAssertionsCountPerFrame;
 };
 
 bool MainSolver::trackPartitions() const {
