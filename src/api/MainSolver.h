@@ -89,7 +89,7 @@ public:
     void insertFormula(PTRef fla);
     // Alias for `insertFormula`, reserved for future use
     void addAssertion(PTRef fla) { return insertFormula(fla); }
-    std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
+    std::size_t getInsertedFormulasCount() const { return insertedAssertionsCount; }
     // Alias for `getInsertedFormulasCount`, reserved for future use
     std::size_t getAssertionsCount() const { return getInsertedFormulasCount(); }
 
@@ -332,8 +332,8 @@ private:
     int check_called = 0;    // A counter on how many times check was called.
 
     vec<PTRef> frameTerms;
-    std::size_t firstNotSimplifiedFrame = 0;
-    unsigned int insertedFormulasCount = 0;
+    std::size_t firstNotPreprocessedFrame = 0;
+    std::size_t insertedAssertionsCount = 0;
 };
 
 bool MainSolver::trackPartitions() const {
