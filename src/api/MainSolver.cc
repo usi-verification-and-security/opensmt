@@ -23,6 +23,8 @@
 #include <tsolvers/RDLTHandler.h>
 #include <unsatcores/UnsatCoreBuilder.h>
 
+#include <type_traits>
+
 namespace opensmt {
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
@@ -60,6 +62,7 @@ void MainSolver::initialize() {
     frames.push();
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
+    preprocessedAssertionsCountPerFrame.push_back(0);
     smt_solver->initialize();
     pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     smt_solver->addOriginalSMTClause({term_mapper->getOrCreateLit(logic.getTerm_true())}, iorefs);
@@ -74,6 +77,7 @@ void MainSolver::push() {
     frames.push();
     preprocessor.push();
     frameTerms.push(newFrameTerm(frames.last().getId()));
+    preprocessedAssertionsCountPerFrame.push_back(0);
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
@@ -92,7 +96,9 @@ bool MainSolver::pop() {
     }
     frames.pop();
     preprocessor.pop();
+    preprocessedAssertionsCountPerFrame.pop_back();
     termNames.popScope();
+    // goes back to frames.frameCount()-1 only if a formula is added via addAssertion
     firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
@@ -159,9 +165,14 @@ sstat MainSolver::preprocessAssertions() {
 bool MainSolver::tryPreprocessFrame(std::size_t i) {
     auto & frame = frames[i];
     FrameId const frameId = frame.getId();
-    PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
+    auto & preprocessedFrameAssertionsCount = preprocessedAssertionsCountPerFrame[i];
+    assert(frame.formulas.size() == 0 or std::size_t(frame.formulas.size()) > preprocessedFrameAssertionsCount);
+    PreprocessingContext context{.frameCount = i,
+                                 .preprocessedFrameAssertionsCount = preprocessedFrameAssertionsCount,
+                                 .perPartition = trackPartitions()};
     preprocessor.prepareForProcessingFrame(i);
     firstNotPreprocessedFrame = i + 1;
+    preprocessedFrameAssertionsCount = frame.formulas.size();
 
     assert(status != s_False);
 
@@ -186,6 +197,7 @@ PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, Preproces
 
     if (flas.size() == 0) { return logic.getTerm_true(); }
 
+    // Include even already preprocessed formulas which can still benefit from the new ones
     PTRef fla = logic.mkAnd(flas);
     return preprocessFormula(fla, context);
 }
@@ -193,15 +205,20 @@ PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, Preproces
 vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, PreprocessingContext const & context) {
     assert(context.perPartition);
 
-    if (flas.size() == 0) { return {}; }
+    std::size_t const formulasCount = flas.size();
+    static_assert(std::is_unsigned_v<decltype(context.preprocessedFrameAssertionsCount)>);
+    assert(context.preprocessedFrameAssertionsCount <= formulasCount);
+    std::size_t const formulasCountToProcess = formulasCount - context.preprocessedFrameAssertionsCount;
+    if (formulasCountToProcess == 0) { return {}; }
 
     vec<PTRef> processedFormulas;
-    for (PTRef fla : flas) {
+    for (std::size_t i = context.preprocessedFrameAssertionsCount; i < formulasCount; ++i) {
+        PTRef fla = flas[i];
         PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
         processedFormulas.push(processed);
     }
 
-    assert(processedFormulas.size() == flas.size());
+    assert(std::size_t(processedFormulas.size()) == formulasCountToProcess);
     if (std::all_of(processedFormulas.begin(), processedFormulas.end(),
                     [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
         return {};
