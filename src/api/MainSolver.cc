@@ -182,10 +182,24 @@ sstat MainSolver::simplifyFormulas() {
 PTRef MainSolver::preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const & context) {
     assert(not context.perPartition);
 
-    if (frameFormulas.size() == 0) { return logic.getTerm_true(); }
+    std::size_t const frameFormulasCount = frameFormulas.size();
+    static_assert(std::is_unsigned_v<decltype(context.preprocessedFrameAssertionsCount)>);
+    assert(context.preprocessedFrameAssertionsCount <= frameFormulasCount);
+    std::size_t const formulasCountToProcess = frameFormulasCount - context.preprocessedFrameAssertionsCount;
+    if (formulasCountToProcess == 0) { return logic.getTerm_true(); }
 
-    // Include even already preprocessed formulas which can still benefit from the new ones
-    PTRef frameFormula = logic.mkAnd(frameFormulas);
+    PTRef frameFormula = [&] {
+        if (formulasCountToProcess == frameFormulasCount) {
+            return logic.mkAnd(frameFormulas);
+        }
+
+        vec<PTRef> processedFormulas;
+        for (std::size_t i = context.preprocessedFrameAssertionsCount; i < frameFormulasCount; ++i) {
+            processedFormulas.push(frameFormulas[i]);
+        }
+        return logic.mkAnd(std::move(processedFormulas));
+    }();
+
     return preprocessFormula(frameFormula, context);
 }
 
