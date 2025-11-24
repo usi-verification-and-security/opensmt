@@ -251,3 +251,11 @@ target_sources(StopTest
 
 target_link_libraries(StopTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET StopTest)
+
+add_executable(ScopedVectorTest)
+target_sources(ScopedVectorTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_ScopedVector.cc"
+        )
+
+target_link_libraries(ScopedVectorTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET ScopedVectorTest)
