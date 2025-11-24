@@ -328,8 +328,13 @@ private:
 
 bool MainSolver::trackPartitions() const {
     assert(smt_solver);
-    if (config.produce_assignments()) { return true; }
+
     if (smt_solver->logsResolutionProof()) { return true; }
+    if (config.produce_assignments()) { return true; }
+    // Even if computed independently of resolution proofs, we must track partitions
+    if (config.produce_unsat_cores()) { return true; }
+    if (config.produce_inter()) { return true; }
+
     return false;
 }
 } // namespace opensmt
