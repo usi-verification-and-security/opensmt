@@ -19,7 +19,10 @@
 #include <smtsolvers/SimpSMTSolver.h>
 #include <unsatcores/UnsatCore.h>
 
+#include <iosfwd>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace opensmt {
 class Logic;
