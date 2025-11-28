@@ -90,6 +90,28 @@ vec<PTRef> PartitionManager::getPartitions(ipartitions_t const & mask) const {
     return res;
 }
 
+PTRef PartitionManager::getPartition(int partitionIndex) const {
+    if (partitionIndex < 0) { return PTRef_Undef; }
+    return partitionInfo.getTopLevelFormula(static_cast<unsigned>(partitionIndex));
+}
+
+PTRef PartitionManager::getPartitionForInternal(PTRef term) const {
+    // we ignore if the term is actually top-level ..
+    int const partitionIndex = getPartitionIndex(term);
+    return getPartition(partitionIndex);
+}
+
+PTRef PartitionManager::getInternalPartition(int partitionIndex) const {
+    if (partitionIndex < 0) { return PTRef_Undef; }
+    return partitionInfo.getInternalFormula(static_cast<unsigned>(partitionIndex));
+}
+
+PTRef PartitionManager::getInternalPartitionFor(PTRef term) const {
+    // we ignore if the term is actually internal ..
+    int const partitionIndex = getPartitionIndex(term);
+    return getInternalPartition(partitionIndex);
+}
+
 void PartitionManager::addClauseClassMask(CRef c, ipartitions_t const & toadd) {
     partitionInfo.addClausePartition(c, toadd);
 }
