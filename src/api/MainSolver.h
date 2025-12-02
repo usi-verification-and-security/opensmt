@@ -295,6 +295,8 @@ protected:
     virtual PTRef preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
     virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
 
+    PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &);
+
     virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
     virtual PTRef preprocessFormulaBeforeFinalTheoryPreprocessing(PTRef, PreprocessingContext const &);
     virtual void preprocessFormulaDoFinalTheoryPreprocessing(PreprocessingContext const &);

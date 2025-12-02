@@ -213,7 +213,9 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
     vec<PTRef> processedFormulas;
     for (std::size_t i = context.preprocessedFrameAssertionsCount; i < frameFormulasCount; ++i) {
         PTRef fla = frameFormulas[i];
-        PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+        PTRef processed = fla;
+        processed = preprocessFormulaItes(processed, context);
+        processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
         processedFormulas.push(processed);
     }
 
@@ -236,8 +238,22 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
     return processedFormulas;
 }
 
+PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
+    assert(fla != PTRef_Undef);
+
+    bool const perPartition = context.perPartition;
+
+    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
+    PTRef processed = IteHandler(logic, partitionNumber).rewrite(fla);
+    assert(processed != PTRef_Undef);
+    if (perPartition) { pmanager.transferPartitionMembership(fla, processed); }
+    return processed;
+}
+
 PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
-    PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+    PTRef processed = fla;
+    processed = preprocessFormulaItes(processed, context);
+    processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
     preprocessFormulaDoFinalTheoryPreprocessing(context);
     processed = preprocessFormulaAfterFinalTheoryPreprocessing(processed, context);
     return processed;
@@ -246,9 +262,6 @@ PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & cont
 PTRef MainSolver::preprocessFormulaBeforeFinalTheoryPreprocessing(PTRef fla, PreprocessingContext const & context) {
     bool const perPartition = context.perPartition;
     PTRef processed = fla;
-
-    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
-    processed = IteHandler(logic, partitionNumber).rewrite(processed);
 
     if (not perPartition) {
         if (context.frameCount > 0) { processed = applyLearntSubstitutions(processed); }
