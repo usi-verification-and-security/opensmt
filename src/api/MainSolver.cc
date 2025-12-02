@@ -213,7 +213,9 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, P
     vec<PTRef> processedFormulas;
     for (std::size_t i = context.preprocessedFrameAssertionsCount; i < formulasCount; ++i) {
         PTRef fla = flas[i];
-        PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
+        PTRef processed = fla;
+        processed = preprocessFormulaItes(processed, context);
+        processed = preprocessFormulaBeforeGlobalPhase(processed, context);
         processedFormulas.push(processed);
     }
 
@@ -235,8 +237,22 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, P
     return processedFormulas;
 }
 
+PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
+    assert(fla != PTRef_Undef);
+
+    bool const perPartition = context.perPartition;
+
+    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
+    PTRef processed = IteHandler(logic, partitionNumber).rewrite(fla);
+    assert(processed != PTRef_Undef);
+    if (perPartition) { pmanager.transferPartitionMembership(fla, processed); }
+    return processed;
+}
+
 PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
-    PTRef processed = preprocessFormulaBeforeGlobalPhase(fla, context);
+    PTRef processed = fla;
+    processed = preprocessFormulaItes(processed, context);
+    processed = preprocessFormulaBeforeGlobalPhase(processed, context);
     preprocessFormulaGlobalPhase(context);
     processed = preprocessFormulaAfterGlobalPhase(processed, context);
     return processed;
@@ -245,9 +261,6 @@ PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & cont
 PTRef MainSolver::preprocessFormulaBeforeGlobalPhase(PTRef fla, PreprocessingContext const & context) {
     bool const perPartition = context.perPartition;
     PTRef processed = fla;
-
-    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
-    processed = IteHandler(logic, partitionNumber).rewrite(processed);
 
     if (not perPartition) {
         if (context.frameCount > 0) { processed = applyLearntSubstitutions(processed); }

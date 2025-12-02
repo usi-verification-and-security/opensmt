@@ -297,6 +297,8 @@ protected:
     virtual PTRef preprocessFormulasConjoined(vec<PTRef> const &, PreprocessingContext const &);
     virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const &, PreprocessingContext const &);
 
+    PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &);
+
     virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
     virtual PTRef preprocessFormulaBeforeGlobalPhase(PTRef, PreprocessingContext const &);
     virtual void preprocessFormulaGlobalPhase(PreprocessingContext const &);
