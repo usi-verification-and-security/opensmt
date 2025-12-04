@@ -290,6 +290,8 @@ protected:
 
     inline bool trackPartitions() const;
 
+    inline bool preprocessItesWhenAsserting() const;
+
     virtual bool tryPreprocessFormulasOfFrame(std::size_t);
 
     virtual PTRef preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
@@ -361,6 +363,21 @@ bool MainSolver::trackPartitions() const {
     // Even if computed independently of resolution proofs, we must track partitions
     if (config.produce_unsat_cores()) { return true; }
     if (config.produce_inter()) { return true; }
+
+    return false;
+}
+
+bool MainSolver::preprocessItesWhenAsserting() const {
+    // We still must keep tracking the terms which only happens in the pipeline
+    if (trackPartitions()) { return false; }
+
+    // If combining UF, it may be beneficial to introduce the auxiliary ITE variables right away, especially when sat
+    if (logic.hasUFs()) {
+        // In UFLIA, it significantly improves
+        if (logic.hasIntegers()) { return true; }
+        // In UFLRA, it slightly improves, so it is still worth
+        if (logic.hasReals()) { return true; }
+    }
 
     return false;
 }

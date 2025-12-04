@@ -117,6 +117,12 @@ void MainSolver::insertFormula(PTRef fla) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
     }
 
+    if (preprocessItesWhenAsserting()) {
+        assert(not trackPartitions());
+        // Do not use preprocessFormulaItes which assumes to be used within the preprocessing pipeline
+        fla = IteHandler(logic, pmanager.getNofPartitions()).rewrite(fla);
+    }
+
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
         // formulas,
@@ -248,6 +254,7 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
     for (std::size_t i = context.preprocessedFrameAssertionsCount; i < frameFormulasCount; ++i) {
         PTRef fla = frameFormulas[i];
         PTRef processed = fla;
+        assert(not preprocessItesWhenAsserting());
         processed = preprocessFormulaItes(processed, context);
         processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
         processedFormulas.push(processed);
@@ -293,7 +300,7 @@ PTRef MainSolver::preprocessFormulaItesImpl(PTRef fla, PreprocessingContext cons
 PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context,
                                     PreprocessFormulaItesConfig const & iteConfig) {
     PTRef processed = fla;
-    processed = preprocessFormulaItes(processed, context, iteConfig);
+    if (not preprocessItesWhenAsserting()) { processed = preprocessFormulaItes(processed, context, iteConfig); }
     processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
     preprocessFormulaDoFinalTheoryPreprocessing(context);
     processed = preprocessFormulaAfterFinalTheoryPreprocessing(processed, context);
