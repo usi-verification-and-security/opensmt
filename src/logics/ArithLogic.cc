@@ -431,27 +431,7 @@ namespace {
 
 lbool ArithLogic::arithmeticElimination(vec<PTRef> const & top_level_arith, SubstMap & out_substitutions) {
     ArithLogic & logic = *this;
-    auto toPoly = [&logic](PTRef eq) {
-        assert(logic.isEquality(eq));
-        poly_t poly;
-        PTRef lhs = logic.getPterm(eq)[0];
-        PTRef rhs = logic.getPterm(eq)[1];
-        PTRef polyTerm = lhs == logic.getZeroForSort(logic.getSortRef(lhs)) ? rhs : logic.mkMinus(rhs, lhs);
-        if (logic.isLinearFactor(polyTerm)) {
-            auto [var, c] = logic.splitPolyTerm(polyTerm);
-            auto coeff = logic.getNumConst(c);
-            poly.addTerm(var, std::move(coeff));
-        } else {
-            assert(logic.isPlus(polyTerm) || logic.isTimesNonlin(polyTerm));
-            for (PTRef factor : logic.getPterm(polyTerm)) {
-                auto [var, c] = logic.splitPolyTerm(factor);
-                auto coeff = logic.getNumConst(c);
-                poly.addTerm(var, std::move(coeff));
-            }
-        }
-        return poly;
-    };
-    std::vector<poly_t> polynomials;
+    std::vector<LAPoly> polynomials;
     polynomials.reserve(top_level_arith.size_());
     std::transform(top_level_arith.begin(), top_level_arith.end(), std::back_inserter(polynomials),
                    [&](auto const & eq) { return ptrefToPoly(eq, logic); });

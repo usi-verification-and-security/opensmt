@@ -1,3 +1,4 @@
+(set-option :produce-models true)
 (set-logic QF_LIA)
 (declare-fun x () Int)
 (define-fun uninterp_mul ((a Int) (b Int)) Int (* 2 a b))
