@@ -89,7 +89,7 @@ public:
     void insertFormula(PTRef fla);
     // Alias for `insertFormula`, reserved for future use
     void addAssertion(PTRef fla) { return insertFormula(fla); }
-    std::size_t getInsertedFormulasCount() const { return insertedFormulasCount; }
+    std::size_t getInsertedFormulasCount() const { return insertedAssertionsCount; }
     // Alias for `getInsertedFormulasCount`, reserved for future use
     std::size_t getAssertionsCount() const { return getInsertedFormulasCount(); }
 
@@ -105,6 +105,8 @@ public:
     // Simplify formulas until all are simplified or the instance is detected unsat
     // Skip assertion levels that have already been simplified
     sstat simplifyFormulas();
+    // Alias for `simplifyFormulas`, reserved for future use
+    sstat preprocess() { return simplifyFormulas(); }
 
     [[nodiscard]] sstat getStatus() const { return status; }
 
@@ -289,6 +291,16 @@ protected:
 
     inline bool trackPartitions() const;
 
+    virtual bool tryPreprocessFormulasOfFrame(std::size_t);
+
+    virtual PTRef preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
+    virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
+
+    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
+    virtual PTRef preprocessFormulaBeforeFinalTheoryPreprocessing(PTRef, PreprocessingContext const &);
+    virtual void preprocessFormulaDoFinalTheoryPreprocessing(PreprocessingContext const &);
+    virtual PTRef preprocessFormulaAfterFinalTheoryPreprocessing(PTRef, PreprocessingContext const &);
+
     PTRef rewriteMaxArity(PTRef root);
 
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
@@ -322,8 +334,8 @@ private:
     int check_called = 0;    // A counter on how many times check was called.
 
     vec<PTRef> frameTerms;
-    std::size_t firstNotSimplifiedFrame = 0;
-    unsigned int insertedFormulasCount = 0;
+    std::size_t firstNotPreprocessedFrame = 0;
+    std::size_t insertedAssertionsCount = 0;
 };
 
 bool MainSolver::trackPartitions() const {
