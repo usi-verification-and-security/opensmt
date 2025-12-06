@@ -292,6 +292,8 @@ protected:
 
     inline bool trackPartitions() const;
 
+    virtual bool tryPreprocessFrame(std::size_t);
+
     // Usually applied to frame formulas
     virtual PTRef preprocessFormulasConjoined(vec<PTRef> const &, PreprocessingContext const &);
     virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const &, PreprocessingContext const &);

@@ -141,23 +141,11 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
 sstat MainSolver::preprocessAssertions() {
     status = s_Undef;
     for (std::size_t i = firstNotPreprocessedFrame; i < frames.frameCount(); ++i) {
-        auto & frame = frames[i];
-        FrameId const frameId = frame.getId();
-        PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
-        preprocessor.prepareForProcessingFrame(i);
-        firstNotPreprocessedFrame = i + 1;
-
-        if (not context.perPartition) {
-            PTRef frameFormula = preprocessFormulasConjoined(frame.formulas, context);
-            status = giveToSolver(frameFormula, frameId);
-        } else {
-            vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
-            for (PTRef fla : processedFormulas) {
-                status = giveToSolver(fla, frameId);
-                if (status == s_False) { break; }
-            }
+        assert(status != s_False);
+        if (not tryPreprocessFrame(i)) {
+            assert(status == s_False);
+            break;
         }
-        if (status == s_False) { break; }
     }
 
     if (status == s_False) {
@@ -166,6 +154,31 @@ sstat MainSolver::preprocessAssertions() {
     }
 
     return status;
+}
+
+bool MainSolver::tryPreprocessFrame(std::size_t i) {
+    auto & frame = frames[i];
+    FrameId const frameId = frame.getId();
+    PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
+    preprocessor.prepareForProcessingFrame(i);
+    firstNotPreprocessedFrame = i + 1;
+
+    assert(status != s_False);
+
+    if (not context.perPartition) {
+        PTRef frameFormula = preprocessFormulasConjoined(frame.formulas, context);
+        status = giveToSolver(frameFormula, frameId);
+        return status != s_False;
+    }
+
+    vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+    for (PTRef fla : processedFormulas) {
+        status = giveToSolver(fla, frameId);
+        if (status == s_False) { return false; }
+    }
+
+    assert(status != s_False);
+    return true;
 }
 
 PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, PreprocessingContext const & context) {
