@@ -63,6 +63,7 @@ void MainSolver::initialize() {
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
     preprocessedAssertionsCountPerFrame.push_back(0);
+    preprocessedAssertionsPerFrame.push_back(PTRef_Undef);
     smt_solver->initialize();
     pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     smt_solver->addOriginalSMTClause({term_mapper->getOrCreateLit(logic.getTerm_true())}, iorefs);
@@ -78,6 +79,7 @@ void MainSolver::push() {
     preprocessor.push();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     preprocessedAssertionsCountPerFrame.push_back(0);
+    preprocessedAssertionsPerFrame.push_back(PTRef_Undef);
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
@@ -97,6 +99,7 @@ bool MainSolver::pop() {
     frames.pop();
     preprocessor.pop();
     preprocessedAssertionsCountPerFrame.pop_back();
+    preprocessedAssertionsPerFrame.pop_back();
     termNames.popScope();
     // goes back to frames.frameCount()-1 only if a formula is added via addAssertion
     firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount());
@@ -113,8 +116,12 @@ void MainSolver::insertFormula(PTRef fla) {
     if (logic.getSortRef(fla) != logic.getSort_bool()) {
         throw ApiException("Top-level assertion sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
     }
-    // TODO: Move this to preprocessing of the formulas
-    fla = IteHandler(logic, getPartitionManager().getNofPartitions()).rewrite(fla);
+
+    if (preprocessItesWhenAsserting()) {
+        assert(not trackPartitions());
+        // Do not use preprocessFormulaItes which assumes to be used within the preprocessing pipeline
+        fla = IteHandler(logic, pmanager.getNofPartitions()).rewrite(fla);
+    }
 
     if (trackPartitions()) {
         // MB: Important for HiFrog! partition index is the index of the formula in an virtual array of inserted
@@ -165,9 +172,11 @@ bool MainSolver::tryPreprocessFormulasOfFrame(std::size_t i) {
     auto & frame = frames[i];
     FrameId const frameId = frame.getId();
     auto & preprocessedFrameAssertionsCount = preprocessedAssertionsCountPerFrame[i];
+    auto & preprocessedFrameAssertions = preprocessedAssertionsPerFrame[i];
     assert(frame.formulas.size() == 0 or std::size_t(frame.formulas.size()) > preprocessedFrameAssertionsCount);
     PreprocessingContext context{.frameCount = i,
                                  .preprocessedFrameAssertionsCount = preprocessedFrameAssertionsCount,
+                                 .preprocessedFrameAssertions = preprocessedFrameAssertions,
                                  .perPartition = trackPartitions()};
     preprocessor.prepareForProcessingFrame(i);
     firstNotPreprocessedFrame = i + 1;
@@ -178,10 +187,13 @@ bool MainSolver::tryPreprocessFormulasOfFrame(std::size_t i) {
     if (not context.perPartition) {
         PTRef frameFormula = preprocessFormulasDefault(frame.formulas, context);
         status = giveToSolver(frameFormula, frameId);
-        return status != s_False;
+        if (status == s_False) { return false; }
+        preprocessedFrameAssertions = frameFormula;
+        return true;
     }
 
     vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+    // no need to update preprocessedFrameAssertions, not used here
     for (PTRef fla : processedFormulas) {
         status = giveToSolver(fla, frameId);
         if (status == s_False) { return false; }
@@ -194,11 +206,38 @@ bool MainSolver::tryPreprocessFormulasOfFrame(std::size_t i) {
 PTRef MainSolver::preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const & context) {
     assert(not context.perPartition);
 
-    if (frameFormulas.size() == 0) { return logic.getTerm_true(); }
+    std::size_t const frameFormulasCount = frameFormulas.size();
+    static_assert(std::is_unsigned_v<decltype(context.preprocessedFrameAssertionsCount)>);
+    assert(context.preprocessedFrameAssertionsCount <= frameFormulasCount);
+    std::size_t const formulasCountToProcess = frameFormulasCount - context.preprocessedFrameAssertionsCount;
+    if (formulasCountToProcess == 0) { return logic.getTerm_true(); }
 
-    // Include even already preprocessed formulas which can still benefit from the new ones
-    PTRef frameFormula = logic.mkAnd(frameFormulas);
-    return preprocessFormula(frameFormula, context);
+    bool const processAll = formulasCountToProcess == frameFormulasCount;
+
+    PTRef frameFormula = [&] {
+        if (processAll) { return logic.mkAnd(frameFormulas); }
+
+        vec<PTRef> processedFormulas;
+        for (std::size_t i = context.preprocessedFrameAssertionsCount; i < frameFormulasCount; ++i) {
+            processedFormulas.push(frameFormulas[i]);
+        }
+        return logic.mkAnd(std::move(processedFormulas));
+    }();
+
+    // All frame formulas are always somehow preprocessed
+    preprocessedAssertionsCount += frameFormulas.size();
+
+    if (processAll) {
+        assert(context.preprocessedFrameAssertions == PTRef_Undef or
+               context.preprocessedFrameAssertions == logic.getTerm_true());
+        return preprocessFormula(frameFormula, context, {.useCache = true});
+    }
+
+    // Still put together with already preprocessed formulas which can still benefit from the new ones
+    frameFormula = preprocessFormulaItes(frameFormula, context, {.useCache = true});
+    assert(context.preprocessedFrameAssertions != PTRef_Undef);
+    frameFormula = logic.mkAnd(context.preprocessedFrameAssertions, frameFormula);
+    return preprocessFormula(frameFormula, context, {.skip = true});
 }
 
 vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFormulas,
@@ -214,9 +253,15 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
     vec<PTRef> processedFormulas;
     for (std::size_t i = context.preprocessedFrameAssertionsCount; i < frameFormulasCount; ++i) {
         PTRef fla = frameFormulas[i];
-        PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+        PTRef processed = fla;
+        assert(not preprocessItesWhenAsserting());
+        // Do not use the cache, it is processed for the first time
+        processed = preprocessFormulaItes(processed, context, {.useCache = false});
+        processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
         processedFormulas.push(processed);
     }
+
+    preprocessedAssertionsCount += processedFormulas.size();
 
     assert(std::size_t(processedFormulas.size()) == formulasCountToProcess);
     assert(std::size_t(processedFormulas.size()) > 0);
@@ -235,8 +280,39 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
     return processedFormulas;
 }
 
-PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
-    PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context,
+                                        PreprocessFormulaItesConfig const & conf) {
+    if (conf.skip) { return fla; }
+    if (not conf.useCache) { return preprocessFormulaItesImpl(fla, context); }
+
+    // Ensure that it is not looked up more than once
+    auto [it, inserted] = iteHandlerCache.try_emplace(fla, PTRef_Undef);
+    if (not inserted) { return it->second; }
+
+    assert(it->first == fla);
+    fla = preprocessFormulaItesImpl(fla, context);
+    assert(fla != PTRef_Undef);
+    it->second = fla;
+    return fla;
+}
+
+PTRef MainSolver::preprocessFormulaItesImpl(PTRef fla, PreprocessingContext const & context) {
+    assert(fla != PTRef_Undef);
+
+    bool const perPartition = context.perPartition;
+
+    std::size_t const partitionNumber = perPartition ? pmanager.getPartitionIndex(fla) : preprocessedAssertionsCount;
+    PTRef processed = IteHandler(logic, partitionNumber).rewrite(fla);
+    assert(processed != PTRef_Undef);
+    if (perPartition) { pmanager.transferPartitionMembership(fla, processed); }
+    return processed;
+}
+
+PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context,
+                                    PreprocessFormulaItesConfig const & iteConfig) {
+    PTRef processed = fla;
+    if (not preprocessItesWhenAsserting()) { processed = preprocessFormulaItes(processed, context, iteConfig); }
+    processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
     preprocessFormulaDoFinalTheoryPreprocessing(context);
     processed = preprocessFormulaAfterFinalTheoryPreprocessing(processed, context);
     return processed;
@@ -581,6 +657,7 @@ PTRef MainSolver::applyLearntSubstitutions(PTRef fla) {
 }
 
 PTRef MainSolver::substitutionPass(PTRef fla, PreprocessingContext const & context) {
+    assert(not trackPartitions());
     if (not config.do_substitutions()) { return fla; }
     auto res = computeSubstitutions(fla);
     vec<PTRef> args;
