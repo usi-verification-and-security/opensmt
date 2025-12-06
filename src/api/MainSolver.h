@@ -22,6 +22,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace opensmt {
@@ -302,6 +303,7 @@ protected:
 
     struct PreprocessFormulaItesConfig {
         bool skip{false};
+        bool useCache{false};
     };
     PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &, PreprocessFormulaItesConfig const &);
     PTRef preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
@@ -356,6 +358,7 @@ private:
     std::vector<std::size_t> preprocessedAssertionsCountPerFrame;
 
     std::vector<PTRef> preprocessedAssertionsPerFrame;
+    std::unordered_map<PTRef, PTRef, PTRefHash> iteHandlerCache;
 };
 
 bool MainSolver::trackPartitions() const {

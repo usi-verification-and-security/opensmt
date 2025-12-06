@@ -230,11 +230,11 @@ PTRef MainSolver::preprocessFormulasDefault(vec<PTRef> const & frameFormulas, Pr
     if (processAll) {
         assert(context.preprocessedFrameAssertions == PTRef_Undef or
                context.preprocessedFrameAssertions == logic.getTerm_true());
-        return preprocessFormula(frameFormula, context);
+        return preprocessFormula(frameFormula, context, {.useCache = true});
     }
 
     // Still put together with already preprocessed formulas which can still benefit from the new ones
-    frameFormula = preprocessFormulaItes(frameFormula, context);
+    frameFormula = preprocessFormulaItes(frameFormula, context, {.useCache = true});
     assert(context.preprocessedFrameAssertions != PTRef_Undef);
     frameFormula = logic.mkAnd(context.preprocessedFrameAssertions, frameFormula);
     return preprocessFormula(frameFormula, context, {.skip = true});
@@ -255,7 +255,8 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
         PTRef fla = frameFormulas[i];
         PTRef processed = fla;
         assert(not preprocessItesWhenAsserting());
-        processed = preprocessFormulaItes(processed, context);
+        // Do not use the cache, it is processed for the first time
+        processed = preprocessFormulaItes(processed, context, {.useCache = false});
         processed = preprocessFormulaBeforeFinalTheoryPreprocessing(processed, context);
         processedFormulas.push(processed);
     }
@@ -282,7 +283,17 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFo
 PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context,
                                         PreprocessFormulaItesConfig const & conf) {
     if (conf.skip) { return fla; }
-    return preprocessFormulaItesImpl(fla, context);
+    if (not conf.useCache) { return preprocessFormulaItesImpl(fla, context); }
+
+    // Ensure that it is not looked up more than once
+    auto [it, inserted] = iteHandlerCache.try_emplace(fla, PTRef_Undef);
+    if (not inserted) { return it->second; }
+
+    assert(it->first == fla);
+    fla = preprocessFormulaItesImpl(fla, context);
+    assert(fla != PTRef_Undef);
+    it->second = fla;
+    return fla;
 }
 
 PTRef MainSolver::preprocessFormulaItesImpl(PTRef fla, PreprocessingContext const & context) {
