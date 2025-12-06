@@ -63,6 +63,7 @@ void MainSolver::initialize() {
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
     preprocessedAssertionsCountPerFrame.push_back(0);
+    preprocessedAssertionsPerFrame.push_back(PTRef_Undef);
     smt_solver->initialize();
     pair<CRef, CRef> iorefs{CRef_Undef, CRef_Undef};
     smt_solver->addOriginalSMTClause({term_mapper->getOrCreateLit(logic.getTerm_true())}, iorefs);
@@ -78,6 +79,7 @@ void MainSolver::push() {
     preprocessor.push();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     preprocessedAssertionsCountPerFrame.push_back(0);
+    preprocessedAssertionsPerFrame.push_back(PTRef_Undef);
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
 }
@@ -97,6 +99,7 @@ bool MainSolver::pop() {
     frames.pop();
     preprocessor.pop();
     preprocessedAssertionsCountPerFrame.pop_back();
+    preprocessedAssertionsPerFrame.pop_back();
     termNames.popScope();
     // goes back to frames.frameCount()-1 only if a formula is added via addAssertion
     firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount());
@@ -164,9 +167,11 @@ bool MainSolver::tryPreprocessFrame(std::size_t i) {
     auto & frame = frames[i];
     FrameId const frameId = frame.getId();
     auto & preprocessedFrameAssertionsCount = preprocessedAssertionsCountPerFrame[i];
+    auto & preprocessedFrameAssertions = preprocessedAssertionsPerFrame[i];
     assert(frame.formulas.size() == 0 or std::size_t(frame.formulas.size()) > preprocessedFrameAssertionsCount);
     PreprocessingContext context{.frameCount = i,
                                  .preprocessedFrameAssertionsCount = preprocessedFrameAssertionsCount,
+                                 .preprocessedFrameAssertions = preprocessedFrameAssertions,
                                  .perPartition = trackPartitions()};
     preprocessor.prepareForProcessingFrame(i);
     firstNotPreprocessedFrame = i + 1;
@@ -177,10 +182,13 @@ bool MainSolver::tryPreprocessFrame(std::size_t i) {
     if (not context.perPartition) {
         PTRef frameFormula = preprocessFormulasConjoined(frame.formulas, context);
         status = giveToSolver(frameFormula, frameId);
-        return status != s_False;
+        if (status == s_False) { return false; }
+        preprocessedFrameAssertions = frameFormula;
+        return true;
     }
 
     vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+    // no need to update preprocessedFrameAssertions, not used here
     for (PTRef fla : processedFormulas) {
         status = giveToSolver(fla, frameId);
         if (status == s_False) { return false; }
@@ -193,12 +201,39 @@ bool MainSolver::tryPreprocessFrame(std::size_t i) {
 PTRef MainSolver::preprocessFormulasConjoined(vec<PTRef> const & flas, PreprocessingContext const & context) {
     assert(not context.perPartition);
 
-    if (flas.size() == 0) { return logic.getTerm_true(); }
+    std::size_t const formulasCount = flas.size();
+    static_assert(std::is_unsigned_v<decltype(context.preprocessedFrameAssertionsCount)>);
+    assert(context.preprocessedFrameAssertionsCount <= formulasCount);
+    std::size_t const formulasCountToProcess = formulasCount - context.preprocessedFrameAssertionsCount;
+    if (formulasCountToProcess == 0) { return logic.getTerm_true(); }
 
-    // Include even already preprocessed formulas which can still benefit from the new ones
-    PTRef fla = logic.mkAnd(flas);
+    bool const processAll = formulasCountToProcess == formulasCount;
+
+    PTRef fla = [&] {
+        if (processAll) { return logic.mkAnd(flas); }
+
+        vec<PTRef> processedFormulas;
+        for (std::size_t i = context.preprocessedFrameAssertionsCount; i < formulasCount; ++i) {
+            processedFormulas.push(flas[i]);
+        }
+        return logic.mkAnd(std::move(processedFormulas));
+    }();
+
+    // All frame formulas are always somehow preprocessed
     preprocessedAssertionsCount += flas.size();
-    return preprocessFormula(fla, context);
+
+    if (processAll) {
+        assert(context.preprocessedFrameAssertions == PTRef_Undef or
+               context.preprocessedFrameAssertions == logic.getTerm_true());
+        return preprocessFormula(fla, context);
+    }
+
+    // Must not preprocess ITEs multiple times
+    fla = preprocessFormulaItes(fla, context);
+    assert(context.preprocessedFrameAssertions != PTRef_Undef);
+    // Still put together with already preprocessed formulas which can benefit from the new ones
+    fla = logic.mkAnd(context.preprocessedFrameAssertions, fla);
+    return preprocessFormula(fla, context, {.skip = true});
 }
 
 vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, PreprocessingContext const & context) {
@@ -237,7 +272,13 @@ vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & flas, P
     return processedFormulas;
 }
 
-PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
+PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & context,
+                                        PreprocessFormulaItesConfig const & conf) {
+    if (conf.skip) { return fla; }
+    return preprocessFormulaItesImpl(fla, context);
+}
+
+PTRef MainSolver::preprocessFormulaItesImpl(PTRef fla, PreprocessingContext const & context) {
     assert(fla != PTRef_Undef);
 
     bool const perPartition = context.perPartition;
@@ -249,9 +290,10 @@ PTRef MainSolver::preprocessFormulaItes(PTRef fla, PreprocessingContext const & 
     return processed;
 }
 
-PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
+PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context,
+                                    PreprocessFormulaItesConfig const & iteConfig) {
     PTRef processed = fla;
-    processed = preprocessFormulaItes(processed, context);
+    processed = preprocessFormulaItes(processed, context, iteConfig);
     processed = preprocessFormulaBeforeGlobalPhase(processed, context);
     preprocessFormulaGlobalPhase(context);
     processed = preprocessFormulaAfterGlobalPhase(processed, context);

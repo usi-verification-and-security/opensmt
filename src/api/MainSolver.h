@@ -297,9 +297,19 @@ protected:
     virtual PTRef preprocessFormulasConjoined(vec<PTRef> const &, PreprocessingContext const &);
     virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const &, PreprocessingContext const &);
 
-    PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &);
+    struct PreprocessFormulaItesConfig {
+        bool skip{false};
+    };
+    PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &, PreprocessFormulaItesConfig const &);
+    PTRef preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
+        return preprocessFormulaItes(fla, context, {});
+    }
+    PTRef preprocessFormulaItesImpl(PTRef, PreprocessingContext const &);
 
-    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
+    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &, PreprocessFormulaItesConfig const &);
+    PTRef preprocessFormula(PTRef fla, PreprocessingContext const & context) {
+        return preprocessFormula(fla, context, {});
+    }
     virtual PTRef preprocessFormulaBeforeGlobalPhase(PTRef, PreprocessingContext const &);
     virtual void preprocessFormulaGlobalPhase(PreprocessingContext const &);
     virtual PTRef preprocessFormulaAfterGlobalPhase(PTRef, PreprocessingContext const &);
@@ -341,6 +351,8 @@ private:
     std::size_t addedAssertionsCount = 0;
     std::size_t preprocessedAssertionsCount = 0;
     std::vector<std::size_t> preprocessedAssertionsCountPerFrame;
+
+    std::vector<PTRef> preprocessedAssertionsPerFrame;
 };
 
 bool MainSolver::trackPartitions() const {
