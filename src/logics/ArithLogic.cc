@@ -486,14 +486,14 @@ pair<lbool, Logic::SubstMap> ArithLogic::retrieveSubstitutions(vec<PtAsgn> const
 }
 
 uint32_t LessThan_deepPTRef::getVarIdFromProduct(PTRef tr) const {
-    assert(l.isTimesLinOrNonlin(tr));
+    assert(l.isTimesLin(tr));
     auto [v, c] = l.splitPolyTerm(tr);
     return v.x;
 }
 
 bool LessThan_deepPTRef::operator()(PTRef x_, PTRef y_) const {
-    uint32_t id_x = l.isTimesLinOrNonlin(x_) ? getVarIdFromProduct(x_) : x_.x;
-    uint32_t id_y = l.isTimesLinOrNonlin(y_) ? getVarIdFromProduct(y_) : y_.x;
+    uint32_t id_x = l.isTimesLin(x_) ? getVarIdFromProduct(x_) : x_.x;
+    uint32_t id_y = l.isTimesLin(y_) ? getVarIdFromProduct(y_) : y_.x;
     return id_x < id_y;
 }
 
