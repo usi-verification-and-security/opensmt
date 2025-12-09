@@ -37,7 +37,8 @@ public:
             PTRef modVar = divMod.mod;
             PTRef rewritten = logic.isIntDiv(symRef) ? divVar : modVar;
             if (not inCache) {
-                if (not logic.isConstant(divisor)) { throw NonLinException(logic.pp(term)); }
+                // Throws exception if term is nonlinear
+                logic.ensureLinear(term);
                 // collect the definitions to add
                 assert(logic.isConstant(divisor));
                 auto divisorVal = logic.getNumConst(divisor);

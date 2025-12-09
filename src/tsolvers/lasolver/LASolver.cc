@@ -174,7 +174,8 @@ LVRef LASolver::getVarForLeq(PTRef ref) const {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
-    if (logic.isTimesNonlin(expr_in)) { throw NonLinException(logic.pp(expr_in)); }
+    // Throws exception if term is nonlinear
+    logic.ensureLinear(expr_in);
     assert(logic.isLinearTerm(expr_in));
     if (laVarMapper.hasVar(expr_in)) {
         return getVarForTerm(expr_in);

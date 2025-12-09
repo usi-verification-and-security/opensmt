@@ -203,6 +203,26 @@ bool ArithLogic::isLinearTerm(PTRef tr) const {
     return false;
 }
 
+void ArithLogic::ensureLinear(PTRef tr) const {
+    // Quick checks on the root
+    auto const sym = getPterm(tr).symb();
+    if (isTimesNonlin(sym)) { throw NonLinException(pp(tr)); }
+    if (isRealDiv(sym) || isIntDiv(sym) || isMod(sym)) {
+        auto const & t = getPterm(tr);
+        if (t.size() == 2) {
+            PTRef divisor = t[1];
+            if (!isConstant(divisor)) { throw NonLinException(pp(tr)); }
+        }
+    }
+    // Recurse on children where applicable
+    Pterm const & term = getPterm(tr);
+    for (int i = 0; i < term.size(); ++i) {
+        PTRef child = term[i];
+        // Only descend into numeric terms; boolean structure is irrelevant here
+        if (yieldsSortNum(child) || isNumTerm(child)) { ensureLinear(child); }
+    }
+}
+
 Number const & ArithLogic::getNumConst(PTRef tr) const {
     SymId id = sym_store[getPterm(tr).symb()].getId();
     assert(id < static_cast<unsigned int>(numbers.size()) && numbers[id] != nullptr);
@@ -871,6 +891,7 @@ PTRef ArithLogic::mkRealDiv(vec<PTRef> && args) {
         args_new[1] = mkRealConst(getNumConst(args_new[1]).inverse()); // mkConst(1/getRealConst(args_new[1]));
         return mkTimes(args_new);
     }
+    // if (isNonLinear())
     PTRef tr = mkFun(s_new, std::move(args_new));
     return tr;
 }

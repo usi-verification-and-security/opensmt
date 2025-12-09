@@ -346,6 +346,8 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
+    // Function checks if term is non-linear and throws exception if it is the case
+    void ensureLinear(PTRef tr) const;
     pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
     // Given a term `t` is splits the term into monomial and its coefficient
     pair<PTRef, PTRef> splitPolyTerm(PTRef term) const;
