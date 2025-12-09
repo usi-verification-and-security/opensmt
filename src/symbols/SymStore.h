@@ -41,11 +41,13 @@ public:
     SymStore & operator=(SymStore &&) = default;
     // Constructs a new symbol.
 
-    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig = SymConf::Default) {
+    SymRef newSymb(char const * fname, SRef rsort, vec<SRef> const & args,
+                   SymbolConfig const & symConfig = SymConf::Default) {
         return newSymbImpl(fname, rsort, args, symConfig, false);
     };
 
-    SymRef newInternalSymb(char const * fname, SRef rsort, vec<SRef> const & args, SymbolConfig const & symConfig = SymConf::Default) {
+    SymRef newInternalSymb(char const * fname, SRef rsort, vec<SRef> const & args,
+                           SymbolConfig const & symConfig = SymConf::Default) {
         return newSymbImpl(fname, rsort, args, symConfig, true);
     }
     bool contains(char const * fname) const { return symbolTable.has(fname); }
