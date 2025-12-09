@@ -25,5 +25,5 @@ include(numbers/CMakeLists.txt)
 install(FILES
         StringMap.h Timer.h inttypes.h IColor.h
         TreeOps.h FlaPartitionMap.h PartitionInfo.h Partitions.h ApiException.h TypeUtils.h
-        NatSet.h ScopedVector.h TermNames.h
+        NatSet.h ScopedVector.h TermNames.h NonLinException.h
 DESTINATION ${INSTALL_HEADERS_DIR}/common)

@@ -1,0 +1,5 @@
+(set-logic QF_LIA)
+(define-fun uninterp_mul ((a Int) (b Int)) Int (mod a b))
+(assert (= (uninterp_mul 1 2) 0))
+(check-sat)
+(exit)

@@ -74,7 +74,7 @@ TEST_F(LIALogicMkTermsTest, testMod_Times) {
     PTRef three = logic.mkIntConst(3);
     PTRef mod = logic.mkMod(x,two);
     PTRef times = logic.mkTimes(mod, three);
-    EXPECT_EQ(logic.getSymRef(times), logic.get_sym_Int_TIMES());
+    EXPECT_EQ(logic.getSymRef(times), logic.get_sym_Int_TIMES_LIN());
 }
 
 TEST_F(LIALogicMkTermsTest, testMod_Leq) {
@@ -191,8 +191,8 @@ TEST_F(LIALogicMkTermsTest, test_EqualityNormalization_EqualityToConstant) {
     PTRef eq = logic.mkEq(x, two);
     PTRef lhs = logic.getPterm(eq)[0];
     PTRef rhs = logic.getPterm(eq)[1];
-    EXPECT_NE(logic.getSymRef(lhs), logic.get_sym_Int_TIMES());
-    EXPECT_NE(logic.getSymRef(rhs), logic.get_sym_Int_TIMES());
+    EXPECT_NE(logic.getSymRef(lhs), logic.get_sym_Int_TIMES_LIN());
+    EXPECT_NE(logic.getSymRef(rhs), logic.get_sym_Int_TIMES_LIN());
 }
 
 TEST_F(LIALogicMkTermsTest, test_ReverseAuxRewrite) {
