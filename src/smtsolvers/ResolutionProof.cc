@@ -256,7 +256,7 @@ void ResolutionProof::printSMT2(std::ostream & out, CoreSMTSolver & s, THandler 
     out << "cls_" << cref << " ";
   }
   out << ")" << '\n';
-  out << ")" << '\n';
+  out << ")" << std::endl;
 }
 
 void ResolutionProof::cleanAssumedLiteral(Lit l) {
