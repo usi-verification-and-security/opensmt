@@ -73,6 +73,7 @@ void MainSolver::push() {
     bool alreadyUnsat = isLastFrameUnsat();
     frames.push();
     preprocessor.push();
+    decisionPreferences.pushScope();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
@@ -92,7 +93,15 @@ bool MainSolver::pop() {
     }
     frames.pop();
     preprocessor.pop();
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
+    if (decisionPreferences.size() == smt_solver->userBranchLitsSize()) {
+        decisionPreferences.popScope([this](PTRef /*pref*/) { smt_solver->popUserBranchLit(); });
+    } else {
+        decisionPreferences.popScope();
+    }
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
     termNames.popScope();
+    // goes back to frames.frameCount()-1 only if a formula is added via insertFormula
     firstNotSimplifiedFrame = std::min(firstNotSimplifiedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
@@ -138,63 +147,146 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
     return termNames.tryInsert(name, fla);
 }
 
+void MainSolver::addDecisionPreference(PTRef fla) {
+    if (logic.getSortRef(fla) != logic.getSort_bool()) {
+        throw ApiException("Decision preference sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
+    }
+
+    if (logic.isConstant(fla)) { return; }
+
+    decisionPreferences.push(fla);
+}
+
+void MainSolver::resetDecisionPreferences() {
+    decisionPreferences.clear();
+
+    smt_solver->clearUserBranchLits();
+}
+
 sstat MainSolver::simplifyFormulas() {
     status = s_Undef;
-    for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount() && status != s_False; i++) {
+    for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount(); ++i) {
+        auto & frame = frames[i];
+        FrameId const frameId = frame.getId();
         PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
         preprocessor.prepareForProcessingFrame(i);
         firstNotSimplifiedFrame = i + 1;
-        if (context.perPartition) {
-            vec<PTRef> frameFormulas;
-            for (PTRef fla : frames[i].formulas) {
-                PTRef processed = theory->preprocessAfterSubstitutions(fla, context);
-                pmanager.transferPartitionMembership(fla, processed);
-                frameFormulas.push(processed);
-                preprocessor.addPreprocessedFormula(processed);
-            }
-            if (frameFormulas.size() == 0 or std::all_of(frameFormulas.begin(), frameFormulas.end(),
-                                                         [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
-                continue;
-            }
-            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            for (PTRef fla : frameFormulas) {
-                if (fla == logic.getTerm_true()) { continue; }
-                assert(pmanager.getPartitionIndex(fla) != -1);
-                // Optimize the dag for cnfization
-                if (logic.isBooleanOperator(fla)) {
-                    PTRef old = fla;
-                    fla = rewriteMaxArity(fla);
-                    pmanager.transferPartitionMembership(old, fla);
-                }
-                assert(pmanager.getPartitionIndex(fla) != -1);
-                pmanager.propagatePartitionMask(fla);
-                status = giveToSolver(fla, frames[i].getId());
+
+        if (not context.perPartition) {
+            PTRef frameFormula = preprocessFormulasDefault(frame.formulas, context);
+            status = giveToSolver(frameFormula, frameId);
+        } else {
+            vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+            for (PTRef fla : processedFormulas) {
+                status = giveToSolver(fla, frameId);
                 if (status == s_False) { break; }
             }
-        } else {
-            PTRef frameFormula = logic.mkAnd(frames[i].formulas);
-            if (context.frameCount > 0) { frameFormula = applyLearntSubstitutions(frameFormula); }
-            frameFormula = theory->preprocessBeforeSubstitutions(frameFormula, context);
-            frameFormula = substitutionPass(frameFormula, context);
-            frameFormula = theory->preprocessAfterSubstitutions(frameFormula, context);
+        }
+        if (status == s_False) { break; }
 
-            if (logic.isFalse(frameFormula)) {
-                giveToSolver(logic.getTerm_false(), frames[i].getId());
-                status = s_False;
-                break;
-            }
-            preprocessor.addPreprocessedFormula(frameFormula);
-            theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
-            // Optimize the dag for cnfization
-            if (logic.isBooleanOperator(frameFormula)) { frameFormula = rewriteMaxArity(frameFormula); }
-            status = giveToSolver(frameFormula, frames[i].getId());
+        for (PTRef pref : decisionPreferences.scope(i)) {
+            giveDecisionPreferenceToSMTSolver(pref, frameId, context);
         }
     }
+
     if (status == s_False) {
         assert(firstNotSimplifiedFrame > 0);
         rememberUnsatFrame(firstNotSimplifiedFrame - 1);
     }
+
     return status;
+}
+
+PTRef MainSolver::preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const & context) {
+    assert(not context.perPartition);
+
+    if (frameFormulas.size() == 0) { return logic.getTerm_true(); }
+
+    PTRef frameFormula = logic.mkAnd(frameFormulas);
+    return preprocessFormula(frameFormula, context);
+}
+
+vec<PTRef> MainSolver::preprocessFormulasPerPartition(vec<PTRef> const & frameFormulas,
+                                                      PreprocessingContext const & context) {
+    assert(context.perPartition);
+
+    if (frameFormulas.size() == 0) { return {}; }
+
+    vec<PTRef> processedFormulas;
+    for (PTRef fla : frameFormulas) {
+        PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+        processedFormulas.push(processed);
+    }
+
+    assert(processedFormulas.size() == frameFormulas.size());
+    assert(processedFormulas.size() > 0);
+    if (std::all_of(processedFormulas.begin(), processedFormulas.end(),
+                    [&](PTRef fla) { return fla == logic.getTerm_true(); })) {
+        return {};
+    }
+
+    preprocessFormulaDoFinalTheoryPreprocessing(context);
+
+    for (PTRef & fla : processedFormulas) {
+        if (fla == logic.getTerm_true()) { continue; }
+        fla = preprocessFormulaAfterFinalTheoryPreprocessing(fla, context);
+    }
+
+    return processedFormulas;
+}
+
+PTRef MainSolver::preprocessFormula(PTRef fla, PreprocessingContext const & context) {
+    PTRef processed = preprocessFormulaBeforeFinalTheoryPreprocessing(fla, context);
+    preprocessFormulaDoFinalTheoryPreprocessing(context);
+    processed = preprocessFormulaAfterFinalTheoryPreprocessing(processed, context);
+    return processed;
+}
+
+PTRef MainSolver::preprocessFormulaBeforeFinalTheoryPreprocessing(PTRef fla, PreprocessingContext const & context) {
+    bool const perPartition = context.perPartition;
+    PTRef processed = fla;
+
+    if (not perPartition) {
+        if (context.frameCount > 0) { processed = applyLearntSubstitutions(processed); }
+        processed = theory->preprocessBeforeSubstitutions(processed, context);
+        processed = substitutionPass(processed, context);
+    }
+
+    processed = theory->preprocessAfterSubstitutions(processed, context);
+
+    if (perPartition) {
+        pmanager.transferPartitionMembership(fla, processed);
+    } else if (logic.isFalse(processed)) {
+        return logic.getTerm_false();
+    }
+
+    preprocessor.addPreprocessedFormula(processed);
+
+    return processed;
+}
+
+void MainSolver::preprocessFormulaDoFinalTheoryPreprocessing(PreprocessingContext const &) {
+    theory->afterPreprocessing(preprocessor.getPreprocessedFormulas());
+}
+
+PTRef MainSolver::preprocessFormulaAfterFinalTheoryPreprocessing(PTRef fla, PreprocessingContext const & context) {
+    bool const perPartition = context.perPartition;
+    PTRef processed = fla;
+
+    assert(not perPartition or pmanager.getPartitionIndex(processed) != -1);
+
+    // Optimize the dag for cnfization
+    if (logic.isBooleanOperator(processed)) {
+        processed = rewriteMaxArity(processed);
+        if (perPartition) { pmanager.transferPartitionMembership(fla, processed); }
+    }
+
+    if (perPartition) {
+        assert(pmanager.getPartitionIndex(processed) != -1);
+        pmanager.propagatePartitionMask(processed);
+    }
+
+    return processed;
 }
 
 vec<PTRef> MainSolver::getCurrentAssertions() const {
@@ -255,6 +347,68 @@ PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
+void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId, PreprocessingContext const & pcontext) {
+    assert(logic.getSortRef(pref) == logic.getSort_bool());
+    assert(not logic.isConstant(pref));
+
+    // Ignores substitutions ..
+    Lit l = [&] {
+        if (term_mapper->hasLit(pref)) { return giveExistingDecisionPreferenceToSMTSolver(pref); }
+        if (logic.isBoolVarLiteral(pref)) { return giveBoolVarDecisionPreferenceToSMTSolver(pref); }
+        return giveAnyDecisionPreferenceToSMTSolver(pref, frameId, pcontext);
+    }();
+
+    decisionPreferenceToLitMap.emplace(pref, l);
+}
+
+Lit MainSolver::giveExistingDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(term_mapper->hasLit(pref));
+
+    ++existingDecisionPreferencesGivenToSMTSolverCount;
+    return term_mapper->getLit(pref);
+}
+
+Lit MainSolver::giveBoolVarDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(logic.isBoolVarLiteral(pref));
+
+    Lit l = term_mapper->getOrCreateLit(pref);
+    Var v = var(l);
+    smt_solver->addVar(v);
+    assert(term_mapper->getLit(pref) == l);
+    assert(term_mapper->getVar(pref) == var(l));
+
+    ++boolVarDecisionPreferencesGivenToSMTSolverCount;
+    return l;
+}
+
+Lit MainSolver::giveAnyDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId,
+                                                     PreprocessingContext const & pcontext) {
+    assert(not term_mapper->hasLit(pref));
+    assert(not logic.isBoolVarLiteral(pref));
+
+    // Cannot preprocess pref unconditionally - may result in a conflict
+
+    auto name = std::string{".pref"} + std::to_string(pref.x);
+    PTRef decisionVarTerm = logic.mkBoolVar(name.c_str());
+    Lit l = term_mapper->getOrCreateLit(decisionVarTerm);
+    PTRef condTerm = logic.mkImpl(decisionVarTerm, pref);
+
+    assert(not pcontext.perPartition);
+    PTRef processed = preprocessFormula(condTerm, pcontext);
+    assert(not logic.isConstant(processed));
+    assert(not logic.isBoolVarLiteral(processed));
+
+    [[maybe_unused]]
+    sstat status = giveToSolver(processed, frameId);
+    assert(status == s_Undef);
+
+    assert(term_mapper->getLit(decisionVarTerm) == l);
+    assert(term_mapper->getVar(decisionVarTerm) == var(l));
+
+    ++otherDecisionPreferencesGivenToSMTSolverCount;
+    return l;
+}
+
 std::unique_ptr<Model> MainSolver::getModel() {
     if (!config.produce_models()) { throw ApiException("Producing models is not enabled"); }
     if (status != s_True) { throw ApiException("Model cannot be created if solver is not in SAT state"); }
@@ -307,16 +461,19 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
 }
 
 sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
-
     struct ClauseCallBack : public Cnfizer::ClauseCallBack {
         std::vector<vec<Lit>> clauses;
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
+
+    if (root == logic.getTerm_true()) { return s_Undef; }
+
     ClauseCallBack callBack;
     ts.setClauseCallBack(&callBack);
     ts.Cnfizer::cnfize(root, push_id);
     bool const keepPartitionsSeparate = trackPartitions();
-    Lit frameLit = push_id == 0 ? Lit{} : term_mapper->getOrCreateLit(frameTerms[push_id]);
+    Lit frameLit;
+    if (push_id != 0) { frameLit = term_mapper->getOrCreateLit(frameTerms[push_id]); }
     int partitionIndex = keepPartitionsSeparate ? pmanager.getPartitionIndex(root) : -1;
     for (auto & clause : callBack.clauses) {
         if (push_id != 0) { clause.push(frameLit); }
@@ -362,6 +519,12 @@ sstat MainSolver::check() {
 
 sstat MainSolver::solve() {
     if (!smt_solver->isOK()) { return s_False; }
+
+    smt_solver->clearUserBranchLits();
+    for (PTRef pref : decisionPreferences) {
+        //++ probably just use vector
+        smt_solver->pushUserBranchLit(decisionPreferenceToLitMap[pref]);
+    }
 
     // FIXME: Find a better way to deal with Bools in UF
     for (PTRef tr : logic.propFormulasAppearingInUF) {
