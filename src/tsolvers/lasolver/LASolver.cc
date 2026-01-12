@@ -133,7 +133,12 @@ bool LASolver::check_simplex(bool complete) {
     if (status == INIT) {
         initSolver();
     }
-    storeExplanation(simplex.checkSimplex());
+
+    try { storeExplanation(simplex.checkSimplex()); }
+    catch (Simplex::StopException const &) {
+        assert(stopped());
+        throw StopException{};
+    }
 
     if (explanation.size() == 0)
         setStatus(SAT);
@@ -626,6 +631,11 @@ LASolver::~LASolver( )
 
 ArithLogic&  LASolver::getLogic()  { return logic; }
 
+
+void LASolver::notifyStop() {
+    TSolver::notifyStop();
+    simplex.notifyStop();
+}
 
 /**
  * Given an inequality v ~ c (with ~ is either < or <=), compute the correct bounds on the variable.
