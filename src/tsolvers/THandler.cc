@@ -20,6 +20,11 @@ namespace opensmt {
 
 void THandler::backtrack(int lev)
 {
+    auto & tshandler = getSolverHandler();
+    //++ currently popBacktrackPoints may fail if stopped due to ending in an inconsistent state
+    // now we just return -> the solver state must be discarded and cannot be recovered
+    if (tshandler.stopped()) { return; }
+
     unsigned int backTrackPointsCounter = 0;
     // Undoes the state of theory atoms if needed
     while ( (int)stack.size( ) > (lev > 0 ? lev : 0) ) {
@@ -33,7 +38,7 @@ void THandler::backtrack(int lev)
         if (not isDeclared(var(PTRefToLit(e)))) continue;
         ++backTrackPointsCounter;
     }
-    for (auto solver : getSolverHandler().solverSchedule) {
+    for (auto solver : tshandler.solverSchedule) {
         solver->popBacktrackPoints(backTrackPointsCounter);
     }
 

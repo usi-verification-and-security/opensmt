@@ -78,6 +78,8 @@ public:
     ArithLogic & getLogic() override;
     bool isValid(PTRef tr) override;
 
+    void notifyStop() override;
+
 private:
     struct DecEl {
         PtAsgn asgn;
