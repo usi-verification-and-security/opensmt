@@ -1535,6 +1535,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                 default:
                     assert( false );
             }
+            if (not okContinue()) { break; }
 
             Lit next = lit_Undef;
             while (decisionLevel() < assumptions.size()) {
@@ -1588,6 +1589,7 @@ lbool CoreSMTSolver::search(int nof_conflicts)
                         return zeroLevelConflictHandler();
                     }
                     assert( res == TPropRes::Decide );
+                    if (not okContinue()) { break; }
 
                     // Otherwise we still have to make sure that
                     // splitting on demand did not add any new variable

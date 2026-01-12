@@ -29,6 +29,8 @@ struct SimplexStats {
 
 class Simplex {
 public:
+    struct StopException {};
+
     struct ExplTerm {
         LABoundRef boundref;
         Real coeff;
@@ -142,7 +144,13 @@ public:
         return l_Undef;
     }
 
+    void notifyStop() { stopFlag = true; }
+
+    bool stopped() const { return stopFlag; }
+
 private:
+    bool okContinue() const;
+
     void pivot(LVRef basic, LVRef nonBasic);
     LVRef getBasicVarToFixByBland() const;
     LVRef getBasicVarToFixByShortestPoly() const;
@@ -193,6 +201,8 @@ private:
     // Keeping track of activated bounds
     std::vector<std::pair<LVRef, LABoundRef>> bufferOfActivatedBounds;
     std::vector<unsigned int> boundsActivated;
+
+    bool stopFlag{false};
 };
 } // namespace opensmt
 
