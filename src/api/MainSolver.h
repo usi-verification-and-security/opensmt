@@ -157,7 +157,7 @@ public:
 
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
-    void notifyStop() { smt_solver->notifyStop(); }
+    void notifyStop();
 
     // Set wall-clock time limit for the solver in miliseconds
     // When it expires, the solving is terminated gracefully and unknown is returned

@@ -70,9 +70,15 @@ public:
     virtual TRes    check(bool);
     virtual vec<PTRef> getSplitClauses();
     virtual void fillTheoryFunctions(ModelBuilder & modelBuilder) const;
+
+    void notifyStop();
+
+    bool stopped() const { return stopFlag; }
 private:
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;
+
+    bool stopFlag{false};
 };
 
 }

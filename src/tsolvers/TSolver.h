@@ -125,6 +125,8 @@ private:
      */
     Map<PTRef,lbool,PTRefHash>  polarityMap;
 
+    bool stopFlag{false};
+
 protected:
     SolverId                    id;              // Solver unique identifier
     vec<PtAsgn>                 explanation;     // Stores the explanation
@@ -151,6 +153,8 @@ protected:
     vec<PTRef>                  splitondemand;
 
 public:
+    struct StopException {};
+
     // The states of the TSolver check query
 
 
@@ -189,6 +193,10 @@ public:
     virtual Logic& getLogic() = 0;
     virtual bool isValid(PTRef tr) = 0;
     bool isInformed(PTRef tr) const { return informed_PTRefs.has(tr); }
+
+    virtual void notifyStop() { stopFlag = true; }
+
+    bool stopped() const { return stopFlag; }
 
     virtual void printStatistics(std::ostream & os);
 protected:

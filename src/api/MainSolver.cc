@@ -618,6 +618,11 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     }
 }
 
+void MainSolver::notifyStop() {
+    smt_solver->notifyStop();
+    theory->getTSolverHandler().notifyStop();
+}
+
 void MainSolver::setTimeLimit(std::chrono::milliseconds limit, TimeLimitConf const & conf) {
     if (limit <= std::chrono::milliseconds::zero()) {
         throw std::invalid_argument{"MainSolver::setTimeLimit: The value must be positive."};
