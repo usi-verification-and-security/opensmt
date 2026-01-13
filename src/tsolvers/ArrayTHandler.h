@@ -23,7 +23,7 @@ public:
 
     Logic const & getLogic() const override { return logic; }
 
-    PTRef getInterpolant(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw InternalException("Interpolation not supported yet"); };
+    PTRef getInterpolantImpl(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw InternalException("Interpolation not supported yet"); };
 
 };
 

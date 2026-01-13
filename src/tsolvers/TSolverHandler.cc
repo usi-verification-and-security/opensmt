@@ -12,6 +12,11 @@ TSolverHandler::~TSolverHandler()
     }
 }
 
+PTRef TSolverHandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager& pmanager) {
+    if (stopped()) { return PTRef_Undef; }
+    return getInterpolantImpl(mask, labels, pmanager);
+}
+
 void TSolverHandler::computeModel()
 {
     if (stopped()) { return; }
