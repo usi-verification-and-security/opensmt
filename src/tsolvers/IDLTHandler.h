@@ -23,7 +23,7 @@ public:
     virtual Logic& getLogic() override;
     virtual const Logic& getLogic() const override;
 //    virtual lbool getPolaritySuggestion(PTRef) const override;
-    virtual PTRef getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager&) override {
+    virtual PTRef getInterpolantImpl(const ipartitions_t&, ItpColorMap *, PartitionManager&) override {
         throw std::logic_error("Not implemented yet");
     }
 
