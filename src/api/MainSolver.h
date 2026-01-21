@@ -324,6 +324,7 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotSimplifiedFrame = 0;
     unsigned int insertedFormulasCount = 0;
+    std::string reasonUnknown;
 };
 
 bool MainSolver::trackPartitions() const {

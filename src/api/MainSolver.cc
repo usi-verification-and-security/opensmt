@@ -9,6 +9,7 @@
 #include "MainSolver.h"
 
 #include <common/ApiException.h>
+#include <common/NonLinException.h>
 #include <itehandler/IteHandler.h>
 #include <logics/ArrayTheory.h>
 #include <logics/LATheory.h>
@@ -347,14 +348,23 @@ sstat MainSolver::check() {
         StopWatch sw(query_timer);
     }
     if (isLastFrameUnsat()) { return s_False; }
-    sstat rval = simplifyFormulas();
+    sstat rval;
+    try {
+        rval = simplifyFormulas();
+    } catch (NonLinException const & error) {
+        reasonUnknown = error.what();
+        return s_Undef;
+    }
 
     if (config.dump_query()) printCurrentAssertionsAsQuery();
 
     if (rval == s_Undef) {
         try {
             rval = solve();
-        } catch (std::overflow_error const & error) { rval = s_Error; }
+        } catch (std::overflow_error const & error) { rval = s_Error; } catch (NonLinException const & error) {
+            reasonUnknown = error.what();
+            return s_Undef;
+        }
         if (rval == s_False) {
             assert(not smt_solver->isOK());
             rememberUnsatFrame(smt_solver->getConflictFrame());

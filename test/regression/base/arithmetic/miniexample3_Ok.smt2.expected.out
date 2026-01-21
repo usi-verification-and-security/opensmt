@@ -1,0 +1,7 @@
+sat
+(
+  (define-fun x () Int
+    0)
+  (define-fun y () Int
+    4)
+)

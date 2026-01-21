@@ -11,6 +11,7 @@
 #include "Rewriter.h"
 
 #include <common/InternalException.h>
+#include <common/NonLinException.h>
 #include <logics/ArithLogic.h>
 
 namespace opensmt {
@@ -36,6 +37,8 @@ public:
             PTRef modVar = divMod.mod;
             PTRef rewritten = logic.isIntDiv(symRef) ? divVar : modVar;
             if (not inCache) {
+                // Throws exception if term is nonlinear
+                logic.ensureLinear(term);
                 // collect the definitions to add
                 assert(logic.isConstant(divisor));
                 auto divisorVal = logic.getNumConst(divisor);

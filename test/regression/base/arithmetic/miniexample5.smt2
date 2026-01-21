@@ -1,0 +1,8 @@
+(set-option :produce-models true)
+(set-logic QF_LIA)
+(declare-fun x () Int)
+(define-fun uninterp_mul ((a Int) (b Int)) Int (* a (+ b 5)))
+(assert (= (uninterp_mul 2 x) (+ x 15)))
+(check-sat)
+(get-model)
+(exit)

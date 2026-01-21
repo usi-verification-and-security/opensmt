@@ -11,6 +11,7 @@
 #include "CutCreator.h"
 
 #include <common/Random.h>
+#include <common/NonLinException.h>
 #include <models/ModelBuilder.h>
 
 #include <unordered_set>
@@ -64,9 +65,7 @@ void LASolver::isProperLeq(PTRef tr)
     assert(logic.isLeq(tr));
     auto [cons, sum] = logic.leqToConstantAndTerm(tr);
     assert(logic.isConstant(cons));
-    assert(logic.isNumVar(sum) || logic.isPlus(sum) || logic.isTimes(sum));
-    assert(!logic.isTimes(sum) || ((logic.isNumVar(logic.getPterm(sum)[0]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[1]))) ||
-                                   (logic.isNumVar(logic.getPterm(sum)[1]) && logic.isOne(logic.mkNeg(logic.getPterm(sum)[0])))));
+    assert(logic.isPlus(sum) or logic.isTimesLin(sum) or logic.isMonomial(sum));
     (void) cons; (void)sum;
 }
 
@@ -175,6 +174,8 @@ LVRef LASolver::getVarForLeq(PTRef ref) const {
 }
 
 LVRef LASolver::getLAVar_single(PTRef expr_in) {
+    // Throws exception if term is nonlinear
+    logic.ensureLinear(expr_in);
     assert(logic.isLinearTerm(expr_in));
     if (laVarMapper.hasVar(expr_in)) {
         return getVarForTerm(expr_in);
@@ -190,7 +191,7 @@ std::unique_ptr<Tableau::Polynomial> LASolver::expressionToLVarPoly(PTRef term) 
     auto poly = std::make_unique<Tableau::Polynomial>();
     bool negated = laVarMapper.isNegated(term);
     for (int i = 0; i < logic.getPterm(term).size(); i++) {
-        auto [v,c] = logic.splitTermToVarAndConst(logic.getPterm(term)[i]);
+        auto [v,c] = logic.splitPolyTerm(logic.getPterm(term)[i]);
         LVRef var = getLAVar_single(v);
         Real coeff = getNum(c);
         if (negated) {
@@ -224,11 +225,11 @@ LVRef LASolver::registerArithmeticTerm(PTRef expr) {
         }
     }
 
-    if (logic.isNumVar(expr) || logic.isTimes(expr)) {
+    if (logic.isNumVar(expr) || logic.isTimesLin(expr)) {
         // Case (1), (2a), and (2b)
-        auto [v,c] = logic.splitTermToVarAndConst(expr);
-        assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
+        auto [v,c] = logic.splitPolyTerm(expr);
         x = getLAVar_single(v);
+        assert(logic.isNumVar(v) || (laVarMapper.isNegated(v) && logic.isNumVar(logic.mkNeg(v))));
         simplex.newNonbasicVar(x);
         notifyVar(x);
     }
@@ -773,7 +774,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         PTRef poly = defConstraint.lhs;
         fillTerms(poly, terms);
         for (PTRef arg : terms) {
-            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto [var, constant] = logic.splitPolyTerm(arg);
             assert(var != PTRef_Undef);
             if (varIndices.find(var) == varIndices.end()) {
                 varIndices.insert({var, columns++});
@@ -792,7 +793,7 @@ std::pair<SparseLinearSystem,std::vector<PTRef>> linearSystemFromConstraints(std
         PTRef poly = constraints[row].lhs;
         fillTerms(poly, terms);
         for (PTRef arg : terms) {
-            auto [var, constant] = logic.splitTermToVarAndConst(arg);
+            auto [var, constant] = logic.splitPolyTerm(arg);
             auto col = varIndices[var];
             columnPolynomials[col].addTerm(IndexType{row}, logic.getNumConst(constant));
         }

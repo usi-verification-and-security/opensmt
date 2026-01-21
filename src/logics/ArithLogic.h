@@ -8,16 +8,6 @@
 #include <numeric>
 
 namespace opensmt {
-class LANonLinearException : public std::runtime_error {
-public:
-    LANonLinearException(char const * reason_) : runtime_error(reason_) {
-        msg = "Term " + std::string(reason_) + " is non-linear";
-    }
-    virtual char const * what() const noexcept override { return msg.c_str(); }
-
-private:
-    std::string msg;
-};
 
 class ArithDivisionByZeroException : public std::runtime_error {
 public:
@@ -98,6 +88,10 @@ public:
 
     SymRef get_sym_Int_TIMES() const { return sym_Int_TIMES; }
     SymRef get_sym_Real_TIMES() const { return sym_Real_TIMES; }
+    SymRef get_sym_Int_TIMES_LIN() const { return sym_Int_TIMES_LIN; }
+    SymRef get_sym_Real_TIMES_LIN() const { return sym_Real_TIMES_LIN; }
+    SymRef get_sym_Int_TIMES_NONLIN() const { return sym_Int_TIMES_NONLIN; }
+    SymRef get_sym_Real_TIMES_NONLIN() const { return sym_Real_TIMES_NONLIN; }
     SymRef get_sym_Int_DIV() const { return sym_Int_DIV; }
     SymRef get_sym_Int_MOD() const { return sym_Int_MOD; }
     SymRef get_sym_Real_DIV() const { return sym_Real_DIV; }
@@ -163,10 +157,22 @@ public:
     bool isIntNeg(SymRef sr) const { return sr == sym_Int_NEG; }
     bool isRealNeg(SymRef sr) const { return sr == sym_Real_NEG; }
 
-    bool isTimes(SymRef sr) const { return isIntTimes(sr) or isRealTimes(sr); }
+    bool isTimes(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr) or isIntTimes(sr) or isRealTimes(sr); };
+    bool isTimesLinOrNonlin(SymRef sr) const { return isTimesLin(sr) or isTimesNonlin(sr); };
+    bool isTimesLin(SymRef sr) const { return isIntTimesLin(sr) or isRealTimesLin(sr); }
+    bool isTimesNonlin(SymRef sr) const { return isIntTimesNonlin(sr) or isRealTimesNonlin(sr); }
     bool isTimes(PTRef tr) const { return isTimes(getPterm(tr).symb()); }
-    bool isIntTimes(PTRef tr) const { return isIntTimes(getPterm(tr).symb()); }
-    bool isRealTimes(PTRef tr) const { return isRealTimes(getPterm(tr).symb()); }
+    bool isTimesLinOrNonlin(PTRef tr) const { return isTimesLinOrNonlin(getPterm(tr).symb()); };
+    bool isTimesLin(PTRef tr) const { return isTimesLin(getPterm(tr).symb()); }
+    bool isTimesNonlin(PTRef tr) const { return isTimesNonlin(getPterm(tr).symb()); }
+    bool isIntTimesLin(PTRef tr) const { return isIntTimesLin(getPterm(tr).symb()); }
+    bool isIntTimesNonlin(PTRef tr) const { return isIntTimesNonlin(getPterm(tr).symb()); }
+    bool isRealTimesLin(PTRef tr) const { return isRealTimesLin(getPterm(tr).symb()); }
+    bool isRealTimesNonlin(PTRef tr) const { return isRealTimesNonlin(getPterm(tr).symb()); }
+    bool isIntTimesLin(SymRef sr) const { return sr == sym_Int_TIMES_LIN; }
+    bool isIntTimesNonlin(SymRef sr) const { return sr == sym_Int_TIMES_NONLIN; }
+    bool isRealTimesLin(SymRef sr) const { return sr == sym_Real_TIMES_LIN; }
+    bool isRealTimesNonlin(SymRef sr) const { return sr == sym_Real_TIMES_NONLIN; }
     bool isIntTimes(SymRef sr) const { return sr == sym_Int_TIMES; }
     bool isRealTimes(SymRef sr) const { return sr == sym_Real_TIMES; }
 
@@ -215,10 +221,11 @@ public:
 
     bool isNumVar(SymRef sr) const { return isVar(sr) and (yieldsSortInt(sr) or yieldsSortReal(sr)); }
     bool isNumVar(PTRef tr) const { return isNumVar(getPterm(tr).symb()); }
-    bool isNumVarLike(SymRef sr) const {
-        return yieldsSortNum(sr) and not isPlus(sr) and not isTimes(sr) and not isNumConst(sr);
+    // isMonomial property is related to PTRef only
+    bool isMonomial(PTRef tr) const {
+        SymRef sr = getPterm(tr).symb();
+        return yieldsSortNum(sr) and not isPlus(sr) and not isTimesLin(sr) and not isNumConst(sr);
     }
-    bool isNumVarLike(PTRef tr) const { return isNumVarLike(getPterm(tr).symb()); }
 
     bool isZero(SymRef sr) const { return isIntZero(sr) or isRealZero(sr); }
     bool isZero(PTRef tr) const { return isZero(getSymRef(tr)); }
@@ -260,7 +267,8 @@ public:
     }
 
     SymRef getPlusForSort(SRef sort) const;
-    SymRef getTimesForSort(SRef sort) const;
+    SymRef getTimesLinForSort(SRef sort) const;
+    SymRef getTimesNonlinForSort(SRef sort) const;
     SymRef getMinusForSort(SRef sort) const;
 
     PTRef getZeroForSort(SRef sort) const;
@@ -338,8 +346,11 @@ public:
 
     bool isLinearTerm(PTRef tr) const;
     bool isLinearFactor(PTRef tr) const;
+    // Function checks if term is non-linear and throws exception if it is the case
+    void ensureLinear(PTRef tr) const;
     pair<Number, vec<PTRef>> getConstantAndFactors(PTRef sum) const;
-    pair<PTRef, PTRef> splitTermToVarAndConst(PTRef term) const;
+    // Given a term `t` is splits the term into monomial and its coefficient
+    pair<PTRef, PTRef> splitPolyTerm(PTRef term) const;
     PTRef normalizeMul(PTRef mul);
     // Given a sum term 't' returns a normalized inequality 'c <= s' equivalent to '0 <= t'
     PTRef sumToNormalizedInequality(PTRef sum);
@@ -377,6 +388,9 @@ protected:
     pair<Number, PTRef> sumToNormalizedRealPair(PTRef sum);
 
     std::string termToSMT2StringImpl(PTRef tr, bool withRefs) const override;
+    SymRef declareFunMultiplicationLinNonlin(std::string const & s, SRef rsort, vec<SRef> const & args) {
+        return sym_store.newInternalSymb(s.c_str(), rsort, args, SymConf::CommutativeNoScopingLeftAssoc);
+    }
 
     bool hasNegativeLeadingVariable(PTRef poly) const;
 
@@ -424,6 +438,8 @@ protected:
     SymRef sym_Real_MINUS;
     SymRef sym_Real_PLUS;
     SymRef sym_Real_TIMES;
+    SymRef sym_Real_TIMES_LIN;
+    SymRef sym_Real_TIMES_NONLIN;
     SymRef sym_Real_DIV;
     SymRef sym_Real_EQ;
     SymRef sym_Real_LEQ;
@@ -444,6 +460,8 @@ protected:
     SymRef sym_Int_MINUS;
     SymRef sym_Int_PLUS;
     SymRef sym_Int_TIMES;
+    SymRef sym_Int_TIMES_LIN;
+    SymRef sym_Int_TIMES_NONLIN;
     SymRef sym_Int_DIV;
     SymRef sym_Int_MOD;
     SymRef sym_Int_EQ;
