@@ -51,6 +51,28 @@ public:
     [[nodiscard]] T * data() { return elements.data(); }
 
     [[nodiscard]] std::size_t scopeCount() const { return limits.size() + 1; }
+
+    [[nodiscard]] std::size_t topScopeEmpty() const { return topScopeSize() == 0; }
+    [[nodiscard]] std::size_t topScopeSize() const { return size() - sizeBeforeTopScope(); }
+
+    [[nodiscard]] auto topScopeBegin() const { return begin() + sizeBeforeTopScope(); }
+    [[nodiscard]] auto topScopeEnd() const { return end(); }
+
+    [[nodiscard]] auto topScopeBegin() { return begin() + sizeBeforeTopScope(); }
+    [[nodiscard]] auto topScopeEnd() { return end(); }
+
+    [[nodiscard]] T const * topScopeData() const { return data() + sizeBeforeTopScope(); }
+    [[nodiscard]] T * topScopeData() { return data() + sizeBeforeTopScope(); }
+
+    // Views to just the top scope
+    inline auto topScope() const;
+    inline auto topScope();
+
+protected:
+    template<typename>
+    class TopScopeView;
+
+    inline std::size_t sizeBeforeTopScope() const;
 };
 
 template<typename T>
@@ -75,6 +97,44 @@ template<typename T>
 void ScopedVector<T>::clear() {
     elements.clear();
     limits.clear();
+}
+
+template<typename T>
+std::size_t ScopedVector<T>::sizeBeforeTopScope() const {
+    if (limits.empty()) { return 0; }
+    return limits.back();
+}
+
+template<typename T>
+template<typename VectorT>
+class ScopedVector<T>::TopScopeView {
+public:
+    explicit TopScopeView(VectorT & scopedVector_) : scopedVector{scopedVector_} {}
+
+    bool empty() const noexcept { return scopedVector.topScopeEmpty(); }
+    std::size_t size() const noexcept { return scopedVector.topScopeSize(); }
+
+    auto begin() const noexcept { return scopedVector.topScopeBegin(); }
+    auto end() const noexcept { return scopedVector.topScopeEnd(); }
+
+    auto begin() noexcept { return scopedVector.topScopeBegin(); }
+    auto end() noexcept { return scopedVector.topScopeEnd(); }
+
+    T const * data() const noexcept { return scopedVector.topScopeData(); }
+    T * data() noexcept { return scopedVector.topScopeData(); }
+
+protected:
+    VectorT & scopedVector;
+};
+
+template<typename T>
+auto ScopedVector<T>::topScope() const {
+    return TopScopeView<ScopedVector const>{*this};
+}
+
+template<typename T>
+auto ScopedVector<T>::topScope() {
+    return TopScopeView<ScopedVector>{*this};
 }
 } // namespace opensmt
 
