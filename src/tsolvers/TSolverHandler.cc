@@ -12,14 +12,21 @@ TSolverHandler::~TSolverHandler()
     }
 }
 
+PTRef TSolverHandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager& pmanager) {
+    if (stopped()) { return PTRef_Undef; }
+    return getInterpolantImpl(mask, labels, pmanager);
+}
+
 void TSolverHandler::computeModel()
 {
+    if (stopped()) { return; }
     for (auto solver : solverSchedule) {
         solver->computeModel();
     }
 }
 
 void TSolverHandler::fillTheoryFunctions(ModelBuilder & modelBuilder) const {
+    if (stopped()) { return; }
     for (auto solver : solverSchedule) {
         assert(solver);
         solver->fillTheoryFunctions(modelBuilder);
@@ -70,7 +77,9 @@ void TSolverHandler::informNewSplit(PTRef tr)
 }
 
 TRes TSolverHandler::check(bool complete)
-{
+try {
+    if (stopped()) { return TRes::UNKNOWN; }
+
     TRes res_final = TRes::SAT;
     for (auto solver : solverSchedule) {
         TRes res = solver->check(complete);
@@ -80,6 +89,10 @@ TRes TSolverHandler::check(bool complete)
             res_final = TRes::UNKNOWN;
     }
     return res_final;
+}
+catch (TSolver::StopException const &) {
+    assert(stopped());
+    return TRes::UNKNOWN;
 }
 
 vec<PTRef> TSolverHandler::getSplitClauses() {
@@ -102,6 +115,13 @@ TSolver* TSolverHandler::getReasoningSolverFor(PTRef ptref) const {
     }
     assert(false);
     return nullptr;
+}
+
+void TSolverHandler::notifyStop() {
+    stopFlag = true;
+    for (auto solver : solverSchedule) {
+        solver->notifyStop();
+    }
 }
 
 }
