@@ -251,3 +251,11 @@ target_sources(StopTest
 
 target_link_libraries(StopTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET StopTest)
+
+add_executable(TimeoutTest)
+target_sources(TimeoutTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Timeout.cc"
+        )
+
+target_link_libraries(TimeoutTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TimeoutTest)
