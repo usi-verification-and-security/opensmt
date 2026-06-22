@@ -9,6 +9,8 @@
 #define OPENSMT_SCOPEDVECTOR_H
 
 #include <cassert>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace opensmt {
@@ -52,6 +54,7 @@ public:
 
     [[nodiscard]] std::size_t scopeCount() const { return limits.size() + 1; }
 
+    // Slightly more efficient than scope*
     [[nodiscard]] std::size_t topScopeEmpty() const { return topScopeSize() == 0; }
     [[nodiscard]] std::size_t topScopeSize() const { return size() - sizeBeforeTopScope(); }
 
@@ -64,15 +67,32 @@ public:
     [[nodiscard]] T const * topScopeData() const { return data() + sizeBeforeTopScope(); }
     [[nodiscard]] T * topScopeData() { return data() + sizeBeforeTopScope(); }
 
+    [[nodiscard]] std::size_t scopeEmpty(std::size_t idx) const { return scopeSize(idx) == 0; }
+    [[nodiscard]] std::size_t scopeSize(std::size_t idx) const;
+
+    // Only const accessors for potentially non-top scopes
+    [[nodiscard]] auto scopeBegin(std::size_t idx) const { return begin() + sizeBeforeScope(idx); }
+    [[nodiscard]] auto scopeEnd(std::size_t idx) const;
+
+    [[nodiscard]] T const * scopeData(std::size_t idx) const { return data() + sizeBeforeScope(idx); }
+
     // Views to just the top scope
     inline auto topScope() const;
     inline auto topScope();
 
+    // Views to just a scope
+    inline auto scope(std::size_t idx) const;
+
 protected:
     template<typename>
     class TopScopeView;
+    template<typename>
+    class ScopeView;
+
+    inline void checkScopeIdx(std::size_t idx) const;
 
     inline std::size_t sizeBeforeTopScope() const;
+    inline std::size_t sizeBeforeScope(std::size_t idx) const;
 };
 
 template<typename T>
@@ -100,9 +120,34 @@ void ScopedVector<T>::clear() {
 }
 
 template<typename T>
+void ScopedVector<T>::checkScopeIdx(std::size_t idx) const {
+    if (idx < scopeCount()) { return; }
+    throw std::out_of_range{"Scope index out of range: " + std::to_string(idx)};
+}
+
+template<typename T>
 std::size_t ScopedVector<T>::sizeBeforeTopScope() const {
     if (limits.empty()) { return 0; }
     return limits.back();
+}
+
+template<typename T>
+std::size_t ScopedVector<T>::sizeBeforeScope(std::size_t idx) const {
+    checkScopeIdx(idx);
+    if (idx == 0) { return 0; }
+    return limits[idx - 1];
+}
+
+template<typename T>
+std::size_t ScopedVector<T>::scopeSize(std::size_t idx) const {
+    if (idx == scopeCount() - 1) { return topScopeSize(); }
+    return sizeBeforeScope(idx + 1) - sizeBeforeScope(idx);
+}
+
+template<typename T>
+auto ScopedVector<T>::scopeEnd(std::size_t idx) const {
+    if (idx == scopeCount() - 1) { return topScopeEnd(); }
+    return begin() + sizeBeforeScope(idx + 1);
 }
 
 template<typename T>
@@ -128,6 +173,25 @@ protected:
 };
 
 template<typename T>
+template<typename VectorT>
+class ScopedVector<T>::ScopeView {
+public:
+    explicit ScopeView(VectorT & scopedVector_, std::size_t idx_) : scopedVector{scopedVector_}, idx{idx_} {}
+
+    bool empty() const noexcept { return scopedVector.scopeEmpty(idx); }
+    std::size_t size() const noexcept { return scopedVector.scopeSize(idx); }
+
+    auto begin() const noexcept { return scopedVector.scopeBegin(idx); }
+    auto end() const noexcept { return scopedVector.scopeEnd(idx); }
+
+    T const * data() const noexcept { return scopedVector.scopeData(idx); }
+
+protected:
+    VectorT & scopedVector;
+    std::size_t idx;
+};
+
+template<typename T>
 auto ScopedVector<T>::topScope() const {
     return TopScopeView<ScopedVector const>{*this};
 }
@@ -135,6 +199,11 @@ auto ScopedVector<T>::topScope() const {
 template<typename T>
 auto ScopedVector<T>::topScope() {
     return TopScopeView<ScopedVector>{*this};
+}
+
+template<typename T>
+auto ScopedVector<T>::scope(std::size_t idx) const {
+    return ScopeView<ScopedVector const>{*this, idx};
 }
 } // namespace opensmt
 
