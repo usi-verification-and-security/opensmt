@@ -239,6 +239,27 @@ void Interpret::interp(ASTNode& n) {
                 }
                 break;
             }
+            case t_prefer: {
+                if (isInitialized()) {
+                    ASTNode const & asrt = **(n.children->begin());
+                    LetRecords letRecords;
+                    PTRef tr = parseTerm(asrt, letRecords);
+                    if (tr == PTRef_Undef) {
+                        notify_formatted(true, "invalid preference");
+                    } else {
+                        assertions.push(tr);
+                        try {
+                            main_solver->addDecisionPreference(tr);
+                            notify_success();
+                        } catch (ApiException const & e) {
+                            notify_formatted(true, e.what());
+                        }
+                    }
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: prefer");
+                }
+                break;
+            }
             case t_definefun: {
                 if (isInitialized()) {
                     defineFun(n);
