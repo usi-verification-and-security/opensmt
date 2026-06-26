@@ -63,8 +63,8 @@ protected:
     bool isAssumptionVar(Var v) const { return assumptionVars.find(v) != assumptionVars.end(); }
 
     lbool solve_() override;
-    bool branchLitRandom() override;
-    Var doActivityDecision() override;
+    bool randomBranchingCond() override;
+    Var pickActivityBranchVar() override;
     bool okContinue() const override;
     ConsistencyAction notifyConsistency() override;
     void notifyEnd() override;

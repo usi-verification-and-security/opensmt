@@ -880,12 +880,22 @@ bool Logic::isAtom(PTRef r) const {
     return false;
 }
 
+namespace {
+    bool isLiteralTp(Logic const & logic, auto logicPredicate, PTRef tr) {
+        if ((logic.*logicPredicate)(tr)) { return true; }
+        if (not logic.isNot(tr)) { return false; }
+        auto & term = logic.getPterm(tr);
+        assert(term.size() == 1);
+        return (logic.*logicPredicate)(term[0]);
+    }
+} // namespace
+
 bool Logic::isLiteral(PTRef tr) const {
-    if (isAtom(tr)) { return true; }
-    if (not isNot(tr)) { return false; }
-    auto & term = getPterm(tr);
-    assert(term.size() == 1);
-    return isAtom(term[0]);
+    return isLiteralTp(*this, &Logic::isAtom, tr);
+}
+
+bool Logic::isBoolVarLiteral(PTRef tr) const {
+    return isLiteralTp(*this, &Logic::isBoolVar, tr);
 }
 
 //

@@ -20,6 +20,7 @@
 #include <unsatcores/UnsatCore.h>
 
 #include <memory>
+#include <unordered_map>
 
 namespace opensmt {
 class Logic;
@@ -98,6 +99,12 @@ public:
     // Try add a unique name for a term already included in the assertions
     bool tryAddTermNameFor(PTRef, std::string const & name);
 
+    // Instructs the solver to assign the formula to true when it arrives at a decision point
+    // The preference is appended to the list of preferences, favoring the earlier entries first
+    // It complies with the assertion stack
+    void addDecisionPreference(PTRef fla);
+    void resetDecisionPreferences();
+
     void initialize();
 
     virtual sstat check(); // A wrapper for solve which simplifies the loaded formulas and initializes the solvers
@@ -105,6 +112,8 @@ public:
     // Simplify formulas until all are simplified or the instance is detected unsat
     // Skip assertion levels that have already been simplified
     sstat simplifyFormulas();
+    // Alias for `simplifyFormulas`, reserved for future use
+    sstat preprocess() { return simplifyFormulas(); }
 
     [[nodiscard]] sstat getStatus() const { return status; }
 
@@ -289,7 +298,20 @@ protected:
 
     inline bool trackPartitions() const;
 
+    virtual PTRef preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
+    virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const & frameFormulas, PreprocessingContext const &);
+
+    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
+    virtual PTRef preprocessFormulaBeforeFinalTheoryPreprocessing(PTRef, PreprocessingContext const &);
+    virtual void preprocessFormulaDoFinalTheoryPreprocessing(PreprocessingContext const &);
+    virtual PTRef preprocessFormulaAfterFinalTheoryPreprocessing(PTRef, PreprocessingContext const &);
+
     PTRef rewriteMaxArity(PTRef root);
+
+    void giveDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
+    Lit giveExistingDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveBoolVarDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveAnyDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
 
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
@@ -303,7 +325,14 @@ protected:
 
     AssertionStack frames;
 
+    ScopedVector<PTRef> decisionPreferences;
+    std::unordered_map<PTRef, Lit, PTRefHash> decisionPreferenceToLitMap;
+
     sstat status = s_Undef; // The status of the last solver call
+
+    std::size_t existingDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t boolVarDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t otherDecisionPreferencesGivenToSMTSolverCount{};
 
 private:
     std::unique_ptr<Theory> theory;

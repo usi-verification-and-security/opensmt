@@ -286,6 +286,8 @@ public:
     virtual bool isAtom(PTRef tr) const;
     // An atom or its negation
     bool isLiteral(PTRef tr) const;
+    // BoolVar or its negation
+    bool isBoolVarLiteral(PTRef tr) const;
     // Check if term is an uninterpreted predicate.
     bool isInterpreted(SymRef sr) const { return sym_store.isInterpreted(sr); }
     virtual bool isUP(PTRef) const;

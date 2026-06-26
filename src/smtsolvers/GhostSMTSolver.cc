@@ -87,34 +87,6 @@ GhostSMTSolver::newVar(bool dvar)
     return v;
 }
 
-// Random decision:
-Var
-GhostSMTSolver::pickRandomBranchVar() {
-    if (order_heap.empty())
-        return var_Undef;
-    else
-        return order_heap[irand(random_seed,order_heap.size())];
-}
-
-// Activity based decision:
-Var
-GhostSMTSolver::pickBranchVar() {
-    Var next;
-    while (true) {
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        }
-        else {
-            next = order_heap.removeMin();
-        }
-        if (value(next) == l_Undef && decision[next])
-            break;
-    }
-    assert(next == var_Undef || value(next) == l_Undef);
-    return next;
-}
-
 Lit
 GhostSMTSolver::pickBranchPolarity(Var next) {
     assert(next != var_Undef);
@@ -154,7 +126,7 @@ GhostSMTSolver::pickBranchLit() {
     StopWatch s(branchTimer);
 #endif
 
-    if ((drand(random_seed) < random_var_freq) && !order_heap.empty()) {
+    {
         Var v = pickRandomBranchVar();
         if (v != var_Undef && value(v) == l_Undef) {
             Lit l = pickBranchPolarity(v);
@@ -167,7 +139,7 @@ GhostSMTSolver::pickBranchLit() {
 
     Lit l = lit_Undef;
     while (l == lit_Undef) {
-        Var v = pickBranchVar();
+        Var v = pickActivityBranchVar();
         if (v == var_Undef)
             break; // There are no free vars
         l = pickBranchPolarity(v);

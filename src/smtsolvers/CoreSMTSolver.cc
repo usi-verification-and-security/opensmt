@@ -499,68 +499,86 @@ void CoreSMTSolver::cancelUntilVarTempDone( )
     }
 }
 
-Var CoreSMTSolver::doRandomDecision() {
-    Var next = var_Undef;
-    if (branchLitRandom()) {
-        next = order_heap[irand(random_seed,order_heap.size())];
-        if (value(next) == l_Undef && decision[next])
-            rnd_decisions++;
-    }
-    return next;
-}
-
-bool CoreSMTSolver::branchLitRandom() {
+bool CoreSMTSolver::randomBranchingCond() {
     return drand(random_seed) < random_var_freq && !order_heap.empty();
 }
 
-Var CoreSMTSolver::doActivityDecision() {
+Var CoreSMTSolver::pickRandomBranchVar() {
+    if (not randomBranchingCond()) { return var_Undef; }
+
+    Var next = order_heap[irand(random_seed,order_heap.size())];
+    assert(next != var_Undef);
+    if (isValidBranchVar(next)) { rnd_decisions++; }
+    return next;
+}
+
+Var CoreSMTSolver::pickActivityBranchVar() {
     Var next = var_Undef;
-    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        } else {
-            next = order_heap.removeMin();
-        }
+    while (not isValidBranchVar(next)) {
+        if (order_heap.empty()) { return var_Undef; }
+        next = order_heap.removeMin();
     }
     return next;
 }
 
-Lit CoreSMTSolver::choosePolarity(Var next) {
-    assert(next != var_Undef);
-    bool sign = false;
-    bool use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
-    if (use_theory_suggested_polarity && next != var_Undef && theory_handler.isDeclared(next)) {
+Var CoreSMTSolver::pickBranchVar() {
+    if (Var next = pickUserBranchVar(); next != var_Undef) { return next; }
+
+    // Pick a variable either randomly or based on activity
+    if (Var next = pickRandomBranchVar(); isValidBranchVar(next)) { return next; }
+
+    // Activity based decision
+    return pickActivityBranchVar();
+}
+
+bool CoreSMTSolver::pickBranchSignFor(Var next) {
+    assert(isValidBranchVar(next));
+
+    if (lbool sign = pickUserBranchSignFor(next); sign != l_Undef) { return sign != l_True; }
+
+    bool const use_theory_suggested_polarity = config.use_theory_polarity_suggestion();
+    if (use_theory_suggested_polarity && theory_handler.isDeclared(next)) {
         lbool suggestion = theory_handler.getSolverHandler().getPolaritySuggestion(theory_handler.varToTerm(next));
         if (suggestion != l_Undef) {
-            sign = (suggestion != l_True);
-            return mkLit(next, sign);
+            return suggestion != l_True;
         }
     }
-    sign = (savedPolarity[next] == flipState);
+
+    return savedPolarity[next] == flipState;
+}
+
+Lit CoreSMTSolver::mkBranchLitFrom(Var next) {
+    assert(isValidBranchVar(next));
+    bool const sign = pickBranchSignFor(next);
     return mkLit(next, sign);
+}
+
+Lit CoreSMTSolver::pickUserBranchLit() {
+    // TODO: remember the last position that can be reused until a backtrack or reset
+    for (Lit l : userBranchLits) {
+        assert(l != lit_Undef);
+        Var const x = var(l);
+        assert(x != var_Undef);
+        if (isValidBranchVar(x)) { return l; }
+    }
+
+    return lit_Undef;
+}
+
+Lit CoreSMTSolver::pickBranchLit() {
+    if (Lit l = pickUserBranchLit(); l != lit_Undef) {
+        assert(isValidBranchVar(var(l)));
+        return l;
+    }
+
+    Var next = pickBranchVar();
+    // All variables are assigned
+    if (next == var_Undef) { return lit_Undef; }
+    return mkBranchLitFrom(next);
 }
 
 //=================================================================================================
 // Major methods:
-
-Lit CoreSMTSolver::pickBranchLit()
-{
-    Var next = var_Undef;
-
-   // Pick a variable either randomly or based on activity
-    next = doRandomDecision();
-    // Activity based decision
-    if (next == var_Undef || value(next) != l_Undef || !decision[next])
-        next = doActivityDecision();
-
-    if (next == var_Undef) // All variables are assigned
-        return lit_Undef;
-
-    // Return the literal with the chosen polarity
-    return choosePolarity(next);
-
-}
 
 /*_________________________________________________________________________________________________
   |
@@ -1205,7 +1223,7 @@ void CoreSMTSolver::rebuildOrderHeap()
 {
     vec<Var> vs;
     for (Var v = 0; v < nVars(); v++)
-        if (decision[v] && value(v) == l_Undef)
+        if (isValidBranchVar(v))
             vs.push(v);
     order_heap.build(vs);
 }
@@ -1615,46 +1633,45 @@ void CoreSMTSolver::declareVarsToTheories()
 {
     // First empty the solver
     theory_handler.clear();
-    for (int i = 0; i < var_seen.size(); i++)
+    for (int i = 0; i < var_seen.size(); i++) {
         var_seen[i] = false;
+    }
 
-    for (int i = 0; i < trail.size(); i++)
-    {
+    for (int i = 0; i < trail.size(); i++) {
         Var v = var(trail[i]);
-        if (!var_seen[v]) {
-            var_seen[v] = true;
-            const Logic & logic = theory_handler.getLogic();
-            const PTRef term = theory_handler.varToTerm(v);
-            if (logic.isTheoryTerm(term)) {
-                theory_handler.declareAtom(term);
-            }
+        if (var_seen[v]) { continue; }
+        var_seen[v] = true;
+        const Logic & logic = theory_handler.getLogic();
+        const PTRef term = theory_handler.varToTerm(v);
+        if (logic.isTheoryTerm(term)) {
+            theory_handler.declareAtom(term);
         }
     }
+
     const Logic & logic = theory_handler.getLogic();
     top_level_lits = trail.size();
     for (int i = 0; i < clauses.size(); i++) {
         Clause & c = ca[clauses[i]];
         for (unsigned j = 0; j < c.size(); j++) {
             Var v = var(c[j]);
-            if (!var_seen[v]) {
-                var_seen[v] = true;
-                assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
-                const PTRef term = theory_handler.varToTerm(v);
-                if (logic.isTheoryTerm(term)) {
-                    theory_handler.declareAtom(term);
-                }
+            if (var_seen[v]) { continue; }
+            var_seen[v] = true;
+            assert(theory_handler.ptrefToVar(theory_handler.varToTerm(v)) == v);
+            const PTRef term = theory_handler.varToTerm(v);
+            if (logic.isTheoryTerm(term)) {
+                theory_handler.declareAtom(term);
             }
         }
     }
+
     for (Var v = 0; v < var_seen.size(); v++) {
-        if (not var_seen[v]) {
-            PTRef atom = theory_handler.varToTerm(v);
-            bool appearsInUf = logic.appearsInUF(atom);
-            if (appearsInUf) {
-                theory_handler.declareAtom(atom);
-            } else {
-                setDecisionVar(v, false);
-            }
+        if (var_seen[v]) { continue; }
+        PTRef atom = theory_handler.varToTerm(v);
+        bool appearsInUf = logic.appearsInUF(atom);
+        if (appearsInUf) {
+            theory_handler.declareAtom(atom);
+        } else {
+            setDecisionVar(v, false);
         }
     }
 }
