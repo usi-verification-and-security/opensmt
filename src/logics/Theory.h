@@ -36,6 +36,7 @@ namespace opensmt {
 
 struct PreprocessingContext {
     std::size_t frameCount {0};
+    std::size_t preprocessedFrameAssertionsCount{0};
     bool perPartition {false};
 };
 
