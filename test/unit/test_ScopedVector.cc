@@ -57,16 +57,29 @@ TEST_F(Test, test_ScopeVector1) {
     ASSERT_TRUE(compareTopScope({}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({0}));
+    ASSERT_FALSE(compareTopScope({0}));
+    ASSERT_FALSE(compareScope(0, {0}));
+
     svector.push(1);
     ASSERT_TRUE(compare({1}));
     ASSERT_TRUE(compareTopScope({1}));
     ASSERT_TRUE(compareScope(0, {1}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({}));
+    ASSERT_FALSE(compareTopScope({}));
+    ASSERT_FALSE(compareScope(0, {}));
+
     svector.push(2);
     ASSERT_TRUE(compare({1, 2}));
     ASSERT_TRUE(compareTopScope({1, 2}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({1}));
+    ASSERT_FALSE(compareTopScope({1}));
+    ASSERT_FALSE(compareScope(0, {1}));
+
+    //--------------------------------------------------
 
     svector.pushScope();
     ASSERT_TRUE(compare({1, 2}));
@@ -74,18 +87,34 @@ TEST_F(Test, test_ScopeVector1) {
     ASSERT_TRUE(compareScope(1, {}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({}));
+    ASSERT_FALSE(compareTopScope({1, 2}));
+    ASSERT_FALSE(compareScope(1, {1, 2}));
+    ASSERT_FALSE(compareScope(0, {}));
+
     svector.push(3);
     ASSERT_TRUE(compare({1, 2, 3}));
     ASSERT_TRUE(compareTopScope({3}));
     ASSERT_TRUE(compareScope(1, {3}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2}));
+    ASSERT_FALSE(compareTopScope({1, 2}));
+    ASSERT_FALSE(compareScope(1, {1, 2}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
     svector.push(4);
     ASSERT_TRUE(compare({1, 2, 3, 4}));
     ASSERT_TRUE(compareTopScope({3, 4}));
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2, 3}));
+    ASSERT_FALSE(compareTopScope({1, 2, 3}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
+    //--------------------------------------------------
 
     svector.pushScope();
     ASSERT_TRUE(compare({1, 2, 3, 4}));
@@ -94,12 +123,24 @@ TEST_F(Test, test_ScopeVector1) {
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 3);
+    ASSERT_FALSE(compare({1, 2, 3}));
+    ASSERT_FALSE(compareTopScope({1, 2, 3}));
+    ASSERT_FALSE(compareScope(2, {3, 4}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
     svector.popScope();
     ASSERT_TRUE(compare({1, 2, 3, 4}));
     ASSERT_TRUE(compareTopScope({3, 4}));
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2, 3}));
+    ASSERT_FALSE(compareTopScope({1, 2, 3}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
+    //--------------------------------------------------
 
     svector.pushScope();
     ASSERT_TRUE(compare({1, 2, 3, 4}));
@@ -108,6 +149,12 @@ TEST_F(Test, test_ScopeVector1) {
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 3);
+    ASSERT_FALSE(compare({1, 2, 3}));
+    ASSERT_FALSE(compareTopScope({1, 2, 3}));
+    ASSERT_FALSE(compareScope(2, {3, 4}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
     svector.push(5);
     ASSERT_TRUE(compare({1, 2, 3, 4, 5}));
     ASSERT_TRUE(compareTopScope({5}));
@@ -115,42 +162,78 @@ TEST_F(Test, test_ScopeVector1) {
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 3);
+    ASSERT_FALSE(compare({1, 2, 3, 4}));
+    ASSERT_FALSE(compareTopScope({3, 4, 5}));
+    ASSERT_FALSE(compareScope(2, {3, 4, 5}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3, 4}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3, 4}));
+
     svector.popScope();
     ASSERT_TRUE(compare({1, 2, 3, 4}));
     ASSERT_TRUE(compareTopScope({3, 4}));
     ASSERT_TRUE(compareScope(1, {3, 4}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2, 3}));
+    ASSERT_FALSE(compareTopScope({1, 2, 3}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 3}));
+    ASSERT_FALSE(compareScope(0, {1, 2, 3}));
+
+    //--------------------------------------------------
 
     svector.popScope();
     ASSERT_TRUE(compare({1, 2}));
     ASSERT_TRUE(compareTopScope({1, 2}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({1, 2, 3, 4}));
+    ASSERT_FALSE(compareTopScope({3, 4}));
+    ASSERT_FALSE(compareScope(0, {3, 4}));
+
     svector.pushScope();
     ASSERT_TRUE(compare({1, 2}));
     ASSERT_TRUE(compareTopScope({}));
     ASSERT_TRUE(compareScope(1, {}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2, 3, 4}));
+    ASSERT_FALSE(compareTopScope({3, 4}));
+    ASSERT_FALSE(compareScope(1, {3, 4}));
+    ASSERT_FALSE(compareScope(0, {3, 4}));
+
     svector.push(6);
     ASSERT_TRUE(compare({1, 2, 6}));
     ASSERT_TRUE(compareTopScope({6}));
     ASSERT_TRUE(compareScope(1, {6}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 2);
+    ASSERT_FALSE(compare({1, 2}));
+    ASSERT_FALSE(compareTopScope({1, 2, 6}));
+    ASSERT_FALSE(compareScope(1, {1, 2, 6}));
+    ASSERT_FALSE(compareScope(0, {6}));
+
+    //--------------------------------------------------
 
     svector.popScope();
     ASSERT_TRUE(compare({1, 2}));
     ASSERT_TRUE(compareTopScope({1, 2}));
     ASSERT_TRUE(compareScope(0, {1, 2}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({1, 2, 6}));
+    ASSERT_FALSE(compareTopScope({6}));
+    ASSERT_FALSE(compareScope(0, {6}));
+
+    //--------------------------------------------------
 
     svector.clear();
     ASSERT_TRUE(compare({}));
     ASSERT_TRUE(compareTopScope({}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 1);
+    ASSERT_FALSE(compare({1, 2}));
+    ASSERT_FALSE(compareTopScope({1, 2}));
+    ASSERT_FALSE(compareScope(0, {1, 2}));
+
 }
 
 TEST_F(Test, test_ScopeVector2) {
@@ -160,12 +243,14 @@ TEST_F(Test, test_ScopeVector2) {
     ASSERT_TRUE(compareScope(1, {}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 2);
+
     svector.push(1);
     ASSERT_TRUE(compare({1}));
     ASSERT_TRUE(compareTopScope({1}));
     ASSERT_TRUE(compareScope(1, {1}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 2);
+
     svector.push(2);
     ASSERT_TRUE(compare({1, 2}));
     ASSERT_TRUE(compareTopScope({1, 2}));
@@ -173,17 +258,22 @@ TEST_F(Test, test_ScopeVector2) {
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 2);
 
+    //--------------------------------------------------
+
     svector.popScope();
     ASSERT_TRUE(compare({}));
     ASSERT_TRUE(compareTopScope({}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 1);
 
+    //--------------------------------------------------
+
     svector.clear();
     ASSERT_TRUE(compare({}));
     ASSERT_TRUE(compareTopScope({}));
     ASSERT_TRUE(compareScope(0, {}));
     ASSERT_EQ(svector.scopeCount(), 1);
+
 }
 
 TEST_F(Test, test_ScopeVector3) {
@@ -192,11 +282,14 @@ TEST_F(Test, test_ScopeVector3) {
     ASSERT_TRUE(compareTopScope({11}));
     ASSERT_TRUE(compareScope(0, {11}));
     ASSERT_EQ(svector.scopeCount(), 1);
+
     svector.push(22);
     ASSERT_TRUE(compare({11, 22}));
     ASSERT_TRUE(compareTopScope({11, 22}));
     ASSERT_TRUE(compareScope(0, {11, 22}));
     ASSERT_EQ(svector.scopeCount(), 1);
+
+    //--------------------------------------------------
 
     svector.pushScope();
     ASSERT_TRUE(compare({11, 22}));
@@ -204,12 +297,15 @@ TEST_F(Test, test_ScopeVector3) {
     ASSERT_TRUE(compareScope(1, {}));
     ASSERT_TRUE(compareScope(0, {11, 22}));
     ASSERT_EQ(svector.scopeCount(), 2);
+
     svector.push(33);
     ASSERT_TRUE(compare({11, 22, 33}));
     ASSERT_TRUE(compareTopScope({33}));
     ASSERT_TRUE(compareScope(1, {33}));
     ASSERT_TRUE(compareScope(0, {11, 22}));
     ASSERT_EQ(svector.scopeCount(), 2);
+
+    //--------------------------------------------------
 
     svector.clear();
     ASSERT_TRUE(compare({}));
