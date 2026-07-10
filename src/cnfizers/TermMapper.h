@@ -51,6 +51,7 @@ public:
     // Returns the literal corresponding to the term. The connection must already exist.
     Lit getLit(PTRef) const;
     // Test if the given term already has an assigned SAT variable
+    // Only *internal* terms that were given to the SMT solver are tracked, not necessarily top-level formulas!
     bool hasLit(PTRef tr) const {
         Var v = var_Undef;
         peekVar(toPositive(tr), v);
