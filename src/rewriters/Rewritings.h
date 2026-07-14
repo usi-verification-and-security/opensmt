@@ -20,6 +20,8 @@ PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla);
 
 PTRef rewriteDivMod(ArithLogic & logic, PTRef fla);
 
+PTRef backtrackDivMod(ArithLogic & logic, PTRef term);
+
 std::optional<PTRef> tryGetOriginalDivModTerm(ArithLogic & logic, PTRef term);
 } // namespace opensmt
 

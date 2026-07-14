@@ -6,12 +6,16 @@
  */
 
 #include "Rewritings.h"
+
+#include <map>
 #include "DistinctRewriter.h"
 #include "DivModRewriter.h"
 
 #include <common/TreeOps.h>
 
 namespace opensmt {
+std::map<PTRef, PTRef> rewritings;
+
 PTRef rewriteDistincts(Logic & logic, PTRef fla) {
     return DistinctRewriter(logic).rewrite(fla);
 }
@@ -26,7 +30,53 @@ PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla) {
 }
 
 PTRef rewriteDivMod(ArithLogic & logic, PTRef term) {
-    return DivModRewriter(logic).rewrite(term);
+    auto rewriter = DivModRewriter(logic);
+    auto res =  rewriter.rewrite(term);
+    rewritings = rewriter.getRewritings();
+    return res;
+}
+
+PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {
+    // std::cout << "Entered!!!" << logic.pp(term)  << term'\n';
+    auto it = logic.getPterm(term).begin();
+    if (logic.isAnd(term) || logic.isOr(term)) {
+        vec<PTRef> args;
+        while (it != logic.getPterm(term).end()) {
+            args.push(backtrackDivMod(logic, *it));
+            it++;
+        }
+        return logic.isAnd(term) ? logic.mkAnd(std::move(args)) : logic.mkOr(std::move(args));
+    }
+    if (logic.isPlus(term)) {
+
+        vec<PTRef> args;
+        while (it != logic.getPterm(term).end()) {
+            args.push(backtrackDivMod(logic, *it));
+            it++;
+        }
+        return logic.mkPlus(std::move(args));
+    }
+    if (logic.isGt(term)) {
+        return logic.mkGt(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    if (logic.isLt(term)) {
+        return logic.mkLt(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    if (logic.isLeq(term)) {
+        return logic.mkLeq(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    if (logic.isGeq(term)) {
+        return logic.mkGeq(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    if (logic.isVar(term)) {
+        return rewritings.contains(term) ? rewritings.at(term) : term;
+    }
+    if (logic.isTimes(term)) {
+        return logic.mkTimes(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    return term;
+
+
 }
 
 std::optional<PTRef> tryGetOriginalDivModTerm(ArithLogic & logic, PTRef tr) {

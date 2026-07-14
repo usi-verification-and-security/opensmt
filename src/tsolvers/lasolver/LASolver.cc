@@ -12,6 +12,7 @@
 
 #include <common/Random.h>
 #include <models/ModelBuilder.h>
+#include "rewriters/Rewritings.h"
 
 #include <unordered_set>
 
@@ -727,7 +728,8 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
 PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
-    return interpolateUsingEngine(interpolator);
+    return  backtrackDivMod(logic, interpolateUsingEngine(interpolator));
+
 }
 
 void LASolver::printStatistics(std::ostream & out) {
