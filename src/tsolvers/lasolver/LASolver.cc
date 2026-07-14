@@ -16,6 +16,8 @@
 
 #include <unordered_set>
 
+#include "common/polynomials/Translations.h"
+
 namespace opensmt {
 
 static SolverDescr descr_la_solver("LA Solver", "Solver for Quantifier Free Linear Arithmetics");
@@ -721,14 +723,115 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     vec<PtAsgn> explCopy;
     explanation.copyTo(explCopy);
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
-        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
-    return interpolateUsingEngine(interpolator);
+    std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+    auto res = interpolateUsingEngine(interpolator);
+    mixedVars = interpolator.getMixedVars();
+    return res;
 }
 
-PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
+namespace {
+    // A splitMixedLiteral()-generated shared variable is named ".mixed_<atomId>" (see FarkasInterpolator.cc).
+    bool isMixedVar(ArithLogic & logic, PTRef var) {
+        return var != PTRef_Undef && logic.isVar(var) &&
+               std::string(logic.getSymName(var)).rfind(".mixed_", 0) == 0;
+    }
+}
+
+// left and right are the two partial interpolants meeting at a resolution pivot whose atom is I_MIXED.
+// By construction (FarkasInterpolator::splitMixedLiteral) each side is (or was derived from) a Farkas split
+// half of a mixed literal and therefore contains exactly one ".mixed_*" shared variable. The two occurrences
+// need not be the same symbol (e.g. LIA strengthening can produce a differently-named split for what is
+// logically the negated atom), but they always play opposite roles in the two halves, so identifying them
+// requires substituting the right-hand mixed variable by the negation of the left-hand one before the two
+// partial interpolants can be combined/summed.
+PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
+    // A partial interpolant may be the Boolean negation of a Leq/Equality atom (e.g. getFarkasInterpolant
+    // wraps the dual/"for B" result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation
+    // flips the sign every coefficient contributes with, exactly like a l_False-signed literal does in
+    // FarkasInterpolator::weightedSum.
+    auto toSignedPoly = [this](PTRef t) {
+        bool const negated = logic.isNot(t);
+        PTRef const atom = negated ? logic.getPterm(t)[0] : t;
+        return std::make_tuple(ptrefToPoly(atom, logic), negated, atom);
+    };
+    auto [leftPoly, leftNegated, leftAtom] = toSignedPoly(left);
+    auto [rightPoly, rightNegated, rightAtom] = toSignedPoly(right);
+    (void)leftAtom;
+
+    PTRef leftMixedVar = PTRef_Undef;
+    Real leftMixedCoeff = 0;
+    for (auto const & [var, coeff] : leftPoly) {
+        if (isMixedVar(logic, var)) {
+            leftMixedVar = var;
+            leftMixedCoeff = coeff;
+            break;
+        }
+    }
+    PTRef rightMixedVar = PTRef_Undef;
+    for (auto const & [var, coeff] : rightPoly) {
+        if (isMixedVar(logic, var)) {
+            rightMixedVar = var;
+            break;
+        }
+    }
+    if (leftMixedVar == PTRef_Undef or rightMixedVar == PTRef_Undef) {
+        throw InternalException("Could not find a mixed variable to resolve on in both sides");
+    }
+
+    // If both sides already share the identical fresh variable (the common case: Logic::mkVar deduplicates
+    // splitMixedLiteral's ".mixed_<atomId>" name, so splitting the same atom twice yields the same symbol),
+    // there is nothing to identify. Only when the two sides ended up with genuinely different fresh variables
+    // (e.g. one side went through LIA strengthening and split the negated, differently-named atom) do we need
+    // to identify them by rewriting (rightMixedVar, c) to (leftMixedVar, -c), i.e. substituting
+    // rightMixedVar := -leftMixedVar. Either way we end up with leftMixedVar's (possibly rewritten)
+    // coefficient on the right side, rightMixedCoeff, to eliminate against leftMixedCoeff.
+    LAPoly rewrittenRightPoly;
+    Real rightMixedCoeff = 0;
+    for (auto const & [var, coeff] : rightPoly) {
+        if (var == rightMixedVar) {
+            Real const rewrittenCoeff = rightMixedVar != leftMixedVar ? -coeff : coeff;
+            rewrittenRightPoly.addTerm(leftMixedVar, rewrittenCoeff);
+            rightMixedCoeff = rewrittenCoeff;
+        } else {
+            rewrittenRightPoly.addTerm(var, coeff);
+        }
+    }
+
+    // Farkas/Fourier-Motzkin elimination: leftMixedVar's *effective* coefficient (i.e. after also accounting
+    // for the outer negation of each side, exactly as applied to the final merge below) must have opposite
+    // signs on the two sides for a positive combination to cancel it. Scale each side by the (positive)
+    // magnitude of the other side's effective coefficient before summing:
+    //   |effRight| * effLeft + |effLeft| * effRight == 0
+    Real const effLeftMixedCoeff = leftNegated ? -leftMixedCoeff : leftMixedCoeff;
+    Real const effRightMixedCoeff = rightNegated ? -rightMixedCoeff : rightMixedCoeff;
+    if (effLeftMixedCoeff.sign() == 0 or effRightMixedCoeff.sign() == 0 or
+        effLeftMixedCoeff.sign() == effRightMixedCoeff.sign()) {
+        throw InternalException("Mixed variable coefficients cannot be eliminated by a positive Farkas combination");
+    }
+    Real const leftFarkasCoeff = abs(effRightMixedCoeff);
+    Real const rightFarkasCoeff = abs(effLeftMixedCoeff);
+
+    // Summing the (Farkas- and sign-adjusted) sides now cancels leftMixedVar: it no longer appears in the
+    // combined interpolant, exactly as the two split halves cancel it in FarkasInterpolator::weightedSum.
+    LAPoly combined;
+    combined.merge(leftPoly, leftFarkasCoeff * (leftNegated ? Real(-1) : Real(1)));
+    combined.merge(rewrittenRightPoly, rightFarkasCoeff * (rightNegated ? Real(-1) : Real(1)));
+    if (combined.size() == 0) {return logic.getTerm_true();}
+    // A negated side contributed a strict Farkas coefficient, so the combined inequality is strict too
+    // (mirrors FarkasInterpolator::weightedSum's Strictness handling).
+    bool const strict = leftNegated or rightNegated;
+    SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
+    PTRef const sum = polyToPTRef(combined, logic, sort);
+    PTRef const zero = logic.getZeroForSort(sort);
+    return strict ? logic.mkGt(sum, zero) : logic.mkGeq(sum, zero);
+}
+
+PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap const & labels, PartitionManager & pmanager) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
-    return backtrackDivMod(logic, interpolateUsingEngine(interpolator));
+    auto res = interpolateUsingEngine(interpolator);
+    mixedVars = interpolator.getMixedVars();
+    return backtrackDivMod(logic, interpolateUsingEngine(res));
 }
 
 void LASolver::printStatistics(std::ostream & out) {
@@ -737,7 +840,7 @@ void LASolver::printStatistics(std::ostream & out) {
 }
 
 bool LASolver::shouldTryCutFromProof() const {
-    if (this->config.produce_inter()) { return false; }
+    // if (this->config.produce_inter()) { return false; }
     static unsigned long counter = 0;
     return ++counter % 10 == 0;
 }
@@ -858,7 +961,7 @@ TRes LASolver::cutFromProof() {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
 
-//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
+        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
@@ -871,6 +974,7 @@ TRes LASolver::cutFromProof() {
     auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
     auto cut = cutCreator.makeCut(std::move(system), toVarMap);
     PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
+    std::cout << "Complex cut: " << logic.pp(split) << std::endl;
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;
     }

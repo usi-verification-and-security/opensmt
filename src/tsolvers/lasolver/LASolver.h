@@ -70,15 +70,20 @@ public:
                                     std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
     PTRef getRealInterpolant(ipartitions_t const &, ItpColorMap *, PartitionManager & pmanager);
-    PTRef getIntegerInterpolant(ItpColorMap const &);
+    PTRef getIntegerInterpolant(ipartitions_t const &, ItpColorMap const &, PartitionManager & pmanager);
+    PTRef resolveMixed(PTRef, PTRef);
 
     // Return the conflicting bounds
     void getConflict(vec<PtAsgn> &) override;
 
     ArithLogic & getLogic() override;
     bool isValid(PTRef tr) override;
+    std::unordered_map<PTRef,PTRef,PTRefHash> const & getMixedVars() const {
+        return mixedVars;
+    }
 
 private:
+    std::unordered_map<PTRef, PTRef, PTRefHash> mixedVars;
     struct DecEl {
         PtAsgn asgn;
         int dl;

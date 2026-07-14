@@ -73,9 +73,13 @@ public:
 
     static DecomposedStatistics stats;
 
+    std::unordered_map<PTRef,PTRef,PTRefHash> const & getMixedVars() const { return mixedVars; }
+
 private:
     PTRef getDecomposedInterpolant(icolor_t color);
     PTRef getFarkasInterpolant(icolor_t color);
+    std::unordered_map<PTRef, PTRef, PTRefHash> mixedVars;
+    std::tuple<PTRef, PTRef> splitMixedLiteral(PTRef leq);
 
     bool isLocalFor(icolor_t color, PTRef var) const { return getColorFor(var) == color; }
 

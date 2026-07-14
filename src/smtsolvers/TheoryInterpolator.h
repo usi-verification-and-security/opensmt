@@ -7,6 +7,7 @@
 #include <pterms/PtStore.h>
 
 #include <algorithm>
+#include <iostream>
 #include <memory>
 
 namespace opensmt {
@@ -79,17 +80,22 @@ private:
             auto const entry = queue.back();
             icolor_t colorToAssign = entry.second;
             PTRef term = entry.first;
+            std::cout << " Term: "<< logic.pp(term) << " to be colored: " << colorToString(colorToAssign) << '\n';
             queue.pop_back();
             auto it = termColors.find(term);
             if (it != termColors.end()) {
+                if (colorToAssign == icolor_t::I_MIXED) { continue; }
                 icolor_t assignedColor = it->second;
                 if (assignedColor == colorToAssign ||
                     assignedColor == icolor_t::I_AB) { // already processed, color does not change
                     continue;
                 } else { // assigning new color
-                    assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B);
-                    colorToAssign = colorUnion(colorToAssign, assignedColor);
-                    assert(colorToAssign == icolor_t::I_AB);
+                    if (assignedColor != icolor_t::I_MIXED) {
+                        assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B);
+                        colorToAssign = assignedColor == icolor_t::I_MIXED ? assignedColor :
+                            colorUnion(colorToAssign, assignedColor);
+                        assert(colorToAssign == icolor_t::I_AB or colorToAssign == icolor_t::I_MIXED);
+                    }
                 }
             }
             // if we reach here, we need to propagate colorToAssign to the whole term subtree of `term`
@@ -101,7 +107,8 @@ private:
             auto insertRes = symbolColors.insert(std::make_pair(logic.getSymRef(term), colorToAssign));
             if (not insertRes.second) { // there was entry for this symbol already
                 auto entryIt = insertRes.first;
-                entryIt->second = colorUnion(entryIt->second, colorToAssign);
+                entryIt->second = colorToAssign == icolor_t::I_MIXED ? colorToAssign :
+                    colorUnion(entryIt->second, colorToAssign);
             }
         }
         // Make sure complex terms have correct color assigned

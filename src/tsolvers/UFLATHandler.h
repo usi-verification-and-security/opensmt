@@ -55,6 +55,10 @@ class UFLATHandler : public TSolverHandler
 
     PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
 
+    PTRef  resolveMixed(const PTRef, const PTRef) override {
+        throw std::logic_error("Not implemented yet");
+    }
+
     lbool getPolaritySuggestion(PTRef pt) const override;
 
     TRes check(bool complete) override;

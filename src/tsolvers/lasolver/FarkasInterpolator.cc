@@ -603,15 +603,70 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const
     return itp;
 }
 
+std::tuple<PTRef, PTRef> FarkasInterpolator::splitMixedLiteral(PTRef leq) {
+    assert(logic.isLeq(leq));
+    assert(getColorFor(leq) == icolor_t::I_MIXED);
+    // Canonical form of a Leq atom is "0 <= poly"
+    SRef const sort = logic.getSortRef(logic.getPterm(leq)[1]);
+    std::cout << logic.pp(leq) << '\n';
+    LAPoly const poly = ptrefToPoly(leq, logic);
+
+    // Fresh shared (AB) variable used to connect the two halves of the split
+    std::string const name = ".mixed_" + std::to_string(leq.x);
+    PTRef const x = logic.mkVar(sort, name.c_str());
+    mixedVars.insert({leq,x});
+
+    // poly = A_part + B_part, where A_part contains only A-local variables and
+    // B_part contains B-local and AB (shared) variables, including the constant term
+    LAPoly polyA;
+    LAPoly polyB;
+    for (auto const & [var, coeff] : poly) {
+        if (var == PTRef_Undef) {
+            polyB.addTerm(var, coeff);
+            continue;
+        }
+        icolor_t const varColor = getColorFor(var);
+        if (varColor == icolor_t::I_A) {
+            polyA.addTerm(var, coeff);
+        } else {
+            assert(varColor == icolor_t::I_B or varColor == icolor_t::I_AB);
+            polyB.addTerm(var, coeff);
+        }
+    }
+    // 0 <= A_part + x        (colorable for A: only A-local vars and the shared x)
+    // 0 <= B_part + const - x (colorable for B: only B-local/shared vars and the shared x)
+    // Summing the two recovers the original literal: 0 <= A_part + B_part + const
+    polyA.addTerm(x, -1);
+    polyB.addTerm(x, 1);
+
+    PTRef const zero = logic.getZeroForSort(sort);
+    PTRef const l = logic.mkLeq(zero, polyToPTRef(polyA, logic, sort));
+    PTRef const r = logic.mkLeq(logic.mkNeg(polyToPTRef(polyB, logic, sort)), zero);
+    return {l, r};
+}
+
 PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
+    // bool hasColors = ensureHasColorForAllTerms();
+    // if (not hasColors) {
+    //     throw InternalException("Error in computation of Farkas interpolant, colors could not be determined!");
+    // }
     std::vector<std::pair<PtAsgn, Real>> system;
     for (int i = 0; i < explanations.size(); ++i) {
+        // std::cout << "Explanation: " << logic.pp(explanations[i].tr) << '\n';
         auto litColor = getColorFor(explanations[i].tr);
         if (litColor == color or litColor == icolor_t::I_AB) {
             system.emplace_back(explanations[i], explanation_coeffs[i]);
+        } else if (litColor == icolor_t::I_MIXED) {
+            auto [l,r] = splitMixedLiteral(explanations[i].tr);
+            if (color == icolor_t::I_A) {
+                system.emplace_back(PtAsgn(l, explanations[i].sgn), explanation_coeffs[i]);
+            } else {
+                system.emplace_back(PtAsgn(r, explanations[i].sgn), explanation_coeffs[i]);
+            }
         }
     }
     PTRef itp = weightedSum(system);
+    // std::cout << "Farkas interpolant: " << logic.pp(itp) << '\n';
     assert(itp != PTRef_Undef);
     return color == icolor_t::I_B ? logic.mkNot(itp) : itp;
 }

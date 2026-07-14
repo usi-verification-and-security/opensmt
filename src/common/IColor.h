@@ -20,7 +20,7 @@ namespace opensmt {
  * For example we can represent information of a variable occurs only in the first partition, only in the second
  * partition, or both.
  */
-enum class icolor_t : char { I_UNDEF = 0, I_A = 1, I_B = 2, I_AB = I_A | I_B, I_S = 4 };
+enum class icolor_t : char { I_UNDEF = 0, I_A = 1, I_B = 2, I_AB = I_A | I_B, I_S = 4, I_MIXED = 5 };
 
 inline constexpr icolor_t operator|(icolor_t f, icolor_t s) {
     return static_cast<icolor_t>(static_cast<std::underlying_type_t<icolor_t>>(f) |
@@ -44,6 +44,8 @@ inline std::string colorToString(icolor_t c) {
             return "AB";
         case icolor_t::I_S:
             return "S";
+        case icolor_t::I_MIXED:
+            return "MIXED";
         default:
             assert(false);
             throw std::logic_error("Unreachable");
