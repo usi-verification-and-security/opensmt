@@ -19,7 +19,11 @@
 #include <smtsolvers/SimpSMTSolver.h>
 #include <unsatcores/UnsatCore.h>
 
+#include <iosfwd>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace opensmt {
 class Logic;
@@ -265,7 +269,6 @@ protected:
     Theory & getTheory() { return *theory; }
     Theory const & getTheory() const { return *theory; }
     TermMapper & getTermMapper() const { return *term_mapper; }
-    PartitionManager & getPartitionManager() { return pmanager; }
 
     // TODO: inefficient
     vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
@@ -292,13 +295,28 @@ protected:
 
     inline bool trackPartitions() const;
 
+    inline bool preprocessItesWhenAsserting() const;
+
     virtual bool tryPreprocessFrame(std::size_t);
 
     // Usually applied to frame formulas
     virtual PTRef preprocessFormulasConjoined(vec<PTRef> const &, PreprocessingContext const &);
     virtual vec<PTRef> preprocessFormulasPerPartition(vec<PTRef> const &, PreprocessingContext const &);
 
-    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &);
+    struct PreprocessFormulaItesConfig {
+        bool skip{false};
+        bool useCache{false};
+    };
+    PTRef preprocessFormulaItes(PTRef, PreprocessingContext const &, PreprocessFormulaItesConfig const &);
+    PTRef preprocessFormulaItes(PTRef fla, PreprocessingContext const & context) {
+        return preprocessFormulaItes(fla, context, {});
+    }
+    PTRef preprocessFormulaItesImpl(PTRef, PreprocessingContext const &);
+
+    virtual PTRef preprocessFormula(PTRef, PreprocessingContext const &, PreprocessFormulaItesConfig const &);
+    PTRef preprocessFormula(PTRef fla, PreprocessingContext const & context) {
+        return preprocessFormula(fla, context, {});
+    }
     virtual PTRef preprocessFormulaBeforeGlobalPhase(PTRef, PreprocessingContext const &);
     virtual void preprocessFormulaGlobalPhase(PreprocessingContext const &);
     virtual PTRef preprocessFormulaAfterGlobalPhase(PTRef, PreprocessingContext const &);
@@ -338,7 +356,11 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotPreprocessedFrame = 0;
     std::size_t addedAssertionsCount = 0;
+    std::size_t preprocessedAssertionsCount = 0;
     std::vector<std::size_t> preprocessedAssertionsCountPerFrame;
+
+    std::vector<PTRef> preprocessedAssertionsPerFrame;
+    std::unordered_map<PTRef, PTRef, PTRefHash> iteHandlerCache;
 };
 
 bool MainSolver::trackPartitions() const {
@@ -349,6 +371,21 @@ bool MainSolver::trackPartitions() const {
     // Even if computed independently of resolution proofs, we must track partitions
     if (config.produce_unsat_cores()) { return true; }
     if (config.produce_inter()) { return true; }
+
+    return false;
+}
+
+bool MainSolver::preprocessItesWhenAsserting() const {
+    // We still must keep tracking the terms which only happens in the pipeline
+    if (trackPartitions()) { return false; }
+
+    // If combining UF, it may be beneficial to introduce the auxiliary ITE variables right away, especially when sat
+    if (logic.hasUFs()) {
+        // In UFLIA, it significantly improves
+        if (logic.hasIntegers()) { return true; }
+        // In UFLRA, it slightly improves, so it is still worth
+        if (logic.hasReals()) { return true; }
+    }
 
     return false;
 }
