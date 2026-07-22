@@ -49,41 +49,40 @@ PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {
         return logic.mkPlus(std::move(args));
     }
     if (logic.isGt(term)) {
-        return logic.mkGt(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+        return logic.mkGt(backtrackDivMod(logic, logic.getPterm(term)[0]),
+                          backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
     if (logic.isLt(term)) {
-        return logic.mkLt(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+        return logic.mkLt(backtrackDivMod(logic, logic.getPterm(term)[0]),
+                          backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
     if (logic.isLeq(term)) {
-        return logic.mkLeq(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+        return logic.mkLeq(backtrackDivMod(logic, logic.getPterm(term)[0]),
+                           backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
     if (logic.isGeq(term)) {
-        return logic.mkGeq(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+        return logic.mkGeq(backtrackDivMod(logic, logic.getPterm(term)[0]),
+                           backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
     if (logic.isVar(term)) {
         auto name = logic.getSymName(term);
-        const char *div = ".div";
-        const char *mod = ".mod";
+        char const * div = ".div";
+        char const * mod = ".mod";
         auto check = strstr(name, div);
         if (check != NULL) {
-            return DivModConfig::getDivTermFor(logic,term);
+            return DivModConfig::getDivTermFor(logic, term);
         } else {
             check = strstr(name, mod);
-            if (check != NULL) {
-                return DivModConfig::getModTermFor(logic,term);
-            }
+            if (check != NULL) { return DivModConfig::getModTermFor(logic, term); }
         }
         return term;
     }
     if (logic.isTimes(term)) {
-        return logic.mkTimes(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+        return logic.mkTimes(backtrackDivMod(logic, logic.getPterm(term)[0]),
+                             backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
-    if (logic.isNot(term)) {
-        return logic.mkNot(backtrackDivMod(logic, logic.getPterm(term)[0]));
-    }
+    if (logic.isNot(term)) { return logic.mkNot(backtrackDivMod(logic, logic.getPterm(term)[0])); }
     return term;
-
-
 }
 
 std::optional<PTRef> tryGetOriginalDivModTerm(ArithLogic & logic, PTRef tr) {
