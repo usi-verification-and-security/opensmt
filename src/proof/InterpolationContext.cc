@@ -645,11 +645,12 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
     vec<PTRef> args;
     args.capacity(restricted_clause.size());
     for (Lit l : restricted_clause) {
-        PTRef litTerm =varToPTRef(var(l));
+        PTRef litTerm = varToPTRef(var(l));
         if (sign(l) == clauseIsA) litTerm = logic.mkNot(litTerm);
         args.push(litTerm);
     }
-    return clauseClass == icolor_t::I_A ?  thandler->revertFormula(logic.mkOr(std::move(args))) :  thandler->revertFormula(logic.mkAnd(std::move(args)));
+    return clauseClass == icolor_t::I_A ? thandler->revertFormula(logic.mkOr(std::move(args)))
+                                        : thandler->revertFormula(logic.mkAnd(std::move(args)));
 }
 
 // Input: leaf clause, current interpolant partition masks for A and B
@@ -706,7 +707,7 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
 PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitClause(ProofNode const & n) const {
     auto const & clause = n.getClause();
     auto clauseColor = icolor_t::I_AB;
-    for (auto l: clause) {
+    for (auto l : clause) {
         clauseColor = clauseColor & getVarClass(var(l));
     }
 
@@ -861,7 +862,7 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipart
     assert(proof_graph);
     PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask)
                     .produceSingleInterpolant();
-    
+
     if (enabledInterpVerif()) {
         bool sound = verifyInterpolant(itp, A_mask);
         assert(sound);
