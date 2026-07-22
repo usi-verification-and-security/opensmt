@@ -26,8 +26,20 @@
 #include <functional>
 #include <unordered_map>
 
+// Name prefix of the fresh shared variables introduced when splitting mixed literals
+#define MIXED_AUX_VAR_PREFIX ".mixed_"
+
 namespace opensmt {
 using matrix_t = std::vector<std::vector<Real>>;
+
+std::string mixedAuxVarName(PTRef splitAtom) {
+    return std::string(MIXED_AUX_VAR_PREFIX) + std::to_string(splitAtom.x);
+}
+
+bool isMixedAuxVar(ArithLogic const & logic, PTRef term) {
+    return term != PTRef_Undef and logic.isVar(term) and
+           std::string(logic.getSymName(term)).starts_with(MIXED_AUX_VAR_PREFIX);
+}
 
 // initializing static member
 DecomposedStatistics FarkasInterpolator::stats{};
@@ -417,6 +429,12 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
         throw InternalException(
             "Error in computation of decomposed Farkas interpolant, colors could not be determined!");
     }
+    // Decomposition would have to cancel the split's auxiliary variable inside every component;
+    // fall back to the plain Farkas interpolant, which splits mixed literals.
+    bool const hasMixed = std::any_of(explanations.begin(), explanations.end(), [this](PtAsgn const & expl) {
+        return getColorFor(expl.tr) == icolor_t::I_MIXED;
+    });
+    if (hasMixed) { return getFarkasInterpolant(color); }
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of
     // given color)
@@ -580,7 +598,7 @@ PTRef FarkasInterpolator::getDualFarkasInterpolant() {
     return getFarkasInterpolant(icolor_t::I_B);
 }
 
-PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system) {
+PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system, icolor_t color) {
     if (system.empty()) { return logic.getTerm_true(); }
     LAPoly interpolant;
     Strictness strictness = Strictness::NONSTRICT;
@@ -591,11 +609,14 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const
         sumSort = sumSort != SRef_Undef ? sumSort : logic.getUniqueArgSort(atom);
         assert(sumSort != SRef_Undef);
         lbool sign = literal.sgn;
+        // A mixed literal contributes only its half colorable for `color`
+        LAPoly poly =
+            getColorFor(atom) == icolor_t::I_MIXED ? splitMixedLiteral(atom, color) : ptrefToPoly(atom, logic);
         if (sign == l_False) {
-            interpolant.merge(ptrefToPoly(atom, logic), -entry.second);
+            interpolant.merge(poly, -entry.second);
             strictness = Strictness::STRICT;
         } else {
-            interpolant.merge(ptrefToPoly(atom, logic), entry.second);
+            interpolant.merge(poly, entry.second);
         }
     }
     assert(sumSort != SRef_Undef);
@@ -603,15 +624,42 @@ PTRef FarkasInterpolator::weightedSum(std::vector<std::pair<PtAsgn, Real>> const
     return itp;
 }
 
+LAPoly FarkasInterpolator::splitMixedLiteral(PTRef leq, icolor_t color) {
+    assert(color == icolor_t::I_A or color == icolor_t::I_B);
+    assert(logic.isLeq(leq));
+    assert(getColorFor(leq) == icolor_t::I_MIXED);
+    // Canonical form of a Leq atom is "0 <= poly"
+    SRef const sort = logic.getSortRef(logic.getPterm(leq)[1]);
+    LAPoly const poly = ptrefToPoly(leq, logic);
+
+    // Fresh shared (AB) variable used to connect the two halves of the split
+    std::string const name = mixedAuxVarName(leq);
+    PTRef const x = logic.mkVar(sort, name.c_str());
+
+    // poly = A_part + B_part, where A_part holds the A-local variables and B_part the B-local and shared ones plus
+    // the constant term. The halves are 0 <= A_part - x (for A) and 0 <= B_part + x (for B); they sum to the literal.
+    LAPoly half;
+    for (auto const & [var, coeff] : poly) {
+        // LATheory's preprocessing (rewriteDivMod) replaces every div/mod by a fresh variable, so none reach here
+        assert(var == PTRef_Undef or (not logic.isIntDiv(var) and not logic.isMod(logic.getSymRef(var))));
+        bool const aLocal = var != PTRef_Undef and getColorFor(var) == icolor_t::I_A;
+        if ((aLocal and (color == icolor_t::I_A)) or (not aLocal and (color == icolor_t::I_B))) {
+            half.addTerm(var, coeff);
+        }
+    }
+    half.addTerm(x, color == icolor_t::I_A ? -1 : 1);
+    return half;
+}
+
 PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
     std::vector<std::pair<PtAsgn, Real>> system;
     for (int i = 0; i < explanations.size(); ++i) {
         auto litColor = getColorFor(explanations[i].tr);
-        if (litColor == color or litColor == icolor_t::I_AB) {
+        if (litColor == color or litColor == icolor_t::I_AB or litColor == icolor_t::I_MIXED) {
             system.emplace_back(explanations[i], explanation_coeffs[i]);
         }
     }
-    PTRef itp = weightedSum(system);
+    PTRef itp = weightedSum(system, color);
     assert(itp != PTRef_Undef);
     return color == icolor_t::I_B ? logic.mkNot(itp) : itp;
 }
@@ -628,6 +676,9 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(Real strengthFactor) {
             systemA.emplace_back(explanations[i], explanation_coeffs[i]);
         } else if (litColor == icolor_t::I_B) {
             systemB.emplace_back(explanations[i], explanation_coeffs[i]);
+        } else {
+            // Mixed literals come only from LIA cuts; the flexible algorithm is LRA-only and cannot split them.
+            throw InternalException("Flexible LRA interpolant does not support mixed literals");
         }
     }
     PTRef itpA = weightedSum(systemA);

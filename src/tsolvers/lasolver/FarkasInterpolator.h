@@ -6,13 +6,21 @@
 #define OPENSMT_FARKASINTERPOLATOR_H
 
 #include <common/numbers/Real.h>
+#include <common/polynomials/Translations.h>
 #include <pterms/PtStructs.h>
 #include <smtsolvers/TheoryInterpolator.h>
 
 #include <iostream>
+#include <string>
 
 namespace opensmt {
 class ArithLogic;
+
+/// Name of the fresh shared variable FarkasInterpolator::splitMixedLiteral introduces when it splits @p splitAtom.
+/// The single source of truth for that name: LASolver::resolveMixed finds the variable again through it.
+std::string mixedAuxVarName(PTRef splitAtom);
+/// Whether @p term is a variable introduced by FarkasInterpolator::splitMixedLiteral.
+bool isMixedAuxVar(ArithLogic const & logic, PTRef term);
 
 struct DecomposedStatistics {
     unsigned int decompositionOpportunities = 0;
@@ -76,11 +84,15 @@ public:
 private:
     PTRef getDecomposedInterpolant(icolor_t color);
     PTRef getFarkasInterpolant(icolor_t color);
+    // The half of mixed literal @p leq colorable for @p color, as the body of "0 <= half". The two halves share a
+    // fresh variable (mixedAuxVarName(leq)) and sum up to the original literal.
+    LAPoly splitMixedLiteral(PTRef leq, icolor_t color);
 
     bool isLocalFor(icolor_t color, PTRef var) const { return getColorFor(var) == color; }
 
     bool isInPartitionOfColor(icolor_t color, PTRef atom) const {
         auto atomColor = getColorFor(atom);
+        assert(atomColor != icolor_t::I_MIXED);
         return (color & atomColor) != icolor_t::I_UNDEF;
     }
 
@@ -95,7 +107,8 @@ private:
 
     icolor_t getGlobalColorFor(PTRef term) const;
 
-    PTRef weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system);
+    // Mixed literals in @p system contribute their half colorable for @p color (unused if there are none)
+    PTRef weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system, icolor_t color = icolor_t::I_A);
 
     ArithLogic & logic;
     vec<PtAsgn> const explanations;

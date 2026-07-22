@@ -11,8 +11,11 @@
 #include "CutCreator.h"
 
 #include <common/Random.h>
+#include <common/TreeOps.h>
+#include <common/polynomials/Translations.h>
 #include <models/ModelBuilder.h>
 
+#include <algorithm>
 #include <unordered_set>
 
 namespace opensmt {
@@ -724,9 +727,140 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     return interpolateUsingEngine(interpolator);
 }
 
-PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
+namespace {
+// The variable splitMixedLiteral introduced when splitting splitAtom, or PTRef_Undef if it was never introduced
+PTRef mixedAuxVarFor(ArithLogic & logic, PTRef splitAtom) {
+    std::string const name = mixedAuxVarName(splitAtom);
+    if (not logic.hasSym(name.c_str())) { return PTRef_Undef; }
+    SRef const sort = logic.getSortRef(logic.getPterm(splitAtom)[1]);
+    return logic.mkVar(sort, name.c_str()); // terms are hash-consed, so this returns the existing variable
+}
+
+bool mentions(Logic const & logic, PTRef term, PTRef var) {
+    if (var == PTRef_Undef) { return false; }
+    auto const vars = variables(logic, term);
+    return std::find(vars.begin(), vars.end(), var) != vars.end();
+}
+
+// The polynomial P of a hole `0 <= P`
+LAPoly holeToPoly(ArithLogic & logic, PTRef hole) {
+    return ptrefToPoly(logic.isNot(hole) ? strengthenedNegation(logic, logic.getPterm(hole)[0]) : hole, logic);
+}
+
+// Exact integer projection of `0 <= L /\ 0 <= R` onto the pivot's mixed variable. The left side carries it as x (the
+// variable of the pivot's strengthened negation), the right side as y (the pivot's own variable), where y stands for -x.
+PTRef combineMixedLiterals(ArithLogic & logic, PTRef left, PTRef right, PTRef x, PTRef y) {
+    LAPoly const leftPoly = holeToPoly(logic, left);
+    LAPoly rightPolyInX = holeToPoly(logic, right);
+    if (not leftPoly.contains(x) or not rightPolyInX.contains(y)) {
+        throw InternalException("Partial interpolant does not contain the pivot's mixed variable");
+    }
+    // Only the right side is renamed, so an x there would be conflated with the pivot; a y on the left belongs to
+    // another mixed literal and is kept.
+    if (rightPolyInX.contains(x)) { throw InternalException("Ambiguous mixed variable in a partial interpolant"); }
+    rightPolyInX.addTerm(x, -rightPolyInX.removeVar(y));
+    Real const a = leftPoly.getCoeff(x);
+    Real const b = rightPolyInX.getCoeff(x);
+    if (a.sign() == b.sign()) {
+        throw InternalException("Mixed variable coefficients cannot be eliminated by a positive Farkas combination");
+    }
+    SRef const sort = logic.getSortRef(x);
+    LAPoly combined; // Fourier-Motzkin elimination of x; exact over the integers if |a| = 1 or |b| = 1
+    combined.merge(leftPoly, abs(b));
+    combined.merge(rightPolyInX, abs(a));
+    if (abs(a) > 1 and abs(b) > 1) {
+        if (std::any_of(combined.begin(), combined.end(), [&](auto const & t) { return isMixedAuxVar(logic, t.var); })) {
+            throw InternalException("Inexact integer combination of mixed literals");
+        }
+        // 0 <= cLo*x + lo  and  0 <= hi - cHi*x  have an integer solution iff  ceil(-lo/cLo) <= floor(hi/cHi)
+        LAPoly lo = a.sign() > 0 ? leftPoly : rightPolyInX;
+        LAPoly hi = a.sign() > 0 ? rightPolyInX : leftPoly;
+        Real const cLo = lo.removeVar(x);
+        Real const cHi = -hi.removeVar(x);
+        PTRef const floorHi = logic.mkIntDiv(polyToPTRef(hi, logic, sort), logic.mkIntConst(cHi));
+        PTRef const ceilMinusLo = logic.mkNeg(logic.mkIntDiv(polyToPTRef(lo, logic, sort), logic.mkIntConst(cLo)));
+        return logic.mkLeq(ceilMinusLo, floorHi);
+    }
+    if (combined.size() == 0) { return logic.getTerm_true(); }
+    return logic.mkGeq(polyToPTRef(combined, logic, sort), logic.getZeroForSort(sort));
+}
+
+using TermMap = std::unordered_map<PTRef, PTRef, PTRefHash>;
+
+// The holes, i.e. the (possibly negated) inequalities mentioning var, in the and/or skeleton of itp; throws if var
+// occurs anywhere else, since substituting below e.g. not/ite/= would not be monotone and (rule-la) would not apply.
+std::vector<PTRef> collectHoles(ArithLogic const & logic, PTRef itp, PTRef var) {
+    std::vector<PTRef> holes;
+    std::unordered_set<PTRef, PTRefHash> visited; // partial interpolants are DAGs
+    std::vector<PTRef> toVisit{itp};
+    while (not toVisit.empty()) {
+        PTRef const term = toVisit.back();
+        toVisit.pop_back();
+        if (not visited.insert(term).second) { continue; }
+        PTRef const atom = logic.isNot(term) ? logic.getPterm(term)[0] : term;
+        if (logic.isLeq(atom) and mentions(logic, atom, var)) {
+            holes.push_back(term);
+        } else if (logic.isAnd(term) or logic.isOr(term)) {
+            for (PTRef child : logic.getPterm(term)) {
+                toVisit.push_back(child);
+            }
+        } else if (mentions(logic, term, var)) {
+            throw InternalException("Mixed variable under a non-monotone context in a partial interpolant");
+        }
+    }
+    return holes;
+}
+
+// Rebuilds the and/or skeleton of term with every key of substitution replaced by its value.
+// Rebuilt and/or nodes are memoized into substitution as well.
+PTRef fillHoles(Logic & logic, PTRef term, TermMap & substitution) {
+    if (auto it = substitution.find(term); it != substitution.end()) { return it->second; }
+    if (not logic.isAnd(term) and not logic.isOr(term)) { return term; }
+    vec<PTRef> args;
+    // Index the children afresh: recursive calls create terms, which may invalidate a Pterm reference
+    for (int i = 0; i < logic.getPterm(term).size(); ++i) {
+        args.push(fillHoles(logic, logic.getPterm(term)[i], substitution));
+    }
+    PTRef const filled = logic.isAnd(term) ? logic.mkAnd(std::move(args)) : logic.mkOr(std::move(args));
+    substitution.emplace(term, filled);
+    return filled;
+}
+} // namespace
+
+// left and right are the two partial interpolants meeting at a resolution pivot whose atom is I_MIXED.
+// (rule-la): for I1[LA1] and I2[LA2] the result is I1[I2[LA3]]. A partial interpolant is a monotone Boolean
+// combination (and/or, built by the A/B/AB resolution rules) whose "holes" are the (possibly negated) arithmetic
+// atoms mentioning the pivot's ".mixed_*" variable. Every hole h1 of left is replaced by a copy of right in which
+// every hole h2 is replaced by combineMixedLiterals(h1, h2). A side can contain several holes, e.g. when both
+// antecedents of an AB pivot contained the mixed literal (SMTInterpol's mixedPivotLA does the same).
+PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
+    if (not logic.hasIntegers()) { throw InternalException("Mixed literals are supported only over the integers"); }
+    // left (ant1) contains the pivot positively, so its theory conflicts held the pivot's strengthened negation, whose
+    // variable represents the pivot there; any other ".mixed_*" variable of a side belongs to another mixed literal
+    PTRef const leftVar = mixedAuxVarFor(logic, strengthenedNegation(logic, pivotAtom));
+    PTRef const rightVar = mixedAuxVarFor(logic, pivotAtom);
+    // (rule-la) degenerates to a single side when that side does not mention the pivot's auxiliary variable.
+    std::vector<PTRef> const leftHoles = collectHoles(logic, left, leftVar);
+    if (leftHoles.empty()) { return left; }
+    std::vector<PTRef> const rightHoles = collectHoles(logic, right, rightVar);
+    if (rightHoles.empty()) { return right; }
+
+    TermMap leftFillings;
+    for (PTRef leftHole : leftHoles) {
+        TermMap rightFillings;
+        for (PTRef rightHole : rightHoles) {
+            // Pairwise combination of the left and right - introduced terms to eliminate introduced .mixed variables
+            rightFillings.emplace(rightHole, combineMixedLiterals(logic, leftHole, rightHole, leftVar, rightVar));
+        }
+        leftFillings.emplace(leftHole, fillHoles(logic, right, rightFillings));
+    }
+    return fillHoles(logic, left, leftFillings);
+}
+
+PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap const & labels, PartitionManager & pmanager) {
     assert(status == UNSAT);
-    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels),
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     return interpolateUsingEngine(interpolator);
 }
 
@@ -736,7 +870,7 @@ void LASolver::printStatistics(std::ostream & out) {
 }
 
 bool LASolver::shouldTryCutFromProof() const {
-    if (this->config.produce_inter()) { return false; }
+    // Cuts from proof can be done now with interpolation
     static unsigned long counter = 0;
     return ++counter % 10 == 0;
 }

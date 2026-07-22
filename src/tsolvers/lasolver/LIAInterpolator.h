@@ -10,6 +10,9 @@
 namespace opensmt {
 using ItpColorMap = TheoryInterpolator::ItpColorMap;
 
+/// The positive inequality equivalent over the integers to the negation of @p leq: 'not (c <= t)' is '-(c-1) <= -t'
+PTRef strengthenedNegation(ArithLogic & logic, PTRef leq);
+
 struct LAExplanations {
     vec<PtAsgn> explanations;
     std::vector<Real> coeffs;
@@ -21,7 +24,7 @@ struct LAExplanations {
 
 class LIAInterpolator : public FarkasInterpolator {
 public:
-    LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations);
+    LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations, std::unique_ptr<TermColorInfo> colorInfo = {});
 
     // not implemented for integers
     PTRef getFlexibleInterpolant(Real strengthFactor) = delete;

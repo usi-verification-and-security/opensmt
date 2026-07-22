@@ -28,6 +28,7 @@ public:
     virtual lbool getPolaritySuggestion(PTRef p) const override { return lasolver->getPolaritySuggestion(p); }
 
     virtual PTRef getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) override;
+    PTRef resolveMixed(PTRef p, PTRef l, PTRef r) override { return lasolver->resolveMixed(p, l, r); }
 };
 
 }
