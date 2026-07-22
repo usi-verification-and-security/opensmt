@@ -68,6 +68,7 @@ public:
     std::vector<vec<Lit>> getNewSplits(); // Return the new splits as a vector of literals that needs to be interpreted as a clause.
 
     PTRef   getInterpolant       (const ipartitions_t&, ItpColorMap *, PartitionManager &pmanager);
+    PTRef   revertFormula        (PTRef formula);
     Lit     getDeduction         ();                      // Returns a literal that is implied by the current state and the reason literal
     Lit     getSuggestion        ( );                     // Returns a literal that is suggested by the current state
     void    getReason            ( Lit, vec< Lit > &);    // Returns the explanation for a deduced literal

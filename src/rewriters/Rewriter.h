@@ -23,7 +23,6 @@ template<typename TConfig>
 class Rewriter {
 public:
     Rewriter(Logic & logic, TConfig & cfg) : logic(logic), cfg(cfg) {}
-    std::map<PTRef, PTRef> rewritings;
 
     virtual PTRef rewrite(PTRef root) {
         // MB: If term has no children then single call to config is enough;
@@ -76,7 +75,6 @@ public:
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
             PTRef rewritten = cfg.rewrite(newTerm);
             if (rewritten != newTerm or needsChange) {
-                rewritings[rewritten] = newTerm;
                 assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));
                 substitutions.insert(currentRef, rewritten);
             }

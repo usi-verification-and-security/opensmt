@@ -28,6 +28,7 @@ public:
     virtual lbool getPolaritySuggestion(PTRef p) const override { return lasolver->getPolaritySuggestion(p); }
 
     virtual PTRef getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) override;
+    virtual PTRef revertFormula(PTRef formula) override;
 };
 
 }

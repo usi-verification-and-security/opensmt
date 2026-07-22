@@ -24,6 +24,7 @@ public:
     Logic const & getLogic() const override { return logic; }
 
     PTRef getInterpolant(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw InternalException("Interpolation not supported yet"); };
+    virtual PTRef revertFormula(PTRef formula) override { throw std::logic_error("Not implemented yet"); }
 
 };
 

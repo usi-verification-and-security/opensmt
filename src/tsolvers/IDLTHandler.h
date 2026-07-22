@@ -26,6 +26,7 @@ public:
     virtual PTRef getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager&) override {
         throw std::logic_error("Not implemented yet");
     }
+    virtual PTRef revertFormula(PTRef formula) override { throw std::logic_error("Not implemented yet"); }
 
 };
 

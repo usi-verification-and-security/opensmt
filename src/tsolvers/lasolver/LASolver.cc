@@ -728,17 +728,19 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
 PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
-    return  backtrackDivMod(logic, interpolateUsingEngine(interpolator));
-
+    return interpolateUsingEngine(interpolator);
 }
 
+PTRef LASolver::revertFormula(PTRef formula) {
+    return backtrackDivMod(logic, formula);
+}
 void LASolver::printStatistics(std::ostream & out) {
     TSolver::printStatistics(out);
     laSolverStats.printStatistics(out);
 }
 
 bool LASolver::shouldTryCutFromProof() const {
-    if (this->config.produce_inter()) { return false; }
+    // if (this->config.produce_inter()) { return false; }
     static unsigned long counter = 0;
     return ++counter % 10 == 0;
 }
@@ -859,7 +861,7 @@ TRes LASolver::cutFromProof() {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
 
-//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
+        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));

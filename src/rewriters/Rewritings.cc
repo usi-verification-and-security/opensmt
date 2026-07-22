@@ -14,7 +14,6 @@
 #include <common/TreeOps.h>
 
 namespace opensmt {
-std::map<PTRef, PTRef> rewritings;
 
 PTRef rewriteDistincts(Logic & logic, PTRef fla) {
     return DistinctRewriter(logic).rewrite(fla);
@@ -32,12 +31,10 @@ PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla) {
 PTRef rewriteDivMod(ArithLogic & logic, PTRef term) {
     auto rewriter = DivModRewriter(logic);
     auto res =  rewriter.rewrite(term);
-    rewritings = rewriter.getRewritings();
     return res;
 }
 
 PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {
-    // std::cout << "Entered!!!" << logic.pp(term)  << term'\n';
     auto it = logic.getPterm(term).begin();
     if (logic.isAnd(term) || logic.isOr(term)) {
         vec<PTRef> args;
@@ -69,10 +66,25 @@ PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {
         return logic.mkGeq(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
     }
     if (logic.isVar(term)) {
-        return rewritings.contains(term) ? rewritings.at(term) : term;
+        auto name = logic.getSymName(term);
+        const char *div = ".div";
+        const char *mod = ".mod";
+        auto check = strstr(name, div);
+        if (check != NULL) {
+            return DivModConfig::getDivTermFor(logic,term);
+        } else {
+            check = strstr(name, mod);
+            if (check != NULL) {
+                return DivModConfig::getModTermFor(logic,term);
+            }
+        }
+        return term;
     }
     if (logic.isTimes(term)) {
         return logic.mkTimes(backtrackDivMod(logic, logic.getPterm(term)[0]), backtrackDivMod(logic, logic.getPterm(term)[1]));
+    }
+    if (logic.isNot(term)) {
+        return logic.mkNot(backtrackDivMod(logic, logic.getPterm(term)[0]));
     }
     return term;
 

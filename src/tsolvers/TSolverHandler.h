@@ -61,6 +61,7 @@ public:
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
     virtual PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap *, PartitionManager& pmanager) = 0;
+    virtual PTRef revertFormula(PTRef formula) = 0;
 
     void    computeModel      ();                      // Computes a model in the solver if necessary
     bool    assertLit         (PtAsgn);                // Push the assignment to all theory solvers

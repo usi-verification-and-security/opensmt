@@ -71,6 +71,7 @@ public:
 
     PTRef getRealInterpolant(ipartitions_t const &, ItpColorMap *, PartitionManager & pmanager);
     PTRef getIntegerInterpolant(ItpColorMap const &);
+    PTRef revertFormula(PTRef formula);
 
     // Return the conflicting bounds
     void getConflict(vec<PtAsgn> &) override;
