@@ -674,7 +674,6 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
     std::vector<Lit> const & oldvec = n.getClause();
     for (Lit l : oldvec) {
         newvec.push(~l);
-        std::cout << "Literal: " << logic.pp(varToPTRef(var(l))) << std::endl;
     }
     bool satisfiable = this->assertLiteralsToTSolver(newvec);
     if (satisfiable) {
@@ -710,8 +709,7 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
     for (auto l: clause) {
         clauseColor = clauseColor & getVarClass(var(l));
     }
-    // assert(clause.size() == 2); // only binary splits at the moment
-    // auto clauseColor = getVarClass(var(clause[0])) & getVarClass(var(clause[1]));
+
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
     } else if (clauseColor == icolor_t::I_UNDEF) {
@@ -863,6 +861,7 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipart
     assert(proof_graph);
     PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask)
                     .produceSingleInterpolant();
+    
     if (enabledInterpVerif()) {
         bool sound = verifyInterpolant(itp, A_mask);
         assert(sound);

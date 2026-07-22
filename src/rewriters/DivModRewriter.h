@@ -130,7 +130,6 @@ public:
         return logic.mkAnd(args);
     }
 
-
 private:
     ArithLogic & logic;
     DivModConfig config;

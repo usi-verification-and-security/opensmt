@@ -10,7 +10,6 @@
 #define OPENSMT_REWRITER_H
 
 #include <logics/Logic.h>
-#include <map>
 
 namespace opensmt {
 /**
@@ -73,6 +72,7 @@ public:
             PTRef newTerm = needsChange ? logic.insertTerm(term.symb(), std::move(auxiliaryArgs)) : currentRef;
             auxiliaryArgs.clear();
             // The reference "term" has now been possibly invalidated! Do not access it anymore!
+            
             PTRef rewritten = cfg.rewrite(newTerm);
             if (rewritten != newTerm or needsChange) {
                 assert(logic.getSortRef(currentRef) == logic.getSortRef(rewritten));

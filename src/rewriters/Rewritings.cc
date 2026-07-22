@@ -6,15 +6,12 @@
  */
 
 #include "Rewritings.h"
-
-#include <map>
 #include "DistinctRewriter.h"
 #include "DivModRewriter.h"
 
 #include <common/TreeOps.h>
 
 namespace opensmt {
-
 PTRef rewriteDistincts(Logic & logic, PTRef fla) {
     return DistinctRewriter(logic).rewrite(fla);
 }
@@ -29,9 +26,7 @@ PTRef rewriteDistinctsKeepTopLevel(Logic & logic, PTRef fla) {
 }
 
 PTRef rewriteDivMod(ArithLogic & logic, PTRef term) {
-    auto rewriter = DivModRewriter(logic);
-    auto res =  rewriter.rewrite(term);
-    return res;
+    return DivModRewriter(logic).rewrite(term);
 }
 
 PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {

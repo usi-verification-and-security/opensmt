@@ -861,7 +861,7 @@ TRes LASolver::cutFromProof() {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
 
-        std::cout << logic.pp(term) << " = " << rhs << std::endl;
+        // std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));
