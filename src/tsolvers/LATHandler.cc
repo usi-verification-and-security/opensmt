@@ -18,6 +18,7 @@ LATHandler::LATHandler(SMTConfig & c, ArithLogic & l)
     setSolverSchedule({lasolver});
 }
 
+
 PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) {
     if (logic.hasReals() and not logic.hasIntegers()) {
         return lasolver->getRealInterpolant(mask, labels, pmanager);
@@ -25,10 +26,15 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
         if (labels == nullptr) {
             throw InternalException("LIA interpolation requires partitioning map, but no map was provided");
         }
-        return lasolver->getIntegerInterpolant(*labels);
+        return lasolver->getIntegerInterpolant(mask, *labels, pmanager);
     } else {
         throw InternalException("Mixed arithmetic interpolation not supported yet");
     }
 }
+
+PTRef  LATHandler::resolveMixed(PTRef left, PTRef right) {
+    return lasolver->resolveMixed(left, right);
+}
+
 
 }
