@@ -49,6 +49,11 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
     return liaExplanations;
 }
 
+LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations,
+                                 std::unique_ptr<TermColorInfo> colorInfo)
+    : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs),
+                         std::move(liaExplanations.labels), std::move(colorInfo)) {}
+
 LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
     : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs),
                          std::move(liaExplanations.labels)) {}
