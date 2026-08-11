@@ -979,15 +979,14 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
                 // This resolvent will be processed when the second antecedent is taken from the queue
                 continue;
             }
-            assert(ant1->getType() == clause_type::CLA_THEORY || ant1->getType() == clause_type::CLA_SPLIT);
-            assert(ant2->getType() == clause_type::CLA_THEORY || ant2->getType() == clause_type::CLA_SPLIT);
+            assert(ant1->getType() == clause_type::CLA_THEORY);
+            assert(ant2->getType() == clause_type::CLA_THEORY);
             assert(ant1->isLeaf() && ant2->isLeaf());
             ant1->remRes(resolvent_id);
             ant2->remRes(resolvent_id);
             if (ant1->getNumResolvents() == 0) { this->removeNode(ant1->getId()); }
             if (ant2->getNumResolvents() == 0) { this->removeNode(ant2->getId()); }
-            bool involvesSplit = ant1->getType() == clause_type::CLA_SPLIT || ant2->getType() == clause_type::CLA_SPLIT;
-            resolvent->setType(involvesSplit ? clause_type::CLA_THEORY : clause_type::CLA_SPLIT);
+            resolvent->setType(clause_type::CLA_THEORY);
             resolvent->setAnt1(nullptr);
             resolvent->setAnt2(nullptr);
             this->addLeaf(resolvent_id);

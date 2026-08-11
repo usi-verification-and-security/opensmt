@@ -49,7 +49,6 @@ class UFTHandler : public TSolverHandler
     virtual lbool getPolaritySuggestion(PTRef) const override;
 
   virtual PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
-  PTRef revertFormula(PTRef formula) override { return formula; }
 };
 
 }

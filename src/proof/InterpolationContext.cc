@@ -9,10 +9,7 @@
 #include "PG.h"
 
 #include <common/VerificationUtils.h>
-#include <rewriters/Rewritings.h>
 #include <simplifiers/BoolRewriting.h>
-
-#include "rewriters/DivModRewriter.h"
 
 namespace opensmt {
 class SingleInterpolationComputationContext {
@@ -649,8 +646,7 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
         if (sign(l) == clauseIsA) litTerm = logic.mkNot(litTerm);
         args.push(litTerm);
     }
-    return clauseClass == icolor_t::I_A ? thandler->revertFormula(logic.mkOr(std::move(args)))
-                                        : thandler->revertFormula(logic.mkAnd(std::move(args)));
+    return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args)) : logic.mkAnd(std::move(args));
 }
 
 // Input: leaf clause, current interpolant partition masks for A and B
@@ -691,7 +687,6 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
     }
 
     PTRef interpolant = thandler->getInterpolant(A_mask, &ptref2label, pmanager);
-    interpolant = thandler->revertFormula(interpolant);
     backtrackTSolver();
     return interpolant;
 }
@@ -706,11 +701,8 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
  */
 PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitClause(ProofNode const & n) const {
     auto const & clause = n.getClause();
-    auto clauseColor = icolor_t::I_AB;
-    for (auto l : clause) {
-        clauseColor = clauseColor & getVarClass(var(l));
-    }
-
+    assert(clause.size() == 2); // only binary splits at the moment
+    auto clauseColor = getVarClass(var(clause[0])) & getVarClass(var(clause[1]));
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
     } else if (clauseColor == icolor_t::I_UNDEF) {

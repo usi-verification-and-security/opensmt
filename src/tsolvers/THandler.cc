@@ -171,11 +171,6 @@ THandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, Partit
     return getSolverHandler().getInterpolant(mask, labels, pmanager);
 }
 
-PTRef
-THandler::revertFormula(PTRef formula)
-{
-    return getSolverHandler().revertFormula(formula);
-}
 
 //
 // It is in principle possible that the egraph contains deduceable literals

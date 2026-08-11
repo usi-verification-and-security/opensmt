@@ -31,8 +31,5 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
     }
 }
 
-PTRef LATHandler::revertFormula(PTRef formula) {
-    return lasolver->revertFormula(formula);
-};
 
 }
