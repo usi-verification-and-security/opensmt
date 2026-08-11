@@ -226,4 +226,22 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFractionalCoefficientsInExpla
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), leq3, farkasItp));
 }
 
+TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFModsAndDivs){
+    /*
+     * A:  mod(x,10) < 5
+     *
+     * B:  mod(x,10) > 6
+     */
+    PTRef lt = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
+    PTRef gt = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
+
+
+    vec<PtAsgn> conflict {PtAsgn(lt, l_True), PtAsgn(gt, l_True)};
+    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1, FastRational{1,3}, 1}, labels));
+    PTRef farkasItp = interpolator.getFarkasInterpolant();
+    std::cout << logic.pp(farkasItp) << std::endl;
+    EXPECT_TRUE(verifyInterpolant(lt, gt, farkasItp));
+}
+
 }
