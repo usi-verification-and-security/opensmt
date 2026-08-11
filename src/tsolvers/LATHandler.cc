@@ -30,6 +30,5 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
         throw InternalException("Mixed arithmetic interpolation not supported yet");
     }
 }
-
-
+    
 }
