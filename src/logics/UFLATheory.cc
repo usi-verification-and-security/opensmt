@@ -17,6 +17,7 @@ PTRef UFLATheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext c
         purified = instantiateReadOverStore(logic, purified);
     }
     PTRef noArithmeticEqualities = splitArithmeticEqualities(purified);
+    AppearsInUfVisitor(getLogic()).visit(noArithmeticEqualities);
     return noArithmeticEqualities;
 }
 

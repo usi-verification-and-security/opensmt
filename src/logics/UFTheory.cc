@@ -3,6 +3,8 @@
 #include <common/TreeOps.h>
 #include <rewriters/Rewritings.h>
 
+#include <iostream>
+
 namespace opensmt {
 
 PTRef UFTheory::preprocessBeforeSubstitutions(PTRef fla, PreprocessingContext const & context) {
@@ -13,6 +15,7 @@ PTRef UFTheory::preprocessAfterSubstitutions(PTRef fla, PreprocessingContext con
     using namespace opensmt;
     fla = context.frameCount == 0 ? rewriteDistinctsKeepTopLevel(getLogic(), fla)
                                : rewriteDistincts(getLogic(), fla);
+    std::cerr << "AppearsInUfVisitor" << std::endl;
     AppearsInUfVisitor(getLogic()).visit(fla);
     return fla;
 }
