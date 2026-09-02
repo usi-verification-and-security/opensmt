@@ -226,4 +226,32 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFractionalCoefficientsInExpla
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), leq3, farkasItp));
 }
 
+TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFModsAndDivs){
+    /*
+     * A:  mod(x,10) < 5
+     *
+     * B:  mod(x,10) > 6
+     */
+    PTRef partA = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
+    PTRef partB = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef farkasItp = interpolants[0];
+
+    std::string itpStr = logic.pp(farkasItp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, farkasItp));
+}
+
 }
