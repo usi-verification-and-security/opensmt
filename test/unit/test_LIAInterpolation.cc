@@ -236,11 +236,35 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFModsAndDivs){
     PTRef gt = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
 
 
-    vec<PtAsgn> conflict {PtAsgn(lt, l_True), PtAsgn(gt, l_True)};
+    vec conflict {PtAsgn(lt, l_True), PtAsgn(gt, l_True)};
     ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1, FastRational{1,3}, 1}, labels));
     PTRef farkasItp = interpolator.getFarkasInterpolant();
-    std::cout << logic.pp(farkasItp) << std::endl;
+
+    auto collectVars = [](Logic & logic, PTRef root) {
+        vec<PTRef> vars;
+        Map<PTRef, bool, PTRefHash> visited;
+        vec<PTRef> queue;
+        queue.push(root);
+        while (queue.size() > 0) {
+            PTRef tr = queue.last();
+            queue.pop();
+            if (visited.has(tr)) continue;
+            visited.insert(tr, true);
+            if (logic.isVar(tr)) {
+                vars.push(tr);
+                continue;
+            }
+            Pterm const & t = logic.getPterm(tr);
+            for (int i = 0; i < t.size(); i++)
+                queue.push(t[i]);
+        }
+        return vars;
+    };
+    auto vars = collectVars(logic, farkasItp);
+    for (auto v : vars) {
+        EXPECT_TRUE(v == x);
+    }
     EXPECT_TRUE(verifyInterpolant(lt, gt, farkasItp));
 }
 
