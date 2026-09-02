@@ -232,40 +232,26 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFModsAndDivs){
      *
      * B:  mod(x,10) > 6
      */
-    PTRef lt = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
-    PTRef gt = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
+    PTRef partA = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
+    PTRef partB = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
 
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef farkasItp = interpolants[0];
 
-    vec conflict {PtAsgn(lt, l_True), PtAsgn(gt, l_True)};
-    ItpColorMap labels {{conflict[0].tr, icolor_t::I_A}, {conflict[1].tr, icolor_t::I_B}};
-    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, conflict, {1, FastRational{1,3}, 1}, labels));
-    PTRef farkasItp = interpolator.getFarkasInterpolant();
-
-    auto collectVars = [](Logic & logic, PTRef root) {
-        vec<PTRef> vars;
-        Map<PTRef, bool, PTRefHash> visited;
-        vec<PTRef> queue;
-        queue.push(root);
-        while (queue.size() > 0) {
-            PTRef tr = queue.last();
-            queue.pop();
-            if (visited.has(tr)) continue;
-            visited.insert(tr, true);
-            if (logic.isVar(tr)) {
-                vars.push(tr);
-                continue;
-            }
-            Pterm const & t = logic.getPterm(tr);
-            for (int i = 0; i < t.size(); i++)
-                queue.push(t[i]);
-        }
-        return vars;
-    };
-    auto vars = collectVars(logic, farkasItp);
-    for (auto v : vars) {
-        EXPECT_TRUE(v == x);
-    }
-    EXPECT_TRUE(verifyInterpolant(lt, gt, farkasItp));
+    std::string itpStr = logic.pp(farkasItp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, farkasItp));
 }
 
 }
