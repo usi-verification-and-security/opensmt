@@ -828,10 +828,11 @@ PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
 
 PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap const & labels, PartitionManager & pmanager) {
     assert(status == UNSAT);
-    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels),
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
     mixedVars = interpolator.getMixedVars();
-    return backtrackDivMod(logic, interpolateUsingEngine(res));
+    return backtrackDivMod(logic, res);
 }
 
 void LASolver::printStatistics(std::ostream & out) {

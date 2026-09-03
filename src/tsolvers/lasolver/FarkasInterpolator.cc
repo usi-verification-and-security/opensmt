@@ -626,6 +626,7 @@ std::tuple<PTRef, PTRef> FarkasInterpolator::splitMixedLiteral(PTRef leq) {
             continue;
         }
         icolor_t const varColor = getColorFor(var);
+        std::cout<<"Var: " << logic.pp(var) << " Color: " << colorToString(varColor) << "\n";
         if (varColor == icolor_t::I_A) {
             polyA.addTerm(var, coeff);
         } else {
@@ -646,10 +647,6 @@ std::tuple<PTRef, PTRef> FarkasInterpolator::splitMixedLiteral(PTRef leq) {
 }
 
 PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
-    // bool hasColors = ensureHasColorForAllTerms();
-    // if (not hasColors) {
-    //     throw InternalException("Error in computation of Farkas interpolant, colors could not be determined!");
-    // }
     std::vector<std::pair<PtAsgn, Real>> system;
     for (int i = 0; i < explanations.size(); ++i) {
         // std::cout << "Explanation: " << logic.pp(explanations[i].tr) << '\n';

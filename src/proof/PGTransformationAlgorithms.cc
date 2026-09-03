@@ -957,8 +957,6 @@ void ProofGraph::replaceSubproofsWithNoPartitionTheoryVars(std::vector<Var> cons
         assert(leaf);
         assert(leaf->isLeaf());
         bool hasMixed = false;
-        std::cout << "Clause: " << '\n';
-        printClause(leaf);
         for (Var v : vars) {
             short present = leaf->hasOccurrenceBin(v);
             hasMixed |= (present != -1);

@@ -90,12 +90,10 @@ private:
                     assignedColor == icolor_t::I_AB) { // already processed, color does not change
                     continue;
                 } else { // assigning new color
-                    if (assignedColor != icolor_t::I_MIXED) {
-                        assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B);
-                        colorToAssign = assignedColor == icolor_t::I_MIXED ? assignedColor :
-                            colorUnion(colorToAssign, assignedColor);
-                        assert(colorToAssign == icolor_t::I_AB or colorToAssign == icolor_t::I_MIXED);
-                    }
+                    assert(assignedColor == icolor_t::I_A or assignedColor == icolor_t::I_B or assignedColor == icolor_t::I_MIXED);
+                    colorToAssign = assignedColor == icolor_t::I_MIXED ? colorToAssign :
+                        colorUnion(colorToAssign, assignedColor);
+                    assert(colorToAssign != icolor_t::I_MIXED);
                 }
             }
             // if we reach here, we need to propagate colorToAssign to the whole term subtree of `term`
