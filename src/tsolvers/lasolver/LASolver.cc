@@ -827,30 +827,69 @@ PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
     Real const c2 = leftFarkasCoeff;  // |effRightMixedCoeff|: coeff of the mixed var in the right `s`
     Real const k3 = logic.hasIntegers() ? (c2 * k1 + c1 * k2 + c1 * c2)
                                         : (k1 == Real(-1) ? k2 : Real(0));
-    // TODO(step 3): when k3 >= 0 the plain `s3 <| 0` returned below is not a valid partial interpolant;
-    // (rule-la) then requires emitting F3 -- a finite floor-division case split that materialises the
-    // divisibility constraint (e.g. "there is an even integer between t and r" for test3). Until then
-    // the emitted term is unchanged.
-    (void)k3;
 
     // Summing the (Farkas- and sign-adjusted) sides now cancels leftMixedVar: it no longer appears in the
     // combined interpolant, exactly as the two split halves cancel it in FarkasInterpolator::weightedSum.
     LAPoly combined;
     combined.merge(leftPoly, leftFarkasCoeff * (leftNegated ? Real(-1) : Real(1)));
     combined.merge(rewrittenRightPoly, rightFarkasCoeff * (rightNegated ? Real(-1) : Real(1)));
-    if (combined.size() == 0) {return logic.getTerm_true();}
     // A negated side contributed a strict Farkas coefficient, so the combined inequality is strict too
     // (mirrors FarkasInterpolator::weightedSum's Strictness handling).
     bool const strict = leftNegated or rightNegated;
     // If the clause had more than one mixed literal, `combined` still carries a mixed variable; make
     // its `k` available to the (rule-la) step that pivots on it next. `combined` is the body of the
     // "0 <= combined" form, so the coefficient in the paper's "s <| 0" orientation is negated.
+    bool combinedHasMixed = false;
     for (auto const & [var, coeff] : combined) {
-        if (isMixedVar(logic, var)) { mixedLAInfo.insert_or_assign(var, MixedLAInfo{var, -coeff, k3, strict}); }
+        if (isMixedVar(logic, var)) {
+            combinedHasMixed = true;
+            mixedLAInfo.insert_or_assign(var, MixedLAInfo{var, -coeff, k3, strict});
+        }
     }
     SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
-    PTRef const sum = polyToPTRef(combined, logic, sort);
     PTRef const zero = logic.getZeroForSort(sort);
+
+    // Step 3 -- (rule-la) F3 for the integer, single-mixed-literal, leaf-and-leaf case.
+    // Each side is a half-plane  a_i * x1 + s_i(shared) <| 0  (a_i the mixed-var coefficient in the
+    // "<| 0" orientation, s_i over shared vars only). With opposite-signed a_i one side upper-bounds
+    // x1 and the other lower-bounds it, and the exact combined interpolant is
+    //     exists integer y.  (y <= floor(-s_hi / c_hi))  /\  (y >= ceil(s_lo / c_lo))
+    //   <=>  ceil(s_lo / c_lo)  <=  floor(-s_hi / c_hi)
+    // i.e. "there is an integer -- hence, given c_hi/c_lo, a value with the required divisibility --
+    // between the two shared bounds" (the "even integer between t and r" for test3). When c_hi or
+    // c_lo is 1 this is equivalent to the plain `s3 <| 0` below, so restrict to c_hi, c_lo >= 2 to
+    // leave every other case byte-identical. This runs before the `combined` (== s3) is inspected
+    // below: even when s3 vanishes identically (all shared terms cancel) the interpolant is a real
+    // divisibility fact, not `true`.
+    if (logic.hasIntegers() and not combinedHasMixed) {
+        LAPoly leftS = leftPoly;
+        if (not leftNegated) { leftS.negate(); }
+        LAPoly rightS = rewrittenRightPoly;
+        if (not rightNegated) { rightS.negate(); }
+        auto itL = leftS.findTermForVar(leftMixedVar);
+        auto itR = rightS.findTermForVar(leftMixedVar);
+        if (itL != leftS.end() and itR != rightS.end() and itL->coeff.sign() != 0 and
+            itR->coeff.sign() != 0 and itL->coeff.sign() != itR->coeff.sign()) {
+            bool const leftIsUpper = itL->coeff.sign() > 0; // a_left > 0  =>  x1 <= -s_left / a_left
+            Real const cHi = abs(leftIsUpper ? itL->coeff : itR->coeff);
+            Real const cLo = abs(leftIsUpper ? itR->coeff : itL->coeff);
+            if (cHi > 1 and cLo > 1) {
+                leftS.removeVar(leftMixedVar);
+                rightS.removeVar(leftMixedVar);
+                LAPoly hiRem = leftIsUpper ? std::move(leftS) : std::move(rightS);
+                LAPoly loRem = leftIsUpper ? std::move(rightS) : std::move(leftS);
+                hiRem.negate(); // x1 <= hiRem / cHi
+                PTRef const hi = logic.mkIntDiv(polyToPTRef(hiRem, logic, sort), logic.mkIntConst(cHi)); // floor
+                PTRef const loNum = polyToPTRef(loRem, logic, sort);
+                PTRef const lo = // ceil(loRem / cLo) = -floor(-loRem / cLo)
+                    logic.mkNeg(logic.mkIntDiv(logic.mkNeg(loNum), logic.mkIntConst(cLo)));
+                return logic.mkLeq(lo, hi);
+            }
+        }
+    }
+
+    if (combined.size() == 0) { return logic.getTerm_true(); }
+    PTRef const sum = polyToPTRef(combined, logic, sort);
     return strict ? logic.mkGt(sum, zero) : logic.mkGeq(sum, zero);
 }
 
