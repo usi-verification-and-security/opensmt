@@ -78,12 +78,8 @@ public:
 
     ArithLogic & getLogic() override;
     bool isValid(PTRef tr) override;
-    std::unordered_map<PTRef,PTRef,PTRefHash> const & getMixedVars() const {
-        return mixedVars;
-    }
 
 private:
-    std::unordered_map<PTRef, PTRef, PTRefHash> mixedVars;
     struct DecEl {
         PtAsgn asgn;
         int dl;

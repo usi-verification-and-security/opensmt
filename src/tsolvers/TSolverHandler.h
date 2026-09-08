@@ -71,12 +71,6 @@ public:
     virtual TRes    check(bool);
     virtual vec<PTRef> getSplitClauses();
     virtual void fillTheoryFunctions(ModelBuilder & modelBuilder) const;
-    // Default: this handler never introduces mixed-literal splitting variables.
-    // Only LATHandler (backed by FarkasInterpolator) currently overrides this.
-    virtual std::unordered_map<PTRef,PTRef,PTRefHash> const & getMixedVars() const {
-        static std::unordered_map<PTRef,PTRef,PTRefHash> const empty{};
-        return empty;
-    }
 private:
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;

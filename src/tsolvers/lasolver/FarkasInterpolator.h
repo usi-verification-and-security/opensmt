@@ -14,6 +14,11 @@
 namespace opensmt {
 class ArithLogic;
 
+// Defined in FarkasInterpolator.cc. `LATerm` is the paper's `LA(s <| 0, k)` value; `MixedSplit`
+// is the (not-yet-lowered) result of splitting a mixed inequality literal into its A/B halves.
+struct LATerm;
+struct MixedSplit;
+
 struct DecomposedStatistics {
     unsigned int decompositionOpportunities = 0;
     unsigned int decomposedItps = 0;
@@ -73,13 +78,10 @@ public:
 
     static DecomposedStatistics stats;
 
-    std::unordered_map<PTRef,PTRef,PTRefHash> const & getMixedVars() const { return mixedVars; }
-
 private:
     PTRef getDecomposedInterpolant(icolor_t color);
     PTRef getFarkasInterpolant(icolor_t color);
-    std::unordered_map<PTRef, PTRef, PTRefHash> mixedVars;
-    std::tuple<PTRef, PTRef> splitMixedLiteral(PTRef leq);
+    MixedSplit splitMixedLiteral(PTRef leq);
 
     bool isLocalFor(icolor_t color, PTRef var) const { return getColorFor(var) == color; }
 
@@ -100,6 +102,8 @@ private:
     icolor_t getGlobalColorFor(PTRef term) const;
 
     PTRef weightedSum(std::vector<std::pair<PtAsgn, Real>> const & system);
+    // Sum of `LA(s <| 0, k)` terms; the representation used by the mixed-literal (LIA) path.
+    PTRef weightedSum(std::vector<LATerm> const & system);
 
     ArithLogic & logic;
     vec<PtAsgn> const explanations;

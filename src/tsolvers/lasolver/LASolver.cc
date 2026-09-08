@@ -725,7 +725,6 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
     std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
-    mixedVars = interpolator.getMixedVars();
     return res;
 }
 
@@ -831,7 +830,6 @@ PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap co
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels),
         std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
-    mixedVars = interpolator.getMixedVars();
     return backtrackDivMod(logic, res);
 }
 

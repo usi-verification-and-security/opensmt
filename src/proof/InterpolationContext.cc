@@ -764,6 +764,7 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
     auto clauseColor = icolor_t::I_AB;
     for (auto l : clause) {
         if (getVarClass(var(l)) == icolor_t::I_MIXED) {
+
             clauseColor = icolor_t::I_MIXED;
             break;
         }
@@ -839,8 +840,8 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
     // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
     else if (pivot_color == icolor_t::I_MIXED) {
         std::cout << "Mixed pivot" << std::endl;
-        if (partial_interp_ant1 == logic.getTerm_true() or partial_interp_ant2 == logic.getTerm_false()) { return partial_interp_ant2; }
-        if (partial_interp_ant2 == logic.getTerm_true() or partial_interp_ant1 == logic.getTerm_false()) { return partial_interp_ant1; }
+        if (partial_interp_ant1 == logic.getTerm_true() or partial_interp_ant1 == logic.getTerm_false()) { return partial_interp_ant2; }
+        if (partial_interp_ant2 == logic.getTerm_true() or partial_interp_ant2 == logic.getTerm_false()) { return partial_interp_ant1; }
         return thandler->resolveMixed(partial_interp_ant1, partial_interp_ant2);
     } else
         throw InternalException("Pivot has no color");
