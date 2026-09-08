@@ -85,6 +85,11 @@ private:
         int dl;
     };
 
+    // Paper's LA(s, k, F) parameter `k` for each mixed auxiliary variable (".mixed_*"), keyed by the
+    // variable. Populated by getRealInterpolant/getIntegerInterpolant from the FarkasInterpolator and
+    // consumed by resolveMixed when it pivots on the corresponding mixed literal.
+    std::unordered_map<PTRef, MixedLAInfo, PTRefHash> mixedLAInfo;
+
     // Possible internal states of the solver
     typedef enum { INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR } LASolverStatus;
 

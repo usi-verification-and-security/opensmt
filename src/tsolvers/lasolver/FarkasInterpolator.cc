@@ -636,16 +636,31 @@ PTRef FarkasInterpolator::weightedSum(std::vector<LATerm> const & system) {
     LAPoly interpolant;
     Strictness strictness = Strictness::NONSTRICT;
     SRef sumSort = SRef_Undef;
+    std::vector<PTRef> auxVars;
     for (auto const & term : system) {
         if (sumSort == SRef_Undef) { sumSort = term.sort; }
         // `term.s` already carries its Farkas coefficient (pre-scaled by the caller).
         interpolant.merge(term.s, Real{1});
         if (term.strictness == Strictness::STRICT) { strictness = Strictness::STRICT; }
-        // Steps 2-3 (LIA): consume `term.k` / `term.auxVars` here to eliminate the mixed auxiliary
-        // variables via integer projection and to emit divisibility atoms. For now the auxiliary
-        // variables (if any) are left in `interpolant`, reproducing the previous behaviour exactly.
+        for (PTRef x : term.auxVars) {
+            if (std::find(auxVars.begin(), auxVars.end(), x) == auxVars.end()) { auxVars.push_back(x); }
+        }
     }
     assert(sumSort != SRef_Undef);
+
+    // Record the paper's LA(s, k, F) parameters for every mixed auxiliary variable that survived the
+    // summation (an aux var cancels when both split halves of its literal are present). `interpolant`
+    // is the body of the "0 <= interpolant" form that toInequality emits, so in the paper's "s <| 0"
+    // orientation the coefficient of `x` in `s` is the negation of its coefficient here. The leaf
+    // value of k is -e, written -1 in the integer case (see MixedLAInfo). Step 3 (rule-la, in
+    // LASolver::resolveMixed) consumes this; the emitted term below is unchanged.
+    bool const strict = strictness == Strictness::STRICT;
+    for (PTRef x : auxVars) {
+        auto it = interpolant.findTermForVar(x);
+        if (it == interpolant.end() or it->coeff.isZero()) { continue; }
+        mixedLAInfos.push_back(MixedLAInfo{x, -it->coeff, Real{-1}, strict});
+    }
+
     return toInequality(std::move(interpolant), logic, sumSort, strictness);
 }
 
@@ -713,6 +728,7 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
 }
 
 PTRef FarkasInterpolator::getFarkasInterpolant(icolor_t color) {
+    mixedLAInfos.clear();
     std::vector<LATerm> system;
 
     // Add one `LA(s <| 0, k)` term to the system: `half` is the shared/aux polynomial, `auxVars`

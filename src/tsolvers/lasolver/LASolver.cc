@@ -725,6 +725,7 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
     std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
+    for (auto const & info : interpolator.getMixedLAInfo()) { mixedLAInfo.insert_or_assign(info.auxVar, info); }
     return res;
 }
 
@@ -810,6 +811,28 @@ PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
     Real const leftFarkasCoeff = abs(effRightMixedCoeff);
     Real const rightFarkasCoeff = abs(effLeftMixedCoeff);
 
+    // Paper's LA(s(x), k, F(x)): (rule-la) also combines the `k` parameters of the two partial
+    // interpolants. The leaf value is k = -e (represented as -1, which is literally -1 in the integer
+    // case); a partial interpolant that is itself the result of an earlier (rule-la) carries its `k`
+    // in mixedLAInfo. With c1, c2 the (positive) coefficients of the mixed variable in the two `s`
+    // terms,  k3 = c2*k1 + c1*k2 + c1*c2  (the integer "dark shadow" gap term); in the real case
+    // k3 = k2 if k1 = -e else 0.
+    auto kOf = [this](PTRef v) {
+        auto it = mixedLAInfo.find(v);
+        return it != mixedLAInfo.end() ? it->second.k : Real(-1);
+    };
+    Real const k1 = kOf(leftMixedVar);
+    Real const k2 = kOf(rightMixedVar);
+    Real const c1 = rightFarkasCoeff; // |effLeftMixedCoeff| : coeff of the mixed var in the left `s`
+    Real const c2 = leftFarkasCoeff;  // |effRightMixedCoeff|: coeff of the mixed var in the right `s`
+    Real const k3 = logic.hasIntegers() ? (c2 * k1 + c1 * k2 + c1 * c2)
+                                        : (k1 == Real(-1) ? k2 : Real(0));
+    // TODO(step 3): when k3 >= 0 the plain `s3 <| 0` returned below is not a valid partial interpolant;
+    // (rule-la) then requires emitting F3 -- a finite floor-division case split that materialises the
+    // divisibility constraint (e.g. "there is an even integer between t and r" for test3). Until then
+    // the emitted term is unchanged.
+    (void)k3;
+
     // Summing the (Farkas- and sign-adjusted) sides now cancels leftMixedVar: it no longer appears in the
     // combined interpolant, exactly as the two split halves cancel it in FarkasInterpolator::weightedSum.
     LAPoly combined;
@@ -819,6 +842,12 @@ PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
     // A negated side contributed a strict Farkas coefficient, so the combined inequality is strict too
     // (mirrors FarkasInterpolator::weightedSum's Strictness handling).
     bool const strict = leftNegated or rightNegated;
+    // If the clause had more than one mixed literal, `combined` still carries a mixed variable; make
+    // its `k` available to the (rule-la) step that pivots on it next. `combined` is the body of the
+    // "0 <= combined" form, so the coefficient in the paper's "s <| 0" orientation is negated.
+    for (auto const & [var, coeff] : combined) {
+        if (isMixedVar(logic, var)) { mixedLAInfo.insert_or_assign(var, MixedLAInfo{var, -coeff, k3, strict}); }
+    }
     SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
     PTRef const sum = polyToPTRef(combined, logic, sort);
     PTRef const zero = logic.getZeroForSort(sort);
@@ -830,6 +859,7 @@ PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap co
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels),
         std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
+    for (auto const & info : interpolator.getMixedLAInfo()) { mixedLAInfo.insert_or_assign(info.auxVar, info); }
     return backtrackDivMod(logic, res);
 }
 
