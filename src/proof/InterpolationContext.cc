@@ -556,12 +556,12 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
         // Generate partial interpolant for clause i
         if (n->isLeaf()) {
             auto lits = n->getClause();
-            std::cout << "Leaf clause id: " << n->getId() << std::endl;
+            // std::cout << "Leaf clause id: " << n->getId() << std::endl;
             std::vector<PTRef> clause;
             for (auto lit:lits) {
                 clause.push_back(varToPTRef(var(~lit)));
             }
-            std::cout << "Clause: " << logic.pp(logic.mkOr(clause)) << '\n';
+            // std::cout << "Clause: " << logic.pp(logic.mkOr(clause)) << '\n';
 
             if (!isLeafClauseType(n->getType())) throw InternalException("; Leaf node with non-leaf clause type");
 
@@ -585,12 +585,12 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
             setPartialInterpolant(*n, partial_interp);
             if (enabledPedInterpVerif()) { verifyPartialInterpolant(*n); }
         } else { // Inner node
-            std::cout << "Inner clause id: " << n->getId() <<std::endl;
-            std::cout << "Antecedent 1: " <<  n->getAnt1()->getId()  << " Antecedent 2: " <<  n->getAnt2()->getId() << std::endl;
+            // std::cout << "Inner clause id: " << n->getId() <<std::endl;
+            // std::cout << "Antecedent 1: " <<  n->getAnt1()->getId()  << " Antecedent 2: " <<  n->getAnt2()->getId() << std::endl;
             partial_interp = compInterpLabelingInner(*n);
             assert(partial_interp != PTRef_Undef);
             setPartialInterpolant(*n, partial_interp);
-            std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
+            // std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
         }
     }
 
@@ -668,7 +668,7 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
 
 
     std::vector<Lit> restricted_clause = getRestrictedNodeClause(node, otherClass);
-    std::cout << "Original clause" << std::endl;
+    // std::cout << "Original clause" << std::endl;
     if (restricted_clause.empty()) { return clauseIsA ? logic.getTerm_false() : logic.getTerm_true(); }
     vec<PTRef> args;
     args.capacity(restricted_clause.size());
@@ -791,11 +791,11 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
     PTRef partial_interp_ant2 = getPartialInterpolant(*n.getAnt2());
     assert(partial_interp_ant1 != PTRef_Undef);
     assert(partial_interp_ant2 != PTRef_Undef);
-    std::cout << "Pivot" << std::endl;
-    std::cout << "Ant1: " << logic.pp(partial_interp_ant1) << std::endl;
-    std::cout << "Ant2: " << logic.pp(partial_interp_ant2) << std::endl;
+    // std::cout << "Pivot" << std::endl;
+    //// std::cout << "Ant1: " << logic.pp(partial_interp_ant1) << std::endl;
+    //// std::cout << "Ant2: " << logic.pp(partial_interp_ant2) << std::endl;
 
-    // Determine color pivot, depending on its color in the two antecedents
+    //Determine color pivot, depending on its color in the two antecedents
     icolor_t pivot_color = getPivotColor(n);
     if (pivot_color == icolor_t::I_S) {
         Var v = n.getPivot();
@@ -838,7 +838,7 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
     // TODO: Think about this if
     // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
     else if (pivot_color == icolor_t::I_MIXED) {
-        std::cout << "Mixed pivot" << std::endl;
+        // std::cout << "Mixed pivot" << std::endl;
         if (partial_interp_ant1 == logic.getTerm_true() or partial_interp_ant1 == logic.getTerm_false()) { return partial_interp_ant2; }
         if (partial_interp_ant2 == logic.getTerm_true() or partial_interp_ant2 == logic.getTerm_false()) { return partial_interp_ant1; }
         return thandler->resolveMixed(partial_interp_ant1, partial_interp_ant2);
