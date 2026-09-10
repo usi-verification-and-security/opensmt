@@ -579,7 +579,7 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
                 setPartialInterpolant(*n, logic.getTerm_true());
                 continue;
             }
-            std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
+            // std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
 
             assert(partial_interp != PTRef_Undef);
             setPartialInterpolant(*n, partial_interp);
