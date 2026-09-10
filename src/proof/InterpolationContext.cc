@@ -764,7 +764,6 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
     auto clauseColor = icolor_t::I_AB;
     for (auto l : clause) {
         if (getVarClass(var(l)) == icolor_t::I_MIXED) {
-
             clauseColor = icolor_t::I_MIXED;
             break;
         }

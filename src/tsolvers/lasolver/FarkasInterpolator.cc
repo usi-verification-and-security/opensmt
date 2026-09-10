@@ -667,6 +667,7 @@ PTRef FarkasInterpolator::weightedSum(std::vector<LATerm> const & system) {
 MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
     assert(logic.isLeq(leq));
     assert(getColorFor(leq) == icolor_t::I_MIXED);
+    // std::cout << "Leq: " << logic.pp(leq) << "\n";
     // Canonical form of a Leq atom is "0 <= poly"
     SRef const sort = logic.getSortRef(logic.getPterm(leq)[1]);
     LAPoly const poly = ptrefToPoly(leq, logic);
