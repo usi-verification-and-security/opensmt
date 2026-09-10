@@ -70,7 +70,8 @@ public:
                                     std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
     PTRef getRealInterpolant(ipartitions_t const &, ItpColorMap *, PartitionManager & pmanager);
-    PTRef getIntegerInterpolant(ItpColorMap const &);
+    PTRef getIntegerInterpolant(ipartitions_t const &, ItpColorMap const &, PartitionManager & pmanager);
+    PTRef resolveMixed(PTRef, PTRef);
 
     // Return the conflicting bounds
     void getConflict(vec<PtAsgn> &) override;
@@ -83,6 +84,11 @@ private:
         PtAsgn asgn;
         int dl;
     };
+
+    // Paper's LA(s, k, F) parameter `k` for each mixed auxiliary variable (".mixed_*"), keyed by the
+    // variable. Populated by getRealInterpolant/getIntegerInterpolant from the FarkasInterpolator and
+    // consumed by resolveMixed when it pivots on the corresponding mixed literal.
+    std::unordered_map<PTRef, MixedLAInfo, PTRefHash> mixedLAInfo;
 
     // Possible internal states of the solver
     typedef enum { INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR } LASolverStatus;

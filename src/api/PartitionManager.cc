@@ -40,8 +40,13 @@ ipartitions_t PartitionManager::computeAllowedPartitions(PTRef p) {
     vec<PTRef> vars = variables(logic, p);
     if (vars.size() == 0) { return 0; }
     ipartitions_t allowed = getIPartitions(vars[0]);
+    bool mixed = true;
     for (int i = 1; i < vars.size(); ++i) {
         allowed &= getIPartitions(vars[i]);
+        if (getIPartitions(vars[i]) == 0 ) { mixed = false; };
+    }
+    if (allowed == 0 && mixed) {
+        return 5;
     }
     return allowed;
 }

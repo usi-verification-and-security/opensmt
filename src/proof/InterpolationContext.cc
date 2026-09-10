@@ -21,9 +21,9 @@ public:
 
     icolor_t getVarClassFromCache(Var v) const {
         assert((unsigned)v < AB_vars_mapping.size());
-        assert(AB_vars_mapping[v] >= -2);
+        assert(AB_vars_mapping[v] >= -3);
         int c = AB_vars_mapping[v];
-        return c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB);
+        return c == -3 ? icolor_t::I_MIXED : ( c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB));
     }
 
     SingleInterpolationComputationContext(SMTConfig const & config, Theory & theory, TermMapper & termMapper,
@@ -40,6 +40,10 @@ public:
 
     inline bool isColoredAB(ProofNode const & n, Var v) const {
         return nodeData[n.getId()].isColoredAB(getSharedVarIndex(v));
+    }
+
+    inline bool isColoredMixed(ProofNode const & n, Var v) const {
+        return nodeData[n.getId()].isColoredMixed(getSharedVarIndex(v));
     }
 
     inline void colorA(ProofNode & n, Var v) { nodeData[n.getId()].colorA(getSharedVarIndex(v)); }
@@ -85,6 +89,8 @@ public:
             return icolor_t::I_B;
         else if (isColoredAB(node, v))
             return icolor_t::I_AB;
+        else if (isColoredMixed(node, v))
+            return icolor_t::I_MIXED;
 
         throw InternalException("Variable " + std::to_string(v) + " has no color in clause " +
                                 std::to_string(node.getId()));
@@ -107,6 +113,7 @@ public:
     void setLeafPSSLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
 
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
+    PTRef getInterpolantForMixedClause(ProofNode const & node, icolor_t clauseClass);
     std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
 
     icolor_t getVarClass(Var) const;
@@ -119,7 +126,7 @@ public:
 
     PTRef computePartialInterpolantForTheoryClause(ProofNode const & n);
 
-    PTRef computePartialInterpolantForSplitClause(ProofNode const & n) const;
+    PTRef computePartialInterpolantForSplitClause(ProofNode const & n);
 
     PTRef compInterpLabelingInner(ProofNode &);
 
@@ -202,6 +209,10 @@ private:
             return ((tstbit(AB_vars_a_colored, i) == 1) && (tstbit(AB_vars_b_colored, i) == 1));
         }
 
+        inline bool isColoredMixed(int i) const {
+            return i == 5;
+        }
+
         inline void colorA(int i) {
             setbit(AB_vars_a_colored, i);
             clrbit(AB_vars_b_colored, i);
@@ -221,6 +232,7 @@ private:
     // NOTE class A has value -1, class B value -2, undetermined value -3, class AB has index bit from 0 onwards
     std::vector<int> AB_vars_mapping; // Variables of class AB mapping to mpz integer bit index
     std::vector<InterpolationNodeData> nodeData;
+
     Logic & logic;
     SMTConfig const & config;
     PartitionManager & pmanager;
@@ -253,6 +265,7 @@ namespace {
         return false;
     }
 
+    // TODO: Can it be called for some clause with mixed literals?
     icolor_t getClass(ipartitions_t const & mask, ipartitions_t const & A_mask) {
         ipartitions_t B_mask = ~A_mask;
 
@@ -260,7 +273,7 @@ namespace {
         bool const in_A = ((mask & A_mask) != 0);
         bool const in_B = ((mask & B_mask) != 0);
         assert(in_A or in_B);
-
+        if (mask == 5 ) { return icolor_t::I_MIXED; }
         icolor_t clause_color = icolor_t::I_UNDEF;
         if (in_A and not in_B)
             clause_color = icolor_t::I_A;
@@ -279,9 +292,9 @@ icolor_t SingleInterpolationComputationContext::getVarColor(ProofNode const & n,
     assert(n.isLeaf());
     // In labeling, classes and colors are distinct
     icolor_t var_class = getVarClass(v);
-    assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB);
+    assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB or var_class == icolor_t::I_MIXED);
     icolor_t var_color =
-        var_class == icolor_t::I_B || var_class == icolor_t::I_A ? var_class : getSharedVarColorInNode(v, n);
+        var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_MIXED ? var_class : getSharedVarColorInNode(v, n);
     return var_color;
 }
 
@@ -293,7 +306,7 @@ icolor_t SingleInterpolationComputationContext::getPivotColor(ProofNode const & 
     Var v = n.getPivot();
     // In labeling, classes and colors are distinct
     icolor_t var_class = getVarClassFromCache(v);
-    if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_AB) {
+    if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_MIXED and var_class != icolor_t::I_AB) {
         throw InternalException("Pivot " + std::to_string(v) + " has no class");
     }
 
@@ -302,7 +315,7 @@ icolor_t SingleInterpolationComputationContext::getPivotColor(ProofNode const & 
 
     // Determine if variable A-local, B-local or AB-common
     icolor_t var_color = var_class;
-    if (var_color != icolor_t::I_A and var_color != icolor_t::I_B) {
+    if (var_color != icolor_t::I_A and var_color != icolor_t::I_B and var_color != icolor_t::I_MIXED) {
         assert(var_class == icolor_t::I_AB);
         var_color = getSharedVarColorInNode(v, n);
         // Remove pivot from resolvent if class AB
@@ -315,7 +328,7 @@ icolor_t SingleInterpolationComputationContext::getPivotColor(ProofNode const & 
 }
 
 // Input: variable, current interpolant partition masks for A
-// Output: returns A-local , B-local or AB-common
+// Output: returns A-local , B-local, AB-common or Mixed
 icolor_t SingleInterpolationComputationContext::getVarClass(Var v) const {
     if (proofGraph.isAssumedVar(v)) { return icolor_t::I_AB; } // MB: Does not matter for assumed literals
     ipartitions_t const & var_mask = getVarPartition(v);
@@ -508,6 +521,8 @@ SingleInterpolationComputationContext::SingleInterpolationComputationContext(SMT
         } else if (v_class == icolor_t::I_AB) {
             AB_vars_mapping[v] = AB_bit_index;
             AB_bit_index++;
+        } else if (v_class == icolor_t::I_MIXED) {
+            AB_vars_mapping[v] = -3;
         } else
             throw InternalException("Error in computing variable colors");
     }
@@ -526,6 +541,7 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
 
     // Vector for topological ordering
     std::vector<clauseid_t> DFSv = proofGraph.topolSortingTopDown();
+
     size_t proof_size = DFSv.size();
 
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
@@ -539,10 +555,17 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
 
         // Generate partial interpolant for clause i
         if (n->isLeaf()) {
+            auto lits = n->getClause();
+            // std::cout << "Leaf clause id: " << n->getId() << std::endl;
+            std::vector<PTRef> clause;
+            for (auto lit:lits) {
+                clause.push_back(varToPTRef(var(~lit)));
+            }
+            // std::cout << "Clause: " << logic.pp(logic.mkOr(clause)) << '\n';
+
             if (!isLeafClauseType(n->getType())) throw InternalException("; Leaf node with non-leaf clause type");
 
             labelLeaf(*n, PSFunction.get());
-
             if (n->getType() == clause_type::CLA_ORIG) {
                 partial_interp = computePartialInterpolantForOriginalClause(*n);
             } else if (n->getType() == clause_type::CLA_THEORY) {
@@ -556,14 +579,18 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
                 setPartialInterpolant(*n, logic.getTerm_true());
                 continue;
             }
+            // std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
 
             assert(partial_interp != PTRef_Undef);
             setPartialInterpolant(*n, partial_interp);
             if (enabledPedInterpVerif()) { verifyPartialInterpolant(*n); }
         } else { // Inner node
+            // std::cout << "Inner clause id: " << n->getId() <<std::endl;
+            // std::cout << "Antecedent 1: " <<  n->getAnt1()->getId()  << " Antecedent 2: " <<  n->getAnt2()->getId() << std::endl;
             partial_interp = compInterpLabelingInner(*n);
             assert(partial_interp != PTRef_Undef);
             setPartialInterpolant(*n, partial_interp);
+            // std::cout << "Partial interpolant: " << logic.pp(partial_interp) << "\n";
         }
     }
 
@@ -622,11 +649,13 @@ std::vector<Lit> SingleInterpolationComputationContext::getRestrictedNodeClause(
         }
         Var v = var(l);
         icolor_t var_class = getVarClassFromCache(v);
-        assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB);
+        assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB or var_class == icolor_t::I_MIXED);
 
         icolor_t var_color =
-            var_class == icolor_t::I_B or var_class == icolor_t::I_A ? var_class : getSharedVarColorInNode(v, node);
-        if (var_color == wantedVarClass) restrictedClause.push_back(l);
+            var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_MIXED ? var_class : getSharedVarColorInNode(v, node);
+        if (var_color == wantedVarClass) {
+            restrictedClause.push_back(l);
+        }
     }
     return restrictedClause;
 }
@@ -637,7 +666,9 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
     auto otherClass = clauseClass == icolor_t::I_A ? icolor_t::I_B : icolor_t::I_A;
     bool clauseIsA = clauseClass == icolor_t::I_A;
 
+
     std::vector<Lit> restricted_clause = getRestrictedNodeClause(node, otherClass);
+    // std::cout << "Original clause" << std::endl;
     if (restricted_clause.empty()) { return clauseIsA ? logic.getTerm_false() : logic.getTerm_true(); }
     vec<PTRef> args;
     args.capacity(restricted_clause.size());
@@ -646,8 +677,37 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
         if (sign(l) == clauseIsA) litTerm = logic.mkNot(litTerm);
         args.push(litTerm);
     }
-    return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args)) : logic.mkAnd(std::move(args));
+    return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args))
+                                        : logic.mkAnd(std::move(args));
 }
+
+PTRef SingleInterpolationComputationContext::getInterpolantForMixedClause(ProofNode const & node,
+                                                                                 icolor_t clauseClass) {
+    backtrackTSolver();
+    vec<Lit> newvec;
+    std::vector<Lit> const & oldvec = node.getClause();
+    for (Lit l : oldvec) {
+        newvec.push(~l);
+    }
+    bool satisfiable = this->assertLiteralsToTSolver(newvec);
+    if (satisfiable) {
+        TRes tres = thandler->check(true);
+        satisfiable = (tres != TRes::UNSAT);
+    }
+    if (satisfiable) {
+        assert(false);
+        throw InternalException("Asserting negation of theory clause did not result in conflict in theory solver!");
+    }
+    THandler::ItpColorMap ptref2label;
+    for (Lit l : oldvec) {
+        ptref2label.insert({varToPTRef(var(l)), getVarColor(node, var(l))});
+    }
+
+    PTRef interpolant = thandler->getInterpolant(A_mask, &ptref2label, pmanager);
+    backtrackTSolver();
+    return interpolant;
+}
+
 
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
@@ -699,14 +759,22 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
  * actually common to both A and B. Thus we can consider the clause as A or as B and the interpolant condition on
  * common variables will be preserved.
  */
-PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitClause(ProofNode const & n) const {
+PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitClause(ProofNode const & n) {
     auto const & clause = n.getClause();
-    assert(clause.size() == 2); // only binary splits at the moment
-    auto clauseColor = getVarClass(var(clause[0])) & getVarClass(var(clause[1]));
+    auto clauseColor = icolor_t::I_AB;
+    for (auto l : clause) {
+        if (getVarClass(var(l)) == icolor_t::I_MIXED) {
+            clauseColor = icolor_t::I_MIXED;
+            break;
+        }
+        clauseColor = clauseColor & getVarClass(var(l));
+    }
+
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
-    } else if (clauseColor == icolor_t::I_UNDEF) {
-        clauseColor = icolor_t::I_A; // MB: Split expression is common, we treat the clause as AB-clause
+    }
+    else if (clauseColor == icolor_t::I_MIXED) {
+       return getInterpolantForMixedClause(n,clauseColor);
     }
     if (clauseColor != icolor_t::I_A and clauseColor != icolor_t::I_B) {
         assert(false);
@@ -723,8 +791,11 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
     PTRef partial_interp_ant2 = getPartialInterpolant(*n.getAnt2());
     assert(partial_interp_ant1 != PTRef_Undef);
     assert(partial_interp_ant2 != PTRef_Undef);
+    // std::cout << "Pivot" << std::endl;
+    //// std::cout << "Ant1: " << logic.pp(partial_interp_ant1) << std::endl;
+    //// std::cout << "Ant2: " << logic.pp(partial_interp_ant2) << std::endl;
 
-    // Determine color pivot, depending on its color in the two antecedents
+    //Determine color pivot, depending on its color in the two antecedents
     icolor_t pivot_color = getPivotColor(n);
     if (pivot_color == icolor_t::I_S) {
         Var v = n.getPivot();
@@ -763,6 +834,14 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
             PTRef or_2 = logic.mkOr(partial_interp_ant2, logic.mkNot(piv));
             return logic.mkAnd(or_1, or_2);
         }
+    }
+    // TODO: Think about this if
+    // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
+    else if (pivot_color == icolor_t::I_MIXED) {
+        // std::cout << "Mixed pivot" << std::endl;
+        if (partial_interp_ant1 == logic.getTerm_true() or partial_interp_ant1 == logic.getTerm_false()) { return partial_interp_ant2; }
+        if (partial_interp_ant2 == logic.getTerm_true() or partial_interp_ant2 == logic.getTerm_false()) { return partial_interp_ant1; }
+        return thandler->resolveMixed(partial_interp_ant1, partial_interp_ant2);
     } else
         throw InternalException("Pivot has no color");
 }
@@ -974,7 +1053,9 @@ void InterpolationContext::ensureNoLiteralsWithoutPartition() {
                 // MB: Update the partition information
                 pmanager.addIPartitions(term, allowedPartitions);
             } else {
-                noPartitionVars.push_back(v);
+                // TODO: Handle mixed literals
+                pmanager.addIPartitions(term, allowedPartitions);
+                // noPartitionVars.push_back(v);
             }
         }
     }
