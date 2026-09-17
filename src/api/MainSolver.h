@@ -20,6 +20,7 @@
 #include <unsatcores/UnsatCore.h>
 
 #include <memory>
+#include <span>
 #include <unordered_map>
 
 namespace opensmt {
@@ -125,6 +126,12 @@ public:
 
     vec<PTRef> const & getAssertionsAtCurrentLevel() const { return getAssertionsAtLevel(getAssertionLevel()); }
     vec<PTRef> const & getAssertionsAtLevel(std::size_t) const;
+
+    // Returns a copy of all decision preferences of the currently valid assertion levels of the the assertion stack
+    // I.e., *excluding* popped preferences
+    vec<PTRef> getCurrentDecisionPreferences() const;
+    // Returns just a view to the preferences
+    auto getCurrentDecisionPreferencesView() const { return getCurrentDecisionPreferencesViewImpl(); }
 
     [[deprecated("Use printCurrentAssertionsAsQuery")]]
     void printFramesAsQuery() const {
@@ -275,6 +282,10 @@ protected:
 
     // TODO: inefficient
     vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
+
+    std::span<PTRef const> getCurrentDecisionPreferencesViewImpl() const {
+        return {decisionPreferences.begin(), decisionPreferences.end()};
+    }
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
 

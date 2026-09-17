@@ -7,6 +7,7 @@
 #include <options/SMTConfig.h>
 
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace opensmt {
@@ -62,7 +63,8 @@ class UnsatCoreBuilder::Minimize {
 public:
     using InternalSMTSolver = MainSolver;
 
-    Minimize(UnsatCoreBuilder &, vec<PTRef> targetTerms, vec<PTRef> const & backgroundTerms_ = {});
+    Minimize(UnsatCoreBuilder &, vec<PTRef> targetTerms, std::span<PTRef const> decisionPreferencesView_ = {},
+             vec<PTRef> const & backgroundTerms_ = {});
     ~Minimize();
 
     vec<PTRef> perform() &&;
@@ -70,12 +72,14 @@ public:
 protected:
     SMTConfig makeSmtSolverConfig() const;
     std::unique_ptr<InternalSMTSolver> newSmtSolver(SMTConfig &) const;
+    void initSmtSolver(InternalSMTSolver &) const;
 
     vec<PTRef> performNaive(InternalSMTSolver &);
 
     UnsatCoreBuilder & builder;
 
     vec<PTRef> targetTerms;
+    std::span<PTRef const> decisionPreferencesView;
     vec<PTRef> const & backgroundTerms;
 };
 

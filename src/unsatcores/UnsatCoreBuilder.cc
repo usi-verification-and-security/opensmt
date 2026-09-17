@@ -10,6 +10,7 @@
 
 #include <unordered_set>
 #include <vector>
+#include <ranges>
 
 namespace opensmt {
 
@@ -114,8 +115,10 @@ void UnsatCoreBuilder::partitionNamedTerms() {
 void UnsatCoreBuilder::minimize() {
     assert(config.minimal_unsat_cores());
 
+    auto decisionPreferencesView = solver.getCurrentDecisionPreferencesView();
+
     if (config.print_cores_full()) {
-        allTerms = Minimize{*this, std::move(allTerms)}.perform();
+        allTerms = Minimize{*this, std::move(allTerms), std::move(decisionPreferencesView)}.perform();
         return;
     }
 
@@ -131,15 +134,17 @@ void UnsatCoreBuilder::minimize() {
         // (we do not care about `allTerms` any more since the call to `partitionNamedTerms`)
     }
 
-    namedTerms = Minimize{*this, std::move(namedTerms), hiddenTerms}.perform();
+    namedTerms = Minimize{*this, std::move(namedTerms), std::move(decisionPreferencesView), hiddenTerms}.perform();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 UnsatCoreBuilder::Minimize::Minimize(UnsatCoreBuilder & builder_, vec<PTRef> targetTerms_,
+                                     std::span<PTRef const> decisionPreferencesView_,
                                      vec<PTRef> const & backgroundTerms_)
     : builder{builder_},
       targetTerms{std::move(targetTerms_)},
+      decisionPreferencesView{std::move(decisionPreferencesView_)},
       backgroundTerms{backgroundTerms_} {
     assert(builder.config.minimal_unsat_cores());
 }
@@ -165,21 +170,31 @@ UnsatCoreBuilder::Minimize::newSmtSolver(SMTConfig & newConfig) const {
     return std::make_unique<InternalSMTSolver>(builder.logic, newConfig, "min unsat core solver");
 }
 
+void UnsatCoreBuilder::Minimize::initSmtSolver(InternalSMTSolver & smtSolver) const {
+    for (PTRef term : backgroundTerms) {
+        // the term that we do not care about eliminating -> can be hard-asserted
+        smtSolver.addAssertion(term);
+    }
+
+    //!! Seems to be only making things worse!
+    // Keep the decision preferences
+    for (PTRef term : decisionPreferencesView) {
+    //- for (PTRef term : decisionPreferencesView | std::views::reverse) {
+        smtSolver.addDecisionPreference(term);
+    }
+}
+
 vec<PTRef> UnsatCoreBuilder::Minimize::perform() && {
     if (targetTerms.size() == 0) { return std::move(targetTerms); }
 
     SMTConfig smtSolverConfig = makeSmtSolverConfig();
     std::unique_ptr<InternalSMTSolver> smtSolverPtr = newSmtSolver(smtSolverConfig);
+    initSmtSolver(*smtSolverPtr);
 
     return performNaive(*smtSolverPtr);
 }
 
 vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolver) {
-    for (PTRef term : backgroundTerms) {
-        // the term that we do not care about eliminating -> can be hard-asserted
-        smtSolver.insertFormula(term);
-    }
-
     // minimize the contents of `targetTerms` (given the already hard-asserted constraints)
 
     decltype(targetTerms) newTargetTerms;
@@ -191,7 +206,7 @@ vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolve
 
         for (size_t keptIdx = idx + 1; keptIdx < targetTermsSize; ++keptIdx) {
             PTRef term = targetTerms[keptIdx];
-            smtSolver.insertFormula(term);
+            smtSolver.addAssertion(term);
         }
 
         sstat const res = smtSolver.check();
@@ -205,7 +220,7 @@ vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolve
         // targetTerms[idx] is not redundant - include it
 
         PTRef term = targetTerms[idx];
-        smtSolver.insertFormula(term); // can already be hard-asserted
+        smtSolver.addAssertion(term); // can already be hard-asserted
         newTargetTerms.push(term);
     }
 

@@ -305,6 +305,15 @@ vec<PTRef> const & MainSolver::getAssertionsAtLevel(std::size_t level) const {
     return frames[level].formulas;
 }
 
+vec<PTRef> MainSolver::getCurrentDecisionPreferences() const {
+    //++ with std::vector, we could use just the constructor
+    vec<PTRef> preferences;
+    for (PTRef fla : decisionPreferences) {
+        preferences.push(fla);
+    }
+    return preferences;
+}
+
 void MainSolver::printCurrentAssertionsAsQuery() const {
     char * base_name = config.dump_query_name();
     if (base_name == NULL)
