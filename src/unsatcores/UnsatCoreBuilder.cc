@@ -180,39 +180,95 @@ vec<PTRef> UnsatCoreBuilder::Minimize::perform() && {
     initSmtSolver(*smtSolverPtr);
 
     return performNaive(*smtSolverPtr);
+    //!! It only makes it worse (too many iterations even with skipping)
+    //- return performIterative(*smtSolverPtr);
 }
 
 vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolver) {
+    performIteration(smtSolver, 1);
+    return std::move(targetTerms);
+}
+
+vec<PTRef> UnsatCoreBuilder::Minimize::performIterative(InternalSMTSolver & smtSolver) {
+    size_t step = 1;
+    for (; step < targetTerms.size(); step <<= 1) {}
+    if (step > targetTerms.size()) { step >>= 1; }
+    step >>= 1;
+    assert(step >= 1);
+    performIteration(smtSolver, step);
+    for (step >>= 1; step >= 1; step >>= 1) {
+        performIteration<true>(smtSolver, step);
+    }
+
+    return std::move(targetTerms);
+}
+
+template<bool maySkip>
+void UnsatCoreBuilder::Minimize::performIteration(InternalSMTSolver & smtSolver, size_t step) {
+    size_t const prevStep = step << 1;
+
     // minimize the contents of `targetTerms` (given the already hard-asserted constraints)
+    smtSolver.push();
 
     decltype(targetTerms) newTargetTerms;
     size_t const targetTermsSize = targetTerms.size();
-    for (size_t idx = 0; idx < targetTermsSize; ++idx) {
-        smtSolver.push();
-
-        // try to ignore targetTerms[idx]
-
-        for (size_t keptIdx = idx + 1; keptIdx < targetTermsSize; ++keptIdx) {
-            PTRef term = targetTerms[keptIdx];
-            smtSolver.addAssertion(term);
+    std::cerr << "step: " << step << std::endl;
+    std::cerr << "targetTermsSize: " << targetTermsSize << std::endl;
+    bool skip = false;
+    for (size_t idx = 0; idx < targetTermsSize; idx += step) {
+        size_t const nextIdx = idx + step;
+        if (nextIdx > targetTermsSize) {
+            for (size_t keptIdx = idx; keptIdx < targetTermsSize; ++keptIdx) {
+                PTRef term = targetTerms[keptIdx];
+                newTargetTerms.push(term);
+            }
+            break;
         }
 
-        sstat const res = smtSolver.check();
-        assert(res == s_True || res == s_False);
-        bool const isRedundant = (res == s_False);
+        if (not skip) {
+            smtSolver.push();
 
-        smtSolver.pop();
+            // try to ignore targetTerms[idx:nextIdx)
+            std::cerr << "ignoring [" << idx << ":" << nextIdx << ") ... ";
 
-        if (isRedundant) continue;
+            for (size_t keptIdx = nextIdx; keptIdx < targetTermsSize; ++keptIdx) {
+                PTRef term = targetTerms[keptIdx];
+                smtSolver.addAssertion(term);
+            }
 
-        // targetTerms[idx] is not redundant - include it
+            sstat const res = smtSolver.check();
+            assert(res == s_True || res == s_False);
+            bool const isRedundant = (res == s_False);
 
-        PTRef term = targetTerms[idx];
-        smtSolver.addAssertion(term); // can already be hard-asserted
-        newTargetTerms.push(term);
+            smtSolver.pop();
+
+            if (isRedundant) {
+                std::cerr << "succeded!" << std::endl;
+                if constexpr (maySkip) {
+                    if (idx % prevStep == 0) {
+                        std::cerr << "skipping next check!" << std::endl;
+                        skip = true;
+                    }
+                }
+                continue;
+            }
+
+            std::cerr << "failed" << std::endl;
+        } else {
+            skip = false;
+        }
+
+        // targetTerms[idx:nextIdx) is not redundant - include it
+
+        for (size_t keptIdx = idx; keptIdx < nextIdx; ++keptIdx) {
+            PTRef term = targetTerms[keptIdx];
+            smtSolver.addAssertion(term); // can already be hard-asserted
+            newTargetTerms.push(term);
+        }
     }
 
-    return newTargetTerms;
+    smtSolver.pop();
+    targetTerms = std::move(newTargetTerms);
 }
 
 } // namespace opensmt

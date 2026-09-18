@@ -73,6 +73,9 @@ protected:
     void initSmtSolver(InternalSMTSolver &) const;
 
     vec<PTRef> performNaive(InternalSMTSolver &);
+    vec<PTRef> performIterative(InternalSMTSolver &);
+    template<bool maySkip = false>
+    void performIteration(InternalSMTSolver & smtSolver, size_t step);
 
     UnsatCoreBuilder & builder;
 
