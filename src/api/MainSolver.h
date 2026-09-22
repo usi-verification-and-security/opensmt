@@ -149,16 +149,20 @@ public:
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
     void notifyStop();
+    // Check if this particular solver has been stopped
+    bool stopped() const;
 
+    bool isBoundedTimeLimit() const;
     // Set wall-clock time limit for the solver in miliseconds
     // When it expires, the solving is terminated gracefully and unknown is returned
     // Overrides previously set and still running limit
     void setTimeLimit(std::chrono::milliseconds limit) { setTimeLimit(limit, {}); }
-    struct TimeLimitConf {
+    struct SetTimeLimitConf {
         // override by default, otherwise do not set the limit
         bool override = true;
     };
-    void setTimeLimit(std::chrono::milliseconds, TimeLimitConf const &);
+    void setTimeLimit(std::chrono::milliseconds, SetTimeLimitConf const &);
+    std::chrono::milliseconds getRemainingTimeLimit() const;
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 

@@ -93,12 +93,11 @@ public:
     void     clearSearch      ();  // Backtrack SAT solver and theories to decision level 0
 
     void notifyStop() { stopFlag = true; }
+    bool stopped() const { return stopFlag; }
 
     // Problem specification:
     //
 protected:
-    bool stopped() const { return stopFlag; }
-
     void  addVar_    (Var v); // Ensure that var v exists in the solver
     virtual Var newVar(bool dvar); // Add a new variable with parameters specifying variable mode.
 public:

@@ -33,11 +33,18 @@ public:
     TimeLimitImpl(MainSolver & s) : solver(s) {}
     ~TimeLimitImpl();
 
+    bool isBounded() const;
+
     void setLimit(std::chrono::milliseconds);
     void setLimitIfNotRunning(std::chrono::milliseconds);
 
+    std::chrono::milliseconds getRemainingTime() const;
+
 protected:
-    bool isRunning() const noexcept;
+    bool isBoundedUnlocked() const noexcept;
+
+    bool isRunning() const;
+    bool isRunningUnlocked() const noexcept;
 
     void requestEnd();
     void waitToEnd();
@@ -49,9 +56,11 @@ private:
     std::thread thread{};
 
     // See https://en.cppreference.com/w/cpp/thread/condition_variable.html
-    std::mutex mtx{};
+    mutable std::mutex mtx{};
     std::condition_variable condVar{};
     bool endReq{false};
+
+    std::chrono::steady_clock::time_point deadline{};
 };
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
@@ -464,7 +473,19 @@ void MainSolver::notifyStop() {
     theory->getTSolverHandler().notifyStop();
 }
 
-void MainSolver::setTimeLimit(std::chrono::milliseconds limit, TimeLimitConf const & conf) {
+bool MainSolver::stopped() const {
+    if (smt_solver->stopped()) { return true; }
+    if (theory->getTSolverHandler().stopped()) { return true; }
+    return false;
+}
+
+bool MainSolver::isBoundedTimeLimit() const {
+    assert(timeLimitImplPtr);
+
+    return timeLimitImplPtr->isBounded();
+}
+
+void MainSolver::setTimeLimit(std::chrono::milliseconds limit, SetTimeLimitConf const & conf) {
     if (limit <= std::chrono::milliseconds::zero()) {
         throw std::invalid_argument{"MainSolver::setTimeLimit: The value must be positive."};
     }
@@ -474,6 +495,12 @@ void MainSolver::setTimeLimit(std::chrono::milliseconds limit, TimeLimitConf con
     } else {
         timeLimitImplPtr->setLimitIfNotRunning(limit);
     }
+}
+
+std::chrono::milliseconds MainSolver::getRemainingTimeLimit() const {
+    assert(timeLimitImplPtr);
+
+    return timeLimitImplPtr->getRemainingTime();
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
@@ -651,6 +678,16 @@ MainSolver::TimeLimitImpl::~TimeLimitImpl() {
     waitToEnd();
 }
 
+bool MainSolver::TimeLimitImpl::isBounded() const {
+    std::lock_guard lock(mtx);
+    assert(isBoundedUnlocked() or not isRunningUnlocked());
+    return isBoundedUnlocked();
+}
+
+bool MainSolver::TimeLimitImpl::isBoundedUnlocked() const noexcept {
+    return deadline != std::chrono::steady_clock::time_point{};
+}
+
 void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
     assert(limit > std::chrono::milliseconds::zero());
 
@@ -661,14 +698,15 @@ void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
     }
 
     std::lock_guard lock(mtx);
+    deadline = std::chrono::steady_clock::now() + limit;
 
-    thread = decltype(thread){[this, limit] {
+    thread = decltype(thread){[this] {
         std::unique_lock lock(mtx);
         // Abort if a further future end request has already been sent
         if (endReq) { return; }
         // Releases the lock and suspends the thread, waiting on a notification or timeout
         // Notification must be sent *after* the wait, otherwise could be missed - hence checking `endReq` above
-        if (condVar.wait_for(lock, limit) == std::cv_status::timeout) { solver.notifyStop(); }
+        if (condVar.wait_until(lock, deadline) == std::cv_status::timeout) { solver.notifyStop(); }
     }};
 }
 
@@ -677,8 +715,13 @@ void MainSolver::TimeLimitImpl::setLimitIfNotRunning(std::chrono::milliseconds l
     setLimit(limit);
 }
 
-bool MainSolver::TimeLimitImpl::isRunning() const noexcept {
+bool MainSolver::TimeLimitImpl::isRunning() const {
     std::lock_guard lock(mtx);
+    assert(not isRunningUnlocked() or isBoundedUnlocked());
+    return isRunningUnlocked();
+}
+
+bool MainSolver::TimeLimitImpl::isRunningUnlocked() const noexcept {
     return thread.joinable();
 }
 
@@ -700,5 +743,18 @@ void MainSolver::TimeLimitImpl::waitToEnd() {
         endReq = false;
     }
     assert(not isRunning());
+}
+
+std::chrono::milliseconds MainSolver::TimeLimitImpl::getRemainingTime() const {
+    constexpr auto zero = std::chrono::milliseconds::zero();
+
+    if (not isBounded()) { return zero; }
+
+    std::lock_guard lock(mtx);
+
+    auto const now = std::chrono::steady_clock::now();
+    if (now >= deadline) { return zero; }
+
+    return std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
 }
 } // namespace opensmt
