@@ -823,6 +823,8 @@ void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
         waitToEnd();
     }
 
+    std::lock_guard lock(mtx);
+
     thread = decltype(thread){[this, limit] {
         std::unique_lock lock(mtx);
         // Abort if a further future end request has already been sent
@@ -839,6 +841,7 @@ void MainSolver::TimeLimitImpl::setLimitIfNotRunning(std::chrono::milliseconds l
 }
 
 bool MainSolver::TimeLimitImpl::isRunning() const noexcept {
+    std::lock_guard lock(mtx);
     return thread.joinable();
 }
 
@@ -855,7 +858,10 @@ void MainSolver::TimeLimitImpl::requestEnd() {
 void MainSolver::TimeLimitImpl::waitToEnd() {
     assert(isRunning());
     thread.join();
-    endReq = false;
+    {
+        std::lock_guard lock(mtx);
+        endReq = false;
+    }
     assert(not isRunning());
 }
 } // namespace opensmt
