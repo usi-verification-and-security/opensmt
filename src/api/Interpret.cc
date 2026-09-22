@@ -1307,6 +1307,11 @@ void Interpret::getProof()
 
 void Interpret::getUnsatCore() {
     auto const unsatCore = main_solver->getUnsatCore();
+    if (not unsatCore) {
+        assert(main_solver->stopped());
+        //? Should we report that unsat core extraction timed out?
+        return;
+    }
     unsatCore->print();
 }
 
