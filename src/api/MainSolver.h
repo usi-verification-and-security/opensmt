@@ -180,6 +180,8 @@ protected:
 
     using FrameId = uint32_t;
 
+    struct StopException {};
+
     struct PushFrame {
     public:
         FrameId getId() const { return id; }
@@ -292,6 +294,8 @@ protected:
     vec<PTRef> getCurrentAssertionsViewImpl() const { return getCurrentAssertions(); }
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
+
+    bool okContinue() const;
 
     PTRef newFrameTerm(FrameId frameId) {
         assert(frameId != 0);

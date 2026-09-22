@@ -8,6 +8,7 @@
 
 #include "MainSolver.h"
 
+#include <api/GlobalStop.h>
 #include <common/ApiException.h>
 #include <itehandler/IteHandler.h>
 #include <logics/ArrayTheory.h>
@@ -210,9 +211,10 @@ void MainSolver::resetDecisionPreferences() {
     smt_solver->clearUserBranchLits();
 }
 
-sstat MainSolver::simplifyFormulas() {
+sstat MainSolver::simplifyFormulas() try {
     status = s_Undef;
     for (std::size_t i = firstNotSimplifiedFrame; i < frames.frameCount(); ++i) {
+        if (not okContinue()) { break; }
         auto & frame = frames[i];
         FrameId const frameId = frame.getId();
         PreprocessingContext context{.frameCount = i, .perPartition = trackPartitions()};
@@ -242,6 +244,9 @@ sstat MainSolver::simplifyFormulas() {
     }
 
     return status;
+} catch (StopException const &) {
+    --firstNotSimplifiedFrame;
+    return s_Undef;
 }
 
 PTRef MainSolver::preprocessFormulasDefault(vec<PTRef> const & frameFormulas, PreprocessingContext const & context) {
@@ -517,6 +522,8 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
 
+    if (not okContinue()) { throw StopException{}; }
+
     if (root == logic.getTerm_true()) { return s_Undef; }
 
     ClauseCallBack callBack;
@@ -544,7 +551,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     return s_Undef;
 }
 
-sstat MainSolver::check() {
+sstat MainSolver::check() try {
     ++check_called;
     if (config.timeQueries()) {
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
@@ -566,7 +573,7 @@ sstat MainSolver::check() {
     }
 
     return rval;
-}
+} catch (StopException const &) { return s_Undef; }
 
 sstat MainSolver::solve() {
     if (!smt_solver->isOK()) { return s_False; }
@@ -640,6 +647,10 @@ bool MainSolver::stopped() const {
     if (smt_solver->stopped()) { return true; }
     if (theory->getTSolverHandler().stopped()) { return true; }
     return false;
+}
+
+bool MainSolver::okContinue() const {
+    return not stopped() and not globallyStopped();
 }
 
 bool MainSolver::isBoundedTimeLimit() const {
@@ -751,6 +762,7 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
     PTRef root = fla;
     Logic::SubstMap allsubsts;
     while (true) {
+        if (not okContinue()) { throw StopException{}; }
         // update the current simplification formula
         PTRef simp_formula = root;
         // l_True : exists and is valid
