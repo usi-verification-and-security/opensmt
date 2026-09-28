@@ -12,7 +12,6 @@
 
 #include <common/Random.h>
 #include <models/ModelBuilder.h>
-#include "rewriters/Rewritings.h"
 
 #include <unordered_set>
 
