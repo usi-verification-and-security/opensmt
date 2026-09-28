@@ -2,6 +2,7 @@
 // Created by Martin Blicha on 06.11.20.
 //
 
+#include "pterms/PTRef.h"
 #include <gtest/gtest.h>
 #include <logics/ArithLogic.h>
 #include <common/VerificationUtils.h>
@@ -226,4 +227,131 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFractionalCoefficientsInExpla
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), leq3, farkasItp));
 }
 
+TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFModsAndDivs){
+    /*
+     * A:  mod(x,10) < 5
+     *
+     * B:  mod(x,10) > 6
+     */
+    PTRef partA = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
+    PTRef partB = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef farkasItp = interpolants[0];
+
+    std::string itpStr = logic.pp(farkasItp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, farkasItp));
 }
+
+// Found through Golem's TPA engine, whose interpolation queries contain the same mod term in both partitions:
+// a negated divisibility constraint in A and the constraint itself in B.
+TEST_F(LIAInterpolationTest, test_NegatedDivisibilityConstraint){
+    /*
+     * A:  (not (= 0 (mod x 25)))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef divisible = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(x, logic.mkIntConst(25)));
+    PTRef partA = logic.mkNot(divisible);
+    PTRef partB = divisible;
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    std::string itpStr = logic.pp(itp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_EQ(itpStr.find(".div"), std::string::npos) << "Interpolant leaks auxiliary div variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+TEST_F(LIAInterpolationTest, test_NegatedDivisibilityConstraint_SimplifiedInterpolant){
+    /*
+     * Same query, with the interpolant simplification Golem uses (:simplify-interpolants 4)
+     *
+     * A:  (not (= 0 (mod x 25)))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef divisible = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(x, logic.mkIntConst(25)));
+    PTRef partA = logic.mkNot(divisible);
+    PTRef partB = divisible;
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_simplify_inter, SMTOption(4), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    std::string itpStr = logic.pp(itp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_EQ(itpStr.find(".div"), std::string::npos) << "Interpolant leaks auxiliary div variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+TEST_F(LIAInterpolationTest, test_ModBoundAgainstDivisibilityConstraint){
+    /*
+     * The same contradiction, with A written as a bound
+     *
+     * A:  (<= 1 (mod x 25))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef mod = logic.mkMod(x, logic.mkIntConst(25));
+    PTRef partA = logic.mkLeq(logic.getTerm_IntOne(), mod);
+    PTRef partB = logic.mkEq(logic.getTerm_IntZero(), mod);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    std::string itpStr = logic.pp(itp);
+    EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
+    EXPECT_EQ(itpStr.find(".div"), std::string::npos) << "Interpolant leaks auxiliary div variable: " << itpStr;
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+}
+
+
