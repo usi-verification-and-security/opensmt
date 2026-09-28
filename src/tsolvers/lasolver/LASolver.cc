@@ -728,7 +728,7 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
 PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
     assert(status == UNSAT);
     LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
-    return backtrackDivMod(logic, interpolateUsingEngine(interpolator));
+    return interpolateUsingEngine(interpolator);
 }
 
 void LASolver::printStatistics(std::ostream & out) {
