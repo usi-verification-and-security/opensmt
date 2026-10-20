@@ -150,10 +150,10 @@ CoreSMTSolver::~CoreSMTSolver()
 #ifdef STATISTICS
     if (config.produceStats() != 0) printStatistics(config.getStatsOut());
     // TODO added for convenience
-    if (config.print_stats != 0) printStatistics(cerr);
+    if (config.print_stats != 0) printStatistics(std::cerr);
 
-    cerr << "; time used for choosing branch lit " << branchTimer.getTime() << endl;
-    cerr << "; avg dec time " << branchTimer.getTime()/decisions << endl;
+    std::cerr << "; time used for choosing branch lit " << branchTimer.getTime() << std::endl;
+    std::cerr << "; avg dec time " << branchTimer.getTime()/decisions << std::endl;
 #endif
 }
 
@@ -1846,33 +1846,33 @@ int CoreSMTSolver::restartNextLimit ( int nof_conflicts )
 
 
 #ifdef STATISTICS
-void CoreSMTSolver::printStatistics( ostream & os )
+void CoreSMTSolver::printStatistics( std::ostream & os )
 {
-    os << "; -------------------------" << endl;
-    os << "; STATISTICS FOR SAT SOLVER" << endl;
-    os << "; -------------------------" << endl;
-    os << "; Restarts.................: " << starts << endl;
-    os << "; Conflicts................: " << conflicts << endl;
-    os << "; Decisions................: " << (float)decisions << endl;
-    os << "; Propagations.............: " << propagations << endl;
-    os << "; Conflict literals........: " << tot_literals << endl;
-    os << "; T-Lemmata learnt.........: " << learnt_t_lemmata << endl;
-    os << "; T-Lemmata perm learnt....: " << perm_learnt_t_lemmata << endl;
-    os << "; Conflicts learnt.........: " << conflicts << endl;
-    os << "; T-conflicts learnt.......: " << learnt_theory_conflicts << endl;
-    os << "; Average learnts size.....: " << learnts_size/conflicts << endl;
-    os << "; Top level literals.......: " << top_level_lits << endl;
-    os << "; Search time..............: " << search_timer.getTime() << " s" << endl;
+    os << "; -------------------------" << std::endl;
+    os << "; STATISTICS FOR SAT SOLVER" << std::endl;
+    os << "; -------------------------" << std::endl;
+    os << "; Restarts.................: " << starts << std::endl;
+    os << "; Conflicts................: " << conflicts << std::endl;
+    os << "; Decisions................: " << (float)decisions << std::endl;
+    os << "; Propagations.............: " << propagations << std::endl;
+    os << "; Conflict literals........: " << tot_literals << std::endl;
+    os << "; T-Lemmata learnt.........: " << learnt_t_lemmata << std::endl;
+    os << "; T-Lemmata perm learnt....: " << perm_learnt_t_lemmata << std::endl;
+    os << "; Conflicts learnt.........: " << conflicts << std::endl;
+    os << "; T-conflicts learnt.......: " << learnt_theory_conflicts << std::endl;
+    os << "; Average learnts size.....: " << learnts_size/conflicts << std::endl;
+    os << "; Top level literals.......: " << top_level_lits << std::endl;
+    os << "; Search time..............: " << search_timer.getTime() << " s" << std::endl;
     if (config.sat_preprocess_booleans != 0
             || config.sat_preprocess_theory != 0)
-        os << "; Preprocessing time.......: " << preproc_time << " s" << endl;
+        os << "; Preprocessing time.......: " << preproc_time << " s" << std::endl;
     if (config.sat_preprocess_theory != 0)
-        os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << endl;
-    os << "; TSolvers time............: " << tsolvers_time << " s" << endl;
-    os << "; Init clauses.............: " << clauses.size() << endl;
-    os << "; Variables................: " << nVars() << endl;
+        os << "; T-Vars eliminated........: " << elim_tvars << " out of " << total_tvars << std::endl;
+    os << "; TSolvers time............: " << tsolvers_time << " s" << std::endl;
+    os << "; Init clauses.............: " << clauses.size() << std::endl;
+    os << "; Variables................: " << nVars() << std::endl;
     if (config.sat_split_type() != spt_none)
-    os << "; Ill-adviced splits.......: " << unadvised_splits << endl;
+    os << "; Ill-adviced splits.......: " << unadvised_splits << std::endl;
 }
 #endif // STATISTICS
 
