@@ -29,6 +29,10 @@ PTRef rewriteDivMod(ArithLogic & logic, PTRef term) {
     return DivModRewriter(logic).rewrite(term);
 }
 
+PTRef backtrackDivMod(ArithLogic & logic, PTRef term) {
+    return DivModBacktrackRewriter(logic).rewrite(term);
+}
+
 std::optional<PTRef> tryGetOriginalDivModTerm(ArithLogic & logic, PTRef tr) {
     if (not logic.isVar(tr)) return std::nullopt; // Only variables can match
     auto symName = std::string_view(logic.getSymName(tr));

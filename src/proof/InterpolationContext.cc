@@ -9,6 +9,7 @@
 #include "PG.h"
 
 #include <common/VerificationUtils.h>
+#include <rewriters/Rewritings.h>
 #include <simplifiers/BoolRewriting.h>
 
 namespace opensmt {
@@ -854,6 +855,10 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipart
     assert(proof_graph);
     PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask)
                     .produceSingleInterpolant();
+
+    if (auto * arithLogic = dynamic_cast<ArithLogic *>(&logic); arithLogic and arithLogic->hasIntegers()) {
+        itp = backtrackDivMod(*arithLogic, itp);
+    }
 
     if (enabledInterpVerif()) {
         bool sound = verifyInterpolant(itp, A_mask);

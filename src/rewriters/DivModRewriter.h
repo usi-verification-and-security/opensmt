@@ -134,6 +134,50 @@ private:
     ArithLogic & logic;
     DivModConfig config;
 };
+
+// Inverse of DivModConfig: replaces auxiliary .div/.mod variables with the original div/mod terms
+class DivModBacktrackConfig : public DefaultRewriterConfig {
+public:
+    explicit DivModBacktrackConfig(ArithLogic & logic) : logic(logic) {}
+
+    PTRef rewrite(PTRef term) override {
+        if (not logic.isVar(term)) { return term; }
+        std::string_view name = logic.getSymName(term);
+        if (isAuxName(name, DivModConfig::divPrefix)) { return DivModConfig::getDivTermFor(logic, term); }
+        if (isAuxName(name, DivModConfig::modPrefix)) { return DivModConfig::getModTermFor(logic, term); }
+        return term;
+    }
+
+private:
+    ArithLogic & logic;
+
+    static bool isAuxName(std::string_view name, std::string_view prefix) {
+        return name.size() > prefix.size() and name.compare(0, prefix.size(), prefix) == 0 and
+               name[prefix.size()] == '_';
+    }
+};
+
+class DivModBacktrackRewriter : Rewriter<DivModBacktrackConfig> {
+public:
+    explicit DivModBacktrackRewriter(ArithLogic & logic)
+        : Rewriter<DivModBacktrackConfig>(logic, config),
+          config(logic) {}
+
+    PTRef rewrite(PTRef term) override {
+        // The dividend of a restored term may itself contain auxiliary variables (nested div/mod), which a single
+        // pass does not revisit. Nested rewriters cannot be used, as all rewriters share the logic's term marks,
+        // so iterate until fixpoint instead. This terminates as the nesting depth is finite.
+        PTRef current = term;
+        while (true) {
+            PTRef next = Rewriter<DivModBacktrackConfig>::rewrite(current);
+            if (next == current) { return current; }
+            current = next;
+        }
+    }
+
+private:
+    DivModBacktrackConfig config;
+};
 } // namespace opensmt
 
 #endif // OPENSMT_DIVMODREWRITER_H
