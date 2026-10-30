@@ -21,6 +21,7 @@ struct LAExplanations {
 
 class LIAInterpolator : public FarkasInterpolator {
 public:
+    LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations, std::unique_ptr<TermColorInfo> colorInfo);
     LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations);
 
     // not implemented for integers
