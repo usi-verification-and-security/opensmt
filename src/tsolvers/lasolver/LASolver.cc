@@ -1041,6 +1041,8 @@ TRes LASolver::cutFromProof() {
     auto [system, toVarMap] = linearSystemFromConstraints(constraints, logic);
     auto cut = cutCreator.makeCut(std::move(system), toVarMap);
     PTRef split = cutToSplit(std::move(cut), toVarMap, logic);
+    // std::cout << "Complex cut: " << logic.pp(split) << std::endl;
+    std::cout << "Complex cut! " << std::endl;
     if (split == PTRef_Undef) {
         return TRes::UNKNOWN;
     }
