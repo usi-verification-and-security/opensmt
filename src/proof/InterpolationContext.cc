@@ -225,7 +225,6 @@ private:
     // NOTE class A has value -1, class B value -2, undetermined value -3, class mixed value -4, class AB has index bit from 0 onwards
     std::vector<int> AB_vars_mapping; // Variables of class AB mapping to mpz integer bit index
     std::vector<InterpolationNodeData> nodeData;
-
     Logic & logic;
     SMTConfig const & config;
     PartitionManager & pmanager;
@@ -553,7 +552,6 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
 
     // Vector for topological ordering
     std::vector<clauseid_t> DFSv = proofGraph.topolSortingTopDown();
-
     size_t proof_size = DFSv.size();
 
     if (verbose() > 0) std::cerr << "; Generating interpolant " << std::endl;
@@ -576,6 +574,7 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
             if (!isLeafClauseType(n->getType())) throw InternalException("; Leaf node with non-leaf clause type");
 
             labelLeaf(*n, PSFunction.get());
+
             if (n->getType() == clause_type::CLA_ORIG) {
                 partial_interp = computePartialInterpolantForOriginalClause(*n);
             } else if (n->getType() == clause_type::CLA_THEORY) {
@@ -672,9 +671,7 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
     auto otherClass = clauseClass == icolor_t::I_A ? icolor_t::I_B : icolor_t::I_A;
     bool clauseIsA = clauseClass == icolor_t::I_A;
 
-
     std::vector<Lit> restricted_clause = getRestrictedNodeClause(node, otherClass);
-    // std::cout << "Original clause" << std::endl;
     if (restricted_clause.empty()) { return clauseIsA ? logic.getTerm_false() : logic.getTerm_true(); }
     vec<PTRef> args;
     args.capacity(restricted_clause.size());
@@ -797,11 +794,8 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
     PTRef partial_interp_ant2 = getPartialInterpolant(*n.getAnt2());
     assert(partial_interp_ant1 != PTRef_Undef);
     assert(partial_interp_ant2 != PTRef_Undef);
-    // std::cout << "Pivot" << std::endl;
-    //// std::cout << "Ant1: " << logic.pp(partial_interp_ant1) << std::endl;
-    //// std::cout << "Ant2: " << logic.pp(partial_interp_ant2) << std::endl;
 
-    //Determine color pivot, depending on its color in the two antecedents
+    // Determine color pivot, depending on its color in the two antecedents
     icolor_t pivot_color = getPivotColor(n);
     if (pivot_color == icolor_t::I_S) {
         Var v = n.getPivot();
@@ -841,13 +835,10 @@ PTRef SingleInterpolationComputationContext::compInterpLabelingInner(ProofNode &
             return logic.mkAnd(or_1, or_2);
         }
     }
-    // TODO: Think about this if
-    // Pivot colored b -> interpolant = interpolant of ant1 AND interpolant of ant2
+    // Pivot is a mixed literal -> delegated to the theory,
+    // which knows the auxiliary variable(s) introduced for the pivot atom.
     else if (pivot_color == icolor_t::I_MIXED) {
-        // std::cout << "Mixed pivot" << std::endl;
-        if (partial_interp_ant1 == logic.getTerm_true() or partial_interp_ant1 == logic.getTerm_false()) { return partial_interp_ant2; }
-        if (partial_interp_ant2 == logic.getTerm_true() or partial_interp_ant2 == logic.getTerm_false()) { return partial_interp_ant1; }
-        return thandler->resolveMixed(partial_interp_ant1, partial_interp_ant2);
+        return thandler->resolveMixed(varToPTRef(n.getPivot()), partial_interp_ant1, partial_interp_ant2);
     } else
         throw InternalException("Pivot has no color");
 }
@@ -1062,7 +1053,6 @@ void InterpolationContext::ensureNoLiteralsWithoutPartition() {
             } else {
                 // No partition contains all variables of the term (e.g., an LIA cut over A-local and B-local variables).
                 // The term keeps the empty mask; its class depends on the A/B split, see getClassFromVariables.
-                // noPartitionVars.push_back(v);
             }
         }
     }

@@ -32,8 +32,8 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
     }
 }
 
-PTRef  LATHandler::resolveMixed(PTRef left, PTRef right) {
-    return lasolver->resolveMixed(left, right);
+PTRef  LATHandler::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
+    return lasolver->resolveMixed(pivotAtom, left, right);
 }
 
 

@@ -172,8 +172,8 @@ THandler::getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, Partit
 }
 
 
-PTRef THandler::resolveMixed(PTRef l, PTRef r) {
-    return getSolverHandler().resolveMixed( l, r);
+PTRef THandler::resolveMixed(PTRef pivotAtom, PTRef l, PTRef r) {
+    return getSolverHandler().resolveMixed(pivotAtom, l, r);
 }
 
 //
