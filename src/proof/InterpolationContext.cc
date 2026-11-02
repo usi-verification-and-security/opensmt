@@ -108,7 +108,7 @@ public:
     void setLeafPSSLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
 
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
-    PTRef getInterpolantForMixedClause(ProofNode const & node, icolor_t clauseClass);
+    PTRef getInterpolantForMixedClause(ProofNode const & node);
     std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
 
     icolor_t getVarClass(Var) const;
@@ -680,12 +680,12 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
         if (sign(l) == clauseIsA) litTerm = logic.mkNot(litTerm);
         args.push(litTerm);
     }
-    return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args))
-                                        : logic.mkAnd(std::move(args));
+    return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args)) : logic.mkAnd(std::move(args));
 }
 
-PTRef SingleInterpolationComputationContext::getInterpolantForMixedClause(ProofNode const & node,
-                                                                                 icolor_t clauseClass) {
+// Input: mixed clause, interpolation was done on a mixed literal
+// Output: partial interpolant for the clause based on the tree resolution
+PTRef SingleInterpolationComputationContext::getInterpolantForMixedClause(ProofNode const & node) {
     backtrackTSolver();
     vec<Lit> newvec;
     std::vector<Lit> const & oldvec = node.getClause();
@@ -710,7 +710,6 @@ PTRef SingleInterpolationComputationContext::getInterpolantForMixedClause(ProofN
     backtrackTSolver();
     return interpolant;
 }
-
 
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
@@ -772,12 +771,11 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
         }
         clauseColor = clauseColor & getVarClass(var(l));
     }
-
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
     }
     else if (clauseColor == icolor_t::I_MIXED) {
-       return getInterpolantForMixedClause(n,clauseColor);
+       return getInterpolantForMixedClause(n);
     }
     if (clauseColor != icolor_t::I_A and clauseColor != icolor_t::I_B) {
         assert(false);

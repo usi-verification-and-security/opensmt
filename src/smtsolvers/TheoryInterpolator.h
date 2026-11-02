@@ -7,7 +7,6 @@
 #include <pterms/PtStore.h>
 
 #include <algorithm>
-#include <iostream>
 #include <memory>
 
 namespace opensmt {
