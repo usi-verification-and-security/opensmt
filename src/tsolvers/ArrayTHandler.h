@@ -24,7 +24,7 @@ public:
     Logic const & getLogic() const override { return logic; }
 
     PTRef getInterpolant(const ipartitions_t & , ItpColorMap *, PartitionManager &) override { throw InternalException("Interpolation not supported yet"); };
-    PTRef  resolveMixed(const PTRef, const PTRef) override {
+    PTRef  resolveMixed(PTRef, PTRef, PTRef) override {
         throw std::logic_error("Not implemented yet");
     }
 };

@@ -80,7 +80,6 @@ private:
             auto const entry = queue.back();
             icolor_t colorToAssign = entry.second;
             PTRef term = entry.first;
-            std::cout << " Term: "<< logic.pp(term) << " to be colored: " << colorToString(colorToAssign) << '\n';
             queue.pop_back();
             auto it = termColors.find(term);
             if (it != termColors.end()) {

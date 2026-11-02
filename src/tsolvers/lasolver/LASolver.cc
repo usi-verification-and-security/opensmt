@@ -11,8 +11,11 @@
 #include "CutCreator.h"
 
 #include <common/Random.h>
+#include <common/TreeOps.h>
 #include <models/ModelBuilder.h>
 
+#include <algorithm>
+#include <string_view>
 #include <unordered_set>
 
 #include "common/polynomials/Translations.h"
@@ -736,6 +739,24 @@ namespace {
     }
 }
 
+// Names of the auxiliary variables FarkasInterpolator::splitMixedLiteral may have introduced for pivotAtom: it splits
+// the explanation atom, which is pivotAtom itself or, in LIA, its strengthened negation built by
+// LAExplanations::getLIAExplanation ('not (c <= t)'  =>  '-(c-1) <= -t'). Terms are hash-consed, so rebuilding the
+// strengthened atom here yields the very PTRef whose id names the variable.
+std::vector<std::string> LASolver::mixedVarNamesFor(PTRef pivotAtom) {
+    assert(logic.isLeq(pivotAtom));
+    std::vector<std::string> names{".mixed_" + std::to_string(pivotAtom.x)};
+    PTRef const boundVal = logic.getConstantFromLeq(pivotAtom);
+    PTRef const boundedTerm = logic.getTermFromLeq(pivotAtom);
+    if (logic.yieldsSortInt(boundedTerm) and logic.getNumConst(boundVal).isInteger()) {
+        auto newBoundValue = logic.getNumConst(boundVal) - 1;
+        newBoundValue.negate();
+        PTRef const strengthenedNegation = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
+        names.push_back(".mixed_" + std::to_string(strengthenedNegation.x));
+    }
+    return names;
+}
+
 // left and right are the two partial interpolants meeting at a resolution pivot whose atom is I_MIXED.
 // By construction (FarkasInterpolator::splitMixedLiteral) each side is (or was derived from) a Farkas split
 // half of a mixed literal and therefore contains exactly one ".mixed_*" shared variable. The two occurrences
@@ -743,7 +764,20 @@ namespace {
 // logically the negated atom), but they always play opposite roles in the two halves, so identifying them
 // requires substituting the right-hand mixed variable by the negation of the left-hand one before the two
 // partial interpolants can be combined/summed.
-PTRef LASolver::resolveMixed(PTRef left, PTRef right) {
+PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
+    // (rule-la) yields I1[I2[LA(...)]], which degenerates to a single side when that side does not mention the
+    // pivot's auxiliary variable.
+    auto const pivotVarNames = mixedVarNamesFor(pivotAtom);
+    auto mentionsPivotVar = [&](PTRef itp) {
+        for (PTRef v : variables(logic, itp)) {
+            std::string_view const name = logic.getSymName(v);
+            if (std::find(pivotVarNames.begin(), pivotVarNames.end(), name) != pivotVarNames.end()) { return true; }
+        }
+        return false;
+    };
+    if (not mentionsPivotVar(left)) { return left; }
+    if (not mentionsPivotVar(right)) { return right; }
+
     // A partial interpolant may be the Boolean negation of a Leq/Equality atom (e.g. getFarkasInterpolant
     // wraps the dual/"for B" result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation
     // flips the sign every coefficient contributes with, exactly like a l_False-signed literal does in

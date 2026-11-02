@@ -26,7 +26,7 @@ public:
     virtual PTRef getInterpolant(const ipartitions_t&, ItpColorMap *, PartitionManager&) override {
         throw std::logic_error("Not implemented yet");
     }
-    PTRef  resolveMixed(const PTRef, const PTRef) override {
+    PTRef  resolveMixed(PTRef, PTRef, PTRef) override {
         throw std::logic_error("Not implemented yet");
     }
 };
