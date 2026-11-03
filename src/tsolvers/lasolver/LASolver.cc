@@ -725,7 +725,7 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     vec<PtAsgn> explCopy;
     explanation.copyTo(explCopy);
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
-    std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
     auto res = interpolateUsingEngine(interpolator);
     for (auto const & info : interpolator.getMixedLAInfo()) { mixedLAInfo.insert_or_assign(info.auxVar, info); }
     return res;
@@ -941,7 +941,7 @@ void LASolver::printStatistics(std::ostream & out) {
 }
 
 bool LASolver::shouldTryCutFromProof() const {
-    // if (this->config.produce_inter()) { return false; }
+    // Cuts from proof can be done now with interpolation
     static unsigned long counter = 0;
     return ++counter % 10 == 0;
 }
@@ -1062,7 +1062,7 @@ TRes LASolver::cutFromProof() {
             constraints.push_back(DefiningConstraint{term, rhs});
         }
 
-        // std::cout << logic.pp(term) << " = " << rhs << std::endl;
+//        std::cout << logic.pp(term) << " = " << rhs << std::endl;
     }
     auto getVarValue = [this](PTRef var) {
         assert(this->logic.isVar(var));

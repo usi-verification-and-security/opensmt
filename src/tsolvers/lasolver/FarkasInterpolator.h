@@ -30,7 +30,7 @@ struct MixedSplit;
 struct MixedLAInfo {
     PTRef auxVar = PTRef_Undef; // the `.mixed_*` variable, free in the emitted partial interpolant
     Real coeff = 0;             // c > 0 : coefficient of `auxVar` in `s` (oriented to the `s <| 0` form)
-    Real k = 0;                 // paper's k for this partial interpolant
+    Real k = 0;                 // paper's k for the partial interpolant
     bool strict = false;        // whether the emitted inequality is strict
 };
 
