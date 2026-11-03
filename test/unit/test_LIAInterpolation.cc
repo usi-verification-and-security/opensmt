@@ -6,7 +6,10 @@
 #include <logics/ArithLogic.h>
 #include <common/VerificationUtils.h>
 #include <tsolvers/lasolver/LIAInterpolator.h>
+#include <tsolvers/lasolver/LASolver.h>
 #include <api/MainSolver.h>
+
+#include <unordered_map>
 
 namespace opensmt {
 
@@ -511,6 +514,126 @@ TEST_F(LIAInterpolationTest, test_SharedTermInFirstAndThirdPartition){
         PTRef partB = aPartitions == 1 ? logic.mkAnd(p1, p2) : p2;
         EXPECT_TRUE(verifyInterpolant(partA, partB, interpolants[0]));
     }
+}
+
+namespace {
+// Colors terms from an explicit map, standing in for the partition-based GlobalTermColorInfo that
+// LASolver hands to the interpolator. Needed for mixed literals: their variables are not in the labels.
+class FixedTermColorInfo : public TermColorInfo {
+public:
+    explicit FixedTermColorInfo(std::unordered_map<PTRef, icolor_t, PTRefHash> colors) : colors(std::move(colors)) {}
+    icolor_t getColorFor(PTRef term) override { return colors.at(term); }
+
+private:
+    std::unordered_map<PTRef, icolor_t, PTRefHash> colors;
+};
+} // namespace
+
+TEST_F(LIAInterpolationTest, test_SplitMixedLiteral_LeafInterpolants) {
+    /*
+     * Conflict:  0 <= x + y  (mixed: x is A-local, y is B-local),   x <= -1  (A),   y <= 0  (B)
+     *
+     * splitMixedLiteral splits the mixed literal with the fresh shared variable m = .mixed_<id> into
+     *   0 <= x - m  (A half)   and   0 <= y + m  (B half)
+     * A side:  (x - m) + (-1 - x) = -1 - m,  i.e. the partial interpolant  m <= -1
+     * B side:  (y + m) + (-y)     = m,       i.e. 0 <= m, returned negated: not (0 <= m)
+     */
+    PTRef zero = logic.getTerm_IntZero();
+    PTRef mixed = logic.mkLeq(zero, logic.mkPlus(x, y));
+    PTRef aLit = logic.mkLeq(x, logic.mkIntConst(-1));
+    PTRef bLit = logic.mkLeq(y, zero);
+    vec<PtAsgn> conflict{PtAsgn(mixed, l_True), PtAsgn(aLit, l_True), PtAsgn(bLit, l_True)};
+    ItpColorMap labels{{mixed, icolor_t::I_MIXED}, {aLit, icolor_t::I_A}, {bLit, icolor_t::I_B}};
+    LIAInterpolator interpolator(
+        logic, LAExplanations::getLIAExplanation(logic, conflict, {1, 1, 1}, labels),
+        std::make_unique<FixedTermColorInfo>(std::unordered_map<PTRef, icolor_t, PTRefHash>{
+            {x, icolor_t::I_A}, {y, icolor_t::I_B}}));
+    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(mixed.x)).c_str());
+    PTRef expected = logic.mkLeq(m, logic.mkIntConst(-1));
+    VerificationUtils verifier(logic);
+
+    PTRef itpA = interpolator.getFarkasInterpolant();
+    std::cout << logic.pp(itpA) << std::endl;
+    EXPECT_TRUE(verifier.impliesInternal(itpA, expected));
+    EXPECT_TRUE(verifier.impliesInternal(expected, itpA));
+    ASSERT_EQ(interpolator.getMixedLAInfo().size(), 1u);
+    {
+        auto const & info = interpolator.getMixedLAInfo()[0];
+        EXPECT_EQ(info.auxVar, m);
+        EXPECT_EQ(info.coeff, Real(1)); // m <= -1 is  m + 1 <| 0
+        EXPECT_EQ(info.k, Real(-1));    // leaf value of k
+        EXPECT_FALSE(info.strict);
+    }
+
+    PTRef itpB = interpolator.getDualFarkasInterpolant();
+    std::cout << logic.pp(itpB) << std::endl;
+    // not (0 <= m) is m < 0, which over the integers is again m <= -1
+    EXPECT_TRUE(verifier.impliesInternal(itpB, expected));
+    EXPECT_TRUE(verifier.impliesInternal(expected, itpB));
+    ASSERT_EQ(interpolator.getMixedLAInfo().size(), 1u); // cleared and recomputed for the dual
+    {
+        auto const & info = interpolator.getMixedLAInfo()[0];
+        EXPECT_EQ(info.auxVar, m);
+        EXPECT_EQ(info.coeff, Real(-1)); // 0 <= m is  -m <| 0
+        EXPECT_EQ(info.k, Real(-1));
+        EXPECT_FALSE(info.strict);
+    }
+}
+
+TEST_F(LIAInterpolationTest, test_ResolveMixed_UnitCoefficients) {
+    /*
+     * Pivot p := y <= x with fresh shared variable m = .mixed_<p>
+     *
+     * left:  m <= x1     right:  x2 <= m
+     *
+     * Eliminating m by summing the two sides gives  x2 <= x1
+     */
+    LASolver solver(config, logic);
+    PTRef pivot = logic.mkLeq(y, x);
+    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(pivot.x)).c_str());
+    PTRef left = logic.mkLeq(m, x1);
+    PTRef right = logic.mkLeq(x2, m);
+    PTRef expected = logic.mkLeq(x2, x1);
+    VerificationUtils verifier(logic);
+
+    PTRef res = solver.resolveMixed(pivot, left, right);
+    std::cout << logic.pp(res) << std::endl;
+    EXPECT_TRUE(verifier.impliesInternal(res, expected));
+    EXPECT_TRUE(verifier.impliesInternal(expected, res));
+
+    // A side that does not mention the pivot's variable is returned unchanged
+    EXPECT_EQ(solver.resolveMixed(pivot, left, expected), expected);
+    EXPECT_EQ(solver.resolveMixed(pivot, expected, right), expected);
+}
+
+TEST_F(LIAInterpolationTest, test_ResolveMixed_IntegerDivisibility) {
+    /*
+     * Pivot p := y <= x with fresh shared variable m = .mixed_<p>
+     *
+     * left:  2m <= r     right:  t <= 2m
+     *
+     * Over the integers, eliminating m must keep the parity information: the result is equivalent to
+     * "there is an even number between t and r", i.e.  ceil(t/2) <= floor(r/2), not just  t <= r.
+     */
+    LASolver solver(config, logic);
+    PTRef t = logic.mkIntVar("t");
+    PTRef r = logic.mkIntVar("r");
+    PTRef two = logic.mkIntConst(2);
+    PTRef pivot = logic.mkLeq(y, x);
+    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(pivot.x)).c_str());
+    PTRef twoM = logic.mkTimes(two, m);
+    PTRef left = logic.mkLeq(twoM, r);
+    PTRef right = logic.mkLeq(t, twoM);
+    PTRef ceilHalfT = logic.mkNeg(logic.mkIntDiv(logic.mkNeg(t), two));
+    PTRef expected = logic.mkLeq(ceilHalfT, logic.mkIntDiv(r, two));
+    VerificationUtils verifier(logic);
+
+    PTRef res = solver.resolveMixed(pivot, left, right);
+    std::cout << logic.pp(res) << std::endl;
+    EXPECT_TRUE(verifier.impliesInternal(res, expected));
+    EXPECT_TRUE(verifier.impliesInternal(expected, res));
+    // t <= r alone is weaker: t = r = 1 satisfies it, but there is no even number in [1, 1]
+    EXPECT_FALSE(verifier.impliesInternal(logic.mkLeq(t, r), res));
 }
 
 }
