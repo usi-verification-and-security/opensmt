@@ -24,7 +24,7 @@ public:
         assert((unsigned)v < AB_vars_mapping.size());
         assert(AB_vars_mapping[v] >= -4);
         int c = AB_vars_mapping[v];
-        return c == -4 ? icolor_t::I_MIXED : ( c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB));
+        return c == -4 ? icolor_t::I_MIXED : (c == -1 ? icolor_t::I_A : (c == -2 ? icolor_t::I_B : icolor_t::I_AB));
     }
 
     SingleInterpolationComputationContext(SMTConfig const & config, Theory & theory, TermMapper & termMapper,
@@ -222,7 +222,8 @@ private:
         }
     };
 
-    // NOTE class A has value -1, class B value -2, undetermined value -3, class mixed value -4, class AB has index bit from 0 onwards
+    // NOTE class A has value -1, class B value -2, undetermined value -3, class mixed value -4, class AB has index bit
+    // from 0 onwards
     std::vector<int> AB_vars_mapping; // Variables of class AB mapping to mpz integer bit index
     std::vector<InterpolationNodeData> nodeData;
     Logic & logic;
@@ -284,9 +285,11 @@ icolor_t SingleInterpolationComputationContext::getVarColor(ProofNode const & n,
     assert(n.isLeaf());
     // In labeling, classes and colors are distinct
     icolor_t var_class = getVarClass(v);
-    assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB or var_class == icolor_t::I_MIXED);
-    icolor_t var_color =
-        var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_MIXED ? var_class : getSharedVarColorInNode(v, n);
+    assert(var_class == icolor_t::I_A or var_class == icolor_t::I_B or var_class == icolor_t::I_AB or
+           var_class == icolor_t::I_MIXED);
+    icolor_t var_color = var_class == icolor_t::I_B || var_class == icolor_t::I_A || var_class == icolor_t::I_MIXED
+                           ? var_class
+                           : getSharedVarColorInNode(v, n);
     return var_color;
 }
 
@@ -298,7 +301,8 @@ icolor_t SingleInterpolationComputationContext::getPivotColor(ProofNode const & 
     Var v = n.getPivot();
     // In labeling, classes and colors are distinct
     icolor_t var_class = getVarClassFromCache(v);
-    if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_MIXED and var_class != icolor_t::I_AB) {
+    if (var_class != icolor_t::I_A and var_class != icolor_t::I_B and var_class != icolor_t::I_MIXED and
+        var_class != icolor_t::I_AB) {
         throw InternalException("Pivot " + std::to_string(v) + " has no class");
     }
 
@@ -521,7 +525,8 @@ SingleInterpolationComputationContext::SingleInterpolationComputationContext(SMT
     nodeData.resize(proof.getGraphSize());
     AB_vars_mapping.resize(varCounts, -3);
 
-    // NOTE class A has value -1, class B value -2, undetermined value -3, class mixed value -4, class AB has index bit from 0 onwards
+    // NOTE class A has value -1, class B value -2, undetermined value -3, class mixed value -4, class AB has index bit
+    // from 0 onwards
     int AB_bit_index = 0;
     for (Var v : vars) {
         icolor_t v_class = this->getVarClass(v);
@@ -565,12 +570,6 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
 
         // Generate partial interpolant for clause i
         if (n->isLeaf()) {
-            auto lits = n->getClause();
-            std::vector<PTRef> clause;
-            for (auto lit:lits) {
-                clause.push_back(varToPTRef(var(~lit)));
-            }
-
             if (!isLeafClauseType(n->getType())) throw InternalException("; Leaf node with non-leaf clause type");
 
             labelLeaf(*n, PSFunction.get());
@@ -654,13 +653,13 @@ std::vector<Lit> SingleInterpolationComputationContext::getRestrictedNodeClause(
         }
         Var v = var(l);
         icolor_t var_class = getVarClassFromCache(v);
-        assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB or var_class == icolor_t::I_MIXED);
+        assert(var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_AB or
+               var_class == icolor_t::I_MIXED);
 
-        icolor_t var_color =
-            var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_MIXED ? var_class : getSharedVarColorInNode(v, node);
-        if (var_color == wantedVarClass) {
-            restrictedClause.push_back(l);
-        }
+        icolor_t var_color = var_class == icolor_t::I_B or var_class == icolor_t::I_A or var_class == icolor_t::I_MIXED
+                               ? var_class
+                               : getSharedVarColorInNode(v, node);
+        if (var_color == wantedVarClass) restrictedClause.push_back(l);
     }
     return restrictedClause;
 }
@@ -773,9 +772,8 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
     }
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
-    }
-    else if (clauseColor == icolor_t::I_MIXED) {
-       return getInterpolantForMixedClause(n);
+    } else if (clauseColor == icolor_t::I_MIXED) {
+        return getInterpolantForMixedClause(n);
     }
     if (clauseColor != icolor_t::I_A and clauseColor != icolor_t::I_B) {
         assert(false);
@@ -1049,8 +1047,9 @@ void InterpolationContext::ensureNoLiteralsWithoutPartition() {
                 // MB: Update the partition information
                 pmanager.addIPartitions(term, allowedPartitions);
             } else {
-                // No partition contains all variables of the term (e.g., an LIA cut over A-local and B-local variables).
-                // The term keeps the empty mask; its class depends on the A/B split, see getClassFromVariables.
+                // No partition contains all variables of the term (e.g., an LIA cut over A-local and B-local
+                // variables). The term keeps the empty mask; its class depends on the A/B split, see
+                // getClassFromVariables.
             }
         }
     }
