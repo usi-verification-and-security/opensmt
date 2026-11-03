@@ -18,7 +18,6 @@ LATHandler::LATHandler(SMTConfig & c, ArithLogic & l)
     setSolverSchedule({lasolver});
 }
 
-
 PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * labels, PartitionManager & pmanager) {
     if (logic.hasReals() and not logic.hasIntegers()) {
         return lasolver->getRealInterpolant(mask, labels, pmanager);
@@ -35,6 +34,5 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
 PTRef  LATHandler::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
     return lasolver->resolveMixed(pivotAtom, left, right);
 }
-
 
 }
