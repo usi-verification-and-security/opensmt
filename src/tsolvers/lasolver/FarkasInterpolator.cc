@@ -635,7 +635,6 @@ PTRef FarkasInterpolator::weightedSum(std::vector<LATerm> const & system) {
 MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
     assert(logic.isLeq(leq));
     assert(getColorFor(leq) == icolor_t::I_MIXED);
-    // std::cout << "Leq: " << logic.pp(leq) << "\n";
     // Canonical form of a Leq atom is "0 <= poly"
     SRef const sort = logic.getSortRef(logic.getPterm(leq)[1]);
     LAPoly const poly = ptrefToPoly(leq, logic);
@@ -648,8 +647,6 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
     // B_part contains B-local and AB (shared) variables, including the constant term
     LAPoly polyA;
     LAPoly polyB;
-    int aCount = 0;
-    int bCount = 0;
     for (auto const & [var, coeff] : poly) {
         if (var == PTRef_Undef) {
             polyB.addTerm(var, coeff);
@@ -668,11 +665,9 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
             varColor = getColorFor(var);
         }
         if (varColor == icolor_t::I_A) {
-            ++aCount;
             polyA.addTerm(var, coeff);
         } else {
             assert(varColor == icolor_t::I_B or varColor == icolor_t::I_AB);
-            if (varColor == icolor_t::I_B) { ++bCount; }
             polyB.addTerm(var, coeff);
         }
     }
@@ -683,7 +678,6 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
     polyB.addTerm(x, 1);
 
     MixedSplit result;
-    assert(aCount > 0 and bCount > 0);
     result.aPart = std::move(polyA);
     result.bPart = std::move(polyB);
     result.auxVar = x;
