@@ -807,9 +807,7 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
             break;
         }
     }
-    if (leftMixedVar == PTRef_Undef or rightMixedVar == PTRef_Undef) {
-        throw InternalException("Could not find a mixed variable to resolve on in both sides");
-    }
+    assert (leftMixedVar != PTRef_Undef and rightMixedVar != PTRef_Undef);
 
     // If both sides already share the identical fresh variable (the common case: Logic::mkVar deduplicates
     // splitMixedLiteral's ".mixed_<atomId>" name, so splitting the same atom twice yields the same symbol),
@@ -882,7 +880,6 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
     SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
     PTRef const zero = logic.getZeroForSort(sort);
 
-    // Step 3 -- (rule-la) F3 for the integer, single-mixed-literal, leaf-and-leaf case.
     // Each side is a half-plane  a_i * x1 + s_i(shared) <| 0  (a_i the mixed-var coefficient in the
     // "<| 0" orientation, s_i over shared vars only). With opposite-signed a_i one side upper-bounds
     // x1 and the other lower-bounds it, and the exact combined interpolant is
