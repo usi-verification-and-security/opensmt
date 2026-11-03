@@ -19,6 +19,16 @@ lookahead=./utils/lookahead.smt2
 tmpfolder=log-$(date '+%Y-%m-%d-%H-%M-%S')
 mkdir ${tmpfolder}
 
+# Compares the stdout of the last run with the benchmark's .expected.out, if the benchmark has one
+check_stdout() {
+    local expected="$dir/$name.expected.out"
+    if [ -f "$expected" ] && ! diff -q "$tmpfolder/$name.out" "$expected" > /dev/null; then
+        echo "stdout differs for $1benchmark $file";
+        diff "$tmpfolder/$name.out" "$expected"
+        err=true;
+    fi
+}
+
 export outmod=false
 export errmod=false
 export rtmod=false
@@ -35,6 +45,7 @@ for file in $(find . -name '*.smt2' |sort); do
         echo "stderr not empty for benchmark $file";
         err=true;
     fi
+    check_stdout ""
 
     sh -c "ulimit -St 60; ${opensmt} $picky $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
@@ -43,6 +54,7 @@ for file in $(find . -name '*.smt2' |sort); do
         echo "stderr not empty for picky benchmark $file";
         err=true;
     fi
+    check_stdout "picky "
 
     sh -c "ulimit -St 60; ${opensmt} $lookahead $dir/$name > $tmpfolder/$name.out 2>$tmpfolder/$name.err.tmp" 2>/dev/null
     grep -v '^;' $tmpfolder/$name.err.tmp > $tmpfolder/$name.err
@@ -51,6 +63,7 @@ for file in $(find . -name '*.smt2' |sort); do
         echo "stderr not empty for lookahead benchmark $file";
         err=true;
     fi
+    check_stdout "lookahead "
 
     #diff -q ${tmpfolder}/${name}.out ${dir}/${name}.expected.out
     #if [ $? != 0 ]; then
