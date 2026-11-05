@@ -108,7 +108,6 @@ public:
     void setLeafPSSLabeling(ProofNode &, std::map<Var, icolor_t> const & PSFunction);
 
     PTRef getInterpolantForOriginalClause(ProofNode const & node, icolor_t clauseClass) const;
-    PTRef getInterpolantForMixedClause(ProofNode const & node);
     std::vector<Lit> getRestrictedNodeClause(ProofNode const & node, icolor_t wantedVarClass) const;
 
     icolor_t getVarClass(Var) const;
@@ -682,34 +681,6 @@ PTRef SingleInterpolationComputationContext::getInterpolantForOriginalClause(Pro
     return clauseClass == icolor_t::I_A ? logic.mkOr(std::move(args)) : logic.mkAnd(std::move(args));
 }
 
-// Input: mixed clause, interpolation was done on a mixed literal
-// Output: partial interpolant for the clause based on the tree resolution
-PTRef SingleInterpolationComputationContext::getInterpolantForMixedClause(ProofNode const & node) {
-    backtrackTSolver();
-    vec<Lit> newvec;
-    std::vector<Lit> const & oldvec = node.getClause();
-    for (Lit l : oldvec) {
-        newvec.push(~l);
-    }
-    bool satisfiable = this->assertLiteralsToTSolver(newvec);
-    if (satisfiable) {
-        TRes tres = thandler->check(true);
-        satisfiable = (tres != TRes::UNSAT);
-    }
-    if (satisfiable) {
-        assert(false);
-        throw InternalException("Asserting negation of theory clause did not result in conflict in theory solver!");
-    }
-    THandler::ItpColorMap ptref2label;
-    for (Lit l : oldvec) {
-        ptref2label.insert({varToPTRef(var(l)), getVarColor(node, var(l))});
-    }
-
-    PTRef interpolant = thandler->getInterpolant(A_mask, &ptref2label, pmanager);
-    backtrackTSolver();
-    return interpolant;
-}
-
 // Input: leaf clause, current interpolant partition masks for A and B
 // Output: Labeling-based partial interpolant for the clause
 PTRef SingleInterpolationComputationContext::computePartialInterpolantForOriginalClause(ProofNode const & n) const {
@@ -773,8 +744,11 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForSplitCl
     if (clauseColor == icolor_t::I_AB) {
         clauseColor = icolor_t::I_A; // MB: Arbitrary choice, same as with original AB-clauses
     } else if (clauseColor == icolor_t::I_MIXED) {
-        return getInterpolantForMixedClause(n);
+        return computePartialInterpolantForTheoryClause(n);
+    } else if (clauseColor == icolor_t::I_UNDEF) {
+        clauseColor = icolor_t::I_A; // MB: Split expression is common, we treat the clause as AB-clause
     }
+
     if (clauseColor != icolor_t::I_A and clauseColor != icolor_t::I_B) {
         assert(false);
         throw InternalException("Error in coloring split clause!");

@@ -768,12 +768,14 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
     // (rule-la) yields I1[I2[LA(...)]], which degenerates to a single side when that side does not mention the
     // pivot's auxiliary variable.
     auto const pivotVarNames = mixedVarNamesFor(pivotAtom);
+    auto isPivotVar = [&](PTRef v) {
+        if (v == PTRef_Undef or not logic.isVar(v)) { return false; }
+        std::string_view const name = logic.getSymName(v);
+        return std::find(pivotVarNames.begin(), pivotVarNames.end(), name) != pivotVarNames.end();
+    };
     auto mentionsPivotVar = [&](PTRef itp) {
-        for (PTRef v : variables(logic, itp)) {
-            std::string_view const name = logic.getSymName(v);
-            if (std::find(pivotVarNames.begin(), pivotVarNames.end(), name) != pivotVarNames.end()) { return true; }
-        }
-        return false;
+        auto const vars = variables(logic, itp);
+        return std::any_of(vars.begin(), vars.end(), isPivotVar);
     };
     if (not mentionsPivotVar(left)) { return left; }
     if (not mentionsPivotVar(right)) { return right; }
@@ -791,23 +793,15 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
     auto [rightPoly, rightNegated, rightAtom] = toSignedPoly(right);
     (void)leftAtom;
 
-    PTRef leftMixedVar = PTRef_Undef;
-    Real leftMixedCoeff = 0;
-    for (auto const & [var, coeff] : leftPoly) {
-        if (isMixedVar(logic, var)) {
-            leftMixedVar = var;
-            leftMixedCoeff = coeff;
-            break;
-        }
-    }
-    PTRef rightMixedVar = PTRef_Undef;
-    for (auto const & [var, coeff] : rightPoly) {
-        if (isMixedVar(logic, var)) {
-            rightMixedVar = var;
-            break;
-        }
-    }
-    assert (leftMixedVar != PTRef_Undef and rightMixedVar != PTRef_Undef);
+    // Locate the auxiliary variable belonging to *this* pivot on each side. A side may carry further ".mixed_*"
+    // variables of other mixed literals still to be resolved at a later pivot, so any ".mixed_*" is not enough.
+    auto findPivotVar = [&](LAPoly const & poly) {
+        auto it = std::find_if(poly.begin(), poly.end(), [&](auto const & term) { return isPivotVar(term.var); });
+        if (it == poly.end()) { throw InternalException("Partial interpolant does not contain the pivot's mixed variable"); }
+        return std::make_pair(it->var, it->coeff);
+    };
+    auto const [leftMixedVar, leftMixedCoeff] = findPivotVar(leftPoly);
+    PTRef const rightMixedVar = findPivotVar(rightPoly).first;
 
     // If both sides already share the identical fresh variable (the common case: Logic::mkVar deduplicates
     // splitMixedLiteral's ".mixed_<atomId>" name, so splitting the same atom twice yields the same symbol),
