@@ -1122,7 +1122,11 @@ PTRef ArithLogic::removeAuxVars(PTRef tr) {
     };
     // Note: this has negligible impact on performance, no need to check if there are divs or mods
     AuxSymbolMatcherConfig config(*this);
-    tr = Rewriter(*this, config).rewrite(tr);
+    // A restored div/mod term can contain further aux vars in its dividend (nested div/mod), which a single
+    // pass does not revisit; nested rewriters can't be used (shared term marks), so iterate to a fixpoint.
+    for (PTRef next = Rewriter(*this, config).rewrite(tr); next != tr; next = Rewriter(*this, config).rewrite(tr)) {
+        tr = next;
+    }
     return Logic::removeAuxVars(tr);
 }
 
