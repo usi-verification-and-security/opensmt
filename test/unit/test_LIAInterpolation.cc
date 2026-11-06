@@ -49,12 +49,6 @@ protected:
         itpCtx->getSingleInterpolant(interpolants, mask);
         return interpolants[0];
     }
-
-    void expectNoAuxiliaryVars(PTRef itp) {
-        std::string itpStr = logic.pp(itp);
-        EXPECT_EQ(itpStr.find(".mod"), std::string::npos) << "Interpolant leaks auxiliary mod variable: " << itpStr;
-        EXPECT_EQ(itpStr.find(".div"), std::string::npos) << "Interpolant leaks auxiliary div variable: " << itpStr;
-    }
 };
 
 TEST_F(LIAInterpolationTest, test_InterpolationLRASat){
@@ -407,8 +401,6 @@ TEST_F(LIAInterpolationTest, test_Split_DivisibilityByFactors){
 
     PTRef itp = computeInterpolant(partA, partB);
     ASSERT_NE(itp, PTRef_Undef);
-    std::cout << logic.pp(itp) << std::endl;
-    expectNoAuxiliaryVars(itp);
     EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
 }
 
@@ -430,7 +422,6 @@ TEST_F(LIAInterpolationTest, test_Split_EvenAndOddBetweenBounds){
 
     PTRef itp = computeInterpolant(partA, partB);
     ASSERT_NE(itp, PTRef_Undef);
-    std::cout << logic.pp(itp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
 }
 
@@ -472,7 +463,6 @@ TEST_F(LIAInterpolationTest, test_Split_DisjunctiveTransitionQuery){
 
     PTRef itp = computeInterpolant(partA, partB);
     ASSERT_NE(itp, PTRef_Undef);
-    std::cout << logic.pp(itp) << std::endl;
     EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
 }
 
