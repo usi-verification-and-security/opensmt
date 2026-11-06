@@ -107,6 +107,7 @@ private:
 
     bool isInPartitionOfColor(icolor_t color, PTRef atom) const {
         auto atomColor = getColorFor(atom);
+        assert(atomColor != icolor_t::I_MIXED);
         return (color & atomColor) != icolor_t::I_UNDEF;
     }
 

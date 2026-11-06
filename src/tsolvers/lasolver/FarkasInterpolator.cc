@@ -436,6 +436,11 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
         throw InternalException(
             "Error in computation of decomposed Farkas interpolant, colors could not be determined!");
     }
+    // Decomposition would have to cancel the split's auxiliary variable inside every component;
+    // fall back to the plain Farkas interpolant, which splits mixed literals.
+    bool const hasMixed = std::any_of(explanations.begin(), explanations.end(),
+                                      [this](PtAsgn const & expl) { return getColorFor(expl.tr) == icolor_t::I_MIXED; });
+    if (hasMixed) { return getFarkasInterpolant(color); }
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of
     // given color)
@@ -733,6 +738,9 @@ PTRef FarkasInterpolator::getFlexibleInterpolant(Real strengthFactor) {
             systemA.emplace_back(literalToLATerm(explanations[i], explanation_coeffs[i], logic));
         } else if (litColor == icolor_t::I_B) {
             systemB.emplace_back(literalToLATerm(explanations[i], explanation_coeffs[i], logic));
+        } else {
+            // Mixed literals come only from LIA cuts; the flexible algorithm is LRA-only and cannot split them.
+            throw InternalException("Flexible LRA interpolant does not support mixed literals");
         }
     }
     PTRef itpA = weightedSum(systemA);
