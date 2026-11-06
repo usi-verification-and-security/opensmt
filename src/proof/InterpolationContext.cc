@@ -854,6 +854,7 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipart
     assert(proof_graph);
     PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask)
                     .produceSingleInterpolant();
+    itp = logic.removeAuxVars(itp);
 
     if (enabledInterpVerif()) {
         bool sound = verifyInterpolant(itp, A_mask);
