@@ -15,6 +15,7 @@
 #include <models/ModelBuilder.h>
 
 #include <algorithm>
+#include <functional>
 #include <string_view>
 #include <unordered_set>
 
@@ -758,15 +759,12 @@ std::vector<std::string> LASolver::mixedVarNamesFor(PTRef pivotAtom) {
 }
 
 // left and right are the two partial interpolants meeting at a resolution pivot whose atom is I_MIXED.
-// By construction (FarkasInterpolator::splitMixedLiteral) each side is (or was derived from) a Farkas split
-// half of a mixed literal and therefore contains exactly one ".mixed_*" shared variable. The two occurrences
-// need not be the same symbol (e.g. LIA strengthening can produce a differently-named split for what is
-// logically the negated atom), but they always play opposite roles in the two halves, so identifying them
-// requires substituting the right-hand mixed variable by the negation of the left-hand one before the two
-// partial interpolants can be combined/summed.
+// (rule-la): for I1[LA1] and I2[LA2] the result is I1[I2[LA3]]. A partial interpolant is a monotone Boolean
+// combination (and/or, built by the A/B/AB resolution rules) whose "holes" are the (possibly negated) arithmetic
+// atoms mentioning the pivot's ".mixed_*" variable. Every hole h1 of left is replaced by a copy of right in which
+// every hole h2 is replaced by combineMixedLiterals(h1, h2). A side can contain several holes, e.g. when both
+// antecedents of an AB pivot contained the mixed literal (SMTInterpol's mixedPivotLA does the same).
 PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
-    // (rule-la) yields I1[I2[LA(...)]], which degenerates to a single side when that side does not mention the
-    // pivot's auxiliary variable.
     auto const pivotVarNames = mixedVarNamesFor(pivotAtom);
     auto isPivotVar = [&](PTRef v) {
         if (v == PTRef_Undef or not logic.isVar(v)) { return false; }
@@ -777,16 +775,52 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
         auto const vars = variables(logic, itp);
         return std::any_of(vars.begin(), vars.end(), isPivotVar);
     };
+    // (rule-la) degenerates to a single side when that side does not mention the pivot's auxiliary variable.
     if (not mentionsPivotVar(left)) { return left; }
     if (not mentionsPivotVar(right)) { return right; }
 
-    // A partial interpolant may be the Boolean negation of a Leq/Equality atom (e.g. getFarkasInterpolant
-    // wraps the dual/"for B" result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation
-    // flips the sign every coefficient contributes with, exactly like a l_False-signed literal does in
-    // FarkasInterpolator::weightedSum.
-    if (!(logic.isLeq(left) or logic.isEquality(left)) or !(logic.isLeq(right) or logic.isEquality(right))) {
-        std:: cout << "ERRORR!!!\n";
-    }
+    auto isHole = [&](PTRef t) {
+        PTRef const atom = logic.isNot(t) ? logic.getPterm(t)[0] : t;
+        return (logic.isLeq(atom) or logic.isNumEq(atom)) and mentionsPivotVar(atom);
+    };
+    // Rebuilds the and/or context of itp, replacing every hole h by fill(h).
+    auto replaceHoles = [&](PTRef itp, auto const & fill) {
+        std::unordered_map<PTRef, PTRef, PTRefHash> cache; // partial interpolants are DAGs
+        std::function<PTRef(PTRef)> go = [&](PTRef t) -> PTRef {
+            if (auto it = cache.find(t); it != cache.end()) { return it->second; }
+            PTRef res = t;
+            if (isHole(t)) {
+                res = fill(t);
+            } else if (logic.isAnd(t) or logic.isOr(t)) {
+                vec<PTRef> args;
+                for (PTRef child : logic.getPterm(t)) {
+                    args.push(go(child));
+                }
+                res = logic.isAnd(t) ? logic.mkAnd(std::move(args)) : logic.mkOr(std::move(args));
+            } else if (mentionsPivotVar(t)) {
+                // Substituting below e.g. not/ite/= would not be monotone, so (rule-la) does not apply.
+                throw InternalException("Mixed variable under a non-monotone context in a partial interpolant");
+            }
+            cache.emplace(t, res);
+            return res;
+        };
+        return go(itp);
+    };
+    return replaceHoles(left, [&](PTRef leftHole) {
+        return replaceHoles(right,
+                            [&](PTRef rightHole) { return combineMixedLiterals(leftHole, rightHole, isPivotVar); });
+    });
+}
+
+// Combines two holes (single, possibly negated, arithmetic literals) of the partial interpolants meeting at a mixed
+// pivot. Each contains the pivot's ".mixed_*" variable; the two occurrences need not be the same symbol (e.g. LIA
+// strengthening can produce a differently-named split for what is logically the negated atom), but they always play
+// opposite roles in the two halves, so the right-hand variable is identified with the negation of the left-hand one
+// before the two literals are summed.
+PTRef LASolver::combineMixedLiterals(PTRef left, PTRef right, std::function<bool(PTRef)> const & isPivotVar) {
+    // A hole may be the Boolean negation of a Leq/Equality atom (e.g. getFarkasInterpolant wraps the dual/"for B"
+    // result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation flips the sign every
+    // coefficient contributes with, exactly like a l_False-signed literal does in FarkasInterpolator::weightedSum.
     auto toSignedPoly = [this](PTRef t) {
         bool const negated = logic.isNot(t);
         PTRef const atom = negated ? logic.getPterm(t)[0] : t;

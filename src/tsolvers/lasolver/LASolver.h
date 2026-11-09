@@ -19,6 +19,7 @@
 #include <logics/ArithLogic.h>
 #include <tsolvers/TSolver.h>
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -92,6 +93,8 @@ private:
     // variable. Populated by getRealInterpolant/getIntegerInterpolant from the FarkasInterpolator and
     // consumed by resolveMixed when it pivots on the corresponding mixed literal.
     std::unordered_map<PTRef, MixedLAInfo, PTRefHash> mixedLAInfo;
+
+    PTRef combineMixedLiterals(PTRef left, PTRef right, std::function<bool(PTRef)> const & isPivotVar);
 
     // Possible internal states of the solver
     typedef enum { INIT, INCREMENT, SAT, UNSAT, NEWSPLIT, UNKNOWN, ERROR } LASolverStatus;
