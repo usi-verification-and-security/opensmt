@@ -784,6 +784,9 @@ PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
     // wraps the dual/"for B" result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation
     // flips the sign every coefficient contributes with, exactly like a l_False-signed literal does in
     // FarkasInterpolator::weightedSum.
+    if (!(logic.isLeq(left) or logic.isEquality(left)) or !(logic.isLeq(right) or logic.isEquality(right))) {
+        std:: cout << "ERRORR!!!\n";
+    }
     auto toSignedPoly = [this](PTRef t) {
         bool const negated = logic.isNot(t);
         PTRef const atom = negated ? logic.getPterm(t)[0] : t;
