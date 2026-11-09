@@ -226,4 +226,147 @@ TEST_F(LIAInterpolationTest, test_CorrectHandlingOfFractionalCoefficientsInExpla
     EXPECT_TRUE(verifyInterpolant(logic.mkAnd(leq1, leq2), leq3, farkasItp));
 }
 
+TEST_F(LIAInterpolationTest, test_CorrectHandlingOfMods){
+    /*
+     * A:  mod(x,10) <= 4
+     *
+     * B:  mod(x,10) >= 7
+     */
+    PTRef partA = logic.mkLeq(logic.mkMod(x,  logic.mkIntConst(10)), logic.mkIntConst(4));
+    PTRef partB = logic.mkLeq(logic.mkIntConst(7), logic.mkMod(x,  logic.mkIntConst(10)));
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef farkasItp = interpolants[0];
+    EXPECT_TRUE(verifyInterpolant(partA, partB, farkasItp));
+}
+
+// Found through Golem's TPA engine, whose interpolation queries contain the same mod term in both partitions:
+// a negated divisibility constraint in A and the constraint itself in B.
+TEST_F(LIAInterpolationTest, test_NegatedDivisibilityConstraint){
+    /*
+     * A:  (not (= 0 (mod x 25)))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef divisible = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(x, logic.mkIntConst(25)));
+    PTRef partA = logic.mkNot(divisible);
+    PTRef partB = divisible;
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+TEST_F(LIAInterpolationTest, test_NegatedDivisibilityConstraint_SimplifiedInterpolant){
+    /*
+     * Same query, with the interpolant simplification Golem uses (:simplify-interpolants 4)
+     *
+     * A:  (not (= 0 (mod x 25)))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef divisible = logic.mkEq(logic.getTerm_IntZero(), logic.mkMod(x, logic.mkIntConst(25)));
+    PTRef partA = logic.mkNot(divisible);
+    PTRef partB = divisible;
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    config.setOption(SMTConfig::o_simplify_inter, SMTOption(4), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+TEST_F(LIAInterpolationTest, test_ModBoundAgainstDivisibilityConstraint){
+    /*
+     * The same contradiction, with A written as a bound
+     *
+     * A:  (<= 1 (mod x 25))
+     *
+     * B:  (= 0 (mod x 25))
+     */
+    PTRef mod = logic.mkMod(x, logic.mkIntConst(25));
+    PTRef partA = logic.mkLeq(logic.getTerm_IntOne(), mod);
+    PTRef partB = logic.mkEq(logic.getTerm_IntZero(), mod);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
+TEST_F(LIAInterpolationTest, test_NestedDivModBoundAgainstDivisibilityConstraint){
+    /*
+     * The same contradiction, over a mod of a div: the auxiliary variable for the outer mod is defined in terms
+     * of the auxiliary variable for the inner div, so both must be translated back
+     *
+     * A:  (<= 1 (mod (div x 3) 5))
+     *
+     * B:  (= 0 (mod (div x 3) 5))
+     */
+    PTRef mod = logic.mkMod(logic.mkIntDiv(x, logic.mkIntConst(3)), logic.mkIntConst(5));
+    PTRef partA = logic.mkLeq(logic.getTerm_IntOne(), mod);
+    PTRef partB = logic.mkEq(logic.getTerm_IntZero(), mod);
+
+    const char* msg = "ok";
+    config.setOption(SMTConfig::o_produce_inter, SMTOption(true), msg);
+    MainSolver solver(logic, config, "test");
+    solver.insertFormula(partA);
+    solver.insertFormula(partB);
+    auto res = solver.check();
+    ASSERT_EQ(res, s_False);
+    auto itpCtx = solver.getInterpolationContext();
+    vec<PTRef> interpolants;
+    ipartitions_t mask;
+    setbit(mask, 0);
+    itpCtx->getSingleInterpolant(interpolants, mask);
+    PTRef itp = interpolants[0];
+
+    EXPECT_TRUE(verifyInterpolant(partA, partB, itp));
+}
+
 }
