@@ -830,6 +830,23 @@ PTRef LASolver::combineMixedLiterals(PTRef left, PTRef right, std::function<bool
     auto [rightPoly, rightNegated, rightAtom] = toSignedPoly(right);
     (void)leftAtom;
 
+    // Over the integers a strict hole `not (0 <= P)`, i.e. `P < 0`, is equivalent to the non-strict `0 <= -P - 1`.
+  // Normalising both holes keeps the combination exact; left strict, every bound below is relaxed by one unit and
+  // the result can be consistent with B.
+  auto makeNonStrictOverIntegers = [this](LAPoly & poly, bool & negated, PTRef atom) {
+      if (not negated or not logic.isLeq(atom) or logic.getSortRef(logic.getPterm(atom)[1]) != logic.getSort_int()) {
+          return;
+      }
+      assert(std::all_of(poly.begin(), poly.end(), [](auto const & term) { return term.coeff.isInteger(); }));
+      poly.negate();
+      LAPoly minusOne;
+      minusOne.addTerm(PTRef_Undef, Real(-1));
+      poly.merge(minusOne, Real(1));
+      negated = false;
+  };
+  makeNonStrictOverIntegers(leftPoly, leftNegated, leftAtom);
+  makeNonStrictOverIntegers(rightPoly, rightNegated, rightAtom);
+
     // Locate the auxiliary variable belonging to *this* pivot on each side. A side may carry further ".mixed_*"
     // variables of other mixed literals still to be resolved at a later pivot, so any ".mixed_*" is not enough.
     auto findPivotVar = [&](LAPoly const & poly) {
