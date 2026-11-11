@@ -457,6 +457,8 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolant(ProofNode c
 }
 
 bool SingleInterpolationComputationContext::verifyPartialInterpolantA(ProofNode const & n) {
+    // TODO: certify leaves with mixed (I_MIXED) literals. Such a literal must contribute its A-projection
+    //  (paper's (~l)|A, over the same .mixed_ variable as the leaf interpolant); today it hits the assert below.
     // Check A /\ ~(C|a,ab) -> I, i.e., A /\ ~(C|a,ab) /\ ~I unsat
     std::vector<Lit> const & cl = n.getClause();
     vec<PTRef> restricted_clause;
@@ -483,6 +485,8 @@ bool SingleInterpolationComputationContext::verifyPartialInterpolantA(ProofNode 
 }
 
 bool SingleInterpolationComputationContext::verifyPartialInterpolantB(ProofNode const & n) {
+    // TODO: certify leaves with mixed (I_MIXED) literals. Such a literal must contribute its B-projection
+    //  (paper's (~l)|B, over the same .mixed_ variable as the leaf interpolant); today it hits the assert below.
     // Check B /\ ~(C|b,ab) -> ~I, i.e., B /\ ~(C|b,ab) /\ I unsat
     std::vector<Lit> const & cl = n.getClause();
     vec<PTRef> restricted_clause;
@@ -1010,7 +1014,6 @@ PTRef InterpolationContext::simplifyInterpolant(PTRef itp) const {
 }
 
 void InterpolationContext::ensureNoLiteralsWithoutPartition() {
-    std::vector<Var> noPartitionVars;
     for (Var v : proof_graph->getVariables()) {
         auto const & part = pmanager.getIPartitions(termMapper.varToPTRef(v));
         if (part == 0 && not proof_graph->isAssumedVar(v)) {
@@ -1020,13 +1023,8 @@ void InterpolationContext::ensureNoLiteralsWithoutPartition() {
             if (allowedPartitions != 0) {
                 // MB: Update the partition information
                 pmanager.addIPartitions(term, allowedPartitions);
-            } else {
-                // No partition contains all variables of the term (e.g., an LIA cut over A-local and B-local
-                // variables). The term keeps the empty mask; its class depends on the A/B split, see
-                // getClassFromVariables.
             }
         }
     }
-    if (!noPartitionVars.empty()) { proof_graph->eliminateNoPartitionTheoryVars(noPartitionVars); }
 }
 } // namespace opensmt

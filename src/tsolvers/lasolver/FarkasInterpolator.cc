@@ -25,10 +25,24 @@
 #include <rewriters/Rewritings.h>
 
 #include <functional>
+#include <string_view>
 #include <unordered_map>
 
 namespace opensmt {
 using matrix_t = std::vector<std::vector<Real>>;
+
+namespace {
+    constexpr std::string_view mixedAuxVarPrefix = ".mixed_";
+}
+
+std::string mixedAuxVarName(PTRef splitAtom) {
+    return std::string(mixedAuxVarPrefix) + std::to_string(splitAtom.x);
+}
+
+bool isMixedAuxVar(Logic const & logic, PTRef term) {
+    return term != PTRef_Undef and logic.isVar(term) and
+           std::string_view(logic.getSymName(term)).substr(0, mixedAuxVarPrefix.size()) == mixedAuxVarPrefix;
+}
 
 // initializing static member
 DecomposedStatistics FarkasInterpolator::stats{};
@@ -645,7 +659,7 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
     LAPoly const poly = ptrefToPoly(leq, logic);
 
     // Fresh shared (AB) variable used to connect the two halves of the split
-    std::string const name = ".mixed_" + std::to_string(leq.x);
+    std::string const name = mixedAuxVarName(leq);
     PTRef const x = logic.mkVar(sort, name.c_str());
 
     // poly = A_part + B_part, where A_part contains only A-local variables and
@@ -657,18 +671,9 @@ MixedSplit FarkasInterpolator::splitMixedLiteral(PTRef leq) {
             polyB.addTerm(var, coeff);
             continue;
         }
-        icolor_t varColor = icolor_t::I_AB;
-        if (logic.isMod(logic.getSymRef(var)) or logic.isIntDiv(var)) {
-            Pterm const & p = logic.getPterm(var);
-            for (int i = 0; i < p.size(); ++i) {
-                if (logic.isVar(p[i])) {
-                    varColor = getColorFor(p[i]);
-                    break;
-                }
-            }
-        } else {
-            varColor = getColorFor(var);
-        }
+        // LATheory's preprocessing (rewriteDivMod) replaces every div/mod by a fresh variable, so none reach here
+        assert(not logic.isIntDiv(var) and not logic.isMod(logic.getSymRef(var)));
+        icolor_t const varColor = getColorFor(var);
         if (varColor == icolor_t::I_A) {
             polyA.addTerm(var, coeff);
         } else {

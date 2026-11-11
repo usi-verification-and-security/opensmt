@@ -10,9 +10,17 @@
 #include <smtsolvers/TheoryInterpolator.h>
 
 #include <iostream>
+#include <string>
 
 namespace opensmt {
 class ArithLogic;
+class Logic;
+
+/// Name of the fresh shared variable FarkasInterpolator::splitMixedLiteral introduces when it splits @p splitAtom.
+/// The single source of truth for that name: LASolver::resolveMixed finds the variable again through it.
+std::string mixedAuxVarName(PTRef splitAtom);
+/// Whether @p term is a variable introduced by FarkasInterpolator::splitMixedLiteral.
+bool isMixedAuxVar(Logic const & logic, PTRef term);
 
 // Defined in FarkasInterpolator.cc. `LATerm` is one `s <| 0` summand of a Farkas combination; `MixedSplit`
 // is the (not-yet-lowered) result of splitting a mixed inequality literal into its A/B halves.

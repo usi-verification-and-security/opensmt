@@ -732,28 +732,17 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     return res;
 }
 
-namespace {
-    // A splitMixedLiteral()-generated shared variable is named ".mixed_<atomId>" (see FarkasInterpolator.cc).
-    bool isMixedVar(ArithLogic & logic, PTRef var) {
-        return var != PTRef_Undef && logic.isVar(var) &&
-               std::string(logic.getSymName(var)).rfind(".mixed_", 0) == 0;
-    }
-}
-
 // Names of the auxiliary variables FarkasInterpolator::splitMixedLiteral may have introduced for pivotAtom: it splits
 // the explanation atom, which is pivotAtom itself or, in LIA, its strengthened negation built by
-// LAExplanations::getLIAExplanation ('not (c <= t)'  =>  '-(c-1) <= -t'). Terms are hash-consed, so rebuilding the
-// strengthened atom here yields the very PTRef whose id names the variable.
+// LAExplanations::strengthen ('not (c <= t)'  =>  '-(c-1) <= -t'). Terms are hash-consed, so strengthening the
+// negated pivot here yields the very PTRef whose id names the variable.
 std::vector<std::string> LASolver::mixedVarNamesFor(PTRef pivotAtom) {
     assert(logic.isLeq(pivotAtom));
-    std::vector<std::string> names{".mixed_" + std::to_string(pivotAtom.x)};
-    PTRef const boundVal = logic.getConstantFromLeq(pivotAtom);
-    PTRef const boundedTerm = logic.getTermFromLeq(pivotAtom);
-    if (logic.yieldsSortInt(boundedTerm) and logic.getNumConst(boundVal).isInteger()) {
-        auto newBoundValue = logic.getNumConst(boundVal) - 1;
-        newBoundValue.negate();
-        PTRef const strengthenedNegation = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
-        names.push_back(".mixed_" + std::to_string(strengthenedNegation.x));
+    std::vector<std::string> names{mixedAuxVarName(pivotAtom)};
+    if (logic.yieldsSortInt(logic.getTermFromLeq(pivotAtom)) and
+        logic.getNumConst(logic.getConstantFromLeq(pivotAtom)).isInteger()) {
+        PtAsgn const strengthenedNegation = LAExplanations::strengthen(logic, PtAsgn(pivotAtom, l_False));
+        names.push_back(mixedAuxVarName(strengthenedNegation.tr));
     }
     return names;
 }
@@ -920,13 +909,21 @@ PTRef LASolver::combineMixedLiterals(PTRef left, PTRef right, std::function<bool
     // "0 <= combined" form, so the coefficient in the paper's "s <| 0" orientation is negated.
     bool combinedHasMixed = false;
     for (auto const & [var, coeff] : combined) {
-        if (isMixedVar(logic, var)) {
+        if (isMixedAuxVar(logic, var)) {
             combinedHasMixed = true;
             mixedLAInfo.insert_or_assign(var, MixedLAInfo{var, -coeff, k3, strict});
         }
     }
     SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
     PTRef const zero = logic.getZeroForSort(sort);
+
+    // With another mixed variable still in `combined`, the exact div/ceil projection below is not used and the
+    // plain sum is returned. Over the integers that sum is exact only if one pivot coefficient is 1; otherwise
+    // it is the weaker rational shadow and the interpolant may be invalid (the paper needs LA(s, k, F) here).
+    if (logic.hasIntegers() and combinedHasMixed and c1 > 1 and c2 > 1) {
+        throw InternalException("Inexact integer combination of mixed literals: several mixed variables and no unit "
+                                "pivot coefficient");
+    }
 
     // Each side is a half-plane  a_i * x1 + s_i(shared) <| 0  (a_i the mixed-var coefficient in the
     // "<| 0" orientation, s_i over shared vars only). With opposite-signed a_i one side upper-bounds
