@@ -587,7 +587,8 @@ PTRef SingleInterpolationComputationContext::produceSingleInterpolant() {
                 continue;
             }
 
-            assert(partial_interp != PTRef_Undef);
+            if (partial_interp == PTRef_Undef) { return PTRef_Undef; }
+
             setPartialInterpolant(*n, partial_interp);
             if (enabledPedInterpVerif()) { verifyPartialInterpolant(*n); }
         } else { // Inner node
@@ -698,6 +699,9 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForOrigina
 }
 
 PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryClause(ProofNode const & n) {
+    auto & tshandler = thandler->getSolverHandler();
+    if (tshandler.stopped()) { return PTRef_Undef; }
+
     backtrackTSolver();
     vec<Lit> newvec;
     std::vector<Lit> const & oldvec = n.getClause();
@@ -707,6 +711,10 @@ PTRef SingleInterpolationComputationContext::computePartialInterpolantForTheoryC
     bool satisfiable = this->assertLiteralsToTSolver(newvec);
     if (satisfiable) {
         TRes tres = thandler->check(true);
+        if (tres == TRes::UNKNOWN) {
+            assert(tshandler.stopped());
+            return PTRef_Undef;
+        }
         satisfiable = (tres != TRes::UNSAT);
     }
     if (satisfiable) {
@@ -896,11 +904,16 @@ void InterpolationContext::printProofDotty() {
     proof_graph->printProofGraph();
 }
 
-void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask) {
+bool InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask) {
     assert(proof_graph);
     PTRef itp = SingleInterpolationComputationContext(config, theory, termMapper, pmanager, *proof_graph, A_mask)
                     .produceSingleInterpolant();
     itp = logic.removeAuxVars(itp);
+
+    if (itp == PTRef_Undef) {
+        assert(theory.getTSolverHandler().stopped());
+        return false;
+    }
 
     if (enabledInterpVerif()) {
         bool sound = verifyInterpolant(itp, A_mask);
@@ -915,13 +928,15 @@ void InterpolationContext::getSingleInterpolant(vec<PTRef> & interpolants, ipart
 
     if (config.simplify_inter() > 0) { itp = simplifyInterpolant(itp); }
     interpolants.push(itp);
+    return true;
 }
 
-void InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask) {
+bool InterpolationContext::getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask) {
     vec<PTRef> itps;
-    getSingleInterpolant(itps, A_mask);
+    if (not getSingleInterpolant(itps, A_mask)) { return false; }
     for (int i = 0; i < itps.size(); i++)
         interpolants.push_back(itps[i]);
+    return true;
 }
 
 bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, std::vector<ipartitions_t> const & A_masks) {
@@ -933,7 +948,7 @@ bool InterpolationContext::getPathInterpolants(vec<PTRef> & interpolants, std::v
                .first == A_masks.end());
 
     for (unsigned i = 0; i < A_masks.size(); ++i) {
-        getSingleInterpolant(interpolants, A_masks[i]);
+        if (not getSingleInterpolant(interpolants, A_masks[i])) { return false; }
         if (i > 0 and enabledInterpVerif()) {
             PTRef previous_itp = interpolants[interpolants.size() - 2];
             PTRef next_itp = interpolants[interpolants.size() - 1];

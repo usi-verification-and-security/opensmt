@@ -8,6 +8,7 @@
 
 #include "MainSolver.h"
 
+#include <api/GlobalStop.h>
 #include <common/ApiException.h>
 #include <itehandler/IteHandler.h>
 #include <logics/ArrayTheory.h>
@@ -23,7 +24,45 @@
 #include <tsolvers/RDLTHandler.h>
 #include <unsatcores/UnsatCoreBuilder.h>
 
+#include <condition_variable>
+#include <thread>
+
 namespace opensmt {
+
+class MainSolver::TimeLimitImpl {
+public:
+    TimeLimitImpl(MainSolver & s) : solver(s) {}
+    ~TimeLimitImpl();
+
+    bool isBounded() const;
+
+    void setLimit(std::chrono::milliseconds);
+    void setLimitIfNotRunning(std::chrono::milliseconds);
+
+    std::chrono::milliseconds getRemainingTime() const;
+
+protected:
+    bool isBoundedUnlocked() const noexcept;
+
+    bool isRunning() const;
+    bool isRunningUnlocked() const noexcept;
+
+    void requestEnd();
+    void waitToEnd();
+
+private:
+    MainSolver & solver;
+
+    // not using std::jthread since MacOS does not support it
+    std::thread thread{};
+
+    // See https://en.cppreference.com/w/cpp/thread/condition_variable.html
+    mutable std::mutex mtx{};
+    std::condition_variable condVar{};
+    bool endReq{false};
+
+    std::chrono::steady_clock::time_point deadline{};
+};
 
 MainSolver::MainSolver(Logic & logic, SMTConfig & conf, std::string name)
     : theory(createTheory(logic, conf)),
@@ -56,7 +95,11 @@ MainSolver::MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> t
     initialize();
 }
 
+MainSolver::~MainSolver() = default;
+
 void MainSolver::initialize() {
+    timeLimitImplPtr = std::make_unique<TimeLimitImpl>(*this);
+
     frames.push();
     frameTerms.push(logic.getTerm_true());
     preprocessor.initialize();
@@ -67,12 +110,18 @@ void MainSolver::initialize() {
 
     smt_solver->addOriginalSMTClause({~term_mapper->getOrCreateLit(logic.getTerm_false())}, iorefs);
     if (iorefs.first != CRef_Undef) { pmanager.addClauseClassMask(iorefs.first, 1); }
+
+    if (auto option = config.getOption(SMTConfig::o_time_limit); not option.isEmpty()) {
+        assert(option.getValue().type == O_NUM);
+        timeLimitImplPtr->setLimit(std::chrono::milliseconds{option.getValue().numval});
+    }
 }
 
 void MainSolver::push() {
     bool alreadyUnsat = isLastFrameUnsat();
     frames.push();
     preprocessor.push();
+    decisionPreferences.pushScope();
     frameTerms.push(newFrameTerm(frames.last().getId()));
     termNames.pushScope();
     if (alreadyUnsat) { rememberLastFrameUnsat(); }
@@ -92,7 +141,15 @@ bool MainSolver::pop() {
     }
     frames.pop();
     preprocessor.pop();
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
+    if (decisionPreferences.size() == smt_solver->userBranchLitsSize()) {
+        decisionPreferences.popScope([this](PTRef /*pref*/) { smt_solver->popUserBranchLit(); });
+    } else {
+        decisionPreferences.popScope();
+    }
+    assert(decisionPreferences.size() >= smt_solver->userBranchLitsSize());
     termNames.popScope();
+    // goes back to frames.frameCount()-1 only if a formula is added via insertFormula
     firstNotPreprocessedFrame = std::min(firstNotPreprocessedFrame, frames.frameCount());
     if (not isLastFrameUnsat()) { getSMTSolver().restoreOK(); }
     return true;
@@ -138,10 +195,27 @@ bool MainSolver::tryAddTermNameFor(PTRef fla, std::string const & name) {
     return termNames.tryInsert(name, fla);
 }
 
-sstat MainSolver::preprocessAssertions() {
+void MainSolver::addDecisionPreference(PTRef fla) {
+    if (logic.getSortRef(fla) != logic.getSort_bool()) {
+        throw ApiException("Decision preference sort must be Bool, got " + logic.sortToString(logic.getSortRef(fla)));
+    }
+
+    if (logic.isConstant(fla)) { return; }
+
+    decisionPreferences.push(fla);
+}
+
+void MainSolver::resetDecisionPreferences() {
+    decisionPreferences.clear();
+
+    smt_solver->clearUserBranchLits();
+}
+
+sstat MainSolver::preprocessAssertions() try {
     status = s_Undef;
     for (std::size_t i = firstNotPreprocessedFrame; i < frames.frameCount(); ++i) {
         assert(status != s_False);
+        if (not okContinue()) { break; }
         if (not tryPreprocessFrame(i)) {
             assert(status == s_False);
             break;
@@ -154,6 +228,9 @@ sstat MainSolver::preprocessAssertions() {
     }
 
     return status;
+} catch (StopException const &) {
+    --firstNotPreprocessedFrame;
+    return s_Undef;
 }
 
 bool MainSolver::tryPreprocessFrame(std::size_t i) {
@@ -168,16 +245,21 @@ bool MainSolver::tryPreprocessFrame(std::size_t i) {
     if (not context.perPartition) {
         PTRef frameFormula = preprocessFormulasConjoined(frame.formulas, context);
         status = giveToSolver(frameFormula, frameId);
-        return status != s_False;
-    }
-
-    vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
-    for (PTRef fla : processedFormulas) {
-        status = giveToSolver(fla, frameId);
         if (status == s_False) { return false; }
+    } else {
+        vec<PTRef> processedFormulas = preprocessFormulasPerPartition(frame.formulas, context);
+        for (PTRef fla : processedFormulas) {
+            status = giveToSolver(fla, frameId);
+            if (status == s_False) { return false; }
+        }
     }
 
     assert(status != s_False);
+
+    for (PTRef pref : decisionPreferences.scope(i)) {
+        giveDecisionPreferenceToSMTSolver(pref, frameId, context);
+    }
+
     return true;
 }
 
@@ -329,6 +411,68 @@ PTRef MainSolver::rewriteMaxArity(PTRef root) {
     return opensmt::rewriteMaxArityClassic(logic, root);
 }
 
+void MainSolver::giveDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId, PreprocessingContext const & pcontext) {
+    assert(logic.getSortRef(pref) == logic.getSort_bool());
+    assert(not logic.isConstant(pref));
+
+    // Ignores substitutions ..
+    Lit l = [&] {
+        if (term_mapper->hasLit(pref)) { return giveExistingDecisionPreferenceToSMTSolver(pref); }
+        if (logic.isBoolVarLiteral(pref)) { return giveBoolVarDecisionPreferenceToSMTSolver(pref); }
+        return giveAnyDecisionPreferenceToSMTSolver(pref, frameId, pcontext);
+    }();
+
+    decisionPreferenceToLitMap.emplace(pref, l);
+}
+
+Lit MainSolver::giveExistingDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(term_mapper->hasLit(pref));
+
+    ++existingDecisionPreferencesGivenToSMTSolverCount;
+    return term_mapper->getLit(pref);
+}
+
+Lit MainSolver::giveBoolVarDecisionPreferenceToSMTSolver(PTRef pref) {
+    assert(logic.isBoolVarLiteral(pref));
+
+    Lit l = term_mapper->getOrCreateLit(pref);
+    Var v = var(l);
+    smt_solver->addVar(v);
+    assert(term_mapper->getLit(pref) == l);
+    assert(term_mapper->getVar(pref) == var(l));
+
+    ++boolVarDecisionPreferencesGivenToSMTSolverCount;
+    return l;
+}
+
+Lit MainSolver::giveAnyDecisionPreferenceToSMTSolver(PTRef pref, FrameId frameId,
+                                                     PreprocessingContext const & pcontext) {
+    assert(not term_mapper->hasLit(pref));
+    assert(not logic.isBoolVarLiteral(pref));
+
+    // Cannot preprocess pref unconditionally - may result in a conflict
+
+    auto name = std::string{".pref"} + std::to_string(pref.x);
+    PTRef decisionVarTerm = logic.mkBoolVar(name.c_str());
+    Lit l = term_mapper->getOrCreateLit(decisionVarTerm);
+    PTRef condTerm = logic.mkImpl(decisionVarTerm, pref);
+
+    assert(not pcontext.perPartition);
+    PTRef processed = preprocessFormula(condTerm, pcontext);
+    assert(not logic.isConstant(processed));
+    assert(not logic.isBoolVarLiteral(processed));
+
+    [[maybe_unused]]
+    sstat status = giveToSolver(processed, frameId);
+    assert(status == s_Undef);
+
+    assert(term_mapper->getLit(decisionVarTerm) == l);
+    assert(term_mapper->getVar(decisionVarTerm) == var(l));
+
+    ++otherDecisionPreferencesGivenToSMTSolverCount;
+    return l;
+}
+
 std::unique_ptr<Model> MainSolver::getModel() {
     if (!config.produce_models()) { throw ApiException("Producing models is not enabled"); }
     if (status != s_True) { throw ApiException("Model cannot be created if solver is not in SAT state"); }
@@ -385,11 +529,12 @@ std::unique_ptr<InterpolationContext> MainSolver::getInterpolationContext() {
 }
 
 sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
-
     struct ClauseCallBack : public Cnfizer::ClauseCallBack {
         std::vector<vec<Lit>> clauses;
         void operator()(vec<Lit> && c) override { clauses.push_back(std::move(c)); }
     };
+
+    if (not okContinue()) { throw StopException{}; }
 
     if (root == logic.getTerm_true()) { return s_Undef; }
 
@@ -418,7 +563,7 @@ sstat MainSolver::giveToSolver(PTRef root, FrameId push_id) {
     return s_Undef;
 }
 
-sstat MainSolver::check() {
+sstat MainSolver::check() try {
     ++check_called;
     if (config.timeQueries()) {
         printf("; %s query time so far: %f\n", solver_name.c_str(), query_timer.getTime());
@@ -440,10 +585,16 @@ sstat MainSolver::check() {
     }
 
     return rval;
-}
+} catch (StopException const &) { return s_Undef; }
 
 sstat MainSolver::solve() {
     if (!smt_solver->isOK()) { return s_False; }
+
+    smt_solver->clearUserBranchLits();
+    for (PTRef pref : decisionPreferences) {
+        //++ probably just use vector
+        smt_solver->pushUserBranchLit(decisionPreferenceToLitMap[pref]);
+    }
 
     // FIXME: Find a better way to deal with Bools in UF
     for (PTRef tr : logic.propFormulasAppearingInUF) {
@@ -497,6 +648,45 @@ std::unique_ptr<SimpSMTSolver> MainSolver::createInnerSolver(SMTConfig & config,
     } else {
         return std::make_unique<SimpSMTSolver>(config, thandler);
     }
+}
+
+void MainSolver::notifyStop() {
+    smt_solver->notifyStop();
+    theory->getTSolverHandler().notifyStop();
+}
+
+bool MainSolver::stopped() const {
+    if (smt_solver->stopped()) { return true; }
+    if (theory->getTSolverHandler().stopped()) { return true; }
+    return false;
+}
+
+bool MainSolver::okContinue() const {
+    return not stopped() and not globallyStopped();
+}
+
+bool MainSolver::isBoundedTimeLimit() const {
+    assert(timeLimitImplPtr);
+
+    return timeLimitImplPtr->isBounded();
+}
+
+void MainSolver::setTimeLimit(std::chrono::milliseconds limit, SetTimeLimitConf const & conf) {
+    if (limit <= std::chrono::milliseconds::zero()) {
+        throw std::invalid_argument{"MainSolver::setTimeLimit: The value must be positive."};
+    }
+
+    if (conf.override) {
+        timeLimitImplPtr->setLimit(limit);
+    } else {
+        timeLimitImplPtr->setLimitIfNotRunning(limit);
+    }
+}
+
+std::chrono::milliseconds MainSolver::getRemainingTimeLimit() const {
+    assert(timeLimitImplPtr);
+
+    return timeLimitImplPtr->getRemainingTime();
 }
 
 std::unique_ptr<Theory> MainSolver::createTheory(Logic & logic, SMTConfig & config) {
@@ -584,6 +774,7 @@ MainSolver::SubstitutionResult MainSolver::computeSubstitutions(PTRef fla) {
     PTRef root = fla;
     Logic::SubstMap allsubsts;
     while (true) {
+        if (not okContinue()) { throw StopException{}; }
         // update the current simplification formula
         PTRef simp_formula = root;
         // l_True : exists and is valid
@@ -665,5 +856,92 @@ void MainSolver::Preprocessor::addPreprocessedFormula(PTRef fla) {
 
 span<PTRef const> MainSolver::Preprocessor::getPreprocessedFormulas() const {
     return {preprocessedFormulas.data(), static_cast<uint32_t>(preprocessedFormulas.size())};
+}
+
+MainSolver::TimeLimitImpl::~TimeLimitImpl() {
+    if (not isRunning()) { return; }
+
+    requestEnd();
+    waitToEnd();
+}
+
+bool MainSolver::TimeLimitImpl::isBounded() const {
+    std::lock_guard lock(mtx);
+    assert(isBoundedUnlocked() or not isRunningUnlocked());
+    return isBoundedUnlocked();
+}
+
+bool MainSolver::TimeLimitImpl::isBoundedUnlocked() const noexcept {
+    return deadline != std::chrono::steady_clock::time_point{};
+}
+
+void MainSolver::TimeLimitImpl::setLimit(std::chrono::milliseconds limit) {
+    assert(limit > std::chrono::milliseconds::zero());
+
+    // Override already running thread
+    if (isRunning()) {
+        requestEnd();
+        waitToEnd();
+    }
+
+    std::lock_guard lock(mtx);
+    deadline = std::chrono::steady_clock::now() + limit;
+
+    thread = decltype(thread){[this] {
+        std::unique_lock lock(mtx);
+        // Abort if a further future end request has already been sent
+        if (endReq) { return; }
+        // Releases the lock and suspends the thread, waiting on a notification or timeout
+        // Notification must be sent *after* the wait, otherwise could be missed - hence checking `endReq` above
+        if (condVar.wait_until(lock, deadline) == std::cv_status::timeout) { solver.notifyStop(); }
+    }};
+}
+
+void MainSolver::TimeLimitImpl::setLimitIfNotRunning(std::chrono::milliseconds limit) {
+    if (isRunning()) { return; }
+    setLimit(limit);
+}
+
+bool MainSolver::TimeLimitImpl::isRunning() const {
+    std::lock_guard lock(mtx);
+    assert(not isRunningUnlocked() or isBoundedUnlocked());
+    return isRunningUnlocked();
+}
+
+bool MainSolver::TimeLimitImpl::isRunningUnlocked() const noexcept {
+    return thread.joinable();
+}
+
+void MainSolver::TimeLimitImpl::requestEnd() {
+    assert(isRunning());
+    {
+        std::lock_guard lock(mtx);
+        endReq = true;
+    }
+    condVar.notify_all();
+    assert(isRunning());
+}
+
+void MainSolver::TimeLimitImpl::waitToEnd() {
+    assert(isRunning());
+    thread.join();
+    {
+        std::lock_guard lock(mtx);
+        endReq = false;
+    }
+    assert(not isRunning());
+}
+
+std::chrono::milliseconds MainSolver::TimeLimitImpl::getRemainingTime() const {
+    constexpr auto zero = std::chrono::milliseconds::zero();
+
+    if (not isBounded()) { return zero; }
+
+    std::lock_guard lock(mtx);
+
+    auto const now = std::chrono::steady_clock::now();
+    if (now >= deadline) { return zero; }
+
+    return std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
 }
 } // namespace opensmt

@@ -53,7 +53,7 @@ class UFLATHandler : public TSolverHandler
     Logic & getLogic() override { return logic; }
     Logic const & getLogic() const override { return logic; }
 
-    PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
+    PTRef getInterpolantImpl(const ipartitions_t& mask, ItpColorMap * labels, PartitionManager &pmanager) override;
 
     PTRef  resolveMixed(PTRef, PTRef, PTRef) override {
         throw std::logic_error("Not implemented yet");

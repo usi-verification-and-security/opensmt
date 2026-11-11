@@ -60,7 +60,7 @@ public:
 
     virtual       Logic& getLogic() = 0;
     virtual const Logic& getLogic() const = 0;
-    virtual PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap *, PartitionManager& pmanager) = 0;
+    PTRef getInterpolant(const ipartitions_t& mask, ItpColorMap *, PartitionManager& pmanager);
     virtual PTRef resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) = 0;
 
     void    computeModel      ();                      // Computes a model in the solver if necessary
@@ -71,9 +71,17 @@ public:
     virtual TRes    check(bool);
     virtual vec<PTRef> getSplitClauses();
     virtual void fillTheoryFunctions(ModelBuilder & modelBuilder) const;
+
+    void notifyStop();
+
+    bool stopped() const { return stopFlag; }
 private:
+    virtual PTRef getInterpolantImpl(const ipartitions_t& mask, ItpColorMap *, PartitionManager& pmanager) = 0;
+
     // Helper method for computing reasons
     TSolver* getReasoningSolverFor(PTRef ptref) const;
+
+    bool stopFlag{false};
 };
 
 }

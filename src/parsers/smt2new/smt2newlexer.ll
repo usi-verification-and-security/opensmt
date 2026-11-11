@@ -78,6 +78,7 @@ using namespace opensmt::tokens;
 "STRING"   { yyget_lval(yyscanner)->tok = { t_STRING}; return TK_STRING;  }
 
 "assert"           { yyget_lval(yyscanner)->tok = { t_assert }; return TK_ASSERT;        }
+"prefer"           { yyget_lval(yyscanner)->tok = { t_prefer }; return TK_PREFER;        }
 "check-sat"        { yyget_lval(yyscanner)->tok = { t_checksat }; return TK_CHECKSAT;      }
 "declare-sort"     { yyget_lval(yyscanner)->tok = { t_declaresort }; return TK_DECLARESORT;   }
 "declare-fun"      { yyget_lval(yyscanner)->tok = { t_declarefun }; return TK_DECLAREFUN;    }

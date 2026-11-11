@@ -40,7 +40,11 @@ public:
     std::unique_ptr<UnsatCore> build();
 
 protected:
+    struct StopException {};
+
     class Minimize;
+
+    bool okContinue() const;
 
     void buildBody();
     std::unique_ptr<UnsatCore> buildReturn();
@@ -70,6 +74,7 @@ public:
 protected:
     SMTConfig makeSmtSolverConfig() const;
     std::unique_ptr<InternalSMTSolver> newSmtSolver(SMTConfig &) const;
+    void initSmtSolver(InternalSMTSolver &) const;
 
     vec<PTRef> performNaive(InternalSMTSolver &);
 

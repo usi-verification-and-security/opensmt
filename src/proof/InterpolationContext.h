@@ -29,10 +29,11 @@ public:
     // Create interpolants with each A consisting of the specified partitions
     void getInterpolants(std::vector<vec<int>> const & partitions, vec<PTRef> & interpolants);
 
-    void getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask);
+    // Returns true on success
+    bool getSingleInterpolant(vec<PTRef> & interpolants, ipartitions_t const & A_mask);
+    bool getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask);
 
-    void getSingleInterpolant(std::vector<PTRef> & interpolants, ipartitions_t const & A_mask);
-
+    // Returns true on success
     bool getPathInterpolants(vec<PTRef> & interpolants, std::vector<ipartitions_t> const & A_masks);
 
 private:

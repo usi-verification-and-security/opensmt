@@ -107,8 +107,16 @@ void Interpret::setOption(ASTNode& n) {
     SMTOption value(n);
     const char* msg = "ok";
     bool rval = config.setOption(name, value, msg);
-    if (rval == false)
+    if (rval == false) {
         notify_formatted(true, "set-option failed for %s: %s", name, msg);
+    } else if (main_solver) {
+        const SMTOption& stored_value = config.getOption(name);
+        assert(not stored_value.isEmpty());
+
+        if (strcmp(name, SMTConfig::o_time_limit) == 0) {
+            main_solver->setTimeLimit(std::chrono::milliseconds{stored_value.getValue().numval});
+        }
+    }
     free(name);
 }
 
@@ -236,6 +244,27 @@ void Interpret::interp(ASTNode& n) {
                     }
                 } else {
                     notify_formatted(true, "Illegal command before set-logic: assert");
+                }
+                break;
+            }
+            case t_prefer: {
+                if (isInitialized()) {
+                    ASTNode const & asrt = **(n.children->begin());
+                    LetRecords letRecords;
+                    PTRef tr = parseTerm(asrt, letRecords);
+                    if (tr == PTRef_Undef) {
+                        notify_formatted(true, "invalid preference");
+                    } else {
+                        assertions.push(tr);
+                        try {
+                            main_solver->addDecisionPreference(tr);
+                            notify_success();
+                        } catch (ApiException const & e) {
+                            notify_formatted(true, e.what());
+                        }
+                    }
+                } else {
+                    notify_formatted(true, "Illegal command before set-logic: prefer");
                 }
                 break;
             }
@@ -1299,6 +1328,11 @@ void Interpret::getProof()
 
 void Interpret::getUnsatCore() {
     auto const unsatCore = main_solver->getUnsatCore();
+    if (not unsatCore) {
+        assert(main_solver->stopped());
+        //? Should we report that unsat core extraction timed out?
+        return;
+    }
     unsatCore->print();
 }
 

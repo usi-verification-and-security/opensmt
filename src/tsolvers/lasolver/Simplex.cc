@@ -4,6 +4,7 @@
 
 #include "Simplex.h"
 
+#include <api/GlobalStop.h>
 #include <common/InternalException.h>
 
 #include <algorithm>
@@ -34,6 +35,10 @@ namespace {
     }
 } // namespace
 
+bool Simplex::okContinue() const {
+    return not stopped() and not globallyStopped();
+}
+
 Simplex::Explanation Simplex::checkSimplex() {
     processBufferOfActivatedBounds();
     bool bland_rule = false;
@@ -41,6 +46,8 @@ Simplex::Explanation Simplex::checkSimplex() {
 
     // keep doing pivotAndUpdate until the SAT/UNSAT status is confirmed
     while (true) {
+        if (not okContinue()) { throw StopException{}; }
+
         repeats++;
         LVRef x = LVRef::Undef;
 

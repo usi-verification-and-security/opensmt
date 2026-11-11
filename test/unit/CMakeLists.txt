@@ -259,3 +259,19 @@ target_sources(ScopedVectorTest
 
 target_link_libraries(ScopedVectorTest OpenSMT gtest gtest_main)
 gtest_add_tests(TARGET ScopedVectorTest)
+
+add_executable(DecisionPreferenceTest)
+target_sources(DecisionPreferenceTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_DecisionPreference.cc"
+        )
+
+target_link_libraries(DecisionPreferenceTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET DecisionPreferenceTest)
+
+add_executable(TimeoutTest)
+target_sources(TimeoutTest
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/test_Timeout.cc"
+        )
+
+target_link_libraries(TimeoutTest OpenSMT gtest gtest_main)
+gtest_add_tests(TARGET TimeoutTest)

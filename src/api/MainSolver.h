@@ -19,7 +19,9 @@
 #include <smtsolvers/SimpSMTSolver.h>
 #include <unsatcores/UnsatCore.h>
 
+#include <chrono>
 #include <memory>
+#include <unordered_map>
 
 namespace opensmt {
 class Logic;
@@ -63,7 +65,7 @@ public:
     MainSolver(std::unique_ptr<Theory> th, std::unique_ptr<TermMapper> tm, std::unique_ptr<THandler> thd,
                std::unique_ptr<SimpSMTSolver> ss, Logic & logic, SMTConfig & conf, std::string name);
 
-    virtual ~MainSolver() = default;
+    virtual ~MainSolver();
     MainSolver(MainSolver const &) = delete;
     MainSolver & operator=(MainSolver const &) = delete;
     MainSolver(MainSolver &&) = default;
@@ -98,6 +100,12 @@ public:
     bool tryAddNamedAssertion(PTRef, std::string const & name);
     // Try add a unique name for a term already included in the assertions
     bool tryAddTermNameFor(PTRef, std::string const & name);
+
+    // Instructs the solver to assign the formula to true when it arrives at a decision point
+    // The preference is appended to the list of preferences, favoring the earlier entries first
+    // It complies with the assertion stack
+    void addDecisionPreference(PTRef fla);
+    void resetDecisionPreferences();
 
     void initialize();
 
@@ -150,7 +158,21 @@ public:
 
     // Notify this particular solver to stop the computation
     // For stopping at the global scope, refer to GlobalStop.h
-    void notifyStop() { smt_solver->notifyStop(); }
+    void notifyStop();
+    // Check if this particular solver has been stopped
+    bool stopped() const;
+
+    bool isBoundedTimeLimit() const;
+    // Set wall-clock time limit for the solver in miliseconds
+    // When it expires, the solving is terminated gracefully and unknown is returned
+    // Overrides previously set and still running limit
+    void setTimeLimit(std::chrono::milliseconds limit) { setTimeLimit(limit, {}); }
+    struct SetTimeLimitConf {
+        // override by default, otherwise do not set the limit
+        bool override = true;
+    };
+    void setTimeLimit(std::chrono::milliseconds, SetTimeLimitConf const &);
+    std::chrono::milliseconds getRemainingTimeLimit() const;
 
     static std::unique_ptr<Theory> createTheory(Logic & logic, SMTConfig & config);
 
@@ -158,6 +180,8 @@ protected:
     friend class UnsatCoreBuilderBase;
 
     using FrameId = uint32_t;
+
+    struct StopException {};
 
     struct PushFrame {
     public:
@@ -272,6 +296,8 @@ protected:
 
     static std::unique_ptr<SimpSMTSolver> createInnerSolver(SMTConfig & config, THandler & thandler);
 
+    bool okContinue() const;
+
     PTRef newFrameTerm(FrameId frameId) {
         assert(frameId != 0);
         auto name = std::string(Logic::s_framev_prefix) + std::to_string(frameId);
@@ -305,6 +331,11 @@ protected:
 
     PTRef rewriteMaxArity(PTRef root);
 
+    void giveDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
+    Lit giveExistingDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveBoolVarDecisionPreferenceToSMTSolver(PTRef);
+    Lit giveAnyDecisionPreferenceToSMTSolver(PTRef, FrameId, PreprocessingContext const &);
+
     virtual sstat solve_(vec<FrameId> const & enabledFrames);
 
     sstat giveToSolver(PTRef root, FrameId push_id);
@@ -317,7 +348,14 @@ protected:
 
     AssertionStack frames;
 
+    ScopedVector<PTRef> decisionPreferences;
+    std::unordered_map<PTRef, Lit, PTRefHash> decisionPreferenceToLitMap;
+
     sstat status = s_Undef; // The status of the last solver call
+
+    std::size_t existingDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t boolVarDecisionPreferencesGivenToSMTSolverCount{};
+    std::size_t otherDecisionPreferencesGivenToSMTSolverCount{};
 
 private:
     std::unique_ptr<Theory> theory;
@@ -338,6 +376,9 @@ private:
     vec<PTRef> frameTerms;
     std::size_t firstNotPreprocessedFrame = 0;
     std::size_t addedAssertionsCount = 0;
+
+    class TimeLimitImpl;
+    std::unique_ptr<TimeLimitImpl> timeLimitImplPtr;
 };
 
 bool MainSolver::trackPartitions() const {

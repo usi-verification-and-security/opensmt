@@ -1,6 +1,7 @@
 
 #include "UnsatCoreBuilder.h"
 
+#include <api/GlobalStop.h>
 #include <api/MainSolver.h>
 #include <api/PartitionManager.h>
 #include <common/Partitions.h>
@@ -22,9 +23,16 @@ UnsatCoreBuilderBase::UnsatCoreBuilderBase(MainSolver const & solver_)
       proof{solver_.smt_solver->getResolutionProof()},
       partitionManager{solver_.pmanager} {}
 
-std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() {
+bool UnsatCoreBuilder::okContinue() const {
+    return not solver.stopped() and not globallyStopped();
+}
+
+std::unique_ptr<UnsatCore> UnsatCoreBuilder::build() try {
     buildBody();
     return buildReturn();
+} catch (StopException const &) {
+    assert(not okContinue());
+    return {};
 }
 
 void UnsatCoreBuilder::buildBody() {
@@ -38,6 +46,8 @@ void UnsatCoreBuilder::buildBody() {
 
 std::unique_ptr<UnsatCore> UnsatCoreBuilder::buildReturn() {
     // Not using `make_unique` because only UnsatCoreBuilder is a friend of *UnsatCore
+
+    if (not okContinue()) { throw StopException{}; }
 
     if (config.print_cores_full()) { return std::unique_ptr<UnsatCore>{new FullUnsatCore{logic, std::move(allTerms)}}; }
 
@@ -53,6 +63,7 @@ void UnsatCoreBuilder::computeClauses() {
     stack.push_back(CRef_Undef);
     std::unordered_set<CRef> processed;
     while (not stack.empty()) {
+        if (not okContinue()) { throw StopException{}; }
         CRef current = stack.back();
         stack.pop_back();
         if (auto [_, inserted] = processed.insert(current); not inserted) { continue; }
@@ -91,6 +102,8 @@ void UnsatCoreBuilder::partitionNamedTerms() {
     namedTerms.clear();
     hiddenTerms.clear();
 
+    if (not okContinue()) { throw StopException{}; }
+
     bool const minCore = config.minimal_unsat_cores();
     // See the comment in `minimize` for why we exclude hidden terms here
 
@@ -113,6 +126,8 @@ void UnsatCoreBuilder::partitionNamedTerms() {
 
 void UnsatCoreBuilder::minimize() {
     assert(config.minimal_unsat_cores());
+
+    if (not okContinue()) { throw StopException{}; }
 
     if (config.print_cores_full()) {
         allTerms = Minimize{*this, std::move(allTerms)}.perform();
@@ -165,21 +180,30 @@ UnsatCoreBuilder::Minimize::newSmtSolver(SMTConfig & newConfig) const {
     return std::make_unique<InternalSMTSolver>(builder.logic, newConfig, "min unsat core solver");
 }
 
+void UnsatCoreBuilder::Minimize::initSmtSolver(InternalSMTSolver & smtSolver) const {
+    if (builder.solver.isBoundedTimeLimit()) {
+        smtSolver.setTimeLimit(builder.solver.getRemainingTimeLimit() + std::chrono::milliseconds(1));
+        assert(smtSolver.getRemainingTimeLimit() >= builder.solver.getRemainingTimeLimit());
+    }
+
+    for (PTRef term : backgroundTerms) {
+        if (not builder.okContinue()) { throw StopException{}; }
+        // the term that we do not care about eliminating -> can be hard-asserted
+        smtSolver.insertFormula(term);
+    }
+}
+
 vec<PTRef> UnsatCoreBuilder::Minimize::perform() && {
     if (targetTerms.size() == 0) { return std::move(targetTerms); }
 
     SMTConfig smtSolverConfig = makeSmtSolverConfig();
     std::unique_ptr<InternalSMTSolver> smtSolverPtr = newSmtSolver(smtSolverConfig);
+    initSmtSolver(*smtSolverPtr);
 
     return performNaive(*smtSolverPtr);
 }
 
 vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolver) {
-    for (PTRef term : backgroundTerms) {
-        // the term that we do not care about eliminating -> can be hard-asserted
-        smtSolver.insertFormula(term);
-    }
-
     // minimize the contents of `targetTerms` (given the already hard-asserted constraints)
 
     decltype(targetTerms) newTargetTerms;
@@ -190,11 +214,14 @@ vec<PTRef> UnsatCoreBuilder::Minimize::performNaive(InternalSMTSolver & smtSolve
         // try to ignore targetTerms[idx]
 
         for (size_t keptIdx = idx + 1; keptIdx < targetTermsSize; ++keptIdx) {
+            if (not builder.okContinue()) { throw StopException{}; }
             PTRef term = targetTerms[keptIdx];
             smtSolver.insertFormula(term);
         }
 
         sstat const res = smtSolver.check();
+        // Should be almost equivalent to smtSolver.stopped() but this ensures the later C-assertion
+        if (not builder.okContinue()) { throw StopException{}; }
         assert(res == s_True || res == s_False);
         bool const isRedundant = (res == s_False);
 
