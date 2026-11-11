@@ -532,7 +532,7 @@ TEST_F(LIAInterpolationTest, test_SplitMixedLiteral_LeafInterpolants) {
         logic, LAExplanations::getLIAExplanation(logic, conflict, {1, 1, 1}, labels),
         std::make_unique<FixedTermColorInfo>(std::unordered_map<PTRef, icolor_t, PTRefHash>{
             {x, icolor_t::I_A}, {y, icolor_t::I_B}}));
-    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(mixed.x)).c_str());
+    PTRef m = logic.mkIntVar(mixedAuxVarName(mixed).c_str());
     PTRef expected = logic.mkLeq(m, logic.mkIntConst(-1));
     VerificationUtils verifier(logic);
 
@@ -574,7 +574,7 @@ TEST_F(LIAInterpolationTest, test_ResolveMixed_UnitCoefficients) {
      */
     LASolver solver(config, logic);
     PTRef pivot = logic.mkLeq(y, x);
-    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(pivot.x)).c_str());
+    PTRef m = logic.mkIntVar(mixedAuxVarName(pivot).c_str());
     PTRef left = logic.mkLeq(m, x1);
     PTRef right = logic.mkLeq(x2, m);
     PTRef expected = logic.mkLeq(x2, x1);
@@ -604,7 +604,7 @@ TEST_F(LIAInterpolationTest, test_ResolveMixed_IntegerDivisibility) {
     PTRef r = logic.mkIntVar("r");
     PTRef two = logic.mkIntConst(2);
     PTRef pivot = logic.mkLeq(y, x);
-    PTRef m = logic.mkIntVar((".mixed_" + std::to_string(pivot.x)).c_str());
+    PTRef m = logic.mkIntVar(mixedAuxVarName(pivot).c_str());
     PTRef twoM = logic.mkTimes(two, m);
     PTRef left = logic.mkLeq(twoM, r);
     PTRef right = logic.mkLeq(t, twoM);

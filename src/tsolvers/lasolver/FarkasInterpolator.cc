@@ -452,8 +452,9 @@ PTRef FarkasInterpolator::getDecomposedInterpolant(icolor_t color) {
     }
     // Decomposition would have to cancel the split's auxiliary variable inside every component;
     // fall back to the plain Farkas interpolant, which splits mixed literals.
-    bool const hasMixed = std::any_of(explanations.begin(), explanations.end(),
-                                      [this](PtAsgn const & expl) { return getColorFor(expl.tr) == icolor_t::I_MIXED; });
+    bool const hasMixed = std::any_of(explanations.begin(), explanations.end(), [this](PtAsgn const & expl) {
+        return getColorFor(expl.tr) == icolor_t::I_MIXED;
+    });
     if (hasMixed) { return getFarkasInterpolant(color); }
     StatsHelper statsHelper;
     // this will be contain the result, inequalities corresponding to summed up partitions of explanataions (of
