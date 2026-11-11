@@ -11,9 +11,15 @@
 #include "CutCreator.h"
 
 #include <common/Random.h>
+#include <common/TreeOps.h>
 #include <models/ModelBuilder.h>
 
+#include <algorithm>
+#include <functional>
+#include <string_view>
 #include <unordered_set>
+
+#include "common/polynomials/Translations.h"
 
 namespace opensmt {
 
@@ -721,13 +727,254 @@ LASolver::getRealInterpolant( const ipartitions_t & mask , ItpColorMap * labels,
     explanation.copyTo(explCopy);
     FarkasInterpolator interpolator(logic, std::move(explCopy), explanationCoefficients, labels ? *labels : ItpColorMap{},
         std::make_unique<GlobalTermColorInfo>(pmanager, mask));
-    return interpolateUsingEngine(interpolator);
+    auto res = interpolateUsingEngine(interpolator);
+    for (auto const & info : interpolator.getMixedLAInfo()) { mixedLAInfo.insert_or_assign(info.auxVar, info); }
+    return res;
 }
 
-PTRef LASolver::getIntegerInterpolant(ItpColorMap const& labels) {
+// Names of the auxiliary variables FarkasInterpolator::splitMixedLiteral may have introduced for pivotAtom: it splits
+// the explanation atom, which is pivotAtom itself or, in LIA, its strengthened negation built by
+// LAExplanations::strengthen ('not (c <= t)'  =>  '-(c-1) <= -t'). Terms are hash-consed, so strengthening the
+// negated pivot here yields the very PTRef whose id names the variable.
+std::vector<std::string> LASolver::mixedVarNamesFor(PTRef pivotAtom) {
+    assert(logic.isLeq(pivotAtom));
+    std::vector<std::string> names{mixedAuxVarName(pivotAtom)};
+    if (logic.yieldsSortInt(logic.getTermFromLeq(pivotAtom)) and
+        logic.getNumConst(logic.getConstantFromLeq(pivotAtom)).isInteger()) {
+        PtAsgn const strengthenedNegation = LAExplanations::strengthen(logic, PtAsgn(pivotAtom, l_False));
+        names.push_back(mixedAuxVarName(strengthenedNegation.tr));
+    }
+    return names;
+}
+
+// left and right are the two partial interpolants meeting at a resolution pivot whose atom is I_MIXED.
+// (rule-la): for I1[LA1] and I2[LA2] the result is I1[I2[LA3]]. A partial interpolant is a monotone Boolean
+// combination (and/or, built by the A/B/AB resolution rules) whose "holes" are the (possibly negated) arithmetic
+// atoms mentioning the pivot's ".mixed_*" variable. Every hole h1 of left is replaced by a copy of right in which
+// every hole h2 is replaced by combineMixedLiterals(h1, h2). A side can contain several holes, e.g. when both
+// antecedents of an AB pivot contained the mixed literal (SMTInterpol's mixedPivotLA does the same).
+PTRef LASolver::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
+    auto const pivotVarNames = mixedVarNamesFor(pivotAtom);
+    auto isPivotVar = [&](PTRef v) {
+        if (v == PTRef_Undef or not logic.isVar(v)) { return false; }
+        std::string_view const name = logic.getSymName(v);
+        return std::find(pivotVarNames.begin(), pivotVarNames.end(), name) != pivotVarNames.end();
+    };
+    auto mentionsPivotVar = [&](PTRef itp) {
+        auto const vars = variables(logic, itp);
+        return std::any_of(vars.begin(), vars.end(), isPivotVar);
+    };
+    // (rule-la) degenerates to a single side when that side does not mention the pivot's auxiliary variable.
+    if (not mentionsPivotVar(left)) { return left; }
+    if (not mentionsPivotVar(right)) { return right; }
+
+    auto isHole = [&](PTRef t) {
+        PTRef const atom = logic.isNot(t) ? logic.getPterm(t)[0] : t;
+        return (logic.isLeq(atom) or logic.isNumEq(atom)) and mentionsPivotVar(atom);
+    };
+    // Rebuilds the and/or context of itp, replacing every hole h by fill(h).
+    auto replaceHoles = [&](PTRef itp, auto const & fill) {
+        std::unordered_map<PTRef, PTRef, PTRefHash> cache; // partial interpolants are DAGs
+        std::function<PTRef(PTRef)> go = [&](PTRef t) -> PTRef {
+            if (auto it = cache.find(t); it != cache.end()) { return it->second; }
+            PTRef res = t;
+            if (isHole(t)) {
+                res = fill(t);
+            } else if (logic.isAnd(t) or logic.isOr(t)) {
+                vec<PTRef> args;
+                for (PTRef child : logic.getPterm(t)) {
+                    args.push(go(child));
+                }
+                res = logic.isAnd(t) ? logic.mkAnd(std::move(args)) : logic.mkOr(std::move(args));
+            } else if (mentionsPivotVar(t)) {
+                // Substituting below e.g. not/ite/= would not be monotone, so (rule-la) does not apply.
+                throw InternalException("Mixed variable under a non-monotone context in a partial interpolant");
+            }
+            cache.emplace(t, res);
+            return res;
+        };
+        return go(itp);
+    };
+    return replaceHoles(left, [&](PTRef leftHole) {
+        return replaceHoles(right,
+                            [&](PTRef rightHole) { return combineMixedLiterals(leftHole, rightHole, isPivotVar); });
+    });
+}
+
+// Combines two holes (single, possibly negated, arithmetic literals) of the partial interpolants meeting at a mixed
+// pivot. Each contains the pivot's ".mixed_*" variable; the two occurrences need not be the same symbol (e.g. LIA
+// strengthening can produce a differently-named split for what is logically the negated atom), but they always play
+// opposite roles in the two halves, so the right-hand variable is identified with the negation of the left-hand one
+// before the two literals are summed.
+PTRef LASolver::combineMixedLiterals(PTRef left, PTRef right, std::function<bool(PTRef)> const & isPivotVar) {
+    // A hole may be the Boolean negation of a Leq/Equality atom (e.g. getFarkasInterpolant wraps the dual/"for B"
+    // result in logic.mkNot). ptrefToPoly only accepts the bare atom, and a negation flips the sign every
+    // coefficient contributes with, exactly like a l_False-signed literal does in FarkasInterpolator::weightedSum.
+    auto toSignedPoly = [this](PTRef t) {
+        bool const negated = logic.isNot(t);
+        PTRef const atom = negated ? logic.getPterm(t)[0] : t;
+        return std::make_tuple(ptrefToPoly(atom, logic), negated, atom);
+    };
+    auto [leftPoly, leftNegated, leftAtom] = toSignedPoly(left);
+    auto [rightPoly, rightNegated, rightAtom] = toSignedPoly(right);
+    (void)leftAtom;
+
+    // Over the integers a strict hole `not (0 <= P)`, i.e. `P < 0`, is equivalent to the non-strict `0 <= -P - 1`.
+  // Normalising both holes keeps the combination exact; left strict, every bound below is relaxed by one unit and
+  // the result can be consistent with B.
+  auto makeNonStrictOverIntegers = [this](LAPoly & poly, bool & negated, PTRef atom) {
+      if (not negated or not logic.isLeq(atom) or logic.getSortRef(logic.getPterm(atom)[1]) != logic.getSort_int()) {
+          return;
+      }
+      assert(std::all_of(poly.begin(), poly.end(), [](auto const & term) { return term.coeff.isInteger(); }));
+      poly.negate();
+      LAPoly minusOne;
+      minusOne.addTerm(PTRef_Undef, Real(-1));
+      poly.merge(minusOne, Real(1));
+      negated = false;
+  };
+  makeNonStrictOverIntegers(leftPoly, leftNegated, leftAtom);
+  makeNonStrictOverIntegers(rightPoly, rightNegated, rightAtom);
+
+    // Locate the auxiliary variable belonging to *this* pivot on each side. A side may carry further ".mixed_*"
+    // variables of other mixed literals still to be resolved at a later pivot, so any ".mixed_*" is not enough.
+    auto findPivotVar = [&](LAPoly const & poly) {
+        auto it = std::find_if(poly.begin(), poly.end(), [&](auto const & term) { return isPivotVar(term.var); });
+        if (it == poly.end()) { throw InternalException("Partial interpolant does not contain the pivot's mixed variable"); }
+        return std::make_pair(it->var, it->coeff);
+    };
+    auto const [leftMixedVar, leftMixedCoeff] = findPivotVar(leftPoly);
+    PTRef const rightMixedVar = findPivotVar(rightPoly).first;
+
+    // If both sides already share the identical fresh variable (the common case: Logic::mkVar deduplicates
+    // splitMixedLiteral's ".mixed_<atomId>" name, so splitting the same atom twice yields the same symbol),
+    // there is nothing to identify. Only when the two sides ended up with genuinely different fresh variables
+    // (e.g. one side went through LIA strengthening and split the negated, differently-named atom) do we need
+    // to identify them by rewriting (rightMixedVar, c) to (leftMixedVar, -c), i.e. substituting
+    // rightMixedVar := -leftMixedVar. Either way we end up with leftMixedVar's (possibly rewritten)
+    // coefficient on the right side, rightMixedCoeff, to eliminate against leftMixedCoeff.
+    LAPoly rewrittenRightPoly;
+    Real rightMixedCoeff = 0;
+    for (auto const & [var, coeff] : rightPoly) {
+        if (var == rightMixedVar) {
+            Real const rewrittenCoeff = rightMixedVar != leftMixedVar ? -coeff : coeff;
+            rewrittenRightPoly.addTerm(leftMixedVar, rewrittenCoeff);
+            rightMixedCoeff = rewrittenCoeff;
+        } else {
+            rewrittenRightPoly.addTerm(var, coeff);
+        }
+    }
+
+    // Farkas/Fourier-Motzkin elimination: leftMixedVar's *effective* coefficient (i.e. after also accounting
+    // for the outer negation of each side, exactly as applied to the final merge below) must have opposite
+    // signs on the two sides for a positive combination to cancel it. Scale each side by the (positive)
+    // magnitude of the other side's effective coefficient before summing:
+    //   |effRight| * effLeft + |effLeft| * effRight == 0
+    Real const effLeftMixedCoeff = leftNegated ? -leftMixedCoeff : leftMixedCoeff;
+    Real const effRightMixedCoeff = rightNegated ? -rightMixedCoeff : rightMixedCoeff;
+    if (effLeftMixedCoeff.sign() == 0 or effRightMixedCoeff.sign() == 0 or
+        effLeftMixedCoeff.sign() == effRightMixedCoeff.sign()) {
+        throw InternalException("Mixed variable coefficients cannot be eliminated by a positive Farkas combination");
+    }
+    Real const leftFarkasCoeff = abs(effRightMixedCoeff);
+    Real const rightFarkasCoeff = abs(effLeftMixedCoeff);
+
+    // Paper's LA(s(x), k, F(x)): (rule-la) also combines the `k` parameters of the two partial
+    // interpolants. The leaf value is k = -e (represented as -1, which is literally -1 in the integer
+    // case); a partial interpolant that is itself the result of an earlier (rule-la) carries its `k`
+    // in mixedLAInfo. With c1, c2 the (positive) coefficients of the mixed variable in the two `s`
+    // terms,  k3 = c2*k1 + c1*k2 + c1*c2  (the integer "dark shadow" gap term); in the real case
+    // k3 = k2 if k1 = -e else 0.
+    auto kOf = [this](PTRef v) {
+        auto it = mixedLAInfo.find(v);
+        return it != mixedLAInfo.end() ? it->second.k : Real(-1);
+    };
+    Real const k1 = kOf(leftMixedVar);
+    Real const k2 = kOf(rightMixedVar);
+    Real const c1 = rightFarkasCoeff; // |effLeftMixedCoeff| : coeff of the mixed var in the left `s`
+    Real const c2 = leftFarkasCoeff;  // |effRightMixedCoeff|: coeff of the mixed var in the right `s`
+    Real const k3 = logic.hasIntegers() ? (c2 * k1 + c1 * k2 + c1 * c2)
+                                        : (k1 == Real(-1) ? k2 : Real(0));
+
+    // Summing the (Farkas- and sign-adjusted) sides now cancels leftMixedVar: it no longer appears in the
+    // combined interpolant, exactly as the two split halves cancel it in FarkasInterpolator::weightedSum.
+    LAPoly combined;
+    combined.merge(leftPoly, leftFarkasCoeff * (leftNegated ? Real(-1) : Real(1)));
+    combined.merge(rewrittenRightPoly, rightFarkasCoeff * (rightNegated ? Real(-1) : Real(1)));
+    // A negated side contributed a strict Farkas coefficient, so the combined inequality is strict too
+    // (mirrors FarkasInterpolator::weightedSum's Strictness handling).
+    bool const strict = leftNegated or rightNegated;
+    // If the clause had more than one mixed literal, `combined` still carries a mixed variable; make
+    // its `k` available to the (rule-la) step that pivots on it next. `combined` is the body of the
+    // "0 <= combined" form, so the coefficient in the paper's "s <| 0" orientation is negated.
+    bool combinedHasMixed = false;
+    for (auto const & [var, coeff] : combined) {
+        if (isMixedAuxVar(logic, var)) {
+            combinedHasMixed = true;
+            mixedLAInfo.insert_or_assign(var, MixedLAInfo{var, -coeff, k3, strict});
+        }
+    }
+    SRef const sort = logic.getSortRef(logic.getPterm(rightAtom)[1]);
+    PTRef const zero = logic.getZeroForSort(sort);
+
+    // With another mixed variable still in `combined`, the exact div/ceil projection below is not used and the
+    // plain sum is returned. Over the integers that sum is exact only if one pivot coefficient is 1; otherwise
+    // it is the weaker rational shadow and the interpolant may be invalid (the paper needs LA(s, k, F) here).
+    if (logic.hasIntegers() and combinedHasMixed and c1 > 1 and c2 > 1) {
+        throw InternalException("Inexact integer combination of mixed literals: several mixed variables and no unit "
+                                "pivot coefficient");
+    }
+
+    // Each side is a half-plane  a_i * x1 + s_i(shared) <| 0  (a_i the mixed-var coefficient in the
+    // "<| 0" orientation, s_i over shared vars only). With opposite-signed a_i one side upper-bounds
+    // x1 and the other lower-bounds it, and the exact combined interpolant is
+    //     exists integer y.  (y <= floor(-s_hi / c_hi))  /\  (y >= ceil(s_lo / c_lo))
+    //   <=>  ceil(s_lo / c_lo)  <=  floor(-s_hi / c_hi)
+    // i.e. "there is an integer -- hence, given c_hi/c_lo, a value with the required divisibility --
+    // between the two shared bounds" (the "even integer between t and r" for test3). When c_hi or
+    // c_lo is 1 this is equivalent to the plain `s3 <| 0` below, so restrict to c_hi, c_lo >= 2 to
+    // leave every other case byte-identical. This runs before the `combined` (== s3) is inspected
+    // below: even when s3 vanishes identically (all shared terms cancel) the interpolant is a real
+    // divisibility fact, not `true`.
+    if (logic.hasIntegers() and not combinedHasMixed) {
+        LAPoly leftS = leftPoly;
+        if (not leftNegated) { leftS.negate(); }
+        LAPoly rightS = rewrittenRightPoly;
+        if (not rightNegated) { rightS.negate(); }
+        auto itL = leftS.findTermForVar(leftMixedVar);
+        auto itR = rightS.findTermForVar(leftMixedVar);
+        if (itL != leftS.end() and itR != rightS.end() and itL->coeff.sign() != 0 and
+            itR->coeff.sign() != 0 and itL->coeff.sign() != itR->coeff.sign()) {
+            bool const leftIsUpper = itL->coeff.sign() > 0; // a_left > 0  =>  x1 <= -s_left / a_left
+            Real const cHi = abs(leftIsUpper ? itL->coeff : itR->coeff);
+            Real const cLo = abs(leftIsUpper ? itR->coeff : itL->coeff);
+            if (cHi > 1 and cLo > 1) {
+                leftS.removeVar(leftMixedVar);
+                rightS.removeVar(leftMixedVar);
+                LAPoly hiRem = leftIsUpper ? std::move(leftS) : std::move(rightS);
+                LAPoly loRem = leftIsUpper ? std::move(rightS) : std::move(leftS);
+                hiRem.negate(); // x1 <= hiRem / cHi
+                PTRef const hi = logic.mkIntDiv(polyToPTRef(hiRem, logic, sort), logic.mkIntConst(cHi)); // floor
+                PTRef const loNum = polyToPTRef(loRem, logic, sort);
+                PTRef const lo = // ceil(loRem / cLo) = -floor(-loRem / cLo)
+                    logic.mkNeg(logic.mkIntDiv(logic.mkNeg(loNum), logic.mkIntConst(cLo)));
+                return logic.mkLeq(lo, hi);
+            }
+        }
+    }
+
+    if (combined.size() == 0) { return logic.getTerm_true(); }
+    PTRef const sum = polyToPTRef(combined, logic, sort);
+    return strict ? logic.mkGt(sum, zero) : logic.mkGeq(sum, zero);
+}
+
+PTRef LASolver::getIntegerInterpolant(ipartitions_t const & mask, ItpColorMap const & labels, PartitionManager & pmanager) {
     assert(status == UNSAT);
-    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels));
-    return interpolateUsingEngine(interpolator);
+    LIAInterpolator interpolator(logic, LAExplanations::getLIAExplanation(logic, explanation, explanationCoefficients, labels),
+        std::make_unique<GlobalTermColorInfo>(pmanager, mask));
+    auto res = interpolateUsingEngine(interpolator);
+    for (auto const & info : interpolator.getMixedLAInfo()) { mixedLAInfo.insert_or_assign(info.auxVar, info); }
+    return res;
 }
 
 void LASolver::printStatistics(std::ostream & out) {
@@ -736,7 +983,7 @@ void LASolver::printStatistics(std::ostream & out) {
 }
 
 bool LASolver::shouldTryCutFromProof() const {
-    if (this->config.produce_inter()) { return false; }
+    // Cuts from proof can be done now with interpolation
     static unsigned long counter = 0;
     return ++counter % 10 == 0;
 }

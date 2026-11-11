@@ -25,10 +25,14 @@ PTRef LATHandler::getInterpolant(ipartitions_t const & mask, ItpColorMap * label
         if (labels == nullptr) {
             throw InternalException("LIA interpolation requires partitioning map, but no map was provided");
         }
-        return lasolver->getIntegerInterpolant(*labels);
+        return lasolver->getIntegerInterpolant(mask, *labels, pmanager);
     } else {
         throw InternalException("Mixed arithmetic interpolation not supported yet");
     }
+}
+
+PTRef  LATHandler::resolveMixed(PTRef pivotAtom, PTRef left, PTRef right) {
+    return lasolver->resolveMixed(pivotAtom, left, right);
 }
 
 }
