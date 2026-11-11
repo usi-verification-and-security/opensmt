@@ -52,6 +52,10 @@ class vec {
     static inline void nextCap(int& cap){ cap += ((cap >> 1) + 2) & ~1; }
 
 public:
+    // types for STL compatibility
+    using iterator = T *;
+    using const_iterator = T const *;
+
     // Constructors:
     vec()                       : data(NULL) , sz(0)   , cap(0)    { }
     explicit vec(int size)      : data(NULL) , sz(0)   , cap(0)    { growTo(size); }
@@ -100,10 +104,12 @@ public:
     T&       operator [] (int index)       { return data[index]; }
 
     // methods for STL compatibility
-    T*          begin()       { return data; }
-    const T*    begin() const { return data; }
-    T*          end()         { return data + sz; }
-    const T*    end()   const { return data + sz; }
+    iterator       begin()       { return data; }
+    const_iterator begin() const { return data; }
+    iterator       end()         { return data + sz; }
+    const_iterator end()   const { return data + sz; }
+    const_iterator cbegin() const { return begin(); }
+    const_iterator cend()   const { return end(); }
 
 
     // Duplicatation (preferred instead):
