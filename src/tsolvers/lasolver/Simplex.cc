@@ -18,7 +18,7 @@
 namespace opensmt {
 Simplex::~Simplex() {
 #ifdef STATISTICS
-    simplex_stats.printStatistics(cerr);
+    simplex_stats.printStatistics(std::cerr);
 #endif // STATISTICS
 }
 

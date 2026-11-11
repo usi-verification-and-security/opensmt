@@ -253,7 +253,7 @@ public:
     bool isValid(PTRef tr) override { return logic.isTheoryEquality(tr) || logic.isUP(tr) || logic.isDisequality(tr); }
 
 #ifdef STATISTICS
-    void printMemStats (ostream &);
+    void printMemStats (std::ostream &);
 #endif
     void computePolarities (ERef);
 
