@@ -49,10 +49,16 @@ public:
     void invalidatePartitions(ipartitions_t const & toinvalidate);
 
     inline std::vector<PTRef> getPartitions() const { return partitionInfo.getTopLevelFormulas(); }
+    inline std::vector<PTRef> getInternalPartitions() const { return partitionInfo.getInternalFormulas(); }
 
     vec<PTRef> getPartitions(ipartitions_t const &) const;
 
     unsigned getNofPartitions() const { return partitionInfo.getNoOfPartitions(); }
+
+    PTRef getPartition(int partitionIndex) const;
+    PTRef getPartitionForInternal(PTRef) const;
+    PTRef getInternalPartition(int partitionIndex) const;
+    PTRef getInternalPartitionFor(PTRef) const;
 
     void transferPartitionMembership(PTRef old, PTRef new_ptref) {
         if (new_ptref == old) { return; }

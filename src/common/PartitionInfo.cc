@@ -6,7 +6,7 @@
 
 namespace opensmt {
 void PartitionInfo::assignTopLevelPartitionIndex(unsigned int n, PTRef tr) {
-    flaPartitionMap.store_top_level_fla_index(tr, n);
+    flaPartitionMap.storeTopLevelFlaIndex(tr, n);
     ipartitions_t p = 0;
     setbit(p, n);
     addIPartitions(tr, p);
