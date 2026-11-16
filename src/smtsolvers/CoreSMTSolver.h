@@ -448,7 +448,7 @@ public:
 protected:
 
 #ifdef STATISTICS
-    void   printStatistics        ( ostream & );   // Prints statistics
+    void   printStatistics        ( std::ostream & );   // Prints statistics
 #endif
     void   printTrail             ( );             // Prints the trail (debugging)
     TPropRes checkTheory          (bool, int&);    // Checks consistency in theory.  The second arg is conflictC

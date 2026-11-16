@@ -48,6 +48,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <common/ReportUtils.h>
 
+#ifdef STATISTICS
+#include "common/SystemQueries.h"
+#endif
+
 //=================================================================================================
 // Constructor/Destructor:
 
