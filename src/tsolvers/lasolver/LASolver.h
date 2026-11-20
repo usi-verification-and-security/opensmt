@@ -70,7 +70,8 @@ public:
                                     std::unordered_set<PTRef, PTRefHash> const & knownEqualities) override;
 
     PTRef getRealInterpolant(ipartitions_t const &, ItpColorMap *, PartitionManager & pmanager);
-    PTRef getIntegerInterpolant(ItpColorMap const &);
+    PTRef getIntegerInterpolant(ipartitions_t const &, ItpColorMap const &, PartitionManager & pmanager);
+    PTRef resolveMixed(PTRef pivotAtom, PTRef left, PTRef right);
 
     // Return the conflicting bounds
     void getConflict(vec<PtAsgn> &) override;

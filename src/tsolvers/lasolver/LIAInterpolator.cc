@@ -9,6 +9,17 @@
 #include <memory>
 
 namespace opensmt {
+PTRef strengthenedNegation(ArithLogic & logic, PTRef leq) {
+    assert(logic.isLeq(leq));
+    // 'not (c <= term)' => 'c > term' => 'term < c' => 'term <= c-1' => -(c-1) <= -term
+    auto newBoundValue = (logic.getNumConst(logic.getConstantFromLeq(leq)) - 1);
+    newBoundValue.negate();
+    PTRef const boundedTerm = logic.getTermFromLeq(leq);
+    PTRef const strengthened = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
+    assert(logic.getTermFromLeq(strengthened) == logic.mkNeg(boundedTerm));
+    return strengthened;
+}
+
 LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn> const & explanations,
                                                  std::vector<Real> const & coeffs, ItpColorMap const & labels) {
     LAExplanations liaExplanations;
@@ -22,20 +33,15 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
         lbool sign = explEntry.sgn;
         assert(logic.isLeq(positiveInequality));
         assert(sign == l_True or sign == l_False);
-        PTRef boundVal = logic.getConstantFromLeq(positiveInequality);
-        PTRef boundedTerm = logic.getTermFromLeq(positiveInequality);
+        [[maybe_unused]] PTRef boundVal = logic.getConstantFromLeq(positiveInequality);
+        [[maybe_unused]] PTRef boundedTerm = logic.getTermFromLeq(positiveInequality);
         assert(logic.isNumConst(boundVal) and logic.isLinearTerm(boundedTerm));
         assert(logic.getNumConst(boundVal).isInteger()); // We assume LIA inequalities are already strengthened
         if (sign == l_True) {
             // Already strengthened!
             liaExplanations.explanations.push(PtAsgn(positiveInequality, l_True));
         } else {
-            // 'not (c <= term)' => 'c > term' => 'term < c' => 'term <= c-1' => -(c-1) <= -term
-            auto newBoundValue = (logic.getNumConst(boundVal) - 1);
-            newBoundValue.negate();
-            PTRef nInequality = logic.mkLeq(logic.mkIntConst(newBoundValue), logic.mkNeg(boundedTerm));
-            assert(logic.getTermFromLeq(nInequality) == logic.mkNeg(boundedTerm));
-            liaExplanations.explanations.push(PtAsgn(nInequality, l_True));
+            liaExplanations.explanations.push(PtAsgn(strengthenedNegation(logic, positiveInequality), l_True));
         }
         // Ensure the strengthened inequality has correct partition information
         PTRef nInequality = liaExplanations.explanations.last().tr;
@@ -49,7 +55,8 @@ LAExplanations LAExplanations::getLIAExplanation(ArithLogic & logic, vec<PtAsgn>
     return liaExplanations;
 }
 
-LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations)
+LIAInterpolator::LIAInterpolator(ArithLogic & logic, LAExplanations liaExplanations,
+                                 std::unique_ptr<TermColorInfo> colorInfo)
     : FarkasInterpolator(logic, std::move(liaExplanations.explanations), std::move(liaExplanations.coeffs),
-                         std::move(liaExplanations.labels)) {}
+                         std::move(liaExplanations.labels), std::move(colorInfo)) {}
 } // namespace opensmt
